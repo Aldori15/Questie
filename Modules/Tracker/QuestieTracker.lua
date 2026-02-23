@@ -141,7 +141,7 @@ function QuestieTracker.Initialize()
 
     -- Insures all other data we're getting from other addons and WoW is loaded. There are edge
     -- cases where Questie loads too fast before everything else is available.
-    C_Timer.After(1.0, function()
+    C_Timer.After(0.5, function()
         -- Hide frames during startup
         if QuestieTracker.alreadyHooked then
             if Questie.db.profile.stickyDurabilityFrame then DurabilityFrame:Hide() end
@@ -1686,7 +1686,7 @@ function QuestieTracker:Update()
             end
         end
         isFirstRun = false
-        C_Timer.After(1.0, function()
+        C_Timer.After(0.3, function()
             QuestieCombatQueue:Queue(function()
                 allowFormattingUpdate = true
                 QuestieTracker:Update()

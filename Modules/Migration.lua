@@ -66,6 +66,16 @@ local migrationFunctions = {
     end,
     [5] = function()
         Questie.db.profile.enableTooltipsNextInChain = true
+    end,
+    [6] = function()
+        -- Migrate users from the old default (0.03) to the new default (0.01)
+        -- without overriding custom values.
+        if QuestieCompat.Is335 then
+            local initDelay = Questie.db.profile.initDelay
+            if (initDelay == nil) or (initDelay > 0.029 and initDelay < 0.031) then
+                Questie.db.profile.initDelay = 0.01
+            end
+        end
     end
 }
 
