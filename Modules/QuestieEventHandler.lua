@@ -336,6 +336,12 @@ function _EventHandler:PlayerLevelUp(level)
     Questie:Debug(Questie.DEBUG_DEVELOP, "[EVENT] PLAYER_LEVEL_UP", level)
 
     QuestiePlayer:SetPlayerLevel(level)
+    QuestieJourney:PlayerLevelUp(level)
+
+    -- Quest difficulty colors might have changed with the new level
+    QuestieCombatQueue:Queue(function()
+        QuestieTracker:Update()
+    end)
 
     -- deferred update (possible desync fix?)
     C_Timer.After(3, function()
@@ -343,8 +349,6 @@ function _EventHandler:PlayerLevelUp(level)
 
         AvailableQuests.CalculateAndDrawAll()
     end)
-
-    QuestieJourney:PlayerLevelUp(level)
 end
 
 --- Fires when a modifier key changed
