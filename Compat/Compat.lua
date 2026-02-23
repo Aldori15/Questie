@@ -12,6 +12,8 @@ local QuestieEventHandler = QuestieLoader:ImportModule("QuestieEventHandler")
 local QuestieQuest = QuestieLoader:ImportModule("QuestieQuest")
 ---@type QuestEventHandler
 local QuestEventHandler = QuestieLoader:ImportModule("QuestEventHandler")
+---@type QuestLogCache
+local QuestLogCache = QuestieLoader:ImportModule("QuestLogCache")
 ---@class AvailableQuests
 local AvailableQuests = QuestieLoader:ImportModule("AvailableQuests")
 ---@type ZoneDB
@@ -20,6 +22,8 @@ local ZoneDB = QuestieLoader:ImportModule("ZoneDB")
 local MinimapIcon = QuestieLoader:ImportModule("MinimapIcon")
 ---@type TrackerLinePool
 local TrackerLinePool = QuestieLoader:ImportModule("TrackerLinePool")
+---@type QuestieTracker
+local QuestieTracker = QuestieLoader:ImportModule("QuestieTracker")
 ---@type QuestiePlayer
 local QuestiePlayer = QuestieLoader:ImportModule("QuestiePlayer")
 ---@type QuestXP
@@ -369,9 +373,89 @@ function QuestieCompat.GetServerTime()
 end
 
 local questObjectivesCache = {}
+local QUEST_OBJECTIVE_CACHE_TTL_SECONDS = 3
 
 local function parseQuestObjective(text)
     return string.match(string.gsub(text, "\239\188\154", ":"), "(.*):%s*([%d]+)%s*/%s*([%d]+)")
+end
+
+local function normalizeObjectiveName(objectiveName)
+    if type(objectiveName) ~= "string" then
+        return objectiveName
+    end
+
+    -- Remove coloring codes and trim whitespace to keep lookup keys stable.
+    objectiveName = objectiveName:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+    return objectiveName:match("^%s*(.-)%s*$")
+end
+
+local function setObjectiveProgressCache(objectiveName, numFulfilled)
+    numFulfilled = tonumber(numFulfilled)
+    if (not objectiveName) or (not numFulfilled) then
+        return
+    end
+
+    questObjectivesCache[objectiveName] = {
+        fulfilled = numFulfilled,
+        expiresAt = GetTime() + QUEST_OBJECTIVE_CACHE_TTL_SECONDS
+    }
+end
+
+local function getObjectiveProgressCache(objectiveName)
+    local cached = questObjectivesCache[objectiveName]
+    if not cached then
+        return nil
+    end
+
+    if (type(cached) ~= "table") or (type(cached.fulfilled) ~= "number") then
+        questObjectivesCache[objectiveName] = nil
+        return nil
+    end
+
+    if cached.expiresAt and (GetTime() > cached.expiresAt) then
+        questObjectivesCache[objectiveName] = nil
+        return nil
+    end
+
+    return cached.fulfilled
+end
+
+local function applyObjectiveProgressToQuestieCache(objectiveName, numFulfilled)
+    numFulfilled = tonumber(numFulfilled)
+    if (not objectiveName) or (not numFulfilled) then
+        return false
+    end
+
+    local changedQuestIds = {}
+    for questId, questData in pairs(QuestLogCache.questLog_DO_NOT_MODIFY or {}) do
+        local objectives = questData and questData.objectives
+        if objectives and #objectives > 0 then
+            for _, objective in ipairs(objectives) do
+                if objective and objective.type == "item" and normalizeObjectiveName(objective.text) == objectiveName then
+                    local oldFulfilled = tonumber(objective.numFulfilled) or 0
+                    if numFulfilled > oldFulfilled then
+                        objective.numFulfilled = numFulfilled
+                        objective.raw_numFulfilled = math.max(tonumber(objective.raw_numFulfilled) or 0, numFulfilled)
+                        if objective.numRequired then
+                            local isFinished = numFulfilled >= objective.numRequired
+                            objective.finished = isFinished
+                            objective.raw_finished = objective.raw_finished or isFinished
+                        end
+                        changedQuestIds[questId] = true
+                    end
+                end
+            end
+        end
+    end
+
+    local hasChanges = false
+    for questId in pairs(changedQuestIds) do
+        hasChanges = true
+        QuestieQuest:SetObjectivesDirty(questId)
+        QuestieQuest:UpdateQuest(questId)
+    end
+
+    return hasChanges
 end
 
 QuestieCompat.C_QuestLog = {
@@ -385,12 +469,26 @@ QuestieCompat.C_QuestLog = {
 		    	local description, objectiveType, isCompleted = GetQuestLogLeaderBoard(i, questLogIndex);
                 if objectiveType ~= "log" then
 		    	    local objectiveName, numFulfilled, numRequired = parseQuestObjective(description)
+                    objectiveName = normalizeObjectiveName(objectiveName)
                     -- GetQuestLogLeaderBoard randomly returns incorrect objective information.
                     -- Parsing the UI_INFO_MESSAGE event for the correct numFulfilled value seems like the solution.
-                    local fulfilled = questObjectivesCache[objectiveName]
-                    if fulfilled and (not isCompleted) then
-                        numFulfilled = fulfilled
-                        questObjectivesCache[objectiveName] = nil
+                    local fulfilled = getObjectiveProgressCache(objectiveName)
+                    if fulfilled then
+                        if not isCompleted then
+                            -- GetQuestLogLeaderBoard can lag behind UI_INFO_MESSAGE.
+                            -- Never let cached fallback reduce an already newer value.
+                            local questLogFulfilled = tonumber(numFulfilled)
+                            if questLogFulfilled then
+                                numFulfilled = math.max(questLogFulfilled, fulfilled)
+                                if questLogFulfilled >= fulfilled then
+                                    questObjectivesCache[objectiveName] = nil
+                                end
+                            else
+                                numFulfilled = fulfilled
+                            end
+                        else
+                            questObjectivesCache[objectiveName] = nil
+                        end
                     end
 
 		    	    table.insert(questObjectives, objectiveIndex, {
@@ -1277,17 +1375,100 @@ local chatMessagePattern = {
         LOOT_ITEM_SELF_MULTIPLE,
     }
 }
+local uiInfoObjectiveProgressPending = false
+local uiInfoObjectiveSyncQueued = false
+local uiInfoObjectiveLateSyncQueued = false
+
+local function syncObjectiveProgressFromUiInfoMessage()
+    local questEventHandlerPrivate = QuestEventHandler.private
+    if questEventHandlerPrivate and questEventHandlerPrivate.UpdateAllQuests then
+        questEventHandlerPrivate:UpdateAllQuests()
+    end
+
+    if QuestieTracker and QuestieTracker.Update then
+        QuestieTracker:Update()
+    end
+end
+
+local function queueObjectiveProgressSync(delay)
+    if uiInfoObjectiveSyncQueued then
+        return
+    end
+
+    uiInfoObjectiveSyncQueued = true
+    QuestieCompat.C_Timer.After(delay or 0, function()
+        uiInfoObjectiveSyncQueued = false
+        if not uiInfoObjectiveProgressPending then
+            return
+        end
+
+        uiInfoObjectiveProgressPending = false
+        syncObjectiveProgressFromUiInfoMessage()
+    end)
+end
+
+local function queueLateObjectiveProgressSync()
+    if uiInfoObjectiveLateSyncQueued then
+        return
+    end
+
+    uiInfoObjectiveLateSyncQueued = true
+    QuestieCompat.C_Timer.After(0.35, function()
+        uiInfoObjectiveLateSyncQueued = false
+        syncObjectiveProgressFromUiInfoMessage()
+    end)
+end
+
+function QuestieCompat.LOOT_SLOT_CLEARED(event)
+    if uiInfoObjectiveProgressPending then
+        queueObjectiveProgressSync(0.10)
+        queueLateObjectiveProgressSync()
+    end
+end
+
+function QuestieCompat.LOOT_CLOSED(event)
+    if uiInfoObjectiveProgressPending then
+        queueObjectiveProgressSync(0.20)
+        queueLateObjectiveProgressSync()
+    end
+end
 
 -- parse chat message for quest related info
-function QuestieCompat.UiInfoMessage(event, message)
-    for _, pattern in pairs(chatMessagePattern.questInfo) do
-        if string.find(message, pattern) then
-            local objectiveName, numFulfilled = parseQuestObjective(message)
-            if objectiveName and numFulfilled then
-                questObjectivesCache[objectiveName] = numFulfilled
+function QuestieCompat.UiInfoMessage(event, ...)
+    local arg1, arg2 = ...
+    local message
+    if type(arg1) == "string" then
+        message = arg1
+    elseif type(arg2) == "string" then
+        message = arg2
+    else
+        return
+    end
+
+    local hasObjectiveProgressUpdate = false
+    local objectiveName, numFulfilled = parseQuestObjective(message)
+    objectiveName = normalizeObjectiveName(objectiveName)
+
+    -- Parse and cache objective progress from the message itself, independent of pattern matching.
+    if objectiveName and numFulfilled then
+        setObjectiveProgressCache(objectiveName, numFulfilled)
+        hasObjectiveProgressUpdate = true
+        uiInfoObjectiveProgressPending = true
+        applyObjectiveProgressToQuestieCache(objectiveName, numFulfilled)
+        MinimapIcon:UpdateText(message)
+    else
+        for _, pattern in pairs(chatMessagePattern.questInfo) do
+            if string.find(message, pattern) then
+                MinimapIcon:UpdateText(message)
+                break
             end
-            MinimapIcon:UpdateText(message)
         end
+    end
+
+    if hasObjectiveProgressUpdate then
+        -- Keep a generic delayed sync for non-loot objective progress updates.
+        queueObjectiveProgressSync(0.05)
+        queueLateObjectiveProgressSync()
     end
 end
 
@@ -1355,6 +1536,10 @@ function QuestieCompat.QuestieEventHandler_RegisterLateEvents()
     -- Nameplate / Target Frame Objective Events
     Questie:UnregisterEvent("NAME_PLATE_UNIT_ADDED") -- https://wowpedia.fandom.com/wiki/NAME_PLATE_UNIT_ADDED
     Questie:UnregisterEvent("NAME_PLATE_UNIT_REMOVED") -- https://wowpedia.fandom.com/wiki/NAME_PLATE_UNIT_REMOVED
+
+    -- Use loot events as additional sync points for tracker refreshes.
+    Questie:RegisterEvent("LOOT_SLOT_CLEARED", QuestieCompat.LOOT_SLOT_CLEARED)
+    Questie:RegisterEvent("LOOT_CLOSED", QuestieCompat.LOOT_CLOSED)
 
     if Questie.db.profile.nameplateEnabled then
         QuestieNameplate.UpdateNameplate = QuestieCompat.UpdateNameplate
@@ -1434,7 +1619,10 @@ function QuestieCompat.QuestEventHandler_RegisterEvents()
     QuestieQuestEventFrame:UnregisterEvent("QUEST_REMOVED")
     hooksecurefunc("AbandonQuest", function()
         local questId = QuestieCompat.abandonQuestID or select(9, GetQuestLogTitle(GetQuestLogSelection()))
-        _QuestEventHandler:QuestRemoved(QuestieCompat.abandonQuestID)
+        if questId and questId > 0 then
+            _QuestEventHandler:QuestRemoved(questId, true)
+        end
+        QuestieCompat.abandonQuestID = nil
     end)
 end
 

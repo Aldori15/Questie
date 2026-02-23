@@ -471,6 +471,13 @@ function QuestieQuest:AcceptQuest(questId)
                     QuestieCombatQueue:Queue(function()
                         QuestieTracker:Update()
                     end)
+                    -- Accept flow spans TaskQueue + combat queue; run a delayed second refresh
+                    -- so newly accepted quests are guaranteed visible without manual collapse/expand.
+                    C_Timer.After(0.30, function()
+                        QuestieCombatQueue:Queue(function()
+                            QuestieTracker:Update()
+                        end)
+                    end)
                 end
             )
         else
@@ -561,6 +568,13 @@ function QuestieQuest:AbandonedQuest(questId)
         QuestieTooltips:RemoveQuest(questId)
         QuestieCombatQueue:Queue(function()
             QuestieTracker:Update()
+        end)
+        -- Abandon flow can update tracker before quest log header counters settle.
+        -- Run a short delayed second pass to keep the header/count in sync.
+        C_Timer.After(0.30, function()
+            QuestieCombatQueue:Queue(function()
+                QuestieTracker:Update()
+            end)
         end)
 
         AvailableQuests.CalculateAndDrawAll()

@@ -37,6 +37,8 @@ local QuestEventHandler = QuestieLoader:ImportModule("QuestEventHandler")
 local _QuestEventHandler = QuestEventHandler.private
 ---@type QuestieDB
 local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
+---@type QuestLogCache
+local QuestLogCache = QuestieLoader:ImportModule("QuestLogCache")
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
 ---@type QuestieDebugOffer
@@ -623,6 +625,7 @@ function QuestieTracker:Update()
             if not questId then break end
 
             local quest = questDetails[questId].quest
+            local cachedObjectives = QuestLogCache.questLog_DO_NOT_MODIFY[questId] and QuestLogCache.questLog_DO_NOT_MODIFY[questId].objectives
             local complete = quest:IsComplete()
             local zoneName = questDetails[questId].zoneName
             local remainingSeconds = TrackerQuestTimers:GetRemainingTime(quest, nil, true)
@@ -1081,6 +1084,21 @@ function QuestieTracker:Update()
                                     local objDesc = objective.Description:gsub("%.", "")
 
                                     if (objective.Completed ~= true or (objective.Completed == true and #quest.Objectives > 1)) then
+                                        -- Quest objective objects can lag one update behind in 3.3.5 manual loot flow.
+                                        -- Prefer latest values from QuestLogCache when available.
+                                        if cachedObjectives and objective.Index and cachedObjectives[objective.Index] then
+                                            local cachedObjective = cachedObjectives[objective.Index]
+                                            if type(cachedObjective.numFulfilled) == "number" then
+                                                objective.Collected = cachedObjective.numFulfilled
+                                            end
+                                            if type(cachedObjective.numRequired) == "number" then
+                                                objective.Needed = cachedObjective.numRequired
+                                            end
+                                            if objective.Needed and objective.Collected then
+                                                objective.Completed = (objective.Needed == objective.Collected and objective.Needed > 0) or objective.Completed
+                                            end
+                                        end
+
                                         local lineEnding
                                         lineEnding = tostring(objective.Collected) .. "/" .. tostring(objective.Needed)
 
