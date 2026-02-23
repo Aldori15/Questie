@@ -318,12 +318,12 @@ QuestieEvent.eventDates = {
         startDate = "3/2",
         endDate = "24/2"
     },
-    ["Love is in the Air"] = {startDate = "05/2", endDate = "19/2"},
+    ["Love is in the Air"] = {startDate = "04/2", endDate = "18/2"},
     ["Noblegarden"] = { -- WARNING THIS DATE VARIES!!!!
-        startDate = "31/3",
-        endDate = "6/4"
+        startDate = "20/4",
+        endDate = "27/4"
     },
-    ["Children's Week"] = {startDate = "1/5", endDate = "7/5"},
+    ["Children's Week"] = {startDate = "29/4", endDate = "6/5"},
     ["Midsummer"] = {startDate = "21/6", endDate = "4/7"},
     ["Brewfest"] = {startDate = "20/9", endDate = "5/10"}, -- TODO: This might be different (retail date)
     ["Harvest Festival"] = { -- WARNING THIS DATE VARIES!!!!
@@ -352,15 +352,9 @@ QuestieEvent.eventDateCorrections = {
 }
 
 QuestieEvent.lunarFestival = {
-    ["19"] = {startDate = "5/2", endDate = "19/2"},
-    ["20"] = {startDate = "23/1", endDate = "10/2"},
-    ["21"] = {startDate = "5/2", endDate = "19/2"}, --when this was for real?
-    ["22"] = {startDate = "30/1", endDate = "18/2"},
+    ["25"] = {startDate = "2/2", endDate = "16/2"},
+    ["26"] = {startDate = "2/2", endDate = "16/2"},
     -- Below are estimates
-    ["23"] = {startDate = "20/1", endDate = "10/2"},
-    ["24"] = {startDate = "3/2", endDate = "23/2"},
-    ["25"] = {startDate = "29/1", endDate = "12/2"},
-    ["26"] = {startDate = "17/2", endDate = "3/3"},
     ["27"] = {startDate = "7/2", endDate = "21/2"},
     ["28"] = {startDate = "27/1", endDate = "10/2"}
 }
