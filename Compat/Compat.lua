@@ -506,7 +506,8 @@ function QuestieCompat.CalculateNextResetTime()
     local timeUntilReset = GetQuestResetTime()
 
     Questie:Debug(Questie.DEBUG_DEVELOP, "[CalculateNextResetTime] GetQuestResetTime: ", timeUntilReset)
-    if timeUntilReset <= 0 then
+    -- -10 because reset isn't instant, avoids error unless genuine
+    if timeUntilReset <= -10 then
         Questie:Error("GetQuestResetTime() returns an invalid value: "..timeUntilReset..". Please report on Github!")
         return
     end
