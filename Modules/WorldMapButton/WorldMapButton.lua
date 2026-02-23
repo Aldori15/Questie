@@ -33,6 +33,21 @@ function WorldMapButton.Toggle(shouldShow)
     end
 end
 
+---@param self Frame
+---@return nil
+local function UpdateTooltip(self)
+    local tooltip = GameTooltip
+    tooltip:SetOwner(self, "ANCHOR_NONE");
+    tooltip:ClearLines()
+    tooltip:SetPoint("TOPRIGHT", self, "BOTTOMRIGHT", 0, 0);
+    tooltip:AddDoubleLine(Questie:Colorize("Questie", 'gold'), Questie:Colorize(QuestieLib:GetAddonVersionString(), 'gray'))
+    tooltip:AddLine(" ")
+    local toggleLabel = Questie.db.profile.enabled and l10n('Hide Questie') or l10n('Show Questie')
+    tooltip:AddDoubleLine(Questie:Colorize(l10n('Left Click'), 'lightBlue'), Questie:Colorize(toggleLabel, 'white'))
+    tooltip:AddDoubleLine(Questie:Colorize(l10n('Right Click'), 'lightBlue'), Questie:Colorize(l10n('Toggle Menu'), 'white'))
+    tooltip:Show()
+end
+
 QuestieWorldMapButtonMixin = {
     OnLoad = function() end,
     OnHide = function() end,
@@ -40,19 +55,16 @@ QuestieWorldMapButtonMixin = {
         if button == "LeftButton" then
             Questie.db.profile.enabled = (not Questie.db.profile.enabled)
             QuestieQuest:ToggleNotes(Questie.db.profile.enabled)
+            if GameTooltip:IsShown() and GameTooltip:GetOwner() == mapButton then
+                UpdateTooltip(mapButton)
+            end
         elseif button == "RightButton" then
             QuestieMenu:Show()
         end
     end,
     OnMouseUp = function() end,
     OnEnter = function(self)
-        local GameTooltip = QuestieCompat.SetupTooltip(self)
-        GameTooltip:SetOwner(self, "ANCHOR_NONE");
-        GameTooltip:SetPoint("TOPRIGHT", self, "BOTTOMRIGHT", 0, 0);
-        GameTooltip:AddLine("Questie ".. QuestieLib:GetAddonVersionString(), 1, 1, 1)
-        GameTooltip:AddLine(Questie:Colorize(l10n('Left Click') , 'gray') .. ": ".. l10n('Toggle Questie'))
-        GameTooltip:AddLine(Questie:Colorize(l10n('Right Click') , 'gray') .. ": ".. l10n('Toggle Menu'))
-        GameTooltip:Show()
+        UpdateTooltip(self)
     end,
     OnLeave = function() end,
     OnClick = function() end, -- Only fires on left click
