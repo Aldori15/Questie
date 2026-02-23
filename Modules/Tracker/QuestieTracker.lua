@@ -148,17 +148,17 @@ function QuestieTracker.Initialize()
             if TrackerUtils:IsVoiceOverLoaded() then VoiceOverFrame:Hide() end
         end
 
-        -- Flip some Dugi Guides options to prevent weird behavior
-        if IsAddOnLoaded("DugisGuideViewerZ") then
-            -- Turns off "Show Quest Objectives - Display quest objectives in small/anchored frame instead of the watch frame"
-            DugisGuideViewer:SetDB(false, 39) -- DGV_OBJECTIVECOUNTER
+        -- -- Flip some Dugi Guides options to prevent weird behavior
+        -- if IsAddOnLoaded("DugisGuideViewerZ") then
+        --     -- Turns off "Show Quest Objectives - Display quest objectives in small/anchored frame instead of the watch frame"
+        --     DugisGuideViewer:SetDB(false, 39) -- DGV_OBJECTIVECOUNTER
 
-            -- Turns off "Auto Quest Tracking - Automatically add quest to the Objective Tracker on accept or objective update"
-            DugisGuideViewer:SetDB(false, 78) -- DGV_AUTO_QUEST_TRACK
+        --     -- Turns off "Auto Quest Tracking - Automatically add quest to the Objective Tracker on accept or objective update"
+        --     DugisGuideViewer:SetDB(false, 78) -- DGV_AUTO_QUEST_TRACK
 
-            -- Turns on "Clear Final Waypoint - Always clear the last waypoint on reach"
-            DugisGuideViewer:SetDB(true, 1006) -- DGV_CLEAR_FINAL_WAYPOINT
-        end
+        --     -- Turns on "Clear Final Waypoint - Always clear the last waypoint on reach"
+        --     DugisGuideViewer:SetDB(true, 1006) -- DGV_CLEAR_FINAL_WAYPOINT
+        -- end
 
         -- Quest Focus Feature
         if Questie.db.char.TrackerFocus then
