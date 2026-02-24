@@ -25,8 +25,6 @@ local QuestieMap = QuestieLoader:ImportModule("QuestieMap")
 local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
 ---@type QuestiePlayer
 local QuestiePlayer = QuestieLoader:ImportModule("QuestiePlayer")
----@type TaskQueue
-local TaskQueue = QuestieLoader:ImportModule("TaskQueue")
 ---@type QuestieDB
 local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 ---@type ZoneDB
@@ -446,41 +444,32 @@ function QuestieQuest:AcceptQuest(questId)
                 Questie.db.char.complete[13687] = true -- Horde Tournament Eligibility Marker
             end
 
-            TaskQueue:Queue(
-            -- Get all the Frames for the quest and unload them, the available quest icon for example.
-                function() QuestieMap:UnloadQuestFrames(questId) end,
-                -- Make sure there isn't any lingering tooltip data hanging around in the quest table.
-                function() QuestieTooltips:RemoveQuest(questId) end,
-                function()
-                    -- Re-accepted quest can be collapsed. Expand it. Especially dailies.
-                    if Questie.db.char.collapsedQuests then
-                        Questie.db.char.collapsedQuests[questId] = nil
-                    end
-                    -- Re-accepted quest can be untracked. Clear it. Especially timed quests.
-                    if Questie.db.char.AutoUntrackedQuests[questId] then
-                        Questie.db.char.AutoUntrackedQuests[questId] = nil
-                    end
-                end,
-                function() QuestieQuest:PopulateQuestLogInfo(quest) end,
-                function()
-                    -- This needs to happen after QuestieQuest:PopulateQuestLogInfo because that is the place where quest.Objectives is generated
-                    Questie:SendMessage("QC_ID_BROADCAST_QUEST_UPDATE", questId)
-                end,
-                function() QuestieQuest:PopulateObjectiveNotes(quest) end,
-                function() AvailableQuests.CalculateAndDrawAll() end,
-                function()
-                    QuestieCombatQueue:Queue(function()
-                        QuestieTracker:Update()
-                    end)
-                    -- Accept flow spans TaskQueue + combat queue; run a delayed second refresh
-                    -- so newly accepted quests are guaranteed visible without manual collapse/expand.
-                    C_Timer.After(0.30, function()
-                        QuestieCombatQueue:Queue(function()
-                            QuestieTracker:Update()
-                        end)
-                    end)
-                end
-            )
+            QuestieMap:UnloadQuestFrames(questId)
+            QuestieTooltips:RemoveQuest(questId)
+
+            -- Re-accepted quest can be collapsed. Expand it. Especially dailies.
+            if Questie.db.char.collapsedQuests then
+                Questie.db.char.collapsedQuests[questId] = nil
+            end
+            -- Re-accepted quest can be untracked. Clear it. Especially timed quests.
+            if Questie.db.char.AutoUntrackedQuests[questId] then
+                Questie.db.char.AutoUntrackedQuests[questId] = nil
+            end
+
+            QuestieQuest:PopulateQuestLogInfo(quest)
+            -- This needs to happen after QuestieQuest:PopulateQuestLogInfo because that is the place where quest.Objectives is generated
+            Questie:SendMessage("QC_ID_BROADCAST_QUEST_UPDATE", questId)
+            QuestieQuest:PopulateObjectiveNotes(quest)
+
+            -- Run a delayed refresh so newly accepted quests are
+            -- guaranteed visible without manual collapse/expand.
+            C_Timer.After(0.30, function()
+                QuestieCombatQueue:Queue(function()
+                    QuestieTracker:Update()
+                end)
+            end)
+
+            AvailableQuests.CalculateAndDrawAll()
         else
             Questie:Debug(Questie.DEBUG_INFO, "[QuestieQuest] Accepted Quest:", questId, " Warning: Quest already exists, not adding")
         end
@@ -523,8 +512,13 @@ function QuestieQuest:CompleteQuest(questId)
 
     QuestieTooltips:RemoveQuest(questId)
     QuestieTracker:RemoveQuest(questId)
-    QuestieCombatQueue:Queue(function()
-        QuestieTracker:Update()
+
+    -- Turn-in flow can update tracker before quest log header counters settle.
+    -- Run a short delayed refresh to keep the header/count in sync.
+    C_Timer.After(0.30, function()
+        QuestieCombatQueue:Queue(function()
+            QuestieTracker:Update()
+        end)
     end)
 
     -- TODO: Should this be done first? Because CalculateAndDrawAll looks at QuestieMap.questIdFrames[QuestId] to add available
@@ -567,11 +561,9 @@ function QuestieQuest:AbandonedQuest(questId)
 
         QuestieTracker:RemoveQuest(questId)
         QuestieTooltips:RemoveQuest(questId)
-        QuestieCombatQueue:Queue(function()
-            QuestieTracker:Update()
-        end)
+
         -- Abandon flow can update tracker before quest log header counters settle.
-        -- Run a short delayed second pass to keep the header/count in sync.
+        -- Run a short delayed refresh to keep the header/count in sync.
         C_Timer.After(0.30, function()
             QuestieCombatQueue:Queue(function()
                 QuestieTracker:Update()
