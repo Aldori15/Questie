@@ -50,6 +50,7 @@ function TrackerHeaderFrame.Initialize(baseFrame)
     questieIcon.texture:SetPoint("CENTER", 0, 0)
 
     questieIcon:EnableMouse(true)
+    questieIcon:RegisterForDrag("LeftButton")
     questieIcon:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 
     questieIcon:SetScript("OnClick", function(_, button)
@@ -120,6 +121,9 @@ function TrackerHeaderFrame.Initialize(baseFrame)
         TrackerFadeTicker.Fade(self)
     end)
 
+    questieIcon:SetScript("OnDragStart", TrackerBaseFrame.OnDragStart)
+    questieIcon:SetScript("OnDragStop", TrackerBaseFrame.OnDragStop)
+    
     questieIcon:Hide()
     headerFrame.questieIcon = questieIcon
 
