@@ -355,7 +355,7 @@ function TrackerUtils:IsQuestItemUsable(itemId)
     return false
 end
 
----@param quest table Quest Table
+---@param quest Quest
 ---@return string|nil completionText Quest Completion text string or nil
 function TrackerUtils:GetCompletionText(quest)
     local completionText
@@ -366,8 +366,9 @@ function TrackerUtils:GetCompletionText(quest)
 
     if completionText then
         return completionText
-    else
-        return quest.Description[1]:gsub("%.", "")
+    elseif quest.Description and next(quest.Description) then
+        local descr = quest.Description[1]:gsub("%.", "")
+        return descr
     end
 end
 
