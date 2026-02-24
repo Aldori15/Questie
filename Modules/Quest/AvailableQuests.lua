@@ -38,7 +38,7 @@ local availableQuests = {}
 
 local dungeons = ZoneDB:GetDungeons()
 
-local _CalculateAvailableQuests, _DrawChildQuests, _AddStarter, _DrawAvailableQuest, _GetQuestIcon, _GetIconScaleForAvailable, _HasProperDistanceToAlreadyAddedSpawns
+local _CalculateAvailableQuests, _DrawChildQuests, _AddStarter, _DrawAvailableQuest, _GetQuestIcon, _GetIconScaleForAvailable, _HasProperDistanceToAlreadyAddedSpawns, _RegisterQuestStartTooltips
 
 ---@param callback function | nil
 function AvailableQuests.CalculateAndDrawAll(callback)
@@ -176,6 +176,11 @@ _CalculateAvailableQuests = function()
                     end
                 end
             end
+
+            -- Re-register missing start tooltips for already drawn available quests.
+            -- This is needed after toggling Questie off/on because tooltip data can be cleared
+            -- while icon frames remain cached.
+            _RegisterQuestStartTooltips(QuestieDB.GetQuest(questId))
             return
         end
 
@@ -191,6 +196,41 @@ _CalculateAvailableQuests = function()
         if questCount > QUESTS_PER_YIELD then
             questCount = 0
             yield()
+        end
+    end
+end
+
+---@param quest Quest|nil
+_RegisterQuestStartTooltips = function(quest)
+    if (not quest) or (not quest.Starts) then
+        return
+    end
+
+    local gameObjects = quest.Starts["GameObject"]
+    if gameObjects then
+        for i = 1, #gameObjects do
+            local obj = QuestieDB:GetObject(gameObjects[i])
+            if obj then
+                local tooltipKey = "o_" .. obj.id
+                local tooltipId = tostring(quest.Id) .. " " .. obj.name .. " " .. obj.id
+                if (not QuestieTooltips.lookupByKey[tooltipKey]) or (not QuestieTooltips.lookupByKey[tooltipKey][tooltipId]) then
+                    QuestieTooltips:RegisterQuestStartTooltip(quest.Id, obj.name, obj.id, tooltipKey)
+                end
+            end
+        end
+    end
+
+    local npcs = quest.Starts["NPC"]
+    if npcs then
+        for i = 1, #npcs do
+            local npc = QuestieDB:GetNPC(npcs[i])
+            if npc then
+                local tooltipKey = "m_" .. npc.id
+                local tooltipId = tostring(quest.Id) .. " " .. npc.name .. " " .. npc.id
+                if (not QuestieTooltips.lookupByKey[tooltipKey]) or (not QuestieTooltips.lookupByKey[tooltipKey][tooltipId]) then
+                    QuestieTooltips:RegisterQuestStartTooltip(quest.Id, npc.name, npc.id, tooltipKey)
+                end
+            end
         end
     end
 end

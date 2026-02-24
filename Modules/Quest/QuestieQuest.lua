@@ -98,6 +98,7 @@ function QuestieQuest:ToggleNotes(showIcons)
     if showIcons then
         _QuestieQuest:ShowQuestIcons()
         _QuestieQuest:ShowManualIcons()
+        AvailableQuests.CalculateAndDrawAll()
     else
         _QuestieQuest:HideQuestIcons()
         _QuestieQuest:HideManualIcons()
