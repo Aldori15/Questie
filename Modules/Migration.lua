@@ -76,7 +76,12 @@ local migrationFunctions = {
                 Questie.db.profile.initDelay = 0.01
             end
         end
-    end
+    end,
+    [7] = function()
+        local alpha = Questie.db.profile.trackerBackdropAlpha or 1
+        Questie.db.profile.trackerBackdropColor = {r = 0, g = 0, b = 0, a = alpha}
+        Questie.db.profile.trackerBackdropAlpha = nil
+    end,
 }
 
 function Migration:Migrate()

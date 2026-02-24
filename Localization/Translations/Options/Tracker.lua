@@ -465,7 +465,7 @@ local trackerOptionsLocales = {
         ["esES"] = "Desvanecer fondo",
         ["frFR"] = "Fondu de l'arrière-plan",
     },
-    ["When this is checked, the Questie Tracker Backdrop and Border (if enabled) will fade and become transparent when not in use."] = {
+    ["When this is checked, the Questie Tracker background and border (if enabled) will fade and become transparent when not in use."] = {
         ["ptBR"] = "Quando isso estiver marcado, o Pano de fundo e a borda do Questie Rastreador (se ativado) desaparecerão e se tornarão transparentes quando não estiverem em uso.",
         ["ruRU"] = "Когда включено, фон и граница трекера исчезают и становятся прозрачными при неиспользовании",
         ["deDE"] = "Wenn diese Option aktiviert ist, werden der Hintergrund des Questie-Trackers und der Rahmen (falls aktiviert) ausgeblendet und transparent, wenn sie nicht verwendet werden.",
@@ -1360,29 +1360,29 @@ local trackerOptionsLocales = {
         ["frFR"] = "Contour utilisé pour les zones de quêtes, les titres et les objectifs dans le traqueur",
     },
     ---------------------------------------------------------
-    ["Tracker Backdrop Alpha"] = {
-        ["ptBR"] = "Alfa do cenário do rastreador",
-        ["ruRU"] = "Непрозрачность фона",
-        ["deDE"] = "Tracker Hintergrund Alpha",
-        ["koKR"] = "트래커 배경 알파",
-        ["esMX"] = "Transparencia del fondo del rastreador",
+    ["Background Color"] = {
         ["enUS"] = true,
-        ["zhCN"] = "背景透明度",
-        ["zhTW"] = "背景透明度",
-        ["esES"] = "Transparencia del fondo del rastreador",
-        ["frFR"] = "Opacité de l'arrière-plan",
+        ["deDE"] = "Hintergrundfarbe",
+        ["esES"] = "Color de fondo",
+        ["esMX"] = "Color de fondo",
+        ["frFR"] = "Couleur d’arrière-plan",
+        ["koKR"] = "배경 색상",
+        ["ptBR"] = "Cor de fundo",
+        ["ruRU"] = "Цвет фона",
+        ["zhCN"] = "背景颜色",
+        ["zhTW"] = "背景顏色",
     },
-    ["The alpha level of the Questie Trackers backdrop. A setting of 100 percent is fully visible."] = {
-        ["ptBR"] = "O nível alfa do cenário do rastreador",
-        ["ruRU"] = "Уровень непрозрачности фона трекера",
-        ["deDE"] = "Das Alpha-Level des Tracker-Hintergrunds",
-        ["koKR"] = "트래커 배경의 알파 수준",
-        ["esMX"] = "La transparencia del fondo del rastreador",
+    ["Choose the color for the Questie Tracker background."] = {
         ["enUS"] = true,
-        ["zhCN"] = "设置背景的透明度",
-        ["zhTW"] = "任務清單背景的透明度，100% 是完全不透明。",
-        ["esES"] = "La transparencia del fondo del rastreador",
-        ["frFR"] = "Définis l'opacité de l'arrière-plan du suivi des quêtes Questie.",
+        ["deDE"] = "Wähle die Farbe für den Questie-Tracker-Hintergrund.",
+        ["esES"] = "Elige el color para el fondo del rastreador.",
+        ["esMX"] = "Elige el color para el fondo del rastreador.",
+        ["frFR"] = "Choisissez la couleur de l’arrière-plan du suivi.",
+        ["koKR"] = "Questie 추적기 배경의 색상을 선택하세요.",
+        ["ptBR"] = "Escolha a cor do fundo do rastreador.",
+        ["ruRU"] = "Выберите цвет фона трекера Questie",
+        ["zhCN"] = "选择Questie追踪器的背景颜色。",
+        ["zhTW"] = "選擇Questie追蹤器的背景顏色。",
     },
     ---------------------------------------------------------
     ["Tracker Height Ratio"] = {
