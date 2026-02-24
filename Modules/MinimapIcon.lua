@@ -41,7 +41,7 @@ function _MinimapIcon:CreateDataBrokerObject()
             end
 
             if button == "LeftButton" then
-                if IsShiftKeyDown() and IsControlKeyDown() then
+                if IsControlKeyDown() then
                     Questie.db.profile.enabled = (not Questie.db.profile.enabled)
                     QuestieQuest:ToggleNotes(Questie.db.profile.enabled)
 
@@ -56,9 +56,6 @@ function _MinimapIcon:CreateDataBrokerObject()
                     -- Close config window if it's open to avoid desyncing the Checkbox
                     QuestieOptions:HideFrame();
                     return;
-                elseif IsControlKeyDown() then
-                    QuestieQuest:SmoothReset()
-                    return
                 end
 
                 QuestieMenu:Show()
@@ -92,10 +89,9 @@ function _MinimapIcon:CreateDataBrokerObject()
             tooltip:AddLine(" ")
             tooltip:AddDoubleLine(Questie:Colorize(l10n('Left Click'), 'lightBlue'), Questie:Colorize(l10n('Toggle Menu'), 'white'))
             local toggleLabel = Questie.db.profile.enabled and l10n('Hide Questie') or l10n('Show Questie')
-            tooltip:AddDoubleLine(Questie:Colorize(l10n('Ctrl + Shift + Left Click'), 'lightBlue'), Questie:Colorize(toggleLabel, 'white'))
+            tooltip:AddDoubleLine(Questie:Colorize(l10n('Ctrl + Left Click'), 'lightBlue'), Questie:Colorize(toggleLabel, 'white'))
             tooltip:AddDoubleLine(Questie:Colorize(l10n('Right Click'), 'lightBlue'), Questie:Colorize(l10n('Questie Options'), 'white'))
             tooltip:AddDoubleLine(Questie:Colorize(l10n('Ctrl + Right Click'), 'lightBlue'), Questie:Colorize(l10n('Hide Minimap Button'), 'white'))
-            tooltip:AddDoubleLine(Questie:Colorize(l10n('Ctrl + Left Click'), 'lightBlue'), Questie:Colorize(l10n('Reload Questie'), 'white'))
         end,
     });
 
@@ -109,4 +105,3 @@ function MinimapIcon:UpdateText(text)
     Questie.db.profile.ldbDisplayText = text
     _MinimapIcon.LDBDataObject.text = text
 end
-

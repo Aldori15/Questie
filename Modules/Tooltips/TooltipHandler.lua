@@ -12,8 +12,12 @@ local UnitGUID = QuestieCompat.UnitGUID
 
 local lastGuid
 
+local function _AreQuestieTooltipsEnabled()
+    return Questie.db.profile.enabled and Questie.db.profile.enableTooltips
+end
+
 function _QuestieTooltips:AddUnitDataToTooltip()
-    if (self.IsForbidden and self:IsForbidden()) or (not Questie.db.profile.enableTooltips) then
+    if (self.IsForbidden and self:IsForbidden()) or (not _AreQuestieTooltipsEnabled()) then
         return
     end
 
@@ -52,7 +56,7 @@ end
 local checkedQuestStartItems = {} -- cache item IDs that were already checked if they start a quest
 local lastItemId = 0;
 function _QuestieTooltips:AddItemDataToTooltip()
-    if (self.IsForbidden and self:IsForbidden()) or (not Questie.db.profile.enableTooltips) then
+    if (self.IsForbidden and self:IsForbidden()) or (not _AreQuestieTooltipsEnabled()) then
         return
     end
 
@@ -100,7 +104,7 @@ function _QuestieTooltips:AddItemDataToTooltip()
 end
 
 function _QuestieTooltips:AddObjectDataToTooltip(name)
-    if (not Questie.db.profile.enableTooltips) then
+    if (not _AreQuestieTooltipsEnabled()) then
         return
     end
     if name then
