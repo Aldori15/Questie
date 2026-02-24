@@ -112,7 +112,8 @@ local function updateGreetingFrame()
             local lineIcon = questIconTextures[i]
             -- determining if the current line is a "Current" quest or "Available" quest is important
             -- because we have to use different API calls to obtain their quest titles
-            if (titleLine.isActive == 1) then
+            local isActive = titleLine.isActive == 1
+            if isActive then
                 lineIcon:SetTexture(Questie.icons["incomplete"]) -- fallback icon in case any of the logic below fails
                 local title = GetActiveTitle(titleLine:GetID()) -- obtain plaintext name of quest
                 local questID = QuestieDB.GetQuestIDFromName(title, questgiver, false)
@@ -121,7 +122,7 @@ local function updateGreetingFrame()
             else
                 lineIcon:SetTexture(Questie.icons["available"]) -- fallback icon in case any of the logic below fails
                 local title = GetAvailableTitle(titleLine:GetID())
-                local questID = QuestieDB.GetQuestIDFromName(title, questgiver, true)
+                local questId = QuestieDB.GetQuestIDFromName(title, npcGuid, (not isActive))
                 local icon = determineAppropriateQuestIcon(questID, false)
                 lineIcon:SetTexture(icon)
             end
