@@ -159,6 +159,9 @@ function QuestieLib:GetColoredQuestName(questId, showLevel, showState, blizzLike
     return QuestieLib:PrintDifficultyColor(level, name, QuestieDB.IsRepeatable(questId), QuestieDB.IsActiveEventQuest(questId), QuestieDB.IsPvPQuest(questId))
 end
 
+-- The order of these colors is important for the ColorWheel function.
+-- Taken from https://tailwindcolor.com/
+---@type Color[]
 local colors = {
     { 0.3125,     0.44140625, 1 },          --Blizzard Polygon-blue --Alpha of 128
     --{123,         146,        255},         --Blizzard Polygon-blue-2 --Alpha of 61
@@ -188,6 +191,16 @@ local colors = {
     { 1,          0.1484375,  0 },          --Scarlet
 }
 
+-- Shuffle colors on startup
+local function shuffleTable(t)
+    for i = #t, 2, -1 do
+        local j = math_random(1, i)
+        t[i], t[j] = t[j], t[i]
+    end
+end
+
+shuffleTable(colors)
+
 local numColors = #colors
 local lastColor = math_random(numColors)
 
@@ -198,11 +211,6 @@ function QuestieLib:ColorWheel()
         lastColor = 1
     end
     return colors[lastColor]
-end
-
----@return Color
-function QuestieLib:GetRandomColor()
-    return colors[math_random(numColors)]
 end
 
 ---@param questId number
