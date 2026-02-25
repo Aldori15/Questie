@@ -82,6 +82,9 @@ local migrationFunctions = {
         Questie.db.profile.trackerBackdropColor = {r = 0, g = 0, b = 0, a = alpha}
         Questie.db.profile.trackerBackdropAlpha = nil
     end,
+    [8] = function()
+        Questie.db.profile.alwaysGlowMinimap = true
+    end,
 }
 
 function Migration:Migrate()
