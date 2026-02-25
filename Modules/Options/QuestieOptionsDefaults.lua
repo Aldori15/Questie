@@ -78,6 +78,7 @@ function QuestieOptionsDefaults:Load()
             hideTrackerInDungeons = true,
             trackerFadeMinMaxButtons = false,
             trackerFadeQuestItemButtons = false,
+            trackerDisableHoverFade = false,
             trackerBackdropEnabled = false,
             currentBackdropEnabled = false,
             trackerBorderEnabled = false,

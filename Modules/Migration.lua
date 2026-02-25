@@ -85,6 +85,9 @@ local migrationFunctions = {
     [8] = function()
         Questie.db.profile.alwaysGlowMinimap = true
     end,
+    [9] = function()
+        Questie.db.profile.trackerDisableHoverFade = false
+    end,
 }
 
 function Migration:Migrate()
