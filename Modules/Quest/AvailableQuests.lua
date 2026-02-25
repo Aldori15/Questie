@@ -100,6 +100,16 @@ function AvailableQuests.DrawAvailableQuest(quest) -- prevent recursion
     end
 end
 
+---@param questId QuestId
+function AvailableQuests.RemoveQuest(questId)
+    if availableQuests[questId] then
+        _MarkQuestAsUnavailableFromNPC(questId)
+    end
+    availableQuests[questId] = nil
+    QuestieMap:UnloadQuestFrames(questId)
+    QuestieTooltips:RemoveQuest(questId)
+end
+
 ---@type string|nil
 local lastNpcGuid
 
@@ -145,11 +155,9 @@ function AvailableQuests.HideNotAvailableQuestsFromNPC(fromGossip)
             end
 
             if (not isAvailableInGossip) then
-                QuestieMap:UnloadQuestFrames(questId)
-                QuestieTooltips:RemoveQuest(questId)
+                AvailableQuests.RemoveQuest(questId)
 
                 unavailableQuestsDeterminedByTalking[questId] = true
-                availableQuests[questId] = nil
                 availableQuestsByNpc[npcId][questId] = nil
             end
         end
@@ -166,11 +174,9 @@ function AvailableQuests.HideNotAvailableQuestsFromNPC(fromGossip)
 
         for questId in pairs(availableQuestsByNpc[npcId]) do
             if questId ~= availableQuestId then
-                QuestieMap:UnloadQuestFrames(questId)
-                QuestieTooltips:RemoveQuest(questId)
+                AvailableQuests.RemoveQuest(questId)
 
                 unavailableQuestsDeterminedByTalking[questId] = true
-                availableQuests[questId] = nil
                 availableQuestsByNpc[npcId][questId] = nil
             end
         end
@@ -247,9 +253,7 @@ _CalculateAvailableQuests = function()
             (Questie.IsSoD and QuestieDB.IsRuneAndShouldBeHidden(questId))          -- Don't show SoD Rune quests with the option disabled
         ) then
             if availableQuests[questId] then
-                QuestieMap:UnloadQuestFrames(questId)
-                QuestieTooltips:RemoveQuest(questId)
-                _MarkQuestAsUnavailableFromNPC(questId)
+                AvailableQuests.RemoveQuest(questId)
             end
             availableQuests[questId] = nil
             return
@@ -263,9 +267,7 @@ _CalculateAvailableQuests = function()
             --(This is for when people level up or change settings etc)
 
             if availableQuests[questId] then
-                QuestieMap:UnloadQuestFrames(questId)
-                QuestieTooltips:RemoveQuest(questId)
-                _MarkQuestAsUnavailableFromNPC(questId)
+                AvailableQuests.RemoveQuest(questId)
             end
             availableQuests[questId] = nil
             return

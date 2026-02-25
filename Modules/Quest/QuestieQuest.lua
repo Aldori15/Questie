@@ -397,8 +397,7 @@ end
 
 function QuestieQuest:HideQuest(id)
     Questie.db.char.hidden[id] = true
-    QuestieMap:UnloadQuestFrames(id)
-    QuestieTooltips:RemoveQuest(id)
+    AvailableQuests.RemoveQuest(id)
 end
 
 function QuestieQuest:UnhideQuest(id)
@@ -444,8 +443,7 @@ function QuestieQuest:AcceptQuest(questId)
                 Questie.db.char.complete[13687] = true -- Horde Tournament Eligibility Marker
             end
 
-            QuestieMap:UnloadQuestFrames(questId)
-            QuestieTooltips:RemoveQuest(questId)
+            AvailableQuests.RemoveQuest(questId)
 
             -- Re-accepted quest can be collapsed. Expand it. Especially dailies.
             if Questie.db.char.collapsedQuests then
@@ -505,8 +503,7 @@ function QuestieQuest:CompleteQuest(questId)
         Questie.db.char.complete[13687] = nil -- Horde Tournament Eligibility Marker
     end
 
-    QuestieMap:UnloadQuestFrames(questId)
-    QuestieTooltips:RemoveQuest(questId)
+    AvailableQuests.RemoveQuest(questId)
     QuestieTracker:RemoveQuest(questId)
 
     -- Turn-in flow can update tracker before quest log header counters settle.
@@ -527,7 +524,7 @@ end
 function QuestieQuest:AbandonedQuest(questId)
     if (QuestiePlayer.currentQuestlog[questId]) then
         QuestiePlayer.currentQuestlog[questId] = nil
-        QuestieMap:UnloadQuestFrames(questId)
+        AvailableQuests.RemoveQuest(questId)
         local quest = QuestieDB.GetQuest(questId)
 
         if quest then
@@ -553,9 +550,7 @@ function QuestieQuest:AbandonedQuest(questId)
             end
         end
 
-        QuestieMap:UnloadQuestFrames(questId)
         QuestieTracker:RemoveQuest(questId)
-        QuestieTooltips:RemoveQuest(questId)
 
         -- Abandon flow can update tracker before quest log header counters settle.
         -- Run a short delayed refresh to keep the header/count in sync.
@@ -595,15 +590,14 @@ function QuestieQuest:UpdateQuest(questId)
             -- Quest is complete
             Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest:UpdateQuest] Quest is: Complete!")
 
-            QuestieMap:UnloadQuestFrames(questId)
+            AvailableQuests.RemoveQuest(questId)
             QuestieQuest:AddFinisher(quest)
             quest.WasComplete = true
         elseif isComplete == -1 then
             -- Failed quests should be shown as available again
             Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest:UpdateQuest] Quest has: Failed!")
 
-            QuestieMap:UnloadQuestFrames(questId)
-            QuestieTooltips:RemoveQuest(questId)
+            AvailableQuests.RemoveQuest(questId)
             AvailableQuests.DrawAvailableQuest(quest)
 
             -- Reset any collapsed quest flags
@@ -625,10 +619,9 @@ function QuestieQuest:UpdateQuest(questId)
                 quest.isComplete = nil
 
                 -- Reset tooltips
-                QuestieTooltips:RemoveQuest(questId)
+                AvailableQuests.RemoveQuest(questId)
 
                 QuestieQuest:CheckQuestSourceItem(questId, true)
-                QuestieMap:UnloadQuestFrames(questId)
 
                 -- Reset any collapsed quest flags
                 if Questie.db.char.collapsedQuests then
@@ -653,7 +646,7 @@ function QuestieQuest:UpdateQuest(questId)
 
                     if numCompleteObjectives == #quest.Objectives then
                         Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest:UpdateQuest] All Quest Objective(s) are Complete! Manually setting quest to Complete!")
-                        QuestieMap:UnloadQuestFrames(questId)
+                        AvailableQuests.RemoveQuest(questId)
                         QuestieQuest:AddFinisher(quest)
                         quest.WasComplete = true
                         quest.isComplete = true
@@ -1523,7 +1516,7 @@ function QuestieQuest:PopulateQuestLogInfo(quest)
         -- Some quests when picked up will be flagged isComplete == 0 but the quest.Objective table or quest.SpecialObjectives table is nil. This
         -- check assumes the Quest should have been flagged questLogEngtry.isComplete == 1. We're specifically looking for a quest.triggerEnd or
         -- a quest.Finisher.Id because this might throw an error if there is nothing to populate when we call QuestieQuest:AddFinisher().
-        QuestieMap:UnloadQuestFrames(quest.Id)
+        AvailableQuests.RemoveQuest(quest.Id)
         QuestieQuest:AddFinisher(quest)
         quest.isComplete = true
     end
