@@ -107,7 +107,7 @@ function _QuestieQuest:ShowQuestIcons()
     local trackerHiddenQuests = Questie.db.char.TrackerHiddenQuests
     for questId, frameList in pairs(QuestieMap.questIdFrames) do
         if (not trackerHiddenQuests) or (not trackerHiddenQuests[questId]) then -- Skip quests which are completely hidden from the Tracker menu
-            for _, frameName in pairs(frameList) do                             -- this may seem a bit expensive, but its actually really fast due to the order things are checked
+            for _, frameName in pairs(frameList) do -- this may seem a bit expensive, but its actually really fast due to the order things are checked
                 ---@type IconFrame
                 local icon = _G[frameName];
                 if not icon.data then
@@ -149,7 +149,7 @@ end
 
 function _QuestieQuest:HideQuestIcons()
     for _, frameList in pairs(QuestieMap.questIdFrames) do
-        for _, frameName in pairs(frameList) do                                 -- this may seem a bit expensive, but its actually really fast due to the order things are checked
+        for _, frameName in pairs(frameList) do -- this may seem a bit expensive, but its actually really fast due to the order things are checked
             local icon = _G[frameName];
             if icon ~= nil and (not icon.hidden) and icon:ShouldBeHidden() then -- check for function to make sure its a frame
                 -- Hides Objective Icons
@@ -590,7 +590,8 @@ function QuestieQuest:UpdateQuest(questId)
             -- Quest is complete
             Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest:UpdateQuest] Quest is: Complete!")
 
-            AvailableQuests.RemoveQuest(questId)
+            -- Only remove the map icons, but keep the tooltips
+            QuestieMap:UnloadQuestFrames(questId)
             QuestieQuest:AddFinisher(quest)
             quest.WasComplete = true
         elseif isComplete == -1 then
@@ -646,7 +647,8 @@ function QuestieQuest:UpdateQuest(questId)
 
                     if numCompleteObjectives == #quest.Objectives then
                         Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest:UpdateQuest] All Quest Objective(s) are Complete! Manually setting quest to Complete!")
-                        AvailableQuests.RemoveQuest(questId)
+                        -- Only remove the map icons, but keep the tooltips
+                        QuestieMap:UnloadQuestFrames(questId)
                         QuestieQuest:AddFinisher(quest)
                         quest.WasComplete = true
                         quest.isComplete = true
@@ -1139,7 +1141,14 @@ function QuestieQuest:PopulateObjective(quest, objectiveIndex, objective, blockI
 
         if zoneCount == 1 then -- this objective happens in 1 zone, clustering should be relative to that zone
             local x, y = HBD:GetWorldCoordinatesFromZone(0.5, 0.5, ZoneDB:GetUiMapIdByAreaId(objectiveZone))
-            objectiveCenter = { x = x, y = y }
+            objectiveCenter = {x = x, y = y}
+        end
+
+        if (not objectiveCenter) or (not objectiveCenter.x) or (not objectiveCenter.y) then
+            -- When an NPC doesn't have any spawns objectiveCenter will be nil.
+            -- Also for some areas HBD will return nil for the world coordinates.
+            -- This will create a distance of 0 but it doesn't matter.
+            objectiveCenter = {x = 0, y = 0}
         end
 
         local iconsToDraw, _ = _DetermineIconsToDraw(quest, objective, objectiveIndex, objectiveCenter)
@@ -1268,7 +1277,7 @@ _DetermineIconsToDraw = function(quest, objective, objectiveIndex, objectiveCent
                         if iconList then
                             iconList[#iconList + 1] = drawIcon
                         else
-                            iconsToDraw[distance] = { drawIcon }
+                            iconsToDraw[distance] = {drawIcon}
                         end
                     end
                 end
@@ -1291,7 +1300,7 @@ _DrawObjectiveIcons = function(questId, iconsToDraw, objective, maxPerType)
     local iconCount, orderedList = _GetIconsSortedByDistance(iconsToDraw)
 
     if orderedList[1] and orderedList[1].Icon == Questie.ICON_TYPE_OBJECT then -- new clustering / limit code should prevent problems, always show all object notes
-        range = range * 0.2;                                                   -- Only use 20% of the default range.
+        range = range * 0.2; -- Only use 20% of the default range.
     end
 
     local hotzones = QuestieMap.utils:CalcHotzones(orderedList, range, iconCount);
@@ -1324,7 +1333,7 @@ _DrawObjectiveIcons = function(questId, iconsToDraw, objective, maxPerType)
                 local iconMap, iconMini = QuestieMap:DrawWorldIcon(icon.data, icon.zone, centerX, centerY) -- clustering code takes care of duplicates as long as min-dist is more than 0
 
                 if iconMap and iconMini then
-                    iconPerZone[icon.zone] = { iconMap, centerX, centerY }
+                    iconPerZone[icon.zone] = {iconMap, centerX, centerY}
                     spawnsMapRefs[#spawnsMapRefs + 1] = iconMap
                     spawnsMinimapRefs[#spawnsMinimapRefs + 1] = iconMini
                 end
@@ -1341,7 +1350,7 @@ _DrawObjectiveIcons = function(questId, iconsToDraw, objective, maxPerType)
         local iconMap, iconMini = QuestieMap:DrawWorldIcon(icon.data, icon.zone, centerX, centerY) -- clustering code takes care of duplicates as long as min-dist is more than 0
 
         if iconMap and iconMini then
-            iconPerZone[icon.zone] = { iconMap, centerX, centerY }
+            iconPerZone[icon.zone] = {iconMap, centerX, centerY}
             spawnsMapRefs[#spawnsMapRefs + 1] = iconMap
             spawnsMinimapRefs[#spawnsMinimapRefs + 1] = iconMini
         end
@@ -1387,11 +1396,11 @@ _DrawObjectiveWaypoints = function(objective, icon, iconPerZone)
             for zone, waypoints in pairs(spawnData.Waypoints) do
                 local firstWaypoint = waypoints[1][1]
 
-                if (not iconPerZone[zone]) and icon and firstWaypoint[1] ~= -1 and firstWaypoint[2] ~= -1 then              -- spawn an icon in this zone for the mob
+                if (not iconPerZone[zone]) and icon and firstWaypoint[1] ~= -1 and firstWaypoint[2] ~= -1 then -- spawn an icon in this zone for the mob
                     local iconMap, iconMini = QuestieMap:DrawWorldIcon(icon.data, zone, firstWaypoint[1], firstWaypoint[2]) -- clustering code takes care of duplicates as long as min-dist is more than 0
 
                     if iconMap and iconMini then
-                        iconPerZone[zone] = { iconMap, firstWaypoint[1], firstWaypoint[2] }
+                        iconPerZone[zone] = {iconMap, firstWaypoint[1], firstWaypoint[2]}
                         tinsert(objective.AlreadySpawned[icon.AlreadySpawnedId].mapRefs, iconMap);
                         tinsert(objective.AlreadySpawned[icon.AlreadySpawnedId].minimapRefs, iconMini);
                     end
@@ -1400,7 +1409,7 @@ _DrawObjectiveWaypoints = function(objective, icon, iconPerZone)
                 local ipz = iconPerZone[zone]
 
                 if ipz then
-                    QuestieMap:DrawWaypoints(ipz[1], waypoints, zone, spawnData.Hostile and { 1, 0.2, 0, 0.7 } or nil)
+                    QuestieMap:DrawWaypoints(ipz[1], waypoints, zone, spawnData.Hostile and {1, 0.2, 0, 0.7} or nil)
                 end
             end
 
