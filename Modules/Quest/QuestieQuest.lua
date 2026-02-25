@@ -504,12 +504,8 @@ function QuestieQuest:CompleteQuest(questId)
         Questie.db.char.complete[13701] = true -- Horde Champion Marker
         Questie.db.char.complete[13687] = nil -- Horde Tournament Eligibility Marker
     end
+
     QuestieMap:UnloadQuestFrames(questId)
-
-    if (QuestieMap.questIdFrames[questId]) then
-        Questie:Error("Just removed all frames but the framelist seems to still be there!", questId)
-    end
-
     QuestieTooltips:RemoveQuest(questId)
     QuestieTracker:RemoveQuest(questId)
 
@@ -557,8 +553,7 @@ function QuestieQuest:AbandonedQuest(questId)
             end
         end
 
-        AvailableQuests.UnloadUndoable()
-
+        QuestieMap:UnloadQuestFrames(questId)
         QuestieTracker:RemoveQuest(questId)
         QuestieTooltips:RemoveQuest(questId)
 

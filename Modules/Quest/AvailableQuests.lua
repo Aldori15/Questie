@@ -74,14 +74,6 @@ function AvailableQuests.DrawAvailableQuest(quest) -- prevent recursion
     end
 end
 
-function AvailableQuests.UnloadUndoable()
-    for questId, _ in pairs(availableQuests) do
-        if (not QuestieDB.IsDoable(questId)) then
-            QuestieMap:UnloadQuestFrames(questId)
-        end
-    end
-end
-
 _CalculateAvailableQuests = function()
     -- Localize the variables for speeeeed
     local debugEnabled = Questie.db.profile.debugEnabled
