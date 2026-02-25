@@ -88,6 +88,12 @@ local migrationFunctions = {
     [9] = function()
         Questie.db.profile.trackerDisableHoverFade = false
     end,
+    [10] = function()
+        Questie.db.global = Questie.db.global or {}
+        Questie.db.global.unavailableQuestsDeterminedByTalking = Questie.db.global.unavailableQuestsDeterminedByTalking or {}
+        ---@type table<string, number>
+        Questie.db.global.lastKnownDailyReset = {}
+    end,
 }
 
 function Migration:Migrate()

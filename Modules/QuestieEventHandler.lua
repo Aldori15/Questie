@@ -92,11 +92,13 @@ function QuestieEventHandler:RegisterLateEvents()
     Questie:RegisterEvent("QUEST_FINISHED", QuestieAuto.QUEST_FINISHED)
     Questie:RegisterEvent("QUEST_ACCEPTED", QuestieAuto.QUEST_ACCEPTED)
     Questie:RegisterEvent("QUEST_DETAIL", function(...) -- When the quest is presented!
+        AvailableQuests.HideNotAvailableQuestsFromNPC(false)
         QuestieAuto.QUEST_DETAIL(...)
         if Questie.IsSoD then QuestieDebugOffer.QuestDialog(...) end;
     end)
     Questie:RegisterEvent("QUEST_PROGRESS", QuestieAuto.QUEST_PROGRESS)
     Questie:RegisterEvent("GOSSIP_SHOW", function(...)
+        AvailableQuests.HideNotAvailableQuestsFromNPC(true)
         QuestieAuto.GOSSIP_SHOW(...)
         QuestgiverFrame.GossipMark(...)
     end)

@@ -338,6 +338,9 @@ QuestieInit.Stages[3] = function() -- run as a coroutine
 
     Questie.started = true
 
+    -- We only update this if Questie fully loads to make sure we don't update it on crashes/fast reloads
+    QuestieLib.UpdateLastKnownDailyReset()
+
     if (Questie.IsWotlk or Questie.IsTBC) and QuestiePlayer.IsMaxLevel() then
         local lastRequestWasYesterday = Questie.db.global.lastDailyRequestDate ~= date("%d-%m-%y"); -- Yesterday or some day before
         local isPastDailyReset = Questie.db.global.lastDailyRequestResetTime < GetQuestResetTime();

@@ -25,6 +25,7 @@ local stringGsub = string.gsub
 local strim = string.trim
 local smatch = string.match
 local tonumber = tonumber
+local getCurrentTimestamp = GetServerTime or time
 
 -- The original frame which we use to fetch the data required
 --                           Classic                          Wotlk Classic
@@ -729,6 +730,38 @@ function QuestieLib.GetSpawnDistance(spawnA, spawnB)
     local distanceY = y1 - y2
 
     return math_sqrt(distanceX * distanceX + distanceY * distanceY)
+end
+
+--- Checks if a daily reset has occurred since the player's last login.
+---@return boolean True if a daily reset has occurred, false otherwise.
+function QuestieLib.DidDailyResetHappenSinceLastLogin()
+    if (not Questie.db) or (not Questie.db.global) then
+        return true
+    end
+
+    Questie.db.global.lastKnownDailyReset = Questie.db.global.lastKnownDailyReset or {}
+
+    local realmName = GetRealmName()
+    local lastKnownDailyReset = Questie.db.global.lastKnownDailyReset[realmName]
+
+    if (not lastKnownDailyReset) then
+        return true -- No previous login recorded, assume a reset has occurred
+    end
+
+    return getCurrentTimestamp() >= lastKnownDailyReset
+end
+
+--- Updates the last known daily reset time to the next reset time.
+function QuestieLib.UpdateLastKnownDailyReset()
+    if (not Questie.db) or (not Questie.db.global) then
+        return
+    end
+
+    Questie.db.global.lastKnownDailyReset = Questie.db.global.lastKnownDailyReset or {}
+
+    local realmName = GetRealmName()
+
+    Questie.db.global.lastKnownDailyReset[realmName] = getCurrentTimestamp() + GetQuestResetTime()
 end
 
 return QuestieLib
