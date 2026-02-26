@@ -892,6 +892,7 @@ function TrackerLinePool.HideUnusedLines()
             line.Objective = nil
             line.Button = nil
             line.altButton = nil
+            line.questHasSecondaryQIB = false
             line.trackTimedQuest = nil
             line.expandQuest.mode = nil
             line.expandQuest.questId = nil
