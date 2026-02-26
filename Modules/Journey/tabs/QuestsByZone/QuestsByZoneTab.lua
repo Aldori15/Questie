@@ -94,25 +94,8 @@ end
 
 _CreateContinentDropdown = function()
     local dropdown = AceGUI:Create("Dropdown")
-    local list = {
-        ["ALL_QUESTS"] = l10n("All Quests"),
-        ["_SEPARATOR"] = "|cff7f7f7f----------------|r"
-    }
-    for id, name in pairs(QuestieJourney.continents) do
-        list[id] = name
-    end
-    local order = { "ALL_QUESTS", "_SEPARATOR" }
-    -- Sort by numeric key (questCategoryKeys order) instead of alphabetically
-    local sortedKeys = {}
-    for id in pairs(QuestieJourney.continents) do
-        table.insert(sortedKeys, id)
-    end
-    table.sort(sortedKeys)
-    for _, key in ipairs(sortedKeys) do
-        table.insert(order, key)
-    end
-    dropdown:SetList(list, order)
-    dropdown:SetText(l10n('All Quests'))
+    dropdown:SetList(QuestieJourney.continents)
+    dropdown:SetText(l10n('Select Continent'))
     dropdown:SetCallback("OnValueChanged", _HandleContinentSelection)
 
     local currentContinentId = QuestiePlayer:GetCurrentContinentId()

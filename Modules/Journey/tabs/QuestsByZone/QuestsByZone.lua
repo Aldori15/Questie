@@ -171,11 +171,7 @@ function _QuestieJourney.questsByZone:CollectZoneQuests(zoneId)
                         "preQuestGroup",
                         "requiredMinRep",
                         "requiredMaxRep",
-                        "requiredSpell",
                         "requiredSpecialization",
-                        "requiredMaxLevel",
-                        "requiredSkill",
-                        "requiredLevel"
                         }
                 ) or {}
                 local exclusiveTo = queryResult[1]
@@ -185,11 +181,7 @@ function _QuestieJourney.questsByZone:CollectZoneQuests(zoneId)
                 local preQuestGroup = queryResult[5]
                 local requiredMinRep = queryResult[6]
                 local requiredMaxRep = queryResult[7]
-                local requiredSpell = queryResult[8]
-                local requiredSpecialization = queryResult[9]
-                local requiredMaxLevel = queryResult[10]
-                local requiredSkill = queryResult[11]
-                local requiredLevel = queryResult[12]
+                local requiredSpecialization = queryResult[8]
 
                 -- Exclusive quests will never be available since another quests permanently blocks them.
                 -- Marking them as complete should be the most satisfying solution for user
