@@ -465,17 +465,38 @@ function QuestieDB:GetZoneOrSortForClass(class)
     return QuestieDB.sortKeys[class]
 end
 
---- Wrapper function for the GetQuestTagInfo API to correct
---- quests that are falsely marked by Blizzard
----@param questId number
----@return number|nil questType, string|nil questTag
-function QuestieDB.GetQuestTagInfo(questId)
-    if questTagCorrections[questId] then
-        return questTagCorrections[questId][1], questTagCorrections[questId][2]
-    end
-    local questType, questTag = GetQuestTagInfo(questId)
+local questTagInfoCache = {}
 
-    return questType, questTag
+--- Wrapper function for the GetQuestTagInfo API to correct
+--- quests that are falsely marked by Blizzard and cache the results.
+---@param questId number
+---@return number|nil questTagId
+---@return string|nil questTagName
+function QuestieDB.GetQuestTagInfo(questId)
+    if questTagInfoCache[questId] then
+        return questTagInfoCache[questId][1], questTagInfoCache[questId][2]
+    end
+
+    local questTagId, questTagName
+    if questTagCorrections[questId] then
+        questTagId, questTagName = questTagCorrections[questId][1], questTagCorrections[questId][2]
+    else
+        questTagId, questTagName = GetQuestTagInfo(questId)
+
+        if questTagId == nil and questTagName == nil then
+            -- Retry the API call after a short delay, as the API tends to incorrectly return nil on the first call.
+            -- Doing it here asserts, we only call the API twice per quest at most.
+            C_Timer.After(1, function()
+                local retryQuestTagId, retryQuestTagName = GetQuestTagInfo(questId)
+                questTagInfoCache[questId] = {retryQuestTagId, retryQuestTagName}
+            end)
+        end
+    end
+
+    -- cache the result to avoid hitting the API throttling limit
+    questTagInfoCache[questId] = {questTagId, questTagName}
+
+    return questTagId, questTagName
 end
 
 ---@param questId number
