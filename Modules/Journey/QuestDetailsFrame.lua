@@ -50,6 +50,13 @@ function _QuestieJourney:DrawQuestDetailsFrame(container, quest)
     local questIdLabel = _QuestieJourney:CreateLabel(Questie:Colorize(l10n('Quest ID: '), 'yellow') .. quest.Id, true)
     container:AddChild(questIdLabel)
 
+    local breadcrumbForQuestId = QuestieDB.QueryQuestSingle(quest.Id, "breadcrumbForQuestId")
+    if breadcrumbForQuestId and breadcrumbForQuestId ~= 0 then
+        local completedStatus = Questie.db.char.complete[quest.Id] and Questie:Colorize(YES, 'green') or Questie:Colorize(NO, 'red')
+        local completedLabel = _QuestieJourney:CreateLabel(Questie:Colorize(l10n('Completed') .. l10n(": "), 'yellow') .. completedStatus, true)
+        container:AddChild(completedLabel)
+    end
+
     QuestieJourneyUtils:Spacer(container)
 
     local preQuestCounter, preQuestInlineGroup = _QuestieJourney:CreatePreQuestGroup(quest)

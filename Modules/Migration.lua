@@ -94,6 +94,9 @@ local migrationFunctions = {
         ---@type table<string, number>
         Questie.db.global.lastKnownDailyReset = {}
     end,
+    [11] = function()
+        Questie.db.profile.questAnnounceIncompleteBreadcrumb = true
+    end,
 }
 
 function Migration:Migrate()

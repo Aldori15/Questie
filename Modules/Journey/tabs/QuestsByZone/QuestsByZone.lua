@@ -136,10 +136,21 @@ function _QuestieJourney.questsByZone:CollectZoneQuests(zoneId)
             temp.value = questId
             temp.text = QuestieLib:GetColoredQuestName(questId, Questie.db.profile.enableTooltipsQuestLevel, false, true)
 
+            local breadcrumbForQuestId = QuestieDB.QueryQuest(questId,{"breadcrumbForQuestId"})[1] or {}
+
+            -- Breadcrumb quests
+            if breadcrumbForQuestId and breadcrumbForQuestId ~= 0 then
+                tinsert(zoneTree[1].children, temp)
+                breadcrumbCounter = breadcrumbCounter + 1
+            end
+
             -- Completed quests
             if Questie.db.char.complete[questId] then
                 tinsert(zoneTree[3].children, temp)
                 completedCounter = completedCounter + 1
+                if breadcrumbForQuestId and breadcrumbForQuestId ~= 0 then
+                    breadcrumbCompleteCounter = breadcrumbCompleteCounter + 1
+                end
             else
                 local queryResult = QuestieDB.QueryQuest(
                         questId,

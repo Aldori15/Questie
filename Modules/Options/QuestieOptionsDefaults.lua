@@ -124,6 +124,7 @@ function QuestieOptionsDefaults:Load()
             questAnnounceAbandoned = false,
             questAnnounceObjectives = true,
             questAnnounceCompleted = false,
+            questAnnounceIncompleteBreadcrumb = true,
             questAnnounceLocally = false,
             hideUnexploredMapIcons = false,
             hideUntrackedQuestsMapIcons = false,

@@ -22,6 +22,8 @@ local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
 local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 ---@type QuestieAnnounce
 local QuestieAnnounce = QuestieLoader:ImportModule("QuestieAnnounce")
+---@type QuestiePlayer
+local QuestiePlayer = QuestieLoader:ImportModule("QuestiePlayer")
 ---@type IsleOfQuelDanas
 local IsleOfQuelDanas = QuestieLoader:ImportModule("IsleOfQuelDanas")
 ---@type QuestieCombatQueue
@@ -228,6 +230,34 @@ function _QuestEventHandler:QuestAccepted(questLogIndex, questId)
         QuestieLib:CacheItemNames(questId)
         _QuestEventHandler:HandleQuestAccepted(questId)
     end)
+
+    if Questie.db.profile.questAnnounceIncompleteBreadcrumb then
+        local breadcrumbs = QuestieDB.QueryQuestSingle(questId, "breadcrumbs")
+        if breadcrumbs then
+            for _, breadcrumbQuestId in pairs(breadcrumbs) do
+                -- We want to let users know when they picked up a quest without finishing its breadcrumb
+                if (not Questie.db.char.complete[breadcrumbQuestId]) and (not QuestiePlayer.currentQuestlog[breadcrumbQuestId]) then
+                    local requiredRaces = QuestieDB.QueryQuestSingle(breadcrumbQuestId, "requiredRaces")
+                    local requiredClasses = QuestieDB.QueryQuestSingle(breadcrumbQuestId, "requiredClasses")
+
+                    local exclusiveQuests = QuestieDB.QueryQuestSingle(breadcrumbQuestId, "exclusiveTo")
+                    local exclusiveQuestCompleted = false
+                    if exclusiveQuests then
+                        for _, exclusiveQuestId in pairs(exclusiveQuests) do
+                            if Questie.db.char.complete[exclusiveQuestId] or QuestiePlayer.currentQuestlog[exclusiveQuestId] then
+                                exclusiveQuestCompleted = true
+                                break
+                            end
+                        end
+                    end
+
+                    if QuestiePlayer.HasRequiredRace(requiredRaces) and QuestiePlayer.HasRequiredClass(requiredClasses) and (not exclusiveQuestCompleted) then
+                        QuestieAnnounce.IncompleteBreadcrumbQuest(questId, breadcrumbQuestId)
+                    end
+                end
+            end
+        end
+    end
 
     Questie:Debug(Questie.DEBUG_DEVELOP, "[Quest Event] QUEST_ACCEPTED - skipNextUQLCEvent - ", skipNextUQLCEvent)
 end
