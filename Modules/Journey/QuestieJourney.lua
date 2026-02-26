@@ -29,6 +29,7 @@ local AceGUI = LibStub("AceGUI-3.0")
 local isWindowShown = false
 _QuestieJourney.lastOpenWindow = "journey"
 _QuestieJourney.lastZoneSelection = {}
+_QuestieJourney.lastFactionSelection = {}
 
 local notesPopupWin
 local notesPopupWinIsOpen = false
@@ -61,6 +62,18 @@ function QuestieJourney:Initialize()
     self.zoneMap = ZoneDB:GetZonesWithQuests(true)
     self.zones = ZoneDB:GetRelevantZones()
     coroutine.yield()
+
+    -- Pre-initialize faction data used by the "Quests by Faction" tab so it is ready on first open.
+    if _QuestieJourney.questsByFaction then
+        if _QuestieJourney.questsByFaction.InitializeFactionData then
+            _QuestieJourney.questsByFaction:InitializeFactionData()
+        end
+        if _QuestieJourney.questsByFaction.InitializeFactionQuestData then
+            _QuestieJourney.questsByFaction:InitializeFactionQuestData()
+        end
+    end
+
+    coroutine.yield()
     self:BuildMainFrame()
 end
 
@@ -90,6 +103,10 @@ function QuestieJourney:BuildMainFrame()
             {
                 text = l10n('Quests by Zone'),
                 value="zone"
+            },
+                        {
+            text = l10n("Quests by Faction"),
+                value = "faction"
             },
             {
                 text = l10n('Advanced Search'),

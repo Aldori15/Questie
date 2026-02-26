@@ -2,11 +2,14 @@
 local QuestieReputation = QuestieLoader:CreateModule("QuestieReputation")
 ---@type QuestieQuest
 local QuestieQuest = QuestieLoader:ImportModule("QuestieQuest")
+---@type QuestieDB
+local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 
 --- COMPATIBILITY ---
 local GetFactionInfo = QuestieCompat.GetFactionInfo
 
 local playerReputations = {}
+local factionNameCache = {}
 
 local _ReachedNewStanding, _WinterSaberChanged
 
@@ -116,6 +119,73 @@ function QuestieReputation:HasReputation(requiredMinRep, requiredMaxRep)
     local aboveMinRep, hasMinFaction, belowMaxRep, hasMaxFaction = QuestieReputation:HasFactionAndReputationLevel(requiredMinRep, requiredMaxRep)
 
     return ((aboveMinRep and hasMinFaction) and (belowMaxRep and hasMaxFaction))
+end
+
+---@param factionId FactionId
+---@return string|nil name @Name of the faction
+function QuestieReputation.GetFactionName(factionId)
+    if not factionId then
+        return nil
+    end
+
+    local cachedName = factionNameCache[factionId]
+    if cachedName then
+        return cachedName
+    end
+
+    if C_GossipInfo and C_GossipInfo.GetFriendshipReputation then
+        local friendReputation = C_GossipInfo.GetFriendshipReputation(factionId)
+        if friendReputation and friendReputation.name and friendReputation.name ~= "" then
+            factionNameCache[factionId] = friendReputation.name
+            return friendReputation.name
+        end
+    end
+
+    if GetFactionInfoByID then
+        local factionName = select(1, GetFactionInfoByID(factionId))
+        if factionName and factionName ~= "" then
+            factionNameCache[factionId] = factionName
+            return factionName
+        end
+    end
+
+    ExpandFactionHeader(0) -- Expand all header
+    for i = 1, GetNumFactions() do
+        local factionName, _, _, _, _, _, _, _, isHeader, _, _, _, _, lFactionId = GetFactionInfo(i)
+        if not isHeader and lFactionId == factionId and factionName and factionName ~= "" then
+            factionNameCache[factionId] = factionName
+            return factionName
+        end
+    end
+
+    return nil
+end
+
+---@param questId QuestId
+---@return ReputationPair[]|nil
+function QuestieReputation.GetReputationReward(questId)
+    if not questId then
+        return nil
+    end
+
+    return QuestieDB.QueryQuestSingle(questId, "reputationReward")
+end
+
+---@param reputationReward ReputationPair[]
+---@return string @Formatted reputation reward string
+function QuestieReputation.GetReputationRewardString(reputationReward)
+    local rewardTable = {}
+
+    for _, rewardPair in pairs(reputationReward) do
+        local factionId = rewardPair[1]
+        local rewardValue = rewardPair[2]
+        local factionName = QuestieReputation.GetFactionName(factionId)
+        if factionName then
+            rewardTable[#rewardTable + 1] = (rewardValue > 0 and "+" or "") .. rewardValue .. " " .. factionName
+        end
+    end
+
+    return table.concat(rewardTable, " / ")
 end
 
 return QuestieReputation

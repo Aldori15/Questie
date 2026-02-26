@@ -8,6 +8,8 @@ local _QuestieJourney = QuestieJourney.private
 local QuestieJourneyUtils = QuestieLoader:ImportModule("QuestieJourneyUtils")
 ---@type QuestieDB
 local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
+---@type QuestieReputation
+local QuestieReputation = QuestieLoader:ImportModule("QuestieReputation")
 ---@type QuestieLib
 local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
 ---@type l10n
@@ -15,6 +17,20 @@ local l10n = QuestieLoader:ImportModule("l10n")
 
 local AceGUI = LibStub("AceGUI-3.0")
 
+---@param questId QuestId
+---@return string|nil
+function _QuestieJourney:GetReputationRewardString(questId)
+    if not questId then
+        return nil
+    end
+
+    local reputationRewards = QuestieReputation.GetReputationReward(questId)
+    if not reputationRewards or not next(reputationRewards) then
+        return nil
+    end
+
+    return QuestieReputation.GetReputationRewardString(reputationRewards)
+end
 
 -- TODO remove again once the call in manageZoneTree was removed
 ---@param container ScrollFrame
@@ -49,6 +65,13 @@ function _QuestieJourney:DrawQuestDetailsFrame(container, quest)
 
     local questIdLabel = _QuestieJourney:CreateLabel(Questie:Colorize(l10n('Quest ID: '), 'yellow') .. quest.Id, true)
     container:AddChild(questIdLabel)
+
+    local reputationRewardString = _QuestieJourney:GetReputationRewardString(quest.Id)
+    if reputationRewardString then
+        local labelText = Questie:Colorize(l10n("Reputation Reward") .. l10n(": "), 'yellow') .. Questie:Colorize(reputationRewardString, "reputationBlue")
+        local reputationRewardLabel = _QuestieJourney:CreateLabel(labelText, true)
+        container:AddChild(reputationRewardLabel)
+    end
 
     local breadcrumbForQuestId = QuestieDB.QueryQuestSingle(quest.Id, "breadcrumbForQuestId")
     if breadcrumbForQuestId and breadcrumbForQuestId ~= 0 then
