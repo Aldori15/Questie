@@ -170,6 +170,18 @@ local questsByZoneLocales = {
         ["esES"] = "Misiones requisitas",
         ["frFR"] = "Pré-Quêtes",
     },
+    ["Breadcrumb Quests"] = {
+        ["enUS"] = true,
+        ["deDE"] = "Brotkrumen-Quests",
+        ["esES"] = "Misiones de rastro",
+        ["esMX"] = "Misiones de migajas",
+        ["frFR"] = "Quêtes préliminaires",
+        ["koKR"] = "길잡이 퀘스트",
+        ["ptBR"] = "Missões de encaminhamento",
+        ["ruRU"] = "Предзадания",
+        ["zhCN"] = "线索任务",
+        ["zhTW"] = "任務線索",
+    },
 }
 
 for k, v in pairs(questsByZoneLocales) do
