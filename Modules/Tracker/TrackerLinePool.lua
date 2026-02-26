@@ -829,11 +829,6 @@ function TrackerLinePool.GetNextItemButton()
     return buttonPool[buttonIndex]
 end
 
----@return number lineIndex lineIndex == 1
-function TrackerLinePool.IsFirstLine()
-    return linePool[1]
-end
-
 ---@param index number
 ---@return table index linePool[index]
 function TrackerLinePool.GetLine(index)
@@ -848,16 +843,6 @@ end
 ---@return table buttonIndex buttonPool[buttonIndex]
 function TrackerLinePool.GetCurrentButton()
     return buttonPool[buttonIndex]
-end
-
----@return table|nil lineIndex linePool[lineIndex - 1]
-function TrackerLinePool.GetPreviousLine()
-    lineIndex = lineIndex - 1
-    if not linePool[lineIndex] then
-        return nil -- past the line limit
-    end
-
-    return linePool[lineIndex]
 end
 
 ---@return table linePool linePool[1]
