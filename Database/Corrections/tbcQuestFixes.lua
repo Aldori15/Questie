@@ -3138,9 +3138,12 @@ function QuestieTBCQuestFixes:Load()
         [11152] = {
             [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_EVENT, l10n("Lay the Wreath at the Hyal Family Monument"), 0, {{"object", 186322}}}},
         },
-        [11159] = {
+        [11159] = { -- Spirits of Stonemaul Hold
             [questKeys.preQuestSingle] = {11161},
-            [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_EVENT, l10n("Redeem Remains"), 0, {{"object", 186332}}}},
+            [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_OBJECT, l10n("Redeem Remains"), 0, {{"object", 186332}}}},
+        },
+        [11161] = { -- The Essence of Enmity
+            [questKeys.nextQuestInChain] = 11159,
         },
         [11162] = {
             [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_EVENT, l10n("Plant the Stonemaul Banner"), 0, {{"object", 186336}}}},
