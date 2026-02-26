@@ -571,7 +571,8 @@ function QuestieTBCQuestFixes:Load()
         [8326] = {
             [questKeys.requiredRaces] = raceIDs.BLOOD_ELF,
         },
-        [8327] = {
+        [8327] = { -- Report to Lanthan Perilon
+            [questKeys.nextQuestInChain] = 0,
             [questKeys.requiredRaces] = raceIDs.BLOOD_ELF,
         },
         [8328] = {
@@ -579,10 +580,12 @@ function QuestieTBCQuestFixes:Load()
         },
         [8330] = {
             [questKeys.preQuestSingle] = {},
+            [questKeys.breadcrumbs] = {10068,10069,10070,10071,10072,10073},
             [questKeys.requiredRaces] = raceIDs.BLOOD_ELF,
         },
-        [8334] = {
+        [8334] = { -- Aggression
             [questKeys.requiredRaces] = raceIDs.BLOOD_ELF,
+            [questKeys.preQuestSingle] = {8326},
         },
         [8335] = {
              [questKeys.requiredRaces] = raceIDs.BLOOD_ELF,
@@ -600,10 +603,11 @@ function QuestieTBCQuestFixes:Load()
         [8345] = {
             [questKeys.requiredRaces] = raceIDs.BLOOD_ELF,
         },
-        [8346] = {
-            [questKeys.objectives] = {nil,nil,nil,nil,{{{15294,15274},15274,"Mana Tap creature"}}},
+        [8346] = { -- Thirst Unending
+            [questKeys.objectives] = {nil,nil,nil,nil,{{{15294,15274},15274,"Mana Tap creature",Questie.ICON_TYPE_INTERACT}}},
         },
-        [8347] = {
+        [8347] = { -- Aiding the Outrunners
+            [questKeys.breadcrumbForQuestId] = 9704,
             [questKeys.requiredRaces] = raceIDs.BLOOD_ELF,
         },
         [8353] = {
@@ -661,6 +665,7 @@ function QuestieTBCQuestFixes:Load()
         },
         [8476] = {
             [questKeys.preQuestSingle] = {},
+            [questKeys.breadcrumbs] = {9359},
         },
         [8482] = {
             [questKeys.startedBy] = {{15968},nil,{20765}},
@@ -670,6 +675,8 @@ function QuestieTBCQuestFixes:Load()
         },
         [8487] = {
             [questKeys.preQuestSingle] = {},
+            [questKeys.breadcrumbs] = {9254},
+            [questKeys.nextQuestInChain] = 8488,
         },
         [8488] = {
             [questKeys.triggerEnd] = {"Protect Apprentice Mirveda", {[zoneIDs.EVERSONG_WOODS]={{54.3,71.02}}}},
@@ -879,8 +886,18 @@ function QuestieTBCQuestFixes:Load()
         [8888] = {
             [questKeys.exclusiveTo] = {8889,8890,9394,},
         },
+        [8892] = { -- Situation at Sunsail Anchorage
+            [questKeys.preQuestSingle] = {}, -- TO DO: double check
+            [questKeys.breadcrumbs] = {9256},
+        },
         [8894] = {
             [questKeys.preQuestSingle] = {},
+        },
+        [9035] = { -- Roadside Ambush
+            [questKeys.breadcrumbForQuestId] = 9062,
+        },
+        [9062] = { -- Soaked Pages
+            [questKeys.breadcrumbs] = {9035},
         },
         [9130] = {
             [questKeys.requiredMinRep] = {},
@@ -939,6 +956,15 @@ function QuestieTBCQuestFixes:Load()
         [9212] = {
             [questKeys.triggerEnd] = {"Escort Ranger Lilatha back to the Farstrider Enclave", {[zoneIDs.GHOSTLANDS]={{72.24,30.21}}}},
         },
+        [9252] = { -- Defending Fairbreeze Village
+            [questKeys.breadcrumbs] = {9358},
+        },
+        [9254] = { -- The Wayward Apprentice
+            [questKeys.breadcrumbForQuestId] = 8487,
+        },
+        [9256] = { -- Fairbreeze Village
+            [questKeys.breadcrumbForQuestId] = 8892,
+        },
         [9280] = {
             [questKeys.preQuestSingle] = {},
         },
@@ -974,8 +1000,11 @@ function QuestieTBCQuestFixes:Load()
         [9355] = {
             [questKeys.preQuestSingle] = {10143,10483},
         },
-        [9358] = {
-            [questKeys.exclusiveTo] = {9252},
+        [9358] = { -- Ranger Sareyn
+            [questKeys.breadcrumbForQuestId] = 9252,
+        },
+        [9359] = { -- Farstrider Retreat
+            [questKeys.breadcrumbForQuestId] = 8476,
         },
         [9360] = {
             [questKeys.startedBy] = {{15407},nil,{23249}},
@@ -1047,6 +1076,7 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.requiredSourceItems] = {29112},
         },
         [9484] = {
+            [questKeys.breadcrumbs] = {9617,10530}, -- check if 10529 need to be added
             [questKeys.triggerEnd] = {"Tame a Crazed Dragonhawk", {[zoneIDs.EVERSONG_WOODS]={{60.39,59.09},{61.23,65.08}}}},
         },
         [9485] = {
@@ -1178,6 +1208,10 @@ function QuestieTBCQuestFixes:Load()
         [9616] = {
             [questKeys.startedBy] = {{17591},nil,{23910}},
         },
+        [9617] = { -- Seek the Farstriders
+            [questKeys.startedBy] = {{3038,3171,3407,16673}},
+            [questKeys.breadcrumbForQuestId] = 9484,
+        },
         [9618] = {
             [questKeys.requiredRaces] = raceIDs.BLOOD_ELF,
         },
@@ -1235,7 +1269,8 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.triggerEnd] = {"Investigate the Spawning Glen", {[zoneIDs.ZANGARMARSH]={{15.1,61.21}}}},
             [questKeys.requiredLevel] = 61,
         },
-        [9704] = {
+        [9704] = { -- Slain by the Wretched
+            [questKeys.breadcrumbs] = {8347},
             [questKeys.preQuestSingle] = {},
         },
         [9711] = {
@@ -1564,40 +1599,40 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.startedBy] = {{17986,18020},nil,nil},
         },
         [10068] = {
-            [questKeys.startedBy] = {{15279},nil,nil},
-            [questKeys.exclusiveTo] = {8330},
+            [questKeys.startedBy] = {{15279}},
+            [questKeys.breadcrumbForQuestId] = 8330,
             [questKeys.preQuestSingle] = {8328},
             [questKeys.requiredRaces] = raceIDs.BLOOD_ELF,
             [questKeys.requiredClasses] = classIDs.MAGE,
         },
         [10069] = {
-            [questKeys.startedBy] = {{15280},nil,nil},
-            [questKeys.exclusiveTo] = {8330},
+            [questKeys.startedBy] = {{15280}},
+            [questKeys.breadcrumbForQuestId] = 8330,
             [questKeys.preQuestSingle] = {9676},
             [questKeys.requiredRaces] = raceIDs.BLOOD_ELF,
             [questKeys.requiredClasses] = classIDs.PALADIN,
         },
         [10070] = {
-            [questKeys.startedBy] = {{15513},nil,nil},
-            [questKeys.exclusiveTo] = {8330},
+            [questKeys.startedBy] = {{15513}},
+            [questKeys.breadcrumbForQuestId] = 8330,
             [questKeys.preQuestSingle] = {9393},
             [questKeys.requiredRaces] = raceIDs.BLOOD_ELF,
             [questKeys.requiredClasses] = classIDs.HUNTER,
         },
         [10071] = {
-            [questKeys.exclusiveTo] = {8330},
+            [questKeys.breadcrumbForQuestId] = 8330,
             [questKeys.requiredRaces] = raceIDs.BLOOD_ELF,
             [questKeys.requiredClasses] = classIDs.ROGUE,
         },
         [10072] = {
-            [questKeys.startedBy] = {{15284},nil,nil},
-            [questKeys.exclusiveTo] = {8330},
+            [questKeys.startedBy] = {{15284}},
+            [questKeys.breadcrumbForQuestId] = 8330,
             [questKeys.preQuestSingle] = {8564},
             [questKeys.requiredRaces] = raceIDs.BLOOD_ELF,
             [questKeys.requiredClasses] = classIDs.PRIEST,
         },
         [10073] = {
-            [questKeys.exclusiveTo] = {8330},
+            [questKeys.breadcrumbForQuestId] = 8330,
             [questKeys.requiredRaces] = raceIDs.BLOOD_ELF,
             [questKeys.requiredClasses] = classIDs.WARLOCK,
         },
@@ -2093,6 +2128,9 @@ function QuestieTBCQuestFixes:Load()
         },
         [10525] = {
             [questKeys.triggerEnd] = {"Final Thunderlord artifact discovered", {[zoneIDs.BLADES_EDGE_MOUNTAINS]={{52.76,58.89}}}},
+        },
+        [10530] = { -- The Hunter's Path
+            [questKeys.breadcrumbForQuestId] = 9484,
         },
         [10540] = {
             [questKeys.extraObjectives] = {{{[zoneIDs.SHADOWMOON_VALLEY]={{30,57}}}, Questie.ICON_TYPE_EVENT, l10n("Walk with your Spirit Hunter")}},

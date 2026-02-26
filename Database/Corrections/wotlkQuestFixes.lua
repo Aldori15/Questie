@@ -373,9 +373,6 @@ function QuestieWotlkQuestFixes:Load()
         [8875] = {
             [questKeys.startedBy] = {},
         },
-        [8892] = {
-            [questKeys.preQuestSingle] = {},
-        },
         [9078] = {
             [questKeys.requiredClasses] = classIDs.ROGUE,
         },
@@ -420,8 +417,8 @@ function QuestieWotlkQuestFixes:Load()
         [9247] = {
             [questKeys.finishedBy] = {{16281}},
         },
-        [9358] = {
-            [questKeys.exclusiveTo] = {9252},
+        [9358] = { -- Ranger Sareyn
+            [questKeys.nextQuestInChain] = 9252,
         },
         [9361] = {
             [questKeys.requiredSourceItems] = {23270},
