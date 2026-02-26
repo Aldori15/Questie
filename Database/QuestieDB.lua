@@ -367,7 +367,7 @@ function QuestieDB:GetItem(itemId)
 
     if rawdata[QuestieDB.itemKeys.npcDrops] then
         for _, npcId in pairs(rawdata[QuestieDB.itemKeys.npcDrops]) do
-            sources[#sources+1] = {
+            sources[#sources + 1] = {
                 Id = npcId,
                 Type = "monster",
             }
@@ -376,16 +376,21 @@ function QuestieDB:GetItem(itemId)
 
     if rawdata[QuestieDB.itemKeys.vendors] then
         for _, npcId in pairs(rawdata[QuestieDB.itemKeys.vendors]) do
-            sources[#sources+1] = {
-                Id = npcId,
-                Type = "monster",
-            }
+            local friendlyToFaction = QuestieDB.QueryNPCSingle(npcId, "friendlyToFaction")
+            local isFriendlyToPlayer = QuestieDB.IsFriendlyToPlayer(friendlyToFaction)
+            if isFriendlyToPlayer then
+                -- We don't want to show vendors from the opposite faction
+                sources[#sources + 1] = {
+                    Id = npcId,
+                    Type = "monster",
+                }
+            end
         end
     end
 
     if rawdata[QuestieDB.itemKeys.objectDrops] then
         for _, v in pairs(rawdata[QuestieDB.itemKeys.objectDrops]) do
-            sources[#sources+1] = {
+            sources[#sources + 1] = {
                 Id = v,
                 Type = "object",
             }
@@ -1646,7 +1651,7 @@ function QuestieDB:GetNPC(npcId)
     end
 
     local friendlyToFaction = rawdata[npcKeys.friendlyToFaction]
-    npc.friendly = (not friendlyToFaction) and true or factionReactions[friendlyToFaction]
+    npc.friendly = QuestieDB.IsFriendlyToPlayer(friendlyToFaction)
 
     _QuestieDB.npcCache[npcId] = npc
     return npc
@@ -1703,6 +1708,22 @@ function QuestieDB:GetQuestsByZoneId(zoneId)
     end
     _QuestieDB.zoneCache[zoneId] = zoneQuests;
     return zoneQuests;
+end
+
+---@param friendlyToFaction string --The NPC database field friendlyToFaction - so either nil, "A", "H" or "AH"
+---@return boolean
+function QuestieDB.IsFriendlyToPlayer(friendlyToFaction)
+    if (not friendlyToFaction) or friendlyToFaction == "AH" then
+        return true
+    end
+
+    if friendlyToFaction == "H" then
+        return QuestiePlayer.faction == "Horde"
+    elseif friendlyToFaction == "A" then
+        return QuestiePlayer.faction == "Alliance"
+    end
+
+    return false
 end
 
 ---------------------------------------------------------------------------------------------------
