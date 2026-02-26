@@ -97,6 +97,9 @@ local migrationFunctions = {
     [11] = function()
         Questie.db.profile.questAnnounceIncompleteBreadcrumb = true
     end,
+    [12] = function()
+        Questie.db.profile.trackerWidthRatio = 0.20
+    end,
 }
 
 function Migration:Migrate()
