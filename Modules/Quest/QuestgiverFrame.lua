@@ -130,6 +130,20 @@ local function updateGreetingFrame()
     end
 end
 
+-- This function is called for QUEST_LOG_UPDATE events.
+-- If that event fires, this function checks to see if a greeting dialog is currently open,
+-- and if so it runs our icon pass again. This is because the greeting dialog may open
+-- showing we've accepted a quest before Questie is even aware we're on it.
+-- This also fixes race conditions with server lag delaying events.
+function QuestgiverFrame.RecheckGreeting()
+    local activeTitle, _ = GetActiveTitle(1)
+    local availableTitle, _ = GetAvailableTitle(1)
+    if activeTitle or availableTitle then
+        Questie:Debug(Questie.DEBUG_DEVELOP, "Greeting Panel Refreshing. Active: " .. tostring(activeTitle) .. " Available: " .. tostring(availableTitle))
+        QuestgiverFrame.GreetingMark()
+    end
+end
+
 function QuestgiverFrame.GossipMark()
     if Questie.db.profile.enableQuestFrameIcons == true then
         if GossipAvailableQuestButtonMixin then -- This call is added with Dragonflight (10.0.0) API, use if available

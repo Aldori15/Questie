@@ -30,6 +30,8 @@ local IsleOfQuelDanas = QuestieLoader:ImportModule("IsleOfQuelDanas")
 local QuestieCombatQueue = QuestieLoader:ImportModule("QuestieCombatQueue")
 ---@type QuestieTracker
 local QuestieTracker = QuestieLoader:ImportModule("QuestieTracker")
+---@type QuestgiverFrame
+local QuestgiverFrame = QuestieLoader:ImportModule("QuestgiverFrame")
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
 
@@ -585,6 +587,7 @@ function _QuestEventHandler:OnEvent(event, ...)
         _QuestEventHandler:QuestRemoved(...)
     elseif event == "QUEST_LOG_UPDATE" then
         _QuestEventHandler:QuestLogUpdate()
+        QuestgiverFrame.RecheckGreeting()
     elseif event == "QUEST_WATCH_UPDATE" then
         _QuestEventHandler:QuestWatchUpdate(...)
     elseif event == "UNIT_QUEST_LOG_CHANGED" and select(1, ...) == "player" then
