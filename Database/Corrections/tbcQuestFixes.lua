@@ -659,6 +659,7 @@ function QuestieTBCQuestFixes:Load()
         },
         [8473] = {
             [questKeys.preQuestSingle] = {},
+            [questKeys.breadcrumbs] = {9258},
         },
         [8474] = {
             [questKeys.startedBy] = {{15409},nil,{23228}},
@@ -684,6 +685,7 @@ function QuestieTBCQuestFixes:Load()
         [8490] = {
             [questKeys.preQuestSingle] = {},
             [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_EVENT, l10n("Place the Infused Crystal and protect it from the Scourge for 1 minute"), 0, {{"object", 181164}}}},
+            [questKeys.breadcrumbs] = {9253},
         },
         [8548] = {
             [questKeys.specialFlags] = 1,
@@ -883,8 +885,11 @@ function QuestieTBCQuestFixes:Load()
         [8883] = {
             [questKeys.questLevel] = -1,
         },
-        [8888] = {
-            [questKeys.exclusiveTo] = {8889,8890,9394,},
+        [8888] = { -- The Magister's Apprentice
+            [questKeys.breadcrumbForQuestId] = 8889,
+        },
+        [8889] = { -- Deactivating the Spire
+            [questKeys.breadcrumbs] = {8888},
         },
         [8892] = { -- Situation at Sunsail Anchorage
             [questKeys.preQuestSingle] = {}, -- TO DO: double check
@@ -892,6 +897,7 @@ function QuestieTBCQuestFixes:Load()
         },
         [8894] = {
             [questKeys.preQuestSingle] = {},
+            [questKeys.breadcrumbs] = {9394},
         },
         [9035] = { -- Roadside Ambush
             [questKeys.breadcrumbForQuestId] = 9062,
@@ -899,18 +905,34 @@ function QuestieTBCQuestFixes:Load()
         [9062] = { -- Soaked Pages
             [questKeys.breadcrumbs] = {9035},
         },
+        [9067] = { -- The Party Never Ends
+            [questKeys.breadcrumbs] = {9395},
+        },
         [9130] = {
             [questKeys.requiredMinRep] = {},
         },
-        [9144] = {
-            [questKeys.requiredLevel] = 10,
-            [questKeys.exclusiveTo] = {9147},
-        },
-        [9147] = {
+        [9143] = { -- Dealing with Zeb'Sora
             [questKeys.preQuestSingle] = {},
+            [questKeys.breadcrumbs] = {9145},
+        },
+        [9144] = { -- Missing in the Ghostlands
+            [questKeys.requiredLevel] = 10,
+            [questKeys.nextQuestInChain] = 9147,
+            [questKeys.breadcrumbForQuestId] = 9147,
+        },
+        [9145] = { -- Help Ranger Valanna!
+            [questKeys.requiredMinRep] = {922,3000},
+            [questKeys.breadcrumbForQuestId] = 9143,
+        },
+        [9147] = { -- The Fallen Courier
+            [questKeys.preQuestSingle] = {},
+            [questKeys.breadcrumbs] = {9144},
         },
         [9149] = {
             [questKeys.preQuestSingle] = {9327,9329},
+        },
+        [9151] = { -- The Sanctum of the Sun
+            [questKeys.breadcrumbForQuestId] = 9220,
         },
         [9152] = {
             [questKeys.preQuestSingle] = {9327,9329},
@@ -918,8 +940,9 @@ function QuestieTBCQuestFixes:Load()
         [9160] = {
             [questKeys.triggerEnd] = {"Investigate An'daroth", {[zoneIDs.GHOSTLANDS]={{37.13,16.15}}}},
         },
-        [9161] = {
+        [9161] = { -- The Traitor's Shadow
             [questKeys.preQuestSingle] = {},
+            [questKeys.breadcrumbs] = {9282},
         },
         [9174] = {
             [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_OBJECT, l10n("Use the Bundle of Medallions"), 0, {{"object", 181157}}}},
@@ -956,8 +979,14 @@ function QuestieTBCQuestFixes:Load()
         [9212] = {
             [questKeys.triggerEnd] = {"Escort Ranger Lilatha back to the Farstrider Enclave", {[zoneIDs.GHOSTLANDS]={{72.24,30.21}}}},
         },
+        [9220] = { -- War on Deatholme
+            [questKeys.breadcrumbs] = {9151},
+        },
         [9252] = { -- Defending Fairbreeze Village
             [questKeys.breadcrumbs] = {9358},
+        },
+        [9253] = { -- Runewarden Deryan
+            [questKeys.breadcrumbForQuestId] = 8490,
         },
         [9254] = { -- The Wayward Apprentice
             [questKeys.breadcrumbForQuestId] = 8487,
@@ -965,8 +994,18 @@ function QuestieTBCQuestFixes:Load()
         [9256] = { -- Fairbreeze Village
             [questKeys.breadcrumbForQuestId] = 8892,
         },
-        [9280] = {
+        [9258] = { -- The Scorched Grove
+            [questKeys.breadcrumbForQuestId] = 8473,
+        },
+        [9279] = { -- You Survived!
+            [questKeys.breadcrumbForQuestId] = 9280,
+        },
+        [9280] = { -- Replenishing the Healing Crystals
+            [questKeys.breadcrumbs] = {9279},
             [questKeys.preQuestSingle] = {},
+        },
+        [9282] = { -- The Farstrider Enclave
+            [questKeys.breadcrumbForQuestId] = 9161,
         },
         [9283] = { -- Rescue the Survivors!
             [questKeys.objectives] = {{{16483,"Draenei Survivors Saved",Questie.ICON_TYPE_INTERACT}}},
@@ -994,8 +1033,9 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.requiredRaces] = raceIDs.DRAENEI,
             [questKeys.preQuestSingle] = {9280},
         },
-        [9303] = {
-            [questKeys.objectives] = {{{16518,"Nestlewood Owlkin inoculated"}},nil,nil,nil},
+        [9303] = { -- Inoculation
+            [questKeys.breadcrumbs] = {10304},
+            [questKeys.objectives] = {{{16518,"Nestlewood Owlkin inoculated",Questie.ICON_TYPE_INTERACT}}},
         },
         [9355] = {
             [questKeys.preQuestSingle] = {10143,10483},
@@ -1012,6 +1052,9 @@ function QuestieTBCQuestFixes:Load()
         [9370] = {
             [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_EVENT, l10n("Place the Signaling Gem"), 0, {{"object", 181449}}}},
         },
+        [9371] = { -- Botanist Taerix
+            [questKeys.breadcrumbForQuestId] = 10302,
+        },
         [9375] = {
             [questKeys.triggerEnd] = {"Escort Wounded Blood Elf Pilgrim to Falcon Watch", {[zoneIDs.HELLFIRE_PENINSULA]={{27.09,61.92}}}},
         },
@@ -1020,6 +1063,12 @@ function QuestieTBCQuestFixes:Load()
         },
         [9392] = {
             [questKeys.requiredRaces] = raceIDs.BLOOD_ELF,
+        },
+        [9394] = { -- Where's Wyllithen?
+            [questKeys.breadcrumbForQuestId] = 8894,
+        },
+        [9395] = { -- Saltheril's Haven
+            [questKeys.breadcrumbForQuestId] = 9067,
         },
         [9397] = {
             [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_EVENT, l10n("Disturb the nest"), 0, {{"object", 181582}}}},
@@ -1057,7 +1106,7 @@ function QuestieTBCQuestFixes:Load()
         [9446] = {
             [questKeys.triggerEnd] = {"Escort Anchorite Truuen to Uther's Tomb", {[zoneIDs.WESTERN_PLAGUELANDS]={{52.06,83.26}}}},
         },
-        [9454] = {
+        [9454] = { -- The Great Moongraze Hunt
             [questKeys.preQuestSingle] = {},
         },
         [9457] = {
@@ -1077,13 +1126,13 @@ function QuestieTBCQuestFixes:Load()
         },
         [9484] = {
             [questKeys.breadcrumbs] = {9617,10530}, -- check if 10529 need to be added
-            [questKeys.triggerEnd] = {"Tame a Crazed Dragonhawk", {[zoneIDs.EVERSONG_WOODS]={{60.39,59.09},{61.23,65.08}}}},
+            [questKeys.objectives] = {{{15650,nil,Questie.ICON_TYPE_INTERACT}}},
         },
         [9485] = {
-            [questKeys.triggerEnd] = {"Tame a Mistbat", {[zoneIDs.GHOSTLANDS]={{48.29,13.42},{55.22,11.22},{50.59,15.86}}}},
+            [questKeys.objectives] = {{{16353,nil,Questie.ICON_TYPE_INTERACT}}},
         },
         [9486] = {
-            [questKeys.triggerEnd] = {"Tame an Elder Springpaw", {[zoneIDs.EVERSONG_WOODS]={{61.95,64.61},{64.77,59.93}}}},
+            [questKeys.objectives] = {{{15652,nil,Questie.ICON_TYPE_INTERACT}}},
         },
         [9487] = {
             [questKeys.requiredRaces] = raceIDs.BLOOD_ELF,
@@ -1115,6 +1164,12 @@ function QuestieTBCQuestFixes:Load()
         [9504] = {
             [questKeys.questLevel] = -1,
         },
+        [9505] = { -- The Prophecy of Velen
+            [questKeys.breadcrumbForQuestId] = 9506,
+        },
+        [9506] = { -- A Small Start
+            [questKeys.breadcrumbs] = {9505},
+        },
         [9508] = {
             [questKeys.questLevel] = -1,
             [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_OBJECT, l10n("Destroy the barrel using the Skin of Purest Water"), 0, {{"object", 181699}}}},
@@ -1128,8 +1183,9 @@ function QuestieTBCQuestFixes:Load()
         [9523] = {
             [questKeys.preQuestSingle] = {9506,9512},
         },
-        [9527] = {
+        [9527] = { -- All That Remains
             [questKeys.preQuestSingle] = {},
+            [questKeys.breadcrumbs] = {10428},
         },
         [9528] = {
             [questKeys.triggerEnd] = {"Magwin Escorted to Safety", {[zoneIDs.AZUREMYST_ISLE]={{16.38,94.14}}}},
@@ -1214,6 +1270,12 @@ function QuestieTBCQuestFixes:Load()
         },
         [9618] = {
             [questKeys.requiredRaces] = raceIDs.BLOOD_ELF,
+        },
+        [9625] = { -- Elekks Are Serious Business
+            [questKeys.nextQuestInChain] = 0,
+        },
+        [9634] = { -- Alien Predators
+            [questKeys.preQuestSingle] = {},
         },
         [9635] = {
             [questKeys.requiredSkill] = {202,305},
@@ -1809,8 +1871,12 @@ function QuestieTBCQuestFixes:Load()
         [10299] = {
             [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_EVENT, l10n("Obtain the B'naar Access Crystal from Overseer Theredis. Use it at the B'naar Control Console to shut it down"), 0, {{"object", 183770}}}},
         },
-        [10302] = {
+        [10302] = { -- Volatile Mutations
+            [questKeys.breadcrumbs] = {9371},
             [questKeys.preQuestSingle] = {},
+        },
+        [10304] = { -- Vindicator Aldar
+            [questKeys.breadcrumbForQuestId] = 9303,
         },
         [10305] = {
             [questKeys.startedBy] = {{19546},nil,nil},
@@ -1990,6 +2056,9 @@ function QuestieTBCQuestFixes:Load()
         },
         [10427] = {
             [questKeys.objectives] = {nil,nil,nil,nil,{{{20610,20777},20777,"Talbuk Tagged"}}},
+        },
+        [10428] = { -- The Missing Fisherman
+            [questKeys.breadcrumbForQuestId] = 9527,
         },
         [10438] = {
             [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_EVENT, l10n("Protectorate Nether Drake will fly you close enough to Ultris so that you can drop the disruptor on top of the Void Conduit"), 0, {{"monster", 20903}}}},
@@ -5114,19 +5183,6 @@ function QuestieTBCQuestFixes:Load()
         },
 
         ----- Boosted character quests -----
-        [64037] = {
-            [questKeys.name] = "Eastern Plaguelands",
-            [questKeys.startedBy] = {{376,914,928,5495,5497,5505,5515,13283},nil,nil},
-            [questKeys.finishedBy] = {{11036},nil},
-            [questKeys.requiredLevel] = 58,
-            [questKeys.questLevel] = 58,
-            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
-            [questKeys.objectivesText] = {"Travel to the Eastern Plaguelands and find Leonid Barthalomew. He awaits your arrival at Light's Hope Chapel. "},
-            [questKeys.objectives] = {{{352, "Speak to Dungar Longdrink, the Gryphon Master"}},nil,nil,nil,nil},
-            [questKeys.preQuestSingle] = {64035},
-            [questKeys.exclusiveTo] = {64038},
-            [questKeys.zoneOrSort] = sortKeys.REPUTATION,
-        },
         [64028] = {
             [questKeys.name] = "A New Beginning",
             [questKeys.startedBy] = {}, -- This quest is auto accept
@@ -5135,7 +5191,7 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.questLevel] = 58,
             [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
             [questKeys.objectivesText] = {"Meet with your class trainer in Stormwind."},
-            [questKeys.zoneOrSort] = sortKeys.REPUTATION,
+            [questKeys.zoneOrSort] = zoneIDs.STORMWIND_CITY,
         },
         [64031] = {
             [questKeys.name] = "Tools for Survival",
@@ -5147,7 +5203,7 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.objectivesText] = {"Open the survival kit and equip a weapon."},
             [questKeys.objectives] = {nil,{{400009, "Open the Survival Kit"}, {400010, "Equip a Weapon"}},nil,nil,nil},
             [questKeys.preQuestSingle] = {64028},
-            [questKeys.zoneOrSort] = sortKeys.REPUTATION,
+            [questKeys.zoneOrSort] = zoneIDs.STORMWIND_CITY,
         },
         [64034] = {
             [questKeys.name] = "Combat Training",
@@ -5159,7 +5215,7 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.objectivesText] = {"Train a spell by speaking to your class trainer."},
             [questKeys.objectives] = {nil,{{400011, "Train a Spell"}},nil,nil,nil},
             [questKeys.preQuestSingle] = {64031},
-            [questKeys.zoneOrSort] = sortKeys.REPUTATION,
+            [questKeys.zoneOrSort] = zoneIDs.STORMWIND_CITY,
         },
         [64035] = {
             [questKeys.name] = "Talented",
@@ -5171,7 +5227,20 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.objectivesText] = {"Activate the Talents interface and allocate a Talent Point."},
             [questKeys.objectives] = {nil,{{400012, "Train a Spell"}},nil,nil,nil},
             [questKeys.preQuestSingle] = {64034},
-            [questKeys.zoneOrSort] = sortKeys.REPUTATION,
+            [questKeys.zoneOrSort] = zoneIDs.STORMWIND_CITY,
+        },
+        [64037] = {
+            [questKeys.name] = "Eastern Plaguelands",
+            [questKeys.startedBy] = {{376,914,928,5495,5497,5505,5515,13283},nil,nil},
+            [questKeys.finishedBy] = {{11036},nil},
+            [questKeys.requiredLevel] = 58,
+            [questKeys.questLevel] = 58,
+            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
+            [questKeys.objectivesText] = {"Travel to the Eastern Plaguelands and find Leonid Barthalomew. He awaits your arrival at Light's Hope Chapel. "},
+            [questKeys.objectives] = {{{352, "Speak to Dungar Longdrink, the Gryphon Master"}},nil,nil,nil,nil},
+            [questKeys.preQuestSingle] = {64035},
+            [questKeys.exclusiveTo] = {64038},
+            [questKeys.zoneOrSort] = zoneIDs.EASTERN_PLAGUELANDS,
         },
         [64038] = {
             [questKeys.name] = "The Dark Portal",
@@ -5183,7 +5252,7 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.objectivesText] = {"Find Watch Commander Relthorn Netherwane at the Blasted Lands. He awaits your arrival before the Dark Portal."},
             [questKeys.objectives] = {{{352, "Speak to Dungar Longdrink, the Gryphon Master"}},nil,nil,nil,nil},
             [questKeys.preQuestSingle] = {64035},
-            [questKeys.zoneOrSort] = sortKeys.REPUTATION,
+            [questKeys.zoneOrSort] = zoneIDs.BLASTED_LANDS,
         },
         [64046] = {
             [questKeys.name] = "A New Beginning",
@@ -5193,7 +5262,7 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.questLevel] = 58,
             [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.objectivesText] = {"Meet with your class trainer in Orgrimmar."},
-            [questKeys.zoneOrSort] = sortKeys.REPUTATION,
+            [questKeys.zoneOrSort] = zoneIDs.ORGRIMMAR,
         },
         [64047] = {
             [questKeys.name] = "A New Beginning",
@@ -5204,7 +5273,7 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.requiredRaces] = raceIDs.TAUREN,
             [questKeys.requiredClasses] = classIDs.DRUID,
             [questKeys.objectivesText] = {"Meet with your Druid trainer in Thunder Bluff."},
-            [questKeys.zoneOrSort] = sortKeys.REPUTATION,
+            [questKeys.zoneOrSort] = zoneIDs.THUNDER_BLUFF,
         },
         [64048] = {
             [questKeys.name] = "Tools for Survival",
@@ -5216,7 +5285,7 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.objectivesText] = {"Open the survival kit and equip a weapon."},
             [questKeys.objectives] = {nil,{{400001, "Open the Survival Kit"}, {400002, "Equip a Weapon"}},nil,nil,nil},
             [questKeys.preQuestSingle] = {64046},
-            [questKeys.zoneOrSort] = sortKeys.REPUTATION,
+            [questKeys.zoneOrSort] = zoneIDs.ORGRIMMAR,
         },
         [64049] = {
             [questKeys.name] = "Tools for Survival",
@@ -5229,7 +5298,7 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.objectivesText] = {"Open the survival kit and equip a weapon."},
             [questKeys.objectives] = {nil,{{400003, "Open the Survival Kit"}, {400004, "Equip a Weapon"}},nil,nil,nil},
             [questKeys.preQuestSingle] = {64047},
-            [questKeys.zoneOrSort] = sortKeys.REPUTATION,
+            [questKeys.zoneOrSort] = zoneIDs.THUNDER_BLUFF,
         },
         [64050] = {
             [questKeys.name] = "Combat Training",
@@ -5241,7 +5310,7 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.objectivesText] = {"Train a spell by speaking to your class trainer."},
             [questKeys.objectives] = {nil,{{400005, "Train a Spell"}},nil,nil,nil},
             [questKeys.preQuestSingle] = {64048},
-            [questKeys.zoneOrSort] = sortKeys.REPUTATION,
+            [questKeys.zoneOrSort] = zoneIDs.ORGRIMMAR,
         },
         [64051] = {
             [questKeys.name] = "Combat Training",
@@ -5254,7 +5323,7 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.objectivesText] = {"Train a spell by speaking to your Druid trainer."},
             [questKeys.objectives] = {nil,{{400006, "Train a Spell"}},nil,nil,nil},
             [questKeys.preQuestSingle] = {64049},
-            [questKeys.zoneOrSort] = sortKeys.REPUTATION,
+            [questKeys.zoneOrSort] = zoneIDs.THUNDER_BLUFF,
         },
         [64052] = {
             [questKeys.name] = "Talented",
@@ -5266,7 +5335,7 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.objectivesText] = {"Activate the Talents interface and allocate five Talent Points."},
             [questKeys.objectives] = {nil,{{400007, "Train a Spell"}},nil,nil,nil},
             [questKeys.preQuestSingle] = {64050},
-            [questKeys.zoneOrSort] = sortKeys.REPUTATION,
+            [questKeys.zoneOrSort] = zoneIDs.ORGRIMMAR,
         },
         [64053] = {
             [questKeys.name] = "Talented",
@@ -5279,7 +5348,7 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.objectivesText] = {"Activate the Talents interface and allocate five Talent Points."},
             [questKeys.objectives] = {nil,{{400008, "Train a Spell"}},nil,nil,nil},
             [questKeys.preQuestSingle] = {64051},
-            [questKeys.zoneOrSort] = sortKeys.REPUTATION,
+            [questKeys.zoneOrSort] = zoneIDs.THUNDER_BLUFF,
         },
         [64063] = {
             [questKeys.name] = "The Dark Portal",
@@ -5292,7 +5361,7 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.objectives] = {{{12136, "Visit Snurk Bucksqick by the Zepplin Master"},{1387, "Speak to Thysta at Grom'Gol Base Camp"}},nil,nil,nil,nil},
             [questKeys.preQuestSingle] = {64052},
             [questKeys.exclusiveTo] = {64217},
-            [questKeys.zoneOrSort] = sortKeys.REPUTATION,
+            [questKeys.zoneOrSort] = zoneIDs.BLASTED_LANDS,
         },
         [64064] = {
             [questKeys.name] = "Eastern Plaguelands",
@@ -5305,7 +5374,7 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.objectives] = {{{9564, "Visit Zeppelin Master Frezza"}},nil,nil,nil,nil},
             [questKeys.preQuestSingle] = {64052},
             [questKeys.exclusiveTo] = {64063,64217,64128},
-            [questKeys.zoneOrSort] = sortKeys.REPUTATION,
+            [questKeys.zoneOrSort] = zoneIDs.EASTERN_PLAGUELANDS,
         },
         [64128] = {
             [questKeys.name] = "Eastern Plaguelands",
@@ -5319,7 +5388,7 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.objectives] = {{{9564, "Speak to Tal, the Wind Rider Master"},{9564, "Visit Zeppelin Master Frezza"}},nil,nil,nil,nil},
             [questKeys.preQuestSingle] = {64053},
             [questKeys.exclusiveTo] = {64063,64064,64217},
-            [questKeys.zoneOrSort] = sortKeys.REPUTATION,
+            [questKeys.zoneOrSort] = zoneIDs.EASTERN_PLAGUELANDS,
         },
         [64217] = {
             [questKeys.name] = "The Dark Portal",
@@ -5332,7 +5401,7 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.objectives] = {{{12136, "Visit Snurk Bucksqick by the Zepplin Master"},{1387, "Speak to Thysta at Grom'Gol Base Camp"}},nil,nil,nil,nil},
             [questKeys.preQuestSingle] = {64053},
             [questKeys.exclusiveTo] = {64063,64064,64128},
-            [questKeys.zoneOrSort] = sortKeys.REPUTATION,
+            [questKeys.zoneOrSort] = zoneIDs.BLASTED_LANDS,
         }
     }
 end
