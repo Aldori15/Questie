@@ -23,6 +23,9 @@ local l10n = QuestieLoader:ImportModule("l10n")
 
 --- COMPATIBILITY ---
 local C_Map = QuestieCompat.C_Map
+local UI_MAP_TYPE_COSMIC = 0
+local UI_MAP_TYPE_WORLD = 1
+local UI_MAP_TYPE_CONTINENT = 2
 
 local areaIdToUiMapId = ZoneDB.private.areaIdToUiMapId or {}
 local uiMapIdToAreaId = ZoneDB.private.uiMapIdToAreaId or {}
@@ -356,7 +359,7 @@ function _ZoneDB:RunTests()
     }
     for _, map in pairs(maps) do
         --- We don't care about World, Continent or Cosmic
-        if map.mapType ~= Enum.UIMapType.World and map.mapType ~= Enum.UIMapType.Continent and map.mapType ~= Enum.UIMapType.Cosmic then
+        if map.mapType ~= UI_MAP_TYPE_WORLD and map.mapType ~= UI_MAP_TYPE_CONTINENT and map.mapType ~= UI_MAP_TYPE_COSMIC then
             local success, result = pcall(ZoneDB.GetAreaIdByUiMapId, ZoneDB, map.mapID)
             if not success and not buggedMaps[map.mapID] then
                 Questie:Error("[ZoneDBTests] ZoneDB.GetAreaIdByUiMapId fails for " .. map.name .. " (" .. map.mapID .. "). Result: " .. result)

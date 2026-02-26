@@ -19,6 +19,9 @@ local IsInGroup = QuestieCompat.IsInGroup
 local GetHomePartyInfo = QuestieCompat.GetHomePartyInfo
 local GetClassColor = QuestieCompat.GetClassColor
 local LE_PARTY_CATEGORY_INSTANCE = QuestieCompat.LE_PARTY_CATEGORY_INSTANCE
+local UI_MAP_TYPE_COSMIC = 0
+local UI_MAP_TYPE_WORLD = 1
+local UI_MAP_TYPE_CONTINENT = 2
 
 QuestiePlayer.currentQuestlog = {} --Gets populated by QuestieQuest:GetAllQuestIds(), this is either an object to the quest in question, or the ID if the object doesn't exist.
 _QuestiePlayer.playerLevel = -1
@@ -105,21 +108,33 @@ end
 
 function QuestiePlayer:GetCurrentZoneId()
     local uiMapId = C_Map.GetBestMapForUnit("player")
-    if uiMapId then
-        return ZoneDB:GetAreaIdByUiMapId(uiMapId)
+    if uiMapId and uiMapId > 0 then
+        local mapInfo = C_Map.GetMapInfo(uiMapId)
+        local mapType = mapInfo and mapInfo.mapType
+        if not mapInfo or (mapType ~= UI_MAP_TYPE_WORLD and mapType ~= UI_MAP_TYPE_CONTINENT and mapType ~= UI_MAP_TYPE_COSMIC) then
+            local success, areaId = pcall(ZoneDB.GetAreaIdByUiMapId, ZoneDB, uiMapId)
+            if success then
+                return areaId
+            end
+        end
     end
 
-    return ZoneDB.instanceIdToUiMapId[select(8, GetInstanceInfo())]
+    local instanceId = select(8, GetInstanceInfo())
+    if instanceId then
+        return ZoneDB.instanceIdToUiMapId[instanceId]
+    end
+
+    return nil
 end
 
 ---@return number
 function QuestiePlayer:GetCurrentContinentId()
     local currentZoneId = QuestiePlayer:GetCurrentZoneId()
     if (not currentZoneId) or currentZoneId == 0 then
-        return 1 -- Default to Eastern Kingdom
+        return 0 -- Default to Eastern Kingdom
     end
 
-    local currentContinentId = 1 -- Default to Eastern Kingdom
+    local currentContinentId = 0 -- Default to Eastern Kingdom
     for cId, cont in pairs(l10n.zoneLookup) do
         for id, _ in pairs(cont) do
             if id == currentZoneId then

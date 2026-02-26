@@ -84,6 +84,10 @@ _CreateContinentDropdown = function()
         selectedContinentId = _QuestieJourney.lastZoneSelection[1]
     end
 
+    if not selectedContinentId then
+        selectedContinentId = QuestieJourney.questCategoryKeys.EASTERN_KINGDOMS
+    end
+
     dropdown:SetValue(selectedContinentId)
     return dropdown
 end
@@ -97,17 +101,20 @@ _CreateZoneDropdown = function()
     end
 
     local zones = QuestieJourney.zones[selectedContinentId]
-    if currentZoneId and currentZoneId > 0 and zones then
+    if zones then
         local sortedZones = QuestieJourneyUtils:GetSortedZoneKeys(zones)
         dropdown:SetList(zones, sortedZones)
-        dropdown:SetValue(currentZoneId)
 
-        local zoneTree = _QuestieJourney.questsByZone:CollectZoneQuests(currentZoneId)
-        _QuestieJourney.questsByZone:ManageTree(treegroup, zoneTree)
-    elseif currentZoneId == RESET and zones then
-        dropdown:SetText(l10n('Select Your Zone'))
-        local sortedZones = QuestieJourneyUtils:GetSortedZoneKeys(zones)
-        dropdown:SetList(zones, sortedZones)
+        if currentZoneId and currentZoneId > 0 and zones[currentZoneId] then
+            dropdown:SetValue(currentZoneId)
+
+            local zoneTree = _QuestieJourney.questsByZone:CollectZoneQuests(currentZoneId)
+            _QuestieJourney.questsByZone:ManageTree(treegroup, zoneTree)
+        elseif currentZoneId == RESET then
+            dropdown:SetText(l10n('Select Your Zone'))
+        else
+            dropdown:SetText(l10n('Select Your Zone'))
+        end
     else
         dropdown:SetDisabled(true)
     end
