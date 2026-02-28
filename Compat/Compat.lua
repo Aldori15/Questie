@@ -778,6 +778,8 @@ local questTagToName = {
 -- Retrieves tag information about the quest.
 -- https://wowpedia.fandom.com/wiki/API_GetQuestTagInfo
 function QuestieCompat.GetQuestTagInfo(questId)
+    if not questId then return nil, nil end
+
     local tagId = QuestieCompat.QuestTag[questId]
 	if tagId then
 		return tagId, questTagToName[tagId]

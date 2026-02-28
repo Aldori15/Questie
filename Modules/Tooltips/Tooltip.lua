@@ -12,6 +12,8 @@ local QuestieLib = QuestieLoader:ImportModule("QuestieLib");
 local QuestiePlayer = QuestieLoader:ImportModule("QuestiePlayer");
 ---@type QuestieDB
 local QuestieDB = QuestieLoader:ImportModule("QuestieDB");
+---@type QuestieEvent
+local QuestieEvent = QuestieLoader:ImportModule("QuestieEvent")
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
 
@@ -38,6 +40,37 @@ local MAX_GROUP_MEMBER_COUNT = 6
 local _InitObjectiveTexts
 
 ---@param questId number
+---@param level number
+---@return string
+---@return string
+local function _GetQuestTooltipIconNames(questId, level)
+    if QuestieEvent.IsEventQuest(questId) then
+        return "eventquest", "eventquest_complete"
+    elseif QuestieDB.IsPvPQuest(questId) then
+        return "pvpquest", "pvpquest_complete"
+    elseif QuestieDB.IsRepeatable(questId) then
+        return "repeatable", "repeatable_complete"
+    end
+
+    local r, g, b = QuestieLib:GetDifficultyColorPercent(level)
+    if r >= 0.95 then
+        if g <= 0.20 then
+            -- No dedicated red tooltip icon exists; closest match in current assets.
+            return "pvpquest", "pvpquest_complete"
+        elseif g <= 0.70 then
+            return "pvpquest", "pvpquest_complete"
+        else
+            return "available", "complete"
+        end
+    elseif r <= 0.40 and g >= 0.70 and b <= 0.40 then
+        -- No dedicated green tooltip icon exists; eventquest is the matching green style.
+        return "eventquest", "eventquest_complete"
+    end
+
+    return "available_gray", "available_gray"
+end
+
+---@param questId number
 ---@param key string monster: m_, items: i_, objects: o_ + string name of the objective
 ---@param objective table
 function QuestieTooltips:RegisterObjectiveTooltip(questId, key, objective)
@@ -59,7 +92,7 @@ end
 ---@param name string The name of the object or NPC the tooltip should show on
 ---@param starterId number The ID of the object or NPC the tooltip should show on
 ---@param key string @Either m_<npcId> or o_<objectId>
-function QuestieTooltips:RegisterQuestStartTooltip(questId, name, starterId, key)
+function QuestieTooltips:RegisterQuestStartTooltip(questId, name, starterId, key, type)
     if not QuestieTooltips.lookupByKey[key] then
         QuestieTooltips.lookupByKey[key] = {};
     end
@@ -70,6 +103,7 @@ function QuestieTooltips:RegisterQuestStartTooltip(questId, name, starterId, key
         questId = questId,
         name = name,
         starterId = starterId,
+        type = type
     };
     QuestieTooltips.lookupByKey[key][tostring(questId) .. " " .. name .. " " .. starterId] = tooltip
     tinsert(QuestieTooltips.lookupKeysByQuestId[questId], key)
@@ -221,7 +255,22 @@ function QuestieTooltips:GetTooltip(key)
         for k, tooltip in pairs(QuestieTooltips.lookupByKey[key]) do
             if tooltip.name then
                 if Questie.db.profile.showQuestsInNpcTooltip then
-                    local questString = QuestieLib:GetColoredQuestName(tooltip.questId, Questie.db.profile.enableTooltipsQuestLevel, true, true)
+                    local questId = tooltip.questId
+                    local questString = QuestieLib:GetColoredQuestName(questId, Questie.db.profile.enableTooltipsQuestLevel, true, true)
+                    if tooltip.type then
+                        local level, _ = QuestieLib.GetTbcLevel(questId)
+                        local availableIcon, completeIcon = _GetQuestTooltipIconNames(questId, level)
+                        local iconSize = 18
+                        if tooltip.type == "NPC" then
+                            questString = "|T" .. QuestieLib.AddonPath .. "Icons\\" .. availableIcon .. ".blp:" .. iconSize .. "|t" .. questString
+                        elseif tooltip.type == "Finisher" then
+                            questString = "|T" .. QuestieLib.AddonPath .. "Icons\\" .. completeIcon .. ".blp:" .. iconSize .. "|t" .. questString
+                        elseif tooltip.type == "itemFromMonster" then
+                            questString = "|T" .. QuestieLib.AddonPath .. "Icons\\available_mobdrop.blp:" .. iconSize .. "|t" .. questString
+                        elseif tooltip.type == "itemFromObject" or tooltip.type == "Object" then
+                            questString = "|T" .. QuestieLib.AddonPath .. "Icons\\available_object.blp:" .. iconSize .. "|t" .. questString
+                        end
+                    end
                     tinsert(tooltipLines, questString)
                 end
             else

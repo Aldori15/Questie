@@ -473,6 +473,8 @@ local questTagInfoCache = {}
 ---@return number|nil questTagId
 ---@return string|nil questTagName
 function QuestieDB.GetQuestTagInfo(questId)
+    if not questId then return nil, nil end
+
     if questTagInfoCache[questId] then
         return questTagInfoCache[questId][1], questTagInfoCache[questId][2]
     end
@@ -486,9 +488,14 @@ function QuestieDB.GetQuestTagInfo(questId)
         if questTagId == nil and questTagName == nil then
             -- Retry the API call after a short delay, as the API tends to incorrectly return nil on the first call.
             -- Doing it here asserts, we only call the API twice per quest at most.
+            local retryQuestId = questId
             C_Timer.After(1, function()
-                local retryQuestTagId, retryQuestTagName = GetQuestTagInfo(questId)
-                questTagInfoCache[questId] = {retryQuestTagId, retryQuestTagName}
+                if not retryQuestId then
+                    return
+                end
+
+                local retryQuestTagId, retryQuestTagName = GetQuestTagInfo(retryQuestId)
+                questTagInfoCache[retryQuestId] = {retryQuestTagId, retryQuestTagName}
             end)
         end
     end

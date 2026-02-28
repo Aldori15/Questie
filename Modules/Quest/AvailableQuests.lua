@@ -417,7 +417,7 @@ _RegisterQuestStartTooltips = function(quest)
                 local tooltipKey = "o_" .. obj.id
                 local tooltipId = tostring(quest.Id) .. " " .. obj.name .. " " .. obj.id
                 if (not QuestieTooltips.lookupByKey[tooltipKey]) or (not QuestieTooltips.lookupByKey[tooltipKey][tooltipId]) then
-                    QuestieTooltips:RegisterQuestStartTooltip(quest.Id, obj.name, obj.id, tooltipKey)
+                    QuestieTooltips:RegisterQuestStartTooltip(quest.Id, obj.name, obj.id, tooltipKey, "Object")
                 end
             end
         end
@@ -431,7 +431,7 @@ _RegisterQuestStartTooltips = function(quest)
                 local tooltipKey = "m_" .. npc.id
                 local tooltipId = tostring(quest.Id) .. " " .. npc.name .. " " .. npc.id
                 if (not QuestieTooltips.lookupByKey[tooltipKey]) or (not QuestieTooltips.lookupByKey[tooltipKey][tooltipId]) then
-                    QuestieTooltips:RegisterQuestStartTooltip(quest.Id, npc.name, npc.id, tooltipKey)
+                    QuestieTooltips:RegisterQuestStartTooltip(quest.Id, npc.name, npc.id, tooltipKey, "NPC")
                 end
             end
         end
@@ -512,7 +512,31 @@ _AddStarter = function(starter, quest, tooltipKey)
         return
     end
 
-    QuestieTooltips:RegisterQuestStartTooltip(quest.Id, starter.name, starter.id, tooltipKey)
+    -- Need to know when this quest starts from an item, so we save it later
+    ---@type string|nil
+    local starterType
+
+    if tooltipKey == "m_" .. starter.id then
+        -- filter hostile starters
+        if playerFaction == "Alliance" and starter.friendlyToFaction == "H" then
+            return 0
+        elseif playerFaction == "Horde" and starter.friendlyToFaction == "A" then
+            return 0
+        end
+    elseif tooltipKey == "im_" .. starter.id then
+        -- We don't filter items by faction, because Questie can not differentiate neutral NPCs from friendly ones.
+        -- overwrite tooltipKey, so stuff shows in monster tooltips
+        tooltipKey = "m_" .. starter.id
+        starterType = "itemFromMonster"
+    elseif tooltipKey == "o_" .. starter.id then
+        starterType = "Object"
+    elseif tooltipKey == "io_" .. starter.id then
+        -- overwrite tooltipKey, so stuff shows in object tooltips
+        tooltipKey = "o_" .. starter.id
+        starterType = "itemFromObject"
+    end
+
+    QuestieTooltips:RegisterQuestStartTooltip(quest.Id, starter.name, starter.id, tooltipKey, (starterType or "NPC"))
 
     local starterIcons = {}
     local starterLocs = {}

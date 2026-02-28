@@ -49,7 +49,8 @@ function QuestieLib:PrintDifficultyColor(level, text, isDailyQuest, isEventQuest
         return "|cFF21CCE7" .. text .. "|r" -- Blue
     end
 
-    if level == -1 then
+    level = tonumber(level)
+    if not level or level == -1 then
         level = QuestiePlayer.GetPlayerLevel()
     end
     local levelDiff = level - QuestiePlayer.GetPlayerLevel()
@@ -68,7 +69,8 @@ function QuestieLib:PrintDifficultyColor(level, text, isDailyQuest, isEventQuest
 end
 
 function QuestieLib:GetDifficultyColorPercent(level)
-    if level == -1 then level = QuestiePlayer.GetPlayerLevel() end
+    level = tonumber(level)
+    if not level or level == -1 then level = QuestiePlayer.GetPlayerLevel() end
     local levelDiff = level - QuestiePlayer.GetPlayerLevel()
 
     if (levelDiff >= 5) then
