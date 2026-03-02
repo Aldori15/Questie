@@ -23,6 +23,9 @@ local InCombatLockdown = InCombatLockdown
 local TICKS_PER_YIELD = 48
 local TICKS_PER_YIELD_DEBUG = TICKS_PER_YIELD * 3
 
+-- Bump when compiler field types/order change to invalidate cached binary DB blobs.
+QuestieDBCompiler.compiledSchemaVersion = 2
+
 ---@alias CompilerTypes
 ---| "u8"
 ---| "u16"
@@ -1068,11 +1071,13 @@ function QuestieDBCompiler:Compile()
     if Questie.IsSoD then
         Questie.db.global.sod.dbCompiledOnVersion = QuestieLib:GetAddonVersionString()
         Questie.db.global.sod.dbCompiledLang = l10n:GetUILocale()
+        Questie.db.global.sod.dbCompiledSchemaVersion = QuestieDBCompiler.compiledSchemaVersion
         Questie.db.global.sod.dbIsCompiled = true
         Questie.db.global.sod.dbCompiledCount = (Questie.db.global.sod.dbCompiledCount or 0) + 1
     else
         Questie.db.global.dbCompiledOnVersion = QuestieLib:GetAddonVersionString()
         Questie.db.global.dbCompiledLang = l10n:GetUILocale()
+        Questie.db.global.dbCompiledSchemaVersion = QuestieDBCompiler.compiledSchemaVersion
         Questie.db.global.dbIsCompiled = true
         Questie.db.global.dbCompiledCount = (Questie.db.global.dbCompiledCount or 0) + 1
     end

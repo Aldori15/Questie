@@ -191,15 +191,17 @@ QuestieInit.Stages[1] = function() -- run as a coroutine
 
     local dbCompiled = false
 
-    local dbIsCompiled, dbCompiledOnVersion, dbCompiledLang
+    local dbIsCompiled, dbCompiledOnVersion, dbCompiledLang, dbCompiledSchemaVersion
     if Questie.IsSoD then
         dbIsCompiled = Questie.db.global.sod.dbIsCompiled or false
         dbCompiledOnVersion = Questie.db.global.sod.dbCompiledOnVersion
         dbCompiledLang = Questie.db.global.sod.dbCompiledLang
+        dbCompiledSchemaVersion = Questie.db.global.sod.dbCompiledSchemaVersion
     else
         dbIsCompiled = Questie.db.global.dbIsCompiled or false
         dbCompiledOnVersion = Questie.db.global.dbCompiledOnVersion
         dbCompiledLang = Questie.db.global.dbCompiledLang
+        dbCompiledSchemaVersion = Questie.db.global.dbCompiledSchemaVersion
     end
 
     if Questie.IsSoD then
@@ -208,7 +210,7 @@ QuestieInit.Stages[1] = function() -- run as a coroutine
     end
 
     -- Check if the DB needs to be recompiled
-    if (not dbIsCompiled) or (QuestieLib:GetAddonVersionString() ~= dbCompiledOnVersion) or (l10n:GetUILocale() ~= dbCompiledLang) or (Questie.db.global.dbCompiledExpansion ~= WOW_PROJECT_ID) then
+    if (not dbIsCompiled) or (QuestieLib:GetAddonVersionString() ~= dbCompiledOnVersion) or (l10n:GetUILocale() ~= dbCompiledLang) or (dbCompiledSchemaVersion ~= QuestieDBCompiler.compiledSchemaVersion) or (Questie.db.global.dbCompiledExpansion ~= WOW_PROJECT_ID) then
         print("\124cFFAAEEFF" .. l10n("Questie DB has updated!") .. "\124r\124cFFFF6F22 " .. l10n("Data is being processed, this may take a few moments and cause some lag..."))
         loadFullDatabase()
         QuestieDBCompiler:Compile()
