@@ -1156,6 +1156,16 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
         end
     end
 
+    local requiredLevel = QuestieDB.QueryQuestSingle(questId, "requiredLevel")
+    if (requiredLevel and (UnitLevel("player") < requiredLevel)) then
+        local msg = "Player level is too low for quest " .. questId
+        if returnText and returnBrief then
+            return l10n("Ineligible")..l10n(": ")..l10n("Level too low")
+        elseif returnText and not returnBrief then
+            return msg
+        end
+    end
+
     if returnText then
         if IsQuestFlaggedCompleted(questId) then
             if returnBrief then
