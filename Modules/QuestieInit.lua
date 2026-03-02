@@ -81,6 +81,8 @@ local WorldMapButton = QuestieLoader:ImportModule("WorldMapButton")
 local AvailableQuests = QuestieLoader:ImportModule("AvailableQuests")
 ---@type SeasonOfDiscovery
 local SeasonOfDiscovery = QuestieLoader:ImportModule("SeasonOfDiscovery")
+---@type QuestieAnnounce
+local QuestieAnnounce = QuestieLoader:ImportModule("QuestieAnnounce")
 
 --- COMPATIBILITY ---
 local WOW_PROJECT_ID = QuestieCompat.WOW_PROJECT_ID
@@ -280,6 +282,8 @@ QuestieInit.Stages[3] = function() -- run as a coroutine
     QuestieComms:Initialize()
 
     QuestieSlash.RegisterSlashCommands()
+
+    QuestieAnnounce:InitializeLogoFilter()
 
     coYield()
 

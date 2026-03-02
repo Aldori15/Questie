@@ -4,6 +4,8 @@ local QuestieAnnounce = QuestieLoader:CreateModule("QuestieAnnounce")
 local _QuestieAnnounce = {}
 ---@type QuestieDB
 local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
+---@type QuestieLib
+local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
 ---@type QuestieLink
 local QuestieLink = QuestieLoader:ImportModule("QuestieLink")
 ---@type l10n
@@ -17,6 +19,52 @@ local LE_PARTY_CATEGORY_INSTANCE = QuestieCompat.LE_PARTY_CATEGORY_INSTANCE
 local itemCache = {} -- cache data since this happens on item looted it could happen a lot with auto loot
 
 local alreadySentBandaid = {} -- TODO: rewrite the entire thing its a lost cause
+
+-- === Below code borrowed from ShutUp to implement Questie logo swapping for chat messages ===
+
+-- Compatibility: 2.5.5+ uses ChatFrameUtil.AddMessageEventFilter/RemoveMessageEventFilter instead of ChatFrame_AddMessageEventFilter/RemoveMessageEventFilter
+local ChatFrameAddMessageEventFilter = ChatFrameUtil and ChatFrameUtil.AddMessageEventFilter or ChatFrame_AddMessageEventFilter
+local ChatFrameRemoveMessageEventFilter = ChatFrameUtil and ChatFrameUtil.RemoveMessageEventFilter or ChatFrame_RemoveMessageEventFilter
+
+-- Safe wrapper for ChatFrameAddMessageEventFilter that handles initialization timing issues
+local function SafeAddMessageEventFilter(event, filter)
+    local success, err = pcall(function()
+        ChatFrameAddMessageEventFilter(event, filter)
+    end)
+    if not success then
+        -- If ChatFrameUtil isn't ready yet, retry after a short delay
+        if err and string.find(err, "CreateSecureFiltersArray") then
+            C_Timer.After(0.1, function()
+                SafeAddMessageEventFilter(event, filter)
+            end)
+        else
+            Questie:Error("Failed to register chat filter for", event, ":", err)
+        end
+    end
+end
+
+local pattern = ""
+local chatIconSize = 16
+local chatIconTag = "|T" .. QuestieLib.AddonPath .. "Icons\\questie.blp:" .. chatIconSize .. "|t "
+local chatMarkerPattern = "^%b{} Questie%s?:%s?"
+
+function QuestieAnnounce.LogoFilter(self, event, msg, author, ...)
+    if msg:find(pattern) then
+        return false, gsub(msg, pattern, chatIconTag, 1), author, ...
+    end
+end
+
+function QuestieAnnounce:InitializeLogoFilter()
+    pattern = chatMarkerPattern
+    SafeAddMessageEventFilter("CHAT_MSG_PARTY", QuestieAnnounce.LogoFilter)
+    SafeAddMessageEventFilter("CHAT_MSG_PARTY_LEADER", QuestieAnnounce.LogoFilter)
+    SafeAddMessageEventFilter("CHAT_MSG_RAID", QuestieAnnounce.LogoFilter)
+    SafeAddMessageEventFilter("CHAT_MSG_RAID_LEADER", QuestieAnnounce.LogoFilter)
+    SafeAddMessageEventFilter("CHAT_MSG_INSTANCE_CHAT", QuestieAnnounce.LogoFilter)
+    SafeAddMessageEventFilter("CHAT_MSG_INSTANCE_CHAT_LEADER", QuestieAnnounce.LogoFilter)
+end
+
+-- === End logo swapping code block ===
 
 local _GetAnnounceMarker
 

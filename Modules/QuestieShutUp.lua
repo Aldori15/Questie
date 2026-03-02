@@ -1,20 +1,24 @@
 ---@class QuestieShutUp
 local QuestieShutUp = QuestieLoader:CreateModule("QuestieShutUp")
----@type l10n
-local l10n = QuestieLoader:ImportModule("l10n")
+---@type QuestieLib
+local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
 
 local stringFind = string.find
 local pattern
+local chatIconSize = 16
+local chatIconTag = "|T" .. QuestieLib.AddonPath .. "Icons\\questie.blp:" .. chatIconSize .. "|t "
+local chatMarkerPattern = "^%b{} Questie%s?:%s?"
 
 function QuestieShutUp.FilterFunc(self, event, msg, author, ...)
-    if stringFind(msg, pattern) then
+    -- Filter both legacy raid-marker prefix and icon-prefixed announce messages.
+    if stringFind(msg, pattern) or stringFind(msg, chatIconTag, 1, true) then
         return true
     end
 end
 
 function QuestieShutUp:ToggleFilters(value)
     if value then
-        pattern = "^"..(l10n:GetUILocale() == "ruRU" and "{звезда}" or "{rt1}").." Questie : "
+        pattern = chatMarkerPattern
         Questie:Debug(Questie.DEBUG_DEVELOP, "QuestieShutUp toggle on. Pattern:", pattern)
         ChatFrame_AddMessageEventFilter("CHAT_MSG_PARTY", QuestieShutUp.FilterFunc)
         ChatFrame_AddMessageEventFilter("CHAT_MSG_PARTY_LEADER", QuestieShutUp.FilterFunc)
