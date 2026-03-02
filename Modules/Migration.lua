@@ -100,6 +100,9 @@ local migrationFunctions = {
     [12] = function()
         Questie.db.profile.trackerWidthRatio = 0.20
     end,
+    [13] = function()
+        Questie.db.profile.enableTooltipDroprates = true
+    end,
 }
 
 function Migration:Migrate()

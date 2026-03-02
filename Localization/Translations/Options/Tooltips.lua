@@ -170,6 +170,30 @@ local tooltipOptionsLocales = {
         ["esES"] = "Si está marcado, las siguientes misiones en la cadena se mostrarán en los tooltips de mapa expandidos.",
         ["frFR"] = "Les prochaines quêtes de la série seront affichées dans les infobulles de carte étendue.",
     },
+    ["Show item drop rates"] = {
+        ["enUS"] = true,
+        ["deDE"] = "Zeige Gegenstand-Drop-Rate",
+        ["esES"] = "Mostrar probabilidad de obtención",
+        ["esMX"] = "Mostrar probabilidad de obtención",
+        ["frFR"] = "Afficher les taux d'obtention",
+        ["koKR"] = false,
+        ["ptBR"] = "Mostrar chance de saque",
+        ["ruRU"] = false,
+        ["zhCN"] = false,
+        ["zhTW"] = false,
+    },
+    ["When this is checked, drop rates for quest objectives will show on mob tooltips."] = {
+        ["enUS"] = true,
+        ["deDE"] = "Aktiviert/Deaktiviert die Drop-Rate für Quest-Gegenstände in den Tooltips von Gegnern.",
+        ["esES"] = "Si está activado, la probabilidad de obtención de los objetivos de misión se mostrará en los tooltips de los enemigos.",
+        ["esMX"] = "Si está activado, la probabilidad de obtención de los objetivos de misión se mostrará en los tooltips de los enemigos.",
+        ["frFR"] = "Si cette option est activée, les taux d'obtention des objectifs de quête s'affichent dans les infobulles des ennemis.",
+        ["koKR"] = false,
+        ["ptBR"] = "Se ativado, a chance de saque dos objetivos de missão será mostrada nas dicas dos inimigos.",
+        ["ruRU"] = false,
+        ["zhCN"] = false,
+        ["zhTW"] = false,
+    },
 }
 
 for k, v in pairs(tooltipOptionsLocales) do

@@ -83,6 +83,8 @@ local AvailableQuests = QuestieLoader:ImportModule("AvailableQuests")
 local SeasonOfDiscovery = QuestieLoader:ImportModule("SeasonOfDiscovery")
 ---@type QuestieAnnounce
 local QuestieAnnounce = QuestieLoader:ImportModule("QuestieAnnounce")
+---@type DropDB
+local DropDB = QuestieLoader:ImportModule("DropDB")
 
 --- COMPATIBILITY ---
 local WOW_PROJECT_ID = QuestieCompat.WOW_PROJECT_ID
@@ -277,6 +279,7 @@ QuestieInit.Stages[3] = function() -- run as a coroutine
 
     -- ** OLD ** Questie:ContinueInit() ** START **
     QuestieTooltips:Initialize()
+    DropDB:Initialize()
     QuestieCoords:Initialize()
     TrackerQuestTimers:Initialize()
     QuestieComms:Initialize()
