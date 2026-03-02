@@ -7,6 +7,8 @@ local tinsert = table.insert;
 local QuestieMap = QuestieLoader:ImportModule("QuestieMap")
 ---@type QuestieReputation
 local QuestieReputation = QuestieLoader:ImportModule("QuestieReputation")
+---@type QuestieCorrections
+local QuestieCorrections = QuestieLoader:ImportModule("QuestieCorrections")
 ---@type QuestiePlayer
 local QuestiePlayer = QuestieLoader:ImportModule("QuestiePlayer")
 ---@type QuestieEvent
@@ -268,11 +270,11 @@ function MapIconTooltip:Show()
                 end
 
                 local nextQuestInChain = QuestieDB.QueryQuestSingle(questData.questId, "nextQuestInChain")
-                if shift and nextQuestInChain > 0 and Questie.db.profile.enableTooltipsNextInChain then
+                if shift and nextQuestInChain > 0 and Questie.db.profile.enableTooltipsNextInChain and (not QuestieCorrections.hiddenQuests[nextQuestInChain]) then
                     -- add quest chain info
                     local nextQuest = QuestieDB.GetQuest(nextQuestInChain)
                     local firstInChain = true;
-                    while nextQuest ~= nil do
+                    while nextQuest ~= nil and (not QuestieCorrections.hiddenQuests[nextQuest.Id]) do
 
                         local nextQuestTitleString;
                         local nextQuestXpRewardString = "";
