@@ -2922,6 +2922,8 @@ ZoneDB.private.zoneIDs = {
     NAXXRAMAS = 3456,
     EVERSONG_WOODS = 3430,
     GHOSTLANDS = 3433,
+    NAXXRAMAS = 3456,
+    KARAZHAN = 3457,
     HELLFIRE_PENINSULA = 3483,
     SILVERMOON_CITY = 3487,
     NAGRAND = 3518,
@@ -2955,7 +2957,9 @@ ZoneDB.private.zoneIDs = {
     THE_FROZEN_SEA = 3979,
     SUNWELL_PLATEAU = 4075,
     ISLE_OF_QUEL_DANAS = 4080,
+    THE_CULLING_OF_STRATHOLME = 4100,
     MAGISTERS_TERRACE = 4131,
+    DRAKTHARON_KEEP = 4196,
     UPPER_BLACKROCK_SPIRE = 7307,
     DRAGONBLIGHT = 65,
     ZUL_DRAK = 66,
@@ -3047,6 +3051,39 @@ ZoneDB.private.zoneIDs = {
     -- Fake IDs for Gundrak
     GUNDRAK_UPPER_LEVEL = 4824, --154
     GUNDRAK_LOWER_LEVEL = 4825, --153
+    -- Fake IDs for Blackrock Depths
+    BLACKROCK_DEPTHS_SHADOWFORGE_CITY = 10002, -- 243
+    -- Fake IDs for Naxxramas
+    NAXXRAMAS_CONSTRUCT_QUARTER = 10062, -- 162
+    NAXXRAMAS_ARACHNID_QUARTER = 10063, -- 163
+    NAXXRAMAS_MILITARY_QUARTER = 10064, -- 164
+    NAXXRAMAS_PLAGUE_QUARTER = 10065, -- 165
+    NAXXRAMAS_FROSTWYRM_LAIR = 10066, -- 167
+    -- Fake IDs for Icecrown Citadel
+    ICECROWN_CITADEL_UPPER_SPIRE = 10067, -- 190
+    ICECROWN_CITADEL_QUEEN_LANA_THEL = 10068, -- 191
+    ICECROWN_CITADEL_SINDRAGOSA = 10069, -- 189
+    ICECROWN_CITADEL_RAMPART_OF_SKULLS = 10070, -- 187
+    ICECROWN_CITADEL_DEATHBRINGERS_RISE = 10071, -- 188
+    ICECROWN_CITADEL_THE_FROZEN_THRONE = 10072, -- 192
+    -- Fake IDs for Karazhan
+    KARAZHAN_SERVANTS_QUARTERS = 10102, -- Karazhan - Servant's Quarters 350
+    KARAZHAN_UPPER_LIVERY_STABLES = 10103, -- Karazhan - Upper Livery Stables 351
+    KARAZHAN_THE_BANQUET_HALL = 10104, -- Karazhan - The Banquet Hall 352
+    KARAZHAN_THE_GUEST_CHAMBERS = 10105, -- Karazhan - The Guest Chambers 353
+    KARAZHAN_OPERA_HALL_BALCONY = 10106, -- Karazhan - Opera Hall Balcony 354
+    KARAZHAN_MASTERS_TERRACE = 10107, -- Karazhan - Master's Terrace 355
+    KARAZHAN_LOWER_BROKEN_STAIR = 10108, -- Karazhan - Lower Broken Stair 356
+    KARAZHAN_UPPER_BROKEN_STAIR = 10109, -- Karazhan - Upper Broken Stair 357
+    KARAZHAN_THE_MENAGERIE = 10110, -- Karazhan - The Menagerie 358
+    KARAZHAN_GUARDIANS_LIBRARY = 10111, -- Karazhan - Guardian's Library 359
+    KARAZHAN_THE_REPOSITORY = 10112, -- Karazhan - The Repository 360
+    KARAZHAN_UPPER_LIBRARY = 10113, -- Karazhan - Upper Library 361
+    KARAZHAN_THE_CELESTIAL_WATCH = 10114, -- Karazhan - The Celestial Watch 362
+    KARAZHAN_GAMESMANS_HALL = 10115, -- Karazhan - Gamesman's Hall 363
+    KARAZHAN_MEDIVHS_CHAMBERS = 10116, -- Karazhan - Medivh's Chambers 364
+    KARAZHAN_THE_POWER_STATION = 10117, -- Karazhan - The Power Station 365
+    KARAZHAN_NETHERSPACE = 10118, -- Karazhan - Netherspace 366
     -- Fake IDs for continents
     KALIMDOR = 10073, -- continent map
     EASTERN_KINGDOMS = 10074, -- continent map
