@@ -2812,13 +2812,13 @@ function QuestieQuestFixes:Load()
         [5644] = { -- Devouring Plague (Thunder Bluff)
             [questKeys.startedBy] = {{3044}},
         },
-        [5645] = { -- A Lack of Fear (Stormwind)
+        [5645] = { -- A Lack of Fear (Stormwind City)
             [questKeys.startedBy] = {{376}},
         },
         [5646] = { -- Devouring Plague (Orgrimmar)
             [questKeys.startedBy] = {{6018}},
         },
-        [5647] = { -- A Lack of Fear
+        [5647] = { -- A Lack of Fear (Darnassus)
             [questKeys.startedBy] = {{11401}}, -- #2424
         },
         [5648] = { -- Garments of Spirituality
@@ -3315,6 +3315,7 @@ function QuestieQuestFixes:Load()
         },
         [6661] = {
             [questKeys.objectives] = {{{13016,nil,Questie.ICON_TYPE_INTERACT}}},
+            [questKeys.nextQuestInChain] = 6662,
         },
         [6681] = { -- The Manor, Ravenholdt
             [questKeys.startedBy] = {{332,918,3327,3328,3401,4214,4215,4163,4582,4583,4584,5165,5166,5167},nil,{17126}}, -- #7244

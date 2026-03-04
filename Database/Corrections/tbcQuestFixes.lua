@@ -686,6 +686,24 @@ function QuestieTBCQuestFixes:Load()
         [5640] = { -- Desperate Prayer (Darnassus)
             [questKeys.questLevel] = -1,
         },
+        [5641] = { -- A Lack of Fear (Ironforge)
+            [questKeys.name] = "A Lack of Fear",
+            [questKeys.finishedBy] = {{11406}},
+            [questKeys.requiredRaces] = raceIDs.DWARF,
+            [questKeys.exclusiveTo] = {5645,5647},
+        },
+        [5645] = { -- A Lack of Fear (Stormwind City)
+            [questKeys.name] = "A Lack of Fear",
+            [questKeys.finishedBy] = {{11406}},
+            [questKeys.requiredRaces] = raceIDs.DWARF,
+            [questKeys.exclusiveTo] = {5641,5647},
+        },
+        [5647] = { -- A Lack of Fear (Darnassus)
+            [questKeys.name] = "A Lack of Fear",
+            [questKeys.finishedBy] = {{11406}},
+            [questKeys.requiredRaces] = raceIDs.DWARF,
+            [questKeys.exclusiveTo] = {5641,5645},
+        },
         [5649] = {
             [questKeys.requiredLevel] = 5,
         },
@@ -1493,6 +1511,11 @@ function QuestieTBCQuestFixes:Load()
         },
         [9258] = { -- The Scorched Grove
             [questKeys.breadcrumbForQuestId] = 8473,
+        },
+        [9267] = { -- Mending Old Wounds
+            [questKeys.requiredLevel] = 15,
+            [questKeys.requiredRaces] = raceIDs.NONE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE,
         },
         [9279] = { -- You Survived!
             [questKeys.breadcrumbForQuestId] = 9280,
