@@ -7,6 +7,8 @@ local QuestieLink = QuestieLoader:CreateModule("QuestieLink")
 local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 ---@type QuestieLib
 local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
+---@type QuestieEvent
+local QuestieEvent = QuestieLoader:ImportModule("QuestieEvent")
 ---@type QuestiePlayer
 local QuestiePlayer = QuestieLoader:ImportModule("QuestiePlayer")
 ---@type TrackerUtils
@@ -70,14 +72,7 @@ end
 
 ---@return string
 function QuestieLink:GetQuestLinkString(questLevel, questName, questId)
-    local questLink = GetQuestLink and GetQuestLink(questId)
-    local questString = "["..questName.." ("..tostring(questId)..")]"
-
-    if Questie.db.profile.trackerShowQuestLevel then
-        questString = questString:gsub("%[", "[["..tostring(questLevel).."] ")
-    end
-
-    return questLink and questLink:gsub("%[(.-)%]", questString) or questString
+    return "[["..tostring(questLevel).."] "..questName.." ("..tostring(questId)..")]"
 end
 
 ---@return string
@@ -368,12 +363,13 @@ hooksecurefunc("ChatFrame_OnHyperlinkShow", function(...)
             Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieTooltips:OnHyperlinkShow] Relinking Quest Link to chat:", link)
             questId = tonumber(questId)
 
-            local quest = QuestieDB.GetQuest(questId)
-            if quest then
+            local questLevel = QuestieLib.GetTbcLevel(questId)
+            local questName = QuestieDB.QueryQuestSingle(questId, "name")
+            if questLevel and questName then
                 local msg = ChatFrame1EditBox:GetText()
                 if msg then
                     ChatFrame1EditBox:SetText("")
-                    ChatEdit_InsertLink(QuestieLink:GetQuestLinkString(quest.level, quest.name, questId))
+                    ChatEdit_InsertLink(string.gsub(msg, "%|Hquestie:" .. questId .. ":.*%|h", "%[%[" .. questLevel .. "%] " .. questName .. " %(" .. questId .. "%)%]"))
                 end
             end
         end
