@@ -9,8 +9,13 @@ local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 local ZoneDB = QuestieLoader:ImportModule("ZoneDB")
 ---@type QuestieProfessions
 local QuestieProfessions = QuestieLoader:ImportModule("QuestieProfessions")
+---@type QuestieCorrections
+local QuestieCorrections = QuestieLoader:ImportModule("QuestieCorrections")
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
+
+QuestieCorrections.itemObjectiveFirst[503] = true
+QuestieCorrections.itemObjectiveFirst[5088] = true
 
 -- Further information on how to use this can be found at the wiki
 -- https://github.com/Questie/Questie/wiki/Corrections
@@ -616,6 +621,9 @@ function QuestieQuestFixes:Load()
             [questKeys.parentQuest] = 924, -- #806
             [questKeys.preQuestSingle] = {809}, -- #606
         },
+        [927] = { -- The Moss-twined Heart
+            [questKeys.nextQuestInChain] = 941,
+        },
         [930] = {
             [questKeys.preQuestSingle] = {918}, -- #971
         },
@@ -1183,17 +1191,17 @@ function QuestieQuestFixes:Load()
             [questKeys.objectives] = {{{6090}}},
             [questKeys.preQuestSingle] = {1639,1678,1683},
         },
-        [1641] = { -- This is repeatable giving an item starting 1642
-            [questKeys.exclusiveTo] = {1642,1646,2997,2998,2999,3000,3681},
+        [1641] = { -- The Tome of Divininty (Stormwind)
+            [questKeys.exclusiveTo] = {1642},
         },
-        [1642] = {
-            [questKeys.exclusiveTo] = {1646,2997,2998,2999,3000,3681},
+        [1642] = { -- The Tome of Divinity (Stormwind)
+            [questKeys.preQuestSingle] = {},
         },
-        [1645] = { -- This is repeatable giving an item starting 1646
-            [questKeys.exclusiveTo] = {1642,1646,2997,2998,2999,3000,3681},
+        [1645] = { -- The Tome of Divinity (Ironforge)
+            [questKeys.exclusiveTo] = {1646},
         },
-        [1646] = {
-            [questKeys.exclusiveTo] = {1642,2997,2998,2999,3000,3681},
+        [1646] = { -- The Tome of Divinity (Ironforge)
+            [questKeys.preQuestSingle] = {},
         },
         [1651] = {
             [questKeys.triggerEnd] = {"Protect Daphne Stilwell", {[zoneIDs.WESTFALL]={{42.15,88.44}}}},
@@ -1325,11 +1333,13 @@ function QuestieQuestFixes:Load()
             [questKeys.preQuestSingle] = {},
             [questKeys.breadcrumbs] = {1798},
         },
-        [1789] = {
-            [questKeys.exclusiveTo] = {1785},
+        [1789] = { -- The Symbol of Life (Ironforge)
+            [questKeys.exclusiveTo] = {1784},
+            [questKeys.preQuestSingle] = {1779},
         },
-        [1790] = {
-            [questKeys.exclusiveTo] = {1788},
+        [1790] = { -- The Symbol of Life (Stormwind)
+            [questKeys.exclusiveTo] = {1787},
+            [questKeys.preQuestSingle] = {1781},
         },
         [1793] = {
             [questKeys.exclusiveTo] = {1649},
@@ -1873,17 +1883,21 @@ function QuestieQuestFixes:Load()
             [questKeys.nextQuestInChain] = 1801,
             [questKeys.breadcrumbForQuestId] = 1801,
         },
-        [2997] = {
-            [questKeys.exclusiveTo] = {1642,1646,2998,2999,3000,3681},
+        [2997] = { -- Tome of Divinity (Dun Morogh)
+            [questKeys.exclusiveTo] = {1646,2999,3000},
+            [questKeys.nextQuestInChain] = 0,
         },
-        [2998] = {
-            [questKeys.exclusiveTo] = {1642,1646,2997,2998,3000,3681},
+        [2998] = { -- Tome of Divinity (Elwynn Forest)
+            [questKeys.exclusiveTo] = {1642,3681},
+            [questKeys.nextQuestInChain] = 0,
         },
-        [2999] = {
-            [questKeys.exclusiveTo] = {1642,1646,2997,2998,3000,3681},
+        [2999] = { -- Tome of Divinity (Ironforge)
+            [questKeys.exclusiveTo] = {1646,2997,3000},
+            [questKeys.nextQuestInChain] = 0,
         },
-        [3000] = {
-            [questKeys.exclusiveTo] = {1642,1646,2997,2998,2999,3681},
+        [3000] = { -- Tome of Divinity (Stormwind)
+            [questKeys.exclusiveTo] = {1646,2997,2999},
+            [questKeys.nextQuestInChain] = 0,
         },
         [3001] = {
             [questKeys.nextQuestInChain] = 1801,
@@ -2015,8 +2029,9 @@ function QuestieQuestFixes:Load()
             [questKeys.finishedBy] = {{7944}},
             [questKeys.requiredSpecialization] = specKeys.ENGINEERING_GNOMISH,
         },
-        [3681] = {
-            [questKeys.exclusiveTo] = {1642,1646,2997,2998,2999,3000},
+        [3681] = { -- Tome of Divinity (Ironforge)
+            [questKeys.exclusiveTo] = {1642,2998},
+            [questKeys.nextQuestInChain] = 0,
         },
         [3702] = {
             [questKeys.objectives] = {{{8879,nil,Questie.ICON_TYPE_TALK}}},
@@ -2632,6 +2647,9 @@ function QuestieQuestFixes:Load()
         [5321] = {
             [questKeys.triggerEnd] = {"Escort Kerlonian Evershade to Maestra's Post", {[zoneIDs.ASHENVALE]={{26.77,36.91}}}},
         },
+        [5386] = { -- Catch of the Day
+            [questKeys.childQuests] = {},
+        },
         [5402] = {
             [questKeys.preQuestSingle] = {5401,5503,5405},
             [questKeys.requiredRaces] = raceIDs.NONE,
@@ -2660,7 +2678,8 @@ function QuestieQuestFixes:Load()
             [questKeys.preQuestSingle] = {5401,5503,5405},
             [questKeys.requiredRaces] = raceIDs.NONE,
         },
-        [5421] = {
+        [5421] = { -- Fish in a Bucket
+            [questKeys.parentQuest] = 0,
             [questKeys.questLevel] = 25,
         },
         [5441] = { -- Lazy Peons
@@ -2701,10 +2720,10 @@ function QuestieQuestFixes:Load()
             [questKeys.preQuestSingle] = {},
             [questKeys.breadcrumbs] = {5622},
         },
-        [5622] = {
+        [5622] = { -- In Favor of Elune
             [questKeys.breadcrumbForQuestId] = 5621,
         },
-        [5623] = {
+        [5623] = { -- In Favor of the Light
             [questKeys.breadcrumbForQuestId] = 5624,
         },
         [5624] = { -- Garments of the Light
@@ -2717,32 +2736,61 @@ function QuestieQuestFixes:Load()
             [questKeys.preQuestSingle] = {},
             [questKeys.breadcrumbs] = {5626},
         },
-        [5626] = {
+        [5626] = { -- In Favor of the Light
             [questKeys.breadcrumbForQuestId] = 5625,
         },
-        [5634] = {
+        [5627] = { -- Stars of Elune (Darnassus)
+            [questKeys.exclusiveTo] = {5628,5629,5630,5631,5632,5633},
+        },
+        [5628] = { -- Returning Home (Elwynn Forest)
+            [questKeys.exclusiveTo] = {5627,5629,5630,5631,5632,5633},
+            [questKeys.nextQuestInChain] = 0,
+        },
+        [5629] = { -- Returning Home (Teldrassil)
+            [questKeys.exclusiveTo] = {5627,5628,5630,5631,5632,5633},
+            [questKeys.nextQuestInChain] = 0,
+        },
+        [5630] = { -- Returning Home (Dun Morogh)
+            [questKeys.exclusiveTo] = {5627,5628,5629,5631,5632,5633},
+            [questKeys.nextQuestInChain] = 0,
+        },
+        [5631] = { -- Returning Home (Stormwind City)
+            [questKeys.startedBy] = {{376}},
+            [questKeys.exclusiveTo] = {5627,5628,5629,5630,5632,5633},
+            [questKeys.nextQuestInChain] = 0,
+        },
+        [5632] = { -- Returning Home (Stormwind City)
+            [questKeys.exclusiveTo] = {5627,5628,5629,5630,5631,5633},
+            [questKeys.nextQuestInChain] = 0,
+        },
+        [5633] = { -- Returning Home (Ironforge)
+            [questKeys.startedBy] = {{11406}},
+            [questKeys.exclusiveTo] = {5627,5628,5629,5630,5631,5632},
+            [questKeys.nextQuestInChain] = 0,
+        },
+        [5634] = { -- Desperate Prayer (Stormwind City)
             [questKeys.startedBy] = {{376}},
             [questKeys.objectivesText] = {},
             [questKeys.exclusiveTo] = {5635,5636,5637,5638,5639,5640},
         },
-        [5635] = {
+        [5635] = { -- Desperate Prayer (Elwynn Forest)
             [questKeys.startedBy] = {{377}},
             [questKeys.exclusiveTo] = {5634,5636,5637,5638,5639,5640},
         },
-        [5636] = {
+        [5636] = { -- Desperate Prayer (Teldrassil)
             [questKeys.exclusiveTo] = {5634,5635,5637,5638,5639,5640},
         },
-        [5637] = {
+        [5637] = { -- Desperate Prayer (Dun Morogh)
             [questKeys.startedBy] = {{1226}},
             [questKeys.exclusiveTo] = {5634,5635,5636,5638,5639,5640},
         },
-        [5638] = {
+        [5638] = { -- Desperate Prayer (Stormwind City)
             [questKeys.exclusiveTo] = {5634,5635,5636,5637,5639,5640},
         },
         [5639] = { -- Desperate Prayer (Ironforge)
             [questKeys.exclusiveTo] = {5634,5635,5636,5637,5638,5640},
         },
-        [5640] = {
+        [5640] = { -- Desperate Prayer (Darnassus)
             [questKeys.name] = "Desperate Prayer",
             [questKeys.startedBy] = {{11401}},
             [questKeys.finishedBy] = {{376}},
@@ -2754,7 +2802,7 @@ function QuestieQuestFixes:Load()
             [questKeys.exclusiveTo] = {5634,5635,5636,5637,5638,5639},
             [questKeys.zoneOrSort] = sortKeys.PRIEST,
         },
-        [5641] = { -- Fear Ward (Ironforge)
+        [5641] = { -- A Lack of Fear (Ironforge)
             [questKeys.startedBy] = {{11406}},
             [questKeys.objectivesText] = {},
         },
@@ -2764,13 +2812,13 @@ function QuestieQuestFixes:Load()
         [5644] = { -- Devouring Plague (Thunder Bluff)
             [questKeys.startedBy] = {{3044}},
         },
-        [5645] = { -- Fear Ward (Stormwind)
+        [5645] = { -- A Lack of Fear (Stormwind)
             [questKeys.startedBy] = {{376}},
         },
         [5646] = { -- Devouring Plague (Orgrimmar)
             [questKeys.startedBy] = {{6018}},
         },
-        [5647] = {
+        [5647] = { -- A Lack of Fear
             [questKeys.startedBy] = {{11401}}, -- #2424
         },
         [5648] = { -- Garments of Spirituality
@@ -2778,7 +2826,7 @@ function QuestieQuestFixes:Load()
             [questKeys.preQuestSingle] = {},
             [questKeys.breadcrumbs] = {5649},
         },
-        [5649] = {
+        [5649] = { -- In Favor of Spirituality
             [questKeys.breadcrumbForQuestId] = 5648,
         },
         [5650] = { -- Garments of Darkness
@@ -2786,7 +2834,7 @@ function QuestieQuestFixes:Load()
             [questKeys.preQuestSingle] = {},
             [questKeys.breadcrumbs] = {5651},
         },
-        [5651] = {
+        [5651] = { -- In Favor of Darkness
             [questKeys.breadcrumbForQuestId] = 5650,
         },
         [5652] = { -- Hex of Weakness (Orgrimmar)
@@ -2804,29 +2852,29 @@ function QuestieQuestFixes:Load()
         [5657] = { -- Hex of Weakness (Undercity)
             [questKeys.startedBy] = {{4606}},
         },
-        [5658] = { -- #7083 and #1603 Touch of Weakness (Undercity)
+        [5658] = { -- Touch of Weakness (Undercity)
             [questKeys.startedBy] = {{4606}},
             [questKeys.objectivesText] = {},
         },
-        [5661] = { -- #7083 and #1603 Touch of Weakness (Mulgore)
+        [5661] = { -- Touch of Weakness (Mulgore)
             [questKeys.startedBy] = {{11407}},
         },
-        [5663] = { -- #7083 and #1603 Touch of Weakness (Thunder Bluff)
+        [5663] = { -- Touch of Weakness (Thunder Bluff)
             [questKeys.startedBy] = {{3044}},
         },
         [5672] = { -- Elune's Grace (Darnassus)
             [questKeys.startedBy] = {{11401}},
             [questKeys.objectivesText] = {},
         },
-        [5676] = { -- Feedback (Stormwind)
+        [5676] = { -- Arcane Feedback (Stormwind)
             [questKeys.startedBy] = {{376}},
             [questKeys.exclusiveTo] = {5677,5678},
             [questKeys.objectivesText] = {},
         },
-        [5677] = { -- Feedback (Ironforge)
+        [5677] = { -- Arcane Feedback (Ironforge)
             [questKeys.exclusiveTo] = {5676,5678},
         },
-        [5678] = { -- Feedback (Darnassus)
+        [5678] = { -- Arcane Feedback (Darnassus)
             [questKeys.name] = "Arcane Feedback",
             [questKeys.startedBy] = {{11401}},
             [questKeys.finishedBy] = {{376}},

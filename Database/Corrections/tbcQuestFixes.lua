@@ -546,6 +546,7 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.triggerEnd] = {"Find Magus Rimtori's camp", {[zoneIDs.AZSHARA]={{59.29,31.21}}}},
         },
         [3631] = {
+            [questKeys.name] = "Summon Felsteed",
             [questKeys.startedBy] = {{3326}},
             [questKeys.finishedBy] = {{6251}},
             [questKeys.requiredRaces] = raceIDs.ORC + raceIDs.UNDEAD + raceIDs.BLOOD_ELF,
@@ -566,19 +567,23 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.startedBy] = {}, -- Hiding via startedBy because the quest does not exist in TBC, but does in Era
         },
         [4487] = {
+            [questKeys.name] = "Summon Felsteed",
             [questKeys.startedBy] = {{5172}},
             [questKeys.finishedBy] = {{6251}},
         },
         [4488] = {
+            [questKeys.name] = "Summon Felsteed",
             [questKeys.startedBy] = {{461}},
             [questKeys.finishedBy] = {{6251}},
         },
         [4489] = {
+            [questKeys.name] = "Summon Felsteed",
             [questKeys.startedBy] = {{4563}},
             [questKeys.finishedBy] = {{6251}},
             [questKeys.requiredRaces] = raceIDs.ORC + raceIDs.UNDEAD + raceIDs.BLOOD_ELF,
         },
         [4490] = {
+            [questKeys.name] = "Summon Felsteed",
             [questKeys.startedBy] = {{6251}},
             [questKeys.finishedBy] = {{6251}},
             [questKeys.requiredRaces] = raceIDs.NONE,
@@ -615,9 +620,6 @@ function QuestieTBCQuestFixes:Load()
         [5168] = {
             [questKeys.preQuestSingle] = {5210},
         },
-        [5386] = { -- Catch of the Day
-            [questKeys.childQuests] = {},
-        },
         [5401] = {
             [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
             [questKeys.exclusiveTo] = {5405,5503},
@@ -626,14 +628,63 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.exclusiveTo] = {5401,5503},
         },
-        [5421] = { -- Fish in a Bucket
-            [questKeys.parentQuest] = 0,
-        },
         [5502] = {
             [questKeys.questLevel] = -1,
         },
         [5503] = {
             [questKeys.exclusiveTo] = {5401,5405},
+        },
+        [5621] = { -- Garments of the Moon
+            [questKeys.requiredLevel] = 5,
+        },
+        [5622] = { -- In Favor of Elune
+            [questKeys.requiredLevel] = 5,
+        },
+        [5627] = { -- Stars of Elune (Darnassus)
+            [questKeys.name] = "Stars of Elune",
+            [questKeys.startedBy] = {{11401}},
+            [questKeys.finishedBy] = {{11401}},
+        },
+        [5628] = { -- Returning Home (Elwynn Forest)
+            [questKeys.questLevel] = -1,
+        },
+        [5629] = { -- Returning Home (Teldrassil)
+            [questKeys.questLevel] = -1,
+        },
+        [5630] = { -- Returning Home (Dun Morogh)
+            [questKeys.questLevel] = -1,
+        },
+        [5631] = { -- Returning Home (Stormwind City)
+            [questKeys.questLevel] = -1,
+        },
+        [5632] = { -- Returning Home (Stormwind City)
+            [questKeys.questLevel] = -1,
+            [questKeys.finishedBy] = {{11401}},
+        },
+        [5633] = { -- Returning Home (Ironforge)
+            [questKeys.questLevel] = -1,
+            [questKeys.finishedBy] = {{11401}},
+        },
+        [5634] = { -- Desperate Prayer (Stormwind City)
+            [questKeys.questLevel] = -1,
+        },
+        [5635] = { -- Desperate Prayer (Elwynn Forest)
+            [questKeys.questLevel] = -1,
+        },
+        [5636] = { -- Desperate Prayer (Teldrassil)
+            [questKeys.questLevel] = -1,
+        },
+        [5637] = { -- Desperate Prayer (Dun Morogh)
+            [questKeys.questLevel] = -1,
+        },
+        [5638] = { -- Desperate Prayer (Stormwind City)
+            [questKeys.questLevel] = -1,
+        },
+        [5639] = { -- Desperate Prayer (Ironforge)
+            [questKeys.questLevel] = -1,
+        },
+        [5640] = { -- Desperate Prayer (Darnassus)
+            [questKeys.questLevel] = -1,
         },
         [5649] = {
             [questKeys.requiredLevel] = 5,
@@ -849,6 +900,9 @@ function QuestieTBCQuestFixes:Load()
         },
         [8410] = {
             [questKeys.startedBy] = {{3032,13417,20407,23127,},nil,nil,},
+        },
+        [8411] = { -- Mastering the Elements
+            [questKeys.name] = "Mastering the Elements",
         },
         [8412] = {
             [questKeys.requiredRaces] = raceIDs.NONE,
@@ -1746,12 +1800,11 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.preQuestSingle] = {9544},
         },
         [9564] = {
-            [questKeys.startedBy] = {nil,nil,{23850}},
             [questKeys.preQuestSingle] = {9559},
         },
         [9565] = {
             [questKeys.preQuestGroup] = {},
-            [questKeys.preQuestSingle] = {9560,9562}, -- check if also 9564
+            [questKeys.preQuestSingle] = {9560,9562}, -- without 9564
         },
         [9570] = { -- The Kurken is Lurkin'
             [questKeys.preQuestSingle] = {9565,9573},
@@ -1760,7 +1813,7 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.zoneOrSort] = zoneIDs.HELLFIRE_CITADEL,
         },
         [9573] = {
-            [questKeys.preQuestSingle] = {9560,9562}, -- check if also 9564
+            [questKeys.preQuestSingle] = {9560,9562}, -- without 9564
         },
         [9575] = { -- Weaken the Ramparts
             [questKeys.zoneOrSort] = zoneIDs.HELLFIRE_CITADEL,
@@ -1773,6 +1826,10 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.requiredSourceItems] = {},
             [questKeys.exclusiveTo] = {1678,1683,1639},
             [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_OBJECT, l10n("Open the cage"), 0, {{"object", 181849}}}},
+        },
+        [9586] = { -- Help Tavara
+            [questKeys.objectives] = {{{17551,nil,Questie.ICON_TYPE_INTERACT}}},
+            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
         },
         [9587] = {
             [questKeys.startedBy] = {nil,nil,{23890}},
@@ -1832,6 +1889,10 @@ function QuestieTBCQuestFixes:Load()
         [9619] = {
             [questKeys.requiredSourceItems] = {},
         },
+        [9622] = { -- Warn Your People
+            [questKeys.preQuestSingle] = {},
+            [questKeys.preQuestGroup] = {9566,9570},
+        },
         [9625] = { -- Elekks Are Serious Business
             [questKeys.nextQuestInChain] = 0,
         },
@@ -1868,6 +1929,9 @@ function QuestieTBCQuestFixes:Load()
         [9645] = {
             [questKeys.triggerEnd] = {"Journal Entry Read", {[3457]={{-1,-1}}}},
             [questKeys.zoneOrSort] = zoneIDs.KARAZHAN,
+        },
+        [9647] = { -- Culling the Flutterers
+            [questKeys.preQuestSingle] = {9580,9643}, -- check if 9643 is correct
         },
         [9648] = { -- Mac'Aree Mushroom Menagerie
             [questKeys.name] = "Maatparm Mushroom Menagerie",
@@ -3102,7 +3166,8 @@ function QuestieTBCQuestFixes:Load()
         [10687] = {
             [questKeys.preQuestSingle] = {10552},
         },
-        [10707] = {
+        [10707] = { -- The Ata'mal Terrace
+            [questKeys.objectivesText] = {"Go to the top of the Ata'mal Terrace in Shadowmoon Valley and obtain the Heart of Fury. Return to Akama at the Warden's Cage in Shadowmoon Valley when you've completed this task."},
             [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_EVENT, l10n("Kill the 3 Shadowmoon Soulstealers to force Shadowlord Deathwail to land"), 0, {{"object", 185125}}}},
         },
         [10708] = {
@@ -3627,7 +3692,11 @@ function QuestieTBCQuestFixes:Load()
         [11007] = {
             [questKeys.startedBy] = {nil,nil,{32405}},
         },
+        [11009] = { -- Ogre Heaven
+            [questKeys.breadcrumbs] = {11022},
+        },
         [11010] = {
+            [questKeys.requiredLevel] = 70,
             [questKeys.requiredClasses] = classIDs.WARLOCK + classIDs.ROGUE + classIDs.MAGE + classIDs.PRIEST + classIDs.WARRIOR + classIDs.PALADIN + classIDs.HUNTER + classIDs.SHAMAN,
             [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_SLAY, l10n("Use the Skyguard Bombs to destroy 15 Fel Cannonball Stacks"), 0, {{"object", 185861}}}},
         },
@@ -3664,6 +3733,9 @@ function QuestieTBCQuestFixes:Load()
         [11021] = {
             [questKeys.preQuestSingle] = {11004},
             [questKeys.startedBy] = {nil,nil,{32523}},
+        },
+        [11022] = { -- Speak with Mog'dorg
+            [questKeys.breadcrumbForQuestId] = 11009,
         },
         [11023] = {
             [questKeys.requiredLevel] = 70,
@@ -3759,7 +3831,9 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.objectives] = {nil,nil,nil,nil,{{{20557,22195,22291,19973,22204,22304,23174},20557}}},
         },
         [11052] = {
+            [questKeys.name] = "Akama's Promise",
             [questKeys.exclusiveTo] = {10708},
+            [questKeys.startedBy] = {{21700}},
             [questKeys.finishedBy] = {{18481}},
         },
         [11057] = {
@@ -3810,6 +3884,9 @@ function QuestieTBCQuestFixes:Load()
         [11071] = {
             [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {{{23348,nil,Questie.ICON_TYPE_EVENT}}},
+        },
+        [11072] = { -- Adversarial Blood
+            [questKeys.name] = "Adversarial Blood",
         },
         [11073] = {
             [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_EVENT, l10n("Use a Time-Lost offering to summon Terokk"), 0, {{"object", 185928}}}},
@@ -3899,6 +3976,7 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.triggerEnd] = {"Dragonmaw Forces Defeated", {[zoneIDs.SHADOWMOON_VALLEY]={{56.87,58.18},{64.27,31.01}}}},
         },
         [11102] = {
+            [questKeys.requiredLevel] = 70,
             [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_SLAY, l10n("Use the Skyguard Bombs to destroy 15 Fel Cannonball Stacks"), 0, {{"object", 185861}}}},
         },
         [11103] = {
@@ -3974,9 +4052,12 @@ function QuestieTBCQuestFixes:Load()
         [11152] = {
             [questKeys.objectives] = {nil,{{186322,nil,Questie.ICON_TYPE_EVENT}}},
         },
-        [11159] = {
+        [11159] = { -- Spirits of Stonemaul Hold
             [questKeys.preQuestSingle] = {11161},
-            [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_EVENT, l10n("Redeem Remains"), 0, {{"object", 186332}}}},
+            [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_OBJECT, l10n("Redeem Remains"), 0, {{"object", 186332}}}},
+        },
+        [11161] = { -- The Essence of Enmity
+            [questKeys.nextQuestInChain] = 11159,
         },
         [11162] = {
             [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_EVENT, l10n("Plant the Stonemaul Banner"), 0, {{"object", 186336}}}},
