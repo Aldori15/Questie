@@ -704,8 +704,54 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.requiredRaces] = raceIDs.DWARF,
             [questKeys.exclusiveTo] = {5641,5645},
         },
-        [5649] = {
+        [5648] = { -- Garments of Spirituality
             [questKeys.requiredLevel] = 5,
+        },
+        [5649] = { -- In Favor of Spirituality
+            [questKeys.requiredLevel] = 5,
+        },
+        [5650] = { -- Garments of Darkness
+            [questKeys.requiredLevel] = 5,
+        },
+        [5651] = { -- In Favor of Darkness
+            [questKeys.requiredLevel] = 5,
+        },
+        [5658] = { -- Touch of Weakness (Undercity)
+            [questKeys.questLevel] = -1,
+            [questKeys.exclusiveTo] = {5660,5661,5662,5663},
+        },
+        [5660] = { -- Touch of Weakness (Durotar)
+            [questKeys.questLevel] = -1,
+            [questKeys.exclusiveTo] = {5658,5661,5662,5663},
+        },
+        [5661] = { -- Touch of Weakness (Mulgore)
+            [questKeys.questLevel] = -1,
+            [questKeys.exclusiveTo] = {5658,5660,5662,5663},
+        },
+        [5662] = { -- Touch of Weakness (Orgrimmar)
+            [questKeys.questLevel] = -1,
+            [questKeys.exclusiveTo] = {5658,5660,5661,5663},
+        },
+        [5663] = { -- Touch of Weakness (Thunder Bluff)
+            [questKeys.questLevel] = -1,
+            [questKeys.exclusiveTo] = {5658,5660,5661,5662},
+        },
+        [5672] = { -- Elune's Grace (Darnassus)
+            [questKeys.questLevel] = -1,
+            [questKeys.exclusiveTo] = {5673,5674,5675},
+        },
+        [5673] = { -- Elune's Grace (Stormwind City)
+            [questKeys.questLevel] = -1,
+            [questKeys.exclusiveTo] = {5672,5674,5675},
+        },
+        [5674] = { -- Elune's Grace (Stormwind City)
+            [questKeys.finishedBy] = {{11401}},
+            [questKeys.questLevel] = -1,
+            [questKeys.exclusiveTo] = {5672,5673,5675},
+        },
+        [5675] = { -- Elune's Grace (Ironforge)
+            [questKeys.questLevel] = -1,
+            [questKeys.exclusiveTo] = {5672,5673,5674},
         },
         [5726] = { -- Hidden Enemies
             [questKeys.nextQuestInChain] = 5727,
@@ -986,6 +1032,9 @@ function QuestieTBCQuestFixes:Load()
         },
         [8562] = { -- Conqueror's Breastplate
             [questKeys.preQuestSingle] = {8579},
+        },
+        [8564] = { -- Priest Training
+            [questKeys.requiredRaces] = raceIDs.BLOOD_ELF,
         },
         [8572] = {
             [questKeys.specialFlags] = specialFlags.REPEATABLE,
