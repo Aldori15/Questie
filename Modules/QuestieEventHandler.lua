@@ -52,10 +52,23 @@ local UnitInParty = QuestieCompat.UnitInParty
 
 local questAcceptedMessage = string.gsub(ERR_QUEST_ACCEPTED_S, "(%%s)", "(.+)")
 local questCompletedMessage = string.gsub(ERR_QUEST_COMPLETE_S, "(%%s)", "(.+)")
+local criteriaUpdateQueued
 
 --* Calculated in _EventHandler:PlayerLogin()
 ---en/br/es/fr/gb/it/mx: "You are now %s with %s." (e.g. "You are now Honored with Stormwind."), all other languages are very alike
 local FACTION_STANDING_CHANGED_PATTERN
+
+local function _HasTrackedAchievements()
+    if not (Questie and Questie.db and Questie.db.char and Questie.db.char.trackedAchievementIds) then
+        return false
+    end
+
+    for _ in pairs(Questie.db.char.trackedAchievementIds) do
+        return true
+    end
+
+    return false
+end
 
 function QuestieEventHandler:RegisterEarlyEvents()
     Questie:RegisterEvent("PLAYER_LOGIN", _EventHandler.PlayerLogin)
@@ -151,14 +164,26 @@ function QuestieEventHandler:RegisterLateEvents()
             end)
         end)
 
-        --[[ TODO: This fires FAR too often. Until Blizzard figures out a way to allow us to trigger achievement updates this needs to remain disabled for now.
         Questie:RegisterEvent("CRITERIA_UPDATE", function()
             Questie:Debug(Questie.DEBUG_DEVELOP, "[EVENT] CRITERIA_UPDATE")
-            QuestieCombatQueue:Queue(function()
-                QuestieTracker:Update()
+            if (not Questie.db.profile.trackerEnabled) or (not _HasTrackedAchievements()) then
+                return
+            end
+
+            -- This event can fire rapidly while criteria are being evaluated. Queue one delayed update so
+            -- tracker objectives refresh once criteria state has settled.
+            if criteriaUpdateQueued then
+                return
+            end
+
+            criteriaUpdateQueued = true
+            C_Timer.After(0.1, function()
+                criteriaUpdateQueued = nil
+                QuestieCombatQueue:Queue(function()
+                    QuestieTracker:Update()
+                end)
             end)
         end)
-        --]]
         -- Money based Achievement updates
         Questie:RegisterEvent("CHAT_MSG_MONEY", function()
             Questie:Debug(Questie.DEBUG_DEVELOP, "[EVENT] CHAT_MSG_MONEY")
@@ -326,7 +351,7 @@ function _EventHandler:MapExplorationUpdated()
     end
 
     -- Exploratory based Achievement updates
-    if Questie.IsWotlk then
+    if Questie.IsWotlk or QuestieCompat.Is335 then
         QuestieCombatQueue:Queue(function()
             QuestieTracker:Update()
         end)
