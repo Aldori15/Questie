@@ -214,46 +214,26 @@ function QuestieOptions.tabs.advanced:Initialize()
             questieReset = {
                 type = "execute",
                 order = 4.2,
-                name = function() return l10n('Reset Questie'); end,
-                desc = function() return l10n('Reset Questie to the default values for all settings.'); end,
-                func = function (_, _)
-                    -- update all values to default
-                    for k,v in pairs(optionsDefaults.profile) do
-                       Questie.db.profile[k] = v
-                    end
-
-                    -- only toggle questie if it's off (must be called before resetting the value)
-                    if (not Questie.db.profile.enabled) then
-                        Questie.db.profile.enabled = true
-                        --QuestieQuest:ToggleNotes(true);
-                    end
-
-                    Questie.db.profile.enabled = optionsDefaults.profile.enabled;
-                    Questie.db.profile.lowLevelStyle = optionsDefaults.profile.lowLevelStyle;
-
-                    Questie.db.profile.migrationVersion = nil
-
-                    Questie.db.profile.minimap.hide = optionsDefaults.profile.minimap.hide;
-
-                    if Questie.IsSoD then
-                        Questie.db.global.sod.dbIsCompiled = false
-                    else
-                        Questie.db.global.dbIsCompiled = false
-                    end
-
-                    Questie.db.char.hidden = nil
-                    Questie.db.char.hiddenDailies = optionsDefaults.char.hiddenDailies;
-
-                    Questie.db.global.unavailableQuestsDeterminedByTalking = {}
-
-                    ReloadUI()
-
+                name = function() return l10n("Reset Questie"); end,
+                desc = function() return l10n("Reset Questie to the default values for all settings."); end,
+                func = function()
+                    StaticPopup_Show("QUESTIE_RESET_CONFIRM")
                 end,
             },
             Spacer_E = QuestieOptionsUtils:Spacer(4.3),
-            recompileDatabase = {
+            questieJourneyReset = {
                 type = "execute",
                 order = 4.4,
+                name = function() return l10n("Reset Questie Journey"); end,
+                desc = function() return l10n("Clear the Journey of the current character"); end,
+                func = function(_,_)
+                    StaticPopup_Show("QUESTIE_JOURNEY_RESET_CONFIRM")
+                end,
+            },
+            Spacer_E = QuestieOptionsUtils:Spacer(4.5),
+            recompileDatabase = {
+                type = "execute",
+                order = 4.6,
                 name = function() return l10n('Recompile Database'); end,
                 desc = function() return l10n('Forces a recompile of the Questie database. This will also reload the UI.'); end,
                 func = function (_, _)
@@ -265,17 +245,17 @@ function QuestieOptions.tabs.advanced:Initialize()
                     ReloadUI()
                 end,
             },
-            Spacer_F = QuestieOptionsUtils:Spacer(4.5),
+            Spacer_F = QuestieOptionsUtils:Spacer(4.7),
             openProfiler = {
                 type = "execute",
-                order = 4.6,
+                order = 4.8,
                 name = function() return l10n('Open Profiler'); end,
                 desc = function() return l10n('Open the Questie profiler, this is useful for tracking down the source of lag / frame spikes.'); end,
                 func = function (_, _)
                     QuestieLoader:ImportModule("Profiler"):Start()
                 end,
             },
-            Spacer_G = QuestieOptionsUtils:Spacer(4.7),
+            Spacer_G = QuestieOptionsUtils:Spacer(4.9),
             github_text = {
                 type = "description",
                 order = 4.8,
@@ -419,6 +399,74 @@ function QuestieOptions.tabs.advanced:Initialize()
         },
     }
 end
+
+StaticPopupDialogs["QUESTIE_RESET_CONFIRM"] = {
+    text = "",
+    button1 = YES,
+    button2 = NO,
+    OnAccept = function(self)
+        for k,v in pairs(optionsDefaults.profile) do
+            Questie.db.profile[k] = v
+        end
+
+        if (not Questie.db.profile.enabled) then
+            Questie.db.profile.enabled = true
+        end
+
+        Questie.db.profile.enabled = optionsDefaults.profile.enabled
+        Questie.db.profile.lowLevelStyle = optionsDefaults.profile.lowLevelStyle
+        Questie.db.profile.migrationVersion = nil
+        Questie.db.profile.minimap.hide = optionsDefaults.profile.minimap.hide
+
+        if Questie.IsSoD then
+            Questie.db.global.sod.dbIsCompiled = false
+        else
+            Questie.db.global.dbIsCompiled = false
+        end
+
+        Questie.db.char.hidden = nil
+        Questie.db.char.hiddenDailies = optionsDefaults.char.hiddenDailies
+        Questie.db.global.unavailableQuestsDeterminedByTalking = {}
+
+        ReloadUI()
+    end,
+    OnShow = function(self)
+        local confirmText = l10n("Are you sure you want to reset Questie to default settings?")
+        local textField = self.text or self.Text
+        if textField then
+            textField:SetText(confirmText)
+        end
+        self:SetFrameStrata("FULLSCREEN_DIALOG")
+        self:Raise()
+    end,
+    timeout = 0,
+    whileDead = true,
+    hideOnEscape = true,
+    preferredIndex = 3,
+}
+
+StaticPopupDialogs["QUESTIE_JOURNEY_RESET_CONFIRM"] = {
+    text = "", -- we set it in OnShow
+    button1 = YES,
+    button2 = NO,
+    OnAccept = function(self)
+        Questie.db.char.journey = nil
+        ReloadUI()
+    end,
+    OnShow = function(self)
+        local confirmText = l10n("Are you sure you want to reset the Questie Journey for this character?")
+        local textField = self.text or self.Text
+        if textField then
+            textField:SetText(confirmText)
+        end
+        self:SetFrameStrata("FULLSCREEN_DIALOG")
+        self:Raise()
+    end,
+    timeout = 0,
+    whileDead = true,
+    hideOnEscape = true,
+    preferredIndex = 3,
+}
 
 _GetLanguages = function()
     local languages = {
