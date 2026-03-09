@@ -15,6 +15,8 @@ local QuestiePlayer = QuestieLoader:ImportModule("QuestiePlayer")
 local TrackerUtils = QuestieLoader:ImportModule("TrackerUtils")
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
+---@type ZoneDB
+local ZoneDB = QuestieLoader:ImportModule("ZoneDB")
 
 --- COMPATIBILITY ---
 local GetQuestLink = QuestieCompat.GetQuestLink
@@ -24,7 +26,7 @@ local CALENDAR_FULLDATE_MONTH_NAMES = QuestieCompat.CALENDAR_FULLDATE_MONTH_NAME
 QuestieLink.lastItemRefTooltip = ""
 
 -- Forward declaration
-local _AddQuestTitle, _AddQuestStatus, _AddQuestDescription, _AddQuestRequirements, _GetQuestStarter, _GetQuestFinisher, _AddPlayerQuestProgress
+local _AddQuestTitle, _AddQuestStatus, _AddQuestDescription, _AddQuestRequirements, _AddDungeonInfo, _GetQuestStarter, _GetQuestFinisher, _AddPlayerQuestProgress
 local _AddTooltipLine, _AddColoredTooltipLine
 
 
@@ -103,6 +105,7 @@ function QuestieLink:CreateQuestTooltip(link)
             _AddTooltipLine(" ")
 
             _AddQuestDescription(quest)
+            _AddDungeonInfo(quest)
             _AddQuestRequirements(quest)
             local starterName, starterZoneName = _GetQuestStarter(quest)
             local finisherName, finisherZoneName = _GetQuestFinisher(quest)
@@ -186,6 +189,18 @@ _AddQuestDescription = function (quest)
     end
 end
 
+---@param quest Quest
+_AddDungeonInfo = function(quest)
+    local zoneOrSort = quest.zoneOrSort
+    if zoneOrSort and zoneOrSort > 0 then
+        local localizedDungeonName = ZoneDB:GetLocalizedDungeonName(zoneOrSort)
+        if localizedDungeonName then
+            _AddTooltipLine(" ")
+            _AddColoredTooltipLine(l10n("Dungeon") .. l10n(": ") .. localizedDungeonName, "gray")
+        end
+    end
+end
+
 _AddQuestRequirements = function (quest)
     if #quest.ObjectiveData > 0 and not (QuestiePlayer.currentQuestlog[quest.Id] or Questie.db.char.complete[quest.Id]) then
         for i = 1, #quest.ObjectiveData do
@@ -262,7 +277,7 @@ _GetQuestStarter = function (quest)
             end
         end
 
-        return starterName, starterZoneName
+        return starterName, l10n(starterZoneName)
     end
 
     return nil, nil
@@ -293,7 +308,7 @@ _GetQuestFinisher = function (quest)
             finisherZoneName = TrackerUtils:GetZoneNameByID(quest.zoneOrSort)
         end
 
-        return finisherName, finisherZoneName
+        return finisherName, l10n(finisherZoneName)
     end
 
     return nil, nil

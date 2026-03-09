@@ -37,6 +37,11 @@ local subZoneToParentZone = ZoneDB.private.subZoneToParentZone or {}
 ---Zone ids enum
 ZoneDB.zoneIDs = ZoneDB.private.zoneIDs or {}
 
+-- Generated from alternativeAreaId in dungeons
+-- [alternativeDungeonAreaId] = dungeonZone
+---@type table<AreaId, AreaId>
+local alternativeDungeonAreaIdToDungeonAreaId = {}
+
 
 -- Overrides for UiMapId to AreaId
 local UiMapIdOverrides = {
@@ -52,6 +57,13 @@ function ZoneDB:Initialize()
     -- Run tests if debug enabled
     if Questie.db.profile.debugEnabled then
         _ZoneDB:RunTests()
+    end
+
+    for areaId, dungeonZoneEntry in pairs(dungeons) do
+        local alternativeDungeonZone = dungeonZoneEntry[2]
+        if alternativeDungeonZone then
+            alternativeDungeonAreaIdToDungeonAreaId[alternativeDungeonZone] = areaId
+        end
     end
 end
 
@@ -122,8 +134,40 @@ end
 
 
 ---@param areaId AreaId
+---@return AreaCoordinate?
 function ZoneDB:GetDungeonLocation(areaId)
-    return dungeonLocations[areaId]
+    local dungeon = dungeons[areaId]
+    if dungeon then
+        return dungeon[4]
+    else
+        local alternativeDungeonAreaId = alternativeDungeonAreaIdToDungeonAreaId[areaId]
+        if alternativeDungeonAreaId then
+            return dungeons[alternativeDungeonAreaId][4]
+        end
+    end
+    return nil
+end
+
+---@param areaId AreaId
+---@return string?
+function ZoneDB:GetLocalizedDungeonName(areaId)
+    local dungeon = dungeons[areaId]
+    local dungeonName
+    if dungeon then
+        dungeonName = dungeon[1]
+    else
+        local alternativeDungeonAreaId = alternativeDungeonAreaIdToDungeonAreaId[areaId]
+        if alternativeDungeonAreaId then
+            areaId = alternativeDungeonAreaId
+            dungeonName = dungeons[alternativeDungeonAreaId][1]
+        end
+    end
+
+    if dungeonName then
+        -- The Questie DB has an entry for the area being a dungeon. We still prefer the Blizzard name if found.
+        return C_Map.GetAreaInfo(areaId) or dungeonName
+    end
+    return nil
 end
 
 ---@param areaId AreaId
