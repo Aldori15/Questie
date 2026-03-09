@@ -718,7 +718,6 @@ function QuestieQuestFixes:Load()
         },
         [1011] = {
             [questKeys.preQuestSingle] = {},
-            [questKeys.breadcrumbs] = {4581},
         },
         [1015] = {
             [questKeys.exclusiveTo] = {1047,1019},
@@ -1481,7 +1480,7 @@ function QuestieQuestFixes:Load()
             [questKeys.startedBy] = {{328,1228,7312}},
             [questKeys.breadcrumbForQuestId] = 1920, -- #1328
         },
-        [1920] = {
+        [1920] = { -- Investigate the Blue Recluse
             [questKeys.preQuestSingle] = {},
             [questKeys.breadcrumbs] = {1919}, -- #1328
             [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_EVENT, l10n("Use Cantation of Manifestation to reveal Rift Spawn. Use Chest of Containment Coffers on stunned Rift Spawn"), 0, {{"monster", 6492}}}},
@@ -1693,6 +1692,9 @@ function QuestieQuestFixes:Load()
         },
         [2744] = {
             [questKeys.objectives] = {{{7783,nil,Questie.ICON_TYPE_TALK}}},
+        },
+        [2746] = { -- Items of Some Consequence
+            [questKeys.nextQuestInChain] = 434,
         },
         [2755] = {
             [questKeys.objectives] = {{{7790,nil,Questie.ICON_TYPE_EVENT}}},
@@ -2306,10 +2308,6 @@ function QuestieQuestFixes:Load()
         [4542] = {
             [questKeys.breadcrumbForQuestId] = 4841,
         },
-        [4581] = {
-            [questKeys.nextQuestInChain] = 1011,
-            [questKeys.breadcrumbForQuestId] = 1011,
-        },
         [4601] = {
             [questKeys.exclusiveTo] = {2951,4602},
         },
@@ -2827,7 +2825,7 @@ function QuestieQuestFixes:Load()
             [questKeys.startedBy] = {{11401}}, -- #2424
         },
         [5648] = { -- Garments of Spirituality
-            [questKeys.objectives] = {{{12427,nil,Questie.ICON_TYPE_INTERACT}}},
+            [questKeys.objectives] = {{{12430,nil,Questie.ICON_TYPE_INTERACT}}},
             [questKeys.preQuestSingle] = {},
             [questKeys.breadcrumbs] = {5649},
         },
@@ -2874,7 +2872,7 @@ function QuestieQuestFixes:Load()
         [5674] = { -- Elune's Grace (Stormwind City)
             [questKeys.startedBy] = {{11397}},
         },
-        [5676] = { -- Arcane Feedback (Stormwind)
+        [5676] = { -- Arcane Feedback (Stormwind City)
             [questKeys.startedBy] = {{376}},
             [questKeys.exclusiveTo] = {5677,5678},
             [questKeys.objectivesText] = {},
@@ -3167,14 +3165,14 @@ function QuestieQuestFixes:Load()
             [questKeys.questFlags] = 0,
             [questKeys.specialFlags] = 0,
         },
-        [6132] = {
-            [questKeys.triggerEnd] = {"Melizza Brimbuzzle escorted to safety", {[zoneIDs.DESOLACE]={{40.15,61.58}}}},
-        },
         [6124] = { -- Curing the Sick
             [questKeys.objectives] = {{{12298,nil,Questie.ICON_TYPE_INTERACT}}},
         },
         [6129] = { -- Curing the Sick
             [questKeys.objectives] = {{{12296,nil,Questie.ICON_TYPE_INTERACT}}},
+        },
+        [6132] = {
+            [questKeys.triggerEnd] = {"Melizza Brimbuzzle escorted to safety", {[zoneIDs.DESOLACE]={{40.15,61.58}}}},
         },
         [6134] = {
             [questKeys.extraObjectives] = {{{[zoneIDs.DESOLACE]={{63.71,91.9}}}, Questie.ICON_TYPE_EVENT, l10n("Place the Crate of Ghost Magnets"),}},
@@ -3970,7 +3968,7 @@ function QuestieQuestFixes:Load()
         [8251] = {
             [questKeys.preQuestSingle] = {},
         },
-        [8254] = {
+        [8254] = { -- Cenarion Aid
             [questKeys.startedBy] = {{5489,6018,11406}},
         },
         [8258] = {
@@ -5672,7 +5670,7 @@ function QuestieQuestFixes:LoadFactionFixes()
             [questKeys.startedBy] = {{5753,5815}},
             [questKeys.requiredRaces] = raceIDs.NONE,
         },
-        [8254] = {
+        [8254] = { -- Cenarion Aid
             [questKeys.startedBy] = {{6018}},
         },
         [8928] = {
@@ -5724,7 +5722,7 @@ function QuestieQuestFixes:LoadFactionFixes()
             [questKeys.startedBy] = {{5520,6382}},
             [questKeys.requiredRaces] = raceIDs.NONE,
         },
-        [8254] = {
+        [8254] = { -- Cenarion Aid
             [questKeys.startedBy] = {{5489,11406}},
         },
         [8928] = {

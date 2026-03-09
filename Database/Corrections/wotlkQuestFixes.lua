@@ -331,6 +331,9 @@ function QuestieWotlkQuestFixes:Load()
         [5721] = {
             [questKeys.extraObjectives] = {{{[zoneIDs.EASTERN_PLAGUELANDS]={{35.01,84.05}}}, Questie.ICON_TYPE_EVENT, l10n("Place the Relic Bundle in the Town Square."),}},
         },
+        [6070] = { -- The Hunter's Path
+            [questKeys.finishedBy] = {{3171}},
+        },
         [6185] = {
             [questKeys.triggerEnd] = {"The Blightcaller Uncovered", {[zoneIDs.EASTERN_PLAGUELANDS]={{23.4,67.8}}}},
         },
@@ -521,8 +524,14 @@ function QuestieWotlkQuestFixes:Load()
         [9460] = { -- Combining Forces
             [questKeys.requiredRaces] = raceIDs.BLOOD_ELF,
         },
+        [9461] = { -- Call of Fire
+            [questKeys.requiredRaces] = raceIDs.DRAENEI,
+        },
         [9491] = { -- Greed
             [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
+        },
+        [9502] = { -- Call of Water
+            [questKeys.requiredRaces] = raceIDs.DRAENEI,
         },
         [9532] = { -- Find Keltus Darkleaf
             [questKeys.requiredRaces] = raceIDs.BLOOD_ELF,

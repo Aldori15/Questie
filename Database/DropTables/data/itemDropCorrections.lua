@@ -34,6 +34,27 @@ local DropKeys = DropDB.correctionKeys
   -- regardless of whatever data exists in the Wotlk pserver DB.
 
 QuestieItemDropCorrections.Era = {
+    [725] = { -- Gnoll Paw
+        [98] = DropKeys.WOWHEAD,
+        [117] = DropKeys.WOWHEAD,
+        [123] = DropKeys.WOWHEAD,
+        [124] = DropKeys.WOWHEAD,
+        [125] = DropKeys.WOWHEAD,
+        [452] = DropKeys.WOWHEAD,
+        [453] = DropKeys.WOWHEAD,
+        [500] = DropKeys.WOWHEAD,
+        [501] = DropKeys.WOWHEAD,
+        [506] = DropKeys.WOWHEAD,
+        [1065] = DropKeys.WOWHEAD,
+        [1426] = DropKeys.WOWHEAD,
+    },
+    [829] = { -- Red Leather Bandana
+        [95] = DropKeys.WOWHEAD,
+        [502] = DropKeys.WOWHEAD,
+        [504] = DropKeys.WOWHEAD,
+        [589] = DropKeys.WOWHEAD,
+        [590] = DropKeys.WOWHEAD,
+    },
     [884] = { -- Ghoul Rib
         [3] = DropKeys.WOWHEAD,
         [210] = DropKeys.WOWHEAD,
@@ -73,6 +94,11 @@ QuestieItemDropCorrections.Era = {
     [1598] = { -- Rot Blossom
         [202] = DropKeys.WOWHEAD,
         [531] = DropKeys.WOWHEAD,
+    },
+    [1894] = { -- Miners' Union Card
+        [623] = DropKeys.WOWHEAD,
+        [624] = DropKeys.WOWHEAD,
+        [625] = DropKeys.WOWHEAD,
     },
     [2378] = { -- Skeleton Finger
         [48] = DropKeys.WOWHEAD,
@@ -190,6 +216,9 @@ QuestieItemDropCorrections.Tbc = {
     },
     [23706] = { -- Arcane Fragment
         [16339] = 100,
+    },
+    [23733] = { -- Ritual Torch
+        [17189] = 80,
     },
     [23849] = { -- Stillpine Grain
         [17190] = DropKeys.WOWHEAD,
