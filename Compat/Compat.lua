@@ -774,7 +774,18 @@ function QuestieCompat.GetQuestLink(questId)
 end
 
 function QuestieCompat:GetQuestLinkString(questLevel, questName, questId)
-	return QuestieCompat.GetQuestLink(questId) or "[["..tostring(questLevel).."] "..questName.." ("..tostring(questId)..")]"
+	local questLink = QuestieCompat.GetQuestLink(questId)
+	if questLink then
+		return questLink
+	end
+
+	local numericQuestId = tonumber(questId)
+	if numericQuestId and questName then
+		local numericQuestLevel = tonumber(questLevel) or -1
+		return string.format("|cffffff00|Hquest:%d:%d|h[%s]|h|r", numericQuestId, numericQuestLevel, questName)
+	end
+
+	return "[["..tostring(questLevel).."] "..tostring(questName).." ("..tostring(questId)..")]"
 end
 
 function QuestieCompat:GetQuestLinkStringById(questId)
