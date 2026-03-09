@@ -1160,7 +1160,7 @@ end
 QuestieCompat.IsSpellKnownOrOverridesKnown = IsSpellKnown
 QuestieCompat.IsPlayerSpell = IsSpellKnown
 
-local LARGE_NUMBER_SEPERATOR = ".";
+local LARGE_NUMBER_SEPERATOR = ",";
 function QuestieCompat.FormatLargeNumber(amount)
 	amount = tostring(amount);
 	local newDisplay = "";
