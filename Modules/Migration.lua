@@ -103,6 +103,15 @@ local migrationFunctions = {
     [13] = function()
         Questie.db.profile.enableTooltipDroprates = true
     end,
+    [14] = function()
+        local _, playerClass = UnitClass("player")
+        if playerClass == "ROGUE" and Questie.db.profile.townsfolkConfig["Reagents"] then
+            Questie.db.profile.townsfolkConfig["Reagents"] = false
+            Questie.db.profile.townsfolkConfig["Poisons"] = true
+        else
+            Questie.db.profile.townsfolkConfig["Poisons"] = false
+        end
+    end,
 }
 
 function Migration:Migrate()

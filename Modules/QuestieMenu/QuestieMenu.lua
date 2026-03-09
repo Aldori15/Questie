@@ -33,8 +33,6 @@ local C_Timer = QuestieCompat.C_Timer
 
 local LibDropDown = QuestieCompat.LibUIDropDownMenu or LibStub:GetLibrary("LibUIDropDownMenuQuestie-4.0")
 
-local _, playerClass = UnitClass("player")
-
 local tinsert = tinsert
 
 local professionKeys = QuestieProfessions.professionKeys
@@ -55,12 +53,8 @@ local _townsfolk_texturemap = {
     ["Food"] = 133964,--select(10, GetItemInfo(4540)) -- bread
     ["Pet Food"] = 132165,--select(3, GetSpellInfo(6991)) -- feed pet
     ["Portal Trainer"] = "Interface\\Minimap\\vehicle-alliancemageportal",
-    ["Reagents"] = (function()
-        if playerClass == "ROGUE" then
-            return "Interface\\Minimap\\tracking\\poisons"
-        end
-        return "Interface\\Minimap\\tracking\\reagents"
-    end)(),
+    ["Reagents"] = QuestieLib.AddonPath.."Icons\\reagents.blp",
+    ["Poisons"] = "Interface\\Minimap\\tracking\\poisons",
     [professionKeys.FIRST_AID] = "Interface\\Icons\\spell_holy_sealofsacrifice",
     [professionKeys.BLACKSMITHING] = "Interface\\Icons\\trade_blacksmithing",
     [professionKeys.LEATHERWORKING] = "Interface\\Icons\\trade_leatherworking",

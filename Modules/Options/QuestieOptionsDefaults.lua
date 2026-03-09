@@ -175,6 +175,7 @@ function QuestieOptionsDefaults:Load()
                 ["Auctioneer"] = false,
                 ["Meeting Stones"] = true,
                 ["Reagents"] = false,
+                ["Poisons"] = false,
             },
 
             -- Migration
