@@ -366,12 +366,9 @@ function _QuestieJourney.questsByFaction:ManageTree(container, factionTree)
         questId = tonumber(questId)
         local quest = QuestieDB.GetQuest(questId)
 
+        -- Add the quest to the open chat window if it was a shift click
         if (IsModifiedClick("CHATLINK") and ChatEdit_GetActiveWindow()) then
-            if Questie.db.profile.trackerShowQuestLevel then
-                ChatEdit_InsertLink(QuestieLink:GetQuestLinkString(quest.level, quest.name, quest.Id))
-            else
-                ChatEdit_InsertLink("[" .. quest.name .. " (" .. quest.Id .. ")]")
-            end
+            ChatEdit_InsertLink(QuestieLink:GetQuestLinkString(quest.level, quest.name, quest.Id))
         end
 
         _QuestieJourney:DrawQuestDetailsFrame(scrollFrame, quest)
