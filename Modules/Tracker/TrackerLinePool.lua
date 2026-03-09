@@ -1011,7 +1011,7 @@ TrackerLinePool.OnClickQuest = function(self, button)
         end
     elseif TrackerUtils:IsBindTrue(Questie.db.profile.trackerbindUntrack, button) then
         if (IsModifiedClick("CHATLINK") and ChatEdit_GetActiveWindow()) then
-            ChatEdit_InsertLink(QuestieLink:GetQuestLinkString(self.Quest.level, self.Quest.name, self.Quest.Id))
+            ChatEdit_InsertLink(QuestieLink:GetQuestInsertString(self.Quest.level, self.Quest.name, self.Quest.Id))
         else
             QuestieTracker:UntrackQuestId(self.Quest.Id)
             local questLogFrame = QuestLogExFrame or ClassicQuestLog or QuestLogFrame

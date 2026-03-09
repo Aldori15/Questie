@@ -31,6 +31,7 @@ local _AddQuestTitle, _AddQuestStatus, _AddQuestDescription, _AddQuestRequiremen
 local _AddTooltipLine, _AddColoredTooltipLine
 local _GetQuestIdFromLink
 local _ExtractQuestieLink, _ShowQuestieChatTooltip, _HideQuestieChatTooltip, _HookChatFrameHyperlinkScripts
+local _ShouldInsertQuestIdForChatCommand
 
 
 local oldItemSetHyperlink = ItemRefTooltip.SetHyperlink
@@ -79,6 +80,30 @@ end
 ---@return string
 function QuestieLink:GetQuestLinkString(questLevel, questName, questId)
     return "[["..tostring(questLevel).."] "..questName.." ("..tostring(questId)..")]"
+end
+
+_ShouldInsertQuestIdForChatCommand = function()
+    local activeWindow = ChatEdit_GetActiveWindow()
+    if (not activeWindow) then
+        return false
+    end
+
+    local text = activeWindow:GetText()
+    return type(text) == "string" and string.match(text, "^%s*[./!]") ~= nil
+end
+
+---@return string
+function QuestieLink:GetQuestInsertString(questLevel, questName, questId)
+    if _ShouldInsertQuestIdForChatCommand() then
+        local nativeQuestLink = GetQuestLink(questId)
+        if nativeQuestLink then
+            return nativeQuestLink
+        end
+
+        return tostring(questId)
+    end
+
+    return QuestieLink:GetQuestLinkString(questLevel, questName, questId)
 end
 
 ---@return string
@@ -474,8 +499,11 @@ hooksecurefunc("ChatFrame_OnHyperlinkShow", function(...)
             if questLevel and questName then
                 local msg = ChatFrame1EditBox:GetText()
                 if msg then
+                    local replacement = QuestieLink:GetQuestInsertString(questLevel, questName, questId)
                     ChatFrame1EditBox:SetText("")
-                    ChatEdit_InsertLink(string.gsub(msg, "%|Hquestie:" .. questId .. ":.*%|h", "%[%[" .. questLevel .. "%] " .. questName .. " %(" .. questId .. "%)%]"))
+                    ChatEdit_InsertLink(string.gsub(msg, "%|Hquestie:" .. questId .. ":.*%|h", function()
+                        return replacement
+                    end))
                 end
             end
         end

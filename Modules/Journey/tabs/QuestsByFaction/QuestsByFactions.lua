@@ -368,7 +368,7 @@ function _QuestieJourney.questsByFaction:ManageTree(container, factionTree)
 
         -- Add the quest to the open chat window if it was a shift click
         if (IsModifiedClick("CHATLINK") and ChatEdit_GetActiveWindow()) then
-            ChatEdit_InsertLink(QuestieLink:GetQuestLinkString(quest.level, quest.name, quest.Id))
+            ChatEdit_InsertLink(QuestieLink:GetQuestInsertString(quest.level, quest.name, quest.Id))
         end
 
         _QuestieJourney:DrawQuestDetailsFrame(scrollFrame, quest)
