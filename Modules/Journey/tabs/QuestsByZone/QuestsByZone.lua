@@ -22,6 +22,8 @@ local QuestieProfessions = QuestieLoader:ImportModule("QuestieProfessions")
 local l10n = QuestieLoader:ImportModule("l10n")
 
 local AceGUI = LibStub("AceGUI-3.0")
+local IsSpellKnownOrOverridesKnown = QuestieCompat.IsSpellKnownOrOverridesKnown
+local IsPlayerSpell = QuestieCompat.IsPlayerSpell
 local zoneTreeFrame
 
 ---Restore the previously selected quest in the zone tree
@@ -277,7 +279,7 @@ function _QuestieJourney.questsByZone:CategorizeQuests(quests)
 
                 -- Exclusive quests will never be available since another quests permanently blocks them.
                 -- Marking them as complete should be the most satisfying solution for user
-                if (nextQuestInChain and Questie.db.char.complete[nextQuestInChain]) or (exclusiveTo and QuestieDB:IsExclusiveQuestInQuestLogOrComplete(exclusiveTo)) then
+                if (nextQuestInChain ~= 0 and Questie.db.char.complete[nextQuestInChain]) or (exclusiveTo and QuestieDB:IsExclusiveQuestInQuestLogOrComplete(exclusiveTo)) then
                     tinsert(zoneTree[4].children, temp)
                     completedCounter = completedCounter + 1
                 -- The parent quest has been completed
@@ -290,7 +292,7 @@ function _QuestieJourney.questsByZone:CategorizeQuests(quests)
                     unobtainableQuestIds[questId] = true
                     unobtainableCounter = unobtainableCounter + 1
                 -- Profession specialization
-                elseif (not QuestieProfessions.HasSpecialization(requiredSpecialization)) then
+                elseif (not QuestieProfessions:HasSpecialization(requiredSpecialization)) then
                     tinsert(zoneTree[6].children, temp)
                     unobtainableCounter = unobtainableCounter + 1
                 -- Required profession not learned or skill level not reached
@@ -338,7 +340,7 @@ function _QuestieJourney.questsByZone:CategorizeQuests(quests)
                     tinsert(zoneTree[6].children, temp)
                     unobtainableCounter = unobtainableCounter + 1
                 -- Event quests where the event is not currently active
-                elseif QuestieEvent.IsEventQuest(questId) and not QuestieEvent.IsEventActiveForQuest(questId) then
+                elseif QuestieEvent:IsEventQuest(questId) and not QuestieEvent:IsEventActiveForQuest(questId) then
                     tinsert(zoneTree[6].children, temp)
                     unobtainableCounter = unobtainableCounter + 1
                 -- AQ War Effort quests (one-time world event that has ended for all realms)

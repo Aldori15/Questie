@@ -28,6 +28,7 @@ local l10n = QuestieLoader:ImportModule("l10n")
 
 local AceGUI = LibStub("AceGUI-3.0")
 local IsSpellKnownOrOverridesKnown = QuestieCompat.IsSpellKnownOrOverridesKnown
+local IsPlayerSpell = QuestieCompat.IsPlayerSpell
 
 local factionTreeFrame
 local factionQuestMap
@@ -279,7 +280,7 @@ function _EnsureFactionQuestData()
 
         if _IsQuestAvailableToPlayer(requiredRaces, requiredClasses) then
             -- Filter out hidden quests
-            if hiddenQuests and (((not hiddenQuests[questId]) or hiddenQuests[questId] == HIDE_ON_MAP) or QuestieEvent.IsEventQuest(questId)) then
+            if hiddenQuests and (((not hiddenQuests[questId]) or hiddenQuests[questId] == HIDE_ON_MAP) or QuestieEvent:IsEventQuest(questId)) then
                 if requiredMinRep then
                     _AddQuestToFaction(requiredMinRep[1], questId)
                 end
@@ -499,26 +500,34 @@ function _QuestieJourney.questsByFaction:CollectFactionQuests(factionId)
                 local requiredSkill = queryResult[11]
                 local requiredLevel = queryResult[12]
 
+                -- Required profession not learned or skill level not reached
                 if requiredSkill then
                     local hasProfession, hasSkillLevel = QuestieProfessions:HasProfessionAndSkillLevel(requiredSkill)
                     if (not (hasProfession and hasSkillLevel)) then
                         tinsert(factionTree[6].children, temp)
                         unobtainableCounter = unobtainableCounter + 1
                     end
+                -- Exclusive quests will never be available since another quests permanently blocks them.
+                -- Marking them as complete should be the most satisfying solution for user
                 elseif (nextQuestInChain ~= 0 and Questie.db.char.complete[nextQuestInChain]) or (exclusiveTo and QuestieDB:IsExclusiveQuestInQuestLogOrComplete(exclusiveTo)) then
                     tinsert(factionTree[4].children, temp)
                     completedCounter = completedCounter + 1
+                -- The parent quest has been completed
                 elseif parentQuest and Questie.db.char.complete[parentQuest] then
                     tinsert(factionTree[4].children, temp)
                     completedCounter = completedCounter + 1
-                elseif not QuestieReputation.HasReputation(requiredMinRep, requiredMaxRep) then
+                -- Unoptainable reputation quests
+                elseif not QuestieReputation:HasReputation(requiredMinRep, requiredMaxRep) then
                     tinsert(factionTree[6].children, temp)
                     unobtainableQuestIds[questId] = true
                     unobtainableCounter = unobtainableCounter + 1
-                elseif (not QuestieProfessions.HasSpecialization(requiredSpecialization)) then
+                -- Profession specialization
+                elseif (not QuestieProfessions:HasSpecialization(requiredSpecialization)) then
                     tinsert(factionTree[6].children, temp)
                     unobtainableCounter = unobtainableCounter + 1
+                -- A single pre Quest is missing
                 elseif not QuestieDB:IsPreQuestSingleFulfilled(preQuestSingle) then
+                    -- The pre Quest is unobtainable therefore this quest is it as well
                     if unobtainableQuestIds[preQuestSingle] ~= nil then
                         tinsert(factionTree[6].children, temp)
                         unobtainableQuestIds[questId] = true
@@ -527,6 +536,7 @@ function _QuestieJourney.questsByFaction:CollectFactionQuests(factionId)
                         tinsert(factionTree[3].children, temp)
                         prequestMissingCounter = prequestMissingCounter + 1
                     end
+                -- Multiple pre Quests are missing
                 elseif not QuestieDB:IsPreQuestGroupFulfilled(preQuestGroup) then
                     local hasUnobtainablePreQuest = false
                     for _, preQuestId in pairs(preQuestGroup) do
@@ -543,21 +553,27 @@ function _QuestieJourney.questsByFaction:CollectFactionQuests(factionId)
                         tinsert(factionTree[3].children, temp)
                         prequestMissingCounter = prequestMissingCounter + 1
                     end
+                -- Quests which you have outleveled
                 elseif requiredMaxLevel and requiredMaxLevel ~= 0 and playerlevel > requiredMaxLevel then
                     tinsert(factionTree[6].children, temp)
                     unobtainableCounter = unobtainableCounter + 1
+                -- Quests which you are too low level for
                 elseif requiredLevel and requiredLevel > playerlevel then
                     tinsert(factionTree[6].children, temp)
                     unobtainableCounter = unobtainableCounter + 1
+                -- Repeatable quests
                 elseif QuestieDB.IsRepeatable(questId) then
                     tinsert(factionTree[5].children, temp)
                     repeatableCounter = repeatableCounter + 1
+                -- Quests which require you to NOT have learned a spell
                 elseif requiredSpell and requiredSpell < 0 and (IsSpellKnownOrOverridesKnown(math.abs(requiredSpell)) or IsPlayerSpell(math.abs(requiredSpell))) then
                     tinsert(factionTree[6].children, temp)
                     unobtainableCounter = unobtainableCounter + 1
+                -- Quests which require you to HAVE learned a spell
                 elseif requiredSpell and requiredSpell > 0 and not (IsSpellKnownOrOverridesKnown(math.abs(requiredSpell)) or IsPlayerSpell(math.abs(requiredSpell))) then
                     tinsert(factionTree[6].children, temp)
                     unobtainableCounter = unobtainableCounter + 1
+                -- Available quests
                 else
                     tinsert(factionTree[2].children, temp)
                     availableCounter = availableCounter + 1

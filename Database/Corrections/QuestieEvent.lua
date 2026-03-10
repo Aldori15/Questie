@@ -312,6 +312,12 @@ function QuestieEvent:IsEventQuest(questId)
     return _QuestieEvent.eventNamesForQuests[questId] ~= nil
 end
 
+---@param questId QuestId
+---@return boolean @True if the quest is part of an event and the event is currently active, false otherwise
+function QuestieEvent:IsEventActiveForQuest(questId)
+    return QuestieEvent.activeQuests[questId] == true
+end
+
 -- EUROPEAN FORMAT! NO FUCKING AMERICAN SHIDAZZLE FORMAT!
 QuestieEvent.eventDates = {
     ["Lunar Festival"] = { -- WARNING THIS DATE VARIES!!!!
