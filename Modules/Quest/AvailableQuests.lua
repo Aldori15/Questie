@@ -620,17 +620,6 @@ _GetIconScaleForAvailable = function()
     return Questie.db.profile.availableScale or 1.3
 end
 
-_MarkQuestAsUnavailableFromNPC = function(questId)
-    local quest = QuestieDB.GetQuest(questId)
-    if quest then
-        for _, npcId in pairs(quest.Starts.NPC or {}) do
-            if availableQuestsByNpc[npcId] then
-                availableQuestsByNpc[npcId][questId] = nil
-            end
-        end
-    end
-end
-
 ---@param questId QuestId
 ---@param npcId NpcId
 _MarkQuestAsUnavailableFromNPC = function(questId, npcId)
