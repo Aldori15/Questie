@@ -24,7 +24,7 @@ local TICKS_PER_YIELD = 48
 local TICKS_PER_YIELD_DEBUG = TICKS_PER_YIELD * 3
 
 -- Bump when compiler field types/order change to invalidate cached binary DB blobs.
-QuestieDBCompiler.compiledSchemaVersion = 6
+QuestieDBCompiler.compiledSchemaVersion = 7
 
 ---@alias CompilerTypes
 ---| "u8"

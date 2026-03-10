@@ -265,6 +265,21 @@ function QuestieTBCQuestFixes:Load()
         [1508] = {
             [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
         },
+        [1516] = { -- Call of Earth
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
+        },
+        [1517] = { -- Call of Earth
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
+        },
+        [1518] = { -- Call of Earth
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
+        },
+        [1520] = { -- Call of Earth
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
+        },
+        [1521] = { -- Call of Earth
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
+        },
         [1558] = {
             [questKeys.questLevel] = -1,
         },
@@ -1943,9 +1958,20 @@ function QuestieTBCQuestFixes:Load()
         [9545] = {
             [questKeys.objectives] = {{{16852,nil,Questie.ICON_TYPE_INTERACT}}},
         },
+        [9547] = { -- Call of Air
+            [questKeys.startedBy] = {{17212}},
+            [questKeys.breadcrumbForQuestId] = 9552,
+        },
         [9549] = { -- Artifacts of the Blacksilt
             [questKeys.preQuestSingle] = {},
             [questKeys.breadcrumbs] = {10063},
+        },
+        [9551] = { -- Call of Air
+            [questKeys.startedBy] = {{17219,23127}},
+            [questKeys.breadcrumbForQuestId] = 9552,
+        },
+        [9552] = { -- Call of Air
+            [questKeys.breadcrumbs] = {9547,9551,10491},
         },
         [9555] = { -- Call of Fire
             [questKeys.requiredRaces] = raceIDs.DRAENEI,
@@ -3102,6 +3128,9 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.exclusiveTo] = {9500,9502},
             [questKeys.breadcrumbForQuestId] = 9501,
         },
+        [10491] = { -- Call of Air
+            [questKeys.breadcrumbForQuestId] = 9552,
+        },
         [10506] = {
             [questKeys.objectives] = {{{20058,nil,Questie.ICON_TYPE_INTERACT}}},
         },
@@ -3381,18 +3410,22 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.objectives] = {{{22268,nil,Questie.ICON_TYPE_EVENT}}},
         },
         [10725] = {
+            [questKeys.exclusiveTo] = {10726,10727,10728},
             [questKeys.nextQuestInChain] = 11031,
             [questKeys.zoneOrSort] = zoneIDs.KARAZHAN,
         },
         [10726] = {
+            [questKeys.exclusiveTo] = {10725,10727,10728},
             [questKeys.nextQuestInChain] = 11034,
             [questKeys.zoneOrSort] = zoneIDs.KARAZHAN,
         },
         [10727] = {
+            [questKeys.exclusiveTo] = {10725,10726,10728},
             [questKeys.nextQuestInChain] = 11033,
             [questKeys.zoneOrSort] = zoneIDs.KARAZHAN,
         },
         [10728] = {
+            [questKeys.exclusiveTo] = {10725,10726,10727},
             [questKeys.nextQuestInChain] = 11032,
             [questKeys.zoneOrSort] = zoneIDs.KARAZHAN,
         },
@@ -3409,27 +3442,35 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.zoneOrSort] = zoneIDs.KARAZHAN,
         },
         [10733] = {
+            [questKeys.exclusiveTo] = {10734,10735,10736},
             [questKeys.zoneOrSort] = zoneIDs.KARAZHAN,
         },
         [10734] = {
+            [questKeys.exclusiveTo] = {10733,10735,10736},
             [questKeys.zoneOrSort] = zoneIDs.KARAZHAN,
         },
         [10735] = {
+            [questKeys.exclusiveTo] = {10733,10734,10736},
             [questKeys.zoneOrSort] = zoneIDs.KARAZHAN,
         },
         [10736] = {
+            [questKeys.exclusiveTo] = {10733,10734,10735},
             [questKeys.zoneOrSort] = zoneIDs.KARAZHAN,
         },
         [10738] = {
+            [questKeys.exclusiveTo] = {10739,10740,10741},
             [questKeys.zoneOrSort] = zoneIDs.KARAZHAN,
         },
         [10739] = {
+            [questKeys.exclusiveTo] = {10738,10740,10741},
             [questKeys.zoneOrSort] = zoneIDs.KARAZHAN,
         },
         [10740] = {
+            [questKeys.exclusiveTo] = {10738,10739,10741},
             [questKeys.zoneOrSort] = zoneIDs.KARAZHAN,
         },
         [10741] = {
+            [questKeys.exclusiveTo] = {10738,10739,10740},
             [questKeys.zoneOrSort] = zoneIDs.KARAZHAN,
         },
         [10742] = {
@@ -3916,18 +3957,22 @@ function QuestieTBCQuestFixes:Load()
         },
         [11031] = {
             [questKeys.preQuestSingle] = {10725},
+            [questKeys.exclusiveTo] = {10726,10727,10728},
             [questKeys.zoneOrSort] = zoneIDs.KARAZHAN,
         },
         [11032] = {
             [questKeys.preQuestSingle] = {10728},
+            [questKeys.exclusiveTo] = {10725,10726,10727},
             [questKeys.zoneOrSort] = zoneIDs.KARAZHAN,
         },
         [11033] = {
             [questKeys.preQuestSingle] = {10727},
+            [questKeys.exclusiveTo] = {10725,10726,10728},
             [questKeys.zoneOrSort] = zoneIDs.KARAZHAN,
         },
         [11034] = {
             [questKeys.preQuestSingle] = {10726},
+            [questKeys.exclusiveTo] = {10725,10727,10728},
             [questKeys.zoneOrSort] = zoneIDs.KARAZHAN,
         },
         [11035] = {
