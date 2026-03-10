@@ -54,6 +54,23 @@ local QUEST_FLAGS_WEEKLY = 32768
 -- Pre calculated 2 * QUEST_FLAGS, for testing a bit flag
 local QUEST_FLAGS_DAILY_X2 = 2 * QUEST_FLAGS_DAILY
 local QUEST_FLAGS_WEEKLY_X2 = 2 * QUEST_FLAGS_WEEKLY
+
+---@enum QuestTagIds
+QuestieDB.questTagIds = {
+    ELITE = 1,
+    CLASS = 21,
+    PVP = 41,
+    RAID = 62,
+    DUNGEON = 81,
+    LEGENDARY = 83,
+    ESCORT = 84,
+    HEROIC = 85,
+    RAID_10 = 88,
+    RAID_25 = 89,
+    SCENARIO = 98,
+    ACCOUNT = 102,
+    CELESTIAL = 294,
+}
 --- COMPATIBILITY ---
 local WOW_PROJECT_ID = QuestieCompat.WOW_PROJECT_ID
 local WOW_PROJECT_CLASSIC = QuestieCompat.WOW_PROJECT_CLASSIC

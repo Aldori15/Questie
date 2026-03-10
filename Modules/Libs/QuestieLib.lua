@@ -270,53 +270,94 @@ function QuestieLib.GetTbcLevel(questId, playerLevel)
     return questLevel, requiredLevel, QuestieDB.QueryQuestSingle(questId, "requiredMaxLevel");
 end
 
+---Returns the quest type suffix character (e.g., "+" for Elite, "D" for Dungeon)
 ---@param questId QuestId
----@param level Level @The quest level
----@param blizzLike boolean @True = [40+], false/nil = [40D/R]
----@return string levelString @String of format "[40+]"
-function QuestieLib:GetLevelString(questId, _, level, blizzLike)
-    local questType, questTag = QuestieDB.GetQuestTagInfo(questId)
+---@param blizzLike boolean? @If true, use '+' for group-content tags in classic Blizzard style
+---@return string suffix @The suffix character for the quest type
+function QuestieLib:GetQuestTypeSuffix(questId, blizzLike)
+    local questTagId, questTagName = QuestieDB.GetQuestTagInfo(questId)
 
-    local retLevel = tostring(level)
-    if questType and questTag then
-        local char = "+"
-        if (not blizzLike) then
-            char = stringSub(questTag, 1, 1)
-        end
-        -- the string.sub above doesn't work for multi byte characters in Chinese
-        local langCode = l10n:GetUILocale()
-        if questType == 1 then
-            -- Elite quest
-            retLevel = "[" .. retLevel .. "+" .. "] "
-        elseif questType == 81 then
-            if langCode == "zhCN" or langCode == "zhTW" or langCode == "koKR" or langCode == "ruRU" then
-                char = "D"
-            end
-            -- Dungeon quest
-            retLevel = "[" .. retLevel .. char .. "] "
-        elseif questType == 62 then
-            if langCode == "zhCN" or langCode == "zhTW" or langCode == "koKR" or langCode == "ruRU" then
-                char = "R"
-            end
-            -- Raid quest
-            retLevel = "[" .. retLevel .. char .. "] "
-        elseif questType == 41 then
-            -- Which one? This is just default.
-            retLevel = "[" .. retLevel .. "] "
-            -- PvP quest
-            -- name = "[" .. level .. questTag .. "] " .. name
-        elseif questType == 83 then
-            -- Legendary quest
-            retLevel = "[" .. retLevel .. "++" .. "] "
-        else
-            -- Some other irrelevant type
-            retLevel = "[" .. retLevel .. "] "
-        end
-    else
-        retLevel = "[" .. retLevel .. "] "
+    if not questTagId or not questTagName then
+        return ""
     end
 
-    return retLevel
+    local questTagIds = QuestieDB.questTagIds
+    local tagElite = questTagIds.ELITE
+    local tagPvp = questTagIds.PVP
+    local tagRaid = questTagIds.RAID
+    local tagDungeon = questTagIds.DUNGEON
+    local tagLegendary = questTagIds.LEGENDARY
+    local tagEscort = questTagIds.ESCORT
+    local tagHeroic = questTagIds.HEROIC
+    local tagClass = questTagIds.CLASS
+    local tagRaid10 = questTagIds.RAID_10
+    local tagRaid25 = questTagIds.RAID_25
+    local tagScenario = questTagIds.SCENARIO
+    local tagAccount = questTagIds.ACCOUNT
+    local tagCelestial = questTagIds.CELESTIAL
+    local isGroupContentTag = questTagId == tagRaid or questTagId == tagDungeon or questTagId == tagHeroic or
+            (tagRaid10 and questTagId == tagRaid10) or (tagRaid25 and questTagId == tagRaid25) or
+            (tagScenario and questTagId == tagScenario) or (tagAccount and questTagId == tagAccount) or
+            (tagCelestial and questTagId == tagCelestial)
+    local langCode = l10n:GetUILocale()
+    local isMultiByteLocale = langCode == "zhCN" or langCode == "zhTW" or langCode == "koKR" or langCode == "ruRU"
+
+    if questTagId == tagElite then
+        return "+"
+    elseif questTagId == tagPvp or (tagClass and questTagId == tagClass) or questTagId == tagEscort then
+        return ""
+    elseif questTagId == tagLegendary then
+        return "++"
+    elseif blizzLike and isGroupContentTag then
+        return "+"
+    elseif isMultiByteLocale then
+        if questTagId == tagRaid or (tagRaid10 and questTagId == tagRaid10) or (tagRaid25 and questTagId == tagRaid25) then
+            return "R"
+        elseif questTagId == tagDungeon then
+            return "D"
+        elseif questTagId == tagHeroic then
+            return "H"
+        elseif tagScenario and questTagId == tagScenario then
+            return "S"
+        elseif tagAccount and questTagId == tagAccount then
+            return "A"
+        elseif tagCelestial and questTagId == tagCelestial then
+            return "C"
+        else
+            return ""
+        end
+    else
+        -- Fallback: use first character of quest tag name for unknown tags
+        -- This preserves backward compatibility with existing UI/tests
+        return stringSub(questTagName, 1, 1)
+    end
+end
+
+---@param questId QuestId
+---@param levelOrLegacyName Level|string @Either the quest level (new call style) or ignored legacy name argument
+---@param legacyLevel Level|boolean? @Legacy 3rd arg: quest level (or blizzLike when called with 3 args)
+---@param legacyBlizzLike boolean? @Legacy 4th arg: blizzLike
+---@return string levelString @String of format "[40+]"
+function QuestieLib:GetLevelString(questId, levelOrLegacyName, legacyLevel, legacyBlizzLike)
+    local level
+    local blizzLike = false
+
+    -- Supports both signatures:
+    -- 1) GetLevelString(questId, level)
+    -- 2) GetLevelString(questId, _, level, blizzLike)
+    if legacyLevel == nil then
+        level = levelOrLegacyName
+    elseif type(legacyLevel) == "boolean" and legacyBlizzLike == nil then
+        level = levelOrLegacyName
+        blizzLike = legacyLevel
+    else
+        level = legacyLevel
+        blizzLike = legacyBlizzLike and true or false
+    end
+
+    local levelString = tostring(level)
+    local suffix = QuestieLib:GetQuestTypeSuffix(questId, blizzLike)
+    return "[" .. levelString .. suffix .. "] "
 end
 
 function QuestieLib:GetRaceString(raceMask)
@@ -447,18 +488,45 @@ function QuestieLib:SanitizePattern(pattern)
     return sanitize_cache[pattern]
 end
 
-function QuestieLib:SortQuestIDsByLevel(quests)
-    local sortedQuestsByLevel = {}
+local suffixPriority = {
+    [""] = 1, -- No suffix (normal quests) - should come first
+    ["+"] = 2, -- Elite
+    ["S"] = 3, -- Scenario
+    ["D"] = 4, -- Dungeon
+    ["H"] = 5, -- Heroic
+    ["R"] = 6, -- Raid
+    ["++"] = 7, -- Legendary
+    ["A"] = 8, -- Account
+    ["C"] = 9, -- Celestial
+}
 
-    local function compareTablesByIndex(a, b)
+local function compareQuestsByLevelAndType(a, b)
+    if a[1] ~= b[1] then
         return a[1] < b[1]
     end
 
-    for q in pairs(quests) do
-        local questLevel, _ = QuestieLib.GetTbcLevel(q);
-        tinsert(sortedQuestsByLevel, { questLevel or 0, q })
+    -- if levels are the same, compare by suffix priority
+    local suffixA = a[3] or ""
+    local suffixB = b[3] or ""
+    local priorityA = suffixPriority[suffixA] or 999
+    local priorityB = suffixPriority[suffixB] or 999
+
+    if priorityA ~= priorityB then
+        return priorityA < priorityB
     end
-    table.sort(sortedQuestsByLevel, compareTablesByIndex)
+
+    return a[2] < b[2]
+end
+
+function QuestieLib:SortQuestIDsByLevel(quests)
+    local sortedQuestsByLevel = {}
+
+    for q in pairs(quests) do
+        local questLevel, _ = QuestieLib.GetTbcLevel(q)
+        local suffix = QuestieLib:GetQuestTypeSuffix(q)
+        tinsert(sortedQuestsByLevel, {questLevel or 0, q, suffix})
+    end
+    table.sort(sortedQuestsByLevel, compareQuestsByLevelAndType)
 
     return sortedQuestsByLevel
 end
@@ -582,7 +650,7 @@ end
 
 ---@return table A table of the handed parameters plus the 'n' field with the size of the table
 function QuestieLib.tpack(...)
-    return { n = select("#", ...), ... }
+    return {n = select("#", ...), ...}
 end
 
 --- Wow's own unpack stops at first nil. this version is not speed optimized.
@@ -719,7 +787,7 @@ function QuestieLib:TextWrap(line, prefix, combineTrailing, desiredWidth)
         --Line was not wrapped, return the string as is.
         textWrapObjectiveFontString:Hide()
         useLine = prefix .. line
-        return { useLine }
+        return {useLine}
     end
 end
 

@@ -1,7 +1,6 @@
 ---@type QuestieJourney
 local QuestieJourney = QuestieLoader:CreateModule("QuestieJourney")
 local _QuestieJourney = QuestieJourney.private
-_QuestieJourney.questsByZone = {}
 
 ---@type QuestieDB
 local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
@@ -11,6 +10,8 @@ local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
 local QuestieReputation = QuestieLoader:ImportModule("QuestieReputation")
 ---@type QuestieCorrections
 local QuestieCorrections = QuestieLoader:ImportModule("QuestieCorrections")
+---@type QuestieQuestBlacklist
+local QuestieQuestBlacklist = QuestieLoader:ImportModule("QuestieQuestBlacklist")
 ---@type QuestieEvent
 local QuestieEvent = QuestieLoader:ImportModule("QuestieEvent")
 ---@type QuestieLink
@@ -22,6 +23,70 @@ local l10n = QuestieLoader:ImportModule("l10n")
 
 local AceGUI = LibStub("AceGUI-3.0")
 local zoneTreeFrame
+
+---Restore the previously selected quest in the zone tree
+---@param treeFrame table @The AceGUI TreeGroup frame
+---@param zoneTree table @The zone tree table
+function _QuestieJourney.questsByZone:RestoreSavedQuestSelection(treeFrame, zoneTree)
+    local savedSelection = _QuestieJourney.lastZoneSelection[3]
+    if not savedSelection then return end
+
+    local sel, questId = strsplit("\001", savedSelection)
+    if not questId then return end
+
+    questId = tonumber(questId)
+    local questExists = false
+    local currentSelection
+    local foundSavedCategory = false
+
+    for _, category in ipairs(zoneTree) do
+        if category.children then
+            for _, quest in ipairs(category.children) do
+                if quest.value and quest.value == questId then
+                    questExists = true
+                    local selection = category.value .. "\001" .. questId
+                    if category.value == sel then
+                        currentSelection = selection
+                        foundSavedCategory = true
+                        break
+                    end
+                    if not currentSelection then
+                        currentSelection = selection
+                    end
+                end
+            end
+        end
+        if foundSavedCategory then break end
+    end
+
+    if questExists and currentSelection then
+        _QuestieJourney.lastZoneSelection[3] = currentSelection
+        treeFrame:SelectByValue(currentSelection)
+
+        C_Timer.After(0.1, function()
+            if not treeFrame.frame or not treeFrame.frame.obj then return end
+
+            local quest = QuestieDB.GetQuest(questId)
+            if quest then
+                local master = treeFrame.frame.obj
+                master:ReleaseChildren()
+                master:SetLayout("fill")
+                master:SetFullWidth(true)
+                master:SetFullHeight(true)
+
+                ---@class ScrollFrame
+                local scrollFrame = AceGUI:Create("ScrollFrame")
+                scrollFrame:SetLayout("flow")
+                scrollFrame:SetFullHeight(true)
+                master:AddChild(scrollFrame)
+
+                _QuestieJourney:DrawQuestDetailsFrame(scrollFrame, quest)
+            end
+        end)
+    else
+        _QuestieJourney.lastZoneSelection[3] = nil
+    end
+end
 
 ---Manage the zone tree itself and the contents of the per-quest window
 ---@param container AceSimpleGroup @The container for the zone tree
@@ -40,6 +105,9 @@ function _QuestieJourney.questsByZone:ManageTree(container, zoneTree)
     zoneTreeFrame:SetTree(zoneTree)
 
     zoneTreeFrame.treeframe:SetWidth(220)
+
+    _QuestieJourney.questsByZone:RestoreSavedQuestSelection(zoneTreeFrame, zoneTree)
+
     zoneTreeFrame:SetCallback("OnClick", function(group, ...)
         local treePath = {...}
 
@@ -52,6 +120,9 @@ function _QuestieJourney.questsByZone:ManageTree(container, zoneTree)
         if (sel == nil or sel == "a" or sel == "p" or sel == "c" or sel == "r" or sel == "u" or sel == "b") and (not questId) then
             return
         end
+
+        -- save the selected quest for persistence
+        _QuestieJourney.lastZoneSelection[3] = treePath[2]
 
         -- get master frame and create scroll frame inside
         local master = group.frame.obj
@@ -85,8 +156,19 @@ end
 ---@param zoneId number @The zone ID (Check `l10n.zoneLookup`)
 ---@return table<number,any> @The zoneTree table which represents the list of all the different quests
 function _QuestieJourney.questsByZone:CollectZoneQuests(zoneId)
-    local quests = QuestieJourney.zoneMap[zoneId]--QuestieDB:GetQuestsByZoneId(zoneId)
+    local quests = QuestieJourney.zoneMap[zoneId]
 
+    if (not quests) then
+        return nil
+    end
+
+    return _QuestieJourney.questsByZone:CategorizeQuests(quests)
+end
+
+---Categorize quests into available/completed/repeatable/unavailable categories
+---@param quests table @A table of quest IDs (keys are quest IDs, values are truthy)
+---@return table @The zoneTree table which represents the list of all the different quests
+function _QuestieJourney.questsByZone:CategorizeQuests(quests)
     if (not quests) then
         return nil
     end
@@ -137,6 +219,8 @@ function _QuestieJourney.questsByZone:CollectZoneQuests(zoneId)
     local unobtainableQuestIds = {}
     local temp = {}
 
+    local playerlevel = UnitLevel("player")
+
     for _, levelAndQuest in pairs(sortedQuestByLevel) do
         ---@type number
         local questId = levelAndQuest[2]
@@ -171,7 +255,11 @@ function _QuestieJourney.questsByZone:CollectZoneQuests(zoneId)
                         "preQuestGroup",
                         "requiredMinRep",
                         "requiredMaxRep",
+                        "requiredSpell",
                         "requiredSpecialization",
+                        "requiredMaxLevel",
+                        "requiredSkill",
+                        "requiredLevel"
                         }
                 ) or {}
                 local exclusiveTo = queryResult[1]
@@ -181,7 +269,11 @@ function _QuestieJourney.questsByZone:CollectZoneQuests(zoneId)
                 local preQuestGroup = queryResult[5]
                 local requiredMinRep = queryResult[6]
                 local requiredMaxRep = queryResult[7]
-                local requiredSpecialization = queryResult[8]
+                local requiredSpell = queryResult[8]
+                local requiredSpecialization = queryResult[9]
+                local requiredMaxLevel = queryResult[10]
+                local requiredSkill = queryResult[11]
+                local requiredLevel = queryResult[12]
 
                 -- Exclusive quests will never be available since another quests permanently blocks them.
                 -- Marking them as complete should be the most satisfying solution for user
@@ -200,6 +292,14 @@ function _QuestieJourney.questsByZone:CollectZoneQuests(zoneId)
                 -- Profession specialization
                 elseif (not QuestieProfessions.HasSpecialization(requiredSpecialization)) then
                     tinsert(zoneTree[6].children, temp)
+                    unobtainableCounter = unobtainableCounter + 1
+                -- Required profession not learned or skill level not reached
+                elseif requiredSkill and (function()
+                    local hasProfession, hasSkillLevel = QuestieProfessions:HasProfessionAndSkillLevel(requiredSkill)
+                    return not hasProfession or not hasSkillLevel
+                end)() then
+                    tinsert(zoneTree[6].children, temp)
+                    unobtainableQuestIds[questId] = true
                     unobtainableCounter = unobtainableCounter + 1
                 -- A single pre Quest is missing
                 elseif not QuestieDB:IsPreQuestSingleFulfilled(preQuestSingle) then
@@ -229,10 +329,34 @@ function _QuestieJourney.questsByZone:CollectZoneQuests(zoneId)
                         tinsert(zoneTree[3].children, temp)
                         prequestMissingCounter = prequestMissingCounter + 1
                     end
+                -- Quests which you have outleveled
+                elseif requiredMaxLevel and requiredMaxLevel ~= 0 and playerlevel > requiredMaxLevel then
+                    tinsert(zoneTree[6].children, temp)
+                    unobtainableCounter = unobtainableCounter + 1
+                -- Quests which you are too low level for
+                elseif requiredLevel and requiredLevel > playerlevel then
+                    tinsert(zoneTree[6].children, temp)
+                    unobtainableCounter = unobtainableCounter + 1
+                -- Event quests where the event is not currently active
+                elseif QuestieEvent.IsEventQuest(questId) and not QuestieEvent.IsEventActiveForQuest(questId) then
+                    tinsert(zoneTree[6].children, temp)
+                    unobtainableCounter = unobtainableCounter + 1
+                -- AQ War Effort quests (one-time world event that has ended for all realms)
+                elseif (not Questie.IsSoD) and QuestieQuestBlacklist.AQWarEffortQuests[questId] then
+                    tinsert(zoneTree[6].children, temp)
+                    unobtainableCounter = unobtainableCounter + 1
                 -- Repeatable quests
                 elseif QuestieDB.IsRepeatable(questId) then
                     tinsert(zoneTree[5].children, temp)
                     repeatableCounter = repeatableCounter + 1
+                -- Quests which require you to NOT have learned a spell
+                elseif requiredSpell and requiredSpell < 0 and (IsSpellKnownOrOverridesKnown(math.abs(requiredSpell)) or IsPlayerSpell(math.abs(requiredSpell))) then
+                    tinsert(zoneTree[6].children, temp)
+                    unobtainableCounter = unobtainableCounter + 1
+                -- Quests which require you to HAVE learned a spell
+                elseif requiredSpell and requiredSpell > 0 and not (IsSpellKnownOrOverridesKnown(math.abs(requiredSpell)) or IsPlayerSpell(math.abs(requiredSpell))) then
+                    tinsert(zoneTree[6].children, temp)
+                    unobtainableCounter = unobtainableCounter + 1
                 -- Available quests
                 else
                     tinsert(zoneTree[2].children, temp)

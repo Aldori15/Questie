@@ -218,6 +218,18 @@ local questsByZoneLocales = {
         ["zhCN"] = "条件不满足",
         ["zhTW"] = "未滿足需求",
     },
+    ["All Quests"] = {
+        ["enUS"] = true,
+        ["deDE"] = "Alle Quests",
+        ["esES"] = "Todas las misiones",
+        ["esMX"] = "Todas las misiones",
+        ["frFR"] = "Toutes les quêtes",
+        ["koKR"] = "모든 퀘스트",
+        ["ptBR"] = "Todas as missões",
+        ["ruRU"] = "Все задания",
+        ["zhCN"] = "所有任务",
+        ["zhTW"] = "所有任務",
+    },
 }
 
 for k, v in pairs(questsByZoneLocales) do
