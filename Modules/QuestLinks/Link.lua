@@ -116,7 +116,7 @@ function QuestieLink:GetQuestHyperLink(questId, senderGUID)
         senderGUID = UnitGUID("player")
     end
 
-    return "|Hquestie:"..questId..":"..senderGUID.."|h"..QuestieLib:PrintDifficultyColor(questLevel, "[", isRepeatable, QuestieEvent.IsEventQuest(questId), QuestieDB.IsPvPQuest(questId))..coloredQuestName..QuestieLib:PrintDifficultyColor(questLevel, "]", isRepeatable, QuestieEvent.IsEventQuest(questId), QuestieDB.IsPvPQuest(questId)).."|h"
+    return "|Hquestie:"..questId..":"..senderGUID.."|h"..QuestieLib:PrintDifficultyColor(questLevel, "[", isRepeatable, QuestieEvent:IsEventQuest(questId), QuestieDB.IsPvPQuest(questId))..coloredQuestName..QuestieLib:PrintDifficultyColor(questLevel, "]", isRepeatable, QuestieEvent:IsEventQuest(questId), QuestieDB.IsPvPQuest(questId)).."|h"
 end
 
 _GetQuestIdFromLink = function(link)
@@ -249,7 +249,7 @@ _AddQuestTitle = function(quest)
     local questLevel = QuestieLib.GetTbcLevel(questId)
 
     local questLevelString = QuestieLib:GetLevelString(questId, questName, questLevel, false)
-    local titleColor = string.sub(QuestieLib:PrintDifficultyColor(questLevel, "", QuestieDB.IsRepeatable(questId), QuestieEvent.IsEventQuest(questId), QuestieDB.IsPvPQuest(questId)), 5, 10)
+    local titleColor = string.sub(QuestieLib:PrintDifficultyColor(questLevel, "", QuestieDB.IsRepeatable(questId), QuestieEvent:IsEventQuest(questId), QuestieDB.IsPvPQuest(questId)), 5, 10)
 
     if Questie.db.profile.trackerShowQuestLevel and Questie.db.profile.enableTooltipsQuestID then
         _AddColoredTooltipLine(questLevelString .. questName .. " (" .. questId .. ")", titleColor)

@@ -304,7 +304,7 @@ function QuestieMenu:Show(hideDelay)
 
     tinsert(menuTable, div)
 
-    tinsert(menuTable, { text= l10n('Advanced Search'), func=function() QuestieOptions:HideFrame(); QuestieJourney.tabGroup:SelectTab("search"); QuestieJourney.ToggleJourneyWindow() end})
+    tinsert(menuTable, { text= l10n('Advanced Search'), func=function() QuestieOptions:HideFrame(); QuestieJourney.tabGroup:SelectTab("search"); QuestieJourney:ToggleJourneyWindow() end})
     tinsert(menuTable, { text= l10n("Questie Options"), func=function()
         QuestieCombatQueue:Queue(function()
             QuestieOptions:OpenConfigWindow()
@@ -315,7 +315,7 @@ function QuestieMenu:Show(hideDelay)
         QuestieCombatQueue:Queue(function()
             QuestieOptions:HideFrame();
             QuestieJourney.tabGroup:SelectTab("journey");
-            QuestieJourney.ToggleJourneyWindow()
+            QuestieJourney:ToggleJourneyWindow()
         end)
     end})
 

@@ -56,7 +56,7 @@ function TrackerHeaderFrame.Initialize(baseFrame)
     questieIcon:SetScript("OnClick", function(_, button)
         if button == "LeftButton" then
             if QuestieJourney:IsShown() then
-                QuestieJourney.ToggleJourneyWindow()
+                QuestieJourney:ToggleJourneyWindow()
             end
 
             QuestieCombatQueue:Queue(function()
@@ -70,7 +70,7 @@ function TrackerHeaderFrame.Initialize(baseFrame)
             end
 
             QuestieCombatQueue:Queue(function()
-                QuestieJourney.ToggleJourneyWindow()
+                QuestieJourney:ToggleJourneyWindow()
             end)
 
             return

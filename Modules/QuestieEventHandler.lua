@@ -225,7 +225,7 @@ function QuestieEventHandler:RegisterLateEvents()
     Questie:RegisterEvent("NAME_PLATE_UNIT_ADDED", QuestieNameplate.NameplateCreated)
     Questie:RegisterEvent("NAME_PLATE_UNIT_REMOVED", QuestieNameplate.NameplateDestroyed)
     Questie:RegisterEvent("PLAYER_TARGET_CHANGED", function(...)
-        QuestieNameplate.DrawTargetFrame()
+        QuestieNameplate:DrawTargetFrame()
         --if Questie.IsSoD then QuestieDebugOffer.NPCTarget() end;
     end)
 
@@ -554,7 +554,7 @@ function _EventHandler:PlayerRegenDisabled()
     if QuestieJourney then
         if QuestieJourney:IsShown() then
             journeyHiddenByCombat = true
-            QuestieJourney.ToggleJourneyWindow()
+            QuestieJourney:ToggleJourneyWindow()
         end
     end
 end
@@ -578,7 +578,7 @@ function _EventHandler:PlayerRegenEnabled()
     end
 
     if journeyHiddenByCombat then
-        QuestieJourney.ToggleJourneyWindow()
+        QuestieJourney:ToggleJourneyWindow()
         journeyHiddenByCombat = false
     end
 end

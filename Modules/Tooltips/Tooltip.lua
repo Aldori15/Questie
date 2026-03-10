@@ -44,7 +44,7 @@ local _InitObjectiveTexts
 ---@return string
 ---@return string
 local function _GetQuestTooltipIconNames(questId, level)
-    if QuestieEvent.IsEventQuest(questId) then
+    if QuestieEvent:IsEventQuest(questId) then
         return "eventquest", "eventquest_complete"
     elseif QuestieDB.IsPvPQuest(questId) then
         return "pvpquest", "pvpquest_complete"

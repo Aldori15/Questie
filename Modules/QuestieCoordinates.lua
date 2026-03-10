@@ -133,7 +133,7 @@ end
 
 function QuestieCoords:Update()
     if (Questie.db.profile.minimapCoordinatesEnabled) or (Questie.db.profile.mapCoordinatesEnabled) then
-        QuestieCoords.WriteCoords();
+        QuestieCoords:WriteCoords();
     end
 end
 
