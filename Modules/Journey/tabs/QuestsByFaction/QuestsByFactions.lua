@@ -11,6 +11,8 @@ local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
 local QuestieReputation = QuestieLoader:ImportModule("QuestieReputation")
 ---@type QuestieCorrections
 local QuestieCorrections = QuestieLoader:ImportModule("QuestieCorrections")
+---@type QuestieProfessions
+local QuestieProfessions = QuestieLoader:ImportModule("QuestieProfessions")
 ---@type QuestieQuestBlacklist
 local QuestieQuestBlacklist = QuestieLoader:ImportModule("QuestieQuestBlacklist")
 ---@type QuestieEvent
@@ -449,7 +451,10 @@ function _QuestieJourney.questsByFaction:CollectFactionQuests(factionId)
                     "requiredMinRep",
                     "requiredMaxRep",
                     "requiredSpell",
-                    "requiredMaxLevel"
+                    "requiredSpecialization",
+                    "requiredMaxLevel",
+                    "requiredSkill",
+                    "requiredLevel",
                 }
             ) or {}
 
@@ -489,9 +494,18 @@ function _QuestieJourney.questsByFaction:CollectFactionQuests(factionId)
                 local requiredMinRep = queryResult[6]
                 local requiredMaxRep = queryResult[7]
                 local requiredSpell = queryResult[8]
-                local requiredMaxLevel = queryResult[9]
+                local requiredSpecialization = queryResult[9]
+                local requiredMaxLevel = queryResult[10]
+                local requiredSkill = queryResult[11]
+                local requiredLevel = queryResult[12]
 
-                if (nextQuestInChain and Questie.db.char.complete[nextQuestInChain]) or (exclusiveTo and QuestieDB:IsExclusiveQuestInQuestLogOrComplete(exclusiveTo)) then
+                if requiredSkill then
+                    local hasProfession, hasSkillLevel = QuestieProfessions:HasProfessionAndSkillLevel(requiredSkill)
+                    if (not (hasProfession and hasSkillLevel)) then
+                        tinsert(factionTree[6].children, temp)
+                        unobtainableCounter = unobtainableCounter + 1
+                    end
+                elseif (nextQuestInChain ~= 0 and Questie.db.char.complete[nextQuestInChain]) or (exclusiveTo and QuestieDB:IsExclusiveQuestInQuestLogOrComplete(exclusiveTo)) then
                     tinsert(factionTree[4].children, temp)
                     completedCounter = completedCounter + 1
                 elseif parentQuest and Questie.db.char.complete[parentQuest] then
@@ -500,6 +514,9 @@ function _QuestieJourney.questsByFaction:CollectFactionQuests(factionId)
                 elseif not QuestieReputation.HasReputation(requiredMinRep, requiredMaxRep) then
                     tinsert(factionTree[6].children, temp)
                     unobtainableQuestIds[questId] = true
+                    unobtainableCounter = unobtainableCounter + 1
+                elseif (not QuestieProfessions.HasSpecialization(requiredSpecialization)) then
+                    tinsert(factionTree[6].children, temp)
                     unobtainableCounter = unobtainableCounter + 1
                 elseif not QuestieDB:IsPreQuestSingleFulfilled(preQuestSingle) then
                     if unobtainableQuestIds[preQuestSingle] ~= nil then
@@ -527,6 +544,9 @@ function _QuestieJourney.questsByFaction:CollectFactionQuests(factionId)
                         prequestMissingCounter = prequestMissingCounter + 1
                     end
                 elseif requiredMaxLevel and requiredMaxLevel ~= 0 and playerlevel > requiredMaxLevel then
+                    tinsert(factionTree[6].children, temp)
+                    unobtainableCounter = unobtainableCounter + 1
+                elseif requiredLevel and requiredLevel > playerlevel then
                     tinsert(factionTree[6].children, temp)
                     unobtainableCounter = unobtainableCounter + 1
                 elseif QuestieDB.IsRepeatable(questId) then
