@@ -526,18 +526,25 @@ function _EventHandler:GroupLeft()
     QuestieComms:ResetAll()
 end
 
-local trackerHiddenByCombat, optionsHiddenByCombat, journeyHiddenByCombat = false, false, false
+local trackerMinimizedByCombat, trackerHiddenByCombat = false, false
+local optionsHiddenByCombat, journeyHiddenByCombat = false, false
 function _EventHandler:PlayerRegenDisabled()
     Questie:Debug(Questie.DEBUG_DEVELOP, "[EVENT] PLAYER_REGEN_DISABLED")
 
     -- Let's make sure the frame exists - might be nil if player is in combat upon login
     if QuestieTracker then
-        if Questie.db.profile.hideTrackerInCombat and Questie.db.char.isTrackerExpanded and (not trackerHiddenByCombat) then
-            trackerHiddenByCombat = true
+        if Questie.db.profile.minimizeTrackerInCombat and Questie.db.char.isTrackerExpanded and (not trackerMinimizedByCombat) then
+            trackerMinimizedByCombat = true
             QuestieTracker:Collapse()
         end
 
-        if IsInInstance() and Questie.db.profile.hideTrackerInDungeons then
+        -- Handle complete hiding in combat
+        if Questie.db.profile.hideTrackerInCombat and (not trackerHiddenByCombat) then
+            trackerHiddenByCombat = true
+            QuestieTracker:Hide()
+        end
+
+        if IsInInstance() and Questie.db.profile.minimizeTrackerInDungeons then
             QuestieTracker:Collapse()
         end
     end
@@ -561,15 +568,23 @@ end
 
 function _EventHandler:PlayerRegenEnabled()
     Questie:Debug(Questie.DEBUG_DEVELOP, "[EVENT] PLAYER_REGEN_ENABLED")
-    if Questie.db.profile.hideTrackerInCombat and trackerHiddenByCombat then
-        if (not Questie.db.profile.hideTrackerInDungeons) or (not IsInInstance()) then
-            trackerHiddenByCombat = false
+    if Questie.db.profile.minimizeTrackerInCombat and trackerMinimizedByCombat then
+        if (not Questie.db.profile.minimizeTrackerInDungeons) or (not IsInInstance()) then
+            trackerMinimizedByCombat = false
             QuestieTracker:Expand()
         end
 
         QuestieCombatQueue:Queue(function()
             QuestieTracker:Update()
         end)
+    end
+
+    -- Handle complete hiding in combat
+    if Questie.db.profile.hideTrackerInCombat and trackerHiddenByCombat then
+        if (not Questie.db.profile.hideTrackerInDungeons) or (not IsInInstance()) then
+            trackerHiddenByCombat = false
+            QuestieTracker:Show()
+        end
     end
 
     if optionsHiddenByCombat then

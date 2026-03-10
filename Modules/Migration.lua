@@ -112,6 +112,17 @@ local migrationFunctions = {
             Questie.db.profile.townsfolkConfig["Poisons"] = false
         end
     end,
+    [15] = function()
+        local previousVersion = Questie.db.profile.migrationVersion or 0
+        if previousVersion == 0 then return end
+
+        local previousHideInDungeons = Questie.db.profile.hideTrackerInDungeons
+
+        Questie.db.profile.minimizeTrackerInCombat = false
+        Questie.db.profile.minimizeTrackerInDungeons = previousHideInDungeons
+        Questie.db.profile.hideTrackerInCombat = false
+        Questie.db.profile.hideTrackerInDungeons = false
+    end,
 }
 
 function Migration:Migrate()

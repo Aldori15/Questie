@@ -542,6 +542,7 @@ function _QuestLogUpdateQueue:GetFirst()
 end
 
 local trackerMinimizedByDungeon = false
+local trackerHiddenByDungeon = false
 function _QuestEventHandler:ZoneChangedNewArea()
     Questie:Debug(Questie.DEBUG_DEVELOP, "[EVENT] ZONE_CHANGED_NEW_AREA")
     -- By my tests it takes a full 6-7 seconds for the world to load. There are a lot of
@@ -552,27 +553,46 @@ function _QuestEventHandler:ZoneChangedNewArea()
     if isInInstance then
         C_Timer.After(8, function()
             Questie:Debug(Questie.DEBUG_DEVELOP, "[EVENT] ZONE_CHANGED_NEW_AREA: Entering Instance")
-            if Questie.db.profile.hideTrackerInDungeons then
+            if Questie.db.profile.minimizeTrackerInDungeons then
                 trackerMinimizedByDungeon = true
 
                 QuestieCombatQueue:Queue(function()
                     QuestieTracker:Collapse()
                 end)
             end
-        end)
 
-    -- We only want this to fire outside of an instance if the player isn't dead and we need to reset the Tracker
-    elseif (not Questie.db.char.isTrackerExpanded and not UnitIsGhost("player")) and trackerMinimizedByDungeon == true then
-        C_Timer.After(8, function()
-            Questie:Debug(Questie.DEBUG_DEVELOP, "[EVENT] ZONE_CHANGED_NEW_AREA: Exiting Instance")
+            -- Handle complete hiding in dungeons
             if Questie.db.profile.hideTrackerInDungeons then
-                trackerMinimizedByDungeon = false
-
-                QuestieCombatQueue:Queue(function()
-                    QuestieTracker:Expand()
-                end)
+                Questie:Debug(Questie.DEBUG_DEVELOP, "[EVENT] ZONE_CHANGED_NEW_AREA: Hiding tracker completely in dungeon")
+                trackerHiddenByDungeon = true
+                QuestieTracker:Hide()
             end
         end)
+    else
+        -- Handle exiting instances for both minimize and hide
+        if trackerMinimizedByDungeon == true then
+            C_Timer.After(8, function()
+                Questie:Debug(Questie.DEBUG_DEVELOP, "[EVENT] ZONE_CHANGED_NEW_AREA: Exiting Instance - Minimize")
+                if Questie.db.profile.minimizeTrackerInDungeons and (not Questie.db.char.isTrackerExpanded and not UnitIsGhost("player")) then
+                    trackerMinimizedByDungeon = false
+
+                    QuestieCombatQueue:Queue(function()
+                        QuestieTracker:Expand()
+                    end)
+                end
+            end)
+        end
+
+        -- Handle complete hiding when exiting dungeons
+        if trackerHiddenByDungeon == true then
+            C_Timer.After(8, function()
+                Questie:Debug(Questie.DEBUG_DEVELOP, "[EVENT] ZONE_CHANGED_NEW_AREA: Exiting Instance - Complete Hide")
+                if Questie.db.profile.hideTrackerInDungeons then
+                    trackerHiddenByDungeon = false
+                    QuestieTracker:Show()
+                end
+            end)
+        end
     end
 end
 

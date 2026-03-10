@@ -559,6 +559,26 @@ function QuestieTracker:Expand()
     end
 end
 
+-- Hides the QuestieTracker
+function QuestieTracker:Hide()
+    if trackerBaseFrame and trackerBaseFrame:IsShown() then
+        trackerBaseFrame:Hide()
+    end
+end
+
+-- Shows the QuestieTracker
+function QuestieTracker:Show()
+    if trackerBaseFrame and Questie.db.profile.trackerEnabled then
+        if not trackerBaseFrame:IsShown() then
+            trackerBaseFrame:Show()
+        end
+
+        QuestieCombatQueue:Queue(function()
+            QuestieTracker:Update()
+        end)
+    end
+end
+
 local function _UpdateLineWidth(line, objectiveMarginLeft)
     local trackerMaxWidth = GetScreenWidth() * Questie.db.profile.trackerWidthRatio
     local margin = objectiveMarginLeft + trackerMarginRight
