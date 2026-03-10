@@ -137,11 +137,13 @@ function _QuestieQuest:ShowQuestIcons()
 end
 
 function _QuestieQuest:ShowManualIcons()
-    for _, frameList in pairs(QuestieMap.manualFrames) do
-        for _, frameName in pairs(frameList) do
-            local icon = _G[frameName];
-            if icon ~= nil and icon.hidden and (not icon:ShouldBeHidden()) then -- check for function to make sure its a frame
-                icon:FakeShow()
+    for _, townsfolk in pairs(QuestieMap.manualFrames) do
+        for _, frameList in pairs(townsfolk) do
+            for _, frameName in pairs(frameList) do
+                local icon = _G[frameName];
+                if icon ~= nil and icon.hidden then
+                    icon:FakeShow()
+                end
             end
         end
     end
@@ -154,9 +156,6 @@ function _QuestieQuest:HideQuestIcons()
             if icon ~= nil and (not icon.hidden) and icon:ShouldBeHidden() then -- check for function to make sure its a frame
                 -- Hides Objective Icons
                 icon:FakeHide()
-
-                -- Hides Objective Tooltips
-                QuestieTooltips:RemoveQuest(icon.data.Id)
 
                 if icon.data.lineFrames then
                     for _, lineIcon in pairs(icon.data.lineFrames) do
@@ -174,11 +173,13 @@ function _QuestieQuest:HideQuestIcons()
 end
 
 function _QuestieQuest:HideManualIcons()
-    for _, frameList in pairs(QuestieMap.manualFrames) do
-        for _, frameName in pairs(frameList) do
-            local icon = _G[frameName];
-            if icon ~= nil and (not icon.hidden) and icon:ShouldBeHidden() then -- check for function to make sure its a frame
-                icon:FakeHide()
+    for _, townsfolk in pairs(QuestieMap.manualFrames) do
+        for _, frameList in pairs(townsfolk) do
+            for _, frameName in pairs(frameList) do
+                local icon = _G[frameName];
+                if icon ~= nil and (not icon.hidden) then
+                    icon:FakeHide()
+                end
             end
         end
     end

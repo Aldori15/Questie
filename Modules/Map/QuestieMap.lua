@@ -133,6 +133,7 @@ end
 
 function QuestieMap:ResetManualFrames(typ)
     typ = typ or "any"
+    if not QuestieMap.manualFrames[typ] then return end
     for id, _ in pairs(QuestieMap.manualFrames[typ]) do
         QuestieMap:UnloadManualFrames(id, typ)
     end
@@ -146,6 +147,19 @@ function QuestieMap:RescaleIcons()
             QuestieMap.utils:RescaleIcon(frameName, mapScale)
         end
     end
+    for _, frameTypeList in pairs(QuestieMap.manualFrames) do
+        for _, framelist in pairs(frameTypeList) do
+            for _, frameName in ipairs(framelist) do
+                QuestieMap.utils:RescaleIcon(frameName, mapScale)
+            end
+        end
+    end
+end
+
+-- Rescale all Townsfolk icons
+function QuestieMap:RescaleTownsfolkIcons()
+    local mapScale = QuestieMap.GetScaleValue()
+    -- Only rescale manual frames (townsfolk), not quest frames
     for _, frameTypeList in pairs(QuestieMap.manualFrames) do
         for _, framelist in pairs(frameTypeList) do
             for _, frameName in ipairs(framelist) do
@@ -312,10 +326,17 @@ function QuestieMap.ProcessQueue()
             HBDPins:AddWorldMapIconMap(tunpack(mapDrawCall));
 
             --? If you ever chanage this logic, make sure you change the logic in QuestieMap.utils:RescaleIcon function too!
-            local size = (16 * (frame.data.IconScale or 1) * (Questie.db.profile.globalScale or 0.7)) * scaleValue;
+            -- Use globalTownsfolkScale for townsfolk icons, globalScale for quest icons
+            local scaleProfile = frame.isManualIcon and Questie.db.profile.globalTownsfolkScale or Questie.db.profile.globalScale
+            local size = (16 * (frame.data.IconScale or 1) * (scaleProfile or 0.7)) * scaleValue;
             frame:SetSize(size, size)
 
             QuestieMap.utils:SetDrawOrder(frame);
+
+            mapDrawCall[2]._loaded = true
+            if mapDrawCall[2]._needsUnload then
+                mapDrawCall[2]:Unload()
+            end
         end
 
         local minimapDrawCall = tremove(minimapDrawQueue, 1);
@@ -324,16 +345,11 @@ function QuestieMap.ProcessQueue()
             HBDPins:AddMinimapIconMap(tunpack(minimapDrawCall));
 
             QuestieMap.utils:SetDrawOrder(frame);
-        end
 
-        mapDrawCall[2]._loaded = true
-        if mapDrawCall[2]._needsUnload then
-            mapDrawCall[2]:Unload()
-        end
-
-        minimapDrawCall[2]._loaded = true
-        if minimapDrawCall[2]._needsUnload then
-            minimapDrawCall[2]:Unload()
+            minimapDrawCall[2]._loaded = true
+            if minimapDrawCall[2]._needsUnload then
+                minimapDrawCall[2]:Unload()
+            end
         end
     end
 end
@@ -511,6 +527,7 @@ function QuestieMap:DrawManualIcon(data, areaID, x, y, typ)
 
     -- create the map icon
     local icon = QuestieFramePool:GetFrame()
+    icon.isManualIcon = true
     icon.data = data
     icon.x = x
     icon.y = y
@@ -518,6 +535,10 @@ function QuestieMap:DrawManualIcon(data, areaID, x, y, typ)
     icon.UiMapID = uiMapId
     icon.miniMapIcon = false;
     icon.texture:SetTexture(texture)
+    if not QuestieCompat.Is335 then
+        icon.texture:SetSnapToPixelGrid(false)
+        icon.texture:SetTexelSnappingBias(0)
+    end
     icon:SetWidth(16 * (data:GetIconScale() or 0.7))
     icon:SetHeight(16 * (data:GetIconScale() or 0.7))
 
@@ -527,18 +548,23 @@ function QuestieMap:DrawManualIcon(data, areaID, x, y, typ)
 
     -- create the minimap icon
     local iconMinimap = QuestieFramePool:GetFrame()
+    iconMinimap.isManualIcon = true
     local colorsMinimap = { 1, 1, 1 }
     if data.IconColor ~= nil and Questie.db.profile.questMinimapObjectiveColors then
         colorsMinimap = data.IconColor
     end
-    iconMinimap:SetWidth(16 * ((data:GetIconScale() or 1) * (Questie.db.profile.globalMiniMapScale or 0.7)))
-    iconMinimap:SetHeight(16 * ((data:GetIconScale() or 1) * (Questie.db.profile.globalMiniMapScale or 0.7)))
+    iconMinimap:SetWidth(16 * ((data:GetIconScale() or 0.7) * (Questie.db.profile.globalMiniMapTownsfolkScale or 0.7)))
+    iconMinimap:SetHeight(16 * ((data:GetIconScale() or 0.7) * (Questie.db.profile.globalMiniMapTownsfolkScale or 0.7)))
     iconMinimap.data = data
     iconMinimap.x = x
     iconMinimap.y = y
     iconMinimap.AreaID = areaID -- used by QuestieFramePool
     iconMinimap.UiMapID = uiMapId
     iconMinimap.texture:SetTexture(texture)
+    if not QuestieCompat.Is335 then
+        icon.texture:SetSnapToPixelGrid(false)
+        icon.texture:SetTexelSnappingBias(0)
+    end
     iconMinimap.texture:SetVertexColor(colorsMinimap[1], colorsMinimap[2], colorsMinimap[3], 1);
     iconMinimap.miniMapIcon = true;
 

@@ -123,6 +123,10 @@ local migrationFunctions = {
         Questie.db.profile.hideTrackerInCombat = false
         Questie.db.profile.hideTrackerInDungeons = false
     end,
+    [16] = function()
+        Questie.db.profile.globalTownsfolkScale = 0.6
+        Questie.db.profile.globalMiniMapTownsfolkScale = 0.7
+    end,
 }
 
 function Migration:Migrate()
