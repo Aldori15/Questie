@@ -20,6 +20,24 @@ local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 
 -- Forward declaration
 local _CreateOptionsTable
+local journeyButton
+
+local function _TrySkinJourneyButton()
+    if (not journeyButton) or journeyButton.__QuestieElvUISkinned then return end
+    if not (IsAddOnLoaded and IsAddOnLoaded("ElvUI")) then return end
+
+    local elvUi = _G.ElvUI
+    if type(elvUi) ~= "table" then return end
+
+    local E = unpack(elvUi)
+    if not E or type(E.GetModule) ~= "function" then return end
+
+    local S = E:GetModule("Skins", true)
+    if S and type(S.HandleButton) == "function" then
+        S:HandleButton(journeyButton)
+        journeyButton.__QuestieElvUISkinned = true
+    end
+end
 
 ---Initializes the frames for the options menu
 function QuestieOptions:Initialize()
@@ -49,7 +67,7 @@ function QuestieOptions:Initialize()
     configFrame:Hide()
     coroutine.yield()
 
-    local journeyButton = CreateFrame("Button", nil, configFrame.frame, "UIPanelButtonTemplate")
+    journeyButton = CreateFrame("Button", nil, configFrame.frame, "UIPanelButtonTemplate")
     journeyButton:SetSize(140, 24)
     journeyButton:SetPoint("TOPRIGHT", configFrame.frame, "TOPRIGHT", -50, -13)
     journeyButton:SetText(l10n('My Journey'))
@@ -59,6 +77,7 @@ function QuestieOptions:Initialize()
             QuestieOptions:OpenConfigWindow()
         end)
     end)
+    _TrySkinJourneyButton()
 
     configFrame:Hide()
     coroutine.yield()
@@ -79,6 +98,7 @@ end
 -- Open the configuration window
 function QuestieOptions:OpenConfigWindow()
     if not QuestieConfigFrame:IsShown() then
+        _TrySkinJourneyButton()
         PlaySound(882)
         -- AceConfigDialog:Open("Questie", QuestieConfigFrame)
         QuestieConfigFrame:Show()
