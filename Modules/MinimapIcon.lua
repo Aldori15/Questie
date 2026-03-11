@@ -26,6 +26,13 @@ local minimapButton
 function MinimapIcon:Init()
     _LibDBIcon:Register("Questie", _MinimapIcon:CreateDataBrokerObject(), Questie.db.profile.minimap);
     Questie.minimapConfigIcon = _LibDBIcon
+
+    if (not _LibDBIcon.GetMinimapButton) then
+        -- Compatibility shim for older LibDBIcon versions that don't have this method.
+        function _LibDBIcon:GetMinimapButton(name)
+            return _G["LibDBIcon10_" .. name] or (self.objects and self.objects[name])
+        end
+    end
     minimapButton = _LibDBIcon:GetMinimapButton("Questie")
 end
 
