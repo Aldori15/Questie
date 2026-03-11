@@ -28,6 +28,9 @@ local tinsert = table.insert
 local NewThread = ThreadLib.ThreadSimple
 
 local QUESTS_PER_YIELD = 24
+local QUESTS_PER_YIELD_FAST = 512
+local questsPerYield = QUESTS_PER_YIELD
+local isFastRefreshActive = false
 
 --- Used to keep track of the active timer for CalculateAndDrawAll
 ---@type Ticker|nil
@@ -62,14 +65,74 @@ end
 local _CalculateAvailableQuests, _DrawChildQuests, _AddStarter, _DrawAvailableQuest, _GetQuestIcon, _GetIconScaleForAvailable, _HasProperDistanceToAlreadyAddedSpawns, _RegisterQuestStartTooltips, _MarkQuestAsUnavailableFromNPC
 
 ---@param callback function | nil
-function AvailableQuests.CalculateAndDrawAll(callback)
+---@param fastRefresh boolean|nil
+function AvailableQuests.CalculateAndDrawAll(callback, fastRefresh)
     Questie:Debug(Questie.DEBUG_INFO, "[AvailableQuests.CalculateAndDrawAll]")
 
     --? Cancel the previously running timer to not have multiple running at the same time
     if timer then
         timer:Cancel()
     end
-    timer = ThreadLib.Thread(_CalculateAvailableQuests, 0, "Error in AvailableQuests.CalculateAndDrawAll", callback)
+    if fastRefresh then
+        questsPerYield = QUESTS_PER_YIELD_FAST
+        isFastRefreshActive = true
+    else
+        questsPerYield = QUESTS_PER_YIELD
+        isFastRefreshActive = false
+    end
+
+    timer = ThreadLib.Thread(_CalculateAvailableQuests, 0, "Error in AvailableQuests.CalculateAndDrawAll", function()
+        questsPerYield = QUESTS_PER_YIELD
+        isFastRefreshActive = false
+        if callback then
+            callback()
+        end
+    end)
+end
+
+-- Recolor already drawn available-quest icons immediately on level changes
+function AvailableQuests.RefreshVisibleAvailableIcons()
+    for questId in pairs(QuestieMap.questIdFrames) do
+        local questFrames = QuestieMap:GetFramesForQuest(questId)
+        local oldIcon, newIcon
+
+        for _, frame in pairs(questFrames) do
+            if frame and frame.data and frame.data.Type == "available" and frame.data.QuestData then
+                oldIcon = frame.data.Icon
+                newIcon = _GetQuestIcon(frame.data.QuestData)
+                break
+            end
+        end
+
+        if newIcon and oldIcon and newIcon ~= oldIcon then
+            for _, frame in pairs(questFrames) do
+                if frame and frame.data and frame.data.Type == "available" and frame.data.QuestData then
+                    frame:UpdateTexture(Questie.usedIcons[newIcon])
+                    frame.data.Icon = newIcon
+                end
+            end
+        end
+    end
+end
+
+-- Remove currently shown available quests that no longer match the active level filter.
+function AvailableQuests.PruneByCurrentLevelFilter()
+    local playerLevel = QuestiePlayer.GetPlayerLevel()
+    local minLevel = playerLevel - GetQuestGreenRange("player")
+    local maxLevel = playerLevel
+
+    if Questie.db.profile.lowLevelStyle == Questie.LOWLEVEL_RANGE then
+        minLevel = Questie.db.profile.minLevelFilter
+        maxLevel = Questie.db.profile.maxLevelFilter
+    elseif Questie.db.profile.lowLevelStyle == Questie.LOWLEVEL_OFFSET then
+        minLevel = playerLevel - Questie.db.profile.manualLevelOffset
+    end
+
+    for questId in pairs(availableQuests) do
+        if not QuestieDB.IsLevelRequirementsFulfilled(questId, minLevel, maxLevel, playerLevel) then
+            AvailableQuests.RemoveQuest(questId)
+        end
+    end
 end
 
 --Draw a single available quest, it is used by the CalculateAndDrawAll function.
@@ -277,6 +340,7 @@ function AvailableQuests.ValidateAvailableQuestsFromQuestGreeting()
 end
 
 _CalculateAvailableQuests = function()
+    local maxQuestsPerYield = questsPerYield
     _GetUnavailableQuestsDeterminedByTalking()
 
     -- Localize the variables for speeeeed
@@ -345,7 +409,7 @@ _CalculateAvailableQuests = function()
             (Questie.IsClassic and currentIsleOfQuelDanasQuests[questId]) or        -- Don't show Isle of Quel'Danas quests for Era/HC/SoX
             (Questie.IsSoD and QuestieDB.IsRuneAndShouldBeHidden(questId))          -- Don't show SoD Rune quests with the option disabled
         ) then
-            if availableQuests[questId] then
+            if availableQuests[questId] or QuestieMap.questIdFrames[questId] then
                 AvailableQuests.RemoveQuest(questId)
             end
             availableQuests[questId] = nil
@@ -359,7 +423,7 @@ _CalculateAvailableQuests = function()
             --If the quests are not within level range we want to unload them
             --(This is for when people level up or change settings etc)
 
-            if availableQuests[questId] then
+            if availableQuests[questId] or QuestieMap.questIdFrames[questId] then
                 AvailableQuests.RemoveQuest(questId)
             end
             availableQuests[questId] = nil
@@ -370,12 +434,21 @@ _CalculateAvailableQuests = function()
 
         if QuestieMap.questIdFrames[questId] then
             -- We already drew this quest so we might need to update the icon (config changed/level up)
-            for _, frame in ipairs(QuestieMap:GetFramesForQuest(questId)) do
+            local questFrames = QuestieMap:GetFramesForQuest(questId)
+            local oldIcon, newIcon
+            for _, frame in pairs(questFrames) do
                 if frame and frame.data and frame.data.QuestData then
-                    local newIcon = _GetQuestIcon(frame.data.QuestData)
+                    oldIcon = frame.data.Icon
+                    newIcon = _GetQuestIcon(frame.data.QuestData)
+                    break
+                end
+            end
 
-                    if newIcon ~= frame.data.Icon then
+            if newIcon and oldIcon and newIcon ~= oldIcon then
+                for _, frame in pairs(questFrames) do
+                    if frame and frame.data and frame.data.QuestData then
                         frame:UpdateTexture(Questie.usedIcons[newIcon])
+                        frame.data.Icon = newIcon
                     end
                 end
             end
@@ -396,7 +469,7 @@ _CalculateAvailableQuests = function()
 
         -- Reset the questCount
         questCount = questCount + 1
-        if questCount > QUESTS_PER_YIELD then
+        if questCount > maxQuestsPerYield then
             questCount = 0
             yield()
         end
@@ -470,7 +543,7 @@ end
 
 ---@param questId number
 _DrawAvailableQuest = function(questId)
-    NewThread(function()
+    local function _DrawNow()
         local quest = QuestieDB.GetQuest(questId)
         if (not quest.tagInfoWasCached) then
             QuestieDB.GetQuestTagInfo(questId) -- cache to load in the tooltip
@@ -479,7 +552,14 @@ _DrawAvailableQuest = function(questId)
         end
 
         AvailableQuests.DrawAvailableQuest(quest)
-    end, 0)
+    end
+
+    if isFastRefreshActive then
+        _DrawNow()
+        return
+    end
+
+    NewThread(_DrawNow, 0)
 end
 
 ---@param quest Quest

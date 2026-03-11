@@ -73,6 +73,50 @@ local _townsfolk_texturemap = {
 QuestieMenu.private.townsfolk_texturemap = _townsfolk_texturemap
 
 local _spawned = {} -- used to check if we have already spawned an icon for this npc
+local _availableRefreshTicker
+
+local function _FlushDrawQueue()
+    -- Drain part of the queue immediately so freshly enabled townsfolk icons
+    -- appear sooner instead of waiting only for the periodic queue ticker.
+    local queueSize = math.max(#QuestieMap._mapDrawQueue, #QuestieMap._minimapDrawQueue)
+    local iterations = 1
+
+    if queueSize > 800 then
+        iterations = 6
+    elseif queueSize > 400 then
+        iterations = 4
+    elseif queueSize > 150 then
+        iterations = 3
+    elseif queueSize > 0 then
+        iterations = 2
+    end
+
+    for _ = 1, iterations do
+        if (#QuestieMap._mapDrawQueue == 0) and (#QuestieMap._minimapDrawQueue == 0) then
+            break
+        end
+        QuestieMap.ProcessQueue()
+    end
+end
+
+local function _RunFastAvailableRefresh()
+    if _availableRefreshTicker then
+        _availableRefreshTicker:Cancel()
+        _availableRefreshTicker = nil
+    end
+
+    _availableRefreshTicker = C_Timer.NewTicker(0.02, function()
+        _FlushDrawQueue()
+    end)
+
+    AvailableQuests.CalculateAndDrawAll(function()
+        _FlushDrawQueue()
+        if _availableRefreshTicker then
+            _availableRefreshTicker:Cancel()
+            _availableRefreshTicker = nil
+        end
+    end, true)
+end
 
 local function toggle(key, forceRemove) -- /run QuestieLoader:ImportModule("QuestieMap"):ShowNPC(525, nil, 1, "teaste", {}, true)
     local ids = Questie.db.global.townsfolk[key] or
@@ -98,6 +142,7 @@ local function toggle(key, forceRemove) -- /run QuestieLoader:ImportModule("Ques
                     QuestieMap:ShowObject(id, icon, 1.2, Questie:Colorize(l10n(key), "white"), {}, true, key)
                 end
             end
+            _FlushDrawQueue()
         else
             for _, id in pairs(ids) do
                 QuestieMap:UnloadManualFrames(id, key)
@@ -108,10 +153,10 @@ local function toggle(key, forceRemove) -- /run QuestieLoader:ImportModule("Ques
             local faction = UnitFactionGroup("Player")
             local timer
             local e = 1
-            local max = (#ids)+1
-            timer = C_Timer.NewTicker(0.01, function()
-                local start = e
-                while e < max and e-start < 32 do
+            local maxIndex = #ids
+            local function _DrawTownsfolkBatch(batchSize)
+                local count = 0
+                while e <= maxIndex and count < batchSize do
                     local id = ids[e]
                     if (not _spawned[id]) then
                         local friendly = QuestieDB.QueryNPCSingle(id, "friendlyToFaction")
@@ -124,10 +169,25 @@ local function toggle(key, forceRemove) -- /run QuestieLoader:ImportModule("Ques
                         end
                     end
                     e = e + 1
+                    count = count + 1
                 end
-                if e == max then
+                return e > maxIndex
+            end
+
+            -- Draw a larger first chunk immediately for better responsiveness when enabling townsfolk.
+            if _DrawTownsfolkBatch(192) then
+                _FlushDrawQueue()
+                return
+            end
+            _FlushDrawQueue()
+
+            timer = C_Timer.NewTicker(0.01, function()
+                if _DrawTownsfolkBatch(192) then
+                    _FlushDrawQueue()
                     timer:Cancel()
+                    return
                 end
+                _FlushDrawQueue()
             end)
         else
             for _, id in pairs(ids) do
@@ -281,8 +341,8 @@ function QuestieMenu:Show(hideDelay)
     tinsert(menuTable, { text= l10n("Available Quest"), func = function()
         local value = not Questie.db.profile.enableAvailable
         Questie.db.profile.enableAvailable = value
-        QuestieQuest:ToggleNotes(value)
-        QuestieQuest:SmoothReset()
+        QuestieQuest:RefreshQuestIconVisibility()
+        AvailableQuests.CalculateAndDrawAll()
     end, icon=QuestieLib.AddonPath.."Icons\\available.blp", notCheckable=false, checked=Questie.db.profile.enableAvailable, isNotRadio=true, keepShownOnClick=true})
     tinsert(menuTable, { text= l10n("Trivial Quest"), func = function()
         local value = Questie.db.profile.lowLevelStyle == Questie.LOWLEVEL_ALL
@@ -291,13 +351,17 @@ function QuestieMenu:Show(hideDelay)
         else
             Questie.db.profile.lowLevelStyle = Questie.LOWLEVEL_ALL
         end
-        AvailableQuests.CalculateAndDrawAll()
+        AvailableQuests.PruneByCurrentLevelFilter()
+        _RunFastAvailableRefresh()
     end, icon=QuestieLib.AddonPath.."Icons\\available_gray.blp", notCheckable=false, checked=Questie.db.profile.lowLevelStyle==Questie.LOWLEVEL_ALL, isNotRadio=true, keepShownOnClick=true})
     tinsert(menuTable, { text= l10n("Objective"), func = function()
         local value = not Questie.db.profile.enableObjectives
         Questie.db.profile.enableObjectives = value
-        QuestieQuest:ToggleNotes(value)
-        QuestieQuest:SmoothReset()
+        if value then
+            -- Rebuild objective notes that were not created while objectives were disabled.
+            QuestieQuest:GetAllQuestIds()
+        end
+        QuestieQuest:RefreshQuestIconVisibility()
     end, icon=QuestieLib.AddonPath.."Icons\\event.blp", notCheckable=false, checked=Questie.db.profile.enableObjectives, isNotRadio=true, keepShownOnClick=true})
     tinsert(menuTable, {text= l10n("Profession Trainer"), func = function() end, keepShownOnClick=true, hasArrow=true, menuList=QuestieMenu.buildProfessionMenu(), notCheckable=true})
     tinsert(menuTable, {text= l10n("Vendor"), func = function() end, keepShownOnClick=true, hasArrow=true, menuList=QuestieMenu.buildVendorMenu(), notCheckable=true})

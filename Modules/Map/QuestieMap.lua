@@ -319,7 +319,18 @@ function QuestieMap.ProcessQueue()
     end
 
     local scaleValue = QuestieMap.GetScaleValue()
-    for _ = 1, math.min(24, math.max(#mapDrawQueue, #minimapDrawQueue)) do
+    local queueSize = math.max(#mapDrawQueue, #minimapDrawQueue)
+    local maxPerTick = 24
+
+    if queueSize > 600 then
+        maxPerTick = 96
+    elseif queueSize > 250 then
+        maxPerTick = 64
+    elseif queueSize > 100 then
+        maxPerTick = 48
+    end
+
+    for _ = 1, math.min(maxPerTick, queueSize) do
         local mapDrawCall = tremove(mapDrawQueue, 1);
         if mapDrawCall then
             local frame = mapDrawCall[2];

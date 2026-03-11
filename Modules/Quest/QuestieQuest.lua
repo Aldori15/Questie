@@ -103,6 +103,11 @@ function QuestieQuest:ToggleNotes(showIcons)
     end
 end
 
+function QuestieQuest:RefreshQuestIconVisibility()
+    _QuestieQuest:HideQuestIcons()
+    _QuestieQuest:ShowQuestIcons()
+end
+
 function _QuestieQuest:ShowQuestIcons()
     local trackerHiddenQuests = Questie.db.char.TrackerHiddenQuests
     for questId, frameList in pairs(QuestieMap.questIdFrames) do

@@ -19,21 +19,20 @@ local IsInGroup = QuestieCompat.IsInGroup
 local GetHomePartyInfo = QuestieCompat.GetHomePartyInfo
 local GetClassColor = QuestieCompat.GetClassColor
 local LE_PARTY_CATEGORY_INSTANCE = QuestieCompat.LE_PARTY_CATEGORY_INSTANCE
+local GetTime = GetTime
 local UI_MAP_TYPE_COSMIC = 0
 local UI_MAP_TYPE_WORLD = 1
 local UI_MAP_TYPE_CONTINENT = 2
 
 QuestiePlayer.currentQuestlog = {} --Gets populated by QuestieQuest:GetAllQuestIds(), this is either an object to the quest in question, or the ID if the object doesn't exist.
 _QuestiePlayer.playerLevel = -1
+_QuestiePlayer.playerLevelSetAt = 0
 local playerRaceId = -1
 local playerRaceFlag = 255 -- dummy default value to always return race not matching, corrected in init
 local playerRaceFlagX2 = 1 -- dummy default value to always return race not matching, corrected in init
 local playerClassName = ""
 local playerClassFlag = 255 -- dummy default value to always return class not matching, corrected in init
 local playerClassFlagX2 = 1 -- dummy default value to always return class not matching, corrected in init
-
--- Optimizations
-local math_max = math.max;
 
 QuestiePlayer.numberOfGroupMembers = 0
 
@@ -50,19 +49,37 @@ function QuestiePlayer:Initialize()
     playerClassFlagX2 = 2 * playerClassFlag
 end
 
---Always compare to the UnitLevel parameter, returning the highest.
+-- Cache player level from events (or fallback UnitLevel when event value is unavailable).
 ---@param level Level
 function QuestiePlayer:SetPlayerLevel(level)
-    local localLevel = UnitLevel("player");
-    _QuestiePlayer.playerLevel = math_max(localLevel, level);
+    if level and level > 0 then
+        _QuestiePlayer.playerLevel = level
+        _QuestiePlayer.playerLevelSetAt = GetTime()
+    else
+        local localLevel = UnitLevel("player")
+        if localLevel and localLevel > 0 then
+            _QuestiePlayer.playerLevel = localLevel
+            _QuestiePlayer.playerLevelSetAt = GetTime()
+        end
+    end
 end
 
--- Gets the highest playerlevel available, most of the time playerLevel should be the most correct one
--- doing UnitLevel for completeness.
+-- Return cached level immediately after level events and sync back to UnitLevel once stable.
 ---@return Level
 function QuestiePlayer.GetPlayerLevel()
-    local level = UnitLevel("player");
-    return math_max(_QuestiePlayer.playerLevel, level);
+    local level = UnitLevel("player")
+    local cachedLevel = _QuestiePlayer.playerLevel
+
+    if cachedLevel and cachedLevel > 0 then
+        if level and level > 0 and level ~= cachedLevel and (GetTime() - (_QuestiePlayer.playerLevelSetAt or 0)) >= 1 then
+            _QuestiePlayer.playerLevel = level
+            _QuestiePlayer.playerLevelSetAt = GetTime()
+            return level
+        end
+        return cachedLevel
+    end
+
+    return level
 end
 
 -- Find out if the player is at max level for the active expansion

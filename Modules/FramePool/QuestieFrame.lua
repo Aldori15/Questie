@@ -282,7 +282,9 @@ function _Qframe:UpdateTexture(texture)
     if (self.miniMapIcon) then
         globalScale = Questie.db.profile.globalMiniMapScale;
         objectiveColor = Questie.db.profile.questMinimapObjectiveColors;
-        alpha = 0;
+        -- Keep the current minimap alpha when only swapping icon texture.
+        -- This avoids waiting for movement/fade ticks after level-threshold icon updates.
+        alpha = (self.texture and self.texture.a) or 1;
     else
         globalScale = Questie.db.profile.globalScale;
         objectiveColor = Questie.db.profile.questObjectiveColors;
@@ -490,7 +492,7 @@ function _Qframe:ShouldBeHidden()
         -- i.e. (iconType == "available")  ==  (iconType ~= "monster" and iconType ~= "object" and iconType ~= "event" and iconType ~= "item" and iconType ~= "complete"):
         or (iconType == "available"
             and ((not DailyQuests:IsActiveDailyQuest(questId)) -- hide not-today-dailies
-                or ((not profile.enableAvailable) and normal)
+                or ((not profile.enableAvailable) and normal and data.Icon == Questie.ICON_TYPE_AVAILABLE)
                 or ((not profile.showRepeatableQuests) and repeatable)
                 or ((not profile.showEventQuests) and event)
                 or ((not profile.showDungeonQuests) and dungeon)

@@ -53,6 +53,30 @@ local UnitInParty = QuestieCompat.UnitInParty
 local questAcceptedMessage = string.gsub(ERR_QUEST_ACCEPTED_S, "(%%s)", "(.+)")
 local questCompletedMessage = string.gsub(ERR_QUEST_COMPLETE_S, "(%%s)", "(.+)")
 local criteriaUpdateQueued
+local lastLevelRefreshAt = 0
+local lastLevelRefreshed = nil
+
+local function _RefreshAvailableAfterLevelChange(level)
+    if (not level) or level <= 0 then return end
+
+    local now = GetTime()
+    if lastLevelRefreshed == level and (now - lastLevelRefreshAt) < 0.25 then return end
+
+    lastLevelRefreshed = level
+    lastLevelRefreshAt = now
+    QuestiePlayer:SetPlayerLevel(level)
+
+    AvailableQuests.RefreshVisibleAvailableIcons()
+
+    AvailableQuests.CalculateAndDrawAll()
+    C_Timer.After(0.30, function()
+        local stableLevel = UnitLevel("player")
+        if stableLevel and stableLevel > 0 then
+            QuestiePlayer:SetPlayerLevel(stableLevel)
+        end
+        AvailableQuests.CalculateAndDrawAll()
+    end)
+end
 
 --* Calculated in _EventHandler:PlayerLogin()
 ---en/br/es/fr/gb/it/mx: "You are now %s with %s." (e.g. "You are now Honored with Stormwind."), all other languages are very alike
@@ -76,6 +100,7 @@ end
 
 function QuestieEventHandler:RegisterLateEvents()
     Questie:RegisterEvent("PLAYER_LEVEL_UP", _EventHandler.PlayerLevelUp)
+    Questie:RegisterEvent("UNIT_LEVEL", _EventHandler.UnitLevel)
     Questie:RegisterEvent("PLAYER_REGEN_DISABLED", _EventHandler.PlayerRegenDisabled)
     Questie:RegisterEvent("PLAYER_REGEN_ENABLED", _EventHandler.PlayerRegenEnabled)
 
@@ -363,7 +388,7 @@ end
 function _EventHandler:PlayerLevelUp(level)
     Questie:Debug(Questie.DEBUG_DEVELOP, "[EVENT] PLAYER_LEVEL_UP", level)
 
-    QuestiePlayer:SetPlayerLevel(level)
+    _RefreshAvailableAfterLevelChange(level)
     QuestieJourney:PlayerLevelUp(level)
 
     -- Quest difficulty colors might have changed with the new level
@@ -371,12 +396,18 @@ function _EventHandler:PlayerLevelUp(level)
         QuestieTracker:Update()
     end)
 
-    -- deferred update (possible desync fix?)
-    C_Timer.After(3, function()
-        QuestiePlayer:SetPlayerLevel(level)
+end
 
-        AvailableQuests.CalculateAndDrawAll()
-    end)
+--- Fires when a unit level changed
+---@param unit string
+function _EventHandler:UnitLevel(unit)
+    if unit ~= "player" then return end
+
+    local level = UnitLevel("player")
+    if (not level) or level <= 0 then return end
+
+    Questie:Debug(Questie.DEBUG_DEVELOP, "[EVENT] UNIT_LEVEL", level)
+    _RefreshAvailableAfterLevelChange(level)
 end
 
 --- Fires when a modifier key changed
