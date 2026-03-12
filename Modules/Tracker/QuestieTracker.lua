@@ -1081,30 +1081,43 @@ function QuestieTracker:Update()
 
                             -- Set Timer Title based on states
                             line.label.activeTimer = false
+                            local timerLabelText
                             if quest.timedBlizzardQuest then
-                                line.label:SetText(Questie:Colorize(l10n("Blizzard Timer Active") .. "!", "blue"))
+                                timerLabelText = Questie:Colorize(l10n("Blizzard Timer Active") .. "!", "blue")
                             else
                                 local timeRemainingString, timeRemaining = TrackerQuestTimers:GetRemainingTime(quest, line, false)
                                 if timeRemaining then
                                     if timeRemaining <= 1 then
-                                        line.label:SetText(Questie:Colorize("0 Seconds", "blue"))
+                                        timerLabelText = Questie:Colorize("0 Seconds", "lightBlue")
                                         line.label.activeTimer = false
                                     else
-                                        line.label:SetText(Questie:Colorize(timeRemainingString, "blue"))
+                                        timerLabelText = Questie:Colorize(timeRemainingString, "lightBlue")
                                         line.label.activeTimer = true
                                     end
                                 end
                             end
+                            line.label:SetText(timerLabelText or "")
+
+                            -- Reserve enough width for "MM Minutes SS Seconds" so timer text
+                            -- does not intermittently truncate when seconds change.
+                            local timerSampleText = SecondsToTime(3599, false, true)
+                            if not string.find(timerSampleText, "Seconds?") then
+                                timerSampleText = timerSampleText .. " 0 Seconds"
+                            end
+                            line.label:SetText(Questie:Colorize(timerSampleText, "lightBlue"))
+                            local timerReserveWidth = line.label:GetUnboundedStringWidth()
+                            line.label:SetText(timerLabelText or "")
+                            local timerLabelWidth = math.max(line.label:GetUnboundedStringWidth(), timerReserveWidth)
 
                             -- Check and measure Timer text width and update tracker width
-                            QuestieTracker:UpdateWidth(line.label:GetUnboundedStringWidth() + lineLabelWidthQBC)
+                            QuestieTracker:UpdateWidth(timerLabelWidth + lineLabelWidthQBC)
 
                             -- Set Timer Label and Line widths. We add 40 pixels, because timers start with "15 Minutes" and will then be "14 Minutes 59 Seconds" right after.
-                            line.label:SetWidth(trackerBaseFrame:GetWidth() - lineLabelBaseFrameQBC + 40)
+                            line.label:SetWidth(math.max(trackerBaseFrame:GetWidth() - lineLabelBaseFrameQBC + 40, timerReserveWidth + 2))
                             line:SetWidth(line.label:GetWidth() + lineWidthQBC)
 
                             -- Compare largest text Label in the tracker with current Label, then save widest width
-                            trackerLineWidth = math.max(trackerLineWidth, line.label:GetUnboundedStringWidth() + lineWidthQBC)
+                            trackerLineWidth = math.max(trackerLineWidth, timerLabelWidth + lineWidthQBC)
 
                             line:SetHeight(line.label:GetHeight() + 1)
                             

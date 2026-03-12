@@ -171,7 +171,9 @@ function TrackerQuestTimers:UpdateTimerFrame()
                 end
                 timer.frame.label:SetFont(LSM30:Fetch("font", Questie.db.profile.trackerFontObjective), Questie.db.profile.trackerFontSizeObjective, Questie.db.profile.trackerFontOutline)
                 timer.frame.label:SetText(Questie:Colorize(timeRemainingString, "lightBlue"))
-                timer.frame:SetWidth(timer.frame.label:GetWidth() + ((34) - (18 - Questie.db.profile.trackerFontSizeQuest)) + Questie.db.profile.trackerFontSizeQuest)
+                local unboundedWidth = timer.frame.label:GetUnboundedStringWidth() + 2
+                timer.frame.label:SetWidth(unboundedWidth)
+                timer.frame:SetWidth(unboundedWidth + ((34) - (18 - Questie.db.profile.trackerFontSizeQuest)) + Questie.db.profile.trackerFontSizeQuest)
             end)
         else
             Questie:Debug(Questie.DEBUG_SPAM, "[TrackerQuestTimers] Quest Timer Expired!")
