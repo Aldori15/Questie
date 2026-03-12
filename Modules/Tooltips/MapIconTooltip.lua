@@ -335,7 +335,11 @@ function MapIconTooltip:Show()
 
                         local nextQuestString = string.format("      %s%s%s%s%s", nextQuestTitleString, nextQuestIdString, nextQuestXpRewardString, nextQuestMoneyRewardString, nextQuestTagString); -- we need an offset to align with description
                         self:AddLine(QuestieLib:PrintDifficultyColor(nextQuest.level, nextQuestString, QuestieDB.IsRepeatable(nextQuest.Id), QuestieDB.IsActiveEventQuest(nextQuest.Id), QuestieDB.IsPvPQuest(nextQuest.Id)), 1, 1, 1);
-                        nextQuest = QuestieDB.GetQuest(nextQuest.nextQuestInChain)
+                        local upcomingQuestId = nextQuest.nextQuestInChain
+                        if (not upcomingQuestId) or upcomingQuestId <= 0 then
+                            break
+                        end
+                        nextQuest = QuestieDB.GetQuest(upcomingQuestId)
                     end
                 end
 
