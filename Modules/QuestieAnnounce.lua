@@ -84,8 +84,9 @@ _GetAnnounceMarker = function()
     end
 end
 
-function QuestieAnnounce:AnnounceObjectiveToChannel(questId, itemId, objectiveText, objectiveProgress)
-    if _QuestieAnnounce:AnnounceEnabledAndPlayerInChannel() and Questie.db.profile.questAnnounceObjectives then
+function QuestieAnnounce:AnnounceObjectiveToChannel(questId, itemId, objectiveText, objectiveProgress, isProgressUpdate)
+    local announceToggle = isProgressUpdate and Questie.db.profile.questAnnounceObjectiveProgress or Questie.db.profile.questAnnounceObjectives
+    if _QuestieAnnounce:AnnounceEnabledAndPlayerInChannel() and announceToggle then
         -- no hyperlink required here
         local questLink = QuestieLink:GetQuestLinkStringById(questId);
 
@@ -104,15 +105,61 @@ end
 
 local _has_seen_incomplete = {}
 local _has_sent_announce = {}
+local _announced_progress = {}
+
+---@param questId number
+---@param text string
+---@param numRequired number
+---@return string
+local function _GetObjectiveStateKey(questId, text, numRequired)
+    return tostring(questId) .. "\001" .. tostring(text or "") .. "\001" .. tostring(numRequired or "")
+end
+
+---@param questId number
+local function _ClearObjectiveStateForQuest(questId)
+    local prefix = tostring(questId) .. "\001"
+
+    for key in pairs(_has_seen_incomplete) do
+        if string.find(key, prefix, 1, true) == 1 then
+            _has_seen_incomplete[key] = nil
+        end
+    end
+
+    for key in pairs(_has_sent_announce) do
+        if string.find(key, prefix, 1, true) == 1 then
+            _has_sent_announce[key] = nil
+        end
+    end
+
+    for key in pairs(_announced_progress) do
+        if string.find(key, prefix, 1, true) == 1 then
+            _announced_progress[key] = nil
+        end
+    end
+end
 
 function QuestieAnnounce:ObjectiveChanged(questId, text, numFulfilled, numRequired)
+    local objectiveStateKey = _GetObjectiveStateKey(questId, text, numRequired)
+    local objectiveProgress = tostring(numFulfilled) .. "/" .. tostring(numRequired)
+
+    -- Announce objective progress (1/10, 2/10, ...) without duplicate spam.
+    if numRequired ~= numFulfilled then
+        if numFulfilled > 0 and Questie.db.profile.questAnnounceObjectiveProgress then
+            if _announced_progress[objectiveStateKey] ~= numFulfilled then
+                _announced_progress[objectiveStateKey] = numFulfilled
+                QuestieAnnounce:AnnounceObjectiveToChannel(questId, nil, text, objectiveProgress, true)
+            end
+        end
+    end
+
     -- Announce completed objective
     if (numRequired ~= numFulfilled) then
-        _has_seen_incomplete[text] = true
-    elseif _has_seen_incomplete[text] and not _has_sent_announce[text] then
-        _has_seen_incomplete[text] = nil
-        _has_sent_announce[text] = true
-        QuestieAnnounce:AnnounceObjectiveToChannel(questId, nil, text, tostring(numFulfilled) .. "/" .. tostring(numRequired))
+        _has_seen_incomplete[objectiveStateKey] = true
+    elseif _has_seen_incomplete[objectiveStateKey] and not _has_sent_announce[objectiveStateKey] then
+        _has_seen_incomplete[objectiveStateKey] = nil
+        _has_sent_announce[objectiveStateKey] = true
+        _announced_progress[objectiveStateKey] = numFulfilled
+        QuestieAnnounce:AnnounceObjectiveToChannel(questId, nil, text, objectiveProgress)
     end
 end
 
@@ -208,6 +255,8 @@ function QuestieAnnounce:ItemLooted(text, notPlayerName, _, _, playerName)
 end
 
 function QuestieAnnounce:AcceptedQuest(questId)
+    _ClearObjectiveStateForQuest(questId)
+
     if (_QuestieAnnounce:AnnounceEnabledAndPlayerInChannel()) and Questie.db.profile.questAnnounceAccepted then
         local questLink = QuestieLink:GetQuestLinkStringById(questId)
 
@@ -217,6 +266,8 @@ function QuestieAnnounce:AcceptedQuest(questId)
 end
 
 function QuestieAnnounce:AbandonedQuest(questId)
+    _ClearObjectiveStateForQuest(questId)
+
     if (_QuestieAnnounce:AnnounceEnabledAndPlayerInChannel()) and Questie.db.profile.questAnnounceAbandoned then
         local questLink = QuestieLink:GetQuestLinkStringById(questId)
 
@@ -226,6 +277,8 @@ function QuestieAnnounce:AbandonedQuest(questId)
 end
 
 function QuestieAnnounce:CompletedQuest(questId)
+    _ClearObjectiveStateForQuest(questId)
+
     if (_QuestieAnnounce:AnnounceEnabledAndPlayerInChannel()) and Questie.db.profile.questAnnounceCompleted then
         local questLink = QuestieLink:GetQuestLinkStringById(questId)
 

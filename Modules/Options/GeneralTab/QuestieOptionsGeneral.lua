@@ -160,21 +160,9 @@ function QuestieOptions.tabs.general:Initialize()
                                     Questie:Debug(Questie.DEBUG_DEVELOP, "Quest abandoned announce changed to:", value)
                                 end,
                             },
-                            questAnnounceObjectives = {
-                                type = "toggle",
-                                order = 4,
-                                name = function() return l10n('Objective completed'); end,
-                                desc = function() return l10n('Announce completed objectives to other players'); end,
-                                width = 1.5,
-                                get = function () return Questie.db.profile.questAnnounceObjectives; end,
-                                set = function (_, value)
-                                    Questie.db.profile.questAnnounceObjectives = value
-                                    Questie:Debug(Questie.DEBUG_DEVELOP, "Objective completed announce changed to:", value)
-                                end,
-                            },
                             questAnnounceCompleted = {
                                 type = "toggle",
-                                order = 5,
+                                order = 4,
                                 name = function() return l10n('Quest completed'); end,
                                 desc = function() return l10n('Announce quest completion to other players'); end,
                                 width = 1.5,
@@ -184,9 +172,33 @@ function QuestieOptions.tabs.general:Initialize()
                                     Questie:Debug(Questie.DEBUG_DEVELOP, "Quest completed announce changed to:", value)
                                 end,
                             },
-                            questAnnounceIncompleteBreadcrumb = {
+                            questAnnounceObjectives = {
+                                type = "toggle",
+                                order = 5,
+                                name = function() return l10n('Objective completed'); end,
+                                desc = function() return l10n('Announce completed objectives to other players'); end,
+                                width = 1.5,
+                                get = function () return Questie.db.profile.questAnnounceObjectives; end,
+                                set = function (_, value)
+                                    Questie.db.profile.questAnnounceObjectives = value
+                                    Questie:Debug(Questie.DEBUG_DEVELOP, "Objective completed announce changed to:", value)
+                                end,
+                            },
+                            questAnnounceObjectiveProgress = {
                                 type = "toggle",
                                 order = 6,
+                                name = function() return l10n('Objective progress'); end,
+                                desc = function() return l10n('Announce objective progress to other players'); end,
+                                width = 1.5,
+                                get = function () return Questie.db.profile.questAnnounceObjectiveProgress; end,
+                                set = function (_, value)
+                                    Questie.db.profile.questAnnounceObjectiveProgress = value
+                                    Questie:Debug(Questie.DEBUG_DEVELOP, "Objective progress announce changed to:", value)
+                                end,
+                            },
+                            questAnnounceIncompleteBreadcrumb = {
+                                type = "toggle",
+                                order = 7,
                                 name = function() return l10n("Incomplete breadcrumb"); end,
                                 desc = function() return l10n("Announce that you just picked up a quest for which you have an incomplete breadcrumb quest"); end,
                                 width = 1.5,

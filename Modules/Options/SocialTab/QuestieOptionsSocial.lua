@@ -104,9 +104,22 @@ function QuestieOptions.tabs.social:Initialize()
                                     Questie:Debug(Questie.DEBUG_DEVELOP, "Quest abandoned announce changed to:", value)
                                 end,
                             },
-                            questAnnounceObjectives = {
+                            questAnnounceCompleted = {
                                 type = "toggle",
                                 order = 4,
+                                name = function() return l10n('Quest completed'); end,
+                                desc = function() return l10n('Announce quest completion to other players'); end,
+                                width = 1.5,
+                                disabled = function() return _IsAnnounceDisabled() or Questie.db.profile.questieShutUp; end,
+                                get = function () return Questie.db.profile.questAnnounceCompleted; end,
+                                set = function (_, value)
+                                    Questie.db.profile.questAnnounceCompleted = value
+                                    Questie:Debug(Questie.DEBUG_DEVELOP, "Quest completed announce changed to:", value)
+                                end,
+                            },
+                            questAnnounceObjectives = {
+                                type = "toggle",
+                                order = 5,
                                 name = function() return l10n('Objective completed'); end,
                                 desc = function() return l10n('Announce completed objectives to other players'); end,
                                 width = 1.5,
@@ -117,17 +130,17 @@ function QuestieOptions.tabs.social:Initialize()
                                     Questie:Debug(Questie.DEBUG_DEVELOP, "Objective completed announce changed to:", value)
                                 end,
                             },
-                            questAnnounceCompleted = {
+                            questAnnounceObjectiveProgress = {
                                 type = "toggle",
-                                order = 5,
-                                name = function() return l10n('Quest completed'); end,
-                                desc = function() return l10n('Announce quest completion to other players'); end,
+                                order = 6,
+                                name = function() return l10n('Objective progress'); end,
+                                desc = function() return l10n('Announce objective progress to other players'); end,
                                 width = 1.5,
                                 disabled = function() return _IsAnnounceDisabled() or Questie.db.profile.questieShutUp; end,
-                                get = function () return Questie.db.profile.questAnnounceCompleted; end,
+                                get = function () return Questie.db.profile.questAnnounceObjectiveProgress; end,
                                 set = function (_, value)
-                                    Questie.db.profile.questAnnounceCompleted = value
-                                    Questie:Debug(Questie.DEBUG_DEVELOP, "Quest completed announce changed to:", value)
+                                    Questie.db.profile.questAnnounceObjectiveProgress = value
+                                    Questie:Debug(Questie.DEBUG_DEVELOP, "Objective progress announce changed to:", value)
                                 end,
                             },
                         },

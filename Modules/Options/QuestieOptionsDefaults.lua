@@ -129,6 +129,7 @@ function QuestieOptionsDefaults:Load()
             questAnnounceAccepted = false,
             questAnnounceAbandoned = false,
             questAnnounceObjectives = true,
+            questAnnounceObjectiveProgress = false,
             questAnnounceCompleted = false,
             questAnnounceIncompleteBreadcrumb = true,
             questAnnounceLocally = false,
