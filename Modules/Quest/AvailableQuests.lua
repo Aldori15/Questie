@@ -64,6 +64,28 @@ end
 
 local _CalculateAvailableQuests, _DrawChildQuests, _AddStarter, _DrawAvailableQuest, _GetQuestIcon, _GetIconScaleForAvailable, _HasProperDistanceToAlreadyAddedSpawns, _RegisterQuestStartTooltips, _MarkQuestAsUnavailableFromNPC
 
+-- Repeatable quests should be controlled by showRepeatableQuests
+local function _IsLevelRequirementsFulfilledForAvailable(questId, minLevel, maxLevel, playerLevel, isRepeatableQuest)
+    if QuestieDB.IsLevelRequirementsFulfilled(questId, minLevel, maxLevel, playerLevel) then
+        return true
+    end
+
+    if isRepeatableQuest and Questie.db.profile.lowLevelStyle ~= Questie.LOWLEVEL_RANGE then
+        return QuestieDB.IsLevelRequirementsFulfilled(questId, 1, maxLevel, playerLevel)
+    end
+
+    return false
+end
+
+local function _IsHiddenByTrivialRepeatableSetting(questId, isRepeatableQuest, showTrivialRepeatableQuests)
+    if (not isRepeatableQuest) or showTrivialRepeatableQuests then
+        return false
+    end
+
+    local questLevel = QuestieDB.QueryQuestSingle(questId, "questLevel")
+    return questLevel and QuestieDB.IsTrivial(questLevel)
+end
+
 ---@param callback function | nil
 ---@param fastRefresh boolean|nil
 function AvailableQuests.CalculateAndDrawAll(callback, fastRefresh)
@@ -120,6 +142,7 @@ function AvailableQuests.PruneByCurrentLevelFilter()
     local playerLevel = QuestiePlayer.GetPlayerLevel()
     local minLevel = playerLevel - GetQuestGreenRange("player")
     local maxLevel = playerLevel
+    local showTrivialRepeatableQuests = Questie.db.profile.showTrivialRepeatableQuests ~= false
 
     if Questie.db.profile.lowLevelStyle == Questie.LOWLEVEL_RANGE then
         minLevel = Questie.db.profile.minLevelFilter
@@ -129,7 +152,9 @@ function AvailableQuests.PruneByCurrentLevelFilter()
     end
 
     for questId in pairs(availableQuests) do
-        if not QuestieDB.IsLevelRequirementsFulfilled(questId, minLevel, maxLevel, playerLevel) then
+        local isRepeatableQuest = QuestieDB.IsRepeatable(questId)
+        if _IsHiddenByTrivialRepeatableSetting(questId, isRepeatableQuest, showTrivialRepeatableQuests) or
+            (not _IsLevelRequirementsFulfilledForAvailable(questId, minLevel, maxLevel, playerLevel, isRepeatableQuest)) then
             AvailableQuests.RemoveQuest(questId)
         end
     end
@@ -361,6 +386,7 @@ _CalculateAvailableQuests = function()
 
     local completedQuests = Questie.db.char.complete
     local showRepeatableQuests = Questie.db.profile.showRepeatableQuests
+    local showTrivialRepeatableQuests = Questie.db.profile.showTrivialRepeatableQuests ~= false
     local showDungeonQuests = Questie.db.profile.showDungeonQuests
     local showRaidQuests = Questie.db.profile.showRaidQuests
     local showPvPQuests = Questie.db.profile.showPvPQuests
@@ -380,6 +406,8 @@ _CalculateAvailableQuests = function()
     -- We create a local function here to improve readability but use the localized variables above.
     -- The order of checks is important here to bring the speed to a max
     local function _DrawQuestIfAvailable(questId)
+        local isRepeatableQuest = QuestieDB.IsRepeatable(questId)
+
         if (autoBlacklist[questId] or -- Don't show autoBlacklist quests marked as such by IsDoable
             completedQuests[questId] or -- Don't show completed quests
             hiddenQuests[questId] or -- Don't show blacklisted quests
@@ -401,7 +429,7 @@ _CalculateAvailableQuests = function()
         end
 
         if (
-            ((not showRepeatableQuests) and QuestieDB.IsRepeatable(questId)) or     -- Don't show repeatable quests if option is disabled
+            ((not showRepeatableQuests) and isRepeatableQuest) or                   -- Don't show repeatable quests if option is disabled
             ((not showPvPQuests) and QuestieDB.IsPvPQuest(questId)) or              -- Don't show PvP quests if option is disabled
             ((not showDungeonQuests) and QuestieDB.IsDungeonQuest(questId)) or      -- Don't show dungeon quests if option is disabled
             ((not showRaidQuests) and QuestieDB.IsRaidQuest(questId)) or            -- Don't show raid quests if option is disabled
@@ -416,8 +444,16 @@ _CalculateAvailableQuests = function()
             return
         end
 
+        if _IsHiddenByTrivialRepeatableSetting(questId, isRepeatableQuest, showTrivialRepeatableQuests) then
+            if availableQuests[questId] or QuestieMap.questIdFrames[questId] then
+                AvailableQuests.RemoveQuest(questId)
+            end
+            availableQuests[questId] = nil
+            return
+        end
+
         if (
-            (not QuestieDB.IsLevelRequirementsFulfilled(questId, minLevel, maxLevel, playerLevel)) or
+            (not _IsLevelRequirementsFulfilledForAvailable(questId, minLevel, maxLevel, playerLevel, isRepeatableQuest)) or
             (not QuestieDB.IsDoable(questId, debugEnabled))
         ) then
             --If the quests are not within level range we want to unload them

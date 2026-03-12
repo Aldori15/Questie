@@ -344,6 +344,11 @@ function QuestieMenu:Show(hideDelay)
         QuestieQuest:RefreshQuestIconVisibility()
         AvailableQuests.CalculateAndDrawAll()
     end, icon=QuestieLib.AddonPath.."Icons\\available.blp", notCheckable=false, checked=Questie.db.profile.enableAvailable, isNotRadio=true, keepShownOnClick=true})
+    tinsert(menuTable, { text= l10n("Repeatable Quests"), func = function()
+        local value = not Questie.db.profile.showRepeatableQuests
+        Questie.db.profile.showRepeatableQuests = value
+        _RunFastAvailableRefresh()
+    end, icon=QuestieLib.AddonPath.."Icons\\repeatable.blp", notCheckable=false, checked=Questie.db.profile.showRepeatableQuests, isNotRadio=true, keepShownOnClick=true})
     tinsert(menuTable, { text= l10n("Trivial Quest"), func = function()
         local value = Questie.db.profile.lowLevelStyle == Questie.LOWLEVEL_ALL
         if value then
