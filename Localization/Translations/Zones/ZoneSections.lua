@@ -110,6 +110,18 @@ local zoneSectionLocales = {
         ["zhTW"] = "副本",
         ["zhCN"] = "地下城",
     },
+    ["Instance"] = {
+        ["enUS"] = true,
+        ["deDE"] = "Instanz",
+        ["esES"] = "Estancia",
+        ["esMX"] = "Estancia",
+        ["frFR"] = true,
+        ["koKR"] = "인스턴스",
+        ["ptBR"] = "Instância",
+        ["ruRU"] = "Подземелье",
+        ["zhCN"] = "副本",
+        ["zhTW"] = "副本",
+    },
 }
 
 for k, v in pairs(zoneSectionLocales) do
