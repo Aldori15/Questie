@@ -14,6 +14,11 @@ local stringchar = string.char
 local stringbyte = string.byte
 local stringsub = string.sub
 
+-- When QuestieCompat swaps stream byte IO to its segmented-table implementation,
+-- we must also load incoming data into the expected segmented structure.
+local COMPAT_MAX_TABLE_SIZE = 524288
+local LOAD_BYTE_CHUNK = 4096
+
 -- shift level table
 local QSL_dltab = {};
 QSL_dltab[stringbyte("x")] = 0;
@@ -111,7 +116,6 @@ function QuestieStreamLib:GetStream(mode) -- returns a new stream
         stream.ReadInt24 = QuestieStreamLib._ReadInt24
         stream.ReadInt = QuestieStreamLib._ReadInt
         stream.ReadInt12Pair = QuestieStreamLib._ReadInt12Pair
-        stream.ReadTinyString = QuestieStreamLib._ReadTinyString
         stream.ReadShortString = QuestieStreamLib._ReadShortString
         stream.ReadTinyStringNil = QuestieStreamLib._ReadTinyStringNil
 
@@ -477,7 +481,33 @@ function QuestieStreamLib:Load(bin)
     if self._mode == "raw" or self._mode == "raw_assert" then
         self._bin = bin
     else
-        self._bin = {stringbyte(bin, 1, -1)}
+        local useCompatIO = QuestieCompat and QuestieCompat._readByte and (self._readByte == QuestieCompat._readByte)
+        if useCompatIO then
+            self._bin = {}
+            local len = string.len(bin)
+            local pointer = 1
+
+            for startPos = 1, len, LOAD_BYTE_CHUNK do
+                local endPos = startPos + LOAD_BYTE_CHUNK - 1
+                if endPos > len then
+                    endPos = len
+                end
+                local bytes = { stringbyte(bin, startPos, endPos) }
+                for i = 1, #bytes do
+                    local subIndex = math.ceil(pointer / COMPAT_MAX_TABLE_SIZE)
+                    local index = pointer - (subIndex - 1) * COMPAT_MAX_TABLE_SIZE
+                    local sub = self._bin[subIndex]
+                    if not sub then
+                        sub = {}
+                        self._bin[subIndex] = sub
+                    end
+                    sub[index] = bytes[i]
+                    pointer = pointer + 1
+                end
+            end
+        else
+            self._bin = {stringbyte(bin, 1, -1)}
+        end
     end
     self._level = 0
 end

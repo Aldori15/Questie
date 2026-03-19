@@ -579,7 +579,7 @@ function _QuestieComms:BroadcastQuestLog(eventName, sendMode, targetPlayer) -- b
             --print("[CommsSendOrder][Block " .. (blockCount - 1) .. "] " .. QuestieDB.QueryQuestSingle(entry.questId, "name"))
             entryCount = entryCount + 1
             rawQuestList[quest.id] = quest;
-            if string.len(QuestieSerializer:Serialize(rawQuestList)) > 200 then--extra space for packet metadata and CTL stuff
+            if string.len(QuestieSerializer:Serialize(rawQuestList, "b89")) > 200 then--extra space for packet metadata and CTL stuff
                 rawQuestList[quest.id] = nil
                 tinsert(blocks, rawQuestList)
                 rawQuestList = {
@@ -699,7 +699,7 @@ function _QuestieComms:BroadcastQuestLogV2(eventName, sendMode, targetPlayer) --
 
             offset = QuestieComms:PopulateQuestDataPacketV2_noclass_renameme(entry.questId, rawQuestList, offset)
 
-            if string.len(QuestieSerializer:Serialize(rawQuestList)) > 200 then--extra space for packet metadata and CTL stuff
+            if string.len(QuestieSerializer:Serialize(rawQuestList, "b89")) > 200 then--extra space for packet metadata and CTL stuff
                 rawQuestList[1] = entryCount
                 tinsert(blocks, rawQuestList)
                 rawQuestList = {}
@@ -984,11 +984,11 @@ function _QuestieComms:Broadcast(packet)
     packet.target = nil
     packet.writeMode = nil -- we dont need to include these in the packet data
     if packetWriteMode == _QuestieComms.QC_WRITE_WHISPER then
-        local compressedData = QuestieSerializer:Serialize(packet);
+        local compressedData = QuestieSerializer:Serialize(packet, "b89");
         Questie:Debug(Questie.DEBUG_DEVELOP,"send(|cFFFF2222", string.len(compressedData), "|r)")
         Questie:SendCommMessage(_QuestieComms.prefix, compressedData, packetWriteMode, packetTarget, packetPriority)
     elseif packetWriteMode == _QuestieComms.QC_WRITE_CHANNEL then
-        local compressedData = QuestieSerializer:Serialize(packet);
+        local compressedData = QuestieSerializer:Serialize(packet, "b89");
         Questie:Debug(Questie.DEBUG_DEVELOP,"send(|cFFFF2222", string.len(compressedData), "|r)")
         -- Always do channel messages as BULK priority
         Questie:SendCommMessage(_QuestieComms.prefix, compressedData, packetWriteMode, GetChannelName("questiecom"), "BULK")
@@ -1000,7 +1000,7 @@ function _QuestieComms:Broadcast(packet)
         --print("Yelling progress: " .. compressedData)
         Questie:SendCommMessage(_QuestieComms.prefix, compressedData, packetWriteMode, "BULK")
     else
-        local compressedData = QuestieSerializer:Serialize(packet);
+        local compressedData = QuestieSerializer:Serialize(packet, "b89");
         Questie:Debug(Questie.DEBUG_DEVELOP, "send(|cFFFF2222", string.len(compressedData), "|r)")
         Questie:SendCommMessage(_QuestieComms.prefix, compressedData, packetWriteMode, nil, packetPriority)
         --OLD: C_ChatInfo.SendAddonMessage("questie", compressedData, packet.writeMode)
@@ -1011,9 +1011,9 @@ function _QuestieComms:OnCommReceived(message, distribution, sender)
     pcall(_QuestieComms.OnCommReceived_unsafe, _QuestieComms, message, distribution, sender)
 end
 
-function _QuestieComms:OnCommReceived_unsafe(message, distribution, sender)
+function _QuestieComms.OnCommReceived_unsafe(prefix, message, distribution, sender)
     --print("[" .. distribution .."][" .. sender .. "] " .. message)
-    Questie:Debug(Questie.DEBUG_DEVELOP, "|cFF22FF22", "sender:", "|r", sender, "distribution:", distribution, "Packet length:",string.len(message))
+    Questie:Debug(Questie.DEBUG_DEVELOP, "|cFF22FF22", "sender:", "|r", sender, "distribution:", distribution, "Packet length:", string.len(message))
     if message and sender and sender ~= UnitName("player") then
         local decompressedData
         if distribution == "YELL" then
@@ -1021,7 +1021,7 @@ function _QuestieComms:OnCommReceived_unsafe(message, distribution, sender)
             decompressedData = QuestieSerializer:Deserialize(message, "b89")
         else
             --print("Decompressing normal data")
-            decompressedData = QuestieSerializer:Deserialize(message)
+            decompressedData = QuestieSerializer:Deserialize(message, "b89")
         end
 
         --Check if the message version is the same base value
