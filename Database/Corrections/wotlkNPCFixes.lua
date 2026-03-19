@@ -20,6 +20,9 @@ function QuestieWotlkNpcFixes:Load()
         [658] = {
             [npcKeys.spawns] = {[zoneIDs.DUN_MOROGH] = {{29.87,71.87}}},
         },
+        [823] = { -- Deputy Willem
+            [npcKeys.spawns] = {[zoneIDs.ELWYNN_FOREST] = {{48.05,43.55}}},
+        },
         [914] = { -- Ander Germaine
             [npcKeys.questStarts] = {64031,64034,64035,64037,64038,70397,70398,70401,70411,70865,70870,78140,78157,78164,78166},
             [npcKeys.questEnds] = {64028,64031,64034,64035,70395,70397,70398,70401,70870,78136,78140,78157,78164},
@@ -1962,7 +1965,10 @@ function QuestieWotlkNpcFixes:Load()
             [npcKeys.zoneID] = zoneIDs.ICECROWN,
         },
         [30871] = {
-            [npcKeys.spawns] = {[zoneIDs.UTGARDE_PINNACLE] = {{43.9,18},{-1,-1}}},
+            [npcKeys.spawns] = {
+                [zoneIDs.UTGARDE_PINNACLE_UPPER_LEVEL] = {{43.9,18}},
+                [zoneIDs.UTGARDE_PINNACLE] = {{-1,-1}},
+            },
         },
         [30944] = {
             [npcKeys.spawns] = {[zoneIDs.ICECROWN]={{54.15,71.18}}},
