@@ -2803,7 +2803,13 @@ QuestieCompat.KButtons = {
         button:RegisterForClicks("anyUp")
         button:SetScript("OnMouseDown", QuestieWorldMapButtonMixin.OnMouseDown)
         button:SetScript("OnEnter", QuestieWorldMapButtonMixin.OnEnter)
-        button:SetScript("OnLeave", function(self) QuestieCompat.SetupTooltip(self, true):Hide() end)
+        button:SetScript("OnLeave", function(self)
+            GameTooltip_Hide()
+            local tooltip = QuestieCompat.SetupTooltip(self, true)
+            if tooltip and tooltip ~= GameTooltip then
+                tooltip:Hide()
+            end
+        end)
 
         local background = button:CreateTexture(nil, "BACKGROUND")
         background:SetSize(25, 25)
