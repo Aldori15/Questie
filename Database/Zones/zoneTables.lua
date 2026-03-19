@@ -40,9 +40,11 @@ ZoneDB.private.areaIdToUiMapId = {
     [139] = 1423, -- Eastern Plaguelands
     [141] = 1438, -- Teldrassil
     [148] = 1439, -- Darkshore
+    [206] = 133, -- Utgarde Keep - Dungeon
     [209] = 310, -- Shadowfang Keep - Dungeon
     [210] = 118, -- Icecrown
     [215] = 1412, -- Mulgore
+    [6452] = 462, -- Camp Narache
     [267] = 1424, -- Hillsbrad Foothills
     [331] = 1440, -- Ashenvale
     [357] = 1444, -- Feralas
@@ -64,6 +66,7 @@ ZoneDB.private.areaIdToUiMapId = {
     [722] = 300, -- Razorfen Downs - Dungeon
     [796] = 302, -- Scarlet Monastery - Dungeon
     [1176] = 219, -- Zul'Farrak - Dungeon
+    [1196] = 136, -- Utgarde Pinnacle - Dungeon
     [1337] = 230, -- Uldaman - Dungeon
     [1377] = 1451, -- Silithus
     [1477] = 220, -- The Temple of Atal'Hakkar - Dungeon
@@ -135,6 +138,8 @@ ZoneDB.private.areaIdToUiMapId = {
     [3979] = 113, -- The Frozen Sea
     [4075] = 335, -- Sunwell Plateau - Raid
     [4080] = 1957, -- Isle of Quel'Danas
+    [4100] = 130, -- The Culling of Stratholme - Dungeon
+    [4196] = 160, -- Drak'Tharon Keep - Dungeon
     [4811] = 130, -- The Culling of Stratholme - Village (fake ID for The Culling of Stratholme)
     [4814] = 131, -- The Culling of Stratholme - City (fake ID for The Culling of Stratholme)
     [4822] = 160, -- Drak'Tharon Keep - Lower Level (fake ID for Drak'Tharon Keep)
@@ -143,18 +148,23 @@ ZoneDB.private.areaIdToUiMapId = {
     [4825] = 153, -- Gundrak - Lower Level (fake ID for Gundrak)
     [4197] = 123, -- Wintergrasp
     [4228] = 142, -- The Oculus - Dungeon
+    [4264] = 140, -- Halls of Stone - Dungeon
+    [4265] = 129, -- The Nexus - Dungeon
     [4810] = 140, -- Halls of Stone - dungeon map (fake ID for Halls of Stone)
     [4805] = 129, -- The Nexus - dungeon map (fake ID for The Nexus)
     [4272] = 138, -- Halls of Lightning - Dungeon
     [4273] = 147, -- Ulduar - Raid
     [4274] = 139, -- Halls of Lightning - The Terrestrial Watchtower (fake ID for Halls of Lightning)
     [4301] = 157, -- Azjol-Nerub - The Brood Pit (fake ID for Azjol-Nerub)
+    [4277] = 157, -- Azjol-Nerub - Dungeon
     [4298] = 124, -- Plaguelands: The Scarlet Enclave
     [4384] = 128, -- Strand of the Ancients - Battleground
     [4395] = 125, -- Dalaran - Dungeon?
     [4415] = 168, -- The Violet Hold - Dungeon
+    [4416] = 153, -- Gundrak - Dungeon
     [4493] = 155, -- The Obsidian Sanctum - Raid
     [4808] = 132, -- Ahn'kahet: The Old Kingdom - dungeon map (fake ID for Ahn'kahet: The Old Kingdom)
+    [4494] = 132, -- Ahn'kahet: The Old Kingdom - Dungeon
     [4500] = 141, -- The Eye of Eternity - Raid
     [4560] = 126, -- The Underbelly - Sub zone of Dalaran
     [4603] = 156, -- Vault of Archavon - Raid
@@ -245,6 +255,7 @@ ZoneDB.private.uiMapIdToAreaId = {
     [316]  = 209, -- Shadowfang Keep - Dungeon
     [118]  = 210, -- Icecrown
     [1412] = 215, -- Mulgore
+    [462]  = 6452, -- Camp Narache
     [1424] = 267, -- Hillsbrad Foothills
     [1440] = 331, -- Ashenvale
     [1444] = 357, -- Feralas
@@ -452,6 +463,41 @@ ZoneDB.private.uiMapIdToAreaId = {
     [192] = 4837, -- Icecrown Citadel - The Frozen Throne (fake ID for ICC)
     [193] = 4812, -- Icecrown Citadel - Raid
     [200] = 4987, -- The Ruby Sanctum - Raid
+}
+
+-- Some correction tables use high fake zone IDs that are not AreaIDs.
+-- Resolve them straight to the UiMap they represent.
+---@type table<AreaId, UiMapId>
+ZoneDB.private.specialZoneIdToUiMapId = {
+    [10002] = 243, -- Blackrock Depths - Shadowforge City
+    [10062] = 162, -- Naxxramas - Construct Quarter
+    [10063] = 163, -- Naxxramas - Arachnid Quarter
+    [10064] = 164, -- Naxxramas - Military Quarter
+    [10065] = 165, -- Naxxramas - Plague Quarter
+    [10066] = 167, -- Naxxramas - Frostwyrm Lair
+    [10067] = 190, -- Icecrown Citadel - Upper Spire
+    [10068] = 191, -- Icecrown Citadel - Queen Lana'thel
+    [10069] = 189, -- Icecrown Citadel - Sindragosa
+    [10070] = 187, -- Icecrown Citadel - Rampart of Skulls
+    [10071] = 188, -- Icecrown Citadel - Deathbringer's Rise
+    [10072] = 192, -- Icecrown Citadel - The Frozen Throne
+    [10102] = 350, -- Karazhan - Servant's Quarters
+    [10103] = 351, -- Karazhan - Upper Livery Stables
+    [10104] = 352, -- Karazhan - The Banquet Hall
+    [10105] = 353, -- Karazhan - The Guest Chambers
+    [10106] = 354, -- Karazhan - Opera Hall Balcony
+    [10107] = 355, -- Karazhan - Master's Terrace
+    [10108] = 356, -- Karazhan - Lower Broken Stair
+    [10109] = 357, -- Karazhan - Upper Broken Stair
+    [10110] = 358, -- Karazhan - The Menagerie
+    [10111] = 359, -- Karazhan - Guardian's Library
+    [10112] = 360, -- Karazhan - The Repository
+    [10113] = 361, -- Karazhan - Upper Library
+    [10114] = 362, -- Karazhan - The Celestial Watch
+    [10115] = 363, -- Karazhan - Gamesman's Hall
+    [10116] = 364, -- Karazhan - Medivh's Chambers
+    [10117] = 365, -- Karazhan - The Power Station
+    [10118] = 366, -- Karazhan - Netherspace
 }
 
 -- [areaId] = {"name", alternative areaId (a sub zone), parentId}
@@ -2816,6 +2862,7 @@ ZoneDB.private.subZoneToParentZone = {
 }
 ZoneDB.private.subZoneToParentZone[3545] = 3483 -- Hellfire Citadel -> Hellfire Peninsula
 ZoneDB.private.subZoneToParentZone[3563] = 3483 -- Hellfire Citadel -> Hellfire Peninsula
+ZoneDB.private.subZoneToParentZone[6452] = 215 -- Camp Narache -> Mulgore
 
 -- Different source of zoneIds
 -- These are not in use anymore but are quite helpful when fixing the database

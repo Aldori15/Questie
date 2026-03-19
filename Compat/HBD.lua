@@ -1,5 +1,6 @@
 ---@type QuestieMap
 local QuestieMap = QuestieLoader:ImportModule("QuestieMap");
+local C_Timer = QuestieCompat.C_Timer
 
 local mapData = QuestieCompat.UiMapData -- table { width, height, left, top, .instance, .name, .mapType }
 local worldMapData = QuestieCompat.worldMapData -- table { width, height, left, top }
@@ -99,10 +100,7 @@ end
 -- The position is transformed to the current continent, if applicable
 -- @return x, y, instanceID
 function HBD:GetPlayerWorldPosition()
-    local x, y, uiMapID = HBD:GetPlayerZonePosition()
-    if not x or not y then return nil, nil, nil end
-
-    x, y, instanceID = HBD:GetWorldCoordinatesFromZone(x, y, uiMapID)
+    local x, y, instanceID = QuestieCompat.GetCurrentPlayerStableWorldPosition()
     if x and y then
         return x, y, instanceID
     end
@@ -226,6 +224,9 @@ local minimapPinCount, queueFullUpdate = 0, false
 ---@type unknown, MinimapShapes?
 local minimapScale, minimapShape, mapRadius, minimapWidth, minimapHeight, mapSin, mapCos
 local lastZoom, lastFacing, lastXY, lastYY
+local worldMapLayoutDirty = true
+local worldMapRefreshPending = false
+local lastWorldMapUiMapID, lastWorldMapWidth, lastWorldMapHeight, lastWorldMapScale
 
 local function drawMinimapPin(pin, data)
     local xDist, yDist = lastXY - data.x, lastYY - data.y
@@ -286,8 +287,7 @@ end
 
 local function UpdateMinimapPins(force)
     -- get the current player position
-    local x, y, instanceID = HBD:GetPlayerWorldPosition()
-    local mapID = HBD:GetPlayerZone()
+    local x, y, instanceID = QuestieCompat.GetCurrentPlayerMinimapWorldPosition()
 
     -- get data from the API for calculations
     local zoom = pins.Minimap:GetZoom()
@@ -308,6 +308,7 @@ local function UpdateMinimapPins(force)
             pin:Hide()
             activeMinimapPins[pin] = nil
         end
+        lastXY, lastYY = nil, nil
         return
     end
 
@@ -317,7 +318,7 @@ local function UpdateMinimapPins(force)
         force = true
     end
 
-    if x ~= lastXY or y ~= lastYY or diffZoom or facing ~= lastFacing or force then
+    if minimapPinCount == 0 or x ~= lastXY or y ~= lastYY or diffZoom or facing ~= lastFacing or force then
         -- minimap information
         minimapShape = GetMinimapShape and minimap_shapes[GetMinimapShape() or "ROUND"]
         minimapWidth = pins.Minimap:GetWidth() / 2
@@ -373,7 +374,7 @@ local function UpdateMinimapIconPosition()
     -- we have no active minimap pins, just return early
     if minimapPinCount == 0 then return end
 
-    local x, y = HBD:GetPlayerWorldPosition()
+    local x, y = QuestieCompat.GetCurrentPlayerMinimapWorldPosition()
 
     -- for rotating minimap support
     local facing
@@ -449,10 +450,8 @@ local Enum = {
 
 local worldmapWidth, worldmapHeight
 
-local function HandleWorldMapPin(icon, data)
+local function HandleWorldMapPin(icon, data, uiMapID)
     if not WorldMapFrame:IsVisible() then return end
-
-    local uiMapID = QuestieCompat.GetCurrentUiMapID()
 
     -- check for a valid map
     if not uiMapID then return end
@@ -488,8 +487,33 @@ local function HandleWorldMapPin(icon, data)
                     return
                 end
             else
-                local show = true -- Questie fix to show icons in neighbour areas
-                local parentMapID = HBD.mapData[data.uiMapID].parent
+                local currentMapData = HBD.mapData[uiMapID]
+                local iconMapData = HBD.mapData[data.uiMapID]
+                if not iconMapData then
+                    return
+                end
+
+                local show = currentMapData.mapType == Enum.UIMapType.Zone and
+                    iconMapData.mapType == Enum.UIMapType.Zone and
+                    currentMapData.parentMapID == iconMapData.parentMapID
+                -- World-map-only starter zones still need ancestor-zone pins projected into
+                -- the child rectangle when the world coordinates fall inside it.
+                local currentParentMapID = currentMapData.parentMapID
+                while (not show) and currentParentMapID and HBD.mapData[currentParentMapID] do
+                    if currentParentMapID == data.uiMapID then
+                        local parentMapType = HBD.mapData[currentParentMapID].mapType
+                        if data.worldMapShowFlag >= HBD_PINS_WORLDMAP_SHOW_PARENT and
+                            (parentMapType == Enum.UIMapType.Zone or parentMapType == Enum.UIMapType.Dungeon or parentMapType == Enum.UIMapType.Micro) then
+                            show = true
+                        elseif data.worldMapShowFlag >= HBD_PINS_WORLDMAP_SHOW_CONTINENT and
+                            parentMapType == Enum.UIMapType.Continent then
+                            show = true
+                        end
+                        break
+                    end
+                    currentParentMapID = HBD.mapData[currentParentMapID].parentMapID
+                end
+                local parentMapID = iconMapData.parentMapID
                 while parentMapID and HBD.mapData[parentMapID] do
                     if parentMapID == uiMapID then
                         local parentMapType = HBD.mapData[parentMapID].mapType
@@ -508,7 +532,7 @@ local function HandleWorldMapPin(icon, data)
                         break
                         -- worldmap is handled above already
                     else
-                        parentMapID = HBD.mapData[parentMapID].parent
+                        parentMapID = HBD.mapData[parentMapID].parentMapID
                     end
                 end
 
@@ -535,34 +559,106 @@ local function UpdateMinimap()
     UpdateMinimapPins()
 end
 
-local function UpdateWorldMap()
+local function HideWorldMapPins()
+    for icon in pairs(worldmapPins) do
+        icon:Hide()
+        icon:ClearAllPoints()
+    end
+    worldMapLayoutDirty = true
+    lastWorldMapUiMapID, lastWorldMapWidth, lastWorldMapHeight, lastWorldMapScale = nil, nil, nil, nil
+end
+
+local function UpdateWorldMap(force)
+    if QuestieCompat.IsInternalMapReadActive and QuestieCompat.IsInternalMapReadActive() then
+        return
+    end
+
     if not WorldMapFrame:IsVisible() then return end
+
+    local uiMapID = QuestieCompat.GetCurrentUiMapID()
+    if not uiMapID then return end
 
     local scale = WorldMapButton:GetScale()
     worldmapWidth  = WorldMapButton:GetWidth()*scale
     worldmapHeight = WorldMapButton:GetHeight()*scale
 
     local mapScale = QuestieMap.GetScaleValue()
+    local shouldRescale = force or worldMapLayoutDirty or mapScale ~= lastWorldMapScale
+    if (not force)
+        and (not worldMapLayoutDirty)
+        and uiMapID == lastWorldMapUiMapID
+        and worldmapWidth == lastWorldMapWidth
+        and worldmapHeight == lastWorldMapHeight
+        and mapScale == lastWorldMapScale then
+        return
+    end
 
     for icon, data in pairs(worldmapPins) do
         icon:Hide()
         --icon:ClearAllPoints()
 
-        QuestieMap.utils:RescaleIcon(icon, mapScale)
-        HandleWorldMapPin(icon, data)
+        if shouldRescale then
+            QuestieMap.utils:RescaleIcon(icon, mapScale)
+        end
+        HandleWorldMapPin(icon, data, uiMapID)
     end
+
+    worldMapLayoutDirty = false
+    lastWorldMapUiMapID = uiMapID
+    lastWorldMapWidth = worldmapWidth
+    lastWorldMapHeight = worldmapHeight
+    lastWorldMapScale = mapScale
 end
 pins.UpdateWorldMap = UpdateWorldMap
 
-local last_update = 0
+local function QueueWorldMapRefresh()
+    if worldMapRefreshPending then
+        return
+    end
+
+    if not C_Timer or not C_Timer.After then
+        UpdateWorldMap()
+        return
+    end
+
+    worldMapRefreshPending = true
+    C_Timer.After(0.01, function()
+        worldMapRefreshPending = false
+        if WorldMapFrame and WorldMapFrame:IsVisible() then
+            UpdateWorldMap()
+        end
+    end)
+end
+
+local function EnsureWorldMapLifecycleHooks()
+    if not WorldMapFrame or WorldMapFrame.questieWorldMapPinsLifecycleHooked then
+        return
+    end
+
+    WorldMapFrame.questieWorldMapPinsLifecycleHooked = true
+    WorldMapFrame:HookScript("OnShow", function()
+        UpdateWorldMap()
+        QueueWorldMapRefresh()
+    end)
+    WorldMapFrame:HookScript("OnHide", HideWorldMapPins)
+end
+
+local lastFullUpdate = 0
+local lastIconUpdate = 0
 local function OnUpdateHandler(frame, elapsed)
-    last_update = last_update + elapsed
-    if last_update > 1 or queueFullUpdate then
+    lastFullUpdate = lastFullUpdate + elapsed
+    lastIconUpdate = lastIconUpdate + elapsed
+
+    if lastFullUpdate > 1 or queueFullUpdate then
         UpdateMinimapPins(queueFullUpdate)
-        last_update = 0
+        lastFullUpdate = 0
+        lastIconUpdate = 0
         queueFullUpdate = false
-    else
+    elseif (not WorldMapFrame:IsVisible()) or lastIconUpdate > 0.05 then
         UpdateMinimapIconPosition()
+        if WorldMapFrame:IsVisible() then
+            lastIconUpdate = 0
+        end
     end
 end
 pins.updateFrame:SetScript("OnUpdate", OnUpdateHandler)
@@ -579,7 +675,9 @@ local function OnEventHandler(frame, event, ...)
     elseif event == "PLAYER_LOGIN" then
         -- recheck cvars after login
         rotateMinimap = GetCVar("rotateMinimap") == "1"
+        EnsureWorldMapLifecycleHooks()
     elseif event == "PLAYER_ENTERING_WORLD" then
+        EnsureWorldMapLifecycleHooks()
         UpdateMinimap()
         UpdateWorldMap()
     elseif event == "WORLD_MAP_UPDATE" then
@@ -602,6 +700,7 @@ pins.updateFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 
 -- Showing quest objectives does not trigger WORLD_MAP_UPDATE event
 hooksecurefunc("WorldMapFrame_DisplayQuests", UpdateWorldMap)
+EnsureWorldMapLifecycleHooks()
 
 --- Add a icon to the minimap (x/y world coordinate version)
 -- Note: This API does not let you specify a map to limit the pin to, it'll be shown on all maps these coordinates are valid for.
@@ -768,10 +867,12 @@ function pins:AddWorldMapIconWorld(ref, icon, instanceID, x, y, showFlag, frameL
     t.frameLevelType = frameLevel
 
     worldmapPins[icon] = t
+    worldMapLayoutDirty = true
 
     icon.icon = icon --LOL!
     icon:SetParent(WorldMapButton)
-    HandleWorldMapPin(icon, t)
+    local currentUiMapID = WorldMapFrame and WorldMapFrame:IsVisible() and QuestieCompat.GetCurrentUiMapID() or nil
+    HandleWorldMapPin(icon, t, currentUiMapID)
 end
 
 --- Add a icon to the world map (uiMapID zone coordinate version)
@@ -815,10 +916,12 @@ function pins:AddWorldMapIconMap(ref, icon, uiMapID, x, y, showFlag, frameLevel)
     t.frameLevelType = frameLevel
 
     worldmapPins[icon] = t
+    worldMapLayoutDirty = true
 
     icon.icon = icon --LOL!
     icon:SetParent(WorldMapButton)
-    HandleWorldMapPin(icon, t)
+    local currentUiMapID = WorldMapFrame and WorldMapFrame:IsVisible() and QuestieCompat.GetCurrentUiMapID() or nil
+    HandleWorldMapPin(icon, t, currentUiMapID)
 end
 
 --- Remove a worldmap icon
@@ -830,6 +933,7 @@ function pins:RemoveWorldMapIcon(ref, icon)
     if worldmapPins[icon] then
         recycle(worldmapPins[icon])
         worldmapPins[icon] = nil
+        worldMapLayoutDirty = true
     end
     icon:Hide()
     icon:ClearAllPoints()
@@ -841,8 +945,11 @@ end
 function pins:RemoveAllWorldMapIcons(ref)
     if not ref or not worldmapPinRegistry[ref] then return end
     for icon in pairs(worldmapPinRegistry[ref]) do
-        recycle(worldmapPins[icon])
-        worldmapPins[icon] = nil
+        if worldmapPins[icon] then
+            recycle(worldmapPins[icon])
+            worldmapPins[icon] = nil
+            worldMapLayoutDirty = true
+        end
         icon:Hide()
         icon:ClearAllPoints()
         icon:SetParent(UiParent)

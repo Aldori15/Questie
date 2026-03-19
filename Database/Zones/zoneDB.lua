@@ -28,6 +28,7 @@ local UI_MAP_TYPE_WORLD = 1
 local UI_MAP_TYPE_CONTINENT = 2
 
 local areaIdToUiMapId = ZoneDB.private.areaIdToUiMapId or {}
+local specialZoneIdToUiMapId = ZoneDB.private.specialZoneIdToUiMapId or {}
 local uiMapIdToAreaId = ZoneDB.private.uiMapIdToAreaId or {}
 local dungeons = ZoneDB.private.dungeons or {}
 local dungeonLocations = ZoneDB.private.dungeonLocations or {}
@@ -80,7 +81,7 @@ end
 ---@param areaId AreaId
 ---@return UiMapId
 function ZoneDB:GetUiMapIdByAreaId(areaId)
-    return areaIdToUiMapId[areaId]
+    return areaIdToUiMapId[areaId] or specialZoneIdToUiMapId[areaId]
 end
 
 --- Use with care, kind of slow.
