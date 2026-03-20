@@ -107,6 +107,21 @@ local _has_seen_incomplete = {}
 local _has_sent_announce = {}
 local _announced_progress = {}
 
+---@param objectiveStateKey string
+---@param numFulfilled number
+---@param numRequired number
+local function _PrimeObjectiveState(objectiveStateKey, numFulfilled, numRequired)
+    if numRequired ~= numFulfilled then
+        _has_seen_incomplete[objectiveStateKey] = true
+        _announced_progress[objectiveStateKey] = numFulfilled
+    else
+        _has_seen_incomplete[objectiveStateKey] = nil
+        if numRequired and numRequired > 0 then
+            _announced_progress[objectiveStateKey] = numFulfilled
+        end
+    end
+end
+
 ---@param questId number
 ---@param text string
 ---@param numRequired number
@@ -141,6 +156,12 @@ end
 function QuestieAnnounce:ObjectiveChanged(questId, text, numFulfilled, numRequired)
     local objectiveStateKey = _GetObjectiveStateKey(questId, text, numRequired)
     local objectiveProgress = tostring(numFulfilled) .. "/" .. tostring(numRequired)
+
+    -- Reload/login quest log hydration should establish baseline progress without re-announcing old objectives.
+    if not Questie.started then
+        _PrimeObjectiveState(objectiveStateKey, numFulfilled, numRequired)
+        return
+    end
 
     -- Announce objective progress (1/10, 2/10, ...) without duplicate spam.
     if numRequired ~= numFulfilled then
