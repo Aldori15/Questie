@@ -347,6 +347,31 @@ QuestieInit.Stages[3] = function() -- run as a coroutine
 
     Questie.started = true
 
+    if QuestieCompat.Is335 then
+        -- 3.3.5 can miss the emulated group join sync on login/reload while already in a party.
+        -- Request a fresh quest log sync only after Questie is fully initialized.
+        local syncTicker
+        local attempts = 0
+        syncTicker = C_Timer.NewTicker(0.5, function()
+            attempts = attempts + 1
+
+            local currentMembers = 0
+            if QuestieCompat.IsInRaid() then
+                currentMembers = GetNumRaidMembers()
+            elseif QuestieCompat.IsInGroup() then
+                currentMembers = GetNumPartyMembers()
+            end
+
+            if currentMembers > 0 then
+                QuestiePlayer.numberOfGroupMembers = currentMembers
+                Questie:SendMessage("QC_ID_REQUEST_FULL_QUESTLIST")
+                syncTicker:Cancel()
+            elseif attempts >= 10 then
+                syncTicker:Cancel()
+            end
+        end)
+    end
+
     -- We only update this if Questie fully loads to make sure we don't update it on crashes/fast reloads
     QuestieLib.UpdateLastKnownDailyReset()
 

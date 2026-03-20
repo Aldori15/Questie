@@ -160,6 +160,39 @@ function QuestieComms:GetQuest(questId, playerName)
     return nil;
 end
 
+local function _GetFullSyncDelays(sendMode)
+    if sendMode == "WHISPER" then
+        -- Direct resyncs after reload/login should feel immediate; ChatThrottleLib still protects throughput.
+        return 0, 0.1
+    end
+
+    return random() * 3, 3
+end
+
+local function _ScheduleQuestSyncBlocks(blocks, sendMode, sendBlock, onDone)
+    local startDelay, sendInterval = _GetFullSyncDelays(sendMode)
+
+    local function sendNext()
+        local block = tremove(blocks, 1)
+        if block then
+            sendBlock(block)
+            if blocks[1] then
+                C_Timer.After(sendInterval, sendNext)
+            else
+                onDone()
+            end
+        else
+            onDone()
+        end
+    end
+
+    if startDelay > 0 then
+        C_Timer.After(startDelay, sendNext)
+    else
+        sendNext()
+    end
+end
+
 
 function QuestieComms:Initialize()
     -- Lets us send any length of message. Also implements ChatThrottleLib to not get disconnected.
@@ -573,10 +606,8 @@ function _QuestieComms:BroadcastQuestLog(eventName, sendMode, targetPlayer) -- b
         local rawQuestList = {}
         local blocks = {}
         local entryCount = 0
-        local blockCount = 2 -- the extra tick allows checking tremove() == nil to set _isBroadcasting=false
         for _, entry in pairs(sorted) do
             local quest = QuestieComms:CreateQuestDataPacket(entry.questId);
-            --print("[CommsSendOrder][Block " .. (blockCount - 1) .. "] " .. QuestieDB.QueryQuestSingle(entry.questId, "name"))
             entryCount = entryCount + 1
             rawQuestList[quest.id] = quest;
             if string.len(QuestieSerializer:Serialize(rawQuestList, "b89")) > 200 then--extra space for packet metadata and CTL stuff
@@ -586,46 +617,39 @@ function _QuestieComms:BroadcastQuestLog(eventName, sendMode, targetPlayer) -- b
                     [quest.id] = quest
                 }
                 entryCount = 1
-                blockCount = blockCount + 1
             end
         end
 
         if entryCount ~= 0 then
             tinsert(blocks, rawQuestList) -- add the last block
             _QuestieComms._isBroadcasting = true
-            -- hopefully reduce server load by staggering responses
-            C_Timer.After(random() * 3, function()
-                C_Timer.NewTicker(3, function()
-                    local block = tremove(blocks, 1)
-                    if block then
-                        -- send the block
-                        local questPacket = _QuestieComms:CreatePacket(_QuestieComms.QC_ID_BROADCAST_FULL_QUESTLIST);
-                        questPacket.data.rawQuestList = block;
-                        if "WHISPER" == sendMode then
-                            questPacket.data.writeMode = _QuestieComms.QC_WRITE_WHISPER
-                            questPacket.data.target = targetPlayer
-                            questPacket.data.priority = "NORMAL"
-                        else
-                            if partyType == "raid" then
-                                questPacket.data.writeMode = _QuestieComms.QC_WRITE_ALLRAID
-                                questPacket.data.priority = "BULK"
-                            elseif partyType == "instance" then
-                                questPacket.data.writeMode = _QuestieComms.QC_WRITE_ALLINSTANCE
-                                questPacket.data.priority = "BULK" -- in case of battlegrounds
-                            else
-                                questPacket.data.writeMode = _QuestieComms.QC_WRITE_ALLGROUP
-                                questPacket.data.priority = "NORMAL"
-                            end
-                        end
-                        questPacket:write();
+            _ScheduleQuestSyncBlocks(blocks, sendMode, function(block)
+                -- send the block
+                local questPacket = _QuestieComms:CreatePacket(_QuestieComms.QC_ID_BROADCAST_FULL_QUESTLIST);
+                questPacket.data.rawQuestList = block;
+                if "WHISPER" == sendMode then
+                    questPacket.data.writeMode = _QuestieComms.QC_WRITE_WHISPER
+                    questPacket.data.target = targetPlayer
+                    questPacket.data.priority = "NORMAL"
+                else
+                    if partyType == "raid" then
+                        questPacket.data.writeMode = _QuestieComms.QC_WRITE_ALLRAID
+                        questPacket.data.priority = "BULK"
+                    elseif partyType == "instance" then
+                        questPacket.data.writeMode = _QuestieComms.QC_WRITE_ALLINSTANCE
+                        questPacket.data.priority = "BULK" -- in case of battlegrounds
                     else
-                        _QuestieComms._isBroadcasting = false
-                        local nextBroadcast = tremove(_QuestieComms._nextBroadcastData, 1)
-                        if nextBroadcast then
-                            _QuestieComms:BroadcastQuestLog(unpack(nextBroadcast))
-                        end
+                        questPacket.data.writeMode = _QuestieComms.QC_WRITE_ALLGROUP
+                        questPacket.data.priority = "NORMAL"
                     end
-                end, blockCount)
+                end
+                questPacket:write();
+            end, function()
+                _QuestieComms._isBroadcasting = false
+                local nextBroadcast = tremove(_QuestieComms._nextBroadcastData, 1)
+                if nextBroadcast then
+                    _QuestieComms:BroadcastQuestLog(unpack(nextBroadcast))
+                end
             end)
         end
     end
@@ -690,11 +714,9 @@ function _QuestieComms:BroadcastQuestLogV2(eventName, sendMode, targetPlayer) --
         local rawQuestList = {}
         local blocks = {}
         local entryCount = 0
-        local blockCount = 2 -- the extra tick allows checking tremove() == nil to set _isBroadcasting=false
         local offset = 2
 
         for _, entry in pairs(sorted) do
-            --print("[CommsSendOrder][Block " .. (blockCount - 1) .. "] " .. QuestieDB.QueryQuestSingle(entry.questId, "name"))
             entryCount = entryCount + 1
 
             offset = QuestieComms:PopulateQuestDataPacketV2_noclass_renameme(entry.questId, rawQuestList, offset)
@@ -704,48 +726,41 @@ function _QuestieComms:BroadcastQuestLogV2(eventName, sendMode, targetPlayer) --
                 tinsert(blocks, rawQuestList)
                 rawQuestList = {}
                 entryCount = 0
-                blockCount = blockCount + 1
                 offset = 2
             end
         end
 
-        if entryCount ~= 0 or blockCount ~= 2 then
+        if entryCount ~= 0 or next(blocks) then
             rawQuestList[1] = entryCount
             tinsert(blocks, rawQuestList) -- add the last block
             _QuestieComms._isBroadcastingV2 = true
-            -- hopefully reduce server load by staggering responses
-            C_Timer.After(random() * 3, function()
-                C_Timer.NewTicker(3, function()
-                    local block = tremove(blocks, 1)
-                    if block then
-                        -- send the block
-                        local questPacket = _QuestieComms:CreatePacket(_QuestieComms.QC_ID_BROADCAST_FULL_QUESTLISTV2);
-                        questPacket.data[1] = block;
-                        if "WHISPER" == sendMode then
-                            questPacket.data.writeMode = _QuestieComms.QC_WRITE_WHISPER
-                            questPacket.data.target = targetPlayer
-                            questPacket.data.priority = "NORMAL"
-                        else
-                            if partyType == "raid" then
-                                questPacket.data.writeMode = _QuestieComms.QC_WRITE_ALLRAID
-                                questPacket.data.priority = "BULK"
-                            elseif partyType == "instance" then
-                                questPacket.data.writeMode = _QuestieComms.QC_WRITE_ALLINSTANCE
-                                questPacket.data.priority = "BULK" -- in case of battlegrounds
-                            else
-                                questPacket.data.writeMode = _QuestieComms.QC_WRITE_ALLGROUP
-                                questPacket.data.priority = "NORMAL"
-                            end
-                        end
-                        questPacket:write();
+            _ScheduleQuestSyncBlocks(blocks, sendMode, function(block)
+                -- send the block
+                local questPacket = _QuestieComms:CreatePacket(_QuestieComms.QC_ID_BROADCAST_FULL_QUESTLISTV2);
+                questPacket.data[1] = block;
+                if "WHISPER" == sendMode then
+                    questPacket.data.writeMode = _QuestieComms.QC_WRITE_WHISPER
+                    questPacket.data.target = targetPlayer
+                    questPacket.data.priority = "NORMAL"
+                else
+                    if partyType == "raid" then
+                        questPacket.data.writeMode = _QuestieComms.QC_WRITE_ALLRAID
+                        questPacket.data.priority = "BULK"
+                    elseif partyType == "instance" then
+                        questPacket.data.writeMode = _QuestieComms.QC_WRITE_ALLINSTANCE
+                        questPacket.data.priority = "BULK" -- in case of battlegrounds
                     else
-                        _QuestieComms._isBroadcastingV2 = false
-                        local nextBroadcast = tremove(_QuestieComms._nextBroadcastDataV2, 1)
-                        if nextBroadcast then
-                            _QuestieComms:BroadcastQuestLogV2(unpack(nextBroadcast))
-                        end
+                        questPacket.data.writeMode = _QuestieComms.QC_WRITE_ALLGROUP
+                        questPacket.data.priority = "NORMAL"
                     end
-                end, blockCount)
+                end
+                questPacket:write();
+            end, function()
+                _QuestieComms._isBroadcastingV2 = false
+                local nextBroadcast = tremove(_QuestieComms._nextBroadcastDataV2, 1)
+                if nextBroadcast then
+                    _QuestieComms:BroadcastQuestLogV2(unpack(nextBroadcast))
+                end
             end)
         end
     end

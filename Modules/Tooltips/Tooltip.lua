@@ -394,7 +394,7 @@ function QuestieTooltips:GetTooltip(key)
                         objectiveInfo.text = objectiveInfo.text .. playerString
                     end
                 elseif playerColor and objectivePlayerName ~= playerName then -- Add other player name to their objective
-                    objectiveInfo.text = objectiveInfo.text .. " (|c" .. argbHex .. objectivePlayerName .. "|r" .. objectiveInfo.color .. ")|r"
+                    objectiveInfo.text = objectiveInfo.text .. " (" .. playerColor .. objectivePlayerName .. "|r" .. objectiveInfo.color .. ")|r" .. playerType
                 end
                 -- We want the player to be on top.
                 if objectivePlayerName == playerName then
