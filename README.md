@@ -1,11 +1,10 @@
 # Questie-335
 A fork of the WoW Classic Questie addon aiming to provide compatibility with Wrath of the Lich King client version 3.3.5a (12340).
 # Installation
-- [Download](https://github.com/widxwer/Questie/archive/refs/heads/335.zip) the archive.
+- [Download](https://github.com/Aldori15/Questie/archive/refs/heads/335.zip) the archive.
 - Extract it into `Interface/AddOns/` directory, folder name should be `Questie-335`.
-- If you are playing on a custom server that emulates a previous expansion using the 3.3.5 client, you could add `-Classic` or `-TBC` to the addon folder name to load only the required files for the chosen expansion. In case your server doesn't provide a patch for a world map, you need to enable the in-game setting: `Options/Advanced/Use WotLK map data`.
 
-# Questie
+## Questie Information
 
 [![Discord](https://img.shields.io/badge/discord-Questie-738bd7)](https://discord.gg/s33MAYKeZd)
 [![Stars](https://img.shields.io/github/stars/Questie/Questie)](https://img.shields.io/github/stars/Questie/Questie)
@@ -15,16 +14,6 @@ A fork of the WoW Classic Questie addon aiming to provide compatibility with Wra
 [![Date Latest](https://img.shields.io/github/release-date/Questie/Questie.svg)](https://github.com/Questie/Questie/releases/latest)
 [![Commits Since Latest](https://img.shields.io/github/commits-since/Questie/Questie/latest.svg)](https://github.com/Questie/Questie/commits/master)
 
-
-## Download
-We suggest you use the [Curseforge Client](https://curseforge.overwolf.com/) to manage your Wow addons in general. You will find Questie [here on Curseforge](https://www.curseforge.com/wow/addons/questie).
-
-Alternatively you can always use [the latest GitHub release](https://github.com/Questie/Questie/releases/latest) and follow the [Installation Guide](https://github.com/Questie/Questie/wiki/Installation-Guide) in the Wiki to get the latest version of Questie up and running.
-
-If you have problems, please read the [Frequently Asked Questions](https://github.com/Questie/Questie/wiki/FAQ-for-Classic-(1.13)).
-
-
-## Information
 - [Frequently Asked Questions](https://github.com/Questie/Questie/wiki/FAQ)
 - Come chat with us on [our Discord server](https://discord.gg/s33MAYKeZd).
 - You can use the [issue tracker](https://github.com/Questie/Questie/issues) to report bugs and post feature requests (requires a Github account).
@@ -34,26 +23,7 @@ If you have problems, please read the [Frequently Asked Questions](https://githu
 
 Trust us it's (Good)!
 
-## Contribution
-
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
-- We are happy about every help and contribution we get, so feel free to submit a Pull Request on Github
-- Translators can search for missing translations by: `["<yourLanguage>"] = false` (e.g. `["deDE"] = false`) and replace the `false` with a string of the new translation, e.g. `["<yourLanguage>"] = "YourTranslation"`. Current translations can be found in the [Translation folder](https://github.com/Questie/Questie/tree/master/Localization/Translations)
-- Additional information you might find interesting can be found [here](https://github.com/Questie/Questie/wiki/Contributing)
-
-### Unit Tests
-
-1. Install [busted](https://github.com/lunarmodules/busted) with `luarocks install busted`
-2. Run `busted -p ".test.lua" ."` in the root directory of the project
-3. When adding new tests, make sure to name them `<module>.test.lua` and place them next to the module
-
-
-## Donation
-If you'd like to support the development of Questie by donating, you can do so via PayPal:
-
-<a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=JCUBJWKT395ME&source=url"><img src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif"/></a>
-
-## Features
+# Features
 
 ### Show quests on map
 - Show notes for quest start points, turn in points, and objectives.
@@ -64,7 +34,7 @@ If you'd like to support the development of Questie by donating, you can do so v
 
 ### Quest Tracker
 - Improved quest tracker:
-    - Automatically tracks quests on accepting (instead of progressing)
+    - Automatically tracks quests on accepting
     - Can show all 20 quests from the log (instead of default 5)
     - Left click quest to open quest log (configurable)
     - Right-click for more options, e.g.:
@@ -75,47 +45,45 @@ If you'd like to support the development of Questie by donating, you can do so v
 
 ### Quest Communication
 - You can see party members quest progress on the tooltip.
-- At least Questie version 5.0.0 is required by everyone in the party for it to work, tell your friends to update!
+- You can announce objective progress, objective complete, quest complete, quest accept, quest abandon to chat.
 
-![QuestieComms](https://cdn.discordapp.com/attachments/263036731165638656/636099163460861962/unknown.png)
+<img width="483" height="281" alt="image" src="https://github.com/user-attachments/assets/bed0522f-31e8-4ca1-a9fe-0927a12599df" />
 
 ### Tooltips
 - Show tooltips on map notes and quest NPCs/objects.
 - Holding Shift while hovering over a map icon displays more information, like quest XP.
+- Show quest names on the tooltip of items that begin a quest.
 
-![QuestXP](https://cdn.discordapp.com/attachments/579999220170227716/635540231306608641/unknown.png)
+<img width="707" height="160" alt="image" src="https://github.com/user-attachments/assets/d85698ba-7fdb-428c-a876-02cb8cc698f9" />
 
-#### Quest Information
-
-![TooltipDungeon](https://cdn.discordapp.com/attachments/579999220170227716/634656829619699712/unknown.png)
-
-- Event quests are shown when events are active!
-
-![Event](https://cdn.discordapp.com/attachments/263040777658171392/636159292336242688/unknown.png)
+<img width="447" height="365" alt="image" src="https://github.com/user-attachments/assets/df379e3b-682c-404d-a966-c5b88d5856bf" />
 
 #### Waypoints
 
 - Waypoint lines for quest givers showing their pathing.
+- With the TomTom addon, you can shift+left click an icon on the map to place a waypoint and navigate.
 
-![Waypoints](https://media.discordapp.net/attachments/263040777658171392/643203302993035294/unknown.png)
+<img width="853" height="495" alt="image" src="https://github.com/user-attachments/assets/380aa249-927b-4132-aa54-3b267bbd0a2f" />
+
+<img width="202" height="166" alt="image" src="https://github.com/user-attachments/assets/a44a1b5e-9bd0-49ae-9e27-b932050bd9f3" />
 
 ### Journey Log
-- Questie records the steps of your journey in the "My Journey" window. (right-click on minimap button to open)
+- Questie records the steps of your journey in the "My Journey" window. (left-click on minimap button and select the "My Journey" tab or type `/questie journey`)
 
 ![Journey](https://user-images.githubusercontent.com/8838573/67285651-3cb32f00-f4d8-11e9-95d8-e8ceb2a8d871.png)
 
 ### Quests by Zone
-- Questie lists all the quests of a zone divided between completed and available quest. Gotta complete 'em all. (right-click on minimap button to open)
+- Questie lists all the quests of a zone divided between completed and available quest. Gotta complete 'em all. (left-click on minimap button (or type `/questie journey`) and select the "Quests by Zone" tab
 
 ![QuestsByZone](https://user-images.githubusercontent.com/8838573/67285665-450b6a00-f4d8-11e9-9283-325d26c7c70d.png)
 
+### Quests by Faction
+- Similarly to Quests by Zone, Questie lists all the quests of a faction divided between completed and available quest. Gotta complete 'em all. (left-click on minimap button (or type `/questie journey`) and select the "Quests by Faction" tab
+
 ### Search
-- Questie's database can be searched. (right-click on minimap button to open)
+- Questie's database can be searched. (left-click on minimap button (or type `/questie journey`) and select the "Advanced Search" tab
 
 ![Search](https://user-images.githubusercontent.com/8838573/67285691-4f2d6880-f4d8-11e9-8656-b3e37dce2f05.png)
 
 ### Configuration
-- Extensive configuration options. (left-click on minimap button to open)
-
-![config](https://user-images.githubusercontent.com/8838573/67285731-61a7a200-f4d8-11e9-9026-b1eeaad0d721.png)
-
+- Extensive configuration options. (right-click on minimap button to open or type `/questie`)
