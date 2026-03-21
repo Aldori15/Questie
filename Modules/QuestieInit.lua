@@ -57,6 +57,8 @@ local QuestieValidateGameCache = QuestieLoader:ImportModule("QuestieValidateGame
 local MinimapIcon = QuestieLoader:ImportModule("MinimapIcon")
 ---@type QuestieComms
 local QuestieComms = QuestieLoader:ImportModule("QuestieComms");
+---@type Comms
+local Comms = QuestieLoader:ImportModule("Comms")
 ---@type QuestieOptions
 local QuestieOptions = QuestieLoader:ImportModule("QuestieOptions");
 ---@type QuestieCoords
@@ -284,6 +286,7 @@ QuestieInit.Stages[3] = function() -- run as a coroutine
     DropDB:Initialize()
     QuestieCoords:Initialize()
     TrackerQuestTimers:Initialize()
+    Comms.Initialize()
     QuestieComms:Initialize()
 
     QuestieSlash.RegisterSlashCommands()

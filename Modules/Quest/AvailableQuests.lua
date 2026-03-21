@@ -21,10 +21,17 @@ local QuestieQuestBlacklist = QuestieLoader:ImportModule("QuestieQuestBlacklist"
 local IsleOfQuelDanas = QuestieLoader:ImportModule("IsleOfQuelDanas")
 ---@type QuestieLib
 local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
+---@type Comms
+local Comms = QuestieLoader:ImportModule("Comms")
 
 local GetQuestGreenRange = GetQuestGreenRange
+local UnitGUID = QuestieCompat.UnitGUID
 local yield = coroutine.yield
 local tinsert = table.insert
+local next = next
+local time = time
+local date = date
+local tonumber = tonumber
 local NewThread = ThreadLib.ThreadSimple
 
 local QUESTS_PER_YIELD = 24
@@ -40,29 +47,189 @@ local timer
 local availableQuests = {}
 local availableQuestsByNpc = {}
 local unavailableQuestsDeterminedByTalking -- quests that were hidden after talking to an NPC
+local unavailableQuestSyncState -- reset-aware unavailable daily/weekly quest snapshot by NPC
 
 local dungeons = ZoneDB:GetDungeons()
+local function _CreateUnavailableQuestSyncBucket()
+    return {
+        nextReset = 0,
+        byNpc = {},
+        byQuest = {},
+    }
+end
+
+local function _EnsureUnavailableQuestSyncBucket(syncState, bucketName)
+    if type(syncState[bucketName]) ~= "table" then
+        syncState[bucketName] = _CreateUnavailableQuestSyncBucket()
+    end
+
+    local bucket = syncState[bucketName]
+    if type(bucket.byNpc) ~= "table" then
+        bucket.byNpc = {}
+    end
+    if type(bucket.byQuest) ~= "table" then
+        bucket.byQuest = {}
+    end
+    bucket.nextReset = tonumber(bucket.nextReset) or 0
+    return bucket
+end
+
+local function _GetCurrentServerTimestamp()
+    return QuestieCompat.GetServerTime()
+end
+
+local function _CalculateNextDailyResetTimestamp()
+    local currentTimestamp = _GetCurrentServerTimestamp()
+    local timeUntilReset = tonumber(GetQuestResetTime()) or 0
+    if timeUntilReset < 0 then
+        timeUntilReset = 0
+    end
+    return currentTimestamp + timeUntilReset
+end
+
+local function _CalculateNextWeeklyResetTimestamp()
+    local currentTimestamp, currentDate = QuestieCompat.GetServerTime()
+    local nextDailyReset = _CalculateNextDailyResetTimestamp()
+    local dailyResetHour = tonumber(date("%H", nextDailyReset + 300)) or 0
+    local weeklyResetDay = (Questie.db and Questie.db.profile and Questie.db.profile.weeklyResetDay) or 4
+    local dayOffset = (weeklyResetDay - currentDate.weekday + 7) % 7
+    if dayOffset == 0 and currentDate.hour >= dailyResetHour then
+        dayOffset = 7
+    end
+
+    local nextWeeklyReset = time({
+        year = currentDate.year,
+        month = currentDate.month,
+        day = currentDate.day + dayOffset,
+        hour = dailyResetHour,
+    })
+
+    return nextWeeklyReset or (currentTimestamp + 7 * 24 * 60 * 60)
+end
+
+local function _ResetUnavailableQuestBucketIfNeeded(bucket, nextResetCalculator, currentTimestamp)
+    if bucket.nextReset == 0 then
+        bucket.nextReset = nextResetCalculator()
+        return
+    end
+
+    if currentTimestamp >= bucket.nextReset then
+        bucket.byNpc = {}
+        bucket.byQuest = {}
+        bucket.nextReset = nextResetCalculator()
+    end
+end
+
+local function _RebuildUnavailableQuestLookup(syncState)
+    unavailableQuestsDeterminedByTalking = {}
+
+    local dailyBucket = _EnsureUnavailableQuestSyncBucket(syncState, "daily")
+    local weeklyBucket = _EnsureUnavailableQuestSyncBucket(syncState, "weekly")
+
+    for questId in pairs(dailyBucket.byQuest) do
+        unavailableQuestsDeterminedByTalking[questId] = true
+    end
+
+    for questId in pairs(weeklyBucket.byQuest) do
+        unavailableQuestsDeterminedByTalking[questId] = true
+    end
+end
+
+local function _GetUnavailableQuestSyncState()
+    local syncState
+    if (not Questie.db) or (not Questie.db.global) then
+        unavailableQuestSyncState = unavailableQuestSyncState or {}
+        syncState = unavailableQuestSyncState
+    else
+        Questie.db.global.unavailableQuestSyncState = Questie.db.global.unavailableQuestSyncState or {}
+
+        local realmName = GetRealmName()
+        if type(Questie.db.global.unavailableQuestSyncState[realmName]) ~= "table" then
+            Questie.db.global.unavailableQuestSyncState[realmName] = {}
+        end
+
+        syncState = Questie.db.global.unavailableQuestSyncState[realmName]
+        unavailableQuestSyncState = syncState
+    end
+
+    local currentTimestamp = _GetCurrentServerTimestamp()
+    _ResetUnavailableQuestBucketIfNeeded(_EnsureUnavailableQuestSyncBucket(syncState, "daily"), _CalculateNextDailyResetTimestamp, currentTimestamp)
+    _ResetUnavailableQuestBucketIfNeeded(_EnsureUnavailableQuestSyncBucket(syncState, "weekly"), _CalculateNextWeeklyResetTimestamp, currentTimestamp)
+    _RebuildUnavailableQuestLookup(syncState)
+
+    return syncState
+end
+
 ---@return table<number, boolean>
 local function _GetUnavailableQuestsDeterminedByTalking()
-    if (not Questie.db) or (not Questie.db.global) then
-        unavailableQuestsDeterminedByTalking = unavailableQuestsDeterminedByTalking or {}
-        return unavailableQuestsDeterminedByTalking
-    end
-
-    if (not Questie.db.global.unavailableQuestsDeterminedByTalking) then
-        Questie.db.global.unavailableQuestsDeterminedByTalking = {}
-    end
-
-    local realmName = GetRealmName()
-    if (not Questie.db.global.unavailableQuestsDeterminedByTalking[realmName]) or QuestieLib.DidDailyResetHappenSinceLastLogin() then
-        Questie.db.global.unavailableQuestsDeterminedByTalking[realmName] = {}
-    end
-
-    unavailableQuestsDeterminedByTalking = Questie.db.global.unavailableQuestsDeterminedByTalking[realmName]
+    _GetUnavailableQuestSyncState()
+    unavailableQuestsDeterminedByTalking = unavailableQuestsDeterminedByTalking or {}
     return unavailableQuestsDeterminedByTalking
 end
 
-local _CalculateAvailableQuests, _DrawChildQuests, _AddStarter, _DrawAvailableQuest, _GetQuestIcon, _GetIconScaleForAvailable, _HasProperDistanceToAlreadyAddedSpawns, _RegisterQuestStartTooltips, _MarkQuestAsUnavailableFromNPC
+local function _GetUnavailableQuestBucketForQuest(syncState, questId)
+    if QuestieDB.IsDailyQuest(questId) then
+        return _EnsureUnavailableQuestSyncBucket(syncState, "daily")
+    end
+
+    if QuestieDB.IsWeeklyQuest(questId) then
+        return _EnsureUnavailableQuestSyncBucket(syncState, "weekly")
+    end
+end
+
+local function _IsQuestStillTrackedAsUnavailable(bucket, questId)
+    for _, questIdsByNpc in pairs(bucket.byNpc) do
+        if questIdsByNpc[questId] then
+            return true
+        end
+    end
+    return false
+end
+
+local function _StoreUnavailableQuestForToday(npcId, questId)
+    local syncState = _GetUnavailableQuestSyncState()
+    local bucket = _GetUnavailableQuestBucketForQuest(syncState, questId)
+    if not bucket then
+        return false
+    end
+
+    bucket.byNpc[npcId] = bucket.byNpc[npcId] or {}
+    local wasNew = not bucket.byNpc[npcId][questId]
+    bucket.byNpc[npcId][questId] = true
+    bucket.byQuest[questId] = true
+    unavailableQuestsDeterminedByTalking[questId] = true
+
+    return wasNew
+end
+
+local function _ClearUnavailableQuestForToday(npcId, questId)
+    local syncState = _GetUnavailableQuestSyncState()
+    local bucket = _GetUnavailableQuestBucketForQuest(syncState, questId)
+
+    unavailableQuestsDeterminedByTalking[questId] = nil
+    if not bucket then
+        return false
+    end
+
+    local removed = false
+    local questsByNpc = bucket.byNpc[npcId]
+    if questsByNpc and questsByNpc[questId] then
+        questsByNpc[questId] = nil
+        removed = true
+        if not next(questsByNpc) then
+            bucket.byNpc[npcId] = nil
+        end
+    end
+
+    if bucket.byQuest[questId] and (not _IsQuestStillTrackedAsUnavailable(bucket, questId)) then
+        bucket.byQuest[questId] = nil
+        removed = true
+    end
+
+    return removed
+end
+
+local _CalculateAvailableQuests, _DrawChildQuests, _AddStarter, _DrawAvailableQuest, _GetQuestIcon, _GetIconScaleForAvailable, _HasProperDistanceToAlreadyAddedSpawns, _RegisterQuestStartTooltips, _GetStructuredAvailableQuestsInGossip, _GetStructuredActiveQuestsInGossip
 
 -- Repeatable quests should be controlled by showRepeatableQuests
 local function _IsLevelRequirementsFulfilledForAvailable(questId, minLevel, maxLevel, playerLevel, isRepeatableQuest)
@@ -84,6 +251,66 @@ local function _IsHiddenByTrivialRepeatableSetting(questId, isRepeatableQuest, s
 
     local questLevel = QuestieDB.QueryQuestSingle(questId, "questLevel")
     return questLevel and QuestieDB.IsTrivial(questLevel)
+end
+
+_GetStructuredAvailableQuestsInGossip = function(npcGuid)
+    local rawAvailableQuests = { QuestieCompat.GetAvailableQuests() }
+    local availableQuestsInGossip = {}
+
+    if type(rawAvailableQuests[1]) == "table" then
+        for _, gossipQuest in pairs(rawAvailableQuests) do
+            local questId = gossipQuest.questID
+            if (not questId) or questId == 0 then
+                questId = QuestieDB.GetQuestIDFromName(gossipQuest.title, npcGuid, true)
+            end
+            tinsert(availableQuestsInGossip, {
+                questID = questId,
+                title = gossipQuest.title,
+            })
+        end
+    else
+        for i = 1, #rawAvailableQuests, 7 do
+            local title = rawAvailableQuests[i]
+            if title then
+                tinsert(availableQuestsInGossip, {
+                    questID = QuestieDB.GetQuestIDFromName(title, npcGuid, true),
+                    title = title,
+                })
+            end
+        end
+    end
+
+    return availableQuestsInGossip
+end
+
+_GetStructuredActiveQuestsInGossip = function(npcGuid)
+    local rawActiveQuests = { QuestieCompat.GetActiveQuests() }
+    local activeQuests = {}
+
+    if type(rawActiveQuests[1]) == "table" then
+        for _, gossipQuest in pairs(rawActiveQuests) do
+            local questId = gossipQuest.questID
+            if (not questId) or questId == 0 then
+                questId = QuestieDB.GetQuestIDFromName(gossipQuest.title, npcGuid, false)
+            end
+            tinsert(activeQuests, {
+                questID = questId,
+                title = gossipQuest.title,
+            })
+        end
+    else
+        for i = 1, #rawActiveQuests, 6 do
+            local title = rawActiveQuests[i]
+            if title then
+                tinsert(activeQuests, {
+                    questID = QuestieDB.GetQuestIDFromName(title, npcGuid, false),
+                    title = title,
+                })
+            end
+        end
+    end
+
+    return activeQuests
 end
 
 ---@param callback function | nil
@@ -195,6 +422,96 @@ function AvailableQuests.RemoveQuest(questId)
     QuestieTooltips:RemoveQuest(questId)
 end
 
+---@param npcId NpcId
+---@param questIds QuestId[]
+function AvailableQuests.RemoveQuestsForToday(npcId, questIds)
+    _GetUnavailableQuestsDeterminedByTalking()
+
+    local removedAnyQuest = false
+    for _, questId in pairs(questIds) do
+        if availableQuests[questId] or QuestieMap.questIdFrames[questId] or QuestieTooltips.lookupKeysByQuestId[questId] then
+            AvailableQuests.RemoveQuest(questId)
+            removedAnyQuest = true
+        end
+        if availableQuestsByNpc[npcId] then
+            availableQuestsByNpc[npcId][questId] = nil
+        end
+        _StoreUnavailableQuestForToday(npcId, questId)
+    end
+
+    if removedAnyQuest then
+        AvailableQuests.CalculateAndDrawAll(nil, true)
+    end
+end
+
+local function _BuildUnavailableQuestSnapshotEntries(bucket)
+    local snapshotEntries = {}
+    for npcId, questIdsByNpc in pairs(bucket.byNpc) do
+        local questIds = {}
+        for questId in pairs(questIdsByNpc) do
+            tinsert(questIds, questId)
+        end
+
+        if next(questIds) then
+            tinsert(snapshotEntries, {
+                npcId = npcId,
+                questIds = questIds,
+            })
+        end
+    end
+
+    return snapshotEntries
+end
+
+function AvailableQuests.GetUnavailableQuestSnapshot()
+    local syncState = _GetUnavailableQuestSyncState()
+    local snapshot = {
+        daily = _BuildUnavailableQuestSnapshotEntries(syncState.daily),
+        weekly = _BuildUnavailableQuestSnapshotEntries(syncState.weekly),
+    }
+
+    if (not next(snapshot.daily)) and (not next(snapshot.weekly)) then
+        return nil
+    end
+
+    return snapshot
+end
+
+function AvailableQuests.MergeUnavailableQuestSnapshot(snapshot)
+    if type(snapshot) ~= "table" then
+        return false
+    end
+
+    local mergedAnyQuest = false
+    for _, bucketName in pairs({ "daily", "weekly" }) do
+        local bucketEntries = snapshot[bucketName]
+        if type(bucketEntries) == "table" then
+            for _, entry in pairs(bucketEntries) do
+                local npcId = entry.npcId
+                local questIds = entry.questIds
+                if npcId and type(questIds) == "table" then
+                    local newQuestIds = {}
+                    for _, questId in pairs(questIds) do
+                        local syncState = _GetUnavailableQuestSyncState()
+                        local bucket = _GetUnavailableQuestBucketForQuest(syncState, questId)
+                        local alreadyKnown = bucket and bucket.byNpc[npcId] and bucket.byNpc[npcId][questId]
+                        if not alreadyKnown then
+                            tinsert(newQuestIds, questId)
+                        end
+                    end
+
+                    if next(newQuestIds) then
+                        AvailableQuests.RemoveQuestsForToday(npcId, newQuestIds)
+                        mergedAnyQuest = true
+                    end
+                end
+            end
+        end
+    end
+
+    return mergedAnyQuest
+end
+
 ---@type string|nil
 local lastNpcGuid
 
@@ -219,15 +536,16 @@ function AvailableQuests.ValidateAvailableQuestsFromGossipShow()
 
     lastNpcGuid = npcGuid
 
-    local availableQuestsInGossip = QuestieCompat.GetAvailableQuests()
+    local availableQuestsInGossip = _GetStructuredAvailableQuestsInGossip(npcGuid)
 
     -- validate no quest is incorrectly hidden
     for _, gossipQuest in pairs(availableQuestsInGossip) do
         local questId = gossipQuest.questID
         if unavailableQuestsDeterminedByTalking[questId] then
-            unavailableQuestsDeterminedByTalking[questId] = nil
+            _ClearUnavailableQuestForToday(npcId, questId)
             local quest = QuestieDB.GetQuest(questId)
             if quest then
+                availableQuests[questId] = true
                 AvailableQuests.DrawAvailableQuest(quest)
             end
         end
@@ -235,7 +553,8 @@ function AvailableQuests.ValidateAvailableQuestsFromGossipShow()
 
     -- Active quests are relevant, because the API can fire GOSSIP_SHOW before QUEST_ACCEPTED.
     -- So we need to check active quests to not hide them incorrectly for the day.
-    local activeQuests = QuestieCompat.GetActiveQuests()
+    local activeQuests = _GetStructuredActiveQuestsInGossip(npcGuid)
+    local unavailableQuestsToBroadcast = {}
     for questId in pairs(availableQuestsByNpc[npcId] or {}) do
         local isAvailableInGossip = false
         for _, gossipQuest in pairs(availableQuestsInGossip) do
@@ -252,9 +571,13 @@ function AvailableQuests.ValidateAvailableQuestsFromGossipShow()
         end
 
         if (not isAvailableInGossip) and (QuestieDB.IsDailyQuest(questId) or QuestieDB.IsWeeklyQuest(questId)) then
-            AvailableQuests.RemoveQuest(questId)
-            _MarkQuestAsUnavailableFromNPC(questId, npcId)
+            tinsert(unavailableQuestsToBroadcast, questId)
         end
+    end
+
+    if next(unavailableQuestsToBroadcast) then
+        AvailableQuests.RemoveQuestsForToday(npcId, unavailableQuestsToBroadcast)
+        Comms.BroadcastUnavailableDailyQuests(npcId, unavailableQuestsToBroadcast)
     end
 end
 
@@ -289,24 +612,32 @@ function AvailableQuests.ValidateAvailableQuestsFromQuestDetail()
 
     -- validate quest is not incorrectly hidden
     if unavailableQuestsDeterminedByTalking[availableQuestId] then
-        unavailableQuestsDeterminedByTalking[availableQuestId] = nil
+        _ClearUnavailableQuestForToday(npcId, availableQuestId)
         local quest = QuestieDB.GetQuest(availableQuestId)
         if quest then
+            availableQuests[availableQuestId] = true
             AvailableQuests.DrawAvailableQuest(quest)
         end
     end
 
+    local unavailableQuestsToBroadcast = {}
     for questId in pairs(availableQuestsByNpc[npcId] or {}) do
         if questId ~= availableQuestId and (QuestieDB.IsDailyQuest(questId) or QuestieDB.IsWeeklyQuest(questId)) then
-            AvailableQuests.RemoveQuest(questId)
-            _MarkQuestAsUnavailableFromNPC(questId, npcId)
+            tinsert(unavailableQuestsToBroadcast, questId)
         end
+    end
+
+    if next(unavailableQuestsToBroadcast) then
+        AvailableQuests.RemoveQuestsForToday(npcId, unavailableQuestsToBroadcast)
+        Comms.BroadcastUnavailableDailyQuests(npcId, unavailableQuestsToBroadcast)
     end
 end
 
 --- Called on QUEST_GREETING to hide all quests that are not available from the NPC.
 --- This is relevant on NPCs which offer random quests each day and especially a different number of quests.
 function AvailableQuests.ValidateAvailableQuestsFromQuestGreeting()
+    _GetUnavailableQuestsDeterminedByTalking()
+
     local npcGuid = UnitGUID("target")
     if (not npcGuid) then
         return
@@ -331,14 +662,15 @@ function AvailableQuests.ValidateAvailableQuestsFromQuestGreeting()
             break
         elseif titleLine:IsVisible() then
             local title
-            if titleLine.isActive == 1 then
+            local isActive = titleLine.isActive == 1
+            if isActive then
                 -- Active quests are relevant, because the API can fire QUEST_GREETING before QUEST_ACCEPTED.
                 -- So we need to check active quests to not hide them incorrectly for the day.
                 title = GetActiveTitle(titleLine:GetID())
             else
                 title = GetAvailableTitle(titleLine:GetID())
             end
-            local questId = QuestieDB.GetQuestIDFromName(title, npcGuid, true)
+            local questId = QuestieDB.GetQuestIDFromName(title, npcGuid, (not isActive))
             if questId and questId > 0 then
                 availableQuestsInGreeting[questId] = true
             end
@@ -348,19 +680,25 @@ function AvailableQuests.ValidateAvailableQuestsFromQuestGreeting()
     -- validate no quest is incorrectly hidden
     for questId in pairs(availableQuestsInGreeting) do
         if unavailableQuestsDeterminedByTalking[questId] then
-            unavailableQuestsDeterminedByTalking[questId] = nil
+            _ClearUnavailableQuestForToday(npcId, questId)
             local quest = QuestieDB.GetQuest(questId)
             if quest then
+                availableQuests[questId] = true
                 AvailableQuests.DrawAvailableQuest(quest)
             end
         end
     end
 
+    local unavailableQuestsToBroadcast = {}
     for questId in pairs(availableQuestsByNpc[npcId] or {}) do
         if (not availableQuestsInGreeting[questId]) and (QuestieDB.IsDailyQuest(questId) or QuestieDB.IsWeeklyQuest(questId)) then
-            AvailableQuests.RemoveQuest(questId)
-            _MarkQuestAsUnavailableFromNPC(questId, npcId)
+            tinsert(unavailableQuestsToBroadcast, questId)
         end
+    end
+
+    if next(unavailableQuestsToBroadcast) then
+        AvailableQuests.RemoveQuestsForToday(npcId, unavailableQuestsToBroadcast)
+        Comms.BroadcastUnavailableDailyQuests(npcId, unavailableQuestsToBroadcast)
     end
 end
 
@@ -415,6 +753,9 @@ _CalculateAvailableQuests = function()
             activeChildQuests[questId] or -- We already drew this quest in a previous loop iteration
             unavailableQuestsDeterminedByTalking[questId] -- Don't show quests hidden after talking to an NPC
         ) then
+            if availableQuests[questId] or QuestieMap.questIdFrames[questId] or QuestieTooltips.lookupKeysByQuestId[questId] then
+                AvailableQuests.RemoveQuest(questId)
+            end
             availableQuests[questId] = nil
             return
         end
@@ -734,15 +1075,6 @@ end
 
 _GetIconScaleForAvailable = function()
     return Questie.db.profile.availableScale or 1.3
-end
-
----@param questId QuestId
----@param npcId NpcId
-_MarkQuestAsUnavailableFromNPC = function(questId, npcId)
-    unavailableQuestsDeterminedByTalking[questId] = true
-    availableQuestsByNpc[npcId][questId] = nil
-
-    -- TODO: Add Comms call to inform other players about this unavailable quest
 end
 
 return AvailableQuests
