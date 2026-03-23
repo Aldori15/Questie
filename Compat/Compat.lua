@@ -964,6 +964,28 @@ local function GetPlayerWorldPositionFromActualZoneUiMap(actualUiMapID)
     end
 
     local shouldSuppressVisibleMapSelection = WorldMapFrame and WorldMapFrame:IsVisible()
+    if shouldSuppressVisibleMapSelection then
+        local rawMapID, rawMapLevel = GetRawMapContext()
+        local displayedMapName = GetDisplayedWorldMapName()
+        local displayedUiMapID = ResolveDisplayedWorldMapUiMapID(rawMapID, rawMapLevel, displayedMapName)
+
+        if displayedUiMapID and IsZoneLikeUiMap(displayedUiMapID) and AreUiMapsRelated(displayedUiMapID, targetUiMapID) then
+            local x, y = GetPlayerMapPosition("player")
+            if x and y and (x > 0 or y > 0) then
+                if displayedUiMapID ~= targetUiMapID then
+                    x, y = TranslateZoneCoordinatesBetweenUiMaps(x, y, displayedUiMapID, targetUiMapID)
+                end
+
+                if x and y then
+                    local worldX, worldY, instanceID = GetWorldCoordinatesFromUiMapPosition(x, y, targetUiMapID)
+                    if worldX and worldY then
+                        return worldX, worldY, instanceID, targetUiMapID
+                    end
+                end
+            end
+        end
+    end
+
     local savedSelection = shouldSuppressVisibleMapSelection and CaptureLegacyMapSelection() or nil
     if shouldSuppressVisibleMapSelection then
         BeginInternalMapRead(savedSelection)
