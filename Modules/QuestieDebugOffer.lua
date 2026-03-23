@@ -20,6 +20,7 @@ local DebugInformation = {} -- stores text of debug data dump per session
 local debugIndex = 0 -- current debug index, used so we can still retrieve info from previous offers
 local openDebugWindows = {} -- determines if existing debug window is already open, prevents duplicates
 
+local GetQuestID = QuestieCompat.GetQuestID
 local GetBestMapForUnit = C_Map.GetBestMapForUnit
 local GetPlayerMapPosition = C_Map.GetPlayerMapPosition
 local PosX = 0
@@ -457,7 +458,7 @@ end
 
 -- Missing questID when conversing
 function QuestieDebugOffer.QuestDialog()
-    local questID = GetQuestID() -- obtain quest ID from dialog
+    local questID = GetQuestID(true) -- obtain quest ID from dialog
     if questID <= 0 or questID == nil then
         Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieDebugOffer] - QuestDialog - Invalid quest ID from API, ignoring")
         return -- invalid data from API, abandon offer attempt

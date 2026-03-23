@@ -25,6 +25,7 @@ local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
 local Comms = QuestieLoader:ImportModule("Comms")
 
 local GetQuestGreenRange = GetQuestGreenRange
+local GetQuestID = QuestieCompat.GetQuestID
 local UnitGUID = QuestieCompat.UnitGUID
 local yield = coroutine.yield
 local tinsert = table.insert
@@ -604,7 +605,7 @@ function AvailableQuests.ValidateAvailableQuestsFromQuestDetail()
     lastNpcGuid = npcGuid
 
     -- Hide all quests but the current one
-    local availableQuestId = GetQuestID()
+    local availableQuestId = GetQuestID(true)
     if availableQuestId == 0 then
         -- GetQuestID returns 0 when the dialog is closed. Nothing left to do for us
         return
