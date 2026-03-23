@@ -39,6 +39,8 @@ local Townsfolk = QuestieLoader:ImportModule("Townsfolk")
 local QuestieQuest = QuestieLoader:ImportModule("QuestieQuest")
 ---@type IsleOfQuelDanas
 local IsleOfQuelDanas = QuestieLoader:ImportModule("IsleOfQuelDanas")
+---@type DailyQuests
+local DailyQuests = QuestieLoader:ImportModule("DailyQuests")
 ---@type QuestieEventHandler
 local QuestieEventHandler = QuestieLoader:ImportModule("QuestieEventHandler")
 ---@type QuestieJourney
@@ -342,6 +344,9 @@ QuestieInit.Stages[3] = function() -- run as a coroutine
 
     coYield()
     QuestieMenu:OnLogin()
+
+    coYield()
+    DailyQuests.Initialize()
 
     coYield()
     if Questie.db.profile.debugEnabled then

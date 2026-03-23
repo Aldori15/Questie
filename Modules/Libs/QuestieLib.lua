@@ -7,6 +7,8 @@ local QuestieLib = QuestieLoader:CreateModule("QuestieLib")
 local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 ---@type QuestiePlayer
 local QuestiePlayer = QuestieLoader:ImportModule("QuestiePlayer")
+---@type QuestieEvent
+local QuestieEvent = QuestieLoader:ImportModule("QuestieEvent")
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
 
@@ -160,6 +162,38 @@ function QuestieLib:GetColoredQuestName(questId, showLevel, showState, blizzLike
     end
 
     return QuestieLib:PrintDifficultyColor(level, name, QuestieDB.IsRepeatable(questId), QuestieDB.IsActiveEventQuest(questId), QuestieDB.IsPvPQuest(questId))
+end
+
+---@param questId number
+---@param showLevel number @ Whether the quest level should be included
+---@param showState boolean @ Whether to show (Complete/Failed)
+function QuestieLib:GetColoredQuestName(questId, showLevel, showState)
+    local name = QuestieDB.QueryQuestSingle(questId, "name")
+    local level, _ = QuestieLib.GetTbcLevel(questId);
+
+    if showLevel then
+        name = QuestieLib:GetLevelString(questId, level) .. name
+    end
+
+    if Questie.db.profile.enableTooltipsQuestID then
+        name = name .. " " .. l10n("(") .. questId .. l10n(")")
+    end
+
+    if showState then
+        local isComplete = QuestieDB.IsComplete(questId)
+
+        if isComplete == -1 then
+            name = name .. " " .. Questie:Colorize(l10n("(") .. l10n("Failed") .. l10n(")"), "red")
+        elseif isComplete == 1 then
+            name = name .. " " .. Questie:Colorize(l10n("(") .. l10n("Complete") .. l10n(")"), "green")
+
+            -- Quests treated as complete - zero objectives or synthetic objectives
+        elseif isComplete == 0 and QuestieDB.GetQuest(questId).isComplete == true then
+            name = name .. " " .. Questie:Colorize(l10n("(") .. l10n("Complete") .. l10n(")"), "green")
+        end
+    end
+
+    return QuestieLib:PrintDifficultyColor(level, name, QuestieDB.IsRepeatable(questId), QuestieEvent.IsEventQuest(questId), QuestieDB.IsPvPQuest(questId))
 end
 
 -- The order of these colors is important for the ColorWheel function.
@@ -334,29 +368,11 @@ function QuestieLib:GetQuestTypeSuffix(questId, blizzLike)
 end
 
 ---@param questId QuestId
----@param levelOrLegacyName Level|string @Either the quest level (new call style) or ignored legacy name argument
----@param legacyLevel Level|boolean? @Legacy 3rd arg: quest level (or blizzLike when called with 3 args)
----@param legacyBlizzLike boolean? @Legacy 4th arg: blizzLike
+---@param level Level @The quest level
 ---@return string levelString @String of format "[40+]"
-function QuestieLib:GetLevelString(questId, levelOrLegacyName, legacyLevel, legacyBlizzLike)
-    local level
-    local blizzLike = false
-
-    -- Supports both signatures:
-    -- 1) GetLevelString(questId, level)
-    -- 2) GetLevelString(questId, _, level, blizzLike)
-    if legacyLevel == nil then
-        level = levelOrLegacyName
-    elseif type(legacyLevel) == "boolean" and legacyBlizzLike == nil then
-        level = levelOrLegacyName
-        blizzLike = legacyLevel
-    else
-        level = legacyLevel
-        blizzLike = legacyBlizzLike and true or false
-    end
-
+function QuestieLib:GetLevelString(questId, level)
     local levelString = tostring(level)
-    local suffix = QuestieLib:GetQuestTypeSuffix(questId, blizzLike)
+    local suffix = QuestieLib:GetQuestTypeSuffix(questId)
     return "[" .. levelString .. suffix .. "] "
 end
 
@@ -372,18 +388,20 @@ function QuestieLib:GetRaceString(raceMask)
     else
         local raceString = ""
         local raceTable = QuestieLib:UnpackBinary(raceMask)
+        local langCode = l10n:GetUILocale()
+        local spaceString = ((langCode == "zhCN" or langCode == "zhTW") and "") or " " -- no spaces for chinese strings
         local stringTable = {
-            l10n('Human'),
-            l10n('Orc'),
-            l10n('Dwarf'),
-            l10n('Nightelf'),
-            l10n('Undead'),
-            l10n('Tauren'),
-            l10n('Gnome'),
-            l10n('Troll'),
-            l10n('Goblin'),
-            l10n('Blood Elf'),
-            l10n('Draenei')
+            l10n("Human"),
+            l10n("Orc"),
+            l10n("Dwarf"),
+            l10n("Night Elf"),
+            l10n("Undead"),
+            l10n("Tauren"),
+            l10n("Gnome"),
+            l10n("Troll"),
+            l10n("Goblin"),
+            l10n("Blood Elf"),
+            l10n("Draenei"),
         }
         local firstRun = true
         for k, v in pairs(raceTable) do
@@ -397,6 +415,41 @@ function QuestieLib:GetRaceString(raceMask)
             end
         end
         return raceString
+    end
+end
+
+function QuestieLib:GetClassString(classMask)
+    if not classMask or classMask == QuestieDB.classKeys.NONE or classMask == QuestieDB.classKeys.ALL_CLASSES then
+        return ""
+    else
+        local classString = ""
+        local classTable = QuestieLib:UnpackBinary(classMask)
+        local stringTable = {
+            -- ingame color codes via RAID_CLASS_COLORS["WARRIOR"] etc
+            "|cFFC79C6E" .. l10n("Warrior") .. "|r",                 -- 1
+            "|cFFF58CBA" .. l10n("Paladin") .. "|r",                 -- 2
+            "|cFFABD473" .. l10n("Hunter") .. "|r",                  -- 4
+            "|cFFFFF569" .. l10n("Rogue") .. "|r",                   -- 8
+            "|cFFFFFFFF" .. l10n("Priest") .. "|r",                  -- 16
+            "|cFFC41F3B" .. l10n("Death Knight") .. "|r",            -- 32
+            "|cFF0070DE" .. l10n("Shaman") .. "|r",                  -- 64
+            "|cFF40C7EB" .. l10n("Mage") .. "|r",                    -- 128
+            "|cFF8787ED" .. l10n("Warlock") .. "|r",                 -- 256
+            "|cFF00FF96" .. l10n("Monk") .. "|r",                    -- 512
+            "|cFFFF7D0A" .. l10n("Druid") .. "|r",                   -- 1024
+        }
+        local firstRun = true
+        for k, v in pairs(classTable) do
+            if v then
+                if firstRun then
+                    firstRun = false
+                else
+                    classString = classString .. ", "
+                end
+                classString = classString .. stringTable[k]
+            end
+        end
+        return classString
     end
 end
 
@@ -559,7 +612,7 @@ end
 
 function QuestieLib:UnpackBinary(val)
     local ret = {}
-    for q = 0, 16 do
+    for q = 0, 25 do
         if bit.band(bit.rshift(val, q), 1) == 1 then
             tinsert(ret, true)
         else
@@ -818,7 +871,7 @@ function QuestieLib.DidDailyResetHappenSinceLastLogin()
         return true -- No previous login recorded, assume a reset has occurred
     end
 
-    return getCurrentTimestamp() >= lastKnownDailyReset
+    return QuestieCompat.GetServerTime() >= lastKnownDailyReset
 end
 
 --- Updates the last known daily reset time to the next reset time.

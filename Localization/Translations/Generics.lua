@@ -326,6 +326,18 @@ local genericsLocales = {
         ["esES"] = "Raza Requerida",
         ["frFR"] = "Race requise",
     },
+    ["Required Class"] = {
+        ["enUS"] = true,
+        ["deDE"] = "Benötigte Klasse",
+        ["esES"] = "Clase requerida",
+        ["esMX"] = "Clase requerida",
+        ["frFR"] = "Classe requise",
+        ["koKR"] = "필요 직업",
+        ["ptBR"] = "Classe necessária",
+        ["ruRU"] = "Требуемый класс",
+        ["zhCN"] = "需要职业",
+        ["zhTW"] = "需要職業",
+    },
     ["Treasure Map"] = {
         ["ptBR"] = "Mapa do Tesouro",
         ["ruRU"] = "Поиск кладов",
