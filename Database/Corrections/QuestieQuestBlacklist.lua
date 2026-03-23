@@ -993,6 +993,7 @@ function QuestieQuestBlacklist:Load()
         [10404] = true, -- Against the Legion
         [10441] = true, -- Peddling the Goods
         [10716] = true, -- Test Flight: Raven's Wood <needs reward>
+        [10737] = true, -- The Master's Touch
         [10815] = true, -- The Journal of Val'zareq: Portends of War
         [10841] = true, -- The Vengeful Harbringer
         [10844] = true, -- Forge Camp: Anger
@@ -1096,6 +1097,10 @@ function QuestieQuestBlacklist:Load()
         [78223] = true, -- Boosted character quest
         [78224] = true, -- Boosted character quest
         [78225] = true, -- Boosted character quest
+        [93823] = true, -- Boosted character quest
+        [93824] = true, -- Boosted character quest
+        [96253] = true, -- Boosted character quest
+        [96254] = true, -- Boosted character quest
 
 		-- Paladin class quests with SWP patch
         [64319] = true, -- removed in wotlk
@@ -1133,6 +1138,7 @@ function QuestieQuestBlacklist:Load()
         [7425] = true,
         [7426] = true,
         [7521] = true,
+        [7522] = true,
         [8368] = true,
         [8383] = true,
         [8384] = true,

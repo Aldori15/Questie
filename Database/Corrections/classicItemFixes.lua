@@ -946,10 +946,10 @@ function QuestieItemFixes:Load()
             [itemKeys.objectDrops] = {176344},
         },
         [12766] = { -- Secret Note #2
-            [itemKeys.objectDrops] = {176344},
+            [itemKeys.objectDrops] = {190483},
         },
         [12768] = { -- Secret Note #3
-            [itemKeys.objectDrops] = {176344},
+            [itemKeys.objectDrops] = {190484},
         },
         [12813] = { -- Flask of Mystery Goo (#1313)
             [itemKeys.relatedQuests] = {5085},
@@ -1218,6 +1218,7 @@ function QuestieItemFixes:Load()
         },
         [18401] = { -- Nostro's Compendium of Dragon Slaying
             [itemKeys.name] = "Nostro's Compendium of Dragon Slaying",
+            [itemKeys.startQuest] = 7507,
         },
         [18605] = { -- Imprisoned Doomguard (#7583)
             [itemKeys.npcDrops] = {12396},
@@ -1488,14 +1489,17 @@ function QuestieItemFixes:Load()
         [190181] = { -- Lovers' Hearts
             [itemKeys.name] = "Lovers' Hearts",
             [itemKeys.relatedQuests] = {65597},
+            [itemKeys.class] = itemClasses.QUEST,
         },
         [190186] = { -- Wooden Figurine
             [itemKeys.name] = "Wooden Figurine",
             [itemKeys.relatedQuests] = {65603},
+            [itemKeys.class] = itemClasses.QUEST,
         },
         [190187] = { -- Withered Scarf
             [itemKeys.name] = "Withered Scarf",
             [itemKeys.relatedQuests] = {65604},
+            [itemKeys.class] = itemClasses.QUEST,
         },
         [190232] = { -- Withered Scarf
             [itemKeys.name] = "Withered Scarf",
