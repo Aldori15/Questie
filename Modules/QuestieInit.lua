@@ -89,6 +89,8 @@ local SeasonOfDiscovery = QuestieLoader:ImportModule("SeasonOfDiscovery")
 local QuestieAnnounce = QuestieLoader:ImportModule("QuestieAnnounce")
 ---@type DropDB
 local DropDB = QuestieLoader:ImportModule("DropDB")
+---@type QuestLogCache
+local QuestLogCache = QuestieLoader:ImportModule("QuestLogCache")
 
 --- COMPATIBILITY ---
 local WOW_PROJECT_ID = QuestieCompat.WOW_PROJECT_ID
@@ -302,16 +304,19 @@ QuestieInit.Stages[3] = function() -- run as a coroutine
     end
     -- ** OLD ** Questie:ContinueInit() ** END **
 
-    coYield()
-    QuestEventHandler:RegisterEvents()
-    coYield()
-    ChatFilter:RegisterEvents()
     QuestieMap:InitializeQueue()
 
     coYield()
     QuestieQuest:Initialize()
     coYield()
     WorldMapButton.Initialize()
+    coYield()
+    -- Seed the quest log baseline before live quest events are registered.
+    local _, changes = QuestLogCache.CheckForChanges(nil)
+    QuestEventHandler.InitQuestLogStates(changes)
+    coYield()
+    QuestEventHandler:RegisterEvents()
+    ChatFilter:RegisterEvents()
     coYield()
     QuestieQuest:GetAllQuestIdsNoObjectives()
     coYield()
