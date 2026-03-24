@@ -751,7 +751,6 @@ _CalculateAvailableQuests = function()
             completedQuests[questId] or -- Don't show completed quests
             hiddenQuests[questId] or -- Don't show blacklisted quests
             hidden[questId] or -- Don't show quests hidden by the player
-            activeChildQuests[questId] or -- We already drew this quest in a previous loop iteration
             unavailableQuestsDeterminedByTalking[questId] -- Don't show quests hidden after talking to an NPC
         ) then
             if availableQuests[questId] or QuestieMap.questIdFrames[questId] or QuestieTooltips.lookupKeysByQuestId[questId] then
@@ -762,7 +761,7 @@ _CalculateAvailableQuests = function()
         end
 
         if currentQuestlog[questId] then
-            _DrawChildQuests(questId, currentQuestlog, completedQuests)
+            _DrawChildQuests(questId, currentQuestlog, completedQuests, hiddenQuests, hidden, unavailableQuestsDeterminedByTalking)
 
             if QuestieDB.IsComplete(questId) ~= -1 then -- The quest in the quest log is not failed, so we don't show it as available
                 availableQuests[questId] = nil
@@ -838,6 +837,10 @@ _CalculateAvailableQuests = function()
             return
         end
 
+        if activeChildQuests[questId] then
+            return
+        end
+
         _DrawAvailableQuest(questId)
     end
 
@@ -895,7 +898,10 @@ end
 ---@param questId number
 ---@param currentQuestlog table<number, boolean>
 ---@param completedQuests table<number, boolean>
-_DrawChildQuests = function(questId, currentQuestlog, completedQuests)
+---@param hiddenQuests table<number, boolean>
+---@param hidden table<number, boolean>
+---@param unavailableQuests table<number, boolean>
+_DrawChildQuests = function(questId, currentQuestlog, completedQuests, hiddenQuests, hidden, unavailableQuests)
     local childQuests = QuestieDB.QueryQuestSingle(questId, "childQuests")
     if (not childQuests) then
         return
@@ -903,7 +909,13 @@ _DrawChildQuests = function(questId, currentQuestlog, completedQuests)
 
     for _, childQuestId in pairs(childQuests) do
         local requiredRaces = QuestieDB.QueryQuestSingle(childQuestId, "requiredRaces")
-        if (not completedQuests[childQuestId]) and (not currentQuestlog[childQuestId]) and (not hiddenQuests[childQuestId]) and (QuestiePlayer.HasRequiredRace(requiredRaces)) then
+        if (not completedQuests[childQuestId]) and
+            (not currentQuestlog[childQuestId]) and
+            (not hiddenQuests[childQuestId]) and
+            (not hidden[childQuestId]) and
+            (not unavailableQuests[childQuestId]) and
+            (QuestiePlayer.HasRequiredRace(requiredRaces))
+        then
             local childQuestExclusiveTo = QuestieDB.QueryQuestSingle(childQuestId, "exclusiveTo")
             local blockedByExclusiveTo = false
             for _, exclusiveToQuestId in pairs(childQuestExclusiveTo or {}) do
@@ -913,10 +925,26 @@ _DrawChildQuests = function(questId, currentQuestlog, completedQuests)
                 end
             end
             if (not blockedByExclusiveTo) then
-                QuestieDB.activeChildQuests[childQuestId] = true
-                availableQuests[childQuestId] = true
-                -- Draw them right away and skip all other irrelevant checks
-                _DrawAvailableQuest(childQuestId)
+                local isPreQuestSingleFulfilled = true
+                local isPreQuestGroupFulfilled = true
+
+                local preQuestSingle = QuestieDB.QueryQuestSingle(childQuestId, "preQuestSingle")
+                if preQuestSingle then
+                    isPreQuestSingleFulfilled = QuestieDB:IsPreQuestSingleFulfilled(preQuestSingle)
+                else
+                    local preQuestGroup = QuestieDB.QueryQuestSingle(childQuestId, "preQuestGroup")
+                    if preQuestGroup then
+                        isPreQuestGroupFulfilled = QuestieDB:IsPreQuestGroupFulfilled(preQuestGroup)
+                    end
+                end
+
+                if isPreQuestSingleFulfilled and isPreQuestGroupFulfilled then
+                    QuestieDB.activeChildQuests[childQuestId] = true
+                    availableQuests[childQuestId] = true
+                    -- Draw them right away so child quests still appear when their questId was
+                    -- already processed earlier in this calculation pass.
+                    _DrawAvailableQuest(childQuestId)
+                end
             end
         end
     end
