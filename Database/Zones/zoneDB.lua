@@ -46,7 +46,13 @@ local alternativeDungeonAreaIdToDungeonAreaId = {}
 
 -- Overrides for UiMapId to AreaId
 local UiMapIdOverrides = {
-    [246] = 3713
+    [246] = 3713,
+    -- Continent maps are not real NPC/object zones, but the client can return them
+    -- from C_Map.GetBestMapForUnit("player") while inside caves or similar sub-areas.
+    [113] = 0, -- Northrend
+    [1414] = 0, -- Kalimdor
+    [1415] = 0, -- Eastern Kingdom
+    [1945] = 0, -- Outland
 }
 local parentZoneToSubZone = {} -- Generated
 local zoneMap = {} -- Generated

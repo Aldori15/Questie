@@ -126,13 +126,9 @@ end
 function QuestiePlayer:GetCurrentZoneId()
     local uiMapId = C_Map.GetBestMapForUnit("player")
     if uiMapId and uiMapId > 0 then
-        local mapInfo = C_Map.GetMapInfo(uiMapId)
-        local mapType = mapInfo and mapInfo.mapType
-        if not mapInfo or (mapType ~= UI_MAP_TYPE_WORLD and mapType ~= UI_MAP_TYPE_CONTINENT and mapType ~= UI_MAP_TYPE_COSMIC) then
-            local success, areaId = pcall(ZoneDB.GetAreaIdByUiMapId, ZoneDB, uiMapId)
-            if success then
-                return areaId
-            end
+        local success, areaId = pcall(ZoneDB.GetAreaIdByUiMapId, ZoneDB, uiMapId)
+        if success then
+            return areaId
         end
     end
 
