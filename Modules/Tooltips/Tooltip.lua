@@ -304,9 +304,9 @@ function QuestieTooltips:GetTooltip(key)
         end
 
         for k, tooltip in pairs(QuestieTooltips.lookupByKey[key]) do
+            local questId = tooltip.questId
             if tooltip.name then
                 if Questie.db.profile.showQuestsInNpcTooltip then
-                    local questId = tooltip.questId
                     local questString = QuestieLib:GetColoredQuestName(questId, Questie.db.profile.enableTooltipsQuestLevel, true, true)
                     if tooltip.type then
                         local level, _ = QuestieLib.GetTbcLevel(questId)
@@ -327,11 +327,9 @@ function QuestieTooltips:GetTooltip(key)
             elseif (not finishedAndUnacceptedQuests[questId]) then
                 local objective = tooltip.objective
                 if not (objective.IsSourceItem or objective.IsRequiredSourceItem) then
-                    -- Tooltip was registered for a sourceItem or requiredSourceItem and not a real "objective"
+                    -- Tooltip was registered for a real "objective" and not for a sourceItem or requiredSourceItem
                     objective:Update()
                 end
-
-                local questId = tooltip.questId
                 local objectiveIndex = objective.Index;
                 if (not tooltipData[questId]) then
                     tooltipData[questId] = {
