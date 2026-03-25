@@ -32,7 +32,7 @@ local coYield = coroutine.yield
 local coRunning = coroutine.running
 
 -- Bump when compiler field types/order change to invalidate cached binary DB blobs.
-QuestieDBCompiler.compiledSchemaVersion = 9
+QuestieDBCompiler.compiledSchemaVersion = 10
 
 ---@alias CompilerTypes
 ---| "u8"
@@ -320,7 +320,7 @@ readers["objective"] = function(stream)
 
     local ret = {}
     for i = 1, count do
-        ret[i] = {stream:ReadInt24(), stream:ReadTinyStringNil()}
+        ret[i] = {stream:ReadInt24(), stream:ReadTinyStringNil(), stream:ReadByte()}
     end
     return ret
 end
@@ -354,7 +354,7 @@ readers["objectives"] = function(stream)
             for j=1, creditCount do
                 creditList[j] = stream:ReadInt24()
             end
-            killobjectives[i] = {creditList, stream:ReadInt24(), stream:ReadTinyStringNil()}
+            killobjectives[i] = {creditList, stream:ReadInt24(), stream:ReadTinyStringNil(), stream:ReadByte()}
         end
         ret[5] = killobjectives
     end
@@ -624,6 +624,7 @@ QuestieDBCompiler.writers = {
             for _, pair in pairs(value) do
                 stream:WriteInt24(pair[1])
                 stream:WriteTinyString(pair[2] or "")
+                stream:WriteByte(pair[3] or 0)
             end
         else
             stream:WriteByte(0)
@@ -663,6 +664,7 @@ QuestieDBCompiler.writers = {
                     end
                     stream:WriteInt24(killobjective[2]) -- write baseCreatureID
                     stream:WriteTinyString(killobjective[3] or "") -- write baseCreatureText
+                    stream:WriteByte(killobjective[4] or 0) -- write icon override index
                 end
             else
                 stream:WriteByte(0)
@@ -786,6 +788,7 @@ skippers["objective"] = function(stream)
     for _=1,count do
         stream._pointer = stream._pointer + 3
         stream._pointer = stream:ReadByte() + stream._pointer
+        stream._pointer = stream._pointer + 1
     end
 end
 skippers["spellobjective"] = function(stream)
@@ -809,6 +812,7 @@ skippers["objectives"] = function(stream)
         for _=1, count do
             stream._pointer = stream:ReadByte() * 3 + 3 + stream._pointer
             stream._pointer = stream:ReadByte() + stream._pointer
+            stream._pointer = stream._pointer + 1
         end
     end
     spellObjectiveSkipper(stream)
