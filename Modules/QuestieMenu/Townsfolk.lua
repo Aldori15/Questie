@@ -30,7 +30,7 @@ local function _PopulateTownsfolkTypes(folkTypes) -- populate the table with all
     for id, npcData in pairs(QuestieDB.npcData) do
         local flags = npcData[QuestieDB.npcKeys.npcFlags]
         for name, folkType in pairs(folkTypes) do
-            if flags and bitband(flags, folkType.mask) == folkType.mask then
+            if flags and folkType.mask and bitband(flags, folkType.mask) == folkType.mask then
                 local npcName = npcData[QuestieDB.npcKeys.name]
                 local subName = npcData[QuestieDB.npcKeys.subName]
                 if npcName and sub(npcName, 1, 5) ~= "[DND]" then
@@ -57,7 +57,7 @@ function Townsfolk.Initialize()
     local townsfolkData = {
         ["Repair"] = {
             mask = QuestieDB.npcFlags.REPAIR,
-            requireSubname = true,
+            requireSubname = false,
             data = {}
         },
         ["Auctioneer"] = {
@@ -82,7 +82,7 @@ function Townsfolk.Initialize()
         },
         ["Innkeeper"] = {
             mask = QuestieDB.npcFlags.INNKEEPER,
-            requireSubname = true,
+            requireSubname = false,
             data = {}
         },
         ["Stable Master"] = { -- Used further down by hunters.
@@ -206,33 +206,9 @@ function Townsfolk.Initialize()
     factionSpecificTownsfolk["Horde"]["Spirit Healer"]  = townsfolkData["Spirit Healer"].data
     factionSpecificTownsfolk["Alliance"]["Spirit Healer"]  = townsfolkData["Spirit Healer"].data
 
-    factionSpecificTownsfolk["Horde"]["Mailbox"] = {}
-    factionSpecificTownsfolk["Alliance"]["Mailbox"] = {}
-
-    local mailboxes = Townsfolk.GetMailboxes()
-    for i=1, #mailboxes do
-        local id = mailboxes[i]
-        if QuestieDB.objectData[id] then
-            local factionID = QuestieDB.objectData[id][QuestieDB.objectKeys.factionID]
-
-            if factionID == 0 then
-                tinsert(factionSpecificTownsfolk["Horde"]["Mailbox"], id)
-                tinsert(factionSpecificTownsfolk["Alliance"]["Mailbox"], id)
-            elseif QuestieDB.factionTemplate[factionID] and bitband(QuestieDB.factionTemplate[factionID], 12) == 0 and bitband(QuestieDB.factionTemplate[factionID], 10) == 0 then
-                tinsert(factionSpecificTownsfolk["Horde"]["Mailbox"], id)
-                tinsert(factionSpecificTownsfolk["Alliance"]["Mailbox"], id)
-            elseif QuestieDB.factionTemplate[factionID] and bitband(QuestieDB.factionTemplate[factionID], 12) == 0 then
-                tinsert(factionSpecificTownsfolk["Horde"]["Mailbox"], id)
-            elseif QuestieDB.factionTemplate[factionID] and bitband(QuestieDB.factionTemplate[factionID], 10) == 0 then
-                tinsert(factionSpecificTownsfolk["Alliance"]["Mailbox"], id)
-            else
-                tinsert(factionSpecificTownsfolk["Horde"]["Mailbox"], id)
-                tinsert(factionSpecificTownsfolk["Alliance"]["Mailbox"], id)
-            end
-        else
-            Questie:Debug(Questie.DEBUG_DEVELOP, "Missing mailbox:", tostring(id))
-        end
-    end
+    local allianceMailBoxes, hordeMailBoxes = Townsfolk.GetFactionSpecificMailboxes()
+    factionSpecificTownsfolk["Horde"]["Mailbox"] = hordeMailBoxes
+    factionSpecificTownsfolk["Alliance"]["Mailbox"] = allianceMailBoxes
 
     local petFoodVendorTypes = {["Meat"] = {},["Fish"]={},["Cheese"]={},["Bread"]={},["Fungus"]={},["Fruit"]={},["Raw Meat"]={},["Raw Fish"]={}}
     local petFoodIndexes = {"Meat","Fish","Cheese","Bread","Fungus","Fruit","Raw Meat","Raw Fish"}
@@ -400,4 +376,37 @@ function Townsfolk:PopulateVendors(itemList, existingTable, restrictLevel)
         end
     end
     return tbl
+end
+
+---@return number[], number[] -- Returns two lists of mailbox IDs, one for Alliance and one for Horde
+function Townsfolk.GetFactionSpecificMailboxes()
+    local allianceMailBoxes = {}
+    local hordeMailBoxes = {}
+
+    local mailboxes = Townsfolk.GetMailboxes()
+    for i=1, #mailboxes do
+        local id = mailboxes[i]
+        if QuestieDB.objectData[id] then
+            local factionID = QuestieDB.objectData[id][QuestieDB.objectKeys.factionID]
+
+            if factionID == 0 then
+                tinsert(hordeMailBoxes, id)
+                tinsert(allianceMailBoxes, id)
+            elseif QuestieDB.factionTemplate[factionID] and bitband(QuestieDB.factionTemplate[factionID], 12) == 0 and bitband(QuestieDB.factionTemplate[factionID], 10) == 0 then
+                tinsert(hordeMailBoxes, id)
+                tinsert(allianceMailBoxes, id)
+            elseif QuestieDB.factionTemplate[factionID] and bitband(QuestieDB.factionTemplate[factionID], 12) == 0 then
+                tinsert(hordeMailBoxes, id)
+            elseif QuestieDB.factionTemplate[factionID] and bitband(QuestieDB.factionTemplate[factionID], 10) == 0 then
+                tinsert(allianceMailBoxes, id)
+            else
+                tinsert(hordeMailBoxes, id)
+                tinsert(allianceMailBoxes, id)
+            end
+        else
+            Questie:Debug(Questie.DEBUG_DEVELOP, "Missing mailbox:", tostring(id))
+        end
+    end
+
+    return allianceMailBoxes, hordeMailBoxes
 end
