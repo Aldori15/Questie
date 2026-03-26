@@ -391,7 +391,29 @@ end
 --Draw a single available quest, it is used by the CalculateAndDrawAll function.
 ---@param quest Quest
 function AvailableQuests.DrawAvailableQuest(quest) -- prevent recursion
-    --? Some quests can be started by both an NPC and a GameObject
+    --? Some quests can be started by an item, NPC, and/or a GameObject
+
+    if quest.Starts["Item"] then
+        local items = quest.Starts["Item"]
+        for i = 1, #items do
+            local item = QuestieDB:GetItem(items[i])
+            if item then
+                if item.npcDrops then
+                    for _, npcId in pairs(item.npcDrops) do
+                        local npc = QuestieDB:GetNPC(npcId)
+                        _AddStarter(npc, quest, "im_" .. npcId)
+                    end
+                end
+
+                if item.objectDrops then
+                    for _, objectId in pairs(item.objectDrops) do
+                        local object = QuestieDB:GetObject(objectId)
+                        _AddStarter(object, quest, "io_" .. objectId)
+                    end
+                end
+            end
+        end
+    end
 
     if quest.Starts["GameObject"] then
         local gameObjects = quest.Starts["GameObject"]
@@ -861,6 +883,40 @@ end
 _RegisterQuestStartTooltips = function(quest)
     if (not quest) or (not quest.Starts) then
         return
+    end
+
+    local items = quest.Starts["Item"]
+    if items then
+        for i = 1, #items do
+            local item = QuestieDB:GetItem(items[i])
+            if item then
+                if item.npcDrops then
+                    for _, npcId in pairs(item.npcDrops) do
+                        local npc = QuestieDB:GetNPC(npcId)
+                        if npc then
+                            local tooltipKey = "m_" .. npc.id
+                            local tooltipId = tostring(quest.Id) .. " " .. npc.name .. " " .. npc.id
+                            if (not QuestieTooltips.lookupByKey[tooltipKey]) or (not QuestieTooltips.lookupByKey[tooltipKey][tooltipId]) then
+                                QuestieTooltips:RegisterQuestStartTooltip(quest.Id, npc.name, npc.id, tooltipKey, "itemFromMonster")
+                            end
+                        end
+                    end
+                end
+
+                if item.objectDrops then
+                    for _, objectId in pairs(item.objectDrops) do
+                        local object = QuestieDB:GetObject(objectId)
+                        if object then
+                            local tooltipKey = "o_" .. object.id
+                            local tooltipId = tostring(quest.Id) .. " " .. object.name .. " " .. object.id
+                            if (not QuestieTooltips.lookupByKey[tooltipKey]) or (not QuestieTooltips.lookupByKey[tooltipKey][tooltipId]) then
+                                QuestieTooltips:RegisterQuestStartTooltip(quest.Id, object.name, object.id, tooltipKey, "itemFromObject")
+                            end
+                        end
+                    end
+                end
+            end
+        end
     end
 
     local gameObjects = quest.Starts["GameObject"]
