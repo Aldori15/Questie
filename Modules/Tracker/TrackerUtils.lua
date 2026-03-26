@@ -356,6 +356,38 @@ function TrackerUtils:IsQuestItemUsable(itemId)
 end
 
 ---@param quest Quest
+---@return ItemId[]
+function TrackerUtils:GetUsableQuestItemIds(quest)
+    local usableQuestItems = {}
+    local seenQuestItems = {}
+
+    local function AddUsableQuestItem(itemId)
+        if itemId and (not seenQuestItems[itemId]) and QuestieDB.QueryItemSingle(itemId, "class") == 12 and GetItemCount(itemId) > 0 and self:IsQuestItemUsable(itemId) then
+            seenQuestItems[itemId] = true
+            tinsert(usableQuestItems, itemId)
+        end
+    end
+
+    local sourceItemId = quest.sourceItemId
+    if sourceItemId == nil then
+        sourceItemId = QuestieDB.QueryQuestSingle(quest.Id, "sourceItemId")
+    end
+    AddUsableQuestItem(sourceItemId)
+
+    for _, itemId in ipairs(quest.requiredSourceItems or {}) do
+        AddUsableQuestItem(itemId)
+    end
+
+    for _, objective in ipairs(quest.ObjectiveData or {}) do
+        if objective.Type == "item" then
+            AddUsableQuestItem(objective.Id)
+        end
+    end
+
+    return usableQuestItems
+end
+
+---@param quest Quest
 ---@return string|nil completionText Quest Completion text string or nil
 function TrackerUtils:GetCompletionText(quest)
     local completionText
