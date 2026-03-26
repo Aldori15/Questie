@@ -1,5 +1,7 @@
 ---@class QuestieReputation
 local QuestieReputation = QuestieLoader:CreateModule("QuestieReputation")
+---@type QuestiePlayer
+local QuestiePlayer = QuestieLoader:ImportModule("QuestiePlayer")
 ---@type QuestieQuest
 local QuestieQuest = QuestieLoader:ImportModule("QuestieQuest")
 ---@type QuestieDB
@@ -11,10 +13,11 @@ local GetFactionInfo = QuestieCompat.GetFactionInfo
 local playerReputations = {}
 local factionNameCache = {}
 
-local _ReachedNewStanding, _WinterSaberChanged
+local _ReachedNewStanding, _WinterSaberChanged, _FilterShaTarRewards, _GetRewardMultiplier
 
 -- Fast local references
 local ExpandFactionHeader, GetNumFactions = ExpandFactionHeader, GetNumFactions
+local tinsert, floor = table.insert, math.floor
 
 --- Updates all factions a player already discovered and checks if any of these
 --- reached a new reputation level
@@ -58,7 +61,7 @@ end
 
 ---@return boolean
 _WinterSaberChanged = function(factionID, previousValues, barValue)
-    return factionID == 589 -- Wintersaber Trainer
+    return factionID == QuestieDB.factionIDs.WINTERSABER_TRAINERS
         and previousValues and ((previousValues[2] < 4500 and barValue >= 4500)
             or (previousValues[2] < 13000 and barValue >= 13000))
 end
@@ -101,7 +104,7 @@ function QuestieReputation:HasFactionAndReputationLevel(requiredMinRep, required
         if playerReputations[maxFactionID] then
             hasMaxFaction = true
             belowMaxRep = playerReputations[maxFactionID][2] < reqMaxValue
-        elseif maxFactionID == 909 then -- Darkmoon Faire
+        elseif maxFactionID == QuestieDB.factionIDs.DARKMOON_FAIRE then
             hasMaxFaction = true
             belowMaxRep = true
         end
@@ -168,7 +171,86 @@ function QuestieReputation.GetReputationReward(questId)
         return nil
     end
 
-    return QuestieDB.QueryQuestSingle(questId, "reputationReward")
+    local baseRewards = QuestieDB.QueryQuestSingle(questId, "reputationReward")
+    if not baseRewards or not next(baseRewards) then
+        return nil
+    end
+
+    local rewards = {}
+    for _, rewardPair in pairs(baseRewards) do
+        rewards[#rewards + 1] = {rewardPair[1], rewardPair[2]}
+    end
+
+    local factionIDs = QuestieDB.factionIDs
+    rewards = _FilterShaTarRewards(rewards, factionIDs)
+
+    local reputationMultiplier = _GetRewardMultiplier()
+    local aldorPenalty, scryersPenalty
+
+    for _, rewardPair in pairs(rewards) do
+        local factionId = rewardPair[1]
+        local rewardValue = rewardPair[2]
+
+        if rewardValue > 0 and reputationMultiplier ~= 1 then
+            rewardValue = floor(rewardValue * reputationMultiplier)
+            rewardPair[2] = rewardValue
+        end
+
+        if factionId == factionIDs.THE_ALDOR then
+            scryersPenalty = {factionIDs.THE_SCRYERS, 0 - floor(rewardValue * 1.1)}
+        elseif factionId == factionIDs.THE_SCRYERS then
+            aldorPenalty = {factionIDs.THE_ALDOR, 0 - floor(rewardValue * 1.1)}
+        end
+    end
+
+    if aldorPenalty then
+        tinsert(rewards, aldorPenalty)
+    elseif scryersPenalty then
+        tinsert(rewards, scryersPenalty)
+    end
+
+    return rewards
+end
+
+---@return number
+_GetRewardMultiplier = function()
+    if QuestiePlayer.HasRequiredRace(QuestieDB.raceKeys.HUMAN) then
+        return 1.1 -- 10% bonus reputation from Human racial
+    end
+
+    return 1
+end
+
+---@param reputationReward ReputationPair[]
+---@param factionIDs table
+---@return ReputationPair[]
+_FilterShaTarRewards = function(reputationReward, factionIDs)
+    local playerIsHonoredWithShaTar = QuestieReputation:HasReputation({ factionIDs.THE_SHA_TAR, 9000 }, nil)
+    if not playerIsHonoredWithShaTar then
+        return reputationReward
+    end
+
+    local hasAldorOrScryer = false
+    for _, rewardPair in pairs(reputationReward) do
+        local factionId = rewardPair[1]
+        if factionId == factionIDs.THE_ALDOR or factionId == factionIDs.THE_SCRYERS then
+            hasAldorOrScryer = true
+            break
+        end
+    end
+
+    if not hasAldorOrScryer then
+        return reputationReward
+    end
+
+    local filteredRewards = {}
+    for _, rewardPair in pairs(reputationReward) do
+        if rewardPair[1] ~= factionIDs.THE_SHA_TAR then
+            filteredRewards[#filteredRewards + 1] = rewardPair
+        end
+    end
+
+    return filteredRewards
 end
 
 ---@param reputationReward ReputationPair[]
