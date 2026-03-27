@@ -43,6 +43,8 @@ local QuestLogCache = QuestieLoader:ImportModule("QuestLogCache")
 local ThreadLib = QuestieLoader:ImportModule("ThreadLib")
 ---@type AvailableQuests
 local AvailableQuests = QuestieLoader:ImportModule("AvailableQuests")
+---@type Phasing
+local Phasing = QuestieLoader:ImportModule("Phasing")
 
 --- COMPATIBILITY ---
 local C_Timer = QuestieCompat.C_Timer
@@ -56,6 +58,20 @@ local pairs = pairs;
 local ipairs = ipairs;
 local yield = coroutine.yield
 local NewThread = ThreadLib.ThreadSimple
+
+local function _HasVisibleSpawnInZone(spawns)
+    if not spawns then
+        return true
+    end
+
+    for _, spawn in pairs(spawns) do
+        if Phasing.IsSpawnVisible(spawn[3]) then
+            return true
+        end
+    end
+
+    return false
+end
 
 local NOP_FUNCTION = function()
 end
@@ -1023,49 +1039,54 @@ function QuestieQuest:AddFinisher(quest)
 
             local finisherIcons = {}
             local finisherLocs = {}
+            local visibleFinisherZones = {}
 
             for finisherZone, spawns in pairs(finisher.spawns or {}) do
                 if (finisherZone ~= nil and spawns ~= nil) then
                     for _, coords in ipairs(spawns) do
-                        local data = {
-                            Id = questId,
-                            Icon = Questie.ICON_TYPE_COMPLETE,
-                            GetIconScale = _GetIconScaleForAvailable,
-                            IconScale = _GetIconScaleForAvailable(),
-                            Type = "complete",
-                            QuestData = quest,
-                            Name = finisher.name,
-                            IsObjectiveNote = false,
-                        }
+                        if Phasing.IsSpawnVisible(coords[3]) then
+                            visibleFinisherZones[finisherZone] = true
 
-                        if QuestieDB.IsActiveEventQuest(quest.Id) then
-                            data.Icon = Questie.ICON_TYPE_EVENTQUEST_COMPLETE
-                        elseif QuestieDB.IsPvPQuest(quest.Id) then
-                            data.Icon = Questie.ICON_TYPE_PVPQUEST_COMPLETE
-                        elseif quest.IsRepeatable then
-                            data.Icon = Questie.ICON_TYPE_REPEATABLE_COMPLETE
-                        end
+                            local data = {
+                                Id = questId,
+                                Icon = Questie.ICON_TYPE_COMPLETE,
+                                GetIconScale = _GetIconScaleForAvailable,
+                                IconScale = _GetIconScaleForAvailable(),
+                                Type = "complete",
+                                QuestData = quest,
+                                Name = finisher.name,
+                                IsObjectiveNote = false,
+                            }
 
-                        if (coords[1] == -1 or coords[2] == -1) then
-                            local dungeonLocation = ZoneDB:GetDungeonLocation(finisherZone)
-                            if dungeonLocation ~= nil then
-                                for _, value in ipairs(dungeonLocation) do
-                                    local zone = value[1];
-                                    local x = value[2];
-                                    local y = value[3];
-
-                                    QuestieMap:DrawWorldIcon(data, zone, x, y)
-                                end
+                            if QuestieDB.IsActiveEventQuest(quest.Id) then
+                                data.Icon = Questie.ICON_TYPE_EVENTQUEST_COMPLETE
+                            elseif QuestieDB.IsPvPQuest(quest.Id) then
+                                data.Icon = Questie.ICON_TYPE_PVPQUEST_COMPLETE
+                            elseif quest.IsRepeatable then
+                                data.Icon = Questie.ICON_TYPE_REPEATABLE_COMPLETE
                             end
-                        else
-                            local x = coords[1];
-                            local y = coords[2];
 
-                            Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest] Adding world icon as finisher:", finisherZone, x, y)
-                            finisherIcons[finisherZone] = QuestieMap:DrawWorldIcon(data, finisherZone, x, y)
+                            if (coords[1] == -1 or coords[2] == -1) then
+                                local dungeonLocation = ZoneDB:GetDungeonLocation(finisherZone)
+                                if dungeonLocation ~= nil then
+                                    for _, value in ipairs(dungeonLocation) do
+                                        local zone = value[1];
+                                        local x = value[2];
+                                        local y = value[3];
 
-                            if not finisherLocs[finisherZone] then
-                                finisherLocs[finisherZone] = { x, y }
+                                        QuestieMap:DrawWorldIcon(data, zone, x, y)
+                                    end
+                                end
+                            else
+                                local x = coords[1];
+                                local y = coords[2];
+
+                                Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest] Adding world icon as finisher:", finisherZone, x, y)
+                                finisherIcons[finisherZone] = QuestieMap:DrawWorldIcon(data, finisherZone, x, y, coords[3])
+
+                                if not finisherLocs[finisherZone] then
+                                    finisherLocs[finisherZone] = { x, y }
+                                end
                             end
                         end
                     end
@@ -1074,7 +1095,8 @@ function QuestieQuest:AddFinisher(quest)
 
             if finisher.waypoints then
                 for zone, waypoints in pairs(finisher.waypoints) do
-                    if (not ZoneDB.IsDungeonZone(zone)) then
+                    if (visibleFinisherZones[zone] or (not finisher.spawns) or (not finisher.spawns[zone])) and
+                        (not ZoneDB.IsDungeonZone(zone)) then
                         if not finisherIcons[zone] and waypoints[1] and waypoints[1][1] and waypoints[1][1][1] then
                             local data = {
                                 Id = questId,
@@ -1275,7 +1297,7 @@ _DetermineIconsToDraw = function(quest, objective, objectiveIndex, objectiveCent
             for zone, spawns in pairs(spawnData.Spawns) do
                 local uiMapId = ZoneDB:GetUiMapIdByAreaId(zone)
                 for _, spawn in pairs(spawns) do
-                    if (spawn[1] and spawn[2]) then
+                    if spawn[1] and spawn[2] and Phasing.IsSpawnVisible(spawn[3]) then
                         local drawIcon = {
                             AlreadySpawnedId = id,
                             data = data,
@@ -1422,22 +1444,24 @@ _DrawObjectiveWaypoints = function(objective, icon, iconPerZone)
     for _, spawnData in pairs(objective.spawnList) do -- spawnData.Name, spawnData.Spawns
         if spawnData.Waypoints then
             for zone, waypoints in pairs(spawnData.Waypoints) do
-                local firstWaypoint = waypoints[1][1]
+                if _HasVisibleSpawnInZone(spawnData.Spawns[zone]) then
+                    local firstWaypoint = waypoints[1][1]
 
-                if (not iconPerZone[zone]) and icon and firstWaypoint[1] ~= -1 and firstWaypoint[2] ~= -1 then -- spawn an icon in this zone for the mob
-                    local iconMap, iconMini = QuestieMap:DrawWorldIcon(icon.data, zone, firstWaypoint[1], firstWaypoint[2]) -- clustering code takes care of duplicates as long as min-dist is more than 0
+                    if (not iconPerZone[zone]) and icon and firstWaypoint[1] ~= -1 and firstWaypoint[2] ~= -1 then -- spawn an icon in this zone for the mob
+                        local iconMap, iconMini = QuestieMap:DrawWorldIcon(icon.data, zone, firstWaypoint[1], firstWaypoint[2]) -- clustering code takes care of duplicates as long as min-dist is more than 0
 
-                    if iconMap and iconMini then
-                        iconPerZone[zone] = {iconMap, firstWaypoint[1], firstWaypoint[2]}
-                        tinsert(objective.AlreadySpawned[icon.AlreadySpawnedId].mapRefs, iconMap);
-                        tinsert(objective.AlreadySpawned[icon.AlreadySpawnedId].minimapRefs, iconMini);
+                        if iconMap and iconMini then
+                            iconPerZone[zone] = {iconMap, firstWaypoint[1], firstWaypoint[2]}
+                            tinsert(objective.AlreadySpawned[icon.AlreadySpawnedId].mapRefs, iconMap);
+                            tinsert(objective.AlreadySpawned[icon.AlreadySpawnedId].minimapRefs, iconMini);
+                        end
                     end
-                end
 
-                local ipz = iconPerZone[zone]
+                    local ipz = iconPerZone[zone]
 
-                if ipz then
-                    QuestieMap:DrawWaypoints(ipz[1], waypoints, zone, spawnData.Hostile and {1, 0.2, 0, 0.7} or nil)
+                    if ipz then
+                        QuestieMap:DrawWaypoints(ipz[1], waypoints, zone, spawnData.Hostile and {1, 0.2, 0, 0.7} or nil)
+                    end
                 end
             end
 

@@ -5,12 +5,15 @@ local QuestieWotlkNpcFixes = QuestieLoader:CreateModule("QuestieWotlkNpcFixes")
 local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 ---@type ZoneDB
 local ZoneDB = QuestieLoader:ImportModule("ZoneDB")
+---@type Phasing
+local Phasing = QuestieLoader:ImportModule("Phasing")
 
 function QuestieWotlkNpcFixes:Load()
     local npcKeys = QuestieDB.npcKeys
     local zoneIDs = ZoneDB.zoneIDs
     local waypointPresets = QuestieDB.waypointPresets
     local npcFlags = QuestieDB.npcFlags
+    local phases = Phasing.phases
 
     return {
         [376] = { -- High Priestess Laurena
@@ -1343,8 +1346,8 @@ function QuestieWotlkNpcFixes:Load()
         },
         [28401] = { -- Har'koa
             [npcKeys.spawns] = {[zoneIDs.ZUL_DRAK]={
-                {60.25,57.74},
-                {63.72,70.42},
+                {60.25,57.74,phases.HAR_KOA_AT_ZIM_TORGA},
+                {63.72,70.42,phases.HAR_KOA_AT_ALTAR},
             }},
         },
         [28402] = {

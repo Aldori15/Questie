@@ -23,6 +23,8 @@ local IsleOfQuelDanas = QuestieLoader:ImportModule("IsleOfQuelDanas")
 local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
 ---@type Comms
 local Comms = QuestieLoader:ImportModule("Comms")
+---@type Phasing
+local Phasing = QuestieLoader:ImportModule("Phasing")
 
 local GetQuestGreenRange = GetQuestGreenRange
 local GetQuestID = QuestieCompat.GetQuestID
@@ -52,6 +54,20 @@ local unavailableQuestsDeterminedByTalking -- quests that were hidden after talk
 local unavailableQuestSyncState -- reset-aware unavailable daily/weekly quest snapshot by NPC
 
 AvailableQuests.levelRequirementCache = levelRequirementCache
+
+local function _HasVisibleSpawnInZone(spawns)
+    if not spawns then
+        return true
+    end
+
+    for _, spawn in pairs(spawns) do
+        if Phasing.IsSpawnVisible(spawn[3]) then
+            return true
+        end
+    end
+
+    return false
+end
 
 local dungeons = ZoneDB:GetDungeons()
 local function _CreateUnavailableQuestSyncBucket()
@@ -1109,13 +1125,16 @@ _AddStarter = function(starter, quest, tooltipKey)
 
     local starterIcons = {}
     local starterLocs = {}
+    local visibleStarterZones = {}
     for zone, spawns in pairs(starter.spawns or {}) do
         local alreadyAddedSpawns = {}
         if (zone and spawns) then
             local coords
             for spawnIndex = 1, #spawns do
                 coords = spawns[spawnIndex]
-                if #spawns == 1 or _HasProperDistanceToAlreadyAddedSpawns(coords, alreadyAddedSpawns) then
+                if Phasing.IsSpawnVisible(coords[3]) and (#spawns == 1 or _HasProperDistanceToAlreadyAddedSpawns(coords, alreadyAddedSpawns)) then
+                    visibleStarterZones[zone] = true
+
                     local data = {
                         Id = quest.Id,
                         Icon = _GetQuestIcon(quest),
@@ -1135,8 +1154,8 @@ _AddStarter = function(starter, quest, tooltipKey)
                             end
                         end
                     else
-                        local icon = QuestieMap:DrawWorldIcon(data, zone, coords[1], coords[2])
-                        if starter.waypoints then
+                        local icon = QuestieMap:DrawWorldIcon(data, zone, coords[1], coords[2], coords[3])
+                        if starter.waypoints and icon then
                             -- This is only relevant for waypoint drawing
                             starterIcons[zone] = icon
                             if not starterLocs[zone] then
@@ -1153,7 +1172,8 @@ _AddStarter = function(starter, quest, tooltipKey)
     -- Only for NPCs since objects do not move
     if starter.waypoints then
         for zone, waypoints in pairs(starter.waypoints or {}) do
-            if not dungeons[zone] and waypoints[1] and waypoints[1][1] and waypoints[1][1][1] then
+            if (visibleStarterZones[zone] or (not starter.spawns) or (not starter.spawns[zone]) or _HasVisibleSpawnInZone(starter.spawns[zone])) and
+                (not dungeons[zone]) and waypoints[1] and waypoints[1][1] and waypoints[1][1][1] then
                 if not starterIcons[zone] then
                     local data = {
                         Id = quest.Id,
