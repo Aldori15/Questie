@@ -254,6 +254,14 @@ local starterAreaIdToUiMapId = {
     [6455] = 467,
     [6456] = 468,
 }
+local zoneNameToUiMapIdOverrides = {
+    -- Wrath's legacy zone texts can stay on surface Dalaran while the hidden map context
+    -- correctly resolves to the Underbelly child map. Keep sewer-related aliases on 126.
+    ["The Underbelly"] = 126,
+    ["Circle of Wills"] = 126,
+    ["Sewer Exit Pipe"] = 126,
+    ["Dalaran Arena"] = 126,
+}
 
 local function NormalizeMapKey(mapID, mapLevel)
     return math.floor((mapID + (mapLevel or 0) / 10) * 10 + 0.5) / 10
@@ -631,22 +639,25 @@ end
 
 local function ResolveUiMapIDByZoneTexts()
     local zoneCandidates = {
-        {name = GetRealZoneText and GetRealZoneText(), source = "real"},
-        {name = GetZoneText and GetZoneText(), source = "zone"},
         {name = GetSubZoneText and GetSubZoneText(), source = "sub"},
         {name = GetMinimapZoneText and GetMinimapZoneText(), source = "minimap"},
+        {name = GetZoneText and GetZoneText(), source = "zone"},
+        {name = GetRealZoneText and GetRealZoneText(), source = "real"},
     }
     local fallbackUiMapID, fallbackZoneName = nil, nil
     for _, candidate in ipairs(zoneCandidates) do
         local zoneName = candidate.name
         if zoneName and zoneName ~= "" then
-            local zoneUiMapID = zoneNameToUiMapId[zoneName]
+            local zoneUiMapID = zoneNameToUiMapIdOverrides[zoneName] or zoneNameToUiMapId[zoneName]
             if not zoneUiMapID then
                 local areaId = zoneNameToAreaId[zoneName]
                 if areaId then
-                    local parentAreaId = ZoneDB.GetParentZoneId and ZoneDB:GetParentZoneId(areaId) or nil
-                    zoneUiMapID = (parentAreaId and ZoneDB.GetUiMapIdByAreaId and ZoneDB:GetUiMapIdByAreaId(parentAreaId))
+                    zoneUiMapID = (starterAreaIdToUiMapId[areaId])
                         or (ZoneDB.GetUiMapIdByAreaId and ZoneDB:GetUiMapIdByAreaId(areaId))
+                    if not zoneUiMapID then
+                        local parentAreaId = ZoneDB.GetParentZoneId and ZoneDB:GetParentZoneId(areaId) or nil
+                        zoneUiMapID = parentAreaId and ZoneDB.GetUiMapIdByAreaId and ZoneDB:GetUiMapIdByAreaId(parentAreaId)
+                    end
                 end
             end
             if zoneUiMapID then
@@ -672,15 +683,17 @@ local function ResolveUiMapIDByMapName(mapName)
         return nil, nil
     end
 
-    local uiMapID = zoneNameToUiMapId[mapName]
+    local uiMapID = zoneNameToUiMapIdOverrides[mapName] or zoneNameToUiMapId[mapName]
     if not uiMapID then
         local areaId = zoneNameToAreaId[mapName]
         if areaId then
             uiMapID = starterAreaIdToUiMapId[areaId]
             if not uiMapID then
+                uiMapID = ZoneDB.GetUiMapIdByAreaId and ZoneDB:GetUiMapIdByAreaId(areaId)
+            end
+            if not uiMapID then
                 local parentAreaId = ZoneDB.GetParentZoneId and ZoneDB:GetParentZoneId(areaId) or nil
-                uiMapID = (parentAreaId and ZoneDB.GetUiMapIdByAreaId and ZoneDB:GetUiMapIdByAreaId(parentAreaId))
-                    or (ZoneDB.GetUiMapIdByAreaId and ZoneDB:GetUiMapIdByAreaId(areaId))
+                uiMapID = parentAreaId and ZoneDB.GetUiMapIdByAreaId and ZoneDB:GetUiMapIdByAreaId(parentAreaId)
             end
         end
     end
@@ -1599,6 +1612,12 @@ function QuestieCompat.GetCurrentPlayerMinimapWorldPosition()
     local uiMapID, x, y = nil, nil, nil
     if (not visibleMapIsUnrelated) or shouldSuppressExactRead or (not worldMapVisible) then
         uiMapID, x, y = QuestieCompat.GetCurrentPlayerPosition()
+        if (not worldMapVisible) and uiMapID and IsZoneLikeUiMap(uiMapID) and (not IsWorldMapOnlyUiMap(uiMapID)) then
+            -- Hidden map reads are more reliable for dedicated underground/sub-zone maps
+            -- than the legacy zone text APIs, which can stay on the parent surface zone.
+            actualUiMapID = uiMapID
+            normalizedActualUiMapID = NormalizeActualZoneUiMapID(uiMapID)
+        end
         do
             local worldX, worldY, instanceID = GetValidatedResolvedMinimapWorldPosition(uiMapID, x, y, actualUiMapID)
             if worldX and worldY then

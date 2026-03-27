@@ -1,9 +1,14 @@
 ---@type QuestieMap
 local QuestieMap = QuestieLoader:ImportModule("QuestieMap");
+---@type ZoneDB
+local ZoneDB = QuestieLoader:ImportModule("ZoneDB");
+---@type l10n
+local l10n = QuestieLoader:ImportModule("l10n");
 local C_Timer = QuestieCompat.C_Timer
 
 local mapData = QuestieCompat.UiMapData -- table { width, height, left, top, .instance, .name, .mapType }
 local worldMapData = QuestieCompat.worldMapData -- table { width, height, left, top }
+local zoneNameToAreaId
 
 local HBD = {mapData = mapData}
 QuestieCompat.HBD = HBD
@@ -285,9 +290,145 @@ local function drawMinimapPin(pin, data)
     end
 end
 
+local function IsWorldPositionInsideUiMap(worldX, worldY, uiMapID)
+    if not worldX or not worldY or not uiMapID then
+        return false
+    end
+
+    local zoneX, zoneY = HBD:GetZoneCoordinatesFromWorld(worldX, worldY, uiMapID, true)
+    return zoneX and zoneY and zoneX >= -0.05 and zoneX <= 1.05 and zoneY >= -0.05 and zoneY <= 1.05
+end
+
+local function GetZoneNameToAreaId()
+    if zoneNameToAreaId then
+        return zoneNameToAreaId
+    end
+
+    zoneNameToAreaId = {}
+    if not l10n or not l10n.zoneLookup then
+        return zoneNameToAreaId
+    end
+
+    for _, lookupTable in pairs(l10n.zoneLookup) do
+        if type(lookupTable) == "table" then
+            for areaId, zoneName in pairs(lookupTable) do
+                if zoneName and zoneName ~= "" and not zoneNameToAreaId[zoneName] then
+                    zoneNameToAreaId[zoneName] = areaId
+                end
+            end
+        end
+    end
+
+    return zoneNameToAreaId
+end
+
+local function GetBestAreaIdForUiMap(uiMapID)
+    if not uiMapID then
+        return nil
+    end
+
+    local uiMapData = mapData[uiMapID]
+    local zoneName = uiMapData and uiMapData.name
+    local namedAreaId = zoneName and GetZoneNameToAreaId()[zoneName]
+    if namedAreaId then
+        return namedAreaId
+    end
+
+    if ZoneDB and ZoneDB.GetAreaIdByUiMapId then
+        local success, areaId = pcall(ZoneDB.GetAreaIdByUiMapId, ZoneDB, uiMapID)
+        if success then
+            return areaId
+        end
+    end
+
+    return nil
+end
+
+local function IsParentZoneUiMapForNamedSubZone(pinUiMapID, currentUiMapID)
+    if not pinUiMapID or not currentUiMapID or pinUiMapID == currentUiMapID then
+        return false
+    end
+
+    local pinMapData = mapData[pinUiMapID]
+    local currentMapData = mapData[currentUiMapID]
+    if not pinMapData or not currentMapData or pinMapData.instance ~= currentMapData.instance then
+        return false
+    end
+
+    if not ZoneDB or not ZoneDB.GetParentZoneId then
+        return false
+    end
+
+    local currentAreaId = GetBestAreaIdForUiMap(currentUiMapID)
+    local parentAreaId = currentAreaId and ZoneDB:GetParentZoneId(currentAreaId)
+    if not parentAreaId then
+        return false
+    end
+
+    return GetBestAreaIdForUiMap(pinUiMapID) == parentAreaId
+end
+
+local function IsEquivalentZoneSiblingUiMap(leftUiMapID, rightUiMapID)
+    if not leftUiMapID or not rightUiMapID or leftUiMapID == rightUiMapID then
+        return false
+    end
+
+    local leftMapData = HBD.mapData[leftUiMapID]
+    local rightMapData = HBD.mapData[rightUiMapID]
+    if not leftMapData or not rightMapData then
+        return false
+    end
+
+    return leftMapData.name
+        and rightMapData.name
+        and leftMapData.name == rightMapData.name
+        and leftMapData.parentMapID
+        and leftMapData.parentMapID == rightMapData.parentMapID
+        and leftMapData.instance
+        and leftMapData.instance == rightMapData.instance
+end
+
+local function ShouldShowMinimapPinForUiMap(data, currentUiMapID)
+    local pinUiMapID = data and data.uiMapID
+    local showInParentZone = data and data.showInParentZone
+    if not pinUiMapID or not currentUiMapID then
+        return true
+    end
+
+    if pinUiMapID == currentUiMapID then
+        return true
+    end
+
+    if IsEquivalentZoneSiblingUiMap(pinUiMapID, currentUiMapID)
+        and IsWorldPositionInsideUiMap(data and data.x, data and data.y, currentUiMapID) then
+        return true
+    end
+
+    if showInParentZone
+        and IsParentZoneUiMapForNamedSubZone(pinUiMapID, currentUiMapID)
+        and IsWorldPositionInsideUiMap(data and data.x, data and data.y, currentUiMapID) then
+        return true
+    end
+
+    if not showInParentZone then
+        return false
+    end
+
+    local parentMapID = HBD.mapData[pinUiMapID] and HBD.mapData[pinUiMapID].parentMapID
+    while parentMapID and HBD.mapData[parentMapID] do
+        if parentMapID == currentUiMapID then
+            return true
+        end
+
+        parentMapID = HBD.mapData[parentMapID].parentMapID
+    end
+
+    return false
+end
+
 local function UpdateMinimapPins(force)
     -- get the current player position
-    local x, y, instanceID = QuestieCompat.GetCurrentPlayerMinimapWorldPosition()
+    local x, y, instanceID, currentUiMapID = QuestieCompat.GetCurrentPlayerMinimapWorldPosition()
 
     -- get data from the API for calculations
     local zoom = pins.Minimap:GetZoom()
@@ -340,7 +481,9 @@ local function UpdateMinimapPins(force)
         end
 
         for pin, data in pairs(minimapPins) do
-            if instanceID == data.instanceID and math.abs(x-data.x) + math.abs(y-data.y) < 500 then -- questie specific fix
+            if instanceID == data.instanceID
+                and ShouldShowMinimapPinForUiMap(data, currentUiMapID)
+                and math.abs(x-data.x) + math.abs(y-data.y) < 500 then -- questie specific fix
                 activeMinimapPins[pin] = data
                 data.keep = true
                 -- draw the pin (this may reset data.keep if outside of the map)

@@ -16,13 +16,17 @@ local QuestieDB = QuestieLoader:ImportModule("QuestieDB");
 local QuestieEvent = QuestieLoader:ImportModule("QuestieEvent")
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
+---@type ZoneDB
+local ZoneDB = QuestieLoader:ImportModule("ZoneDB")
 
 --- COMPATIBILITY ---
 local UnitInParty = QuestieCompat.UnitInParty
 local IsInGroup = QuestieCompat.IsInGroup
 local GetClassColor = QuestieCompat.GetClassColor
+local C_Map = QuestieCompat.C_Map
 
 local tinsert = table.insert
+local zoneNameToAreaIds
 QuestieTooltips.lastGametooltip = ""
 QuestieTooltips.lastGametooltipCount = -1;
 QuestieTooltips.lastGametooltipType = "";
@@ -38,6 +42,74 @@ QuestieTooltips.lookupKeysByQuestId = {
 local MAX_GROUP_MEMBER_COUNT = 6
 
 local _InitObjectiveTexts
+
+local function GetZoneNameToAreaIds()
+    if zoneNameToAreaIds then
+        return zoneNameToAreaIds
+    end
+
+    zoneNameToAreaIds = {}
+    if not l10n or not l10n.zoneLookup then
+        return zoneNameToAreaIds
+    end
+
+    for _, lookupTable in pairs(l10n.zoneLookup) do
+        if type(lookupTable) == "table" then
+            for areaId, zoneName in pairs(lookupTable) do
+                if zoneName and zoneName ~= "" then
+                    zoneNameToAreaIds[zoneName] = zoneNameToAreaIds[zoneName] or {}
+                    tinsert(zoneNameToAreaIds[zoneName], areaId)
+                end
+            end
+        end
+    end
+
+    return zoneNameToAreaIds
+end
+
+local function AddAreaIdAndParents(areaId, areaSet)
+    while areaId and not areaSet[areaId] do
+        areaSet[areaId] = true
+        areaId = ZoneDB:GetParentZoneId(areaId)
+    end
+end
+
+local function BuildRelatedPlayerAreaIds(playerZone)
+    local areaSet = {}
+    AddAreaIdAndParents(playerZone, areaSet)
+
+    if C_Map and C_Map.GetBestMapForUnit and C_Map.GetMapInfo then
+        local uiMapId = C_Map.GetBestMapForUnit("player")
+        local mapInfo = uiMapId and C_Map.GetMapInfo(uiMapId)
+        local areaIds = mapInfo and mapInfo.name and GetZoneNameToAreaIds()[mapInfo.name]
+        if areaIds then
+            for _, areaId in ipairs(areaIds) do
+                AddAreaIdAndParents(areaId, areaSet)
+            end
+        end
+    end
+
+    return areaSet
+end
+
+local function IsObjectSpawnInCurrentZone(spawns, playerZone)
+    if not spawns or playerZone == 0 then
+        return true
+    end
+
+    local relatedPlayerAreaIds = BuildRelatedPlayerAreaIds(playerZone)
+    for zoneId in pairs(spawns) do
+        local currentZoneId = zoneId
+        while currentZoneId do
+            if relatedPlayerAreaIds[currentZoneId] then
+                return true
+            end
+            currentZoneId = ZoneDB:GetParentZoneId(currentZoneId)
+        end
+    end
+
+    return false
+end
 
 ---@param questId number
 ---@param level number
@@ -251,22 +323,10 @@ function QuestieTooltips:GetTooltip(key)
 
     local isObjectTooltip = key:sub(1, 2) == "o_"
     if isObjectTooltip then
-        local objectIsInCurrentZone = false
         local objectId = tonumber(key:sub(3))
         local spawns = QuestieDB.QueryObjectSingle(objectId, "spawns")
-        if spawns then
-            local playerZone = QuestiePlayer:GetCurrentZoneId()
-            if playerZone == 0 then
-                objectIsInCurrentZone = true
-            else
-                for zoneId in pairs(spawns) do
-                    if zoneId == playerZone then
-                        objectIsInCurrentZone = true
-                        break
-                    end
-                end
-            end
-        end
+        local playerZone = QuestiePlayer:GetCurrentZoneId()
+        local objectIsInCurrentZone = IsObjectSpawnInCurrentZone(spawns, playerZone)
 
         if (not objectIsInCurrentZone) then
             return nil
