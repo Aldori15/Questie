@@ -209,6 +209,62 @@ ZoneDB.private.areaIdToUiMapId = {
     -- [14286] = 119, -- Sholazar Basin - Battleground
     -- [14287] = 115, -- Dragonblight - Battleground
     -- [14288] = 123, -- Wintergrasp - Battleground
+
+    -- begin support for WDM maps
+    [616] = 198, -- Hyjal (Custom Zone)                      
+    [876] = 824, -- GM Island (Custom Zone)
+    [6170] = 425,  -- Northshire
+    [6176] = 427,  -- Coldridge Valley
+    [6450] = 460,  -- Shadowglen
+    [6451] = 461,  -- Valley of Trials
+    [6452] = 462,  -- Camp Narache
+    [6454] = 465,  -- Deathknell
+    [6455] = 467,  -- Sunstrider Isle
+    [6456] = 468,  -- Ammen Vale
+    [6001] = 38,   -- Fargodeep Mine (Level 1)
+    [6002] = 39,   -- Fargodeep Mine (Level 2)
+    [6003] = 426,  -- Echo Ridge Mine
+    [6004] = 53,   -- Gold Coast Quarry
+    [6005] = 54,   -- Jangolode Mine
+    [6006] = 28,   -- Coldridge Pass
+    [6007] = 29,   -- The Grizzled Den
+    [6008] = 470,  -- Frostmane Hold
+    [6009] = 428,  -- Frostmane Hovel
+    [6010] = 30,   -- Gnomeregan Entrance
+    [6011] = 31,   -- Gol'Bolar Quarry
+    [6012] = 466,  -- Night Web's Hollow
+    [6013] = 19,   -- Scarlet Monastery Entrance
+    [6014] = 33,   -- Blackrock Mountain (Level 1)
+    [6015] = 34,   -- Blackrock Mountain (Level 2)
+    [6016] = 35,   -- Blackrock Mountain (Level 3)
+    [6017] = 55,   -- Deadmines (Westfall)
+    [6018] = 16,   -- Uldaman
+    [6019] = 40,   -- Jasperlode Mine
+    [6020] = 86,   -- Orgrimmar
+    [6021] = 58,   -- Shadowthread Cave
+    [6022] = 59,   -- Fel Rock
+    [6023] = 60,   -- Banethil Barrow Den (Level 1)
+    [6024] = 61,   -- Banethil Barrow Den (Level 2)
+    [6025] = 8,    -- Palemane Rock
+    [6026] = 9,    -- The Venture Co. Mine
+    [6027] = 2,    -- Burning Blade Coven
+    [6028] = 3,    -- Tiragarde Keep (Level 1)
+    [6029] = 4,    -- Tiragarde Keep (Level 2)
+    [6030] = 5,    -- Skull Rock
+    [6031] = 82,   -- Twilight's Run
+    [6032] = 79,   -- The Slithering Scar
+    [6033] = 72,   -- The Noxious Lair
+    [6034] = 73,   -- The Gaping Chasm
+    [6035] = 74,   -- Caverns of Time (Level 1)
+    [6036] = 75,   -- Caverns of Time (Level 2)
+    [6037] = 6,    -- Dustwind Cave
+    [6038] = 11,   -- Wailing Caverns (Barrens)
+    [6039] = 67,   -- Maraudon (Outside - Level 1)
+    [6040] = 68,   -- Maraudon (Outside - Level 2)
+    [6041] = 96,   -- Amani Catacombs
+    [6042] = 98,   -- Tides' Hollow
+    [6043] = 99,   -- Stillpine Hold
+    -- end support for WDM maps
 }
 
 ---@type table<UiMapId, AreaId>
@@ -463,6 +519,62 @@ ZoneDB.private.uiMapIdToAreaId = {
     [192] = 4837, -- Icecrown Citadel - The Frozen Throne (fake ID for ICC)
     [193] = 4812, -- Icecrown Citadel - Raid
     [200] = 4987, -- The Ruby Sanctum - Raid
+
+    -- begin support for WDM maps
+    [198] = 616,   -- Hyjal (Custom Zone)
+    [824] = 876,   -- GM Island (Custom Zone)
+    [425] = 6170,  -- Northshire
+    [427] = 6176,  -- Coldridge Valley
+    [460] = 6450,  -- Shadowglen
+    [461] = 6451,  -- Valley of Trials
+    [462] = 6452,  -- Camp Narache
+    [465] = 6454,  -- Deathknell
+    [467] = 6455,  -- Sunstrider Isle
+    [468] = 6456,  -- Ammen Vale
+    [38] = 6001,   -- Fargodeep Mine (Level 1)
+    [39] = 6002,   -- Fargodeep Mine (Level 2)
+    [426] = 6003,  -- Echo Ridge Mine
+    [53] = 6004,   -- Gold Coast Quarry
+    [54] = 6005,   -- Jangolode Mine
+    [28] = 6006,   -- Coldridge Pass
+    [29] = 6007,   -- The Grizzled Den
+    [470] = 6008,  -- Frostmane Hold
+    [428] = 6009,  -- Frostmane Hovel
+    [30] = 6010,   -- Gnomeregan Entrance
+    [31] = 6011,   -- Gol'Bolar Quarry
+    [466] = 6012,  -- Night Web's Hollow
+    [19] = 6013,   -- Scarlet Monastery Entrance
+    [33] = 6014,   -- Blackrock Mountain (Level 1)
+    [34] = 6015,   -- Blackrock Mountain (Level 2)
+    [35] = 6016,   -- Blackrock Mountain (Level 3)
+    [55] = 6017,   -- Deadmines (Westfall)
+    [16] = 6018,   -- Uldaman
+    [40] = 6019,   -- Jasperlode Mine
+    [86] = 6020,   -- Orgrimmar
+    [58] = 6021,   -- Shadowthread Cave
+    [59] = 6022,   -- Fel Rock
+    [60] = 6023,   -- Banethil Barrow Den (Level 1)
+    [61] = 6024,   -- Banethil Barrow Den (Level 2)
+    [8] = 6025,    -- Palemane Rock
+    [9] = 6026,    -- The Venture Co. Mine
+    [2] = 6027,    -- Burning Blade Coven
+    [3] = 6028,    -- Tiragarde Keep (Level 1)
+    [4] = 6029,    -- Tiragarde Keep (Level 2)
+    [5] = 6030,    -- Skull Rock
+    [82] = 6031,   -- Twilight's Run
+    [79] = 6032,   -- The Slithering Scar
+    [72] = 6033,   -- The Noxious Lair
+    [73] = 6034,   -- The Gaping Chasm
+    [74] = 6035,   -- Caverns of Time (Level 1)
+    [75] = 6036,   -- Caverns of Time (Level 2)
+    [6] = 6037,    -- Dustwind Cave
+    [11] = 6038,   -- Wailing Caverns (Barrens)
+    [67] = 6039,   -- Maraudon (Outside - Level 1)
+    [68] = 6040,   -- Maraudon (Outside - Level 2)
+    [96] = 6041,   -- Amani Catacombs
+    [98] = 6042,   -- Tides' Hollow
+    [99] = 6043,   -- Stillpine Hold
+    -- end support for WDM maps
 }
 
 -- Some correction tables use high fake zone IDs that are not AreaIDs.
