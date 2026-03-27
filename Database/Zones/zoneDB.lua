@@ -143,15 +143,16 @@ end
 ---@param areaId AreaId
 ---@return AreaCoordinate?
 function ZoneDB:GetDungeonLocation(areaId)
-    local dungeon = dungeons[areaId]
-    if dungeon then
-        return dungeon[4]
-    else
-        local alternativeDungeonAreaId = alternativeDungeonAreaIdToDungeonAreaId[areaId]
-        if alternativeDungeonAreaId then
-            return dungeons[alternativeDungeonAreaId][4]
-        end
+    local dungeonLocation = dungeonLocations[areaId]
+    if dungeonLocation then
+        return dungeonLocation
     end
+
+    local alternativeDungeonAreaId = alternativeDungeonAreaIdToDungeonAreaId[areaId]
+    if alternativeDungeonAreaId then
+        return dungeonLocations[alternativeDungeonAreaId]
+    end
+
     return nil
 end
 
