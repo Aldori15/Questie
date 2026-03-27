@@ -358,6 +358,7 @@ function QuestieOptions.tabs.general:Initialize()
                         get = function () return Questie.db.profile.lowLevelStyle end,
                         set = function (_, value)
                             Questie.db.profile.lowLevelStyle = value
+                            AvailableQuests.ResetLevelRequirementCache()
                             AvailableQuests.CalculateAndDrawAll()
                             Questie:Debug(Questie.DEBUG_DEVELOP, "Lowlevel Quests set to:", value)
                         end,
@@ -377,7 +378,10 @@ function QuestieOptions.tabs.general:Initialize()
                         get = function() return Questie.db.profile.manualLevelOffset end,
                         set = function(info, value)
                             Questie.db.profile.manualLevelOffset = value;
-                            QuestieOptionsUtils:Delay(0.3, AvailableQuests.CalculateAndDrawAll, "manualLevelOffset set to " .. value)
+                            QuestieOptionsUtils:Delay(0.3, function()
+                                AvailableQuests.ResetLevelRequirementCache()
+                                AvailableQuests.CalculateAndDrawAll()
+                            end, "manualLevelOffset set to " .. value)
                         end,
                     },
                     minLevelFilter = {
@@ -396,7 +400,10 @@ function QuestieOptions.tabs.general:Initialize()
                                 value = Questie.db.profile.maxLevelFilter
                             end
                             Questie.db.profile.minLevelFilter = value;
-                            QuestieOptionsUtils:Delay(0.3, AvailableQuests.CalculateAndDrawAll, "minLevelFilter set to " .. value)
+                            QuestieOptionsUtils:Delay(0.3, function()
+                                AvailableQuests.ResetLevelRequirementCache()
+                                AvailableQuests.CalculateAndDrawAll()
+                            end, "minLevelFilter set to " .. value)
                         end,
                     },
                     maxLevelFilter = {
@@ -419,7 +426,10 @@ function QuestieOptions.tabs.general:Initialize()
                                 value = Questie.db.profile.minLevelFilter
                             end
                             Questie.db.profile.maxLevelFilter = value;
-                            QuestieOptionsUtils:Delay(0.3, AvailableQuests.CalculateAndDrawAll, "maxLevelFilter set to " .. value)
+                            QuestieOptionsUtils:Delay(0.3, function()
+                                AvailableQuests.ResetLevelRequirementCache()
+                                AvailableQuests.CalculateAndDrawAll()
+                            end, "maxLevelFilter set to " .. value)
                         end,
                     },
                 },

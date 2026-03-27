@@ -47,8 +47,11 @@ local timer
 -- Keep track of all available quests to unload undoable when abandoning a quest
 local availableQuests = {}
 local availableQuestsByNpc = {}
+local levelRequirementCache = {}
 local unavailableQuestsDeterminedByTalking -- quests that were hidden after talking to an NPC
 local unavailableQuestSyncState -- reset-aware unavailable daily/weekly quest snapshot by NPC
+
+AvailableQuests.levelRequirementCache = levelRequirementCache
 
 local dungeons = ZoneDB:GetDungeons()
 local function _CreateUnavailableQuestSyncBucket()
@@ -232,14 +235,35 @@ end
 
 local _CalculateAvailableQuests, _DrawChildQuests, _AddStarter, _DrawAvailableQuest, _GetQuestIcon, _GetIconScaleForAvailable, _HasProperDistanceToAlreadyAddedSpawns, _RegisterQuestStartTooltips, _GetStructuredAvailableQuestsInGossip, _GetStructuredActiveQuestsInGossip
 
+---@param questId QuestId
+---@param minLevel Level
+---@param maxLevel Level
+---@param playerLevel Level?
+---@return boolean
+function AvailableQuests.IsLevelRequirementsFulfilled(questId, minLevel, maxLevel, playerLevel)
+    local cacheKey = questId .. ":" .. minLevel .. ":" .. maxLevel .. ":" .. (playerLevel or 0)
+    if levelRequirementCache[cacheKey] ~= nil then
+        return levelRequirementCache[cacheKey]
+    end
+
+    local isFulfilled = QuestieDB.IsLevelRequirementsFulfilled(questId, minLevel, maxLevel, playerLevel)
+    levelRequirementCache[cacheKey] = isFulfilled
+    return isFulfilled
+end
+
+function AvailableQuests.ResetLevelRequirementCache()
+    levelRequirementCache = {}
+    AvailableQuests.levelRequirementCache = levelRequirementCache
+end
+
 -- Repeatable quests should be controlled by showRepeatableQuests
 local function _IsLevelRequirementsFulfilledForAvailable(questId, minLevel, maxLevel, playerLevel, isRepeatableQuest)
-    if QuestieDB.IsLevelRequirementsFulfilled(questId, minLevel, maxLevel, playerLevel) then
+    if AvailableQuests.IsLevelRequirementsFulfilled(questId, minLevel, maxLevel, playerLevel) then
         return true
     end
 
     if isRepeatableQuest and Questie.db.profile.lowLevelStyle ~= Questie.LOWLEVEL_RANGE then
-        return QuestieDB.IsLevelRequirementsFulfilled(questId, 1, maxLevel, playerLevel)
+        return AvailableQuests.IsLevelRequirementsFulfilled(questId, 1, maxLevel, playerLevel)
     end
 
     return false

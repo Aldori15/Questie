@@ -67,6 +67,7 @@ local function _RefreshAvailableAfterLevelChange(level)
     QuestiePlayer:SetPlayerLevel(level)
 
     AvailableQuests.RefreshVisibleAvailableIcons()
+    AvailableQuests.ResetLevelRequirementCache()
 
     AvailableQuests.CalculateAndDrawAll()
     C_Timer.After(0.30, function()
@@ -74,6 +75,7 @@ local function _RefreshAvailableAfterLevelChange(level)
         if stableLevel and stableLevel > 0 then
             QuestiePlayer:SetPlayerLevel(stableLevel)
         end
+        AvailableQuests.ResetLevelRequirementCache()
         AvailableQuests.CalculateAndDrawAll()
     end)
 end
