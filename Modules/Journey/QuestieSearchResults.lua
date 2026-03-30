@@ -25,22 +25,62 @@ local QuestieLink = QuestieLoader:ImportModule("QuestieLink")
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
 
+local GetItemInfo = GetItemInfo
+local GetItemIcon = GetItemIcon
 local stringrep = string.rep
 local stringsub = string.sub
 
 local AceGUI = LibStub("AceGUI-3.0");
 
-local _HandleOnGroupSelected
+local _HandleTreeItemClick
 local lastOpenSearch = "quest"
 local _selected = 0
 
 local BY_NAME = 1
 local BY_ID = 2
 
+local function _GetJourneyTooltipOwner()
+    local journeyFrame = _G["QuestieJourneyFrame"]
+    if journeyFrame and journeyFrame.frame then
+        return journeyFrame.frame:GetParent()
+    end
+
+    return UIParent
+end
+
+local function _ShowLinkedResultTooltip(button)
+    if GameTooltip:IsShown() then
+        return
+    end
+
+    if not button or not button.GetUserData then
+        return
+    end
+
+    if button:GetUserData("type") == "quest" then
+        _QuestieJourney.ShowJourneyTooltip(button)
+        return
+    end
+
+    local tooltipText = button:GetUserData("tooltipText")
+    if tooltipText then
+        GameTooltip:SetOwner(_GetJourneyTooltipOwner(), "ANCHOR_CURSOR")
+        GameTooltip:AddLine(tooltipText)
+        GameTooltip:SetFrameStrata("TOOLTIP")
+        GameTooltip:Show()
+    end
+end
+
+local function _HideLinkedResultTooltip()
+    if GameTooltip:IsShown() then
+        GameTooltip:Hide()
+    end
+end
+
 
 local function AddParagraph(frame, lookupObject, secondKey, header, query)
     if lookupObject[secondKey] then
-        QuestieJourneyUtils:AddLine(frame,  Questie:Colorize(header, "yellow"))
+        QuestieJourneyUtils:AddLine(frame,  Questie:Colorize(header))
         for _,id in pairs(lookupObject[secondKey]) do
             local name = query(id, "name")
             if name then
@@ -58,13 +98,43 @@ end
 ---@param query function The function used to get link name from
 local function AddLinkedParagraph(frame, linkType, lookupObject, header, query)
     if lookupObject and #lookupObject > 0 then
-        QuestieJourneyUtils:AddLine(frame,  Questie:Colorize(header, "yellow"))
+        local group = AceGUI:Create("InlineGroup");
+        group:SetFullWidth(true);
+        group:SetLayout("flow");
+        group:SetTitle(header);
+        frame:AddChild(group);
+
         for _,id in pairs(lookupObject) do
-            -- QuestieJourneyUtils:AddLine(frame, lookupDB[id][lookupKey].." ("..id..")")
+            id = abs(id)
             local link = AceGUI:Create("InteractiveLabel")
-            link:SetText(query(id, "name").." ("..id..")");
+            local name = query(id, "name") or tostring(id)
+            local text
+            if linkType == 'quest' then
+                text = QuestieLib:GetColoredQuestName(id,  true, true)
+            elseif linkType == 'npc' then
+                local lvl = query(id, 'maxLevel')
+                if lvl then
+                    text = '['..lvl..'] '..name..' ('..id..')'
+                else
+                    text = name.." ("..id..")"
+                end
+            else
+                text = name.." ("..id..")"
+            end
+            link:SetText(text);
+            link:SetUserData("id", id)
+            link:SetUserData("type", linkType)
+            link:SetUserData("name", name)
+            link:SetUserData("tooltipText", text)
             link:SetCallback("OnClick", function() QuestieSearchResults:SetSearch(linkType, id) end)
-            frame:AddChild(link);
+            if linkType == "quest" then
+                link:SetCallback("OnEnter", _QuestieJourney.ShowJourneyTooltip)
+                link:SetCallback("OnLeave", _QuestieJourney.HideJourneyTooltip)
+            else
+                link:SetCallback("OnEnter", _ShowLinkedResultTooltip)
+                link:SetCallback("OnLeave", _HideLinkedResultTooltip)
+            end
+            group:AddChild(link);
         end
     end
 end
@@ -74,6 +144,7 @@ local function CreateShowHideButton(id)
     -- Initialise button
     local button = AceGUI:Create("Button")
     button.id = id
+    button.idsToShow = nil
     if (not QuestieMap.manualFrames["any"]) or (not QuestieMap.manualFrames["any"][id]) then
         button:SetText(l10n("Show on Map"))
         button:SetCallback("OnClick", function(self) self:ShowOnMap(self) end)
@@ -168,7 +239,18 @@ function QuestieSearchResults:QuestDetailsFrame(details, id)
     finished:SetDisabled(true)
     -- reduce offset to next checkbox
     finished:SetHeight(16)
+    finished:SetFullWidth(true);
     details:AddChild(finished)
+
+    -- hidden by Questie
+    local hiddenQuests = AceGUI:Create("CheckBox")
+    hiddenQuests:SetValue(QuestieCorrections.hiddenQuests[id])
+    hiddenQuests:SetLabel(l10n("Hidden by Questie"))
+    hiddenQuests:SetDisabled(true)
+    -- reduce offset to next checkbox
+    hiddenQuests:SetHeight(16)
+    hiddenQuests:SetFullWidth(true);
+    details:AddChild(hiddenQuests)
 
     -- hidden by user
     local hiddenByUser = AceGUI:Create("CheckBox")
@@ -194,7 +276,7 @@ function QuestieSearchResults:QuestDetailsFrame(details, id)
         end
         GameTooltip:SetOwner(_G["QuestieJourneyFrame"].frame:GetParent(), "ANCHOR_CURSOR");
         GameTooltip:AddLine(l10n("Quest is hidden"))
-        GameTooltip:AddLine(l10n("\nWhen selected, hides the quest from the map, even if it is active.\n\nHiding a quest is also possible by Shift-clicking it on the map."), 1, 1, 1, true);
+        GameTooltip:AddLine(l10n("\nIf checked, hides the quest from the map, even if it is active.\n\nHiding a quest is also possible by Shift-clicking it on the map."), 1, 1, 1, true);
         GameTooltip:SetFrameStrata("TOOLTIP");
         GameTooltip:Show();
     end)
@@ -203,36 +285,29 @@ function QuestieSearchResults:QuestDetailsFrame(details, id)
             GameTooltip:Hide();
         end
     end)
-    -- reduce offset to next checkbox
-    hiddenByUser:SetHeight(16)
+    hiddenByUser:SetFullWidth(true);
     details:AddChild(hiddenByUser)
 
-    -- hidden by Questie
-    local hiddenQuests = AceGUI:Create("CheckBox")
-    hiddenQuests:SetValue(QuestieCorrections.hiddenQuests[id])
-    hiddenQuests:SetLabel(l10n("Hidden by Questie"))
-    hiddenQuests:SetDisabled(true)
     -- do not reduce offset, as checkbox is followed by text
-    details:AddChild(hiddenQuests)
 
     -- general info
-    QuestieJourneyUtils:AddLine(details, Questie:Colorize(l10n("Quest ID"), "yellow") .. ": " .. id)
-    QuestieJourneyUtils:AddLine(details,  Questie:Colorize(l10n("Quest Level"), "yellow") .. ": " .. questLevel)
-    QuestieJourneyUtils:AddLine(details,  Questie:Colorize(l10n("Required Level"), "yellow") .. ": " .. requiredLevel)
+    QuestieJourneyUtils:AddLine(details, Questie:Colorize(l10n("Quest ID")) .. l10n(": ") .. id)
+    QuestieJourneyUtils:AddLine(details,  Questie:Colorize(l10n("Quest Level")) .. l10n(": ") .. questLevel)
+    QuestieJourneyUtils:AddLine(details,  Questie:Colorize(l10n("Required Level")) .. l10n(": ") .. requiredLevel)
     local reqRaces = QuestieLib:GetRaceString(requiredRaces)
     if (reqRaces ~= "") then
-        QuestieJourneyUtils:AddLine(details, Questie:Colorize(l10n("Required Race"), "yellow") .. ": " .. reqRaces)
+        QuestieJourneyUtils:AddLine(details, Questie:Colorize(l10n("Required Race")) .. l10n(": ") .. reqRaces)
     end
     local reqClasses = QuestieLib:GetClassString(requiredClasses)
     if (reqClasses ~= "") then
         QuestieJourneyUtils:AddLine(details, Questie:Colorize(l10n("Required Class")) .. l10n(": ") .. reqClasses)
     end
-    QuestieJourneyUtils:AddLine(details, Questie:Colorize(l10n("Doable"), "yellow") .. ": " .. tostring(QuestieDB.IsDoableVerbose(id, false, true, true)))
+    QuestieJourneyUtils:AddLine(details, Questie:Colorize(l10n("Doable")) .. l10n(": ") .. tostring(QuestieDB.IsDoableVerbose(id, false, true, true)))
 
     -- objectives text
     if objectivesText then
         QuestieJourneyUtils:AddLine(details, "")
-        QuestieJourneyUtils:AddLine(details,  Questie:Colorize(l10n("Objectives"), "yellow") .. ":")
+        QuestieJourneyUtils:AddLine(details,  Questie:Colorize(l10n("Objectives")) .. l10n(": "))
         for _, v in pairs(objectivesText) do
             QuestieJourneyUtils:AddLine(details, v)
         end
@@ -241,26 +316,26 @@ function QuestieSearchResults:QuestDetailsFrame(details, id)
     if startedBy then
         -- quest starters
         QuestieJourneyUtils:AddLine(details, "")
-        AddLinkedParagraph(details, "npc", startedBy[1], l10n("NPCs starting this quest:"), QuestieDB.QueryNPCSingle)
-        AddLinkedParagraph(details, "object", startedBy[2], l10n("Objects starting this quest:"), QuestieDB.QueryObjectSingle)
+        AddLinkedParagraph(details, "npc", startedBy[1], l10n("NPCs starting this quest"), QuestieDB.QueryNPCSingle)
+        AddLinkedParagraph(details, "object", startedBy[2], l10n("Objects starting this quest"), QuestieDB.QueryObjectSingle)
         -- TODO change to linked paragraph once item details page exists
-        AddParagraph(details, startedBy, 3, l10n("Items starting this quest:"), QuestieDB.QueryItemSingle)
+        AddLinkedParagraph(details, "item", startedBy[3], l10n("Items starting this quest"), QuestieDB.QueryItemSingle)
     end
     if finishedBy then
         -- quest finishers
         QuestieJourneyUtils:AddLine(details, "")
-        AddLinkedParagraph(details, "npc", finishedBy[1], l10n("NPCs finishing this quest:"), QuestieDB.QueryNPCSingle)
-        AddLinkedParagraph(details, "object", finishedBy[2], l10n("Objects finishing this quest:"), QuestieDB.QueryObjectSingle)
+        AddLinkedParagraph(details, "npc", finishedBy[1], l10n("NPCs finishing this quest"), QuestieDB.QueryNPCSingle)
+        AddLinkedParagraph(details, "object", finishedBy[2], l10n("Objects finishing this quest"), QuestieDB.QueryObjectSingle)
     end
 
     -- pre quests
     if preQuestGroup then
         QuestieJourneyUtils:AddLine(details, "")
-        AddLinkedParagraph(details, "quest", preQuestGroup, l10n("Requires all of these quests to be finished:"), QuestieDB.QueryQuestSingle)
+        AddLinkedParagraph(details, "quest", preQuestGroup, l10n("Requires all of these quests to be finished"), QuestieDB.QueryQuestSingle)
     end
     if preQuestSingle then
         QuestieJourneyUtils:AddLine(details, "")
-        AddLinkedParagraph(details, "quest", preQuestSingle, l10n("Requires one of these quests to be finished:"), QuestieDB.QueryQuestSingle)
+        AddLinkedParagraph(details, "quest", preQuestSingle, l10n("Requires one of these quests to be finished"), QuestieDB.QueryQuestSingle)
     end
     QuestieJourneyUtils:AddLine(details, "")
 
@@ -276,33 +351,75 @@ function QuestieSearchResults:SpawnDetailsFrame(f, spawn, spawnType)
     local id = 0
     local typeLabel = ""
     local query
+    local spawnObject
     if spawnType == "npc" then
-        id = spawn
-        typeLabel = "NPC"
-        query = QuestieDB.QueryNPCSingle
+        typeLabel = l10n("NPC ID")
+        spawnObject = QuestieDB:GetNPC(spawn)
     elseif spawnType == "object" then
-        id = -spawn
-        typeLabel = "Object"
-        query = QuestieDB.QueryObjectSingle
+        typeLabel = l10n("Object ID")
+        spawnObject = QuestieDB:GetObject(spawn)
     end
 
-    header:SetText(query(spawn, "name"));
+    header:SetText(spawnObject.name);
     f:AddChild(header);
 
     QuestieJourneyUtils:Spacer(f);
 
-    local spawnID = AceGUI:Create("Label");
-    spawnID:SetText(typeLabel.." ID: "..spawn);
-    spawnID:SetFullWidth(true);
-    f:AddChild(spawnID);
+    QuestieJourneyUtils:AddLine(f, Questie:Colorize(typeLabel)..l10n(": ")..spawn)
+    if spawnType == "npc" then
+        if spawnObject.subName then
+            QuestieJourneyUtils:AddLine(f, Questie:Colorize(l10n("Title"))..l10n(": ")..spawnObject.subName)
+        end
+        local minLevel = spawnObject.minLevel
+        local maxLevel = spawnObject.maxLevel
+        if minLevel or maxLevel then
+            local level
+            if minLevel and maxLevel and minLevel ~= maxLevel then
+                level = minLevel.." - "..maxLevel
+            else
+                level = minLevel or maxLevel
+            end
+            QuestieJourneyUtils:AddLine(f, Questie:Colorize(l10n("Level"))..l10n(": ")..level)
+        end
+        local minLevelHealth = spawnObject.minLevelHealth
+        local maxLevelHealth = spawnObject.maxLevelHealth
+        if minLevelHealth or maxLevelHealth then
+            local health
+            if minLevelHealth and maxLevelHealth and minLevelHealth ~= maxLevelHealth then
+                health = minLevelHealth.." - "..maxLevelHealth
+            else
+                health = minLevelHealth or maxLevelHealth
+            end
+            QuestieJourneyUtils:AddLine(f, Questie:Colorize(l10n("Health"))..l10n(": ")..health)
+        end
+        local friendlyTo = l10n("no faction")
+        if spawnObject.friendlyToFaction == "AH" then
+            friendlyTo = l10n("both factions")
+        elseif spawnObject.friendlyToFaction == "A" then
+            friendlyTo = l10n("Alliance")
+        elseif spawnObject.friendlyToFaction == "H" then
+            friendlyTo = l10n("Horde")
+        end
+        QuestieJourneyUtils:AddLine(f, Questie:Colorize(l10n("Friendly to"))..l10n(": ")..friendlyTo)
+    end
 
     QuestieJourneyUtils:Spacer(f);
 
+    -- Also Starts
+    if spawnObject.questStarts then
+        AddLinkedParagraph(f, "quest", spawnObject.questStarts, l10n("Starts the following quests"), QuestieDB.QueryQuestSingle)
+    end
+
+    -- Also ends
+    if spawnObject.questEnds then
+        AddLinkedParagraph(f, "quest", spawnObject.questEnds, l10n("Ends the following quests"), QuestieDB.QueryQuestSingle)
+    end
+
     local spawnZone = AceGUI:Create("Label");
-    local spawns = query(spawn, "spawns")
+    local spawns = spawnObject.spawns
 
     if spawns then
-        f:AddChild(CreateShowHideButton(id))
+        f:AddChild(CreateShowHideButton(spawnType == "npc" and spawn or -spawn))
         local startindex = 0;
         for i in pairs(spawns) do
             if spawns[i][1] then
@@ -323,7 +440,7 @@ function QuestieSearchResults:SpawnDetailsFrame(f, spawn, spawnType)
 
             if (startx ~= -1 or starty ~= -1) then
                 local spawnLoc = AceGUI:Create("Label");
-                spawnLoc:SetText("X: ".. startx .." || Y: ".. starty);
+                spawnLoc:SetText("X" .. l10n(": ") .. string.format("%.2f",startx) .." || Y" .. l10n(": ") .. string.format("%.2f",starty));
                 spawnLoc:SetFullWidth(true);
                 f:AddChild(spawnLoc);
             end
@@ -334,89 +451,13 @@ function QuestieSearchResults:SpawnDetailsFrame(f, spawn, spawnType)
         f:AddChild(spawnZone);
     end
 
-    -- Also Starts
-    local questStarts = query(spawn, "questStarts")
-    if questStarts then
-        local startGroup = AceGUI:Create("InlineGroup");
-        startGroup:SetFullWidth(true);
-        startGroup:SetLayout("flow");
-        startGroup:SetTitle(l10n("Starts the following quests:"));
-        f:AddChild(startGroup);
-
-        local startQuests = {};
-        local counter = 1;
-        for _, v in pairs(questStarts) do
-            local quest = QuestieDB.GetQuest(v)
-            local frame = AceGUI:Create("InteractiveLabel")
-            frame:SetUserData("id", v)
-            frame:SetUserData("name", quest.name)
-            frame:SetCallback("OnClick", function() QuestieSearchResults:SetSearch("quest", v) end)
-            frame:SetCallback("OnEnter", _QuestieJourney.ShowJourneyTooltip)
-            frame:SetCallback("OnLeave", _QuestieJourney.HideJourneyTooltip)
-            frame:SetText(QuestieLib:GetColoredQuestName(quest.Id,  true, true))
-
-            startQuests[counter] = {
-                frame = frame,
-                quest = quest
-            }
-            startGroup:AddChild(frame)
-            counter = counter + 1
-        end
-
-        if #startQuests == 0 then
-            local noquest = AceGUI:Create("Label");
-            noquest:SetText(l10n("No quests to list."));
-            noquest:SetFullWidth(true);
-            startGroup:AddChild(noquest);
-        end
-    end
-
-    QuestieJourneyUtils:Spacer(f);
-
-    -- Also ends
-    local questEnds = query(spawn, "questEnds")
-    if questEnds then
-        local endGroup = AceGUI:Create("InlineGroup");
-        endGroup:SetFullWidth(true);
-        endGroup:SetLayout("flow");
-        endGroup:SetTitle(l10n("Ends the following quests:"));
-        f:AddChild(endGroup);
-
-        local endQuests = {};
-        local counter = 1;
-        for _, v in ipairs(questEnds) do
-            local quest = QuestieDB.GetQuest(v)
-            local frame = AceGUI:Create("InteractiveLabel")
-            frame:SetText(QuestieLib:GetColoredQuestName(quest.Id, true, true))
-            frame:SetUserData("id", v)
-            frame:SetUserData("name", quest.name)
-            frame:SetCallback("OnClick", function() QuestieSearchResults:SetSearch("quest", v) end)
-            frame:SetCallback("OnEnter", _QuestieJourney.ShowJourneyTooltip)
-            frame:SetCallback("OnLeave", _QuestieJourney.HideJourneyTooltip)
-
-            endQuests[counter] = {
-                frame = frame,
-                quest = quest
-            }
-            endGroup:AddChild(frame)
-            counter = counter + 1
-        end
-
-        if #endQuests == 0 then
-            local noquest = AceGUI:Create("Label");
-            noquest:SetText(l10n("No quests to list."));
-            noquest:SetFullWidth(true);
-            endGroup:AddChild(noquest);
-        end
-    end
-
     QuestieJourneyUtils:Spacer(f);
 
     if Questie.db.profile.debugEnabled then
         if spawnType == "npc" then
-            QuestieJourneyUtils:AddLine(f, recurseTable(QuestieDB:GetNPC(spawn), QuestieDB.npcKeys))
+            QuestieJourneyUtils:AddLine(f, recurseTable(spawnObject, QuestieDB.npcKeys))
         elseif spawnType == "object" then
-            QuestieJourneyUtils:AddLine(f, recurseTable(QuestieDB:GetObject(spawn), QuestieDB.objectKeys))
+            QuestieJourneyUtils:AddLine(f, recurseTable(spawnObject, QuestieDB.objectKeys))
         end
     end
 
@@ -424,7 +465,59 @@ function QuestieSearchResults:SpawnDetailsFrame(f, spawn, spawnType)
     f.content:SetHeight(10000);
 end
 
+local function _CreateItemIcon(itemId)
+    local itemLink = select(2, GetItemInfo(itemId))
+    local itemIcon = AceGUI:Create("Icon")
+    itemIcon:SetWidth(25)
+    itemIcon:SetHeight(25)
+    itemIcon:SetImage(GetItemIcon(itemId) or "Interface\\Icons\\INV_Misc_QuestionMark")
+    itemIcon:SetImageSize(25, 25)
+    itemIcon:SetCallback("OnEnter", function()
+        if not itemLink then
+            itemLink = select(2, GetItemInfo(itemId))
+        end
+
+        GameTooltip:SetOwner(itemIcon.frame, "ANCHOR_RIGHT")
+        GameTooltip:ClearLines()
+
+        if itemLink then
+            GameTooltip:SetHyperlink(itemLink)
+        elseif QuestieCompat.Is335 then
+            GameTooltip:AddLine("Item Unavailable", 1, 0, 0)
+            GameTooltip:AddLine("This item is unsafe.  To view this item without the risk of disconnection, you need to have first seen it in the game world. This is a restriction enforced by Blizzard since Patch 1.10.", nil, nil, nil, 1)
+            GameTooltip:AddLine(" ")
+            GameTooltip:AddLine("You can |cffFFFFFFLEFT-CLICK|r to attempt to query the server. You may be disconnected.", .75, .75, .75, 1)
+
+            itemIcon:SetCallback("OnClick", function()
+                GameTooltip:SetOwner(itemIcon.frame, "ANCHOR_RIGHT")
+                GameTooltip:SetHyperlink("item:"..itemId..":0:0:0:0:0:0:0")
+                GameTooltip:Show()
+            end)
+        else
+            GameTooltip:SetHyperlink("item:"..itemId..":0:0:0:0:0:0:0")
+        end
+        GameTooltip:Show()
+    end)
+    itemIcon:SetCallback("OnLeave", function()
+        GameTooltip:Hide()
+    end)
+
+    return itemIcon
+end
+
+--- This function draws an item info frame to a given parent frame.
+---@param f Frame The frame to attach the created item details frame to
+---@param itemId ItemID The ID for the item to show details about
+---@return nil
 function QuestieSearchResults:ItemDetailsFrame(f, itemId)
+    QuestieSearchResults:ItemsFrameAfterTicker(f, itemId)
+end
+
+--- This function draws an item info frame to a given parent frame.
+---@param f Frame The frame to attach the created item details frame to
+---@param itemId ItemID The ID for the item to show details about
+---@return nil
+function QuestieSearchResults:ItemsFrameAfterTicker(f, itemId)
     local header = AceGUI:Create("Heading")
     header:SetFullWidth(true)
 
@@ -433,40 +526,18 @@ function QuestieSearchResults:ItemDetailsFrame(f, itemId)
     header:SetText(query(itemId, "name"))
     f:AddChild(header)
 
-    local itemLink = select(2, GetItemInfo(itemId))
-    local itemIcon = AceGUI:Create("Icon")
-    itemIcon:SetWidth(25)
-    itemIcon:SetHeight(25)
-    itemIcon:SetImage(GetItemIcon(itemId))
-    itemIcon:SetImageSize(25, 25)
-    itemIcon:SetCallback("OnEnter", function()
-        if (not itemLink) then
-            itemLink = select(2, GetItemInfo(itemId))
-        end
-        GameTooltip:SetOwner(UIParent, "ANCHOR_CURSOR")
-        if itemLink then
-            GameTooltip:SetHyperlink(itemLink)
-        elseif QuestieCompat.Is335 then
-            -- I don't know if this applies to private servers, but let's assume it does.
-            GameTooltip:AddLine("Item Unavailable", 1, 0, 0)
-            GameTooltip:AddLine("This item is unsafe.  To view this item without the risk of disconnection, you need to have first seen it in the game world. This is a restriction enforced by Blizzard since Patch 1.10.", nil, nil, nil, 1)
-            GameTooltip:AddLine(" ");
-            GameTooltip:AddLine("You can |cffFFFFFFLEFT-CLICK|r to attempt to query the server. You may be disconnected.", .75, .75, .75, 1)
+    local grp = AceGUI:Create("SimpleGroup")
+    grp:SetFullWidth(true)
+    grp:SetLayout("Flow")
 
-            itemIcon:SetCallback("OnClick", function()
-                GameTooltip:SetHyperlink("item:"..itemId..":0:0:0:0:0:0:0")
-            end)
-        end
-        GameTooltip:Show()
-    end)
-    itemIcon:SetCallback("OnLeave", function()
-        GameTooltip:Hide()
-    end)
-    f:AddChild(itemIcon)
+    local itemIcon = _CreateItemIcon(itemId)
+    grp:AddChild(itemIcon)
 
     local spawnIdLabel = AceGUI:Create("Label")
-    spawnIdLabel:SetText("  Item ID: " .. itemId)
-    f:AddChild(spawnIdLabel)
+    spawnIdLabel:SetText(l10n("Item ID")..l10n(": ") .. itemId)
+    grp:AddChild(spawnIdLabel)
+
+    f:AddChild(grp)
 
     if QuestieCorrections.questItemBlacklist[itemId] then
         QuestieJourneyUtils:Spacer(f)
@@ -510,6 +581,7 @@ function QuestieSearchResults:ItemDetailsFrame(f, itemId)
             showHideButton.idsToShow = npcIdsWithSpawns
             f:AddChild(showHideButton)
         end
+        AddLinkedParagraph(f, "npc", npcIdsWithSpawns, "", QuestieDB.QueryNPCSingle)
     end
 
     local objectSpawnsHeading = AceGUI:Create("Heading")
@@ -540,6 +612,7 @@ function QuestieSearchResults:ItemDetailsFrame(f, itemId)
             showHideButton.idsToShow = objectIdsWithSpawns
             f:AddChild(showHideButton)
         end
+        AddLinkedParagraph(f, "object", objectIdsWithSpawns, "", QuestieDB.QueryObjectSingle)
     end
 
     local vendorSpawnsHeading = AceGUI:Create("Heading")
@@ -558,6 +631,7 @@ function QuestieSearchResults:ItemDetailsFrame(f, itemId)
         local vendorIdsWithSpawns = {}
         for _, npcId in pairs(vendors) do
             local spawns = QuestieDB.QueryNPCSingle(npcId, "spawns")
+            local friendlyToFaction = QuestieDB.QueryNPCSingle(npcId, "friendlyToFaction")
 
             if spawns and QuestieDB.IsFriendlyToPlayer(friendlyToFaction) then
                 vendorIdsWithSpawns[#vendorIdsWithSpawns + 1] = npcId
@@ -571,6 +645,7 @@ function QuestieSearchResults:ItemDetailsFrame(f, itemId)
             showHideButton.idsToShow = vendorIdsWithSpawns
             f:AddChild(showHideButton)
         end
+        AddLinkedParagraph(f, "npc", vendorIdsWithSpawns, "", QuestieDB.QueryNPCSingle)
     end
 
     if Questie.db.profile.debugEnabled then
@@ -598,22 +673,28 @@ function QuestieSearchResults:DrawResultTab(container, resultType)
     else
         return
     end
+    local max=0
     for k,_ in pairs(QuestieSearch.LastResult[resultType]) do
-        local name = database(k, "name")
-        if name then
-            local complete = ''
-            if Questie.db.char.complete[k] and resultType == "quest" then
-                complete = Questie:Colorize("(" .. l10n("Complete") .. ")" , "green")
+        if k > max then max = k end
+    end
+    for k=1, max do
+        if QuestieSearch.LastResult[resultType][k] then
+            local name = database(k, "name")
+            if name then
+                local complete = ''
+                if Questie.db.char.complete[k] and resultType == "quest" then
+                    complete = Questie:Colorize("(" .. l10n("Complete") .. ")" , "green")
+                end
+                -- TODO rename option to "enabledIDs" or create separate ones for npcs/objects/items
+                local id = ''
+                if Questie.db.profile.enableTooltipsQuestID then
+                    id = ' (' .. k .. ')'
+                end
+                table.insert(results, {
+                    ["text"] = name .. id .. " " .. complete,
+                    ["value"] = tonumber(k)
+                })
             end
-            -- TODO rename option to "enabledIDs" or create separate ones for npcs/objects/items
-            local id = ''
-            if Questie.db.profile.enableTooltipsQuestID then
-                id = ' (' .. k .. ')'
-            end
-            table.insert(results, {
-                ["text"] = complete .. name .. id,
-                ["value"] = tonumber(k)
-            })
         end
     end
     local resultFrame = AceGUI:Create("SimpleGroup");
@@ -624,9 +705,9 @@ function QuestieSearchResults:DrawResultTab(container, resultType)
     local resultTree = AceGUI:Create("TreeGroup");
     resultTree:SetFullWidth(true);
     resultTree:SetFullHeight(true);
-    resultTree.treeframe:SetWidth(260);
+    resultTree.treeframe:SetWidth(415);
     resultTree:SetTree(results);
-    resultTree:SetCallback("OnGroupSelected", _HandleOnGroupSelected)
+    resultTree:SetCallback("OnClick", _HandleTreeItemClick)
 
     resultFrame:AddChild(resultTree)
     container:AddChild(resultFrame);
@@ -636,18 +717,24 @@ function QuestieSearchResults:DrawResultTab(container, resultType)
     end
 end
 
-_HandleOnGroupSelected = function (resultType)
+_HandleTreeItemClick = function(group, ...)
+    local treePath = {...}
+
     -- This is either the questId, npcId, objectId or itemId
-    local selectedId = tonumber(resultType.localstatus.selected)
+    local selectedId = tonumber(treePath[2])
     if IsShiftKeyDown() and lastOpenSearch == "quest" then
         local questName = QuestieDB.QueryQuestSingle(selectedId, "name")
         local questLevel, _ = QuestieLib.GetTbcLevel(selectedId);
 
-        ChatEdit_InsertLink(QuestieLink:GetQuestInsertString(questLevel, questName, selectedId))
+        if Questie.db.profile.trackerShowQuestLevel then
+            ChatEdit_InsertLink(QuestieLink:GetQuestLinkString(questLevel, questName, selectedId))
+        else
+            ChatEdit_InsertLink("[" .. questName .. " (" .. selectedId .. ")]")
+        end
     end
 
     -- get master frame and create scroll frame inside
-    local master = resultType.frame.obj;
+    local master = group.frame.obj;
     master:ReleaseChildren();
     master:SetLayout("Fill");
     master:SetFullWidth(true);
@@ -682,7 +769,7 @@ local function _GetSearchFunction(searchBox, searchGroup)
             if stringsub(searchText, 1, 4) == "|cff" and itemName then
                 -- An itemLink was added to the searchBox
                 searchBox:SetText(itemName)
-                QuestieSearchResults:DrawSearchResultTab(searchGroup, Questie.db.profile.searchType, itemName, false)
+                QuestieSearchResults:DrawSearchResultTab(searchGroup, BY_NAME, itemName, false)
             elseif stringsub(searchText, 1, 4) == "|cff" then
                 -- This should be impossible to reach, since when you see an item link in the game the item should
                 -- be cached already which would be caught by the condition above
@@ -690,7 +777,7 @@ local function _GetSearchFunction(searchBox, searchGroup)
             else
                 -- Normal search
                 local text = string.trim(searchText, " \n\r\t[]");
-                QuestieSearchResults:DrawSearchResultTab(searchGroup, Questie.db.profile.searchType, text, false)
+                QuestieSearchResults:DrawSearchResultTab(searchGroup, tonumber(text) and BY_ID or BY_NAME, text, false)
             end
             searchBox:ClearFocus()
         end
@@ -788,19 +875,10 @@ function QuestieSearchResults:DrawSearchTab(container)
     searchGroup = AceGUI:Create("SimpleGroup");
     searchButton = AceGUI:Create("Button");
 
-    typeDropdown = AceGUI:Create("Dropdown");
-    typeDropdown:SetList({
-        [1] = l10n("Search By Name"),
-        [2] = l10n("Search By ID"),
-    });
-    typeDropdown:SetValue(Questie.db.profile.searchType);
-    typeDropdown:SetCallback("OnValueChanged", function(key, _)
-        Questie.db.profile.searchType = key.value;
-        searchGroup:ReleaseChildren();
-        searchBox:HighlightText();
-        searchBox:SetFocus();
-    end)
-    container:AddChild(typeDropdown);
+    searchButton:SetText(l10n("Search"));
+    searchButton:SetDisabled(true);
+    searchButton:SetCallback("OnClick", _GetSearchFunction(searchBox, searchGroup));
+    container:AddChild(searchButton);
 
     searchBox:SetFocus();
     searchBox:SetRelativeWidth(0.6);
@@ -820,11 +898,6 @@ function QuestieSearchResults:DrawSearchTab(container)
     end
     container:AddChild(searchBox);
 
-    searchButton:SetText(l10n("Search"));
-    searchButton:SetDisabled(true);
-    searchButton:SetCallback("OnClick", _GetSearchFunction(searchBox, searchGroup));
-    container:AddChild(searchButton);
-
     searchGroup:SetFullHeight(true);
     searchGroup:SetFullWidth(true);
     searchGroup:SetLayout("fill");
@@ -833,7 +906,7 @@ function QuestieSearchResults:DrawSearchTab(container)
     if QuestieSearch.LastResult.query ~= "" then
         searchButton:SetDisabled(false)
         local text = string.trim(searchBox:GetText(), " \n\r\t[]")
-        QuestieSearchResults:DrawSearchResultTab(searchGroup, Questie.db.profile.searchType, text, true)
+        QuestieSearchResults:DrawSearchResultTab(searchGroup, tonumber(text) and BY_ID or BY_NAME, text, true)
     end
 end
 
@@ -869,8 +942,6 @@ end
 function QuestieSearchResults:SetSearch(detailType, id)
     _selected = id
     searchBox:SetText(tostring(id))
-    Questie.db.profile.searchType = BY_ID
-    typeDropdown:SetValue(BY_ID)
     QuestieSearchResults:DrawSearchResultTab(searchGroup, BY_ID, id, false)
     searchResultTabs:SelectTab(detailType)
 end
