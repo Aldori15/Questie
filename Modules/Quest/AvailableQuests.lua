@@ -380,6 +380,20 @@ function AvailableQuests.CalculateAndDrawAll(callback, fastRefresh)
     end)
 end
 
+function AvailableQuests.RebuildAll(callback, fastRefresh)
+    local questIds = {}
+
+    for questId in pairs(availableQuests) do
+        tinsert(questIds, questId)
+    end
+
+    for i = 1, #questIds do
+        AvailableQuests.RemoveQuest(questIds[i])
+    end
+
+    AvailableQuests.CalculateAndDrawAll(callback, fastRefresh)
+end
+
 -- Recolor already drawn available-quest icons immediately on level changes
 function AvailableQuests.RefreshVisibleAvailableIcons()
     for questId in pairs(QuestieMap.questIdFrames) do
@@ -433,7 +447,7 @@ end
 function AvailableQuests.DrawAvailableQuest(quest) -- prevent recursion
     --? Some quests can be started by an item, NPC, and/or a GameObject
 
-    if quest.Starts["Item"] then
+    if Questie.db.profile.showItemStartQuests and quest.Starts["Item"] then
         local items = quest.Starts["Item"]
         for i = 1, #items do
             local item = QuestieDB:GetItem(items[i])
@@ -925,7 +939,7 @@ _RegisterQuestStartTooltips = function(quest)
         return
     end
 
-    local items = quest.Starts["Item"]
+    local items = Questie.db.profile.showItemStartQuests and quest.Starts["Item"]
     if items then
         for i = 1, #items do
             local item = QuestieDB:GetItem(items[i])

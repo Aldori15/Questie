@@ -55,7 +55,11 @@ local function _FlushDrawQueue()
     end
 end
 
-local function _RunFastAvailableRefresh()
+local function _RefreshQuestIconsOnly()
+    QuestieQuest:RefreshQuestIconVisibility()
+end
+
+local function _RunFastAvailableRefresh(rebuildAll)
     if _availableRefreshTicker then
         _availableRefreshTicker:Cancel()
         _availableRefreshTicker = nil
@@ -65,7 +69,8 @@ local function _RunFastAvailableRefresh()
         _FlushDrawQueue()
     end)
 
-    AvailableQuests.CalculateAndDrawAll(function()
+    local refreshFunction = rebuildAll and AvailableQuests.RebuildAll or AvailableQuests.CalculateAndDrawAll
+    refreshFunction(function()
         _FlushDrawQueue()
         if _availableRefreshTicker then
             _availableRefreshTicker:Cancel()
@@ -162,7 +167,7 @@ function QuestieOptions.tabs.icons:Initialize()
                 get = function() return Questie.db.profile.hideUntrackedQuestsMapIcons; end,
                 set = function(info, value)
                     Questie.db.profile.hideUntrackedQuestsMapIcons = value
-                    QuestieQuest:ToggleNotes(not value)
+                    _RefreshQuestIconsOnly()
 
                     -- Hides tooltips for untracked quests
                     if value == true then
@@ -205,7 +210,7 @@ function QuestieOptions.tabs.icons:Initialize()
                         get = function() return Questie.db.profile.enableAvailable; end,
                         set = function(info, value)
                             Questie.db.profile.enableAvailable = value
-                            QuestieQuest:ToggleNotes(value)
+                            _RunFastAvailableRefresh(true)
                         end,
                     },
                     showEventQuests = {
@@ -218,7 +223,7 @@ function QuestieOptions.tabs.icons:Initialize()
                         get = function(info) return Questie.db.profile.showEventQuests end,
                         set = function(info, value)
                             Questie.db.profile.showEventQuests = value
-                            QuestieQuest:ToggleNotes(value)
+                            _RefreshQuestIconsOnly()
                         end,
                     },
                     showRepeatableQuests = {
@@ -231,7 +236,7 @@ function QuestieOptions.tabs.icons:Initialize()
                         get = function(info) return Questie.db.profile.showRepeatableQuests end,
                         set = function(info, value)
                             Questie.db.profile.showRepeatableQuests = value
-                            QuestieQuest:ToggleNotes(value)
+                            _RefreshQuestIconsOnly()
                             _RunFastAvailableRefresh()
                         end,
                     },
@@ -258,7 +263,8 @@ function QuestieOptions.tabs.icons:Initialize()
                         get = function(info) return Questie.db.profile.showPvPQuests end,
                         set = function(info, value)
                             Questie.db.profile.showPvPQuests = value
-                            QuestieQuest:ToggleNotes(value)
+                            _RefreshQuestIconsOnly()
+                            _RunFastAvailableRefresh()
                         end,
                     },
                     showDungeonQuests = {
@@ -271,7 +277,8 @@ function QuestieOptions.tabs.icons:Initialize()
                         get = function(info) return Questie.db.profile.showDungeonQuests end,
                         set = function(info, value)
                             Questie.db.profile.showDungeonQuests = value
-                            QuestieQuest:ToggleNotes(value)
+                            _RefreshQuestIconsOnly()
+                            _RunFastAvailableRefresh()
                         end,
                     },
                     showRaidQuests = {
@@ -284,7 +291,8 @@ function QuestieOptions.tabs.icons:Initialize()
                         get = function(info) return Questie.db.profile.showRaidQuests end,
                         set = function(info, value)
                             Questie.db.profile.showRaidQuests = value
-                            QuestieQuest:ToggleNotes(value)
+                            _RefreshQuestIconsOnly()
+                            _RunFastAvailableRefresh()
                         end,
                     },
                     showCompleteQuests = {
@@ -297,7 +305,7 @@ function QuestieOptions.tabs.icons:Initialize()
                         get = function() return Questie.db.profile.enableTurnins; end,
                         set = function(info, value)
                             Questie.db.profile.enableTurnins = value
-                            QuestieQuest:ToggleNotes(value)
+                            _RefreshQuestIconsOnly()
                         end,
                     },
                     showObjectivesToggle = {
@@ -310,8 +318,21 @@ function QuestieOptions.tabs.icons:Initialize()
                         get = function() return Questie.db.profile.enableObjectives; end,
                         set = function(info, value)
                             Questie.db.profile.enableObjectives = value
-                            QuestieQuest:ToggleNotes(value)
+                            _RefreshQuestIconsOnly()
                             QuestieOptionsUtils.DetermineTheme()
+                        end,
+                    },
+                    showItemStartQuests = {
+                        type = "toggle",
+                        order = 2.081,
+                        name = function() return l10n('Item-Start Quest Sources'); end,
+                        desc = function() return l10n('When this is enabled, available quest icons will also be shown for mobs and objects that can drop quest-start items.'); end,
+                        width = 1.595,
+                        disabled = function() return (not Questie.db.profile.enabled); end,
+                        get = function() return Questie.db.profile.showItemStartQuests; end,
+                        set = function(info, value)
+                            Questie.db.profile.showItemStartQuests = value
+                            _RunFastAvailableRefresh(true)
                         end,
                     },
                     showAQWarEffortQuests = {

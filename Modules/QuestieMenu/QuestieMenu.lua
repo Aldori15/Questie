@@ -99,7 +99,7 @@ local function _FlushDrawQueue()
     end
 end
 
-local function _RunFastAvailableRefresh()
+local function _RunFastAvailableRefresh(rebuildAll)
     if _availableRefreshTicker then
         _availableRefreshTicker:Cancel()
         _availableRefreshTicker = nil
@@ -109,7 +109,8 @@ local function _RunFastAvailableRefresh()
         _FlushDrawQueue()
     end)
 
-    AvailableQuests.CalculateAndDrawAll(function()
+    local refreshFunction = rebuildAll and AvailableQuests.RebuildAll or AvailableQuests.CalculateAndDrawAll
+    refreshFunction(function()
         _FlushDrawQueue()
         if _availableRefreshTicker then
             _availableRefreshTicker:Cancel()
@@ -341,8 +342,7 @@ function QuestieMenu:Show(hideDelay)
     tinsert(menuTable, { text= l10n("Available Quest"), func = function()
         local value = not Questie.db.profile.enableAvailable
         Questie.db.profile.enableAvailable = value
-        QuestieQuest:RefreshQuestIconVisibility()
-        AvailableQuests.CalculateAndDrawAll()
+        _RunFastAvailableRefresh(true)
     end, icon=QuestieLib.AddonPath.."Icons\\available.blp", notCheckable=false, checked=Questie.db.profile.enableAvailable, isNotRadio=true, keepShownOnClick=true})
     tinsert(menuTable, { text= l10n("Repeatable Quests"), func = function()
         local value = not Questie.db.profile.showRepeatableQuests

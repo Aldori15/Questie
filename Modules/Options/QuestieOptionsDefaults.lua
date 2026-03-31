@@ -141,6 +141,7 @@ function QuestieOptionsDefaults:Load()
             showDungeonQuests = true,
             showRaidQuests = true,
             showPvPQuests = true,
+            showItemStartQuests = false,
             showAQWarEffortQuests = false,
             showSoDRunes = false,
             showRunesOfPhase = {
