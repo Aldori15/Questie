@@ -12,6 +12,8 @@ local QuestiePlayer = QuestieLoader:ImportModule("QuestiePlayer")
 local QuestieProfessions = QuestieLoader:ImportModule("QuestieProfessions")
 ---@type QuestieDB
 local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
+---@type ZoneDB
+local ZoneDB = QuestieLoader:ImportModule("ZoneDB")
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
 
@@ -165,6 +167,10 @@ _CreateZoneDropdown = function()
         if not next(zones) then
             zones = nil
         end
+    end
+
+    if currentZoneId then
+        currentZoneId = ZoneDB:GetParentZoneId(currentZoneId) or currentZoneId
     end
 
     if zones then
