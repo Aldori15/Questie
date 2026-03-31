@@ -1,103 +1,71 @@
 ---@type QuestieAuto
 local QuestieAuto = QuestieLoader:ImportModule("QuestieAuto")
+QuestieAuto.private = QuestieAuto.private or {}
+
 ---@class QuestieAutoPrivate
+---@field disallowedNPCs table<NpcId, boolean>
 ---@field disallowedNPC table<NpcId, boolean>
----@field disallowedQuests table<QuestId, boolean>
+---@field disallowedQuests table
 local _QuestieAuto = QuestieAuto.private
 
 --- COMPATIBILITY ---
 local UnitGUID = QuestieCompat.UnitGUID
 local GetQuestID = QuestieCompat.GetQuestID
 
+local bindTruthTable = {
+    ["shift"] = function() return IsShiftKeyDown() end,
+    ["ctrl"] = function() return IsControlKeyDown() end,
+    ["alt"] = function() return IsAltKeyDown() end,
+    ["disabled"] = function() return false end,
+}
+
 function _QuestieAuto:AllQuestWindowsClosed()
-    if GossipFrame and (not GossipFrame:IsVisible())
-        and GossipFrameGreetingPanel and (not GossipFrameGreetingPanel:IsVisible())
-        and QuestFrameGreetingPanel and (not QuestFrameGreetingPanel:IsVisible())
-        and QuestFrameDetailPanel and (not QuestFrameDetailPanel:IsVisible())
-        and QuestFrameProgressPanel and (not QuestFrameProgressPanel:IsVisible())
-        and QuestFrameRewardPanel and (not QuestFrameRewardPanel:IsVisible()) then
+    if ((not GossipFrame) or (not GossipFrame:IsVisible()))
+        and ((not GossipFrameGreetingPanel) or (not GossipFrameGreetingPanel:IsVisible()))
+        and ((not QuestFrameGreetingPanel) or (not QuestFrameGreetingPanel:IsVisible()))
+        and ((not QuestFrameDetailPanel) or (not QuestFrameDetailPanel:IsVisible()))
+        and ((not QuestFrameProgressPanel) or (not QuestFrameProgressPanel:IsVisible()))
+        and ((not QuestFrameRewardPanel) or (not QuestFrameRewardPanel:IsVisible()))
+        and ((not ImmersionFrame) or (not ImmersionFrame.TitleButtons) or (not ImmersionFrame.TitleButtons:IsVisible()))
+        and ((not ImmersionContentFrame) or (not ImmersionContentFrame:IsVisible()))
+    then
         return true
     end
+
     return false
 end
 
-function _QuestieAuto:AcceptQuestFromGossip(index, availableQuests, modulo)
-    local title = availableQuests[index]
-    local isTrivial = availableQuests[index + 2]
-    local isRepeatable = availableQuests[index + 4]
-
-    if _QuestieAuto:IsAllowedQuest(true, title) and ((not isTrivial) or Questie.db.profile.acceptTrivial) then
-        Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieAuto] Checking available quest: \"" .. title .. "\"",
-            "isTrivial", isTrivial, "isRepeatable", isRepeatable, "index",
-            index)
-        QuestieCompat.SelectAvailableQuest(math.floor(index / modulo) + 1)
-    end
-end
-
-function _QuestieAuto:CompleteQuestFromGossip(index, availableQuests, modulo)
-    local title = availableQuests[index]
-    local isComplete = availableQuests[index + 3]
-
-    if _QuestieAuto:IsAllowedQuest() and isComplete and title then
-        Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieAuto] Checking active quest: \"" .. title .. "\"", "index", index)
-        QuestieCompat.SelectActiveQuest(math.floor(index / modulo) + 1)
-    else
-        Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieAuto] \"" .. title .. "\" is not complete. Index:", index)
-    end
-end
-
-function _QuestieAuto:TurnInQuest(rewardIndex)
-    Questie:Debug(Questie.DEBUG_DEVELOP, "Turn in!")
-
-    -- We really want to disable this in instances, mostly to prevent retards from ruining groups.
-    if (Questie.db.profile.autocomplete and _QuestieAuto:IsAllowedNPC() and _QuestieAuto:IsAllowedQuest()) then
-        GetQuestReward(rewardIndex)
-    end
-end
-
 function _QuestieAuto:IsAllowedNPC()
-    local npcGuid = UnitGUID("target") or nil
-    local allowed = true
+    local npcGuid = UnitGUID("npc") or UnitGUID("questnpc") or UnitGUID("target")
+    local disallowedNPCs = self.disallowedNPCs or self.disallowedNPC or {}
+
     if npcGuid then
-        ---@type string, string, string, string, string, string
         local _, _, _, _, _, npcIDStr = strsplit("-", npcGuid)
         if npcIDStr then
             local npcId = tonumber(npcIDStr)
-            if (_QuestieAuto.disallowedNPC[npcId] ~= nil) then
-                allowed = false
-            end
-            Questie:Debug(Questie.DEBUG_INFO, "[QuestieAuto] Is NPC-ID", npcId, "allowed:", allowed)
+            return not disallowedNPCs[npcId]
         end
     end
 
-    return allowed
+    return true
 end
 
-function _QuestieAuto:IsAllowedQuest(questStarter, title)
+function _QuestieAuto:IsAllowedQuest(questStarter, title, turnIn)
     local questId = GetQuestID(questStarter, title)
-    local allowed = true
-    if questId > 0 then
-        if (_QuestieAuto.disallowedQuests[questId] ~= nil) then
-            allowed = false
+    if questId and questId > 0 then
+        local disallowedQuests = self.disallowedQuests or {}
+        if disallowedQuests.accept or disallowedQuests.turnIn then
+            local questBucket = turnIn and disallowedQuests.turnIn or disallowedQuests.accept
+            if questBucket and questBucket[questId] then
+                return false
+            end
+        elseif disallowedQuests[questId] then
+            return false
         end
-        Questie:Debug(Questie.DEBUG_INFO, "[QuestieAuto]", "Is questId", questId, "allowed:", allowed)
     end
 
-    return allowed
+    return true
 end
-
-local bindTruthTable = {
-    ['shift'] = function()
-        return IsShiftKeyDown()
-    end,
-    ['ctrl'] = function()
-        return IsControlKeyDown()
-    end,
-    ['alt'] = function()
-        return IsAltKeyDown()
-    end,
-    ['disabled'] = function() return false; end,
-}
 
 function _QuestieAuto:IsBindTrue(bind)
     return bind and bindTruthTable[bind]()

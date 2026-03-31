@@ -1,15 +1,48 @@
 ---@type QuestieOptions
-local QuestieOptions = QuestieLoader:ImportModule("QuestieOptions");
+local QuestieOptions = QuestieLoader:ImportModule("QuestieOptions")
 ---@type QuestieOptionsUtils
-local QuestieOptionsUtils = QuestieLoader:ImportModule("QuestieOptionsUtils");
+local QuestieOptionsUtils = QuestieLoader:ImportModule("QuestieOptionsUtils")
 ---@type QuestieTracker
-local QuestieTracker = QuestieLoader:ImportModule("QuestieTracker");
+local QuestieTracker = QuestieLoader:ImportModule("QuestieTracker")
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
 
 QuestieOptions.tabs.auto = {...}
 
+local _GetAutoAcceptSettings
 local _GetShortcuts
+
+_GetAutoAcceptSettings = function()
+    local autoAccept = Questie.db.profile.autoAccept
+    if type(autoAccept) ~= "table" then
+        autoAccept = {
+            enabled = Questie.db.profile.autoaccept or false,
+            trivial = Questie.db.profile.acceptTrivial or false,
+            repeatable = true,
+            pvp = true,
+            rejectSharedInBattleground = Questie.db.profile.autoreject_battleground or false,
+        }
+        Questie.db.profile.autoAccept = autoAccept
+    end
+
+    if autoAccept.enabled == nil then
+        autoAccept.enabled = Questie.db.profile.autoaccept or false
+    end
+    if autoAccept.trivial == nil then
+        autoAccept.trivial = Questie.db.profile.acceptTrivial or false
+    end
+    if autoAccept.repeatable == nil then
+        autoAccept.repeatable = true
+    end
+    if autoAccept.pvp == nil then
+        autoAccept.pvp = true
+    end
+    if autoAccept.rejectSharedInBattleground == nil then
+        autoAccept.rejectSharedInBattleground = Questie.db.profile.autoreject_battleground or false
+    end
+
+    return autoAccept
+end
 
 function QuestieOptions.tabs.auto:Initialize()
     return {
@@ -26,7 +59,7 @@ function QuestieOptions.tabs.auto:Initialize()
                 name = function() return l10n('Auto Modifier') end,
                 desc = function() return l10n('The modifier to NOT auto-accept/-complete quests when either option is enabled and you interact with a quest NPC.'); end,
                 width = 0.65,
-                --disabled = function() return (not Questie.db.profile.autocomplete) and (not Questie.db.profile.autoaccept) end,
+                --disabled = function() return (not Questie.db.profile.autocomplete) and (not _GetAutoAcceptSettings().enabled) end,
                 get = function() return Questie.db.profile.autoModifier; end,
                 set = function(input, key)
                     Questie.db.profile.autoModifier = key
@@ -59,9 +92,9 @@ function QuestieOptions.tabs.auto:Initialize()
                 order = 2.1,
                 name = function() return l10n('Auto Accept Quests'); end,
                 desc = function() return l10n('When enabled, Questie will automatically accept quest dialogs when they appear, depending on the rules below.'); end,
-                get = function () return Questie.db.profile.autoaccept; end,
+                get = function () return _GetAutoAcceptSettings().enabled; end,
                 set = function (info, value)
-                    Questie.db.profile.autoaccept = value
+                    _GetAutoAcceptSettings().enabled = value
                     Questie:Debug(Questie.DEBUG_DEVELOP, "Auto Accept toggled to:", value)
                 end,
             },
@@ -71,7 +104,7 @@ function QuestieOptions.tabs.auto:Initialize()
                 inline = true,
                 width = 0.5,
                 name = function() return l10n('Rules for NPCs'); end,
-                disabled = function() return not Questie.db.profile.autoaccept end,
+                disabled = function() return not _GetAutoAcceptSettings().enabled end,
                 args = {
                     npc_normalquests = {
                         type = "toggle",
@@ -96,13 +129,9 @@ function QuestieOptions.tabs.auto:Initialize()
                         name = function() return l10n('Repeatable Quests'); end,
                         desc = function() return l10n('Automatically accept repeatable quests (including dailies) from NPCs.'); end,
                         width = 1,
-                        -- AUTO 1.0
-                        disabled = true,
-                        get = function () return true; end,
-                        -- -- AUTO 2.0
-                        -- get = function () return Questie.db.profile.autoaccept_npc_repeatable; end,
-                        set = function (info, value)
-                            Questie.db.profile.autoaccept_npc_repeatable = value
+                        get = function () return _GetAutoAcceptSettings().repeatable; end,
+                        set = function (_, value)
+                            _GetAutoAcceptSettings().repeatable = value
                             Questie:Debug(Questie.DEBUG_DEVELOP, "Auto Accept NPC Repeatable toggled to:", value)
                         end,
                     },
@@ -128,13 +157,9 @@ function QuestieOptions.tabs.auto:Initialize()
                         name = function() return l10n('PvP Quests'); end,
                         desc = function() return l10n('Automatically accept PvP quests from NPCs.'); end,
                         width = 1,
-                        -- AUTO 1.0
-                        disabled = true,
-                        get = function () return true; end,
-                        -- -- AUTO 2.0
-                        -- get = function () return Questie.db.profile.autoaccept_npc_pvp; end,
-                        set = function (info, value)
-                            Questie.db.profile.autoaccept_npc_pvp = value
+                        get = function () return _GetAutoAcceptSettings().pvp; end,
+                        set = function (_, value)
+                            _GetAutoAcceptSettings().pvp = value
                             Questie:Debug(Questie.DEBUG_DEVELOP, "Auto Accept NPC PvP toggled to:", value)
                         end,
                     },
@@ -161,9 +186,9 @@ function QuestieOptions.tabs.auto:Initialize()
                         desc = function() return l10n('Automatically accept trivial (low-level) quests from NPCs.'); end,
                         width = 1,
                         -- AUTO 1.0
-                        get = function() return Questie.db.profile.acceptTrivial; end,
+                        get = function() return _GetAutoAcceptSettings().trivial; end,
                         set = function(_, value)
-                            Questie.db.profile.acceptTrivial = value
+                            _GetAutoAcceptSettings().trivial = value
                         end,
                         -- AUTO 2.0
                         -- get = function () return Questie.db.profile.autoaccept_npc_trivial; end,
@@ -179,7 +204,7 @@ function QuestieOptions.tabs.auto:Initialize()
                 order = 2.3,
                 inline = true,
                 width = 0.5,
-                disabled = function() return not Questie.db.profile.autoaccept end,
+                disabled = function() return not _GetAutoAcceptSettings().enabled end,
                 name = function() return l10n('Rules for players'); end,
                 args = {
                     player_normalquests = {
@@ -287,11 +312,11 @@ function QuestieOptions.tabs.auto:Initialize()
             --    order = 8,
             --    name = function() return l10n('Accept trivial (low level) quests'); end,
             --    desc = function() return l10n('When this is enabled trivial (gray) quests will be auto accepted as well.'); end,
-            --    disabled = function() return (not Questie.db.profile.autoaccept) end,
+            --    disabled = function() return (not _GetAutoAcceptSettings().enabled) end,
             --    width = 1.5,
-            --    get = function () return Questie.db.profile.acceptTrivial; end,
+            --    get = function () return _GetAutoAcceptSettings().trivial; end,
             --    set = function (info, value)
-            --        Questie.db.profile.acceptTrivial = value
+            --        _GetAutoAcceptSettings().trivial = value
             --    end,
             --},
             autoreject_options = {
@@ -305,13 +330,9 @@ function QuestieOptions.tabs.auto:Initialize()
                 name = function() return l10n('Reject quests shared in battlegrounds'); end,
                 desc = function() return l10n('Automatically reject quests shared by players while in a battleground instance. This feature overrides autoaccept behavior.'); end,
                 width = 1.6,
-                -- AUTO 1.0
-                disabled = true,
-                get = function () return false; end,
-                -- -- AUTO 2.0
-                -- get = function () return Questie.db.profile.autoreject_battleground; end,
-                set = function (info, value)
-                    Questie.db.profile.autoreject_battleground = value
+                get = function () return _GetAutoAcceptSettings().rejectSharedInBattleground; end,
+                set = function (_, value)
+                    _GetAutoAcceptSettings().rejectSharedInBattleground = value
                     Questie:Debug(Questie.DEBUG_DEVELOP, "Auto Reject Battleground toggled to:", value)
                 end,
             },

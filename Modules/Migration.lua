@@ -127,6 +127,42 @@ local migrationFunctions = {
         Questie.db.profile.globalTownsfolkScale = 0.6
         Questie.db.profile.globalMiniMapTownsfolkScale = 0.7
     end,
+    [17] = function()
+        local autoAccept = Questie.db.profile.autoAccept
+        if type(autoAccept) ~= "table" then
+            autoAccept = {}
+            Questie.db.profile.autoAccept = autoAccept
+        end
+
+        if Questie.db.profile.autoaccept ~= nil then
+            autoAccept.enabled = Questie.db.profile.autoaccept
+            Questie.db.profile.autoaccept = nil
+        elseif autoAccept.enabled == nil then
+            autoAccept.enabled = false
+        end
+
+        if Questie.db.profile.acceptTrivial ~= nil then
+            autoAccept.trivial = Questie.db.profile.acceptTrivial
+            Questie.db.profile.acceptTrivial = nil
+        elseif autoAccept.trivial == nil then
+            autoAccept.trivial = false
+        end
+
+        if autoAccept.repeatable == nil then
+            autoAccept.repeatable = true
+        end
+
+        if autoAccept.pvp == nil then
+            autoAccept.pvp = true
+        end
+
+        if Questie.db.profile.autoreject_battleground ~= nil then
+            autoAccept.rejectSharedInBattleground = Questie.db.profile.autoreject_battleground
+            Questie.db.profile.autoreject_battleground = nil
+        elseif autoAccept.rejectSharedInBattleground == nil then
+            autoAccept.rejectSharedInBattleground = false
+        end
+    end,
 }
 
 function Migration:Migrate()
