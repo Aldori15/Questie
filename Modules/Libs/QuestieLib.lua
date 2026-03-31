@@ -424,29 +424,45 @@ function QuestieLib:GetClassString(classMask)
     else
         local classString = ""
         local classTable = QuestieLib:UnpackBinary(classMask)
+        local classColors = {
+            -- QuestieCompat normalizes the older 3.3.5 RAID_CLASS_COLORS table shape.
+            WARRIOR      = "|c" .. select(4, QuestieCompat.GetClassColor("WARRIOR")),
+            PALADIN      = "|c" .. select(4, QuestieCompat.GetClassColor("PALADIN")),
+            HUNTER       = "|c" .. select(4, QuestieCompat.GetClassColor("HUNTER")),
+            ROGUE        = "|c" .. select(4, QuestieCompat.GetClassColor("ROGUE")),
+            PRIEST       = "|c" .. select(4, QuestieCompat.GetClassColor("PRIEST")),
+            DEATH_KNIGHT = "|c" .. select(4, QuestieCompat.GetClassColor("DEATHKNIGHT")),
+            SHAMAN       = "|c" .. select(4, QuestieCompat.GetClassColor("SHAMAN")),
+            MAGE         = "|c" .. select(4, QuestieCompat.GetClassColor("MAGE")),
+            WARLOCK      = "|c" .. select(4, QuestieCompat.GetClassColor("WARLOCK")),
+            DRUID        = "|c" .. select(4, QuestieCompat.GetClassColor("DRUID")),
+        }
         local stringTable = {
             -- ingame color codes via RAID_CLASS_COLORS["WARRIOR"] etc
-            "|cFFC79C6E" .. l10n("Warrior") .. "|r",                 -- 1
-            "|cFFF58CBA" .. l10n("Paladin") .. "|r",                 -- 2
-            "|cFFABD473" .. l10n("Hunter") .. "|r",                  -- 4
-            "|cFFFFF569" .. l10n("Rogue") .. "|r",                   -- 8
-            "|cFFFFFFFF" .. l10n("Priest") .. "|r",                  -- 16
-            "|cFFC41F3B" .. l10n("Death Knight") .. "|r",            -- 32
-            "|cFF0070DE" .. l10n("Shaman") .. "|r",                  -- 64
-            "|cFF40C7EB" .. l10n("Mage") .. "|r",                    -- 128
-            "|cFF8787ED" .. l10n("Warlock") .. "|r",                 -- 256
-            "|cFF00FF96" .. l10n("Monk") .. "|r",                    -- 512
-            "|cFFFF7D0A" .. l10n("Druid") .. "|r",                   -- 1024
+            classColors.WARRIOR .. l10n("Warrior") .. "|r",                 -- 1
+            classColors.PALADIN .. l10n("Paladin") .. "|r",                 -- 2
+            classColors.HUNTER .. l10n("Hunter") .. "|r",                   -- 4
+            classColors.ROGUE .. l10n("Rogue") .. "|r",                     -- 8
+            classColors.PRIEST .. l10n("Priest") .. "|r",                   -- 16
+            classColors.DEATH_KNIGHT .. l10n("Death Knight") .. "|r",       -- 32
+            classColors.SHAMAN .. l10n("Shaman") .. "|r",                   -- 64
+            classColors.MAGE .. l10n("Mage") .. "|r",                       -- 128
+            classColors.WARLOCK .. l10n("Warlock") .. "|r",                 -- 256
+            nil,                                                            -- 512 (unsupported in 3.3.5)
+            classColors.DRUID .. l10n("Druid") .. "|r",                     -- 1024
         }
         local firstRun = true
         for k, v in pairs(classTable) do
             if v then
-                if firstRun then
-                    firstRun = false
-                else
-                    classString = classString .. ", "
+                local className = stringTable[k]
+                if className then
+                    if firstRun then
+                        firstRun = false
+                    else
+                        classString = classString .. ", "
+                    end
+                    classString = classString .. className
                 end
-                classString = classString .. stringTable[k]
             end
         end
         return classString
