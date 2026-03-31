@@ -134,45 +134,13 @@ end
 ---@param questId number
 ---@param showLevel number @ Whether the quest level should be included
 ---@param showState boolean @ Whether to show (Complete/Failed)
----@param blizzLike boolean @True = [40+], false/nil = [40D/R]
+---@param blizzLike boolean? @Compatibility flag used by older 3.3.5 callers
 function QuestieLib:GetColoredQuestName(questId, showLevel, showState, blizzLike)
     local name = QuestieDB.QueryQuestSingle(questId, "name")
     local level, _ = QuestieLib.GetTbcLevel(questId);
 
     if showLevel then
-        name = QuestieLib:GetQuestString(questId, name, level, blizzLike)
-    end
-
-    if Questie.db.profile.enableTooltipsQuestID then
-        name = name .. " (" .. questId .. ")"
-    end
-
-    if showState then
-        local isComplete = QuestieDB.IsComplete(questId)
-
-        if isComplete == -1 then
-            name = name .. " " .. Questie:Colorize("(" .. l10n("Failed") .. ")", "red")
-        elseif isComplete == 1 then
-            name = name .. " " .. Questie:Colorize("(" .. l10n("Complete") .. ")", "green")
-
-        -- Quests treated as complete - zero objectives or synthetic objectives
-        elseif isComplete == 0 and QuestieDB.GetQuest(questId).isComplete == true then
-            name = name .. " " .. Questie:Colorize("(" .. l10n("Complete") .. ")", "green")
-        end
-    end
-
-    return QuestieLib:PrintDifficultyColor(level, name, QuestieDB.IsRepeatable(questId), QuestieDB.IsActiveEventQuest(questId), QuestieDB.IsPvPQuest(questId))
-end
-
----@param questId number
----@param showLevel number @ Whether the quest level should be included
----@param showState boolean @ Whether to show (Complete/Failed)
-function QuestieLib:GetColoredQuestName(questId, showLevel, showState)
-    local name = QuestieDB.QueryQuestSingle(questId, "name")
-    local level, _ = QuestieLib.GetTbcLevel(questId);
-
-    if showLevel then
-        name = QuestieLib:GetLevelString(questId, level) .. name
+        name = QuestieLib:GetLevelString(questId, level, blizzLike) .. name
     end
 
     if Questie.db.profile.enableTooltipsQuestID then
@@ -238,48 +206,7 @@ end
 ---@param level number @The quest level
 ---@param blizzLike boolean @True = [40+], false/nil = [40D/R]
 function QuestieLib:GetQuestString(questId, name, level, blizzLike)
-    local questType, questTag = QuestieDB.GetQuestTagInfo(questId)
-
-    if questType and questTag then
-        local char = "+"
-        if (not blizzLike) then
-            char = stringSub(questTag, 1, 1)
-        end
-
-        -- The string.sub above doesn't work for multi byte characters in Chinese
-        local langCode = l10n:GetUILocale()
-        if questType == 1 then
-            -- Elite quest
-            name = "[" .. level .. "+" .. "] " .. name
-        elseif questType == 81 then
-            if langCode == "zhCN" or langCode == "zhTW" or langCode == "koKR" or langCode == "ruRU" then
-                char = "D"
-            end
-            -- Dungeon quest
-            name = "[" .. level .. char .. "] " .. name
-        elseif questType == 62 then
-            if langCode == "zhCN" or langCode == "zhTW" or langCode == "koKR" or langCode == "ruRU" then
-                char = "R"
-            end
-            -- Raid quest
-            name = "[" .. level .. char .. "] " .. name
-        elseif questType == 41 then
-            -- Which one? This is just default.
-            name = "[" .. level .. "] " .. name
-            -- PvP quest
-            -- name = "[" .. level .. questTag .. "] " .. name
-        elseif questType == 83 then
-            -- Legendary quest
-            name = "[" .. level .. "++" .. "] " .. name
-        else
-            -- Some other irrelevant type
-            name = "[" .. level .. "] " .. name
-        end
-    else
-        name = "[" .. level .. "] " .. name
-    end
-
-    return name
+    return QuestieLib:GetLevelString(questId, level, blizzLike) .. name
 end
 
 --- There are quests in TBC which have a quest level of -1. This indicates that the quest level is the
@@ -368,11 +295,22 @@ function QuestieLib:GetQuestTypeSuffix(questId, blizzLike)
 end
 
 ---@param questId QuestId
----@param level Level @The quest level
+---@param levelOrNameOrIgnored Level|string|nil @Compatibility: older callers pass an ignored 2nd arg before level
+---@param levelOrBlizzLike Level|boolean|nil @Either the quest level or the optional blizzLike flag
+---@param blizzLike boolean? @Compatibility flag used by older 3.3.5 callers
 ---@return string levelString @String of format "[40+]"
-function QuestieLib:GetLevelString(questId, level)
+function QuestieLib:GetLevelString(questId, levelOrNameOrIgnored, levelOrBlizzLike, blizzLike)
+    local level
+
+    if type(levelOrNameOrIgnored) == "number" and (levelOrBlizzLike == nil or type(levelOrBlizzLike) == "boolean") and blizzLike == nil then
+        level = levelOrNameOrIgnored
+        blizzLike = levelOrBlizzLike
+    else
+        level = levelOrBlizzLike
+    end
+
     local levelString = tostring(level)
-    local suffix = QuestieLib:GetQuestTypeSuffix(questId)
+    local suffix = QuestieLib:GetQuestTypeSuffix(questId, blizzLike)
     return "[" .. levelString .. suffix .. "] "
 end
 
