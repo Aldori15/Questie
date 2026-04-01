@@ -196,7 +196,7 @@ local genericsLocales = {
     },
     ["xp"] = {
         ["ptBR"] = true,
-        ["ruRU"] = " опыта",
+        ["ruRU"] = "опыта",
         ["deDE"] = true,
         ["koKR"] = "경험치",
         ["esMX"] = "exp",
@@ -477,7 +477,7 @@ local genericsLocales = {
         ["koKR"] = "수행 가능",
         ["esMX"] = "Realizable",
         ["enUS"] = true,
-        ["zhCN"] = false,
+        ["zhCN"] = "可完成",
         ["zhTW"] = "可行",
         ["esES"] = "Realizable",
         ["frFR"] = "Faisable",

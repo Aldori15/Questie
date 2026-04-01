@@ -36,7 +36,7 @@ local zoneSectionLocales = {
         ["frFR"] = "Événements",
         ["esES"] = "Eventos",
         ["zhTW"] = "節慶",
-        ["zhCN"] = "事件",
+        ["zhCN"] = "节日",
     },
     ["Outland"] = {
         ["ptBR"] = "Terralém",

@@ -338,6 +338,18 @@ local easternKingdomsLocales = {
         ["zhTW"] = "達拉然",
         ["zhCN"] = "达拉然",
     },
+    ["Northshire"] = {
+        ["enUS"] = true,
+        ["deDE"] = "Nordhain",
+        ["esES"] = "Villanorte",
+        ["esMX"] = "Villanorte",
+        ["frFR"] = "Comté-du-Nord",
+        ["koKR"] = "북녘골",
+        ["ptBR"] = "Vila Norte",
+        ["ruRU"] = "Североземье",
+        ["zhCN"] = "北郡",
+        ["zhTW"] = "北郡",
+    },
 }
 
 for k, v in pairs(easternKingdomsLocales) do
