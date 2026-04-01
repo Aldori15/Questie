@@ -612,6 +612,7 @@ QuestieDB.factionTemplate = isWotlk and { -- [id] = EnemyGroup
     [1909] = 9,
     [1913] = 0,
     [1916] = 0,
+    [1922] = 2,
     [1930] = 0,
     [1931] = 0,
     [1934] = 4,
