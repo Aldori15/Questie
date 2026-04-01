@@ -66,6 +66,7 @@ function QuestEventHandler:RegisterEvents()
     eventFrame:RegisterEvent("UNIT_QUEST_LOG_CHANGED")
     eventFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
     eventFrame:RegisterEvent("NEW_RECIPE_LEARNED") -- Spell objectives; Runes in SoD count as recipes because "Engraving" is a profession?
+    eventFrame:RegisterEvent("CURRENCY_DISPLAY_UPDATE")
     --eventFrame:RegisterEvent("SPELLS_CHANGED") -- Spell objectives
 
     eventFrame:RegisterEvent("PLAYER_INTERACTION_MANAGER_FRAME_HIDE")
@@ -521,6 +522,14 @@ function _QuestEventHandler:ReputationChange()
     doFullQuestLogScan = true
 end
 
+function _QuestEventHandler:CurrencyDisplayUpdate()
+    Questie:Debug(Questie.DEBUG_DEVELOP, "[Quest Event] CURRENCY_DISPLAY_UPDATE")
+
+    -- Some quests reward or require currencies without giving us a more specific quest marker event.
+    -- Mark the next quest log update for a full scan so token-based objectives do not stay stale.
+    doFullQuestLogScan = true
+end
+
 --- Helper function to insert a callback to the questLogUpdateQueue and increase the index
 function _QuestLogUpdateQueue:Insert(callback)
     questLogUpdateQueue[questLogUpdateQueueSize] = callback
@@ -610,6 +619,8 @@ function _QuestEventHandler:OnEvent(event, ...)
     elseif event == "NEW_RECIPE_LEARNED" then
         Questie:Debug(Questie.DEBUG_DEVELOP, "[EVENT] NEW_RECIPE_LEARNED (QuestEventHandler)")
         doFullQuestLogScan = true -- If this event is related to a spell objective, a QUEST_LOG_UPDATE will be fired afterwards
+    elseif event == "CURRENCY_DISPLAY_UPDATE" then
+        _QuestEventHandler:CurrencyDisplayUpdate()
     elseif event == "PLAYER_INTERACTION_MANAGER_FRAME_HIDE" then
         local eventType = select(1, ...)
         if eventType == 1 then
