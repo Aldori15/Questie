@@ -233,6 +233,10 @@ local worldMapLayoutDirty = true
 local worldMapRefreshPending = false
 local lastWorldMapUiMapID, lastWorldMapWidth, lastWorldMapHeight, lastWorldMapScale
 
+local function _HasTrackedMinimapPins()
+    return next(minimapPins) ~= nil or next(activeMinimapPins) ~= nil
+end
+
 local function drawMinimapPin(pin, data)
     local xDist, yDist = lastXY - data.x, lastYY - data.y
 
@@ -427,6 +431,12 @@ local function ShouldShowMinimapPinForUiMap(data, currentUiMapID)
 end
 
 local function UpdateMinimapPins(force)
+    if not _HasTrackedMinimapPins() then
+        minimapPinCount = 0
+        lastXY, lastYY = nil, nil
+        return
+    end
+
     -- get the current player position
     local x, y, instanceID, currentUiMapID = QuestieCompat.GetCurrentPlayerMinimapWorldPosition()
 
@@ -505,6 +515,11 @@ local function UpdateMinimapPins(force)
 end
 
 local function UpdateMinimapIconPosition()
+    if next(activeMinimapPins) == nil then
+        minimapPinCount = 0
+        return
+    end
+
     -- get the current map  zoom
     local zoom = pins.Minimap:GetZoom()
     local diffZoom = zoom ~= lastZoom
@@ -789,6 +804,12 @@ end
 local lastFullUpdate = 0
 local lastIconUpdate = 0
 local function OnUpdateHandler(frame, elapsed)
+    if not queueFullUpdate and not _HasTrackedMinimapPins() then
+        lastFullUpdate = 0
+        lastIconUpdate = 0
+        return
+    end
+
     lastFullUpdate = lastFullUpdate + elapsed
     lastIconUpdate = lastIconUpdate + elapsed
 
@@ -797,11 +818,9 @@ local function OnUpdateHandler(frame, elapsed)
         lastFullUpdate = 0
         lastIconUpdate = 0
         queueFullUpdate = false
-    elseif (not WorldMapFrame:IsVisible()) or lastIconUpdate > 0.05 then
+    elseif lastIconUpdate > 0.05 then
         UpdateMinimapIconPosition()
-        if WorldMapFrame:IsVisible() then
-            lastIconUpdate = 0
-        end
+        lastIconUpdate = 0
     end
 end
 pins.updateFrame:SetScript("OnUpdate", OnUpdateHandler)
