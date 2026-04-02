@@ -56,6 +56,8 @@ local normalizedValue = 1 / fadeOverDistance; --Opacity / Distance to fade over
 
 local HBD = QuestieCompat.HBD or LibStub("HereBeDragonsQuestie-2.0")
 local HBDPins = QuestieCompat.HBDPins or LibStub("HereBeDragonsQuestie-Pins-2.0")
+local _MinimapIconSetFade
+local _MinimapIconFadeLogic
 
 --We should really try and squeeze out all the performance we can, especially in this.
 local tostring = tostring;
@@ -645,7 +647,16 @@ function QuestieMap:DrawManualIcon(data, areaID, x, y, typ)
         icon.texture:SetTexelSnappingBias(0)
     end
     iconMinimap.texture:SetVertexColor(colorsMinimap[1], colorsMinimap[2], colorsMinimap[3], 1);
+    iconMinimap.texture.r = colorsMinimap[1]
+    iconMinimap.texture.g = colorsMinimap[2]
+    iconMinimap.texture.b = colorsMinimap[3]
+    iconMinimap.texture.a = 1
     iconMinimap.miniMapIcon = true;
+
+    if (not iconMinimap.FadeLogic) then
+        iconMinimap.SetFade = _MinimapIconSetFade
+        iconMinimap.FadeLogic = _MinimapIconFadeLogic
+    end
 
     -- add the minimap icon
     QuestieMap:QueueDraw(QuestieMap.ICON_MINIMAP_TYPE, Questie, iconMinimap, iconMinimap.UiMapID, x / 100, y / 100, true, true);
@@ -674,6 +685,77 @@ end
 --coordinates need to be 0-1 instead of 0-100
 --showFlag isn't required but may want to be Modified
 ---@return IconFrame, IconFrame
+_MinimapIconSetFade = function(self, value)
+    if self.lastGlowFade ~= value then
+        self.lastGlowFade = value
+        if self.glowTexture then
+            local r, g, b = self.glowTexture:GetVertexColor()
+            self.glowTexture:SetVertexColor(r, g, b, value)
+        end
+
+        local r = self.texture.r
+        local g = self.texture.g
+        local b = self.texture.b
+        if r == nil or g == nil or b == nil then
+            r, g, b = self.texture:GetVertexColor()
+            r = r or 1
+            g = g or 1
+            b = b or 1
+            self.texture.r = r
+            self.texture.g = g
+            self.texture.b = b
+        end
+
+        self.texture.a = value
+        self.texture:SetVertexColor(r, g, b, value)
+    end
+end
+
+_MinimapIconFadeLogic = function(self)
+    local profile = Questie.db.profile
+    if self.miniMapIcon and self.x and self.y and self.texture and self.UiMapID and self.texture.SetVertexColor and HBD and HBD.GetPlayerZonePosition and QuestieLib and QuestieLib.Euclid then
+        if (QuestieMap.playerX and QuestieMap.playerY) then
+            local x, y
+            if not self.worldX then
+                x, y = HBD:GetWorldCoordinatesFromZone(self.x / 100, self.y / 100, self.UiMapID)
+                self.worldX = x
+                self.worldY = y
+            else
+                x = self.worldX
+                y = self.worldY
+            end
+            if (x and y) then
+                --Very small value before, hard to work with.
+                local distance = QuestieLib:Euclid(QuestieMap.playerX, QuestieMap.playerY, x, y) / 10;
+
+                if (distance > profile.fadeLevel) then
+                    local fade = 1 - (math.min(10, (distance - profile.fadeLevel)) * normalizedValue);
+                    self:SetFade(fade)
+                elseif (distance < profile.fadeOverPlayerDistance) and profile.fadeOverPlayer then
+                    local fadeAmount = profile.fadeOverPlayerLevel + distance * (1 - profile.fadeOverPlayerLevel) / profile.fadeOverPlayerDistance
+                    -- local fadeAmount = math.max(fadeAmount, 0.5);
+                    if self.faded and fadeAmount > profile.iconFadeLevel then
+                        fadeAmount = profile.iconFadeLevel
+                    end
+                    self:SetFade(fadeAmount)
+                else
+                    if self.faded then
+                        self:SetFade(profile.iconFadeLevel)
+                    else
+                        self:SetFade(1)
+                    end
+                end
+            end
+        else
+            if self.faded then
+                self:SetFade(profile.iconFadeLevel)
+            else
+                self:SetFade(1)
+            end
+        end
+    end
+end
+
 function QuestieMap:DrawWorldIcon(data, areaID, x, y, phase, showFlag)
     if type(data) ~= "table" then
         error("Questie" .. ": AddWorldMapIconMap: must have some data")
@@ -739,61 +821,8 @@ function QuestieMap:DrawWorldIcon(data, areaID, x, y, phase, showFlag)
     iconMinimap:UpdateTexture(Questie.usedIcons[data.Icon]);
 
     if (not iconMinimap.FadeLogic) then
-        function iconMinimap:SetFade(value)
-            if self.lastGlowFade ~= value then
-                self.lastGlowFade = value
-                if self.glowTexture then
-                    local r, g, b = self.glowTexture:GetVertexColor()
-                    self.glowTexture:SetVertexColor(r, g, b, value)
-                end
-                self.texture:SetVertexColor(self.texture.r, self.texture.g, self.texture.b, value)
-            end
-        end
-
-        function iconMinimap:FadeLogic()
-            local profile = Questie.db.profile
-            if self.miniMapIcon and self.x and self.y and self.texture and self.UiMapID and self.texture.SetVertexColor and HBD and HBD.GetPlayerZonePosition and QuestieLib and QuestieLib.Euclid then
-                if (QuestieMap.playerX and QuestieMap.playerY) then
-                    local x, y
-                    if not self.worldX then
-                        x, y = HBD:GetWorldCoordinatesFromZone(self.x / 100, self.y / 100, self.UiMapID)
-                        self.worldX = x
-                        self.worldY = y
-                    else
-                        x = self.worldX
-                        y = self.worldY
-                    end
-                    if (x and y) then
-                        --Very small value before, hard to work with.
-                        local distance = QuestieLib:Euclid(QuestieMap.playerX, QuestieMap.playerY, x, y) / 10;
-
-                        if (distance > profile.fadeLevel) then
-                            local fade = 1 - (math.min(10, (distance - profile.fadeLevel)) * normalizedValue);
-                            self:SetFade(fade)
-                        elseif (distance < profile.fadeOverPlayerDistance) and profile.fadeOverPlayer then
-                            local fadeAmount = profile.fadeOverPlayerLevel + distance * (1 - profile.fadeOverPlayerLevel) / profile.fadeOverPlayerDistance
-                            -- local fadeAmount = math.max(fadeAmount, 0.5);
-                            if self.faded and fadeAmount > profile.iconFadeLevel then
-                                fadeAmount = profile.iconFadeLevel
-                            end
-                            self:SetFade(fadeAmount)
-                        else
-                            if self.faded then
-                                self:SetFade(profile.iconFadeLevel)
-                            else
-                                self:SetFade(1)
-                            end
-                        end
-                    end
-                else
-                    if self.faded then
-                        self:SetFade(profile.iconFadeLevel)
-                    else
-                        self:SetFade(1)
-                    end
-                end
-            end
-        end
+        iconMinimap.SetFade = _MinimapIconSetFade
+        iconMinimap.FadeLogic = _MinimapIconFadeLogic
 
         -- We do not want to hook the OnUpdate again!
         -- iconMinimap:SetScript("OnUpdate", )
