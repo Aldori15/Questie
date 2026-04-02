@@ -984,6 +984,13 @@ local function GetPlayerWorldPositionFromActualZoneUiMap(actualUiMapID)
 
         if displayedUiMapID and IsZoneLikeUiMap(displayedUiMapID) and AreUiMapsRelated(displayedUiMapID, targetUiMapID) then
             local x, y = GetPlayerMapPosition("player")
+            if not x or not y or (x <= 0 and y <= 0) then
+                -- Avoid forcing a legacy map reselection while the world map is visible.
+                -- Related parent/child maps can hit this path repeatedly and generate
+                -- WORLD_MAP_UPDATE churn without ever producing a better position read.
+                return nil, nil, nil, nil
+            end
+
             if x and y and (x > 0 or y > 0) then
                 if displayedUiMapID ~= targetUiMapID then
                     x, y = TranslateZoneCoordinatesBetweenUiMaps(x, y, displayedUiMapID, targetUiMapID)
