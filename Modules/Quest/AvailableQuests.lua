@@ -45,6 +45,11 @@ local isFastRefreshActive = false
 --- Used to keep track of the active timer for CalculateAndDrawAll
 ---@type Ticker|nil
 local timer
+local timerStarted = false
+local currentCallbacks = {}
+local pendingRefreshRequested = false
+local pendingFastRefresh = false
+local pendingCallbacks = {}
 
 -- Keep track of all available quests to unload undoable when abandoning a quest
 local availableQuests = {}
@@ -54,6 +59,32 @@ local unavailableQuestsDeterminedByTalking -- quests that were hidden after talk
 local unavailableQuestSyncState -- reset-aware unavailable daily/weekly quest snapshot by NPC
 
 AvailableQuests.levelRequirementCache = levelRequirementCache
+
+local function _ApplyRefreshSpeed(useFastRefresh)
+    if useFastRefresh then
+        questsPerYield = QUESTS_PER_YIELD_FAST
+        isFastRefreshActive = true
+    else
+        questsPerYield = QUESTS_PER_YIELD
+        isFastRefreshActive = false
+    end
+end
+
+local function _RunCallbacks(callbacks)
+    for i = 1, #callbacks do
+        callbacks[i]()
+    end
+end
+
+local function _QueueRefreshRequest(callback, fastRefresh)
+    pendingRefreshRequested = true
+    pendingFastRefresh = pendingFastRefresh or (fastRefresh == true)
+    if callback then
+        tinsert(pendingCallbacks, callback)
+    end
+end
+
+local _StartQueuedRefresh
 
 local function _HasVisibleSpawnInZone(spawns)
     if not spawns then
@@ -354,30 +385,55 @@ _GetStructuredActiveQuestsInGossip = function(npcGuid)
     return activeQuests
 end
 
+_StartQueuedRefresh = function()
+    if timer or (not pendingRefreshRequested) then
+        return
+    end
+
+    local useFastRefresh = pendingFastRefresh
+    currentCallbacks = pendingCallbacks
+    pendingCallbacks = {}
+    pendingRefreshRequested = false
+    pendingFastRefresh = false
+    timerStarted = false
+
+    _ApplyRefreshSpeed(useFastRefresh)
+
+    timer = ThreadLib.Thread(function()
+        timerStarted = true
+        _CalculateAvailableQuests()
+    end, 0, "Error in AvailableQuests.CalculateAndDrawAll", function()
+        local callbacks = currentCallbacks
+        currentCallbacks = {}
+        timer = nil
+        timerStarted = false
+        _ApplyRefreshSpeed(false)
+        _RunCallbacks(callbacks)
+        _StartQueuedRefresh()
+    end)
+end
+
 ---@param callback function | nil
 ---@param fastRefresh boolean|nil
 function AvailableQuests.CalculateAndDrawAll(callback, fastRefresh)
     Questie:Debug(Questie.DEBUG_INFO, "[AvailableQuests.CalculateAndDrawAll]")
 
-    --? Cancel the previously running timer to not have multiple running at the same time
     if timer then
-        timer:Cancel()
-    end
-    if fastRefresh then
-        questsPerYield = QUESTS_PER_YIELD_FAST
-        isFastRefreshActive = true
-    else
-        questsPerYield = QUESTS_PER_YIELD
-        isFastRefreshActive = false
+        if not timerStarted then
+            if fastRefresh and not isFastRefreshActive then
+                _ApplyRefreshSpeed(true)
+            end
+            if callback then
+                tinsert(currentCallbacks, callback)
+            end
+        else
+            _QueueRefreshRequest(callback, fastRefresh)
+        end
+        return
     end
 
-    timer = ThreadLib.Thread(_CalculateAvailableQuests, 0, "Error in AvailableQuests.CalculateAndDrawAll", function()
-        questsPerYield = QUESTS_PER_YIELD
-        isFastRefreshActive = false
-        if callback then
-            callback()
-        end
-    end)
+    _QueueRefreshRequest(callback, fastRefresh)
+    _StartQueuedRefresh()
 end
 
 function AvailableQuests.RebuildAll(callback, fastRefresh)
