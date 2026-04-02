@@ -69,6 +69,56 @@ local function _IsSpawnVisible(spawn)
     return Phasing.IsSpawnVisible(spawn and spawn[3])
 end
 
+local alreadyErroredDungeonZones = {}
+
+local function _GetDistanceToNearestResolvedSpawn(zone, spawn, playerX, playerY, playerI)
+    local bestDistance, bestSpawn, bestSpawnZone
+    local resolvedSpawns
+
+    if spawn[1] == -1 or spawn[2] == -1 then
+        local dungeonLocation = ZoneDB:GetDungeonLocation(zone)
+        if not dungeonLocation then
+            local parentZoneId = ZoneDB:GetParentZoneId(zone)
+            if parentZoneId then
+                dungeonLocation = ZoneDB:GetDungeonLocation(parentZoneId)
+            end
+        end
+        if (not dungeonLocation) and (not alreadyErroredDungeonZones[zone]) then
+            alreadyErroredDungeonZones[zone] = true
+            Questie:Error("No dungeon location found for zoneId:", zone, "Please report this on Github or Discord!")
+        end
+
+        resolvedSpawns = {}
+        for _, location in pairs(dungeonLocation or {}) do
+            tinsert(resolvedSpawns, {zone = location[1], x = location[2], y = location[3]})
+        end
+    else
+        resolvedSpawns = {{zone = zone, x = spawn[1], y = spawn[2]}}
+    end
+
+    for _, resolvedSpawn in pairs(resolvedSpawns) do
+        local uiMapId = ZoneDB:GetUiMapIdByAreaId(resolvedSpawn.zone)
+        if uiMapId then
+            local dX, dY, dInstance = HBD:GetWorldCoordinatesFromZone(resolvedSpawn.x / 100.0, resolvedSpawn.y / 100.0, uiMapId)
+            if dX and dY and dInstance then
+                local dist = HBD:GetWorldDistance(dInstance, playerX, playerY, dX, dY)
+                if dist then
+                    if dInstance ~= playerI then
+                        dist = 500000 + dist * 100 -- hack
+                    end
+                    if (not bestDistance) or dist < bestDistance then
+                        bestDistance = dist
+                        bestSpawn = {resolvedSpawn.x, resolvedSpawn.y}
+                        bestSpawnZone = resolvedSpawn.zone
+                    end
+                end
+            end
+        end
+    end
+
+    return bestDistance, bestSpawn, bestSpawnZone
+end
+
 
 local drawTimer
 local drawQueueTickRate
@@ -907,6 +957,9 @@ function QuestieMap:GetNearestSpawn(objective)
         return nil
     end
     local playerX, playerY, playerI = HBD:GetPlayerWorldPosition()
+    if (not playerX) or (not playerY) then
+        playerX, playerY = 0, 0
+    end
     local bestDistance = 999999999
     local bestSpawn, bestSpawnZone, bestSpawnId, bestSpawnType, bestSpawnName
     -- TODO: This is just a temporary workaround - We have to find out why "objective.spawnList" can be nil
@@ -915,21 +968,14 @@ function QuestieMap:GetNearestSpawn(objective)
             for zone, spawns in pairs(spawnData.Spawns) do
                 for _, spawn in pairs(spawns) do
                     if _IsSpawnVisible(spawn) then
-                        local uiMapId = ZoneDB:GetUiMapIdByAreaId(zone)
-                        local dX, dY, dInstance = HBD:GetWorldCoordinatesFromZone(spawn[1] / 100.0, spawn[2] / 100.0, uiMapId)
-                        local dist = HBD:GetWorldDistance(dInstance, playerX, playerY, dX, dY)
-                        if dist then
-                            if dInstance ~= playerI then
-                                dist = 500000 + dist * 100 -- hack
-                            end
-                            if dist < bestDistance then
-                                bestDistance = dist
-                                bestSpawn = spawn
-                                bestSpawnZone = zone
-                                bestSpawnId = id
-                                bestSpawnType = spawnData.Type
-                                bestSpawnName = spawnData.Name
-                            end
+                        local dist, resolvedSpawn, resolvedZone = _GetDistanceToNearestResolvedSpawn(zone, spawn, playerX, playerY, playerI)
+                        if dist and dist < bestDistance then
+                            bestDistance = dist
+                            bestSpawn = resolvedSpawn
+                            bestSpawnZone = resolvedZone
+                            bestSpawnId = id
+                            bestSpawnType = spawnData.Type
+                            bestSpawnName = spawnData.Name
                         end
                     end
                 end
@@ -959,24 +1005,20 @@ function QuestieMap:GetNearestQuestSpawn(quest)
         if finisherSpawns then -- redundant code
             local bestDistance = 999999999
             local playerX, playerY, playerI = HBD:GetPlayerWorldPosition()
+            if (not playerX) or (not playerY) then
+                playerX, playerY = 0, 0
+            end
             local bestSpawn, bestSpawnZone, bestSpawnType, bestSpawnName
             for zone, spawns in pairs(finisherSpawns) do
                 for _, spawn in pairs(spawns) do
                     if _IsSpawnVisible(spawn) then
-                        local uiMapId = ZoneDB:GetUiMapIdByAreaId(zone)
-                        local dX, dY, dInstance = HBD:GetWorldCoordinatesFromZone(spawn[1] / 100.0, spawn[2] / 100.0, uiMapId)
-                        local dist = HBD:GetWorldDistance(dInstance, playerX, playerY, dX, dY)
-                        if dist then
-                            if dInstance ~= playerI then
-                                dist = 500000 + dist * 100 -- hack
-                            end
-                            if dist < bestDistance then
-                                bestDistance = dist
-                                bestSpawn = spawn
-                                bestSpawnZone = zone
-                                bestSpawnType = quest.Finisher.Type
-                                bestSpawnName = finisherName
-                            end
+                        local dist, resolvedSpawn, resolvedZone = _GetDistanceToNearestResolvedSpawn(zone, spawn, playerX, playerY, playerI)
+                        if dist and dist < bestDistance then
+                            bestDistance = dist
+                            bestSpawn = resolvedSpawn
+                            bestSpawnZone = resolvedZone
+                            bestSpawnType = quest.Finisher.Type
+                            bestSpawnName = finisherName
                         end
                     end
                 end
