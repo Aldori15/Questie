@@ -55,6 +55,7 @@ local questCompletedMessage = string.gsub(ERR_QUEST_COMPLETE_S, "(%%s)", "(.+)")
 local criteriaUpdateQueued
 local lastLevelRefreshAt = 0
 local lastLevelRefreshed = nil
+local lastPlayerEnteringWorldContext
 
 local function _RefreshAvailableAfterLevelChange(level)
     if (not level) or level <= 0 then return end
@@ -78,6 +79,31 @@ local function _RefreshAvailableAfterLevelChange(level)
         AvailableQuests.ResetLevelRequirementCache()
         AvailableQuests.CalculateAndDrawAll()
     end)
+end
+
+local function _GetPlayerEnteringWorldContext()
+    local isInInstance, instanceType = IsInInstance()
+    if not isInInstance then
+        return "world", false
+    end
+
+    local _, _, difficultyId, _, _, _, _, instanceMapId = GetInstanceInfo()
+    return string.format("%s:%s:%s", tostring(instanceType or "instance"), tostring(instanceMapId or 0), tostring(difficultyId or 0)),
+        (instanceType == "raid" or instanceType == "pvp" or instanceType == "arena")
+end
+
+local function _ShouldSmoothResetOnPlayerEnteringWorld()
+    local currentContext, skipReset = _GetPlayerEnteringWorldContext()
+    local shouldReset = false
+
+    if not lastPlayerEnteringWorldContext then
+        shouldReset = not skipReset
+    elseif currentContext ~= lastPlayerEnteringWorldContext and not skipReset then
+        shouldReset = true
+    end
+
+    lastPlayerEnteringWorldContext = currentContext
+    return shouldReset
 end
 
 --* Calculated in _EventHandler:PlayerLogin()
@@ -265,16 +291,17 @@ function QuestieEventHandler:RegisterLateEvents()
         QuestieAnnounce.ItemLooted(_, text, notPlayerName, _, _, playerName)
     end)
 
-    -- since icon updates are disabled in instances, we need to reset on P_E_W
+    -- Loading screens can leave quest state stale around instance transitions, but a full
+    -- reset on every world-to-world teleport is unnecessary.
     Questie:RegisterEvent("PLAYER_ENTERING_WORLD", function()
         if Questie.started then
             QuestieMap:InitializeQueue()
-            local isInInstance, instanceType = IsInInstance()
-            local skipInstance = isInInstance and (instanceType == "raid" or instanceType == "pvp" or instanceType == "arena")
-
-            -- Only run map updates when not in a raid or battleground
-            if not skipInstance then
+            if _ShouldSmoothResetOnPlayerEnteringWorld() then
                 QuestieQuest:SmoothReset()
+            else
+                QuestieCombatQueue:Queue(function()
+                    QuestieTracker:Update()
+                end)
             end
         end
     end)
