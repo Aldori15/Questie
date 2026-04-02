@@ -32,6 +32,8 @@ QuestieTooltips.lastGametooltipCount = -1;
 QuestieTooltips.lastGametooltipType = "";
 QuestieTooltips.lastFrameName = "";
 
+local TOOLTIP_OBJECT_POLL_INTERVAL = 0.1
+
 QuestieTooltips.lookupByKey = {
     --["u_Grell"] = {questid, {"Line 1", "Line 2"}}
 }
@@ -42,6 +44,36 @@ QuestieTooltips.lookupKeysByQuestId = {
 local MAX_GROUP_MEMBER_COUNT = 6
 
 local _InitObjectiveTexts
+
+local function _GetTooltipPrimaryText(tooltip)
+    local tooltipName = tooltip and tooltip.GetName and tooltip:GetName()
+    local titleFrame = tooltipName and _G[tooltipName .. "TextLeft1"]
+    return titleFrame and titleFrame:GetText() or nil
+end
+
+local function _ResetTooltipTracking(tooltip)
+    QuestieTooltips.lastGametooltip = ""
+    QuestieTooltips.lastItemRefTooltip = ""
+    QuestieTooltips.lastGametooltipItem = nil
+    QuestieTooltips.lastGametooltipUnit = nil
+    QuestieTooltips.lastGametooltipCount = 0
+    QuestieTooltips.lastGametooltipType = ""
+    QuestieTooltips.lastFrameName = ""
+
+    if tooltip then
+        tooltip.questieTooltipElapsed = 0
+    end
+end
+
+local function _StoreTooltipTracking(tooltip)
+    QuestieTooltips.lastGametooltip = _GetTooltipPrimaryText(tooltip) or ""
+    if tooltip and tooltip.NumLines then
+        local tooltipLineCount = tooltip:NumLines() or 0
+        if tooltipLineCount > (QuestieTooltips.lastGametooltipCount or 0) then
+            QuestieTooltips.lastGametooltipCount = tooltipLineCount
+        end
+    end
+end
 
 local function GetZoneNameToAreaIds()
     if zoneNameToAreaIds then
@@ -513,15 +545,13 @@ end
 
 function QuestieTooltips:Initialize()
     -- For the clicked item frame.
-    ItemRefTooltip:HookScript("OnTooltipSetItem", _QuestieTooltips.AddItemDataToTooltip)
+    ItemRefTooltip:HookScript("OnTooltipSetItem", function(self)
+        _QuestieTooltips.AddItemDataToTooltip(self)
+        _StoreTooltipTracking(self)
+    end)
     ItemRefTooltip:HookScript("OnHide", function(self)
         if (not self.IsForbidden) or (not self:IsForbidden()) then -- do we need this here also
-            QuestieTooltips.lastGametooltip = ""
-            QuestieTooltips.lastItemRefTooltip = ""
-            QuestieTooltips.lastGametooltipItem = nil
-            QuestieTooltips.lastGametooltipUnit = nil
-            QuestieTooltips.lastGametooltipCount = 0
-            QuestieTooltips.lastFrameName = "";
+            _ResetTooltipTracking(self)
         end
     end)
 
@@ -533,8 +563,12 @@ function QuestieTooltips:Initialize()
         end
 
         _QuestieTooltips.AddUnitDataToTooltip(self)
+        _StoreTooltipTracking(self)
     end)
-    GameTooltip:HookScript("OnTooltipSetItem", _QuestieTooltips.AddItemDataToTooltip)
+    GameTooltip:HookScript("OnTooltipSetItem", function(self)
+        _QuestieTooltips.AddItemDataToTooltip(self)
+        _StoreTooltipTracking(self)
+    end)
     GameTooltip:HookScript("OnShow", function(self)
         if QuestiePlayer.numberOfGroupMembers > MAX_GROUP_MEMBER_COUNT then
             -- When in a raid, we want as little code running as possible
@@ -545,7 +579,9 @@ function QuestieTooltips:Initialize()
             QuestieTooltips.lastGametooltipItem = nil
             QuestieTooltips.lastGametooltipUnit = nil
             QuestieTooltips.lastGametooltipCount = 0
+            QuestieTooltips.lastGametooltipType = ""
             QuestieTooltips.lastFrameName = "";
+            self.questieTooltipElapsed = 0
         end
     end)
     GameTooltip:HookScript("OnHide", function(self)
@@ -555,36 +591,65 @@ function QuestieTooltips:Initialize()
         end
 
         if (not self.IsForbidden) or (not self:IsForbidden()) then -- do we need this here also
-            QuestieTooltips.lastGametooltip = ""
-            QuestieTooltips.lastItemRefTooltip = ""
-            QuestieTooltips.lastGametooltipItem = nil
-            QuestieTooltips.lastGametooltipUnit = nil
-            QuestieTooltips.lastGametooltipCount = 0
+            _ResetTooltipTracking(self)
         end
     end)
 
     -- Fired whenever the cursor hovers something with a tooltip. And then on every frame
-    GameTooltip:HookScript("OnUpdate", function(self)
+    GameTooltip:HookScript("OnUpdate", function(self, elapsed)
         if QuestiePlayer.numberOfGroupMembers > MAX_GROUP_MEMBER_COUNT then
             -- When in a raid, we want as little code running as possible
             return
         end
 
         if (not self.IsForbidden) or (not self:IsForbidden()) then
-            --Because this is an OnUpdate we need to check that it is actually not a Unit or Item to think its a
+            self.questieTooltipElapsed = (self.questieTooltipElapsed or 0) + (elapsed or 0)
+            if self.questieTooltipElapsed < TOOLTIP_OBJECT_POLL_INTERVAL then
+                return
+            end
+            self.questieTooltipElapsed = 0
+
+            local tooltipText = _GetTooltipPrimaryText(self)
+            if (not tooltipText) or self.ShownAsMapIcon then
+                QuestieTooltips.lastGametooltip = tooltipText or ""
+                return
+            end
+
+            local lineCount = self:NumLines() or 0
+            if QuestieTooltips.lastGametooltipType ~= "" and
+                tooltipText == QuestieTooltips.lastGametooltip and
+                lineCount >= (QuestieTooltips.lastGametooltipCount or 0) then
+                return
+            end
+
+            -- Because this is an OnUpdate we only probe unit/item/spell state after the visible tooltip changed.
             local uName, unit = self:GetUnit()
+            if uName ~= nil or unit ~= nil then
+                QuestieTooltips.lastGametooltip = tooltipText
+                return
+            end
+
             local iName, link = self:GetItem()
+            if iName ~= nil or link ~= nil then
+                QuestieTooltips.lastGametooltip = tooltipText
+                return
+            end
+
             local sName, spell = self:GetSpell()
-            if (uName == nil and unit == nil and iName == nil and link == nil and sName == nil and spell == nil) and (
-                    QuestieTooltips.lastGametooltip ~= GameTooltipTextLeft1:GetText() or
-                    (not QuestieTooltips.lastGametooltipCount) or
-                    _QuestieTooltips:CountTooltip() < QuestieTooltips.lastGametooltipCount
-                    or QuestieTooltips.lastGametooltipType ~= "object"
-                ) and (not self.ShownAsMapIcon) then -- We are hovering over a Questie map icon which adds its own tooltip
-                _QuestieTooltips:AddObjectDataToTooltip(GameTooltipTextLeft1:GetText())
+            if sName ~= nil or spell ~= nil then
+                QuestieTooltips.lastGametooltip = tooltipText
+                QuestieTooltips.lastGametooltipType = "spell"
+                QuestieTooltips.lastGametooltipCount = lineCount
+                return
+            end
+
+            if tooltipText ~= QuestieTooltips.lastGametooltip or
+                lineCount < (QuestieTooltips.lastGametooltipCount or 0) or
+                QuestieTooltips.lastGametooltipType ~= "object" then
+                _QuestieTooltips:AddObjectDataToTooltip(tooltipText)
                 QuestieTooltips.lastGametooltipCount = _QuestieTooltips:CountTooltip()
             end
-            QuestieTooltips.lastGametooltip = GameTooltipTextLeft1:GetText()
+            QuestieTooltips.lastGametooltip = tooltipText
         end
     end)
 end
