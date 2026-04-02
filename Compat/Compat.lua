@@ -1208,7 +1208,8 @@ end
 function QuestieCompat.TomTom_AddWaypoint(title, zone, x, y)
     local CZ = mapIdToCZ[QuestieCompat.UiMapData[zone].mapID]
     if (zone == 125) or (zone == 126) then CZ = 3.4 end
-    return TomTom:AddZWaypoint(QuestieCompat.Round(CZ%1 * 10), math.floor(CZ), x, y, title)
+    -- Force the crazy arrow on 3.3.5 so Questie behaves like newer TomTom integrations.
+    return TomTom:AddZWaypoint(QuestieCompat.Round(CZ%1 * 10), math.floor(CZ), x, y, title, nil, nil, nil, nil, nil, true)
 end
 
 -- This function will do its utmost to retrieve some sort of valid position
