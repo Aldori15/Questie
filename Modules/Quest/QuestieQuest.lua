@@ -283,7 +283,8 @@ function QuestieQuest:ClearAllToolTips()
     end
 
     QuestieTooltips.lookupByKey = {}
-    QuestieTooltips.lookupKeyByQuestId = {}
+    QuestieTooltips.lookupKeysByQuestId = {}
+    AvailableQuests.MarkQuestStartTooltipsDirty()
 end
 
 -- This is only needed for SmoothReset(), normally special objectives don't need to update

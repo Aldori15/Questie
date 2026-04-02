@@ -299,6 +299,8 @@ function QuestieEventHandler:RegisterLateEvents()
             if _ShouldSmoothResetOnPlayerEnteringWorld() then
                 QuestieQuest:SmoothReset()
             else
+                QuestieQuest:RefreshQuestIconVisibility()
+                AvailableQuests.CalculateAndDrawAll(nil, true)
                 QuestieCombatQueue:Queue(function()
                     QuestieTracker:Update()
                 end)
