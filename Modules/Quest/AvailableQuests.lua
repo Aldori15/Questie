@@ -781,7 +781,7 @@ end
 
 _CalculateAvailableQuests = function()
     local maxQuestsPerYield = questsPerYield
-    _GetUnavailableQuestsDeterminedByTalking()
+    local unavailableQuests = _GetUnavailableQuestsDeterminedByTalking()
 
     -- Localize the variables for speeeeed
     local debugEnabled = Questie.db.profile.debugEnabled
@@ -816,28 +816,31 @@ _CalculateAvailableQuests = function()
     local aqWarEffortQuests = QuestieQuestBlacklist.AQWarEffortQuests
 
     QuestieDB.activeChildQuests = {} -- Reset here so we don't need to keep track in the quest event system
-    local activeChildQuests = QuestieDB.activeChildQuests
 
     -- We create a local function here to improve readability but use the localized variables above.
     -- The order of checks is important here to bring the speed to a max
-    local function _DrawQuestIfAvailable(questId)
+    local function _RemoveQuestIfShown(questId)
+        if availableQuests[questId] or QuestieMap.questIdFrames[questId] or QuestieTooltips.lookupKeysByQuestId[questId] then
+            AvailableQuests.RemoveQuest(questId)
+        end
+    end
+
+    local function _CheckAvailability(questId)
         local isRepeatableQuest = QuestieDB.IsRepeatable(questId)
 
         if (autoBlacklist[questId] or -- Don't show autoBlacklist quests marked as such by IsDoable
             completedQuests[questId] or -- Don't show completed quests
             hiddenQuests[questId] or -- Don't show blacklisted quests
             hidden[questId] or -- Don't show quests hidden by the player
-            unavailableQuestsDeterminedByTalking[questId] -- Don't show quests hidden after talking to an NPC
+            unavailableQuests[questId] -- Don't show quests hidden after talking to an NPC
         ) then
-            if availableQuests[questId] or QuestieMap.questIdFrames[questId] or QuestieTooltips.lookupKeysByQuestId[questId] then
-                AvailableQuests.RemoveQuest(questId)
-            end
+            _RemoveQuestIfShown(questId)
             availableQuests[questId] = nil
             return
         end
 
         if currentQuestlog[questId] then
-            _DrawChildQuests(questId, currentQuestlog, completedQuests, hiddenQuests, hidden, unavailableQuestsDeterminedByTalking)
+            _DrawChildQuests(questId, currentQuestlog, completedQuests, hiddenQuests, hidden, unavailableQuests)
 
             if QuestieDB.IsComplete(questId) ~= -1 then -- The quest in the quest log is not failed, so we don't show it as available
                 availableQuests[questId] = nil
@@ -854,17 +857,13 @@ _CalculateAvailableQuests = function()
             (Questie.IsClassic and currentIsleOfQuelDanasQuests[questId]) or        -- Don't show Isle of Quel'Danas quests for Era/HC/SoX
             (Questie.IsSoD and QuestieDB.IsRuneAndShouldBeHidden(questId))          -- Don't show SoD Rune quests with the option disabled
         ) then
-            if availableQuests[questId] or QuestieMap.questIdFrames[questId] then
-                AvailableQuests.RemoveQuest(questId)
-            end
+            _RemoveQuestIfShown(questId)
             availableQuests[questId] = nil
             return
         end
 
         if _IsHiddenByTrivialRepeatableSetting(questId, isRepeatableQuest, showTrivialRepeatableQuests) then
-            if availableQuests[questId] or QuestieMap.questIdFrames[questId] then
-                AvailableQuests.RemoveQuest(questId)
-            end
+            _RemoveQuestIfShown(questId)
             availableQuests[questId] = nil
             return
         end
@@ -876,15 +875,15 @@ _CalculateAvailableQuests = function()
             --If the quests are not within level range we want to unload them
             --(This is for when people level up or change settings etc)
 
-            if availableQuests[questId] or QuestieMap.questIdFrames[questId] then
-                AvailableQuests.RemoveQuest(questId)
-            end
+            _RemoveQuestIfShown(questId)
             availableQuests[questId] = nil
             return
         end
 
         availableQuests[questId] = true
+    end
 
+    local function _RefreshOrDrawAvailableQuest(questId)
         if QuestieMap.questIdFrames[questId] then
             -- We already drew this quest so we might need to update the icon (config changed/level up)
             local questFrames = QuestieMap:GetFramesForQuest(questId)
@@ -913,16 +912,24 @@ _CalculateAvailableQuests = function()
             return
         end
 
-        if activeChildQuests[questId] then
-            return
-        end
-
         _DrawAvailableQuest(questId)
     end
 
     local questCount = 0
     for questId in pairs(questData) do
-        _DrawQuestIfAvailable(questId)
+        _CheckAvailability(questId)
+
+        -- Reset the questCount
+        questCount = questCount + 1
+        if questCount > maxQuestsPerYield then
+            questCount = 0
+            yield()
+        end
+    end
+
+    questCount = 0
+    for questId in pairs(availableQuests) do
+        _RefreshOrDrawAvailableQuest(questId)
 
         -- Reset the questCount
         questCount = questCount + 1
@@ -1051,9 +1058,8 @@ _DrawChildQuests = function(questId, currentQuestlog, completedQuests, hiddenQue
                 if isPreQuestSingleFulfilled and isPreQuestGroupFulfilled then
                     QuestieDB.activeChildQuests[childQuestId] = true
                     availableQuests[childQuestId] = true
-                    -- Draw them right away so child quests still appear when their questId was
-                    -- already processed earlier in this calculation pass.
-                    _DrawAvailableQuest(childQuestId)
+                    -- Mark them here so the draw pass can render them even if their
+                    -- questId was processed earlier in the availability pass.
                 end
             end
         end
