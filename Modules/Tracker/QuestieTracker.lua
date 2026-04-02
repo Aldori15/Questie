@@ -1071,6 +1071,7 @@ function QuestieTracker:Update()
                                 end
                             end
                             line.label:SetText(timerLabelText or "")
+                            line:RefreshTimedQuestUpdater()
 
                             -- Reserve enough width for "MM Minutes SS Seconds" so timer text
                             -- does not intermittently truncate when seconds change.
@@ -1080,6 +1081,7 @@ function QuestieTracker:Update()
                             end
                             line.label:SetText(Questie:Colorize(timerSampleText, "lightBlue"))
                             local timerReserveWidth = line.label:GetUnboundedStringWidth()
+                            line.timerReserveWidth = timerReserveWidth + 2
                             line.label:SetText(timerLabelText or "")
                             local timerLabelWidth = math.max(line.label:GetUnboundedStringWidth(), timerReserveWidth)
 

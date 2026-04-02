@@ -22,6 +22,23 @@ local WatchFrame = QuestTimerFrame or WatchFrame
 local blizzardTimerLocation = {}
 local timer
 
+local function _ApplyTimerText(frame, timeRemainingString)
+    if not frame or not frame.label then
+        return
+    end
+
+    frame.label:SetFont(LSM30:Fetch("font", Questie.db.profile.trackerFontObjective), Questie.db.profile.trackerFontSizeObjective, Questie.db.profile.trackerFontOutline)
+    frame.label:SetText(Questie:Colorize(timeRemainingString, "lightBlue"))
+
+    local unboundedWidth = frame.label:GetUnboundedStringWidth() + 2
+    if frame.timerReserveWidth and frame.timerReserveWidth > unboundedWidth then
+        unboundedWidth = frame.timerReserveWidth
+    end
+
+    frame.label:SetWidth(unboundedWidth)
+    frame:SetWidth(unboundedWidth + ((34) - (18 - Questie.db.profile.trackerFontSizeQuest)) + Questie.db.profile.trackerFontSizeQuest)
+end
+
 -- Save the default location of the Blizzard QuestTimerFrame
 if not (Questie.IsWotlk or QuestieCompat.Is335) then
     blizzardTimerLocation = { QuestTimerFrame:GetPoint() }
@@ -158,25 +175,43 @@ function TrackerQuestTimers:GetRemainingTimeByQuestId(questId)
     return nil
 end
 
-function TrackerQuestTimers:UpdateTimerFrame()
-    if timer and (Questie.db.profile.trackerEnabled and Questie.db.char.isTrackerExpanded and (QuestieTracker.disableHooks ~= true)) then
-        local timeRemainingString = TrackerQuestTimers:GetRemainingTimeByQuestId(timer.questId)
+---@param frame frame|nil
+---@param questId number|nil
+---@param timeRemainingString string|nil
+function TrackerQuestTimers:UpdateTimerFrame(frame, questId, timeRemainingString)
+    if not (Questie.db.profile.trackerEnabled and Questie.db.char.isTrackerExpanded and (QuestieTracker.disableHooks ~= true)) then
+        return
+    end
+
+    local timerFrame = frame
+    local timerQuestId = questId
+
+    if (not timerFrame) or (not timerQuestId) then
+        if not timer then
+            return
+        end
+
+        timerFrame = timer.frame
+        timerQuestId = timer.questId
+    end
+
+    if timerFrame and timerQuestId then
+        timeRemainingString = timeRemainingString or TrackerQuestTimers:GetRemainingTimeByQuestId(timerQuestId)
         if timeRemainingString ~= nil then
             Questie:Debug(Questie.DEBUG_SPAM, "[TrackerQuestTimers:UpdateTimerFrame] - ", timeRemainingString)
 
             QuestieCombatQueue:Queue(function()
-                if (not timer) then
-                    -- timer might be reset on next combat queue
+                if (not timerFrame) or (not timerFrame.label) then
                     return
                 end
-                timer.frame.label:SetFont(LSM30:Fetch("font", Questie.db.profile.trackerFontObjective), Questie.db.profile.trackerFontSizeObjective, Questie.db.profile.trackerFontOutline)
-                timer.frame.label:SetText(Questie:Colorize(timeRemainingString, "lightBlue"))
-                local unboundedWidth = timer.frame.label:GetUnboundedStringWidth() + 2
-                timer.frame.label:SetWidth(unboundedWidth)
-                timer.frame:SetWidth(unboundedWidth + ((34) - (18 - Questie.db.profile.trackerFontSizeQuest)) + Questie.db.profile.trackerFontSizeQuest)
+
+                _ApplyTimerText(timerFrame, timeRemainingString)
             end)
         else
             Questie:Debug(Questie.DEBUG_SPAM, "[TrackerQuestTimers] Quest Timer Expired!")
+            if timer and timer.frame == timerFrame and timer.questId == timerQuestId then
+                timer = nil
+            end
             return
         end
     end

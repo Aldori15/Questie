@@ -46,6 +46,9 @@ local buttonIndex = 0
 local linePool = {}
 local buttonPool = {}
 local lineMarginLeft = 10
+local ITEM_BUTTON_UPDATE_INTERVAL = 0.1
+local ITEM_BUTTON_CHARGE_UPDATE_INTERVAL = 0.2
+local ITEM_BUTTON_RANGE_UPDATE_INTERVAL = 0.3
 
 ---@param questFrame Frame
 function TrackerLinePool.Initialize(questFrame)
@@ -106,13 +109,27 @@ function TrackerLinePool.Initialize(questFrame)
             end
 
             -- Set Timed Quest Flag
-            if Quest.trackTimedQuest then
-                self.trackTimedQuest = Quest.trackTimedQuest
-            end
+            self.trackTimedQuest = Quest.trackTimedQuest or nil
+            self.label.activeTimer = false
+            self:RefreshTimedQuestUpdater()
         end
 
         function line:SetObjective(Objective)
             self.Objective = Objective
+        end
+
+        function line:RefreshTimedQuestUpdater()
+            if (Questie.IsWotlk or QuestieCompat.Is335) and self.trackTimedQuest and self.label.activeTimer then
+                if self:GetScript("OnUpdate") ~= self.OnUpdate then
+                    timeElapsed = 0
+                    self:SetScript("OnUpdate", self.OnUpdate)
+                end
+            else
+                timeElapsed = 0
+                if self:GetScript("OnUpdate") == self.OnUpdate then
+                    self:SetScript("OnUpdate", nil)
+                end
+            end
         end
 
         line.OnUpdate = function(self, elapsed)
@@ -120,19 +137,21 @@ function TrackerLinePool.Initialize(questFrame)
                 timeElapsed = timeElapsed + elapsed
 
                 if timeElapsed > 1 and self.trackTimedQuest and self.label.activeTimer then
-                    local _, timeRemaining = TrackerQuestTimers:GetRemainingTimeByQuestId(self.Quest.Id)
+                    local timeRemainingString, timeRemaining = TrackerQuestTimers:GetRemainingTimeByQuestId(self.Quest.Id)
 
                     if timeRemaining ~= nil then
                         if timeRemaining > 1 then
-                            TrackerQuestTimers:UpdateTimerFrame()
+                            TrackerQuestTimers:UpdateTimerFrame(self, self.Quest.Id, timeRemainingString)
                         end
 
                         if timeRemaining == 1 then
-                            TrackerQuestTimers:UpdateTimerFrame()
+                            TrackerQuestTimers:UpdateTimerFrame(self, self.Quest.Id, timeRemainingString)
                         end
 
                         timeElapsed = 0
                     else
+                        self.label.activeTimer = false
+                        self:RefreshTimedQuestUpdater()
                         timeElapsed = 0
                         return
                     end
@@ -453,10 +472,6 @@ function TrackerLinePool.Initialize(questFrame)
             end)
         end)
 
-        if Questie.IsWotlk or QuestieCompat.Is335 then
-            line:HookScript("OnUpdate", line.OnUpdate)
-        end
-
         if Questie.db.profile.trackerFadeMinMaxButtons then
             expandQuest:SetAlpha(0)
         end
@@ -573,31 +588,50 @@ function TrackerLinePool.Initialize(questFrame)
             if (event == "PLAYER_TARGET_CHANGED") then
                 self.rangeTimer = -1
                 self.range:Hide()
+            elseif event == "BAG_UPDATE_COOLDOWN" then
+                self.cooldownTimer = 0
+            elseif event == "BAG_UPDATE" or event == "PLAYER_EQUIPMENT_CHANGED" then
+                self.cooldownTimer = 0
+                self.chargeTimer = 0
             end
         end
 
-        btn.OnUpdate = function(self, elapsed)
-            if not self.itemId or not self:IsVisible() then
-                return
-            end
-
+        btn.RefreshCooldown = function(self)
             local start, duration, enabled = QuestieCompat.GetItemCooldown(self.itemId)
 
             if enabled == 1 and duration > 0 then
-                cooldown:SetCooldown(start, duration, enabled)
-                cooldown:Show()
-            else
-                cooldown:Hide()
-            end
+                if self.cooldownStart ~= start or self.cooldownDuration ~= duration or self.cooldownEnabled ~= enabled then
+                    cooldown:SetCooldown(start, duration, enabled)
+                    self.cooldownStart = start
+                    self.cooldownDuration = duration
+                    self.cooldownEnabled = enabled
+                end
 
-            local charges = GetItemCount(self.itemId, nil, true)
-            if (not charges or charges ~= self.charges) then
-                self.count:Hide()
-                self.charges = GetItemCount(self.itemId, nil, true)
+                if not cooldown:IsShown() then
+                    cooldown:Show()
+                end
+            else
+                self.cooldownStart = nil
+                self.cooldownDuration = nil
+                self.cooldownEnabled = nil
+
+                if cooldown:IsShown() then
+                    cooldown:Hide()
+                end
+            end
+        end
+
+        btn.RefreshCharges = function(self)
+            local charges = GetItemCount(self.itemId, nil, true) or 0
+            if charges ~= self.charges then
+                self.charges = charges
                 if self.charges > 1 then
                     self.count:SetText(self.charges)
                     self.count:Show()
+                else
+                    self.count:Hide()
                 end
+
                 if self.charges == 0 then
                     Questie:Debug(Questie.DEBUG_DEVELOP, "[TrackerLinePool: Button.OnUpdate]")
                     QuestieCombatQueue:Queue(function()
@@ -607,42 +641,89 @@ function TrackerLinePool.Initialize(questFrame)
                     end)
                 end
             end
+        end
 
-            if UnitExists("target") then
+        btn.RefreshRangeIndicator = function(self)
+            if not UnitExists("target") then
+                if self.range:IsShown() then
+                    self.range:Hide()
+                end
+                return
+            end
+
+            -- IsItemInRange is restricted to only be used either on hostile targets or friendly ones while NOT in combat.
+            if UnitIsFriend("player", "target") and InCombatLockdown() then
+                return
+            end
+
+            local isInRange = IsItemInRange(self.itemId, "target")
+            if isInRange == nil then
                 if not self.itemName then
                     self.itemName = GetItemInfo(self.itemId)
                 end
 
-                local rangeTimer = self.rangeTimer
-                if (rangeTimer) then
-                    rangeTimer = rangeTimer - elapsed
-
-                    -- IsItemInRange is restricted to only be used either on hostile targets or friendly ones while NOT in combat
-                    if (rangeTimer <= 0) and (not UnitIsFriend("player", "target") or (not InCombatLockdown())) then
-                        local isInRange = IsItemInRange(self.itemName, "target")
-
-                        if isInRange == false then
-                            self.range:SetVertexColor(1.0, 0.1, 0.1)
-                            self.range:Show()
-                        elseif isInRange == true then
-                            self.range:SetVertexColor(0.6, 0.6, 0.6)
-                            self.range:Show()
-                        end
-
-                        rangeTimer = 0.3
-                    end
-
-                    self.rangeTimer = rangeTimer
+                if self.itemName then
+                    isInRange = IsItemInRange(self.itemName, "target")
                 end
+            end
+
+            if isInRange == false then
+                self.range:SetVertexColor(1.0, 0.1, 0.1)
+                self.range:Show()
+            elseif isInRange == true then
+                self.range:SetVertexColor(0.6, 0.6, 0.6)
+                self.range:Show()
+            elseif self.range:IsShown() then
+                self.range:Hide()
+            end
+        end
+
+        btn.OnUpdate = function(self, elapsed)
+            if not self.itemId or not self:IsVisible() then
+                return
+            end
+
+            local cooldownTimer = (self.cooldownTimer or 0) - elapsed
+            if cooldownTimer <= 0 then
+                self:RefreshCooldown()
+                cooldownTimer = ITEM_BUTTON_UPDATE_INTERVAL
+            end
+            self.cooldownTimer = cooldownTimer
+
+            local chargeTimer = (self.chargeTimer or 0) - elapsed
+            if chargeTimer <= 0 then
+                self:RefreshCharges()
+                chargeTimer = ITEM_BUTTON_CHARGE_UPDATE_INTERVAL
+            end
+            self.chargeTimer = chargeTimer
+
+            if UnitExists("target") then
+                local rangeTimer = (self.rangeTimer or 0) - elapsed
+                if rangeTimer <= 0 then
+                    self:RefreshRangeIndicator()
+                    rangeTimer = ITEM_BUTTON_RANGE_UPDATE_INTERVAL
+                end
+                self.rangeTimer = rangeTimer
+            elseif self.range:IsShown() then
+                self.range:Hide()
             end
         end
 
         btn.OnShow = function(self)
             self:RegisterEvent("PLAYER_TARGET_CHANGED")
+            self:RegisterEvent("BAG_UPDATE_COOLDOWN")
+            self:RegisterEvent("BAG_UPDATE")
+            self:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
+            self.cooldownTimer = 0
+            self.chargeTimer = 0
+            self.rangeTimer = -1
         end
 
         btn.OnHide = function(self)
             self:UnregisterEvent("PLAYER_TARGET_CHANGED")
+            self:UnregisterEvent("BAG_UPDATE_COOLDOWN")
+            self:UnregisterEvent("BAG_UPDATE")
+            self:UnregisterEvent("PLAYER_EQUIPMENT_CHANGED")
         end
 
         btn.OnEnter = function(self)
@@ -688,6 +769,9 @@ function TrackerLinePool.ResetLinesForChange()
     for _, line in pairs(linePool) do
         line.mode = nil
         line.trackTimedQuest = nil
+        line.label.activeTimer = false
+        line.timerReserveWidth = nil
+        line:RefreshTimedQuestUpdater()
         if line.expandQuest then
             line.expandQuest.mode = nil
             line.expandQuest.questId = nil
@@ -844,6 +928,9 @@ function TrackerLinePool.HideUnusedLines()
             line.altButton = nil
             line.questHasSecondaryQIB = false
             line.trackTimedQuest = nil
+            line.label.activeTimer = false
+            line.timerReserveWidth = nil
+            line:RefreshTimedQuestUpdater()
             line.expandQuest.mode = nil
             line.expandQuest.questId = nil
             line.expandZone.mode = nil
@@ -874,6 +961,12 @@ function TrackerLinePool.HideUnusedButtons()
             button.itemName = nil
             button.lineID = nil
             button.fontSize = nil
+            button.cooldownTimer = nil
+            button.chargeTimer = nil
+            button.rangeTimer = nil
+            button.cooldownStart = nil
+            button.cooldownDuration = nil
+            button.cooldownEnabled = nil
             button:ClearAllPoints()
             button:SetParent(UIParent)
             button:Hide()
