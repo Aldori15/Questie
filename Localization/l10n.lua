@@ -131,15 +131,18 @@ end
 function l10n:PostBoot()
 
     local count = 0
-    -- Create {['name'] = {ID, },} table for lookup of possible object IDs by name
+    -- Create a lookup of possible object IDs by name.
+    -- Store single matches as numbers and only promote to a table when names collide.
     for id in pairs(QuestieDB.ObjectPointers) do
         local name = QuestieDB.QueryObjectSingle(id, "name")
         if name then -- We (meaning me, BreakBB) introduced Fake IDs for objects to show additional locations, so we need to check this
             local entry = l10n.objectNameLookup[name]
             if not entry then
-                l10n.objectNameLookup[name] = { id }
+                l10n.objectNameLookup[name] = id
+            elseif type(entry) == "number" then
+                l10n.objectNameLookup[name] = { entry, id }
             else
-                entry[#entry+1] = id
+                entry[#entry + 1] = id
             end
         end
 
