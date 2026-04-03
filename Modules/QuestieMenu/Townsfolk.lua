@@ -13,6 +13,17 @@ local tinsert = tinsert
 local sub, bitband, strlen = string.sub, bit.band, string.len
 
 local professionKeys = QuestieProfessions.professionKeys
+local playerVendorKeys = {
+    ["Ammo"] = true,
+    ["Bags"] = true,
+    ["Drink"] = true,
+    ["Food"] = true,
+    ["Pet Food"] = true,
+    ["Poisons"] = true,
+    ["Potions"] = true,
+    ["Reagents"] = true,
+    ["Trade Goods"] = true,
+}
 
 
 local function _reformatVendors(lst, existingTable)
@@ -239,7 +250,6 @@ function Townsfolk.Initialize()
 end
 
 function Townsfolk.PostBoot() -- post DB boot (use queries here)
-
     if Questie.db.global.townsfolkNeedsUpdatedGlobalVendors then
         Questie.db.global.townsfolkNeedsUpdatedGlobalVendors = nil
         -- insert item-based profession vendors
@@ -284,11 +294,13 @@ function Townsfolk.PostBoot() -- post DB boot (use queries here)
         2455, 3385, 3827, 6149, 13443, 13444, 18841, (Questie.IsTBC or Questie.IsWotlk) and 22832 or nil, (Questie.IsTBC or Questie.IsWotlk) and 32948 or nil, (Questie.IsWotlk) and 33448 or nil, -- Mana Potions
     }))
     Townsfolk:UpdatePlayerVendors()
+    Questie.db.char.vendorListInitialized = true
 end
 
 function Townsfolk:BuildCharacterTownsfolk()
     Questie.db.char.townsfolk = {}
     Questie.db.char.vendorList = {}
+    Questie.db.char.vendorListInitialized = nil
     Questie.db.char.townsfolkClass = UnitClass("player")
 
     for key, npcs in pairs(Questie.db.global.factionSpecificTownsfolk[playerFaction]) do
@@ -329,12 +341,28 @@ local function _UpdateFoodDrink()
 end
 
 function Townsfolk:UpdatePlayerVendors() -- call on levelup
+    if not Questie.db.char.vendorListInitialized then
+        return
+    end
+
     _UpdateFoodDrink()
     _UpdateAmmoVendors()
 
     if playerClass == "HUNTER" then
         _UpdatePetFood()
     end
+end
+
+function Townsfolk:IsVendorCategory(key)
+    return playerVendorKeys[key] == true
+end
+
+function Townsfolk:EnsureVendorDataInitialized()
+    if Questie.db.char.vendorListInitialized then
+        return
+    end
+
+    Townsfolk.PostBoot()
 end
 
 function Townsfolk:PopulateVendors(itemList, existingTable, restrictLevel)

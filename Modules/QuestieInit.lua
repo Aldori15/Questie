@@ -323,8 +323,6 @@ QuestieInit.Stages[3] = function() -- run as a coroutine
     coYield()
     QuestieQuest:GetAllQuestIdsNoObjectives()
     coYield()
-    Townsfolk.PostBoot()
-    coYield()
     QuestieQuest:GetAllQuestIds()
 
     -- Initialize the tracker

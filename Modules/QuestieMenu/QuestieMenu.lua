@@ -132,6 +132,10 @@ local function toggle(key, forceRemove) -- /run QuestieLoader:ImportModule("Ques
         return
     end
 
+    if Townsfolk:IsVendorCategory(key) or Questie.db.global.professionTrainers[key] then
+        Townsfolk:EnsureVendorDataInitialized()
+    end
+
     local ids = Questie.db.global.townsfolk[key] or
             Questie.db.char.townsfolk[key] or
             Questie.db.global.professionTrainers[key] or
@@ -240,8 +244,6 @@ local function buildLocalized(key, localizedText)
 end
 
 function QuestieMenu:OnLogin(forceRemove) -- toggle all icons
-    Townsfolk:UpdatePlayerVendors()
-
     if (not Questie.db.profile.townsfolkConfig) then
         Questie.db.profile.townsfolkConfig = {
             ["Flight Master"] = true,
@@ -323,6 +325,8 @@ function QuestieMenu.buildTailoringSubmenu()
 end
 
 function QuestieMenu.buildProfessionMenu()
+    Townsfolk:EnsureVendorDataInitialized()
+
     local profMenu = {}
     local profMenuSorted = {}
     local secondaryProfMenuSorted = {}
@@ -360,6 +364,8 @@ function QuestieMenu.buildProfessionMenu()
 end
 
 function QuestieMenu.buildVendorMenu()
+    Townsfolk:EnsureVendorDataInitialized()
+
     local vendorMenu = {}
     local vendorMenuSorted = {}
     local vendorMenuData = {}
