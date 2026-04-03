@@ -550,12 +550,37 @@ _QuestieComms._isBroadcasting = false
 _QuestieComms._needsNewBroadcast = false
 _QuestieComms._nextBroadcastData = {}
 
+local function _CanSendFullSync(partyType, sendMode, targetPlayer)
+    if sendMode == "WHISPER" then
+        local playerName = UnitName("player")
+        return targetPlayer and targetPlayer ~= "" and targetPlayer ~= playerName
+    end
+
+    return partyType ~= nil
+end
+
+local function _QueueUniqueFullSync(queue, eventName, sendMode, targetPlayer)
+    for _, queued in ipairs(queue) do
+        if queued[1] == eventName and queued[2] == sendMode and queued[3] == targetPlayer then
+            return false
+        end
+    end
+
+    tinsert(queue, {eventName, sendMode, targetPlayer})
+    return true
+end
+
 function _QuestieComms:BroadcastQuestLog(eventName, sendMode, targetPlayer) -- broadcast quest update to group or raid
-    if _QuestieComms._isBroadcasting then
-        tinsert(_QuestieComms._nextBroadcastData, {eventName, sendMode, targetPlayer})
+    local partyType = QuestiePlayer:GetGroupType()
+    if not _CanSendFullSync(partyType, sendMode, targetPlayer) then
         return
     end
-    local partyType = QuestiePlayer:GetGroupType()
+
+    if _QuestieComms._isBroadcasting then
+        _QueueUniqueFullSync(_QuestieComms._nextBroadcastData, eventName, sendMode, targetPlayer)
+        return
+    end
+
     Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieComms] Message", eventName, "partyType:", tostring(partyType))
     if partyType then
         local sorted = {}
@@ -659,11 +684,16 @@ _QuestieComms._isBroadcastingV2 = false
 _QuestieComms._nextBroadcastDataV2 = {}
 
 function _QuestieComms:BroadcastQuestLogV2(eventName, sendMode, targetPlayer) -- broadcast quest update to group or raid
-    if _QuestieComms._isBroadcastingV2 then
-        tinsert(_QuestieComms._nextBroadcastDataV2, {eventName, sendMode, targetPlayer})
+    local partyType = QuestiePlayer:GetGroupType()
+    if not _CanSendFullSync(partyType, sendMode, targetPlayer) then
         return
     end
-    local partyType = QuestiePlayer:GetGroupType()
+
+    if _QuestieComms._isBroadcastingV2 then
+        _QueueUniqueFullSync(_QuestieComms._nextBroadcastDataV2, eventName, sendMode, targetPlayer)
+        return
+    end
+
     Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieComms] Message", eventName, "partyType:", tostring(partyType))
     if partyType then
         local sorted = {}
