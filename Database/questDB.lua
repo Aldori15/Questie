@@ -48,6 +48,7 @@ QuestieDB.questKeys = {
     ['requiredMaxLevel'] = 32, -- int: the maximum level at which the quest is still available
     ['availableUntilCompleted'] = 33, -- int: the current quest is available until this quest is turned in
     ['availableStartingWith'] = 34, -- int: the ID of the quest that needs to be in quest log OR turned in for the current one to be available.
+    ['requiredRanks'] = 35, -- table: {{skill(int), value(int)}}. Table of professions and ranks to be checked with OR logic
 }
 
 QuestieDB.questKeysReversed = {}
@@ -90,6 +91,7 @@ QuestieDB.questCompilerTypes = {
     ['requiredMaxLevel'] = "u8", -- int, the maximum level at which the quest is still available
     ['availableUntilCompleted'] = "u24", -- int, the ID of the quest that needs to not be turned in for the current one to be available.
     ['availableStartingWith'] = "u24", -- int, the ID of the quest that needs to be in quest log OR turned in for the current one to be available.
+    ['requiredRanks'] = "u8s24pairs", -- table: {{skill(int), value(int)}}
 }
 
 QuestieDB.questCompilerOrder = { -- order easily skipable data first for efficiency
@@ -100,7 +102,7 @@ QuestieDB.questCompilerOrder = { -- order easily skipable data first for efficie
 
     -- variable size
     'name', 'preQuestGroup', 'preQuestSingle', 'childQuests', 'inGroupWith', 'exclusiveTo', 'requiredSourceItems',
-    'objectivesText', 'triggerEnd', 'startedBy', 'finishedBy', 'breadcrumbs', 'objectives', 'reputationReward', 'extraObjectives'
+    'objectivesText', 'triggerEnd', 'startedBy', 'finishedBy', 'breadcrumbs', 'objectives', 'reputationReward', 'extraObjectives', 'requiredRanks'
 }
 
 QuestieDB.questFlags = {

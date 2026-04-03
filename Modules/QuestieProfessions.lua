@@ -13,6 +13,7 @@ local alternativeProfessionNames = {}
 
 -- Fast local references
 local ExpandSkillHeader, GetNumSkillLines, GetSkillLineInfo, IsSpellKnown = ExpandSkillHeader, GetNumSkillLines, GetSkillLineInfo, IsSpellKnown
+local IsPlayerSpell = QuestieCompat.IsPlayerSpell
 
 hooksecurefunc("AbandonSkill", function(skillIndex)
     local skillName = GetSkillLineInfo(skillIndex)
@@ -109,6 +110,22 @@ local function _HasSkillLevel(profession, skillLevel)
     return (not skillLevel) or (playerProfessions[profession] and playerProfessions[profession][2] >= skillLevel)
 end
 
+local function _HasRankLevel(profession, rankLevel)
+    if not rankLevel then
+        --? We return true here because otherwise we would have to check for nil everywhere
+        return true
+    end
+    local professionRanks = QuestieProfessions.rankKeys[profession]
+    local HasProfessionAndRankOrHigher = false
+    for rankIndex = rankLevel, #professionRanks do
+        local spellId = professionRanks[rankIndex]
+        if IsPlayerSpell(spellId) then
+            HasProfessionAndRankOrHigher = true
+        end
+    end
+    return (not rankLevel) or HasProfessionAndRankOrHigher
+end
+
 ---@param requiredSkill { [1]: number, [2]: number } [1] = professionId, [2] = skillLevel
 ---@return boolean HasProfession
 ---@return boolean HasSkillLevel
@@ -123,6 +140,29 @@ function QuestieProfessions:HasProfessionAndSkillLevel(requiredSkill)
     return _HasProfession(profession), _HasSkillLevel(profession, skillLevel)
 end
 
+---@param requiredRanks { [1]: number, [2]: number }[]? List of {professionId, rankLevel} pairs (nil returns true, true)
+---@return boolean HasProfession
+---@return boolean HasRankLevel
+function QuestieProfessions:HasProfessionAndRankLevel(requiredRanks)
+    if not requiredRanks then
+        --? We return true here because otherwise we would have to check for nil everywhere
+        return true, true
+    end
+
+    local hasProfession = false
+    for i=1,#requiredRanks do
+        local profession = requiredRanks[i][1]
+        local rankLevel = requiredRanks[i][2]
+        if _HasProfession(profession) then
+            if _HasRankLevel(profession, rankLevel) then
+                return true, true
+            end
+            hasProfession = true
+        end
+    end
+    return hasProfession, false
+end
+
 ---@param requiredSpecialization { [1]: number } [1] = professionId
 ---@return boolean HasSpecialization
 function QuestieProfessions:HasSpecialization(requiredSpecialization)
@@ -135,28 +175,28 @@ function QuestieProfessions:HasSpecialization(requiredSpecialization)
     for _, value in pairs(QuestieProfessions.professionKeys) do
         if value == requiredSpecialization then -- if we determine input is a profession
             if requiredSpecialization == professionKeys.ALCHEMY then
-                return not (IsSpellKnown(specializationKeys.ALCHEMY_ELIXIR)
-                or IsSpellKnown(specializationKeys.ALCHEMY_POTION)
-                or IsSpellKnown(specializationKeys.ALCHEMY_TRANSMUTATION))
+                return not (IsPlayerSpell(specializationKeys.ALCHEMY_ELIXIR)
+                or IsPlayerSpell(specializationKeys.ALCHEMY_POTION)
+                or IsPlayerSpell(specializationKeys.ALCHEMY_TRANSMUTATION))
                 -- if the profession is alchemy, we only return true if the player does NOT know
                 -- the spells for elixir, potion, or transmutation master; otherwise return false
             elseif requiredSpecialization == professionKeys.BLACKSMITHING then
-                return not (IsSpellKnown(specializationKeys.BLACKSMITHING_ARMOR)
-                or IsSpellKnown(specializationKeys.BLACKSMITHING_WEAPON))
+                return not (IsPlayerSpell(specializationKeys.BLACKSMITHING_ARMOR)
+                or IsPlayerSpell(specializationKeys.BLACKSMITHING_WEAPON))
 
             elseif requiredSpecialization == professionKeys.ENGINEERING then
-                return not (IsSpellKnown(specializationKeys.ENGINEERING_GNOMISH)
-                or IsSpellKnown(specializationKeys.ENGINEERING_GOBLIN))
+                return not (IsPlayerSpell(specializationKeys.ENGINEERING_GNOMISH)
+                or IsPlayerSpell(specializationKeys.ENGINEERING_GOBLIN))
 
             elseif requiredSpecialization == professionKeys.LEATHERWORKING then
-                return not (IsSpellKnown(specializationKeys.LEATHERWORKING_DRAGONSCALE)
-                or IsSpellKnown(specializationKeys.LEATHERWORKING_ELEMENTAL)
-                or IsSpellKnown(specializationKeys.LEATHERWORKING_TRIBAL))
+                return not (IsPlayerSpell(specializationKeys.LEATHERWORKING_DRAGONSCALE)
+                or IsPlayerSpell(specializationKeys.LEATHERWORKING_ELEMENTAL)
+                or IsPlayerSpell(specializationKeys.LEATHERWORKING_TRIBAL))
 
             elseif requiredSpecialization == professionKeys.TAILORING then
-                return not (IsSpellKnown(specializationKeys.TAILORING_MOONCLOTH)
-                or IsSpellKnown(specializationKeys.TAILORING_SHADOWEAVE)
-                or IsSpellKnown(specializationKeys.TAILORING_SPELLFIRE))
+                return not (IsPlayerSpell(specializationKeys.TAILORING_MOONCLOTH)
+                or IsPlayerSpell(specializationKeys.TAILORING_SHADOWEAVE)
+                or IsPlayerSpell(specializationKeys.TAILORING_SPELLFIRE))
 
             end
             return _HasProfession(requiredSpecialization)
@@ -165,7 +205,7 @@ function QuestieProfessions:HasSpecialization(requiredSpecialization)
     end
     for _, value in pairs(specializationKeys) do
         if value == requiredSpecialization then -- if we determine input is a specialization
-            return IsSpellKnown(requiredSpecialization) -- return true if the spell is known, false if not
+            return IsPlayerSpell(requiredSpecialization) -- return true if the spell is known, false if not
         end
     end
     return true
@@ -188,6 +228,16 @@ QuestieProfessions.professionKeys = {
     JEWELCRAFTING = 755,
     INSCRIPTION = 773,
     RIDING = 762,
+}
+
+---@enum RankEnum
+QuestieProfessions.rankNames = {
+    APPRENTICE = 1,
+    JOURNEYMAN = 2,
+    EXPERT = 3,
+    ARTISAN = 4,
+    MASTER = 5,
+    GRAND_MASTER = 6,
 }
 
 professionNames = {
@@ -283,4 +333,129 @@ alternativeProfessionNames = {
     ["Weaponsmith"] = 164,
     ["Surgeon"] = 129,
     ["Trauma Surgeon"] = 129,
+}
+
+
+---@class ProfessionMetaDB
+QuestieProfessions.rankKeys = {
+    [129] = { -- First Aid
+      [1] = 3273, -- 1-75
+      [2] = 3274, -- 75-150
+      [3] = 7924, -- 150-225
+      [4] = 10846, -- 225-300
+      [5] = 27028, -- 300-375
+      [6] = 45542, -- 375-450
+    },
+    [164] = { -- Blacksmithing
+      [1] = 2018, -- 1-75
+      [2] = 3100, -- 75-150
+      [3] = 3538, -- 150-225
+      [4] = 9785, -- 225-300
+      [5] = 29844, -- 300-375
+      [6] = 51300, -- 375-450
+    },
+    [165] = { -- Leatherworking
+      [1] = 2108, -- 1-75
+      [2] = 3104, -- 75-150
+      [3] = 3811, -- 150-225
+      [4] = 10662, -- 225-300
+      [5] = 32549, -- 300-375
+      [6] = 51302, -- 375-450
+    },
+    [171] = { -- Alchemy
+      [1] = 2259, -- 1-75
+      [2] = 3101, -- 75-150
+      [3] = 3464, -- 150-225
+      [4] = 11611, -- 225-300
+      [5] = 28596, -- 300-375
+      [6] = 51304, -- 375-450
+    },
+    [182] = { -- Herbalism
+      [1] = 2366, -- 1-75
+      [2] = 2368, -- 75-150
+      [3] = 3570, -- 150-225
+      [4] = 11993, -- 225-300
+      [5] = 28695, -- 300-375
+      [6] = 50300, -- 375-450
+    },
+    [185] = { -- Cooking
+      [1] = 2550, -- 1-75
+      [2] = 3102, -- 75-150
+      [3] = 3413, -- 150-225
+      [4] = 18260, -- 225-300
+      [5] = 33359, -- 300-375
+      [6] = 51296, -- 375-450
+    },
+    [186] = { -- Mining
+      [1] = 2575, -- 1-75
+      [2] = 2576, -- 75-150
+      [3] = 3564, -- 150-225
+      [4] = 10248, -- 225-300
+      [5] = 29354, -- 300-375
+      [6] = 50310, -- 375-450
+    },
+    [197] = { -- Tailoring
+      [1] = 3908, -- 1-75
+      [2] = 3909, -- 75-150
+      [3] = 3910, -- 150-225
+      [4] = 12180, -- 225-300
+      [5] = 26790, -- 300-375
+      [6] = 51309, -- 375-450
+    },
+    [202] = { -- Engineering
+      [1] = 4036, -- 1-75
+      [2] = 4037, -- 75-150
+      [3] = 4038, -- 150-225
+      [4] = 12656, -- 225-300
+      [5] = 30350, -- 300-375
+      [6] = 51306, -- 375-450
+    },
+    [333] = { -- Enchanting
+      [1] = 7411, -- 1-75
+      [2] = 7412, -- 75-150
+      [3] = 7413, -- 150-225
+      [4] = 13920, -- 225-300
+      [5] = 28029, -- 300-375
+      [6] = 51313, -- 375-450
+    },
+    [356] = { -- Fishing
+      [1] = 7620, -- 1-75
+      [2] = 7731, -- 75-150
+      [3] = 7732, -- 150-225
+      [4] = 18248, -- 225-300
+      [5] = 33095, -- 300-375
+      [6] = 51294, -- 375-450
+    },
+    [393] = { -- Skinning
+      [1] = 8613, -- 1-75
+      [2] = 8617, -- 75-150
+      [3] = 8618, -- 150-225
+      [4] = 10768, -- 225-300
+      [5] = 32678, -- 300-375
+      [6] = 50305, -- 375-450
+    },
+    [755] = { -- Jewelcrafting
+      [1] = 25229, -- 1-75
+      [2] = 25230, -- 75-150
+      [3] = 28894, -- 150-225
+      [4] = 28895, -- 225-300
+      [5] = 28897, -- 300-375
+      [6] = 51311, -- 375-450
+    },
+    [773] = { -- Inscription
+      [1] = 45357, -- 1-75
+      [2] = 45358, -- 75-150
+      [3] = 45359, -- 150-225
+      [4] = 45360, -- 225-300
+      [5] = 45361, -- 300-375
+      [6] = 45363, -- 375-450
+    },
+    [794] = { -- Archaeology
+      [1] = 78670, -- 1-75
+      [2] = 88961, -- 75-150
+      [3] = 89718, -- 150-225
+      [4] = 89719, -- 225-300
+      [5] = 89720, -- 300-375
+      [6] = 89721, -- 375-450
+    },
 }
