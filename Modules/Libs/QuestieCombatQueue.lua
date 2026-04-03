@@ -2,7 +2,7 @@
 local QuestieCombatQueue = QuestieLoader:CreateModule("QuestieCombatQueue")
 
 ---@type QuestieLib
-local QuestieLib = QuestieLoader:CreateModule("QuestieLib")
+local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
 
 --- COMPATIBILITY ---
 local C_Timer = QuestieCompat.C_Timer

@@ -13,7 +13,7 @@ local QuestieValidateGameCache = QuestieLoader:CreateModule("QuestieValidateGame
 
 
 ---@type QuestieLib
-local QuestieLib = QuestieLoader:CreateModule("QuestieLib")
+local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
 
 --- COMPATIBILITY ---
 local GetNumQuestLogEntries = GetNumQuestLogEntries
