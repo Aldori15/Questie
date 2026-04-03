@@ -336,30 +336,20 @@ function QuestieDB:Initialize()
     QuestieDB.QueryObject = QuestieDBCompiler:GetDBHandle(objBin, objPtrs, QuestieDBCompiler:BuildSkipMap(QuestieDB.objectCompilerTypes, QuestieDB.objectCompilerOrder), QuestieDB.objectKeys, QuestieDB.objectDataOverrides)
     QuestieDB.QueryItem = QuestieDBCompiler:GetDBHandle(itemBin, itemPtrs, QuestieDBCompiler:BuildSkipMap(QuestieDB.itemCompilerTypes, QuestieDB.itemCompilerOrder), QuestieDB.itemKeys, QuestieDB.itemDataOverrides)
 
-    QuestieDB._QueryQuestSingle = QuestieDB.QueryQuest.QuerySingle
-    QuestieDB._QueryNPCSingle = QuestieDB.QueryNPC.QuerySingle
-    QuestieDB._QueryObjectSingle = QuestieDB.QueryObject.QuerySingle
-    QuestieDB._QueryItemSingle = QuestieDB.QueryItem.QuerySingle
-
     QuestieDB.NPCPointers = QuestieDB.QueryNPC.pointers
     QuestieDB.QuestPointers = QuestieDB.QueryQuest.pointers
     QuestieDB.ObjectPointers = QuestieDB.QueryObject.pointers
     QuestieDB.ItemPointers = QuestieDB.QueryItem.pointers
 
-    QuestieDB._QueryNPC = QuestieDB.QueryNPC.Query
-    QuestieDB._QueryQuest = QuestieDB.QueryQuest.Query
-    QuestieDB._QueryObject = QuestieDB.QueryObject.Query
-    QuestieDB._QueryItem = QuestieDB.QueryItem.Query
+    QuestieDB.QueryNPCSingle = QuestieDB.QueryNPC.QuerySingle
+    QuestieDB.QueryQuestSingle = QuestieDB.QueryQuest.QuerySingle
+    QuestieDB.QueryObjectSingle = QuestieDB.QueryObject.QuerySingle
+    QuestieDB.QueryItemSingle = QuestieDB.QueryItem.QuerySingle
 
-    QuestieDB.QueryNPC = QuestieDB._QueryNPC
-    QuestieDB.QueryQuest = QuestieDB._QueryQuest
-    QuestieDB.QueryObject = QuestieDB._QueryObject
-    QuestieDB.QueryItem = QuestieDB._QueryItem
-
-    QuestieDB.QueryQuestSingle = QuestieDB._QueryQuestSingle
-    QuestieDB.QueryNPCSingle = QuestieDB._QueryNPCSingle
-    QuestieDB.QueryObjectSingle = QuestieDB._QueryObjectSingle
-    QuestieDB.QueryItemSingle = QuestieDB._QueryItemSingle
+    QuestieDB.QueryNPC = QuestieDB.QueryNPC.Query
+    QuestieDB.QueryQuest = QuestieDB.QueryQuest.Query
+    QuestieDB.QueryObject = QuestieDB.QueryObject.Query
+    QuestieDB.QueryItem = QuestieDB.QueryItem.Query
 
     -- data has been corrected, ensure cache is empty (something might have accessed the api before questie initialized)
     _QuestieDB.questCache = {};

@@ -66,12 +66,6 @@ _WinterSaberChanged = function(factionID, previousValues, barValue)
             or (previousValues[2] < 13000 and barValue >= 13000))
 end
 
--- This function is just for debugging purpose
--- There is no need to access the playerReputations table somewhere else
-function QuestieReputation:GetPlayerReputations()
-    return playerReputations
-end
-
 ---@param requiredMinRep { [1]: number, [2]: number }? [1] = factionId, [2] = repValue
 ---@param requiredMaxRep { [1]: number, [2]: number }? [1] = factionId, [2] = repValue
 ---@return boolean AboveMinRep

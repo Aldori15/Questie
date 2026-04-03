@@ -9,7 +9,6 @@ local l10n = QuestieLoader:ImportModule("l10n")
 local playerProfessions = {}
 local professionTable = {}
 local professionNames = {}
-local specializationNames
 local alternativeProfessionNames = {}
 
 -- Fast local references
@@ -91,12 +90,6 @@ function QuestieProfessions:Update()
     end
     playerProfessions = temporaryPlayerProfessions
     return hasProfessionUpdate, hasNewProfession
-end
-
--- This function is just for debugging purpose
--- There is no need to access the playerProfessions table somewhere else
-function QuestieProfessions:GetPlayerProfessions()
-    return playerProfessions
 end
 
 function QuestieProfessions:GetPlayerProfessionNames()
@@ -257,34 +250,9 @@ QuestieProfessions.specializationKeys = { -- specializations use spellID, profes
     TAILORING_SPELLFIRE = 26797,
 }
 
-specializationNames = {
-    [QuestieProfessions.specializationKeys.ALCHEMY_ELIXIR] = "Elixir Master",
-    [QuestieProfessions.specializationKeys.ALCHEMY_POTION] = "Potion Master",
-    [QuestieProfessions.specializationKeys.ALCHEMY_TRANSMUTATION] = "Transmutation Master",
-    [QuestieProfessions.specializationKeys.BLACKSMITHING_ARMOR] = "Armorsmith",
-    [QuestieProfessions.specializationKeys.BLACKSMITHING_WEAPON] = "Weaponsmith",
-    [QuestieProfessions.specializationKeys.BLACKSMITHING_WEAPON_AXE] = "Master Axesmith",
-    [QuestieProfessions.specializationKeys.BLACKSMITHING_WEAPON_HAMMER] = "Master Hammersmith",
-    [QuestieProfessions.specializationKeys.BLACKSMITHING_WEAPON_SWORD] = "Master Swordsmith",
-    [QuestieProfessions.specializationKeys.ENGINEERING_GNOMISH] = "Gnomish Engineer",
-    [QuestieProfessions.specializationKeys.ENGINEERING_GOBLIN] = "Goblin Engineer",
-    [QuestieProfessions.specializationKeys.LEATHERWORKING_DRAGONSCALE] = "Dragonscale Leatherworking",
-    [QuestieProfessions.specializationKeys.LEATHERWORKING_ELEMENTAL] = "Elemental Leatherworking",
-    [QuestieProfessions.specializationKeys.LEATHERWORKING_TRIBAL] = "Tribal Leatherworking",
-    [QuestieProfessions.specializationKeys.TAILORING_MOONCLOTH] = "Mooncloth Tailoring",
-    [QuestieProfessions.specializationKeys.TAILORING_SHADOWEAVE] = "Shadoweave Tailoring",
-    [QuestieProfessions.specializationKeys.TAILORING_SPELLFIRE] = "Spellfire Tailoring",
-}
-
 ---@return string
 function QuestieProfessions:GetProfessionName(professionKey)
     return professionNames[professionKey]
-end
-
----@return string
-function QuestieProfessions:GetSpecializationName(specializationKey)
-    -- TODO: this function is as of yet unused, if you plan on using it add translations for the specializationNames table
-    return specializationNames[specializationKey]
 end
 
 ---@return number

@@ -16,9 +16,6 @@ local phases = {
 }
 Phasing.phases = phases
 
-function Phasing.Initialize()
-end
-
 ---@param phase number|nil
 ---@return boolean
 function Phasing.IsSpawnVisible(phase)

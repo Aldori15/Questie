@@ -87,8 +87,6 @@ local AvailableQuests = QuestieLoader:ImportModule("AvailableQuests")
 local SeasonOfDiscovery = QuestieLoader:ImportModule("SeasonOfDiscovery")
 ---@type QuestieAnnounce
 local QuestieAnnounce = QuestieLoader:ImportModule("QuestieAnnounce")
----@type Phasing
-local Phasing = QuestieLoader:ImportModule("Phasing")
 ---@type DropDB
 local DropDB = QuestieLoader:ImportModule("DropDB")
 ---@type QuestLogCache
@@ -195,7 +193,6 @@ QuestieInit.Stages[1] = function() -- run as a coroutine
 
     QuestieProfessions:Init()
     QuestXP.Init()
-    Phasing.Initialize()
     coYield()
 
     local dbCompiled = false

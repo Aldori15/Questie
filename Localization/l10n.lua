@@ -154,9 +154,6 @@ function l10n:GetObjectNameLookup(name)
     return entry or nil
 end
 
-function l10n:PostBoot()
-end
-
 local format, unpack, tostring = string.format, unpack, tostring
 function _l10n:translate(key, ...)
     local args = {...}
