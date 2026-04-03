@@ -42,6 +42,7 @@ end
 
 function _QuestieJourney.questsByFaction:DrawTab(container)
     _QuestieJourney.questsByFaction:InitializeFactionData()
+    _QuestieJourney.questsByFaction:InitializeFactionQuestData()
 
     ---@class AceSimpleGroup
     treegroup = AceGUI:Create("SimpleGroup")

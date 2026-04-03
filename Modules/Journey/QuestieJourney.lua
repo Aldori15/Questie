@@ -63,19 +63,6 @@ function QuestieJourney:Initialize()
     self.zoneMap = ZoneDB:GetZonesWithQuests(true)
     self.zones = ZoneDB:GetRelevantZones()
     coroutine.yield()
-
-    -- Pre-initialize faction data used by the "Quests by Faction" tab so it is ready on first open.
-    if _QuestieJourney.questsByFaction then
-        if _QuestieJourney.questsByFaction.InitializeFactionData then
-            _QuestieJourney.questsByFaction:InitializeFactionData()
-        end
-        if _QuestieJourney.questsByFaction.InitializeFactionQuestData then
-            _QuestieJourney.questsByFaction:InitializeFactionQuestData()
-        end
-    end
-
-    coroutine.yield()
-    self:BuildMainFrame()
 end
 
 function QuestieJourney:BuildMainFrame()
@@ -147,6 +134,10 @@ function QuestieJourney:ToggleJourneyWindow()
     if (not Questie.started) then
         print(Questie:Colorize(l10n("Please wait a moment for Questie to finish loading")))
         return
+    end
+
+    if (not QuestieJourneyFrame) then
+        self:BuildMainFrame()
     end
 
     if (not isWindowShown) then
