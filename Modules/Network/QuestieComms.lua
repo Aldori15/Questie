@@ -193,6 +193,57 @@ local function _ScheduleQuestSyncBlocks(blocks, sendMode, sendBlock, onDone)
     end
 end
 
+local function _BuildSortedFullSyncEntries(partyType)
+    local sorted = {}
+    local playerZone = HBD:GetPlayerZone()
+
+    for questId, data in pairs(QuestLogCache.questLog_DO_NOT_MODIFY) do -- DO NOT MODIFY THE RETURNED TABLE
+        if (not QuestieDB.QuestPointers[questId]) then
+            if not Questie._sessionWarnings[questId] then
+                if not Questie.IsSoD then Questie:Error(l10n("The quest %s is missing from Questie's database. Please report this on GitHub or Discord!", tostring(questId))) end
+                Questie._sessionWarnings[questId] = true
+            end
+        else
+            local questType = data.questTag
+            local entry = {
+                questId = questId,
+                questType = questType,
+                zoneOrSort = QuestieDB.QueryQuestSingle(questId, "zoneOrSort"),
+                isSoloQuest = not (questType == "Dungeon" or questType == "Raid" or questType == "Group" or questType == "Elite" or questType == "PVP"),
+            }
+
+            if entry.zoneOrSort > 0 then
+                entry.UiMapId = ZoneDB:GetUiMapIdByAreaId(entry.zoneOrSort)
+                entry.zoneDistance = HBD:GetZoneDistance(entry.UiMapId, 0.5, 0.5, playerZone, 0.5, 0.5) or 99999999
+            else
+                entry.zoneDistance = 99999999 -- some high number (class quests etc)
+            end
+
+            if partyType ~= "raid" or (not entry.isSoloQuest) then
+                tinsert(sorted, entry)
+            end
+        end
+    end
+
+    table.sort(sorted, function(a, b)
+        if a.isSoloQuest and not b.isSoloQuest then
+            return false
+        elseif b.isSoloQuest and not a.isSoloQuest then
+            return true
+        else
+            if a.zoneDistance > b.zoneDistance then
+                return false
+            elseif a.zoneDistance < b.zoneDistance then
+                return true
+            else
+                return false
+            end
+        end
+    end)
+
+    return sorted
+end
+
 
 function QuestieComms:Initialize()
     -- Lets us send any length of message. Also implements ChatThrottleLib to not get disconnected.
@@ -583,50 +634,7 @@ function _QuestieComms:BroadcastQuestLog(eventName, sendMode, targetPlayer) -- b
 
     Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieComms] Message", eventName, "partyType:", tostring(partyType))
     if partyType then
-        local sorted = {}
-
-        for questId, data in pairs(QuestLogCache.questLog_DO_NOT_MODIFY) do -- DO NOT MODIFY THE RETURNED TABLE
-            if (not QuestieDB.QuestPointers[questId]) then
-                if not Questie._sessionWarnings[questId] then
-                    if not Questie.IsSoD then Questie:Error(l10n("The quest %s is missing from Questie's database. Please report this on GitHub or Discord!", tostring(questId))) end
-                    Questie._sessionWarnings[questId] = true
-                end
-            else
-                local questType = data.questTag
-                local entry = {
-                    questId = questId,
-                    questType = questType,
-                    zoneOrSort = QuestieDB.QueryQuestSingle(questId, "zoneOrSort"),
-                    isSoloQuest = not (questType == "Dungeon" or questType == "Raid" or questType == "Group" or questType == "Elite" or questType == "PVP"),
-                }
-
-                if entry.zoneOrSort > 0 then
-                    entry.UiMapId = ZoneDB:GetUiMapIdByAreaId(entry.zoneOrSort)
-                    entry.zoneDistance = HBD:GetZoneDistance(entry.UiMapId, 0.5, 0.5, HBD:GetPlayerZone(), 0.5, 0.5) or 99999999
-                else
-                    entry.zoneDistance = 99999999 -- some high number (class quests etc)
-                end
-                if partyType ~= "raid" or (not entry.isSoloQuest) then
-                    tinsert(sorted, entry)
-                end
-            end
-        end
-
-        table.sort(sorted, function(a, b)
-            if a.isSoloQuest and not b.isSoloQuest then
-                return false
-            elseif b.isSoloQuest and not a.isSoloQuest then
-                return true
-            else--if a.isSoloQuest == b.isSoloQuest then
-                if a.zoneDistance > b.zoneDistance then
-                    return false
-                elseif a.zoneDistance < b.zoneDistance then
-                    return true
-                else
-                    return false -- 0
-                end
-            end
-        end)
+        local sorted = _BuildSortedFullSyncEntries(partyType)
 
         local rawQuestList = {}
         local blocks = {}
@@ -696,50 +704,7 @@ function _QuestieComms:BroadcastQuestLogV2(eventName, sendMode, targetPlayer) --
 
     Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieComms] Message", eventName, "partyType:", tostring(partyType))
     if partyType then
-        local sorted = {}
-
-        for questId, data in pairs(QuestLogCache.questLog_DO_NOT_MODIFY) do -- DO NOT MODIFY THE RETURNED TABLE
-            if (not QuestieDB.QuestPointers[questId]) then
-                if not Questie._sessionWarnings[questId] then
-                    if not Questie.IsSoD then Questie:Error(l10n("The quest %s is missing from Questie's database. Please report this on GitHub or Discord!", tostring(questId))) end
-                    Questie._sessionWarnings[questId] = true
-                end
-            else
-                local questType = data.questTag
-                local entry = {
-                    questId = questId,
-                    questType = questType,
-                    zoneOrSort = QuestieDB.QueryQuestSingle(questId, "zoneOrSort"),
-                    isSoloQuest = not (questType == "Dungeon" or questType == "Raid" or questType == "Group" or questType == "Elite" or questType == "PVP"),
-                }
-
-                if entry.zoneOrSort > 0 then
-                    entry.UiMapId = ZoneDB:GetUiMapIdByAreaId(entry.zoneOrSort)
-                    entry.zoneDistance = HBD:GetZoneDistance(entry.UiMapId, 0.5, 0.5, HBD:GetPlayerZone(), 0.5, 0.5) or 99999999
-                else
-                    entry.zoneDistance = 99999999 -- some high number (class quests etc)
-                end
-                if partyType ~= "raid" or (not entry.isSoloQuest) then
-                    tinsert(sorted, entry)
-                end
-            end
-        end
-
-        table.sort(sorted, function(a, b)
-            if a.isSoloQuest and not b.isSoloQuest then
-                return false
-            elseif b.isSoloQuest and not a.isSoloQuest then
-                return true
-            else--if a.isSoloQuest == b.isSoloQuest then
-                if a.zoneDistance > b.zoneDistance then
-                    return false
-                elseif a.zoneDistance < b.zoneDistance then
-                    return true
-                else
-                    return false -- 0
-                end
-            end
-        end)
+        local sorted = _BuildSortedFullSyncEntries(partyType)
 
         local rawQuestList = {}
         local blocks = {}
