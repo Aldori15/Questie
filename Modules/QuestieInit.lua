@@ -259,8 +259,6 @@ end
 
 QuestieInit.Stages[2] = function()
     Questie:Debug(Questie.DEBUG_INFO, "[QuestieInit:Stage2] Stage 2 start.")
-    -- We do this while we wait for the Quest Cache anyway.
-    l10n:PostBoot()
     QuestiePlayer:Initialize()
     coYield()
     QuestieJourney:Initialize()

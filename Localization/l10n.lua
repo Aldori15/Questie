@@ -127,31 +127,34 @@ function l10n:Initialize()
     end
 end
 
---Must be run in a coroutine as it yields
-function l10n:PostBoot()
+function l10n:GetObjectNameLookup(name)
+    if name == nil then
+        return nil
+    end
 
-    local count = 0
-    -- Create a lookup of possible object IDs by name.
-    -- Store single matches as numbers and only promote to a table when names collide.
+    local cachedEntry = l10n.objectNameLookup[name]
+    if cachedEntry ~= nil then
+        return cachedEntry or nil
+    end
+
+    local entry = false
     for id in pairs(QuestieDB.ObjectPointers) do
-        local name = QuestieDB.QueryObjectSingle(id, "name")
-        if name then -- We (meaning me, BreakBB) introduced Fake IDs for objects to show additional locations, so we need to check this
-            local entry = l10n.objectNameLookup[name]
-            if not entry then
-                l10n.objectNameLookup[name] = id
+        if QuestieDB.QueryObjectSingle(id, "name") == name then
+            if entry == false then
+                entry = id
             elseif type(entry) == "number" then
-                l10n.objectNameLookup[name] = { entry, id }
+                entry = { entry, id }
             else
                 entry[#entry + 1] = id
             end
         end
-
-        if count > 300 then
-            count = 0
-            coroutine.yield()
-        end
-        count = count + 1
     end
+
+    l10n.objectNameLookup[name] = entry
+    return entry or nil
+end
+
+function l10n:PostBoot()
 end
 
 local format, unpack, tostring = string.format, unpack, tostring

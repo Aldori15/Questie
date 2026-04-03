@@ -109,7 +109,7 @@ function _QuestieTooltips:AddObjectDataToTooltip(name)
     end
     if name then
         local titleAdded = false
-        local lookup = l10n.objectNameLookup[name]
+        local lookup = l10n:GetObjectNameLookup(name)
         local count = type(lookup) == "table" and table.getn(lookup) or (lookup and 1 or 0)
 
         if Questie.db.profile.enableTooltipsObjectID == true and count ~= 0 then

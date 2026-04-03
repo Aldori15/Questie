@@ -38,7 +38,7 @@ QuestieTooltips.lookupByKey = {
     --["u_Grell"] = {questid, {"Line 1", "Line 2"}}
 }
 QuestieTooltips.lookupKeysByQuestId = {
-    --["questId"] = {"u_Grell", ... }
+    --["questId"] = {["u_Grell"] = true, ... }
 }
 
 local MAX_GROUP_MEMBER_COUNT = 6
@@ -189,7 +189,7 @@ function QuestieTooltips:RegisterObjectiveTooltip(questId, key, objective)
         objective = objective,
     };
     QuestieTooltips.lookupByKey[key][tostring(questId) .. " " .. objective.Index] = tooltip
-    tinsert(QuestieTooltips.lookupKeysByQuestId[questId], key)
+    QuestieTooltips.lookupKeysByQuestId[questId][key] = true
 end
 
 ---@param questId number
@@ -210,7 +210,7 @@ function QuestieTooltips:RegisterQuestStartTooltip(questId, name, starterId, key
         type = type
     };
     QuestieTooltips.lookupByKey[key][tostring(questId) .. " " .. name .. " " .. starterId] = tooltip
-    tinsert(QuestieTooltips.lookupKeysByQuestId[questId], key)
+    QuestieTooltips.lookupKeysByQuestId[questId][key] = true
 end
 
 ---@param questId number
@@ -240,7 +240,7 @@ function QuestieTooltips:RemoveQuest(questId)
 
     Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieTooltips:RemoveQuest]", questId)
 
-    for _, key in pairs(QuestieTooltips.lookupKeysByQuestId[questId] or {}) do
+    for key in pairs(QuestieTooltips.lookupKeysByQuestId[questId] or {}) do
         --Count to see if we should remove the main object
         local totalCount = 0
         local totalRemoved = 0
