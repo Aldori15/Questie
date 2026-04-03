@@ -19,6 +19,7 @@ local playerName
 local realmName
 local requestedUnavailableQuestSnapshot
 local unavailableQuestSnapshotRequestTicker
+local commsAudienceFrame
 
 ---@type AvailableQuests
 local AvailableQuests = QuestieLoader:ImportModule("AvailableQuests")
@@ -46,13 +47,43 @@ local function _StartInitialUnavailableQuestSyncRequest()
     end
 
     local attempts = 0
-    unavailableQuestSnapshotRequestTicker = C_Timer.NewTicker(UNAVAILABLE_QUEST_SYNC_REQUEST_INTERVAL, function()
+    local ticker
+    ticker = C_Timer.NewTicker(UNAVAILABLE_QUEST_SYNC_REQUEST_INTERVAL, function()
         attempts = attempts + 1
         if Comms.RequestUnavailableQuestState() or attempts >= UNAVAILABLE_QUEST_SYNC_REQUEST_ATTEMPTS then
-            unavailableQuestSnapshotRequestTicker:Cancel()
-            unavailableQuestSnapshotRequestTicker = nil
+            local finishedTicker = ticker
+            if ticker then
+                ticker:Cancel()
+                ticker = nil
+            end
+            if unavailableQuestSnapshotRequestTicker == finishedTicker then
+                unavailableQuestSnapshotRequestTicker = nil
+            end
         end
     end)
+    unavailableQuestSnapshotRequestTicker = ticker
+end
+
+local function _StopInitialUnavailableQuestSyncRequest()
+    if unavailableQuestSnapshotRequestTicker then
+        unavailableQuestSnapshotRequestTicker:Cancel()
+        unavailableQuestSnapshotRequestTicker = nil
+    end
+end
+
+local function _RefreshUnavailableQuestSyncRequest()
+    if requestedUnavailableQuestSnapshot then
+        _StopInitialUnavailableQuestSyncRequest()
+        return
+    end
+
+    if _HasUnavailableQuestSyncAudience() then
+        if not unavailableQuestSnapshotRequestTicker then
+            _StartInitialUnavailableQuestSyncRequest()
+        end
+    else
+        _StopInitialUnavailableQuestSyncRequest()
+    end
 end
 
 function Comms.Initialize()
@@ -62,7 +93,15 @@ function Comms.Initialize()
     realmName = GetRealmName()
     requestedUnavailableQuestSnapshot = false
 
-    _StartInitialUnavailableQuestSyncRequest()
+    if not commsAudienceFrame then
+        commsAudienceFrame = CreateFrame("Frame")
+        commsAudienceFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+        commsAudienceFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
+        commsAudienceFrame:RegisterEvent("PLAYER_GUILD_UPDATE")
+        commsAudienceFrame:SetScript("OnEvent", _RefreshUnavailableQuestSyncRequest)
+    end
+
+    _RefreshUnavailableQuestSyncRequest()
 end
 
 ---@param prefix string
@@ -130,6 +169,7 @@ function Comms.RequestUnavailableQuestState()
     end
 
     requestedUnavailableQuestSnapshot = true
+    _StopInitialUnavailableQuestSyncRequest()
 
     ---@type CommEvent
     local event = {
