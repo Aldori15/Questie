@@ -826,6 +826,10 @@ end
 pins.updateFrame:SetScript("OnUpdate", OnUpdateHandler)
 
 local function OnEventHandler(frame, event, ...)
+    if QuestieCompat.ClearCachedPlayerPositions then
+        QuestieCompat.ClearCachedPlayerPositions()
+    end
+
     if event == "CVAR_UPDATE" then
         local cvar, value = ...
         if cvar == "ROTATE_MINIMAP" then
