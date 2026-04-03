@@ -54,12 +54,24 @@ local availableQuestStartTooltipsDirty = true
 
 -- Keep track of all available quests to unload undoable when abandoning a quest
 local availableQuests = {}
+local nextAvailableQuests = {}
 local availableQuestsByNpc = {}
 local levelRequirementCache = {}
 local unavailableQuestsDeterminedByTalking -- quests that were hidden after talking to an NPC
 local unavailableQuestSyncState -- reset-aware unavailable daily/weekly quest snapshot by NPC
+local unavailableQuestLookupDirty = true
 
 AvailableQuests.levelRequirementCache = levelRequirementCache
+
+local function _ClearTable(tbl)
+    for key in pairs(tbl) do
+        tbl[key] = nil
+    end
+end
+
+local function _ShouldTrackNpcAvailability(questId)
+    return QuestieDB.IsDailyQuest(questId) or QuestieDB.IsWeeklyQuest(questId)
+end
 
 local function _ApplyRefreshSpeed(useFastRefresh)
     if useFastRefresh then
@@ -74,6 +86,7 @@ end
 local function _RunCallbacks(callbacks)
     for i = 1, #callbacks do
         callbacks[i]()
+        callbacks[i] = nil
     end
 end
 
@@ -162,14 +175,17 @@ end
 local function _ResetUnavailableQuestBucketIfNeeded(bucket, nextResetCalculator, currentTimestamp)
     if bucket.nextReset == 0 then
         bucket.nextReset = nextResetCalculator()
-        return
+        return false
     end
 
     if currentTimestamp >= bucket.nextReset then
         bucket.byNpc = {}
         bucket.byQuest = {}
         bucket.nextReset = nextResetCalculator()
+        return true
     end
+
+    return false
 end
 
 local function _RebuildUnavailableQuestLookup(syncState)
@@ -205,9 +221,12 @@ local function _GetUnavailableQuestSyncState()
     end
 
     local currentTimestamp = _GetCurrentServerTimestamp()
-    _ResetUnavailableQuestBucketIfNeeded(_EnsureUnavailableQuestSyncBucket(syncState, "daily"), _CalculateNextDailyResetTimestamp, currentTimestamp)
-    _ResetUnavailableQuestBucketIfNeeded(_EnsureUnavailableQuestSyncBucket(syncState, "weekly"), _CalculateNextWeeklyResetTimestamp, currentTimestamp)
-    _RebuildUnavailableQuestLookup(syncState)
+    local dailyReset = _ResetUnavailableQuestBucketIfNeeded(_EnsureUnavailableQuestSyncBucket(syncState, "daily"), _CalculateNextDailyResetTimestamp, currentTimestamp)
+    local weeklyReset = _ResetUnavailableQuestBucketIfNeeded(_EnsureUnavailableQuestSyncBucket(syncState, "weekly"), _CalculateNextWeeklyResetTimestamp, currentTimestamp)
+    if unavailableQuestLookupDirty or dailyReset or weeklyReset then
+        _RebuildUnavailableQuestLookup(syncState)
+        unavailableQuestLookupDirty = false
+    end
 
     return syncState
 end
@@ -250,6 +269,7 @@ local function _StoreUnavailableQuestForToday(npcId, questId)
     bucket.byNpc[npcId][questId] = true
     bucket.byQuest[questId] = true
     unavailableQuestsDeterminedByTalking[questId] = true
+    unavailableQuestLookupDirty = false
 
     return wasNew
 end
@@ -276,6 +296,10 @@ local function _ClearUnavailableQuestForToday(npcId, questId)
     if bucket.byQuest[questId] and (not _IsQuestStillTrackedAsUnavailable(bucket, questId)) then
         bucket.byQuest[questId] = nil
         removed = true
+    end
+
+    if removed then
+        unavailableQuestLookupDirty = false
     end
 
     return removed
@@ -540,13 +564,16 @@ function AvailableQuests.DrawAvailableQuest(quest) -- prevent recursion
     end
     if (quest.Starts["NPC"]) then
         local npcs = quest.Starts["NPC"]
+        local trackNpcAvailability = _ShouldTrackNpcAvailability(quest.Id)
         for i = 1, #npcs do
             local npc = QuestieDB:GetNPC(npcs[i])
 
-            if (not availableQuestsByNpc[npc.id]) then
-                availableQuestsByNpc[npc.id] = {}
+            if trackNpcAvailability then
+                if (not availableQuestsByNpc[npc.id]) then
+                    availableQuestsByNpc[npc.id] = {}
+                end
+                availableQuestsByNpc[npc.id][quest.Id] = true
             end
-            availableQuestsByNpc[npc.id][quest.Id] = true
 
             _AddStarter(npc, quest, "m_" .. npc.id)
         end
@@ -554,7 +581,7 @@ function AvailableQuests.DrawAvailableQuest(quest) -- prevent recursion
 end
 
 _RemoveQuestFromNpcAvailability = function(questId, quest)
-    if (not quest) or (not quest.Starts) or (not quest.Starts["NPC"]) then
+    if (not quest) or (not quest.Starts) or (not quest.Starts["NPC"]) or (not _ShouldTrackNpcAvailability(questId)) then
         return
     end
 
@@ -862,7 +889,10 @@ _CalculateAvailableQuests = function()
     local maxQuestsPerYield = questsPerYield
     local unavailableQuests = _GetUnavailableQuestsDeterminedByTalking()
     local previousAvailableQuests = availableQuests
-    local nextAvailableQuests = {}
+    availableQuests = nextAvailableQuests
+    nextAvailableQuests = previousAvailableQuests
+    _ClearTable(availableQuests)
+    local nextAvailableQuestSet = availableQuests
 
     -- Localize the variables for speeeeed
     local debugEnabled = Questie.db.profile.debugEnabled
@@ -909,15 +939,15 @@ _CalculateAvailableQuests = function()
             hidden[questId] or -- Don't show quests hidden by the player
             unavailableQuests[questId] -- Don't show quests hidden after talking to an NPC
         ) then
-            nextAvailableQuests[questId] = nil
+            nextAvailableQuestSet[questId] = nil
             return
         end
 
         if currentQuestlog[questId] then
-            _DrawChildQuests(questId, currentQuestlog, completedQuests, hiddenQuests, hidden, unavailableQuests, nextAvailableQuests)
+            _DrawChildQuests(questId, currentQuestlog, completedQuests, hiddenQuests, hidden, unavailableQuests, nextAvailableQuestSet)
 
             if QuestieDB.IsComplete(questId) ~= -1 then -- The quest in the quest log is not failed, so we don't show it as available
-                nextAvailableQuests[questId] = nil
+                nextAvailableQuestSet[questId] = nil
                 return
             end
         end
@@ -931,12 +961,12 @@ _CalculateAvailableQuests = function()
             (Questie.IsClassic and currentIsleOfQuelDanasQuests[questId]) or        -- Don't show Isle of Quel'Danas quests for Era/HC/SoX
             (Questie.IsSoD and QuestieDB.IsRuneAndShouldBeHidden(questId))          -- Don't show SoD Rune quests with the option disabled
         ) then
-            nextAvailableQuests[questId] = nil
+            nextAvailableQuestSet[questId] = nil
             return
         end
 
         if _IsHiddenByTrivialRepeatableSetting(questId, isRepeatableQuest, showTrivialRepeatableQuests) then
-            nextAvailableQuests[questId] = nil
+            nextAvailableQuestSet[questId] = nil
             return
         end
 
@@ -946,11 +976,11 @@ _CalculateAvailableQuests = function()
         ) then
             --If the quests are not within level range we want to unload them
             --(This is for when people level up or change settings etc)
-            nextAvailableQuests[questId] = nil
+            nextAvailableQuestSet[questId] = nil
             return
         end
 
-        nextAvailableQuests[questId] = true
+        nextAvailableQuestSet[questId] = true
     end
 
     local questCount = 0
@@ -965,8 +995,7 @@ _CalculateAvailableQuests = function()
         end
     end
 
-    availableQuests = nextAvailableQuests
-    _SyncAvailableQuestDisplay(previousAvailableQuests, nextAvailableQuests, maxQuestsPerYield)
+    _SyncAvailableQuestDisplay(previousAvailableQuests, availableQuests, maxQuestsPerYield)
 end
 
 _SyncAvailableQuestDisplay = function(previousAvailableQuests, nextAvailableQuests, maxQuestsPerYield)
