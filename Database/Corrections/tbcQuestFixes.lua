@@ -29,6 +29,7 @@ function QuestieTBCQuestFixes:Load()
     local questFlags = QuestieDB.questFlags
     local specialFlags = QuestieDB.specialFlags
     local profKeys = QuestieProfessions.professionKeys
+    local rankKeys = QuestieProfessions.rankNames
 
     return {
         [62] = {
@@ -307,6 +308,12 @@ function QuestieTBCQuestFixes:Load()
         [1558] = {
             [questKeys.questLevel] = -1,
         },
+        [1598] = { -- The Stolen Tome
+            [questKeys.requiredRaces] = raceIDs.HUMAN + raceIDs.GNOME,
+        },
+        [1599] = { -- Beginnings
+            [questKeys.requiredRaces] = raceIDs.HUMAN + raceIDs.GNOME,
+        },
         [1638] = { -- A Warrior's Training
             [questKeys.startedBy] = {{913,5480}},
             [questKeys.exclusiveTo] = {
@@ -386,13 +393,13 @@ function QuestieTBCQuestFixes:Load()
         [1800] = {
             [questKeys.questLevel] = -1,
         },
-        [1801] = {
+        [1801] = { -- Tome of the Cabal
             [questKeys.requiredRaces] = raceIDs.ORC + raceIDs.UNDEAD + raceIDs.BLOOD_ELF,
         },
-        [1803] = {
+        [1803] = { -- Tome of the Cabal
             [questKeys.requiredRaces] = raceIDs.ORC + raceIDs.UNDEAD + raceIDs.BLOOD_ELF,
         },
-        [1805] = {
+        [1805] = { -- Tome of the Cabal
             [questKeys.requiredRaces] = raceIDs.ORC + raceIDs.UNDEAD + raceIDs.BLOOD_ELF,
         },
         [1821] = { -- Agamand Heirlooms
@@ -487,6 +494,9 @@ function QuestieTBCQuestFixes:Load()
         [2280] = {
             [questKeys.requiredLevel] = 40,
         },
+        [2284] = { -- Necklace Recovery, Take 2
+            [questKeys.requiredLevel] = 37,
+        },
         [2298] = { -- Kingly Shakedown
             [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
         },
@@ -534,7 +544,7 @@ function QuestieTBCQuestFixes:Load()
         [2989] = {
             [questKeys.triggerEnd] = {"Search the Altar of Zul", {[zoneIDs.THE_HINTERLANDS]={{48.86,68.42}}}},
         },
-        [2996] = {
+        [2996] = { -- Seeking Strahad
             [questKeys.requiredRaces] = raceIDs.ORC + raceIDs.UNDEAD + raceIDs.BLOOD_ELF,
         },
         [3001] = { -- Seeking Strahad
@@ -592,11 +602,12 @@ function QuestieTBCQuestFixes:Load()
         [3505] = {
             [questKeys.triggerEnd] = {"Find Magus Rimtori's camp", {[zoneIDs.AZSHARA]={{59.29,31.21}}}},
         },
-        [3631] = {
+        [3631] = { -- Summon Felsteed
             [questKeys.name] = "Summon Felsteed",
             [questKeys.startedBy] = {{3326}},
             [questKeys.finishedBy] = {{6251}},
             [questKeys.requiredRaces] = raceIDs.ORC + raceIDs.UNDEAD + raceIDs.BLOOD_ELF,
+            [questKeys.exclusiveTo] = {4487,4488,4489},
         },
         [3741] = {
             [questKeys.requiredRaces] = raceIDs.NONE,
@@ -613,27 +624,34 @@ function QuestieTBCQuestFixes:Load()
         [4486] = {
             [questKeys.startedBy] = {}, -- Hiding via startedBy because the quest does not exist in TBC, but does in Era
         },
-        [4487] = {
+        [4487] = { -- Summon Felsteed
             [questKeys.name] = "Summon Felsteed",
             [questKeys.startedBy] = {{5172}},
             [questKeys.finishedBy] = {{6251}},
+            [questKeys.exclusiveTo] = {3631,4488,4489},
         },
-        [4488] = {
+        [4488] = { -- Summon Felsteed
             [questKeys.name] = "Summon Felsteed",
             [questKeys.startedBy] = {{461}},
             [questKeys.finishedBy] = {{6251}},
+            [questKeys.exclusiveTo] = {3631,4487,4489},
         },
-        [4489] = {
+        [4489] = { -- Summon Felsteed
             [questKeys.name] = "Summon Felsteed",
             [questKeys.startedBy] = {{4563}},
             [questKeys.finishedBy] = {{6251}},
             [questKeys.requiredRaces] = raceIDs.ORC + raceIDs.UNDEAD + raceIDs.BLOOD_ELF,
+            [questKeys.exclusiveTo] = {3631,4487,4488},
         },
-        [4490] = {
+        [4490] = { -- Summon Felsteed
             [questKeys.name] = "Summon Felsteed",
             [questKeys.startedBy] = {{6251}},
             [questKeys.finishedBy] = {{6251}},
             [questKeys.requiredRaces] = raceIDs.NONE,
+        },
+        [4738] = { -- In Search of Menara Voidrender
+            [questKeys.startedBy] = {{461,16646}},
+            [questKeys.requiredRaces] = raceIDs.HUMAN + raceIDs.GNOME + raceIDs.ORC + raceIDs.UNDEAD + raceIDs.BLOOD_ELF, -- was available for orc + blood elf, safe to assume also available for undead
         },
         [4740] = {
             [questKeys.requiredLevel] = 9,
@@ -648,6 +666,10 @@ function QuestieTBCQuestFixes:Load()
         },
         [4842] = {
             [questKeys.triggerEnd] = {"Discover Darkwhisper Gorge", {[zoneIDs.WINTERSPRING]={{60.1,73.44}}}},
+        },
+        [4968] = { -- Knowledge of the Orb of Orahil
+            [questKeys.startedBy] = {{461,16646}},
+            [questKeys.requiredRaces] = raceIDs.HUMAN + raceIDs.GNOME + raceIDs.ORC + raceIDs.UNDEAD + raceIDs.BLOOD_ELF, -- was available for orc + blood elf, safe to assume also available for undead
         },
         [4983] = {
             [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
@@ -2050,7 +2072,7 @@ function QuestieTBCQuestFixes:Load()
         [9582] = { -- Strength of One
             [questKeys.requiredSourceItems] = {},
             [questKeys.exclusiveTo] = {1678,1683,1639},
-            [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_OBJECT, l10n("Open the cage"), 0, {{"object", 181849}}}},
+            [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_INTERACT, l10n("Open the cage"), 0, {{"object", 181849}}}},
         },
         [9586] = { -- Help Tavara
             [questKeys.objectives] = {{{17551,nil,Questie.ICON_TYPE_INTERACT}}},
@@ -5230,8 +5252,7 @@ function QuestieTBCQuestFixes:Load()
         },
         [11875] = {
             [questKeys.preQuestSingle] = {},
-            [questKeys.startedBy] = {}, -- we use fake quests, so we don't show the real quest -- this needs proper fix
-            [questKeys.exclusiveTo] = {64997,64998,64999},
+            [questKeys.requiredRanks] = {{profKeys.HERBALISM,rankKeys.ARTISAN},{profKeys.SKINNING,rankKeys.ARTISAN},{profKeys.MINING,rankKeys.ARTISAN}},
         },
         [11877] = {
             [questKeys.preQuestSingle] = {},
@@ -6764,60 +6785,6 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.exclusiveTo] = {64063,64064,64128},
             [questKeys.zoneOrSort] = zoneIDs.BLASTED_LANDS,
         },
-        [64997] = {
-            [questKeys.name] = "Gaining the Advantage",
-            [questKeys.startedBy] = {{19202}},
-            [questKeys.finishedBy] = {{19202}},
-            [questKeys.requiredLevel] = 70,
-            [questKeys.questLevel] = 70,
-            [questKeys.requiredRaces] = 0,
-            [questKeys.requiredClasses] = classIDs.NONE,
-            [questKeys.objectivesText] = {"Bring 8 Nether Residue to Emissary Mordin in Shattrath City."},
-            [questKeys.objectives] = {nil,nil,{{35229}}},
-            [questKeys.preQuestSingle] = {},
-            [questKeys.exclusiveTo] = {11875,64998,64999},
-            [questKeys.zoneOrSort] = 3703,
-            [questKeys.requiredSkill] = {profKeys.HERBALISM,275}, -- this needs proper fix, you need master or higher mining, skinning OR herbalism
-            [questKeys.questFlags] = 4232,
-            [questKeys.specialFlags] = specialFlags.REPEATABLE,
-            [questKeys.reputationReward] = {{1077,250}},
-        },
-        [64998] = {
-            [questKeys.name] = "Gaining the Advantage",
-            [questKeys.startedBy] = {{19202}},
-            [questKeys.finishedBy] = {{19202}},
-            [questKeys.requiredLevel] = 70,
-            [questKeys.questLevel] = 70,
-            [questKeys.requiredRaces] = 0,
-            [questKeys.requiredClasses] = classIDs.NONE,
-            [questKeys.objectivesText] = {"Bring 8 Nether Residue to Emissary Mordin in Shattrath City."},
-            [questKeys.objectives] = {nil,nil,{{35229}}},
-            [questKeys.preQuestSingle] = {},
-            [questKeys.exclusiveTo] = {11875,64997,64999},
-            [questKeys.zoneOrSort] = 3703,
-            [questKeys.requiredSkill] = {profKeys.MINING,275}, -- this needs proper fix, you need master or higher mining, skinning OR herbalism
-            [questKeys.questFlags] = 4232,
-            [questKeys.specialFlags] = specialFlags.REPEATABLE,
-            [questKeys.reputationReward] = {{1077,250}},
-        },
-        [64999] = {
-            [questKeys.name] = "Gaining the Advantage",
-            [questKeys.startedBy] = {{19202}},
-            [questKeys.finishedBy] = {{19202}},
-            [questKeys.requiredLevel] = 70,
-            [questKeys.questLevel] = 70,
-            [questKeys.requiredRaces] = 0,
-            [questKeys.requiredClasses] = classIDs.NONE,
-            [questKeys.objectivesText] = {"Bring 8 Nether Residue to Emissary Mordin in Shattrath City."},
-            [questKeys.objectives] = {nil,nil,{{35229}}},
-            [questKeys.preQuestSingle] = {},
-            [questKeys.exclusiveTo] = {11875,64997,64998},
-            [questKeys.zoneOrSort] = 3703,
-            [questKeys.requiredSkill] = {profKeys.SKINNING,275}, -- this needs proper fix, you need master or higher mining, skinning OR herbalism
-            [questKeys.questFlags] = 4232,
-            [questKeys.specialFlags] = specialFlags.REPEATABLE,
-            [questKeys.reputationReward] = {{1077,250}},
-        },
         ----- TBC Anniversary quests -----
         [95455] = { -- Concerted Efforts
             [questKeys.name] = "Concerted Efforts",
@@ -6982,6 +6949,9 @@ function QuestieTBCQuestFixes:LoadFactionFixes()
         [2861] = { -- Tabetha's Task
             [questKeys.startedBy] = {{4568,5885,16651}}
         },
+        [4738] = { -- In Search of Menara Voidrender
+            [questKeys.startedBy] = {{16646}},
+        },
     }
 
     local questFixesAlliance = {
@@ -6993,6 +6963,9 @@ function QuestieTBCQuestFixes:LoadFactionFixes()
         },
         [2861] = { -- Tabetha's Task
             [questKeys.startedBy] = {{5144,5497,17514}}
+        },
+        [4738] = { -- In Search of Menara Voidrender
+            [questKeys.startedBy] = {{461}},
         },
     }
 

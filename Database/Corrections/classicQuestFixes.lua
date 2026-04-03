@@ -544,6 +544,9 @@ function QuestieQuestFixes:Load()
         [771] = {
             [questKeys.nextQuestInChain] = 772,
         },
+        [779] = {
+            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
+        },
         [788] = {
             [questKeys.preQuestSingle] = {},
             [questKeys.breadcrumbs] = {4641}, -- #1956
@@ -583,8 +586,8 @@ function QuestieQuestFixes:Load()
             [questKeys.nextQuestInChain] = 860,
             [questKeys.exclusiveTo] = {844}, -- #1109
         },
-        [862] = {
-            [questKeys.requiredSkill] = {185,76}, -- You need to be a Journeyman for this quest -- this needs proper fix
+        [862] = { -- Dig Rat Stew
+            [questKeys.requiredSkill] = {profKeys.COOKING,15},
         },
         [863] = {
             [questKeys.triggerEnd] = {"Escort Wizzlecrank out of the Venture Co. drill site", {[zoneIDs.THE_BARRENS]={{55.36,7.68}}}},
@@ -685,6 +688,7 @@ function QuestieQuestFixes:Load()
         },
         [972] = { -- Water Sapta
             [questKeys.exclusiveTo] = {},
+            [questKeys.parentQuest] = 0,
             [questKeys.preQuestSingle] = {220},
             [questKeys.availableUntilCompleted] = 96,
         },
@@ -813,6 +817,7 @@ function QuestieQuestFixes:Load()
         [1103] = {
             [questKeys.preQuestSingle] = {63},
             [questKeys.parentQuest] = 0,
+            [questKeys.childQuests] = {},
             [questKeys.availableUntilCompleted] = 96,
             [questKeys.specialFlags] = specialFlags.REPEATABLE,
         },
@@ -863,7 +868,7 @@ function QuestieQuestFixes:Load()
             [questKeys.extraObjectives] = {{{[zoneIDs.DARKSHORE]={{35.71,44.68}}}, Questie.ICON_TYPE_NODE_FISH, l10n("Fish for Darkshore Groupers"),}},
         },
         [1144] = {
-            [questKeys.triggerEnd] = {"Help Willix the Importer escape from Razorfen Kraul", {[zoneIDs.THE_BARRENS]={{42.27,89.88}}}},
+            [questKeys.triggerEnd] = {"Help Willix the Importer escape from Razorfen Kraul", {[zoneIDs.RAZORFEN_KRAUL]={{-1,-1}}}},
         },
         [1148] = {
             [questKeys.preQuestSingle] = {1146},
@@ -977,9 +982,13 @@ function QuestieQuestFixes:Load()
         },
         [1362] = {
             [questKeys.breadcrumbs] = {1361},
+            [questKeys.breadcrumbForQuestId] = 1365,
         },
         [1364] = {
             [questKeys.preQuestSingle] = {1363}, -- #1674
+        },
+        [1365] = { -- Khan Dez'hepah
+            [questKeys.breadcrumbs] = {1362},
         },
         [1367] = {
             [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_SLAY, l10n("Slay Gelkis centaur to increase your reputation with the Magram Clan"), 0, {{"monster", 4653},{"monster", 4647},{"monster", 4646},{"monster", 4661},{"monster", 5602},{"monster", 4648},{"monster", 4649},{"monster", 4651},{"monster", 4652}}}},
@@ -1298,7 +1307,7 @@ function QuestieQuestFixes:Load()
             },
             [questKeys.nextQuestInChain] = 0,
         },
-        [1685] = {
+        [1685] = { -- Gakin's Summons
             [questKeys.breadcrumbForQuestId] = 1688, -- #7095
             [questKeys.exclusiveTo] = {},
         },
@@ -1308,8 +1317,8 @@ function QuestieQuestFixes:Load()
         [1687] = {
             [questKeys.triggerEnd] = {"Go to the Westfall Lighthouse.", {[zoneIDs.WESTFALL]={{30.41,85.61}}}},
         },
-        [1688] = {
-            [questKeys.breadcrumbs] = {1685,1715}, -- #7095
+        [1688] = { -- Surena Caledon
+            [questKeys.breadcrumbs] = {1685}, -- #7095
         },
         [1689] = { -- The Binding
             [questKeys.requiredSourceItems] = {},
@@ -1358,10 +1367,8 @@ function QuestieQuestFixes:Load()
             [questKeys.breadcrumbs] = {1703}, -- #1857
             [questKeys.nextQuestInChain] = 1711,
         },
-        [1715] = {
-            [questKeys.nextQuestInChain] = 1688,
-            [questKeys.breadcrumbForQuestId] = 1688, -- #7095
-            [questKeys.exclusiveTo] = {},
+        [1715] = { -- The Slaughtered Lamb
+            [questKeys.exclusiveTo] = {1688},
         },
         [1716] = {
             [questKeys.questLevel] = -1,
@@ -1408,13 +1415,14 @@ function QuestieQuestFixes:Load()
         [1798] = {
             [questKeys.breadcrumbForQuestId] = 1758,
         },
-        [1799] = {
+        [1799] = { -- Fragments of the Orb of Orahil
+            [questKeys.preQuestSingle] = {},
             [questKeys.breadcrumbs] = {4965,4967,4968,4969},
         },
         [1800] = {
             [questKeys.triggerEnd] = {"Go to the old Lordaeron Throne Room that lies just before descending into the Undercity.", {[zoneIDs.UNDERCITY]={{65.97,36.12}}}},
         },
-        [1801] = {
+        [1801] = { -- Tome of the Cabal
             [questKeys.breadcrumbs] = {2996,3001},
         },
         [1818] = { -- Speak with Dillinger
@@ -1934,9 +1942,10 @@ function QuestieQuestFixes:Load()
         [2994] = {
             [questKeys.questLevel] = 51, -- #1129
         },
-        [2996] = {
+        [2996] = { -- Seeking Strahad
             [questKeys.nextQuestInChain] = 1801,
             [questKeys.breadcrumbForQuestId] = 1801,
+            [questKeys.exclusiveTo] = {},
         },
         [2997] = { -- Tome of Divinity (Dun Morogh)
             [questKeys.exclusiveTo] = {1646,2999,3000},
@@ -1954,9 +1963,10 @@ function QuestieQuestFixes:Load()
             [questKeys.exclusiveTo] = {1646,2997,2999},
             [questKeys.nextQuestInChain] = 0,
         },
-        [3001] = {
+        [3001] = { -- Seeking Strahad
             [questKeys.nextQuestInChain] = 1801,
             [questKeys.breadcrumbForQuestId] = 1801,
+            [questKeys.exclusiveTo] = {},
         },
         [3090] = {
             [questKeys.requiredRaces] = raceIDs.ORC, -- #2399
@@ -2316,7 +2326,7 @@ function QuestieQuestFixes:Load()
         [4486] = {
             [questKeys.exclusiveTo] = {1661,4485},
         },
-        [4490] = {
+        [4490] = { -- Summon Felsteed
             [questKeys.preQuestSingle] = {3631,4487,4488,4489},
         },
         [4491] = {
@@ -2400,19 +2410,19 @@ function QuestieQuestFixes:Load()
         [4735] = {
             [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_OBJECT, l10n("Collect eggs using the Collectronic Module."), 0, {{"object", 175124}}}},
         },
-        [4736] = {
+        [4736] = { -- In Search of Menara Voidrender
             [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
             [questKeys.breadcrumbForQuestId] = 1796,
         },
-        [4737] = {
+        [4737] = { -- In Search of Menara Voidrender
             [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.breadcrumbForQuestId] = 1796,
         },
-        [4738] = {
+        [4738] = { -- In Search of Menara Voidrender
             [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
             [questKeys.breadcrumbForQuestId] = 1796,
         },
-        [4739] = {
+        [4739] = { -- In Search of Menara Voidrender
             [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.breadcrumbForQuestId] = 1796,
         },
@@ -2455,16 +2465,12 @@ function QuestieQuestFixes:Load()
         [4771] = {
             [questKeys.triggerEnd] = {"Place Dawn's Gambit",{[zoneIDs.SCHOLOMANCE]={{-1,-1}}}},
         },
-        [4784] = {
-            [questKeys.childQuests] = {4785}, -- #1367
-        },
-        [4785] = {
-            [questKeys.preQuestSingle] = {}, -- #1367
-            [questKeys.parentQuest] = 4784, -- #1367
+        [4785] = { -- Fine Gold Thread
             [questKeys.specialFlags] = specialFlags.REPEATABLE, -- #1367
+            [questKeys.availableUntilCompleted] = 4784,
         },
-        [4786] = {
-            [questKeys.triggerEnd] = {"Wait for Menara Voidrender to complete your item", {[zoneIDs.THE_BARRENS]={{62.52,35.47}}}},
+        [4786] = { -- The Completed Robe
+            [questKeys.objectives] = {{{6266,nil,Questie.ICON_TYPE_EVENT}}},
         },
         [4811] = {
             [questKeys.triggerEnd] = {"Locate the large, red crystal on Darkshore's eastern mountain range",{[zoneIDs.DARKSHORE]={{47.24,48.68}}}}, -- #1373
@@ -2509,30 +2515,46 @@ function QuestieQuestFixes:Load()
         [4941] = {
             [questKeys.triggerEnd] = {"Council with Eitrigg.", {[zoneIDs.ORGRIMMAR]={{34.14,39.26}}}},
         },
-        [4964] = {
-            [questKeys.triggerEnd] = {"Wait for Menara Voidrender to complete your item", {[zoneIDs.THE_BARRENS]={{62.52,35.47}}}},
+        [4961] = { -- Cleansing of the Orb of Orahil
+            [questKeys.preQuestSingle] = {},
+            [questKeys.preQuestGroup] = {1799,4962}, -- 4962+4963
         },
-        [4965] = {
+        [4962] = { -- Shard of an Infernal
+            [questKeys.parentQuest] = 0,
+        },
+        [4963] = { -- Shard of an Infernal
+            [questKeys.parentQuest] = 0,
+        },
+        [4964] = { -- The Completed Orb of Dar'Orahil
+            [questKeys.objectives] = {{{6266,nil,Questie.ICON_TYPE_EVENT}}},
+            [questKeys.preQuestSingle] = {},
+            [questKeys.preQuestGroup] = {4976,-4962},
+            [questKeys.exclusiveTo] = {4963},
+        },
+        [4965] = { -- Knowledge of the Orb of Orahil
             [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
             [questKeys.breadcrumbForQuestId] = 1799,
         },
         [4966] = { -- Protect Kanati Greycloud
             [questKeys.objectives] = {{{10720}}},
         },
-        [4967] = {
+        [4967] = { -- Knowledge of the Orb of Orahil
             [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.breadcrumbForQuestId] = 1799,
         },
-        [4968] = {
+        [4968] = { -- Knowledge of the Orb of Orahil
             [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
             [questKeys.breadcrumbForQuestId] = 1799,
         },
-        [4969] = {
+        [4969] = { -- Knowledge of the Orb of Orahil
             [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.breadcrumbForQuestId] = 1799,
         },
-        [4975] = {
-            [questKeys.triggerEnd] = {"Wait for Menara Voidrender to complete your item", {[zoneIDs.THE_BARRENS]={{62.52,35.47}}}},
+        [4975] = { -- The Completed Orb of Noh'Orahil
+            [questKeys.objectives] = {{{6266,nil,Questie.ICON_TYPE_EVENT}}},
+            [questKeys.preQuestSingle] = {},
+            [questKeys.preQuestGroup] = {4976,-4963},
+            [questKeys.exclusiveTo] = {4962},
         },
         [5041] = {
             [questKeys.preQuestSingle] = {},
@@ -2629,6 +2651,9 @@ function QuestieQuestFixes:Load()
         },
         [5149] = {
             [questKeys.preQuestSingle] = {},
+        },
+        [5151] = { -- Hypercapacitor Gizmo
+            [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_INTERACT, l10n("Open the cage"), 0, {{"object", 176195}}}},
         },
         [5156] = {
             [questKeys.triggerEnd] = {"Explore the craters in Shatter Scar Vale", {[zoneIDs.FELWOOD]={{41.03,41.96}}}},

@@ -484,13 +484,43 @@ function QuestieWotlkQuestFixes:Load()
         [9078] = {
             [questKeys.requiredClasses] = classIDs.ROGUE,
         },
+        [9145] = { -- Help Ranger Valanna!
+            [questKeys.requiredMinRep] = false,
+        },
+        [9149] = { -- The Plagued Coast
+            [questKeys.preQuestSingle] = false,
+        },
+        [9150] = { -- Salvaging the Past
+            [questKeys.requiredMinRep] = false,
+        },
+        [9152] = { -- Tomber's Supplies
+            [questKeys.preQuestSingle] = false,
+        },
         [9154] = {
             [questKeys.startedBy] = {{16241,16255}},
             [questKeys.finishedBy] = {{16281}},
             [questKeys.questLevel] = -1,
         },
+        [9155] = { -- Down the Dead Scar
+            [questKeys.requiredMinRep] = false,
+        },
+        [9160] = { -- Investigate An'daroth
+            [questKeys.requiredMinRep] = false,
+        },
+        [9171] = { -- Culinary Crunch
+            [questKeys.requiredMinRep] = false,
+        },
+        [9173] = { -- Retaking Windrunner Spire
+            [questKeys.requiredMinRep] = false,
+        },
         [9189] = {
             [questKeys.requiredRaces] = raceIDs.BLOOD_ELF,
+        },
+        [9207] = { -- Underlight Ore Samples
+            [questKeys.requiredMinRep] = false,
+        },
+        [9192] = { -- Trouble at the Underlight Mines
+            [questKeys.requiredMinRep] = false,
         },
         [9211] = {
             [questKeys.specialFlags] = 1,
@@ -564,6 +594,9 @@ function QuestieWotlkQuestFixes:Load()
         [9681] = {
             [questKeys.startedBy] = {{17717,17718}},
         },
+        [9758] = { -- Return to Arcanist Vandril
+            [questKeys.preQuestSingle] = false,
+        },
         [9876] = {
             [questKeys.nextQuestInChain] = 9738,
         },
@@ -578,6 +611,40 @@ function QuestieWotlkQuestFixes:Load()
         },
         [10180] = {
             [questKeys.nextQuestInChain] = 10097,
+        },
+        [10189] = { -- Manaforge B'naar
+            [questKeys.preQuestSingle] = false,
+        },
+        [10241] = { -- Distraction at Manaforge B'naar
+            [questKeys.preQuestSingle] = false,
+        },
+        [10243] = { -- Naaru Technology
+            [questKeys.preQuestSingle] = false,
+        },
+        [10246] = { -- Attack on Manaforge Coruu
+            [questKeys.preQuestSingle] = {10313},
+        },
+        [10263] = { -- Assisting the Consortium
+            [questKeys.preQuestGroup] = false,
+            [questKeys.requiredMinRep] = false,
+        },
+        [10264] = { -- Assisting the Consortium
+            [questKeys.preQuestGroup] = false,
+            [questKeys.requiredMinRep] = false,
+        },
+        [10328] = { -- Sunfury Briefings
+            [questKeys.preQuestGroup] = {10313, 10321},
+        },
+        [10412] = { -- Firewing Signets
+            [questKeys.preQuestSingle] = false,
+        },
+        [10414] = { -- Single Firewing Signet
+            [questKeys.preQuestGroup] = false,
+            [questKeys.preQuestSingle] = {10412},
+        },
+        [10415] = { -- More Firewing Signets
+            [questKeys.preQuestGroup] = false,
+            [questKeys.preQuestSingle] = {10412},
         },
         [10445] = {
             [questKeys.exclusiveTo] = {13432},
@@ -635,6 +702,20 @@ function QuestieWotlkQuestFixes:Load()
         },
         [10651] = {
             [questKeys.requiredSourceItems] = {},
+        },
+        [10656] = { -- Sunfury Signets
+            [questKeys.preQuestSingle] = false,
+            [questKeys.requiredMaxRep] = false,
+        },
+        [10658] = { -- More Sunfury Signets
+            [questKeys.preQuestGroup] = false,
+            [questKeys.preQuestSingle] = {10656},
+            [questKeys.requiredMaxRep] = false,
+        },
+        [10659] = { -- Single Sunfury Signet
+            [questKeys.preQuestGroup] = false,
+            [questKeys.preQuestSingle] = {10656},
+            [questKeys.requiredMaxRep] = false,
         },
         [10667] = {
             [questKeys.preQuestSingle] = {},
@@ -698,6 +779,10 @@ function QuestieWotlkQuestFixes:Load()
         },
         [11010] = {
             [questKeys.requiredClasses] = classIDs.WARLOCK + classIDs.ROGUE + classIDs.MAGE + classIDs.PRIEST + classIDs.WARRIOR + classIDs.PALADIN + classIDs.HUNTER + classIDs.SHAMAN + classIDs.DEATH_KNIGHT,
+        },
+        [11039] = { -- Report to Spymaster Thalodien
+            [questKeys.preQuestSingle] = false,
+            [questKeys.requiredMinRep] = false,
         },
         [11117] = {
             [questKeys.startedBy] = {{23486}},
@@ -4450,6 +4535,7 @@ function QuestieWotlkQuestFixes:Load()
         },
         [13350] = {
             [questKeys.preQuestSingle] = {13346},
+            [questKeys.objectives] = {{{32300}}},
             [questKeys.requiredSourceItems] = {44476,44477,44478,44479,44480},
         },
         [13351] = {
