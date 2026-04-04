@@ -10,6 +10,8 @@ local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
 local QuestieLink = QuestieLoader:ImportModule("QuestieLink")
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
+--- COMPATIBILITY ---
+local C_Timer = QuestieCompat.C_Timer
 
 --- COMPATIBILITY ---
 local IsInGroup = QuestieCompat.IsInGroup
