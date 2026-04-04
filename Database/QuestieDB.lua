@@ -41,6 +41,8 @@ local DropDB = QuestieLoader:ImportModule("DropDB")
 local QuestieQuest = QuestieLoader:ImportModule("QuestieQuest")
 ---@type QuestieQuestPrivate
 local _QuestieQuest = QuestieQuest.private
+--- COMPATIBILITY ---
+local C_Timer = QuestieCompat.C_Timer
 
 --- A list of quests that will never be available, used to quickly skip quests.
 ---@alias AutoBlacklistString "rep"|"skill"|"race"|"class"|"rank"
