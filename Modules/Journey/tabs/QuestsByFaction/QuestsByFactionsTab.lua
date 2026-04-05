@@ -166,6 +166,7 @@ _HandleExpansionSelection = function(widget, _)
 
     factionDropdown:SetDisabled(false)
     factionDropdown:SetText(l10n('Select Faction'))
+    _QuestieJourney.questsByFaction:ManageTree(treegroup, nil)
     local factions = QuestieJourney.factionsByExpansion[selectedExpansionKey]
 
     if factions and next(factions) then
