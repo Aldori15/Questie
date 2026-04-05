@@ -327,7 +327,7 @@ _HandleContinentSelection = function(key, _)
         end
         local text = l10n('Select Profession')
         if (not next(relevantProfessions)) then
-            text = l10n('No Quests found')
+            text = l10n('No Professions learned')
             zoneDropdown:SetDisabled(true)
             _QuestieJourney.questsByZone:ManageTree(treegroup, nil)
         else
