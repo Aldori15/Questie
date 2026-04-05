@@ -283,6 +283,7 @@ _HandleContinentSelection = function(key, _)
         zoneDropdown:SetList(dungeonZones, sortedDungeons)
         zoneDropdown:SetDisabled(false)
         zoneDropdown:SetText(text)
+        _QuestieJourney.questsByZone:ManageTree(treegroup, nil)
         zoneDropdown.frame:Show()
     elseif (key.value == QuestieJourney.questCategoryKeys.BATTLEGROUNDS) then
         local text = l10n('Select Battleground')
@@ -291,6 +292,7 @@ _HandleContinentSelection = function(key, _)
         zoneDropdown:SetList(bgZones, sortedBGs)
         zoneDropdown:SetDisabled(false)
         zoneDropdown:SetText(text)
+        _QuestieJourney.questsByZone:ManageTree(treegroup, nil)
         zoneDropdown.frame:Show()
     elseif (key.value == QuestieJourney.questCategoryKeys.EVENTS) then
         local text = l10n('Select Event')
@@ -299,6 +301,7 @@ _HandleContinentSelection = function(key, _)
         zoneDropdown:SetList(eventZones, sortedEvents)
         zoneDropdown:SetDisabled(false)
         zoneDropdown:SetText(text)
+        _QuestieJourney.questsByZone:ManageTree(treegroup, nil)
         zoneDropdown.frame:Show()
     elseif (key.value == QuestieJourney.questCategoryKeys.SCENARIOS) then
         local text = l10n('Select Scenario')
@@ -307,6 +310,7 @@ _HandleContinentSelection = function(key, _)
         zoneDropdown:SetList(scenarioZones, sortedScenarios)
         zoneDropdown:SetDisabled(false)
         zoneDropdown:SetText(text)
+        _QuestieJourney.questsByZone:ManageTree(treegroup, nil)
         zoneDropdown.frame:Show()
     elseif (key.value == QuestieJourney.questCategoryKeys.PROFESSIONS) then
         local professionList = QuestieJourney.zones[key.value]
@@ -325,6 +329,7 @@ _HandleContinentSelection = function(key, _)
         if (not next(relevantProfessions)) then
             text = l10n('No Quests found')
             zoneDropdown:SetDisabled(true)
+            _QuestieJourney.questsByZone:ManageTree(treegroup, nil)
         else
             zoneDropdown:SetDisabled(false)
         end
@@ -342,6 +347,7 @@ _HandleContinentSelection = function(key, _)
             zoneDropdown:SetList(zones, sortedZones)
             zoneDropdown:SetText(l10n("Select Zone"))
             zoneDropdown:SetDisabled(false)
+            _QuestieJourney.questsByZone:ManageTree(treegroup, nil)
             zoneDropdown.frame:Show()
         else
             zoneDropdown:SetDisabled(true)
