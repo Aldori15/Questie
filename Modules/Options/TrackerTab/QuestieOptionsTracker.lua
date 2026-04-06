@@ -73,7 +73,7 @@ local function debounceFadeTicker()
         debounceTimer:Cancel()
     end
 
-    debounceTimer = C_Timer.NewTimer(1, function()
+    debounceTimer = C_Timer.After(1, function()
         startFadeTicker()
     end)
 end

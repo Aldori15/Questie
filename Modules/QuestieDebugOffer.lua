@@ -578,9 +578,9 @@ function QuestieDebugOffer.NPCTarget()
                 Questie:Print(l10n("The NPC you just targeted is missing from the Questie database.") .. " " .. l10n("Would you like to help us fix it?") .. " |cff71d5ff|Haddon:questie:offer:" .. debugIndex .. "|h[" .. l10n("More Info") .. "]|h|r")
             end
             if inInstance == false then
-                C_Timer.NewTimer (timeoutDurationOverworld, function() targetTimeout[npcID] = false end)
+                C_Timer.After(timeoutDurationOverworld, function() targetTimeout[npcID] = false end)
             else
-                C_Timer.NewTimer (timeoutDurationInstance, function() targetTimeout[npcID] = false end)
+                C_Timer.After(timeoutDurationInstance, function() targetTimeout[npcID] = false end)
             end
         end
     else
