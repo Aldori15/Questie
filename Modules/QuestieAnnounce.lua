@@ -15,6 +15,7 @@ local l10n = QuestieLoader:ImportModule("l10n")
 local IsInGroup = QuestieCompat.IsInGroup
 local IsInRaid = QuestieCompat.IsInRaid
 local LE_PARTY_CATEGORY_INSTANCE = QuestieCompat.LE_PARTY_CATEGORY_INSTANCE
+local C_Timer = QuestieCompat.C_Timer
 
 local itemCache = {} -- cache data since this happens on item looted it could happen a lot with auto loot
 

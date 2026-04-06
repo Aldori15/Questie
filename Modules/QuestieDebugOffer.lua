@@ -29,6 +29,9 @@ local target = "target"
 local player = "player"
 local questnpc = "questnpc"
 
+--- COMPATIBILITY ---
+local C_Timer = QuestieCompat.C_Timer
+
 local _, playerRace = UnitRace(player)
 local playerClass = UnitClassBase(player)
 
