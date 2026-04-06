@@ -2391,15 +2391,16 @@ end
 -- Returns information about a quest in your quest log.
 -- Patch 6.0.2 (2014-10-14): Removed returns 'questTag'.
 function QuestieCompat.GetQuestLogTitle(questLogIndex)
-    local questTitle, level, questTag, suggestedGroup, isHeader, isCollapsed,
+    local questTitle, level, _, suggestedGroup, isHeader, isCollapsed,
         isComplete, isDaily, questID = GetQuestLogTitle(questLogIndex);
+    local questTag = select(2, QuestieCompat.GetQuestTagInfo(questID))
 
     if (isComplete == nil) then
         local numObjectives = GetNumQuestLeaderBoards(questLogIndex);
         local requiredMoney = GetQuestLogRequiredMoney(questLogIndex);
         isComplete = (numObjectives == 0 and GetMoney() >= requiredMoney) and 1 or nil
     end
-    return questTitle, level, suggestedGroup, isHeader, isCollapsed, isComplete, isDaily and 2 or 1, questID
+    return questTitle, level, questTag, isHeader, isCollapsed, isComplete, isDaily and 2 or 1, questID
 end
 
 local MAX_QUEST_LOG_INDEX = 75
