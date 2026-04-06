@@ -27,6 +27,8 @@ local AceGUI = LibStub("AceGUI-3.0")
 local IsSpellKnownOrOverridesKnown = QuestieCompat.IsSpellKnownOrOverridesKnown
 local IsPlayerSpell = QuestieCompat.IsPlayerSpell
 local zoneTreeFrame
+--- COMPATIBILITY ---
+local C_Timer = QuestieCompat.C_Timer
 
 ---Restore the previously selected quest in the zone tree
 ---@param treeFrame table @The AceGUI TreeGroup frame

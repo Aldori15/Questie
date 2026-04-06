@@ -113,6 +113,7 @@ QuestieDB.DoableStates = {
 local WOW_PROJECT_ID = QuestieCompat.WOW_PROJECT_ID
 local WOW_PROJECT_CLASSIC = QuestieCompat.WOW_PROJECT_CLASSIC
 local C_QuestLog = QuestieCompat.C_QuestLog
+local C_Timer = QuestieCompat.C_Timer
 local GetQuestTagInfo = QuestieCompat.GetQuestTagInfo
 local IsPlayerSpell = QuestieCompat.IsPlayerSpell
 local IsSpellKnownOrOverridesKnown = QuestieCompat.IsSpellKnownOrOverridesKnown
