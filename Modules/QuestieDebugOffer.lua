@@ -16,9 +16,6 @@ local QuestieCorrections = QuestieLoader:ImportModule("QuestieCorrections")
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
 
---- COMPATIBILITY ---
-local C_Timer = QuestieCompat.C_Timer
-
 local DebugInformation = {} -- stores text of debug data dump per session
 local debugIndex = 0 -- current debug index, used so we can still retrieve info from previous offers
 local openDebugWindows = {} -- determines if existing debug window is already open, prevents duplicates
@@ -31,6 +28,9 @@ local PosY = 0
 local target = "target"
 local player = "player"
 local questnpc = "questnpc"
+
+--- COMPATIBILITY ---
+local C_Timer = QuestieCompat.C_Timer
 
 local _, playerRace = UnitRace(player)
 local playerClass = UnitClassBase(player)
