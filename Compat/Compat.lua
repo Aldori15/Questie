@@ -200,6 +200,7 @@ QuestieCompat.C_Timer = {
 local mapIdToUiMapId = {}
 local zoneNameToUiMapId = {}
 local zoneNameToAreaId = {}
+local areaIdToZoneName = {}
 local mapIdToCZ = {}
 local UnitPosition = UnitPosition
 local GetUnitSpeed = GetUnitSpeed
@@ -345,6 +346,72 @@ QuestieCompat.ClearCachedPlayerPositions = ClearCachedPlayerPositions
 local function ResolveDirectUiMapID(mapID, mapLevel)
     return mapIdToUiMapId[NormalizeMapKey(mapID, mapLevel)] or mapIdToUiMapId[mapID]
 end
+
+local uiMapInfoCache = {}
+
+local function BuildUiMapInfo(uiMapID)
+    local uiMapData = uiMapID and QuestieCompat.UiMapData and QuestieCompat.UiMapData[uiMapID]
+    if not uiMapData then
+        return nil
+    end
+
+    local mapInfo = uiMapInfoCache[uiMapID]
+    if mapInfo then
+        return mapInfo
+    end
+
+    mapInfo = {
+        mapID = uiMapID,
+        name = uiMapData.name,
+        mapType = uiMapData.mapType,
+        parentMapID = uiMapData.parentMapID or 0,
+    }
+
+    if uiMapData.instance ~= nil then
+        mapInfo.instance = uiMapData.instance
+    end
+    if uiMapData.worldMapOnly ~= nil then
+        mapInfo.worldMapOnly = uiMapData.worldMapOnly
+    end
+
+    uiMapInfoCache[uiMapID] = mapInfo
+    return mapInfo
+end
+
+local function GetAreaName(areaID)
+    if areaIdToZoneName[areaID] then
+        return areaIdToZoneName[areaID]
+    end
+
+    local uiMapData = areaID and QuestieCompat.UiMapData and QuestieCompat.UiMapData[areaID]
+    if uiMapData then
+        return uiMapData.name
+    end
+
+    return nil
+end
+
+local function CollectMapChildrenInfo(parentUiMapID, mapType, allDescendants, results, seen)
+    results = results or {}
+    seen = seen or {}
+
+    for uiMapID, uiMapData in pairs(QuestieCompat.UiMapData or {}) do
+        if uiMapData.parentMapID == parentUiMapID and not seen[uiMapID] then
+            seen[uiMapID] = true
+
+            if (mapType == nil) or (uiMapData.mapType == mapType) then
+                results[#results + 1] = BuildUiMapInfo(uiMapID)
+            end
+
+            if allDescendants then
+                CollectMapChildrenInfo(uiMapID, mapType, true, results, seen)
+            end
+        end
+    end
+
+    return results
+end
+
 local function IsContinentalOrCosmicUiMap(uiMapID)
     local uiData = uiMapID and QuestieCompat.UiMapData and QuestieCompat.UiMapData[uiMapID]
     return uiData and uiData.mapType and uiData.mapType < 3
@@ -1809,8 +1876,7 @@ function QuestieCompat.GetCurrentPlayerMinimapWorldPosition()
     return QuestieCompat.GetCurrentPlayerStableWorldPosition()
 end
 
-local function GetCurrentActualPlayerZonePosition()
-    local function ResolveTomTomActualPlayerUiMapID()
+    local function ResolveActualPlayerUiMapID()
         local actualUiMapID = ResolveUiMapIDByZoneTexts()
         if actualUiMapID and not IsZoneLikeUiMap(actualUiMapID) then
             actualUiMapID = nil
@@ -1847,7 +1913,8 @@ local function GetCurrentActualPlayerZonePosition()
         return actualUiMapID, NormalizeActualZoneUiMapID(actualUiMapID)
     end
 
-    local actualUiMapID, normalizedActualUiMapID = ResolveTomTomActualPlayerUiMapID()
+local function GetCurrentActualPlayerZonePosition()
+        local actualUiMapID, normalizedActualUiMapID = ResolveActualPlayerUiMapID()
     if not actualUiMapID and not normalizedActualUiMapID then
         return nil, nil, nil
     end
@@ -2043,22 +2110,34 @@ QuestieCompat.C_Map = {
     -- Returns map information.
 	-- https://wowpedia.fandom.com/wiki/API_C_Map.GetMapInfo
 	GetMapInfo = function(uiMapID)
-        if QuestieCompat.UiMapData[uiMapID] then
-            return QuestieCompat.UiMapData[uiMapID]
-        end
+        return BuildUiMapInfo(uiMapID)
 	end,
     -- Returns a map subzone name.
     -- https://wowpedia.fandom.com/wiki/API_C_Map.GetAreaInfo
 	GetAreaInfo = function(areaID)
-        return
+        return GetAreaName(areaID)
 	end,
     -- Returns the current UI map for the given unit.
     -- https://wowpedia.fandom.com/wiki/API_C_Map.GetBestMapForUnit
 	GetBestMapForUnit = function(unit)
         if unit == "player" then
-            return QuestieCompat.GetCurrentPlayerPosition()
+            local actualUiMapID, normalizedActualUiMapID = ResolveActualPlayerUiMapID()
+            return actualUiMapID or normalizedActualUiMapID or QuestieCompat.GetCurrentPlayerPosition()
         end
 	end,
+    -- Returns the player's position on a map.
+    -- https://wowpedia.fandom.com/wiki/API_C_Map.GetPlayerMapPosition
+    GetPlayerMapPosition = function(uiMapID, unit)
+        if unit == "player" or uiMapID == "player" then
+            return QuestieCompat.GetPlayerMapPosition()
+        end
+    end,
+    -- Returns child maps of a map.
+    -- https://wowpedia.fandom.com/wiki/API_C_Map.GetMapChildrenInfo
+    GetMapChildrenInfo = function(uiMapID, mapType, allDescendants)
+        local results = CollectMapChildrenInfo(uiMapID, mapType, allDescendants == true)
+        return #results > 0 and results or nil
+    end,
     -- Translates a map position to a world map position.
     -- https://wowpedia.fandom.com/wiki/API_C_Map.GetWorldPosFromMapPos
 	GetWorldPosFromMapPos = function(uiMapID, mapPos)
@@ -2066,6 +2145,10 @@ QuestieCompat.C_Map = {
         return instanceID or 0, {x = x or 0, y = y or 0}
 	end,
 }
+
+if not C_Map then
+    C_Map = QuestieCompat.C_Map
+end
 
 -- https://www.townlong-yak.com/framexml/classic/Blizzard_MapCanvas/Blizzard_MapCanvas.lua
 QuestieCompat.WorldMapFrame = {
@@ -3704,6 +3787,7 @@ function QuestieCompat:ADDON_LOADED(event, addon)
             if type(lookupTable) == "table" then
                 for areaId, zoneName in pairs(lookupTable) do
                     if zoneName and zoneName ~= "" then
+                        areaIdToZoneName[areaId] = areaIdToZoneName[areaId] or zoneName
                         zoneNameToAreaId[zoneName] = zoneNameToAreaId[zoneName] or areaId
                         if starterAreaIdToUiMapId[areaId] then
                             zoneNameToUiMapId[zoneName] = starterAreaIdToUiMapId[areaId]

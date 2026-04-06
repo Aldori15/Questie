@@ -20,6 +20,10 @@ local DebugInformation = {} -- stores text of debug data dump per session
 local debugIndex = 0 -- current debug index, used so we can still retrieve info from previous offers
 local openDebugWindows = {} -- determines if existing debug window is already open, prevents duplicates
 
+--- COMPATIBILITY ---
+local C_Timer = QuestieCompat.C_Timer
+local C_Map = QuestieCompat.C_Map
+
 local GetQuestID = QuestieCompat.GetQuestID
 local GetBestMapForUnit = C_Map.GetBestMapForUnit
 local GetPlayerMapPosition = C_Map.GetPlayerMapPosition
@@ -28,9 +32,6 @@ local PosY = 0
 local target = "target"
 local player = "player"
 local questnpc = "questnpc"
-
---- COMPATIBILITY ---
-local C_Timer = QuestieCompat.C_Timer
 
 local _, playerRace = UnitRace(player)
 local playerClass = UnitClassBase(player)
