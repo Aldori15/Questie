@@ -256,10 +256,11 @@ function QuestieLib:GetQuestTypeSuffix(questId, blizzLike)
     local tagScenario = questTagIds.SCENARIO
     local tagAccount = questTagIds.ACCOUNT
     local tagCelestial = questTagIds.CELESTIAL
+    local tagWorldEvent = questTagIds.WORLD_EVENT
     local isGroupContentTag = questTagId == tagRaid or questTagId == tagDungeon or questTagId == tagHeroic or
             (tagRaid10 and questTagId == tagRaid10) or (tagRaid25 and questTagId == tagRaid25) or
             (tagScenario and questTagId == tagScenario) or (tagAccount and questTagId == tagAccount) or
-            (tagCelestial and questTagId == tagCelestial)
+            (tagCelestial and questTagId == tagCelestial) or (tagWorldEvent and questTagId == tagWorldEvent)
     local langCode = l10n:GetUILocale()
     local isMultiByteLocale = langCode == "zhCN" or langCode == "zhTW" or langCode == "koKR" or langCode == "ruRU"
 
@@ -284,6 +285,8 @@ function QuestieLib:GetQuestTypeSuffix(questId, blizzLike)
             return "A"
         elseif tagCelestial and questTagId == tagCelestial then
             return "C"
+        elseif tagWorldEvent and questTagId == tagWorldEvent then
+            return "W"
         else
             return ""
         end
@@ -505,6 +508,7 @@ local suffixPriority = {
     ["++"] = 7, -- Legendary
     ["A"] = 8, -- Account
     ["C"] = 9, -- Celestial
+    ["W"] = 10, -- World Event
 }
 
 local function compareQuestsByLevelAndType(a, b)

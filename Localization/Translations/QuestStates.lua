@@ -98,6 +98,18 @@ local questStateLocales = {
         ["esES"] = "Runa",
         ["frFR"] = true,
     },
+    ["World Event"] = {
+        ["enUS"] = true,
+        ["deDE"] = "Weltereignis",
+        ["esES"] = "Suceso mundial",
+        ["esMX"] = "Evento del mundo",
+        ["frFR"] = "Événement mondial",
+        ["koKR"] = "세계",
+        ["ptBR"] = "Evento Mundial",
+        ["ruRU"] = "Игровое событие",
+        ["zhCN"] = "世界事件",
+        ["zhTW"] = "世界事件",
+    },
 }
 
 for k, v in pairs(questStateLocales) do
