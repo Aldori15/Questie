@@ -7,6 +7,8 @@ local QuestieCorrections = QuestieLoader:ImportModule("QuestieCorrections")
 function QuestieQuestBlacklist:Load()
     local questsToBlacklist = {
         [7462] = true, -- Duplicate of 7877. See #1583
+        [7487] = true, -- Duplicate of 7848
+        [7908] = true, -- Duplicate of 7810
         [5663] = true, -- Touch of Weakness of Dark Cleric Beryl - Fixing #730
         [5658] = true, -- Touch of Weakness of Father Lankester -- See #1603
         [2358] = QuestieCorrections.CLASSIC_AND_TBC, -- See #921
@@ -243,8 +245,7 @@ function QuestieQuestBlacklist:Load()
         [8857] = true,
         [8858] = true,
         [8859] = true,
-        --Rocknot's Ale instance quest shown in SG/BS at lvl 1
-        [4295] = true,
+        [9030] = true,
         --mount exchange/replacement
         [7678] = true,
         [7677] = true,
@@ -800,7 +801,6 @@ function QuestieQuestBlacklist:Load()
         -- Alterac Valley
         [6861] = QuestieCorrections.CLASSIC_ONLY,
         [6862] = QuestieCorrections.CLASSIC_ONLY,
-        [6864] = QuestieCorrections.CLASSIC_ONLY,
         [6901] = QuestieCorrections.CLASSIC_ONLY,
         [7221] = true,
         [7222] = true,
@@ -1045,66 +1045,6 @@ function QuestieQuestBlacklist:Load()
         [10932] = true, -- Level 0 Priest quest
         [10933] = true, -- Level 0 Priest quest
         [10934] = true, -- Level 0 Priest quest
-        [64028] = true, -- First quest for boosted characters. Blocked to not show for others
-        [64037] = true, -- Boosted character quest
-        [64038] = true, -- Boosted character quest
-        [64046] = true, -- First quest for boosted characters. Blocked to not show for others
-        [64047] = true, -- First quest for boosted characters. Blocked to not show for others
-        [64063] = true, -- Boosted character quest
-        [64064] = true, -- Boosted character quest
-        [64128] = true, -- Boosted character quest
-        [64139] = true, -- Horde pala mount quest chain
-        [64140] = true, -- Horde pala mount quest chain
-        [64141] = true, -- Horde pala mount quest chain
-        [64142] = true, -- Horde pala mount quest chain
-        [64143] = true, -- Horde pala mount quest chain
-        [64144] = true, -- Horde pala mount quest chain
-        [64145] = true, -- Horde pala mount quest chain
-        [64217] = true, -- Boosted character quest
-        [64845] = QuestieCorrections.TBC_AND_WOTLK, -- Alliance War Effort
-        [70395] = true, -- First quest for boosted characters. Blocked to not show for others
-        [70396] = true, -- First quest for boosted characters. Blocked to not show for others
-        [70397] = true, -- Boosted character quest
-        [70398] = true, -- Boosted character quest
-        [70401] = true, -- Boosted character quest
-        [70411] = true, -- Boosted character quest
-        [70734] = true, -- Boosted character quest
-        [70735] = true, -- Boosted character quest
-        [70736] = true, -- Boosted character quest
-        [70737] = true, -- Boosted character quest
-        [70761] = true, -- Boosted character quest
-        [70762] = true, -- First quest for boosted characters. Blocked to not show for others
-        [70764] = true, -- Boosted character quest
-        [70765] = true, -- Boosted character quest
-        [70865] = true, -- Boosted character quest
-        [70869] = true, -- Boosted character quest
-        [70870] = true, -- Boosted character quest
-        [78136] = true, -- Boosted character quest
-        [78137] = true, -- Boosted character quest
-        [78138] = true, -- Boosted character quest
-        [78140] = true, -- Boosted character quest
-        [78151] = true, -- Boosted character quest
-        [78157] = true, -- Boosted character quest
-        [78158] = true, -- Boosted character quest
-        [78164] = true, -- Boosted character quest
-        [78166] = true, -- Boosted character quest
-        [78167] = true, -- Boosted character quest
-        [78168] = true, -- Boosted character quest
-        [78219] = true, -- Boosted character quest
-        [78220] = true, -- Boosted character quest
-        [78221] = true, -- Boosted character quest
-        [78222] = true, -- Boosted character quest
-        [78223] = true, -- Boosted character quest
-        [78224] = true, -- Boosted character quest
-        [78225] = true, -- Boosted character quest
-        [93823] = true, -- Boosted character quest
-        [93824] = true, -- Boosted character quest
-        [96253] = true, -- Boosted character quest
-        [96254] = true, -- Boosted character quest
-
-		-- Paladin class quests with SWP patch
-        [64319] = true, -- removed in wotlk
-        [63866] = true, -- removed in wotlk
 
         -- Revered Among X quests
         [10459] = true,
@@ -1488,29 +1428,6 @@ function QuestieQuestBlacklist:Load()
         --- Phase 5 Ruby Sanctum
         --[26012] = true, -- Trouble at Wyrmrest
         --[26013] = true, -- Assault on the Sanctum
-
-        ----- SoD -------------- SoD quests --------------- SoD -----
-        [78611] = true, -- A Waylaid Shipment (no longer available in P2)
-        [79100] = true, -- A Waylaid Shipment (no longer available in P2)
-        [79482] = true, -- Stolen Winter Veil Treats
-        [79483] = true, -- Stolen Winter Veil Treats
-        [79484] = true, -- You're a Mean One...
-        [79485] = true, -- You're a Mean One...
-        [79486] = true, -- A Smokywood Pastures' Thank You!
-        [79487] = true, -- A Smokywood Pastures' Thank You!
-        [79492] = true, -- Metzen the Reindeer
-        [79495] = true, -- Metzen the Reindeer
-        [79588] = true, -- Small Furry Paws
-        [79589] = true, -- Torn Bear Pelts
-        [79590] = true, -- Heavy Grinding Stone
-        [79591] = true, -- Whirring Bronze Gizmo
-        [79592] = true, -- Carnival Jerkins
-        [79593] = true, -- Coarse Weightstone
-        [79594] = true, -- Copper Modulator
-        [79595] = true, -- Carnival Boots
-        [80421] = true, -- Green Iron Bracers
-        [80422] = true, -- Green Fireworks
-        [80423] = true, -- The World's Largest Gnome!
 
         --- Automatic Overrides (for when Wowhead data is wrong)
         [13134] = false, -- Spill Their Blood
