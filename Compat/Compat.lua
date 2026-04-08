@@ -2195,7 +2195,7 @@ QuestieCompat.C_Calendar = {
     -- Returns information about the calendar month by offset.
 	-- https://wowpedia.fandom.com/wiki/API_C_Calendar.GetMonthInfo
 	GetMonthInfo = function(offsetMonths)
-		local month, year, numdays, firstday = CalendarGetMonth(offsetMonth);
+        local month, year, numdays, firstday = CalendarGetMonth(offsetMonths or 0);
 		return {
 			month = month,
 			year = year,
@@ -2203,6 +2203,44 @@ QuestieCompat.C_Calendar = {
 			firstWeekday = firstday,
 		}
 	end,
+    OpenCalendar = function()
+        if OpenCalendar then
+            OpenCalendar()
+        end
+    end,
+    SetMonth = function(offsetMonths)
+        if CalendarSetMonth then
+            CalendarSetMonth(offsetMonths or 0)
+        end
+    end,
+    GetNumDayEvents = function(offsetMonths, dayOfMonth)
+        if CalendarGetNumDayEvents then
+            return CalendarGetNumDayEvents(offsetMonths or 0, dayOfMonth)
+        end
+
+        return 0
+    end,
+    GetHolidayInfo = function(offsetMonths, dayOfMonth, index)
+        if not CalendarGetHolidayInfo then
+            return nil
+        end
+
+        local name, description, texture = CalendarGetHolidayInfo(
+            offsetMonths or 0,
+            dayOfMonth,
+            index
+        )
+
+        if not name then
+            return nil
+        end
+
+        return {
+            name = name,
+            description = description,
+            texture = texture,
+        }
+    end,
 }
 
 QuestieCompat.C_DateAndTime = {

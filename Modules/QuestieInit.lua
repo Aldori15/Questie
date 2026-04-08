@@ -43,6 +43,8 @@ local IsleOfQuelDanas = QuestieLoader:ImportModule("IsleOfQuelDanas")
 local DailyQuests = QuestieLoader:ImportModule("DailyQuests")
 ---@type QuestieEventHandler
 local QuestieEventHandler = QuestieLoader:ImportModule("QuestieEventHandler")
+---@type QuestieEvent
+local QuestieEvent = QuestieLoader:ImportModule("QuestieEvent")
 ---@type QuestieJourney
 local QuestieJourney = QuestieLoader:ImportModule("QuestieJourney")
 ---@type HBDHooks
@@ -355,6 +357,10 @@ QuestieInit.Stages[3] = function() -- run as a coroutine
     end
 
     Questie.started = true
+
+    if Questie.db.profile.showEventQuests then
+        QuestieEvent.Initialize()
+    end
 
     if QuestieCompat.Is335 then
         -- 3.3.5 can miss the emulated group join sync on login/reload while already in a party.

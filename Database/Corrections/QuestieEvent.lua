@@ -27,7 +27,6 @@ US Stress Test ended: September 12, 2004
 Peon Day    30th Sept    EU Closed Beta began: September 30, 2004    Observed only in Europe[1]
 Hallow's End    18th Oct - 1st Nov    Halloween
 Day of the Dead    1st Nov - 2nd Nov    Day of the Dead
-WoW's Anniversary    16th Nov - 30th Nov
 Pilgrim's Bounty    22nd Nov - 28th Nov    Thanksgiving
 Feast of Winter Veil    15th Dec - 2nd Jan    Christmas
 
@@ -55,6 +54,9 @@ local _QuestieEvent = QuestieEvent.private
 
 QuestieEvent.activeQuests = {}
 _QuestieEvent.eventNamesForQuests = {}
+_QuestieEvent.announcedEvents = {}
+_QuestieEvent.initializeTimer = nil
+_QuestieEvent.initializeAttempts = 0
 
 ---@type QuestieDB
 local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
@@ -62,21 +64,75 @@ local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 local QuestieCorrections = QuestieLoader:ImportModule("QuestieCorrections")
 ---@type QuestieNPCFixes
 local QuestieNPCFixes = QuestieLoader:ImportModule("QuestieNPCFixes")
+---@type QuestieWotlkNpcFixes
+local QuestieWotlkNpcFixes = QuestieLoader:ImportModule("QuestieWotlkNpcFixes")
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
 
 --- COMPATIBILITY ---
-local C_Calendar = QuestieCompat.C_Calendar
 local C_DateAndTime = QuestieCompat.C_DateAndTime
+local C_Timer = QuestieCompat.C_Timer
 
 local tinsert = table.insert
 local type = type
-local _WithinDates, _LoadDarkmoonFaire, _GetDarkmoonFaireLocation, _GetDarkmoonFaireLocationEra, _GetDarkmoonFaireLocationSoD, _IsEventQuestVisible
+local _WithinDates, _LoadDarkmoonFaire, _GetDarkmoonFaireLocation,
+    _GetDarkmoonFaireLocationForDate, _GetDarkmoonFaireEventName,
+    _IsEventQuestVisible, _GetCalendarEventName, _GetActiveCalendarEvents,
+    _PrimeCalendar, _RefreshAvailableQuests, _CancelInitializeTimer
+
+local EVENT_INIT_INITIAL_DELAY = 1
+local EVENT_INIT_RETRY_INTERVAL = 1
+local EVENT_INIT_MAX_ATTEMPTS = 12
+
+_CancelInitializeTimer = function()
+    if _QuestieEvent.initializeTimer then
+        _QuestieEvent.initializeTimer:Cancel()
+        _QuestieEvent.initializeTimer = nil
+    end
+end
+
+local CALENDAR_EVENT_NAME_ALIASES = {
+    ["Brewfest"] = "Brewfest",
+    ["Children's Week"] = "Children's Week",
+    ["Darkmoon Faire"] = "Darkmoon Faire",
+    ["Day of the Dead"] = "Day of the Dead",
+    ["Feast of Winter Veil"] = "Winter Veil",
+    ["Harvest Festival"] = "Harvest Festival",
+    ["Hallow's End"] = "Hallow's End",
+    ["Love is in the Air"] = "Love is in the Air",
+    ["Lunar Festival"] = "Lunar Festival",
+    ["Midsummer"] = "Midsummer",
+    ["Midsummer Fire Festival"] = "Midsummer",
+    ["Noblegarden"] = "Noblegarden",
+    ["Pilgrim's Bounty"] = "Pilgrim's Bounty",
+    ["Winter Veil"] = "Winter Veil",
+}
+
+local CALENDAR_EVENT_TEXTURE_ALIASES = {
+    ["brewfest"] = "Brewfest",
+    ["child"] = "Children's Week",
+    ["darkmoon"] = "Darkmoon Faire",
+    ["dead"] = "Day of the Dead",
+    ["easter"] = "Noblegarden",
+    ["hallows"] = "Hallow's End",
+    ["halloween"] = "Hallow's End",
+    ["harvest"] = "Harvest Festival",
+    ["love"] = "Love is in the Air",
+    ["lunar"] = "Lunar Festival",
+    ["midsummer"] = "Midsummer",
+    ["noblegarden"] = "Noblegarden",
+    ["pilgrim"] = "Pilgrim's Bounty",
+    ["thanksgiving"] = "Pilgrim's Bounty",
+    ["valentine"] = "Love is in the Air",
+    ["winterveil"] = "Winter Veil",
+    ["christmas"] = "Winter Veil",
+}
 
 local DMF_LOCATIONS = {
     NONE = 0,
     MULGORE = 1,
     ELWYNN_FOREST = 2,
+    TEROKKAR_FOREST = 3,
 }
 
 ---@param hideQuest boolean|number|nil
@@ -90,11 +146,7 @@ _IsEventQuestVisible = function(hideQuest)
         return not hideQuest
     end
 
-    if hideQuest == QuestieCorrections.SOD_ONLY then
-        return Questie.IsSoD
-    elseif hideQuest == QuestieCorrections.HIDE_SOD then
-        return not Questie.IsSoD
-    elseif hideQuest == QuestieCorrections.TBC_ONLY then
+    if hideQuest == QuestieCorrections.TBC_ONLY then
         return not Questie.IsTBC
     elseif hideQuest == QuestieCorrections.CLASSIC_ONLY then
         return not Questie.IsClassic
@@ -109,12 +161,142 @@ _IsEventQuestVisible = function(hideQuest)
     return true
 end
 
-function QuestieEvent:Load()
+_GetCalendarEventName = function(name, texture)
+    if type(name) == "string" then
+        for calendarName, eventName in pairs(CALENDAR_EVENT_NAME_ALIASES) do
+            if name == calendarName or name == l10n(calendarName) then
+                return eventName
+            end
+        end
+    end
+
+    if type(texture) == "string" then
+        local normalizedTexture = string.lower(texture)
+        for keyword, eventName in pairs(CALENDAR_EVENT_TEXTURE_ALIASES) do
+            if string.find(normalizedTexture, keyword, 1, true) then
+                return eventName
+            end
+        end
+    end
+
+    return nil
+end
+
+_GetActiveCalendarEvents = function()
+    local activeEvents = {}
+
+    if not QuestieCompat.Is335 or not CalendarGetNumDayEvents or not CalendarGetHolidayInfo then
+        return activeEvents
+    end
+
+    local currentDate = C_DateAndTime.GetCurrentCalendarTime()
+    if not currentDate or not currentDate.monthDay then
+        return activeEvents
+    end
+
+    local numDayEvents = CalendarGetNumDayEvents(0, currentDate.monthDay) or 0
+    for index = 1, numDayEvents do
+        local name, description, texture = CalendarGetHolidayInfo(0, currentDate.monthDay, index)
+        if name then
+            local eventName = _GetCalendarEventName(name, texture)
+            if eventName then
+                activeEvents[eventName] = true
+            end
+        end
+    end
+
+    return activeEvents
+end
+
+_PrimeCalendar = function()
+    if OpenCalendar then
+        OpenCalendar()
+    end
+
+    if CalendarSetMonth then
+        CalendarSetMonth(0)
+    end
+end
+
+_RefreshAvailableQuests = function()
+    if not Questie.started then
+        return
+    end
+
+    local AvailableQuests = QuestieLoader:ImportModule("AvailableQuests")
+    AvailableQuests.CalculateAndDrawAll()
+end
+
+function QuestieEvent.Initialize()
+    if not Questie.db.profile.showEventQuests then
+        return
+    end
+
+    if not Questie.started then
+        return
+    end
+
+    _CancelInitializeTimer()
+    _QuestieEvent.initializeAttempts = 0
+
+    local function TryInitialize()
+        if not QuestieEvent.eventQuests then
+            _CancelInitializeTimer()
+            return true
+        end
+
+        _QuestieEvent.initializeAttempts = _QuestieEvent.initializeAttempts + 1
+
+        if QuestieCompat.Is335 then
+            _PrimeCalendar()
+        end
+
+        local isFinalAttempt = _QuestieEvent.initializeAttempts >= EVENT_INIT_MAX_ATTEMPTS
+        local sawCalendarEvent = QuestieEvent:Load(isFinalAttempt)
+
+        if sawCalendarEvent then
+            QuestieEvent.eventQuests = nil
+            _CancelInitializeTimer()
+            return true
+        end
+
+        if isFinalAttempt then
+            _CancelInitializeTimer()
+            return true
+        end
+
+        return false
+    end
+
+    C_Timer.After(EVENT_INIT_INITIAL_DELAY, function()
+        if not QuestieEvent.eventQuests then
+            return
+        end
+
+        local finished = TryInitialize()
+        if finished or _QuestieEvent.initializeTimer then
+            return
+        end
+
+        if QuestieEvent.eventQuests and _QuestieEvent.initializeAttempts > 0 and _QuestieEvent.initializeAttempts < EVENT_INIT_MAX_ATTEMPTS then
+            _QuestieEvent.initializeTimer = C_Timer.NewTicker(EVENT_INIT_RETRY_INTERVAL, TryInitialize)
+        end
+    end)
+end
+
+function QuestieEvent:Load(isFinalPass)
+    if not QuestieEvent.eventQuests then
+        return false
+    end
+
     local year = date("%y")
+    local sawCalendarEvent = false
+    local addedActiveQuest = false
 
     -- We want to replace the Lunar Festival date with the date that we estimate
     QuestieEvent.eventDates["Lunar Festival"] = QuestieEvent.lunarFestival[year]
-    local activeEvents = {}
+    local activeEvents = _GetActiveCalendarEvents()
+    sawCalendarEvent = next(activeEvents) ~= nil
 
     local eventCorrections
     if Questie.IsTBC then
@@ -140,9 +322,17 @@ function QuestieEvent:Load()
         endDay = tonumber(endDay)
         endMonth = tonumber(endMonth)
 
-        if _WithinDates(startDay, startMonth, endDay, endMonth) and (eventCorrections[eventName] ~= false) then
-            print(Questie:Colorize("[Questie]", "yellow"), "|cFF6ce314" .. l10n("The '%s' world event is active!", l10n(eventName)))
+        if (not activeEvents[eventName]) and _WithinDates(startDay, startMonth, endDay, endMonth) and (eventCorrections[eventName] ~= false) then
             activeEvents[eventName] = true
+        end
+    end
+
+    for eventName, isActive in pairs(activeEvents) do
+        if isActive and not _QuestieEvent.announcedEvents[eventName] then
+            if eventName ~= "Darkmoon Faire" or not (Questie.IsClassic or Questie.IsWotlk) then
+                _QuestieEvent.announcedEvents[eventName] = true
+                print(Questie:Colorize("[Questie]", "yellow"), "|cFF6ce314" .. l10n("The '%s' world event is active!", l10n(eventName)))
+            end
         end
     end
 
@@ -165,46 +355,62 @@ function QuestieEvent:Load()
 
         if activeEvents[eventName] == true and _WithinDates(startDay, startMonth, endDay, endMonth) then
             if _IsEventQuestVisible(questData[5]) then
+                if not QuestieEvent.activeQuests[questId] then
+                    addedActiveQuest = true
+                end
                 QuestieCorrections.hiddenQuests[questId] = nil
                 QuestieEvent.activeQuests[questId] = true
             end
         end
     end
 
-    -- TODO: Also handle WotLK which has a different starting schedule
-    if Questie.IsClassic then
+    if Questie.IsClassic or Questie.IsWotlk then
         _LoadDarkmoonFaire()
     end
 
-    -- Clear the quests to save memory
-    QuestieEvent.eventQuests = nil
+    if isFinalPass then
+        -- Clear the quests to save memory once initialization has settled.
+        QuestieEvent.eventQuests = nil
+    end
+
+    if addedActiveQuest then
+        _RefreshAvailableQuests()
+    end
+
+    return sawCalendarEvent
 end
 
----@param dayOfMonth number
----@return boolean
+---@return number
 _GetDarkmoonFaireLocation = function()
-    if C_Calendar == nil then
-        -- This is a band aid fix for private servers which do not support the `C_Calendar` API.
+    if not CalendarGetMonth then
+        -- This is a band aid fix for private servers which do not support the calendar API.
         -- They won't see Darkmoon Faire quests, but that's the price to pay.
-        return false
+        return DMF_LOCATIONS.NONE
     end
 
     local currentDate = C_DateAndTime.GetCurrentCalendarTime()
 
-    if Questie.IsSoD then
-        return _GetDarkmoonFaireLocationSoD(currentDate)
-    else
-        return _GetDarkmoonFaireLocationEra(currentDate)
-    end
+    return _GetDarkmoonFaireLocationForDate(currentDate)
 end
 
-_GetDarkmoonFaireLocationEra = function(currentDate)
-    local baseInfo = C_Calendar.GetMonthInfo() -- In Era+SoD this returns `GetMinDate` (November 2004)
-    -- Calculate the offset in months from GetMinDate to make C_Calendar.GetMonthInfo return the correct month
-    local monthOffset = (currentDate.year - baseInfo.year) * 12 + (currentDate.month - baseInfo.month)
-    local firstWeekday = C_Calendar.GetMonthInfo(monthOffset).firstWeekday
+_GetDarkmoonFaireLocationForDate = function(currentDate)
+    local baseMonth, baseYear = CalendarGetMonth(0)
+    -- Calculate the offset in months so CalendarGetMonth returns the current month.
+    local monthOffset = (currentDate.year - baseYear) * 12 + (currentDate.month - baseMonth)
+    local _, _, _, firstWeekday = CalendarGetMonth(monthOffset)
 
-    local eventLocation = (currentDate.month % 2) == 0 and DMF_LOCATIONS.MULGORE or DMF_LOCATIONS.ELWYNN_FOREST
+    local monthModulo = currentDate.month % 3
+    local eventLocation = DMF_LOCATIONS.ELWYNN_FOREST
+
+    if Questie.IsWotlk then
+        if monthModulo == 1 then
+            eventLocation = DMF_LOCATIONS.MULGORE
+        elseif monthModulo == 2 then
+            eventLocation = DMF_LOCATIONS.TEROKKAR_FOREST
+        end
+    else
+        eventLocation = (currentDate.month % 2) == 0 and DMF_LOCATIONS.MULGORE or DMF_LOCATIONS.ELWYNN_FOREST
+    end
 
     local dayOfMonth = currentDate.monthDay
     if firstWeekday == 1 then
@@ -247,30 +453,16 @@ _GetDarkmoonFaireLocationEra = function(currentDate)
     return DMF_LOCATIONS.NONE
 end
 
--- DMF in SoD is every second week, starting on the 4th of December 2023
-_GetDarkmoonFaireLocationSoD = function(currentDate)
-    local initialStartDate = time({year=2023, month=12, day=4, hour=0, min=1}) -- The first time DMF started in SoD
-    local initialEndDate = time({year=2023, month=12, day=10, hour=23, min=59}) -- The first time DMF ended in SoD
-    currentDate = time({ year = currentDate.year, month = currentDate.month, day = currentDate.monthDay, hour = 0, min = 1 })
-
-    local eventDuration = initialEndDate - initialStartDate
-    local timeSinceStart = currentDate - initialStartDate
-
-    local positionInCurrentCycle = timeSinceStart % (eventDuration * 2) -- * 2 because the event repeats every two weeks
-
-    local isEventActive = positionInCurrentCycle < eventDuration
-
-    if (not isEventActive) then
-        return DMF_LOCATIONS.NONE
+_GetDarkmoonFaireEventName = function(eventLocation)
+    if eventLocation == DMF_LOCATIONS.MULGORE then
+        return string.format("%s (%s)", l10n("Darkmoon Faire"), l10n("Mulgore"))
+    elseif eventLocation == DMF_LOCATIONS.TEROKKAR_FOREST then
+        return string.format("%s (%s)", l10n("Darkmoon Faire"), l10n("Terokkar Forest"))
+    elseif eventLocation == DMF_LOCATIONS.ELWYNN_FOREST then
+        return string.format("%s (%s)", l10n("Darkmoon Faire"), l10n("Elwynn Forest"))
     end
 
-    local weeksSinceStart = math.floor(timeSinceStart / eventDuration)
-
-    if weeksSinceStart % 4 == 0 then
-        return DMF_LOCATIONS.MULGORE
-    else
-        return DMF_LOCATIONS.ELWYNN_FOREST
-    end
+    return l10n("Darkmoon Faire")
 end
 
 --- https://classic.wowhead.com/guides/classic-darkmoon-faire#darkmoon-faire-location-and-schedule
@@ -282,8 +474,14 @@ _LoadDarkmoonFaire = function()
         return
     end
 
-    -- TODO: Also handle Terrokar Forest starting with TBC
     local isInMulgore = eventLocation == DMF_LOCATIONS.MULGORE
+    local darkmoonNpcFixes = nil
+
+    if Questie.IsWotlk then
+        darkmoonNpcFixes = QuestieWotlkNpcFixes:LoadDarkmoonFixes(eventLocation)
+    else
+        darkmoonNpcFixes = QuestieNPCFixes:LoadDarkmoonFixes(isInMulgore)
+    end
 
     -- The faire is setting up right now or is already up
     local announcingQuestId = 7905 -- Alliance announcement quest
@@ -298,15 +496,19 @@ _LoadDarkmoonFaire = function()
             local questId = questData[2]
             QuestieCorrections.hiddenQuests[questId] = nil
             QuestieEvent.activeQuests[questId] = true
-
-            -- Update the NPC spawns based on the place of the faire
-            for id, data in pairs(QuestieNPCFixes:LoadDarkmoonFixes(isInMulgore)) do
-                QuestieDB.npcDataOverrides[id] = data
-            end
         end
     end
 
-    print(Questie:Colorize("[Questie]", "yellow"), "|cFF6ce314" .. l10n("The '%s' world event is active!", l10n("Darkmoon Faire")))
+    if darkmoonNpcFixes then
+        for id, data in pairs(darkmoonNpcFixes) do
+            QuestieDB.npcDataOverrides[id] = data
+        end
+    end
+
+    if not _QuestieEvent.announcedEvents["Darkmoon Faire"] then
+        _QuestieEvent.announcedEvents["Darkmoon Faire"] = true
+        print(Questie:Colorize("[Questie]", "yellow"), "|cFF6ce314" .. l10n("The '%s' world event is active!", _GetDarkmoonFaireEventName(eventLocation)))
+    end
 end
 
 --- Checks wheather the current date is within the given date range
@@ -581,15 +783,7 @@ tinsert(QuestieEvent.eventQuests, {"Winter Veil", 8799}) -- The Hero of the Day
 tinsert(QuestieEvent.eventQuests, {"Winter Veil", 6964}) -- The Reason for the Season
 tinsert(QuestieEvent.eventQuests, {"Winter Veil", 8762}) -- Metzen the Reindeer
 tinsert(QuestieEvent.eventQuests, {"Winter Veil", 8746}) -- Metzen the Reindeer
--- New SoD quests
---tinsert(QuestieEvent.eventQuests, {"Winter Veil", 79482}) -- Stolen Winter Veil Treats -- SoD
---tinsert(QuestieEvent.eventQuests, {"Winter Veil", 79483}) -- Stolen Winter Veil Treats -- SoD
---tinsert(QuestieEvent.eventQuests, {"Winter Veil", 79484}) -- You're a Mean One... -- SoD
---tinsert(QuestieEvent.eventQuests, {"Winter Veil", 79485}) -- You're a Mean One... -- SoD
---tinsert(QuestieEvent.eventQuests, {"Winter Veil", 79486}) -- A Smokywood Pastures' Thank You! -- SoD
---tinsert(QuestieEvent.eventQuests, {"Winter Veil", 79487}) -- A Smokywood Pastures' Thank You! -- SoD
---tinsert(QuestieEvent.eventQuests, {"Winter Veil", 79492}) -- Metzen the Reindeer -- SoD
---tinsert(QuestieEvent.eventQuests, {"Winter Veil", 79495}) -- Metzen the Reindeer -- SoD
+
 tinsert(QuestieEvent.eventQuests, {"Winter Veil", 8744, "25/12", "2/1"}) -- A Carefully Wrapped Present
 tinsert(QuestieEvent.eventQuests, {"Winter Veil", 8767, "25/12", "2/1"}) -- A Gently Shaken Gift
 tinsert(QuestieEvent.eventQuests, {"Winter Veil", 8768, "25/12", "2/1"}) -- A Gaily Wrapped Present
@@ -604,39 +798,39 @@ tinsert(QuestieEvent.eventQuests, {"Winter Veil", 8861, "31/12", "1/1"}) -- New 
 tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7902}) -- Vibrant Plumes
 tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7903}) -- Evil Bat Eyes
 tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 8222}) -- Glowing Scorpid Blood
-tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7901, nil, nil, QuestieCorrections.HIDE_SOD}) -- Soft Bushy Tails
-tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7899, nil, nil, QuestieCorrections.HIDE_SOD}) -- Small Furry Paws
+tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7901}) -- Soft Bushy Tails
+tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7899}) -- Small Furry Paws
 tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7940}) -- 1200 Tickets - Orb of the Darkmoon
-tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7900, nil, nil, QuestieCorrections.HIDE_SOD}) -- Torn Bear Pelts
+tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7900}) -- Torn Bear Pelts
 tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7907}) -- Darkmoon Beast Deck
 tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7927}) -- Darkmoon Portals Deck
 tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7929}) -- Darkmoon Elementals Deck
 tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7928}) -- Darkmoon Warlords Deck
-tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7946, nil, nil, QuestieCorrections.HIDE_SOD}) -- Spawn of Jubjub
+tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7946}) -- Spawn of Jubjub
 tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 8223}) -- More Glowing Scorpid Blood
 tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7934}) -- 50 Tickets - Darkmoon Storage Box
 tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7981}) -- 1200 Tickets - Amulet of the Darkmoon
 tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7943}) -- More Bat Eyes
-tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7894, nil, nil, QuestieCorrections.HIDE_SOD}) -- Copper Modulator
+tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7894}) -- Copper Modulator
 tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7933}) -- 40 Tickets - Greater Darkmoon Prize
 tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7898}) -- Thorium Widget
 tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7885}) -- Armor Kits
 tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7942}) -- More Thorium Widgets
-tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7883, nil, nil, QuestieCorrections.HIDE_SOD}) -- The World's Largest Gnome!
+tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7883}) -- The World's Largest Gnome!
 tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7892}) -- Big Black Mace
 tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7937}) -- Your Fortune Awaits You...
 tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7939}) -- More Dense Grinding Stones
 tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7893}) -- Rituals of Strength
-tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7891, nil, nil, QuestieCorrections.HIDE_SOD}) -- Green Iron Bracers
-tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7896, nil, nil, QuestieCorrections.HIDE_SOD}) -- Green Fireworks
+tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7891}) -- Green Iron Bracers
+tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7896}) -- Green Fireworks
 tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7884}) -- Crocolisk Boy and the Bearded Murloc
-tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7882, nil, nil, QuestieCorrections.HIDE_SOD}) -- Carnival Jerkins
+tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7882}) -- Carnival Jerkins
 tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7897}) -- Mechanical Repair Kits
-tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7895, nil, nil, QuestieCorrections.HIDE_SOD}) -- Whirring Bronze Gizmo
+tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7895}) -- Whirring Bronze Gizmo
 tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7941}) -- More Armor Kits
-tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7881, nil, nil, QuestieCorrections.HIDE_SOD}) -- Carnival Boots
-tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7890, nil, nil, QuestieCorrections.HIDE_SOD}) -- Heavy Grinding Stone
-tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7889, nil, nil, QuestieCorrections.HIDE_SOD}) -- Coarse Weightstone
+tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7881}) -- Carnival Boots
+tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7890}) -- Heavy Grinding Stone
+tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7889}) -- Coarse Weightstone
 tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7945}) -- Your Fortune Awaits You...
 tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7935}) -- 10 Tickets - Last Month's Mutton
 tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7938}) -- Your Fortune Awaits You...
@@ -645,18 +839,6 @@ tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7932}) -- 12 Tickets - Less
 tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7930}) -- 5 Tickets - Darkmoon Flower
 tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7931}) -- 5 Tickets - Minor Darkmoon Prize
 tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7936}) -- 50 Tickets - Last Year's Mutton
--- New SoD quests
---tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 79588}) -- Small Furry Paws -- SoD
---tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 79589}) -- Torn Bear Pelts -- SoD
---tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 79590}) -- Heavy Grinding Stone -- SoD
---tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 79591}) -- Whirring Bronze Gizmo -- SoD
---tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 79592}) -- Carnival Jerkins -- SoD
---tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 79593}) -- Coarse Weightstone -- SoD
---tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 79594}) -- Copper Modulator -- SoD
---tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 79595}) -- Carnival Boots -- SoD
---tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 80421}) -- Green Iron Bracers -- SoD
---tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 80422}) -- Green Fireworks -- SoD
---tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 80423}) -- The World's Largest Gnome! -- SoD
 
 -- New TBC event quests
 
