@@ -161,7 +161,7 @@ function QuestieLib:GetColoredQuestName(questId, showLevel, showState, blizzLike
         end
     end
 
-    return QuestieLib:PrintDifficultyColor(level, name, QuestieDB.IsRepeatable(questId), QuestieEvent.IsEventQuest(questId), QuestieDB.IsPvPQuest(questId))
+    return QuestieLib:PrintDifficultyColor(level, name, QuestieDB.IsRepeatable(questId), QuestieEvent:IsEventQuest(questId), QuestieDB.IsPvPQuest(questId))
 end
 
 -- The order of these colors is important for the ColorWheel function.
