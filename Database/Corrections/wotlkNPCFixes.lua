@@ -426,61 +426,31 @@ function QuestieWotlkNpcFixes:Load()
             [npcKeys.questStarts] = {11356,11441,11970,12753,12772,12775,12777,12808,13484,14022},
         },
         [19148] = { -- Dwarf Commoner
-            [npcKeys.questStarts] = {11356,11441,11970,12753,12772,12775,12777,12808},
+            [npcKeys.questStarts] = {11356,11441,11970,12753,12772,12775,12777,12808,13484},
         },
         [19169] = { -- Blood Elf Commoner
             [npcKeys.questStarts] = {11357,11446,11971,12752,12782,12783,12784,12811,13483,14036},
         },
-        [32798] = { -- Spring Gatherer (horde)
-            [npcKeys.spawns] = {
-                [zoneIDs.DUROTAR] = {{51.35,42.30}},
-                [zoneIDs.TIRISFAL_GLADES] = {{61.11,52.51}},
-                [zoneIDs.MULGORE] = {{47.83,61.61}},
-                [zoneIDs.EVERSONG_WOODS] = {{47.23,47.42}},
-            },
-        },
-        [32799] = { -- Spring Collector (alliance)
-            [npcKeys.spawns] = {
-                [zoneIDs.TELDRASSIL] = {{57.15,61.03}},
-                [zoneIDs.DUN_MOROGH] = {{46.97,52.70}},
-                [zoneIDs.ELWYNN_FOREST] = {{41.72,66.32}},
-            },
-        },
-        [32836] = { -- Noblegarden Vendor (alliance)
-            [npcKeys.spawns] = {
-                [zoneIDs.TELDRASSIL] = {{55.66,57.09}},
-                [zoneIDs.DUN_MOROGH] = {{47.29,52.62}},
-                [zoneIDs.ELWYNN_FOREST] = {{43.49,65.70}},
-            },
-        },
-        [32837] = { -- Noblegarden Merchant (horde)
-            [npcKeys.spawns] = {
-                [zoneIDs.DUROTAR] = {{51.47,41.25}},
-                [zoneIDs.TIRISFAL_GLADES] = {{60.55,50.68}},
-                [zoneIDs.MULGORE] = {{45.53,57.74}},
-                [zoneIDs.EVERSONG_WOODS] = {{48.55,46.16}},
-            },
-        },
         [19171] = { -- Draenei Commoner
-            [npcKeys.questStarts] = {11356,11441,11970,12753,12772,12775,12777,12808},
+            [npcKeys.questStarts] = {11356,11441,11970,12753,12772,12775,12777,12808,13484},
         },
         [19172] = { -- Gnome Commoner
-            [npcKeys.questStarts] = {11356,11441,11970,12753,12772,12775,12777,12808},
+            [npcKeys.questStarts] = {11356,11441,11970,12753,12772,12775,12777,12808,13484},
         },
         [19173] = { -- Night Elf Commoner
-            [npcKeys.questStarts] = {11356,11441,11970,12753,12772,12775,12777,12808},
+            [npcKeys.questStarts] = {11356,11441,11970,12753,12772,12775,12777,12808,13484},
         },
         [19175] = { -- Orc Commoner
-            [npcKeys.questStarts] = {11357,11446,11971,12752,12782,12783,12784,12811},
+            [npcKeys.questStarts] = {11357,11446,11971,12752,12782,12783,12784,12811,13484},
         },
         [19176] = { -- Tauren Commoner
-            [npcKeys.questStarts] = {11357,11446,11971,12752,12782,12783,12784,12811},
+            [npcKeys.questStarts] = {11357,11446,11971,12752,12782,12783,12784,12811,13484},
         },
         [19177] = { -- Troll Commoner
-            [npcKeys.questStarts] = {11357,11446,11971,12752,12782,12783,12784,12811},
+            [npcKeys.questStarts] = {11357,11446,11971,12752,12782,12783,12784,12811,13484},
         },
         [19178] = { -- Forsaken Commoner
-            [npcKeys.questStarts] = {11357,11446,11971,12752,12782,12783,12784,12811},
+            [npcKeys.questStarts] = {11357,11446,11971,12752,12782,12783,12784,12811,13484},
         },
         [19220] = {
             [npcKeys.spawns] = {[zoneIDs.THE_MECHANAR]={{-1,-1}}},
@@ -492,7 +462,7 @@ function QuestieWotlkNpcFixes:Load()
             [npcKeys.questEnds] = {70865},
         },
         [20102] = { -- Goblin Commoner
-            [npcKeys.questStarts] = {11441,11446,11970,11971,12752,12753,12772,12775,12777,12782,12783,12784,12808,12811},
+            [npcKeys.questStarts] = {11441,11446,11970,11971,12752,12753,12772,12775,12777,12782,12783,12784,12808,12811,13483,13484},
         },
         [20407] = { -- Farseer Umbrua
             [npcKeys.questStarts] = {8410,10490,10491,70397,70398,70401,70411,70865,70870,78140,78157,78164,78166},
@@ -2277,6 +2247,21 @@ function QuestieWotlkNpcFixes:Load()
         [32663] = {
             [npcKeys.spawns] = {[zoneIDs.GRIZZLY_HILLS]={{16.37,48.26}}},
         },
+        [32798] = { -- Spring Gatherer (horde)
+            [npcKeys.spawns] = {
+                [zoneIDs.DUROTAR] = {{51.35,42.30}},
+                [zoneIDs.TIRISFAL_GLADES] = {{61.11,52.51}},
+                [zoneIDs.MULGORE] = {{47.83,61.61}},
+                [zoneIDs.EVERSONG_WOODS] = {{47.23,47.42}},
+            },
+        },
+        [32799] = { -- Spring Collector (alliance)
+            [npcKeys.spawns] = {
+                [zoneIDs.TELDRASSIL] = {{57.15,61.03}},
+                [zoneIDs.DUN_MOROGH] = {{46.97,52.70}},
+                [zoneIDs.ELWYNN_FOREST] = {{41.72,66.32}},
+            },
+        },
         [32801] = {
             [npcKeys.questStarts] = {13485},
             [npcKeys.questEnds] = {13485},
@@ -2340,6 +2325,21 @@ function QuestieWotlkNpcFixes:Load()
         [32816] = {
             [npcKeys.questStarts] = {13500},
             [npcKeys.questEnds] = {13500},
+        },
+        [32836] = { -- Noblegarden Vendor (alliance)
+            [npcKeys.spawns] = {
+                [zoneIDs.TELDRASSIL] = {{55.66,57.09}},
+                [zoneIDs.DUN_MOROGH] = {{47.29,52.62}},
+                [zoneIDs.ELWYNN_FOREST] = {{43.49,65.70}},
+            },
+        },
+        [32837] = { -- Noblegarden Merchant (horde)
+            [npcKeys.spawns] = {
+                [zoneIDs.DUROTAR] = {{51.47,41.25}},
+                [zoneIDs.TIRISFAL_GLADES] = {{60.55,50.68}},
+                [zoneIDs.MULGORE] = {{45.53,57.74}},
+                [zoneIDs.EVERSONG_WOODS] = {{48.55,46.16}},
+            },
         },
         [32867] = {
             [npcKeys.spawns] = {[zoneIDs.ULDUAR]={{-1,-1}}},

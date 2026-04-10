@@ -1420,7 +1420,8 @@ function QuestieQuestFixes:Load()
         [1796] = {
             [questKeys.breadcrumbs] = {4736,4737,4738,4739},
         },
-        [1798] = {
+        [1798] = { -- Seeking Strahad
+            [questKeys.startedBy] = {{6120,6122}},
             [questKeys.breadcrumbForQuestId] = 1758,
         },
         [1799] = { -- Fragments of the Orb of Orahil
@@ -3600,14 +3601,15 @@ function QuestieQuestFixes:Load()
             [questKeys.objectives] = {nil,{{179544}}},
             [questKeys.objectivesText] = {"Search Dire Maul for Telmius Dreamseeker. Report back to Scholar Runethorn at Feathermoon with whatever information that you may find."},
         },
-        [7483] = {
+        [7483] = { -- Libram of Rapidity
             [questKeys.preQuestSingle] = {7481,7482},
+            [questKeys.reputationReward] = {{factionIDs.SHEN_DRALAR,200}},
         },
-        [7484] = {
+        [7484] = { -- Libram of Focus
             [questKeys.preQuestSingle] = {7481,7482},
             [questKeys.specialFlags] = specialFlags.REPEATABLE,
         },
-        [7485] = {
+        [7485] = { -- Libram of Protection
             [questKeys.preQuestSingle] = {7481,7482},
         },
         [7488] = {

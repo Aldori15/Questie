@@ -435,6 +435,10 @@ function QuestieWotlkQuestFixes:Load()
         [8554] = {
             [questKeys.requiredRaces] = raceIDs.NONE,
         },
+        [8579] = { -- Mortal Champions
+            [questKeys.startedBy] = {{15503}},
+            [questKeys.finishedBy] = {{15503}},
+        },
         [8746] = {
             [questKeys.objectives] = {{{15664,nil,Questie.ICON_TYPE_EVENT}},nil,{{21211}}},
         },
@@ -5006,11 +5010,25 @@ function QuestieWotlkQuestFixes:Load()
             [questKeys.finishedBy] = {nil,{194081}},
             [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
         },
+        [13479] = { -- The Great Egg Hunt
+            [questKeys.breadcrumbs] = {13483},
+        },
+        [13480] = { -- The Great Egg Hunt
+            [questKeys.breadcrumbs] = {13484},
+        },
         [13481] = {
             [questKeys.triggerEnd] = {"Escort Father Kamaros to safety", {[zoneIDs.ICECROWN]={{32,57.1}}}},
         },
         [13482] = {
             [questKeys.triggerEnd] = {"Escort Father Kamaros to safety", {[zoneIDs.ICECROWN]={{32,57.1}}}},
+        },
+        [13483] = { -- Spring Collectors
+            [questKeys.breadcrumbForQuestId] = 13479,
+            [questKeys.startedBy] = {{19169,19175,19176,19177,19178,20102}},
+        },
+        [13484] = { -- Spring Collectors
+            [questKeys.breadcrumbForQuestId] = 13480,
+            [questKeys.startedBy] = {{18927,19148,19171,19172,19173,20102}},
         },
         [13485] = {
             [questKeys.startedBy] = {{32801}},
@@ -5159,6 +5177,7 @@ function QuestieWotlkQuestFixes:Load()
         },
         [13629] = {
             [questKeys.requiredSourceItems] = {},
+            [questKeys.zoneOrSort] = zoneIDs.ULDUAR,
         },
         [13631] = {
             [questKeys.startedBy] = {nil,nil,{46052}},
@@ -5176,6 +5195,7 @@ function QuestieWotlkQuestFixes:Load()
             [questKeys.preQuestSingle] = {7722},
             [questKeys.requiredMinRep] = {59,3000},
             [questKeys.requiredMaxRep] = {59,9000},
+            [questKeys.specialFlags] = specialFlags.REPEATABLE,
         },
         [13663] = {
             [questKeys.objectives] = {{{33513,nil,Questie.ICON_TYPE_INTERACT}},nil,{{45121},{45122}}},
@@ -6673,7 +6693,7 @@ function QuestieWotlkQuestFixes:Load()
             [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_OBJECT, l10n("Examine the remains"), 0, {{"monster", 37552}}}},
         },
         [24564] = {
-            [questKeys.requiredRaces] = raceIDs.UNDEAD + raceIDs.ORC + raceIDs.TROLL + raceIDs.TAUREN,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE - raceIDs.BLOOD_ELF,
             [questKeys.requiredClasses] = classIDs.WARRIOR + classIDs.PALADIN + classIDs.ROGUE + classIDs.HUNTER + classIDs.DEATH_KNIGHT + classIDs.MAGE + classIDs.WARLOCK,
             [questKeys.extraObjectives] = {
                 {nil, Questie.ICON_TYPE_TALK, l10n("Ask the warden to take you to the Sunwell"), 0, {{"monster", 37523}}},
@@ -6746,7 +6766,7 @@ function QuestieWotlkQuestFixes:Load()
             [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
         },
         [24598] = {
-            [questKeys.requiredRaces] = raceIDs.UNDEAD + raceIDs.ORC + raceIDs.TROLL + raceIDs.TAUREN,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE - raceIDs.BLOOD_ELF,
             [questKeys.requiredClasses] = classIDs.DRUID + classIDs.PRIEST + classIDs.SHAMAN,
             [questKeys.extraObjectives] = {
                 {nil, Questie.ICON_TYPE_TALK, l10n("Ask the warden to take you to the Sunwell"), 0, {{"monster", 37523}}},
@@ -7019,7 +7039,7 @@ function QuestieWotlkQuestFixes:Load()
             [questKeys.requiredClasses] = classIDs.DRUID + classIDs.PRIEST + classIDs.SHAMAN,
         },
         [24799] = {
-            [questKeys.requiredRaces] = raceIDs.UNDEAD + raceIDs.ORC + raceIDs.TROLL + raceIDs.TAUREN,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE - raceIDs.BLOOD_ELF,
             [questKeys.requiredClasses] = classIDs.DRUID + classIDs.PRIEST + classIDs.SHAMAN,
         },
         [24800] = {
@@ -7027,7 +7047,7 @@ function QuestieWotlkQuestFixes:Load()
             [questKeys.requiredClasses] = classIDs.WARRIOR + classIDs.PALADIN + classIDs.ROGUE + classIDs.HUNTER + classIDs.DEATH_KNIGHT + classIDs.MAGE + classIDs.WARLOCK,
         },
         [24801] = {
-            [questKeys.requiredRaces] = raceIDs.UNDEAD + raceIDs.ORC + raceIDs.TROLL + raceIDs.TAUREN,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE - raceIDs.BLOOD_ELF,
             [questKeys.requiredClasses] = classIDs.WARRIOR + classIDs.PALADIN + classIDs.ROGUE + classIDs.HUNTER + classIDs.DEATH_KNIGHT + classIDs.MAGE + classIDs.WARLOCK,
         },
         [24802] = {

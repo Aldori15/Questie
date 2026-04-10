@@ -9,6 +9,7 @@ function QuestieQuestBlacklist:Load()
         [7462] = true, -- Duplicate of 7877. See #1583
         [7487] = true, -- Duplicate of 7848
         [7908] = true, -- Duplicate of 7810
+        [11072] = true, -- Duplicate of 11885
         [5663] = true, -- Touch of Weakness of Dark Cleric Beryl - Fixing #730
         [5658] = true, -- Touch of Weakness of Father Lankester -- See #1603
         [2358] = QuestieCorrections.CLASSIC_AND_TBC, -- See #921
@@ -19,6 +20,7 @@ function QuestieQuestBlacklist:Load()
         [615] = true, -- Duplicate of 8553. See #2215
         [618] = true, -- Duplicate of 8554
         [934] = true, -- Duplicate of 7383. See #2386
+        [236] = QuestieCorrections.CLASSIC_AND_TBC,
         --[960] = true, -- Duplicate of 961 -- different quests, not duplicate
         [9378] = true, -- Naxxramas quest which doesn't seem to be in the game
         [1318] = true, -- Duplicate of 7703 and not in the game
@@ -315,6 +317,7 @@ function QuestieQuestBlacklist:Load()
         [10966] = true,
         [10967] = true,
         [10968] = true,
+        [11116] = true,
         [11117] = true,
         [11431] = true,
         [11118] = true,
@@ -1037,7 +1040,12 @@ function QuestieQuestBlacklist:Load()
         [10259] = true, -- Into the Breach (TBC Pre patch event)
         [10364] = true, -- Caedmos (Unavailable Priest quest)
         [10379] = true, -- Touch of Weakness (Followup of NOT A QUEST)
+        [10531] = true, -- The Battle for Arathi Basin!
+        [10532] = true, -- Cut Arathor Supply Lines
+        [10533] = true, -- More Resource Crates
         [10534] = true, -- Returning Home (Unavailable Priest quest)
+        [10535] = true, -- Arathi Basin Resources!
+        [10536] = true, -- More Resource Crates
         [10539] = true, -- Returning Home (Unavailable Priest quest)
         [10638] = true, -- NOT A QUEST (Unavailable Priest quest)
         [10779] = true, -- The Hunter's Path (Unused)

@@ -558,8 +558,8 @@ QuestieEvent.eventDates = {
     },
     ["Love is in the Air"] = {startDate = "04/2", endDate = "18/2"},
     ["Noblegarden"] = { -- WARNING THIS DATE VARIES!!!!
-        startDate = "20/4",
-        endDate = "27/4"
+        startDate = "5/4",
+        endDate = "11/4"
     },
     ["Children's Week"] = {startDate = "29/4", endDate = "6/5"},
     ["Midsummer"] = {startDate = "21/6", endDate = "4/7"},
@@ -583,9 +583,11 @@ QuestieEvent.eventDateCorrections = {
     ["CLASSIC"] = {
         ["Brewfest"] = false,
         ["Pilgrim's Bounty"] = false,
+        ["Noblegarden"] = {startDate = "28/3", endDate = "28/3"}, -- One day event on Era, on the actual day of Easter. Date is set for 2027. Please update this every year.
         ["Love is in the Air"] = {startDate = "11/2", endDate = "16/2"}, -- WARNING THIS DATE VARIES!!!!
     },
     ["TBC"] = {
+        ["Noblegarden"] = false,
         ["Harvest Festival"] = false,
         ["Love is in the Air"] = {startDate = "11/2", endDate = "16/2"}, -- WARNING THIS DATE VARIES!!!!
     },
