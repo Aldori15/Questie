@@ -276,16 +276,16 @@ end
 function QuestieMap.GetScaleValue()
     local mapId = HBDPins.worldmapProvider:GetMap():GetMapID();
     local scaling = 1;
-    if C_Map and C_Map.GetMapInfo then
-        local mapInfo = C_Map.GetMapInfo(mapId)
-        if (mapInfo.mapType == 0) then     --? Cosmic, This is probably not needed but for the sake of completion...
-            scaling = 0.85
-        elseif (mapInfo.mapType == 1) then -- World
-            scaling = 0.85
-        elseif (mapInfo.mapType == 2) then -- Continent
-            scaling = 0.9
-        end
-    end
+--    if C_Map and C_Map.GetMapInfo then
+--        local mapInfo = C_Map.GetMapInfo(mapId)
+--       if (mapInfo.mapType == 0) then     --? Cosmic, This is probably not needed but for the sake of completion...
+--            scaling = 0.85
+--        elseif (mapInfo.mapType == 1) then -- World
+--            scaling = 0.85
+--        elseif (mapInfo.mapType == 2) then -- Continent
+--            scaling = 0.9
+--        end
+--    end
     return scaling
 end
 
