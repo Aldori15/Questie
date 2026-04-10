@@ -470,6 +470,18 @@ local advancedOptionsLocales = {
         ["esES"] = "Si está marcado, la identificación de los PNJs se mostrará en los tooltips.",
         ["frFR"] = "Si cette option est cochée, l'ID des PNJ sera affiché dans les infobulles.",
     },
+    ["Are you sure you want to recompile the Questie database?"] = {
+        ["enUS"] = true,
+        ["deDE"] = true,
+        ["esES"] = true,
+        ["esMX"] = true,
+        ["frFR"] = true,
+        ["koKR"] = true,
+        ["ptBR"] = true,
+        ["ruRU"] = true,
+        ["zhCN"] = "你确定要重建Questie数据库吗？",
+        ["zhTW"] = true,
+    },
 }
 
 for k, v in pairs(advancedOptionsLocales) do
