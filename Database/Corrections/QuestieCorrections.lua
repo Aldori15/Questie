@@ -57,9 +57,6 @@ local IsleOfQuelDanas = QuestieLoader:ImportModule("IsleOfQuelDanas")
 --- Automatic corrections
 local QuestieItemStartFixes = QuestieLoader:ImportModule("QuestieItemStartFixes")
 
---- COMPATIBILITY ---
-local C_Timer = QuestieCompat.C_Timer
-
 --[[
     This file load the corrections of the database files.
 
