@@ -603,6 +603,32 @@ local trackerOptionsLocales = {
         ["frFR"] = "Si cette option est activée, l'en-tête du suivi sera visible même lorsque aucune quête n'est suivie, contrairement à la dissimulation complète du suivi.",
     },
     ---------------------------------------------------------
+	["Show quest progress first"] = {
+		["ptBR"] = "Mostrar primeiro o progresso da missão",
+		["ruRU"] = "Сначала показывать прогресс задания",
+		["deDE"] = "Quest-Fortschritt zuerst anzeigen",
+		["koKR"] = "퀘스트 진행 상황을 먼저 표시",
+		["esMX"] = "Mostrar primero el progreso de la misión",
+        ["enUS"] = true,
+		["zhCN"] = "优先显示任务进度",
+		["zhTW"] = "優先顯示任務進度",
+		["esES"] = "Mostrar primero el progreso de la misión",
+		["frFR"] = "Afficher d'abord la progression de la quête",
+	},
+
+	["When checked, the quest progress will be displayed at the beginning of each line."] = {
+		["ptBR"] = "Quando marcado, o progresso da missão será exibido no início de cada linha.",
+		["ruRU"] = "Если включено, прогресс задания будет отображаться в начале каждой строки.",
+		["deDE"] = "Wenn diese Option aktiviert ist, wird der Quest-Fortschritt am Anfang jeder Zeile angezeigt.",
+		["koKR"] = "이 옵션을 선택하면 퀘스트 진행 상황이 각 줄의 시작 부분에 표시됩니다.",
+		["esMX"] = "Cuando está marcado, el progreso de la misión se mostrará al inicio de cada línea.",
+        ["enUS"] = true,
+		["zhCN"] = "选中时，任务进度将显示在每行的开头。",
+		["zhTW"] = "啟用時，任務進度將顯示在每一行的開頭。",
+		["esES"] = "Cuando está marcado, el progreso de la misión se mostrará al inicio de cada línea.",
+		["frFR"] = "Si activé, la progression de la quête sera affichée au début de chaque ligne.",
+	},
+    ---------------------------------------------------------
     -- Wrath of the Lich King only
     ["List Achievements First"] = {
         ["ptBR"] = "Listar conquistas primeiro",
