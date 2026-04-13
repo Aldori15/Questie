@@ -393,9 +393,6 @@ function QuestieTBCQuestFixes:Load()
         [1782] = { -- Furen's Armor
             [questKeys.zoneOrSort] = sortKeys.WARRIOR,
         },
-        [1799] = {
-            [questKeys.preQuestSingle] = {4967,4969},
-        },
         [1800] = {
             [questKeys.questLevel] = -1,
         },
@@ -490,9 +487,6 @@ function QuestieTBCQuestFixes:Load()
         },
         [2239] = { -- Onin's Report
             [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
-        },
-        [2240] = {
-            [questKeys.triggerEnd] = {"Explore the Hidden Chamber", {[zoneIDs.BADLANDS]={{35.22,10.32}}}},
         },
         [2279] = {
             [questKeys.requiredLevel] = 40,

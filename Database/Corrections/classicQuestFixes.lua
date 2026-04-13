@@ -1048,6 +1048,9 @@ function QuestieQuestFixes:Load()
         [1448] = {
             [questKeys.triggerEnd] = {"Search for the Temple of Atal'Hakkar", {[zoneIDs.SWAMP_OF_SORROWS]={{70.2,45.2},{66.6,48.1},{73.6,48.1},{64.9,53.3},{75.4,53.3},{66.6,58.4},{73.6,58.4},{70.2,60.5}}}},
         },
+        [1452] = { -- Rhapsody's Kalimdor Kocktail
+            [questKeys.nextQuestInChain] = 1469,
+        },
         [1462] = { -- Earth Sapta
             [questKeys.preQuestSingle] = {1520},
             [questKeys.objectivesText] = {},
@@ -1644,7 +1647,6 @@ function QuestieQuestFixes:Load()
             [questKeys.nextQuestInChain] = 2139,
         },
         [2201] = {
-            [questKeys.childQuests] = {3375},
             [questKeys.requiredLevel] = 37, -- #2447
         },
         [2205] = { -- Seek out SI: 7
@@ -1658,7 +1660,7 @@ function QuestieQuestFixes:Load()
             [questKeys.exclusiveTo] = {}, -- #1466
         },
         [2240] = {
-            [questKeys.triggerEnd] = { "Explore the Hidden Chamber", {[zoneIDs.BADLANDS]={{35.22,10.32}}}},
+            [questKeys.triggerEnd] = { "Explore the Hidden Chamber", {[zoneIDs.ULDAMAN]={{-1,-1}}}},
         },
         [2241] = { -- The Apple Falls
             [questKeys.exclusiveTo] = {}, -- #1466
@@ -1998,8 +2000,9 @@ function QuestieQuestFixes:Load()
         [3367] = {
             [questKeys.triggerEnd] = {"Dorius Escort", {[zoneIDs.SEARING_GORGE]={{74.47,19.44}}}},
         },
-        [3375] = {
-            [questKeys.parentQuest] = 2201,
+        [3375] = { -- Replacement Phial
+            [questKeys.availableStartingWith] = 2201,
+            [questKeys.availableUntilCompleted] = 2361,
         },
         [3377] = {
             [questKeys.objectives] = {{{8436,nil,Questie.ICON_TYPE_TALK}}},
@@ -2008,7 +2011,10 @@ function QuestieQuestFixes:Load()
             [questKeys.triggerEnd] = {"Protect Captain Vanessa Beltis from the naga attack", {[zoneIDs.AZSHARA]={{52.86,87.77}}}},
         },
         [3385] = {
-            [questKeys.requiredSkill] = {197,226}, -- You need to be an Artisan for this quest -- this needs proper fix
+            [questKeys.requiredSkill] = {197,230},
+        },
+        [3402] = {
+            [questKeys.requiredSkill] = {197,230},
         },
         [3441] = {
             [questKeys.objectives] = {{{8479,nil,Questie.ICON_TYPE_TALK}}},
