@@ -7,6 +7,8 @@ QuestieCompat.Is335 = (select(4, GetBuildInfo()) == 30300)
 
 local errorMsg = "Questie tried to call a blizzard API function that does not exist..."
 
+local WatchFrame = QuestWatchFrame or WatchFrame
+
 ------------------------------------------
 -- Older client compatibility (pre 1.14.1)
 ------------------------------------------
@@ -204,4 +206,16 @@ function QuestieCompat.GetItemCooldown(itemID)
     else
         return GetItemCooldown(itemID)
     end
+end
+
+function QuestieCompat.HideWatchFrame()
+    WatchFrame:Hide()
+end
+
+function QuestieCompat.ShowWatchFrame()
+    WatchFrame:Show()
+end
+
+function QuestieCompat.GetWatchFramePoint()
+    return WatchFrame:GetPoint()
 end
