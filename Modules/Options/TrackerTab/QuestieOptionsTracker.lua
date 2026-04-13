@@ -345,6 +345,19 @@ function QuestieOptions.tabs.tracker:Initialize()
                                     QuestieTracker:Update()
                                 end
                             },
+                            showQuestProgressFirst = {
+                                type = "toggle",
+                                order = 4.1,
+                                width = 1.5,
+                                name = function() return l10n('Show Objective Progress First') end,
+                                desc = function() return l10n('When checked, objective progress will be displayed at the beginning of each objective line.') end,
+                                disabled = function() return not Questie.db.profile.trackerEnabled end,
+                                get = function() return Questie.db.profile.showQuestProgressFirst end,
+                                set = function(_, value)
+                                    Questie.db.profile.showQuestProgressFirst = value
+                                    QuestieTracker:Update()
+                                end
+                            },
                             Spacer_X = QuestieOptionsUtils:Spacer(5),
                             colorObjectives = {
                                 type = "select",

@@ -1146,11 +1146,15 @@ function QuestieTracker:Update()
                                             end
                                         end
 
-                                        local lineEnding
-                                        lineEnding = tostring(objective.Collected) .. "/" .. tostring(objective.Needed)
+                                        local questProgress
+                                        questProgress = tostring(objective.Collected) .. "/" .. tostring(objective.Needed)
 
                                         -- Set Objective text
-                                        line.label:SetText(QuestieLib:GetRGBForObjective(objective) .. objDesc .. ": " .. lineEnding)
+                                        if (Questie.db.profile.showQuestProgressFirst) then
+                                            line.label:SetText(QuestieLib:GetRGBForObjective(objective) .. questProgress .. " " .. objDesc)
+										else
+								            line.label:SetText(QuestieLib:GetRGBForObjective(objective) .. objDesc .. ": " .. questProgress)
+                                        end
                                         _UpdateLineWidth(line, objectiveMarginLeft)
 
                                         -- Edge case where the quest is still flagged incomplete for single objectives and yet the objective itself is flagged complete

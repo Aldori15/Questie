@@ -94,6 +94,7 @@ function QuestieOptionsDefaults:Load()
             listAchievementsFirst = false,
             stickyVoiceOverFrame = false,
             alwaysShowTracker = false,
+            showQuestProgressFirst = false,
             trackerColorObjectives = 'minimal',
             trackerSortObjectives = 'byZone',
             trackerbindSetTomTom = 'ctrlleft',

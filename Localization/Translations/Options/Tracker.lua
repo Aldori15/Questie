@@ -603,6 +603,32 @@ local trackerOptionsLocales = {
         ["frFR"] = "Si cette option est activée, l'en-tête du suivi sera visible même lorsque aucune quête n'est suivie, contrairement à la dissimulation complète du suivi.",
     },
     ---------------------------------------------------------
+    ["Show Objective Progress First"] = {
+        ["ptBR"] = "Mostrar primeiro o progresso do objetivo",
+        ["ruRU"] = "Сначала показывать прогресс цели задания",
+        ["deDE"] = "Quest-Zielfortschritt zuerst anzeigen",
+        ["koKR"] = "퀘스트 목표 진행 상황을 먼저 표시",
+        ["esMX"] = "Mostrar primero el progreso del objetivo",
+        ["enUS"] = true,
+        ["zhCN"] = "优先显示任务目标进度",
+        ["zhTW"] = "優先顯示任務目標進度",
+        ["esES"] = "Mostrar primero el progreso del objetivo",
+        ["frFR"] = "Afficher d'abord la progression des objectifs",
+	},
+
+    ["When checked, objective progress will be displayed at the beginning of each objective line."] = {
+        ["ptBR"] = "Quando marcado, o progresso do objetivo será exibido no início de cada linha de objetivo.",
+        ["ruRU"] = "Если включено, прогресс цели задания будет отображаться в начале каждой строки цели.",
+        ["deDE"] = "Wenn diese Option aktiviert ist, wird der Quest-Zielfortschritt am Anfang jeder Zielzeile angezeigt.",
+        ["koKR"] = "이 옵션을 선택하면 퀘스트 목표 진행 상황이 각 목표 줄의 시작 부분에 표시됩니다.",
+        ["esMX"] = "Cuando está marcado, el progreso del objetivo se mostrará al inicio de cada línea de objetivo.",
+        ["enUS"] = true,
+        ["zhCN"] = "选中时，任务目标进度将显示在每个目标行的开头。",
+        ["zhTW"] = "啟用時，任務目標進度會顯示在每個目標行的開頭。",
+        ["esES"] = "Cuando está marcado, el progreso del objetivo se mostrará al inicio de cada línea de objetivo.",
+        ["frFR"] = "Si cette option est activée, la progression des objectifs s'affichera au début de chaque ligne d'objectif.",
+	},
+    ---------------------------------------------------------
     -- Wrath of the Lich King only
     ["List Achievements First"] = {
         ["ptBR"] = "Listar conquistas primeiro",
