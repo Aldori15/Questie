@@ -65,12 +65,14 @@ function QuestieWotlkQuestFixes:Load()
             [questKeys.zoneOrSort] = sortKeys.SPECIAL,
         },
         [236] = {
+            [questKeys.startedBy] = {{31108}},
             [questKeys.finishedBy] = {{31108}},
             [questKeys.exclusiveTo] = {13153,13154,13156,13195,13196,13197,13198},
             [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
         },
         [403] = {
             [questKeys.startedBy] = {nil,{269}},
+            [questKeys.finishedBy] = {nil,{269}},
         },
         [434] = {
             [questKeys.triggerEnd] = {"Overhear Lescovar and Marzon's Conversation", {[zoneIDs.STORMWIND_CITY]={{72.22,35.37}}}},
@@ -192,13 +194,13 @@ function QuestieWotlkQuestFixes:Load()
             [questKeys.breadcrumbForQuestId] = 14420,
         },
         [2204] = {
-            [questKeys.startedBy] = {nil,{112877}},
+            [questKeys.startedBy] = {{6826},{112877}},
         },
         [2279] = {
             [questKeys.preQuestSingle] = {2278},
         },
         [2701] = {
-            [questKeys.finishedBy] = {nil,{141980}},
+            [questKeys.finishedBy] = {{7750},{141980}},
         },
         [2767] = {
             [questKeys.triggerEnd] = {"Escort OOX-22/FE to safety", {[zoneIDs.FERALAS]={{55.63,51.35}}}},
@@ -428,12 +430,17 @@ function QuestieWotlkQuestFixes:Load()
         },
         [8552] = {
             [questKeys.specialFlags] = 0,
+            [questKeys.nextQuestInChain] = 8553,
         },
         [8553] = {
             [questKeys.requiredRaces] = raceIDs.NONE,
         },
         [8554] = {
             [questKeys.requiredRaces] = raceIDs.NONE,
+        },
+        [619] = {
+            [questKeys.parentQuest] = 8554, -- Match Classic fix; this is the event-style child step for Facing Negolash
+            [questKeys.requiredLevel] = 35,
         },
         [8579] = { -- Mortal Champions
             [questKeys.startedBy] = {{15503}},
@@ -764,6 +771,7 @@ function QuestieWotlkQuestFixes:Load()
             [questKeys.objectives] = {{{19823}},nil,{{31310}}},
         },
         [10888] = {
+            [questKeys.finishedBy] = {{18481}},
             [questKeys.exclusiveTo] = {13430},
         },
         [10900] = {
@@ -2099,6 +2107,7 @@ function QuestieWotlkQuestFixes:Load()
             [questKeys.requiredSourceItems] = {},
         },
         [12238] = {
+            [questKeys.startedBy] = {{26500,26787}},
             [questKeys.requiredSourceItems] = {35797,38303},
             [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_EVENT, l10n("Drink Drakuru's Elixir after gathering 5 Enduring Mojo"),0,{{"object", 190629}}}},
         },
@@ -2324,6 +2333,7 @@ function QuestieWotlkQuestFixes:Load()
             [questKeys.objectives] = {{{27718}}},
         },
         [12431] = {
+            [questKeys.finishedBy] = {{27102,27726}},
             [questKeys.objectives] = {{{27727}}},
         },
         [12432] = {
@@ -2426,6 +2436,7 @@ function QuestieWotlkQuestFixes:Load()
             [questKeys.preQuestSingle] = {12498},
         },
         [12501] = { -- Troll Patrol
+            [questKeys.startedBy] = {{28039}},
             [questKeys.finishedBy] = {{28039}},
             [questKeys.objectives] = {{{28042,nil,Questie.ICON_TYPE_TALK},{28044,nil,Questie.ICON_TYPE_TALK},{28043,nil,Questie.ICON_TYPE_TALK},{28205,nil,Questie.ICON_TYPE_TALK}}},
             [questKeys.exclusiveTo] = {12563,12587},
@@ -2563,6 +2574,7 @@ function QuestieWotlkQuestFixes:Load()
             [questKeys.requiredSpell] = 54197,
         },
         [12563] = { -- Troll Patrol
+            [questKeys.startedBy] = {{28039}},
             [questKeys.finishedBy] = {{28039}},
             [questKeys.objectives] = {{{28042,nil,Questie.ICON_TYPE_TALK},{28044,nil,Questie.ICON_TYPE_TALK},{28043,nil,Questie.ICON_TYPE_TALK},{28205,nil,Questie.ICON_TYPE_TALK}}},
             [questKeys.exclusiveTo] = {12501,12587},
@@ -3775,6 +3787,9 @@ function QuestieWotlkQuestFixes:Load()
         [13051] = {
             [questKeys.requiredSourceItems] = {},
         },
+        [13057] = {
+            [questKeys.startedBy] = {{29445,30390}},
+        },
         [13058] = {
             [questKeys.preQuestGroup] = {13048,13049},
             [questKeys.extraObjectives] = {
@@ -3968,11 +3983,11 @@ function QuestieWotlkQuestFixes:Load()
             [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_OBJECT, l10n("Free Patches"), 0, {{"object", 193025}}}},
         },
         [13153] = {
-            [questKeys.startedBy] = {},
+            [questKeys.startedBy] = {{31051}},
             [questKeys.exclusiveTo] = {236,13154,13156,13195,13196,13197,13198},
         },
         [13154] = {
-            [questKeys.startedBy] = {},
+            [questKeys.startedBy] = {{31052}},
             [questKeys.exclusiveTo] = {236,13153,13156,13195,13196,13197,13198},
         },
         [13155] = {
@@ -3980,7 +3995,7 @@ function QuestieWotlkQuestFixes:Load()
             [questKeys.preQuestGroup] = {13172,13174},
         },
         [13156] = {
-            [questKeys.startedBy] = {},
+            [questKeys.startedBy] = {{31054}},
             [questKeys.exclusiveTo] = {236,13153,13154,13195,13196,13197,13198},
         },
         [13160] = {
@@ -3989,6 +4004,9 @@ function QuestieWotlkQuestFixes:Load()
         [13164] = {
             [questKeys.preQuestSingle]= {},
             [questKeys.preQuestGroup] = {13161,13162,13163},
+        },
+        [13165] = {
+            [questKeys.startedBy] = {{29173,31084}},
         },
         [13168] = {
             [questKeys.triggerEnd] = {"Seize Control of an Eidolon Watcher", {[zoneIDs.ICECROWN]={{44.19,24.69}}}},
@@ -4014,12 +4032,12 @@ function QuestieWotlkQuestFixes:Load()
             [questKeys.preQuestGroup] = {13169,13170,13171},
         },
         [13177] = {
-            [questKeys.startedBy] = {},
+            [questKeys.startedBy] = {{31036}},
             [questKeys.exclusiveTo] = {13179},
             [questKeys.objectives] = {nil,nil,nil,nil,{{{30739,39019},39019}}},
         },
         [13178] = {
-            [questKeys.startedBy] = {},
+            [questKeys.startedBy] = {{31091}},
             [questKeys.exclusiveTo] = {13180},
         },
         [13179] = {
@@ -4052,7 +4070,7 @@ function QuestieWotlkQuestFixes:Load()
             [questKeys.objectives] = {nil,{{193057}}},
         },
         [13191] = {
-            [questKeys.startedBy] = {},
+            [questKeys.startedBy] = {{31106}},
             [questKeys.finishedBy] = {{31106}},
             [questKeys.exclusiveTo] = {13192,13193,13194,13199,13200,13201,13202},
         },
@@ -4060,11 +4078,11 @@ function QuestieWotlkQuestFixes:Load()
             [questKeys.exclusiveTo] = {13191,13193,13194,13199,13200,13201,13202},
         },
         [13193] = {
-            [questKeys.startedBy] = {},
+            [questKeys.startedBy] = {{31102}},
             [questKeys.exclusiveTo] = {13191,13192,13194,13199,13200,13201,13202},
         },
         [13194] = {
-            [questKeys.startedBy] = {},
+            [questKeys.startedBy] = {{31053}},
             [questKeys.exclusiveTo] = {13191,13192,13193,13199,13200,13201,13202},
         },
         [13195] = {
@@ -4251,6 +4269,9 @@ function QuestieWotlkQuestFixes:Load()
             [questKeys.startedBy] = {{31439}},
             [questKeys.finishedBy] = {{31439}},
             [questKeys.exclusiveTo] = {13245,13246,13247,13248,13249,13250,13251,13252,13253,13254,13255,14199},
+        },
+        [13257] = {
+            [questKeys.finishedBy] = {{31412,32363}},
         },
         [13258] = {
             [questKeys.preQuestGroup] = {12938,13224},
@@ -5973,6 +5994,8 @@ function QuestieWotlkQuestFixes:Load()
             [questKeys.sourceItemId] = 46397,
         },
         [13938] = {
+            [questKeys.startedBy] = {{24468}},
+            [questKeys.finishedBy] = {{24468,33532}},
             [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_LOOT, l10n("Buy a Small Paper Zeppelin"), 0, {{"monster", 29478}}}},
             [questKeys.objectives] = {{{33532,nil,Questie.ICON_TYPE_INTERACT}}},
             [questKeys.preQuestGroup] = {13955,13957},
@@ -5990,6 +6013,10 @@ function QuestieWotlkQuestFixes:Load()
             [questKeys.triggerEnd] = {"Keken taken to visit Snowfall Glade", {[zoneIDs.DRAGONBLIGHT]={{46,61},{44,70}}}}, -- wolvar orphan
             [questKeys.preQuestSingle] = {13927},
             [questKeys.exclusiveTo] = {13926},
+        },
+        [13952] = {
+            [questKeys.startedBy] = {{34435}},
+            [questKeys.finishedBy] = {{34435}},
         },
         [13954] = {
             [questKeys.objectives] = {{{26917,nil,Questie.ICON_TYPE_EVENT}}},
@@ -6021,6 +6048,8 @@ function QuestieWotlkQuestFixes:Load()
             [questKeys.exclusiveTo] = {13926},
         },
         [13966] = {
+            [questKeys.startedBy] = {nil,{187236}},
+            [questKeys.finishedBy] = {nil,{187236}},
             [questKeys.exclusiveTo] = {11528,13203},
         },
         [14016] = {
@@ -6190,6 +6219,9 @@ function QuestieWotlkQuestFixes:Load()
             [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_EVENT, l10n("Use your drum near a Mysterious Snow Mound"), 0, {{"object", 195309}}}},
             [questKeys.requiredSourceItems] = {},
         },
+        [14100] = {
+            [questKeys.startedBy] = {{3030,13417}},
+        },
         [14101] = {
             [questKeys.extraObjectives] = {{{[zoneIDs.HROTHGARS_LANDING]={{50.4,15.6}}}, Questie.ICON_TYPE_EVENT, l10n("Summon Drottinn Hrothgar using the Kvaldir War Horn")}},
             [questKeys.requiredSourceItems] = {},
@@ -6214,6 +6246,9 @@ function QuestieWotlkQuestFixes:Load()
         [14108] = {
             [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_MOUNT_UP, l10n("Mount up"), 0, {{"monster", 35117}}}},
             [questKeys.objectives] = {{{34925,nil,Questie.ICON_TYPE_INTERACT},{35092}}},
+        },
+        [14111] = {
+            [questKeys.startedBy] = {{17219,20407,23127}},
         },
         [14112] = {
             [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_LOOT, l10n("Take chum"), 0, {{"object", 195352}}}},
@@ -6271,6 +6306,54 @@ function QuestieWotlkQuestFixes:Load()
             [questKeys.startedBy] = {{15350}},
             [questKeys.finishedBy] = {{15350}},
             [questKeys.exclusiveTo] = {11339,11340,11341,11342,13407},
+        },
+        [14166] = {
+            [questKeys.startedBy] = {{35256}},
+            [questKeys.finishedBy] = {{35256}},
+        },
+        [14167] = {
+            [questKeys.startedBy] = {{34478}},
+            [questKeys.finishedBy] = {{34478}},
+        },
+        [14168] = {
+            [questKeys.startedBy] = {{34481}},
+            [questKeys.finishedBy] = {{34481}},
+        },
+        [14169] = {
+            [questKeys.startedBy] = {{34484}},
+            [questKeys.finishedBy] = {{34484}},
+        },
+        [14170] = {
+            [questKeys.startedBy] = {{34479}},
+            [questKeys.finishedBy] = {{34479}},
+        },
+        [14171] = {
+            [questKeys.startedBy] = {{34483}},
+            [questKeys.finishedBy] = {{34483}},
+        },
+        [14172] = {
+            [questKeys.startedBy] = {{35260}},
+            [questKeys.finishedBy] = {{35260}},
+        },
+        [14173] = {
+            [questKeys.startedBy] = {{35261}},
+            [questKeys.finishedBy] = {{35261}},
+        },
+        [14174] = {
+            [questKeys.startedBy] = {{34476}},
+            [questKeys.finishedBy] = {{34476}},
+        },
+        [14175] = {
+            [questKeys.startedBy] = {{34477}},
+            [questKeys.finishedBy] = {{34477}},
+        },
+        [14176] = {
+            [questKeys.startedBy] = {{34480}},
+            [questKeys.finishedBy] = {{34480}},
+        },
+        [14177] = {
+            [questKeys.startedBy] = {{34482}},
+            [questKeys.finishedBy] = {{34482}},
         },
         [14178] = {
             [questKeys.triggerEnd] = {"Victory in Arathi Basin", {
@@ -6383,6 +6466,9 @@ function QuestieWotlkQuestFixes:Load()
         },
         [14421] = { -- The Deathstalkers
             [questKeys.requiredRaces] = raceIDs.UNDEAD,
+        },
+        [14441] = {
+            [questKeys.finishedBy] = {{36624}},
         },
         [14444] = {
             [questKeys.objectives] = {{{27990,nil,Questie.ICON_TYPE_TALK}}},
@@ -6615,6 +6701,7 @@ function QuestieWotlkQuestFixes:Load()
             [questKeys.objectives] = {{{36497},{36502}}},
         },
         [24500] = {
+            [questKeys.startedBy] = {{37582}},
             [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
             [questKeys.finishedBy] = {{36955}},
             [questKeys.objectives] = {{{36955,nil,Questie.ICON_TYPE_EVENT},{36954,nil,Questie.ICON_TYPE_EVENT}}},
@@ -6978,6 +7065,8 @@ function QuestieWotlkQuestFixes:Load()
         },
         [24683] = {
             [questKeys.preQuestSingle] = {24499},
+            [questKeys.startedBy] = {{37597,38160}},
+            [questKeys.finishedBy] = {{36993,37597}},
         },
         [24710] = {
             [questKeys.preQuestSingle] = {24498},
@@ -7051,6 +7140,7 @@ function QuestieWotlkQuestFixes:Load()
             [questKeys.requiredClasses] = classIDs.WARRIOR + classIDs.PALADIN + classIDs.ROGUE + classIDs.HUNTER + classIDs.DEATH_KNIGHT + classIDs.MAGE + classIDs.WARLOCK,
         },
         [24802] = {
+            [questKeys.startedBy] = {{37779}},
             [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.finishedBy] = {{37554}},
             [questKeys.objectives] = {{{37554,nil,Questie.ICON_TYPE_EVENT},{36954,nil,Questie.ICON_TYPE_EVENT}}},

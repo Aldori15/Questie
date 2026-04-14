@@ -851,6 +851,53 @@ function QuestieWotlkObjectFixes:Load()
     }
 end
 
+function QuestieWotlkObjectFixes:LoadReverseLinkFixes()
+    local objectKeys = QuestieDB.objectKeys
+
+    return {
+        [269] = {
+            [objectKeys.questStarts] = {403},
+            [objectKeys.questEnds] = {403},
+        },
+        [142343] = {
+            [objectKeys.questStarts] = {2954,2967,2977},
+            [objectKeys.questEnds] = {2946,2954,2966},
+        },
+        [142703] = {
+            [objectKeys.questStarts] = {2933},
+        },
+        [142704] = {
+            [objectKeys.questStarts] = {2933},
+        },
+        [142705] = {
+            [objectKeys.questStarts] = {2933},
+        },
+        [142706] = {
+            [objectKeys.questStarts] = {2933},
+        },
+        [142707] = {
+            [objectKeys.questStarts] = {2933},
+        },
+        [142712] = {
+            [objectKeys.questStarts] = {2933},
+        },
+        [142713] = {
+            [objectKeys.questStarts] = {2933},
+        },
+        [142714] = {
+            [objectKeys.questStarts] = {2933},
+        },
+        [180642] = {
+            [objectKeys.questStarts] = {8578},
+            [objectKeys.questEnds] = {8577},
+        },
+        [187236] = {
+            [objectKeys.questStarts] = {11528,13966},
+            [objectKeys.questEnds] = {11528,13966},
+        },
+    }
+end
+
 -- This should allow manual fix for object availability
 function QuestieWotlkObjectFixes:LoadFactionFixes()
     local objectKeys = QuestieDB.objectKeys

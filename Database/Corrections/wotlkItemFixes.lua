@@ -766,6 +766,25 @@ function _QuestieWotlkItemFixes:InsertMissingItemIds()
     QuestieDB.itemData[211207] = {} -- Mysterious Artifact
 end
 
+function QuestieWotlkItemFixes:LoadReverseStartQuestFixes()
+    local itemKeys = QuestieDB.itemKeys
+
+    return {
+        [18513] = {
+            [itemKeys.startQuest] = 7508,
+        },
+        [18565] = {
+            [itemKeys.startQuest] = 7522,
+        },
+        [49643] = {
+            [itemKeys.startQuest] = 24429,
+        },
+        [49644] = {
+            [itemKeys.startQuest] = 24428,
+        },
+    }
+end
+
 -- This should allow manual fix for item availability
 function QuestieWotlkItemFixes:LoadFactionFixes()
     local itemKeys = QuestieDB.itemKeys

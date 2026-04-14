@@ -3732,8 +3732,487 @@ function QuestieWotlkNpcFixes:LoadAutomatics()
         [3537]={{26.3,54.5},},
       },
     },
-  }
-  end
+    }
+end
+
+function QuestieWotlkNpcFixes:LoadReverseLinkFixes()
+    local npcKeys = QuestieDB.npcKeys
+
+    return {
+        [895] = {
+            [npcKeys.questStarts] = {6075,9757},
+            [npcKeys.questEnds] = {3108},
+        },
+        [986] = {
+            [npcKeys.questStarts] = {8410},
+        },
+        [988] = {
+            [npcKeys.questStarts] = {8419},
+        },
+        [1261] = {
+            [npcKeys.questStarts] = {7673,7674},
+            [npcKeys.questEnds] = {7673,7674},
+        },
+        [1855] = {
+            [npcKeys.questStarts] = {5542,5543,5544,5742,5781,5845,5846,5861},
+            [npcKeys.questEnds] = {5542,5543,5544,5742,5781,5845,5848,5944},
+        },
+        [2981] = {
+            [npcKeys.questStarts] = {752,755,763},
+            [npcKeys.questEnds] = {753,757,781,24857},
+        },
+        [3030] = {
+            [npcKeys.questStarts] = {8410,14100},
+        },
+        [3031] = {
+            [npcKeys.questStarts] = {8410},
+        },
+        [3034] = {
+            [npcKeys.questStarts] = {9063},
+        },
+        [3324] = {
+            [npcKeys.questStarts] = {8419,64048,64050,64052,64063,64064,70734,70735,70736,70737,70865,70869,78167,78168},
+            [npcKeys.questEnds] = {64046,64048,64050,64052,70396,70734,70735,70736,70869,78137,78167},
+        },
+        [3325] = {
+            [npcKeys.questStarts] = {8419},
+        },
+        [3344] = {
+            [npcKeys.questStarts] = {8410,64048,64050,64052,64063,64064,70734,70735,70736,70737,70865,70869,78167,78168},
+            [npcKeys.questEnds] = {64046,64048,64050,64052,70396,70734,70735,70736,70869,78137,78167},
+        },
+        [3403] = {
+            [npcKeys.questStarts] = {8410},
+        },
+        [3596] = {
+            [npcKeys.questStarts] = {6071,6072,9757},
+            [npcKeys.questEnds] = {3117},
+        },
+        [4146] = {
+            [npcKeys.questStarts] = {6071,9757},
+            [npcKeys.questEnds] = {6103},
+        },
+        [4205] = {
+            [npcKeys.questStarts] = {6071,8151,9757},
+        },
+        [4218] = {
+            [npcKeys.questStarts] = {5923,9063},
+        },
+        [4564] = {
+            [npcKeys.questStarts] = {8419},
+        },
+        [4565] = {
+            [npcKeys.questStarts] = {8419},
+        },
+        [4947] = {
+            [npcKeys.questStarts] = {1220},
+        },
+        [5117] = {
+            [npcKeys.questStarts] = {9757},
+        },
+        [5171] = {
+            [npcKeys.questStarts] = {8419},
+        },
+        [5173] = {
+            [npcKeys.questStarts] = {8419},
+        },
+        [5495] = {
+            [npcKeys.questStarts] = {8419,64031,64034,64035,64037,64038,70397,70398,70401,70411,70865,70870,78140,78157,78164,78166},
+            [npcKeys.questEnds] = {64028,64031,64034,64035,70395,70397,70398,70401,70870,78136,78140,78157,78164},
+        },
+        [5496] = {
+            [npcKeys.questStarts] = {8419},
+        },
+        [5504] = {
+            [npcKeys.questStarts] = {9063},
+        },
+        [5515] = {
+            [npcKeys.questStarts] = {6073,6076,9757,64031,64034,64035,64037,64038,70397,70398,70401,70411,70865,70870,78140,78157,78164,78166},
+            [npcKeys.questEnds] = {64028,64031,64034,64035,70395,70397,70398,70401,70870,78136,78140,78157,78164},
+        },
+        [6467] = {
+            [npcKeys.questStarts] = {1978,1998,1999,2019,2378,6681,14418,14419,14420},
+            [npcKeys.questEnds] = {1885,1886,1899,1998,1999,14420,14421},
+        },
+        [6826] = {
+            [npcKeys.questStarts] = {2199,2200,2204,2361,2948,3375,8355},
+            [npcKeys.questEnds] = {2198,2199,2201,2204,2361,2947,2948,3375,8355},
+        },
+        [7007] = {
+            [npcKeys.questStarts] = {100,1103},
+            [npcKeys.questEnds] = {1103},
+        },
+        [7315] = {
+            [npcKeys.questStarts] = {1698,1718,8417},
+        },
+        [7750] = {
+            [npcKeys.questStarts] = {2701},
+            [npcKeys.questEnds] = {2701,2702},
+        },
+        [8126] = {
+            [npcKeys.questStarts] = {3638,3639,3644},
+            [npcKeys.questEnds] = {3526,3629,3633,3638,3639,3644,4181},
+        },
+        [8142] = {
+            [npcKeys.questStarts] = {9063},
+        },
+        [8738] = {
+            [npcKeys.questStarts] = {3646},
+            [npcKeys.questEnds] = {3646},
+        },
+        [9465] = {
+            [npcKeys.questStarts] = {9063},
+        },
+        [10181] = {
+            [npcKeys.questStarts] = {5961,6145,9626,9813,10593,14350},
+            [npcKeys.questEnds] = {9177,9180,9621,9812,10592,14349,24613},
+        },
+        [11554] = {
+            [npcKeys.questStarts] = {6131,8460,8462,8466},
+            [npcKeys.questEnds] = {6131,8460,8466},
+        },
+        [11807] = {
+            [npcKeys.questStarts] = {6075,9757},
+        },
+        [11878] = {
+            [npcKeys.questStarts] = {6022,6042,6133,6135,6136,6144,6146,6148,6163,14349},
+            [npcKeys.questEnds] = {5961,6022,6042,6133,6135,6136,6145,6147,6148,6163,14350},
+        },
+        [13417] = {
+            [npcKeys.questStarts] = {7061,7667,7668,7669,8258,8259,8410,14100},
+            [npcKeys.questEnds] = {6964,7667,7668,7669,8258,8259},
+        },
+        [13448] = {
+            [npcKeys.questEnds] = {7401},
+        },
+        [13597] = {
+            [npcKeys.questStarts] = {7368},
+            [npcKeys.questEnds] = {7368},
+        },
+        [13598] = {
+            [npcKeys.questStarts] = {7367},
+            [npcKeys.questEnds] = {7367},
+        },
+        [13840] = {
+            [npcKeys.questStarts] = {7161,7163,7164,7165,7166,7167,7181,7381},
+            [npcKeys.questEnds] = {7161,7163,7164,7165,7166,7167,7181,7241,7381},
+        },
+        [13841] = {
+            [npcKeys.questStarts] = {7162,7168,7169,7170,7171,7172,7202,7382},
+            [npcKeys.questEnds] = {7162,7168,7169,7170,7171,7172,7202,7261,7382},
+        },
+        [14185] = {
+            [npcKeys.questStarts] = {7361},
+            [npcKeys.questEnds] = {7361},
+        },
+        [14186] = {
+            [npcKeys.questStarts] = {7362},
+            [npcKeys.questEnds] = {7362},
+        },
+        [14188] = {
+            [npcKeys.questStarts] = {7424},
+            [npcKeys.questEnds] = {7424},
+        },
+        [14387] = {
+            [npcKeys.questStarts] = {7487,7848},
+            [npcKeys.questEnds] = {7487,7848},
+        },
+        [14525] = {
+            [npcKeys.questStarts] = {7635},
+            [npcKeys.questEnds] = {7632,7635},
+        },
+        [14526] = {
+            [npcKeys.questStarts] = {7634},
+            [npcKeys.questEnds] = {7632,7634},
+        },
+        [15535] = {
+            [npcKeys.questStarts] = {8615,8616},
+            [npcKeys.questEnds] = {8615,8616},
+        },
+        [15733] = {
+            [npcKeys.questStarts] = {8812,8820},
+            [npcKeys.questEnds] = {8812,8820},
+        },
+        [15734] = {
+            [npcKeys.questStarts] = {8813,8821},
+            [npcKeys.questEnds] = {8813,8821},
+        },
+        [15735] = {
+            [npcKeys.questStarts] = {8814,8822},
+            [npcKeys.questEnds] = {8814,8822},
+        },
+        [15736] = {
+            [npcKeys.questStarts] = {8815,8823},
+            [npcKeys.questEnds] = {8815,8823},
+        },
+        [15737] = {
+            [npcKeys.questStarts] = {8816,8824},
+            [npcKeys.questEnds] = {8816,8824},
+        },
+        [15738] = {
+            [npcKeys.questStarts] = {8815,8817,8826,8842},
+            [npcKeys.questEnds] = {8815,8826,8842},
+        },
+        [15739] = {
+            [npcKeys.questStarts] = {8818,8825},
+            [npcKeys.questEnds] = {8818,8825},
+        },
+        [15891] = {
+            [npcKeys.questStarts] = {8873,8874,8875},
+        },
+        [15892] = {
+            [npcKeys.questStarts] = {8870,8871,8872},
+        },
+        [16478] = {
+            [npcKeys.questStarts] = {9260},
+            [npcKeys.questEnds] = {9260,9292},
+        },
+        [16494] = {
+            [npcKeys.questStarts] = {9265},
+            [npcKeys.questEnds] = {9265,9310},
+        },
+        [16574] = {
+            [npcKeys.questStarts] = {9344,9410},
+            [npcKeys.questEnds] = {9405},
+        },
+        [16646] = {
+            [npcKeys.questStarts] = {3001,4738,4968,8419,10605},
+        },
+        [16647] = {
+            [npcKeys.questStarts] = {8419,9529,10789,10790},
+            [npcKeys.questEnds] = {9619,10788},
+        },
+        [16648] = {
+            [npcKeys.questStarts] = {8419},
+        },
+        [16652] = {
+            [npcKeys.questStarts] = {1943,1947,1953},
+        },
+        [16673] = {
+            [npcKeys.questStarts] = {8151,9617},
+        },
+        [16738] = {
+            [npcKeys.questStarts] = {6073,8151,9757},
+        },
+        [16858] = {
+            [npcKeys.questStarts] = {9345,10213},
+            [npcKeys.questEnds] = {9344,9345},
+        },
+        [17110] = {
+            [npcKeys.questStarts] = {6073,9454,9757,10324},
+            [npcKeys.questEnds] = {9453,9454,10324},
+        },
+        [17120] = {
+            [npcKeys.questStarts] = {8417},
+            [npcKeys.questEnds] = {10350},
+        },
+        [17219] = {
+            [npcKeys.questStarts] = {8410,9462,9502,9551,14111},
+        },
+        [17519] = {
+            [npcKeys.questStarts] = {8410},
+        },
+        [17520] = {
+            [npcKeys.questStarts] = {8410},
+        },
+        [18481] = {
+            [npcKeys.questStarts] = {10167,10560,10704,10882,10884,10885,10886,10949,13082,13430},
+            [npcKeys.questEnds] = {10102,10210,10280,10560,10704,10708,10781,10882,10883,10884,10885,10886,10888,10948,11007,11052,13081,13430},
+        },
+        [19175] = {
+            [npcKeys.questStarts] = {11357,11446,11971,12752,12782,12783,12784,12811,13483,13484},
+        },
+        [19176] = {
+            [npcKeys.questStarts] = {11357,11446,11971,12752,12782,12783,12784,12811,13483,13484},
+        },
+        [19177] = {
+            [npcKeys.questStarts] = {11357,11446,11971,12752,12782,12783,12784,12811,13483,13484},
+        },
+        [19178] = {
+            [npcKeys.questStarts] = {11357,11446,11971,12752,12782,12783,12784,12811,13483,13484},
+        },
+        [20407] = {
+            [npcKeys.questStarts] = {8410,10490,10491,14111,70397,70398,70401,70411,70865,70870,78140,78157,78164,78166},
+            [npcKeys.questEnds] = {70395,70397,70398,70401,70870,78136,78140,78157,78164},
+        },
+        [20482] = {
+            [npcKeys.questStarts] = {10384,10385,10405,10406,10408},
+            [npcKeys.questEnds] = {10339,10384,10385,10405,10406,10408,10974},
+        },
+        [20722] = {
+            [npcKeys.questStarts] = {7494,10373},
+        },
+        [20724] = {
+            [npcKeys.questStarts] = {7492,10374},
+        },
+        [21638] = {
+            [npcKeys.questEnds] = {10842},
+        },
+        [21968] = {
+            [npcKeys.questStarts] = {10693,10698},
+            [npcKeys.questEnds] = {10693,10698},
+        },
+        [21969] = {
+            [npcKeys.questStarts] = {10699,10700},
+            [npcKeys.questEnds] = {10699,10700},
+        },
+        [22112] = {
+            [npcKeys.questStarts] = {10866,10870,10871},
+            [npcKeys.questEnds] = {10858,10866,10872},
+        },
+        [23127] = {
+            [npcKeys.questStarts] = {8410,9462,9502,9551,14111},
+        },
+        [23534] = {
+            [npcKeys.questStarts] = {8419},
+        },
+        [23973] = {
+            [npcKeys.questStarts] = {11219,11220,11361,11449,11450,12139},
+            [npcKeys.questEnds] = {11219,11357,11361,11403,11449,11450,12139,12155},
+        },
+        [24468] = {
+            [npcKeys.questStarts] = {12193,13932,13938},
+            [npcKeys.questEnds] = {11400,13938},
+        },
+        [24519] = {
+            [npcKeys.questStarts] = {11131,11135,11360,11439,11440,12135},
+            [npcKeys.questEnds] = {11131,11242,11356,11360,11439,11440,12133,12135},
+        },
+        [26113] = {
+            [npcKeys.questStarts] = {11922,11923,11925,11926},
+            [npcKeys.questEnds] = {11882,11915,11922,11923,11925,11926},
+        },
+        [26500] = {
+            [npcKeys.questStarts] = {12007,12238},
+            [npcKeys.questEnds] = {11991},
+        },
+        [27726] = {
+            [npcKeys.questEnds] = {12431},
+        },
+        [28039] = {
+            [npcKeys.questStarts] = {12501,12505,12563,12587,12596,12604,12792},
+            [npcKeys.questEnds] = {12501,12563,12587,12596,12604},
+        },
+        [29445] = {
+            [npcKeys.questStarts] = {12915,12924,13010,13050,13051,13057,13064},
+            [npcKeys.questEnds] = {12886,12915,12956,13009,13050,13051,13064},
+        },
+        [29611] = {
+            [npcKeys.questStarts] = {396,6182,6187,7496,7782,13369,13371},
+            [npcKeys.questEnds] = {396,6186,6187,7495,7781,12774,13188,13347,13370,13377,24597},
+        },
+        [31036] = {
+            [npcKeys.questStarts] = {13177,13179},
+            [npcKeys.questEnds] = {13177,13179},
+        },
+        [31051] = {
+            [npcKeys.questStarts] = {13153,13198},
+            [npcKeys.questEnds] = {13153,13198},
+        },
+        [31052] = {
+            [npcKeys.questStarts] = {13154,13196},
+            [npcKeys.questEnds] = {13154,13196},
+        },
+        [31053] = {
+            [npcKeys.questStarts] = {13194,13201},
+            [npcKeys.questEnds] = {13194,13201},
+        },
+        [31054] = {
+            [npcKeys.questStarts] = {13156,13195},
+            [npcKeys.questEnds] = {13156,13195},
+        },
+        [31084] = {
+            [npcKeys.questStarts] = {13165,13166,13188,13189},
+            [npcKeys.questEnds] = {13165,13166},
+        },
+        [31091] = {
+            [npcKeys.questStarts] = {13178,13180},
+            [npcKeys.questEnds] = {13178,13180},
+        },
+        [31102] = {
+            [npcKeys.questStarts] = {13193,13199},
+            [npcKeys.questEnds] = {13193,13199},
+        },
+        [31106] = {
+            [npcKeys.questStarts] = {13191,13200},
+            [npcKeys.questEnds] = {13191,13200},
+        },
+        [31108] = {
+            [npcKeys.questStarts] = {236,13197},
+            [npcKeys.questEnds] = {236,13197},
+        },
+        [32363] = {
+            [npcKeys.questStarts] = {13370},
+            [npcKeys.questEnds] = {13257,13369},
+        },
+        [34435] = {
+            [npcKeys.questStarts] = {13952},
+            [npcKeys.questEnds] = {13952},
+        },
+        [34476] = {
+            [npcKeys.questStarts] = {14174},
+            [npcKeys.questEnds] = {14174},
+        },
+        [34477] = {
+            [npcKeys.questStarts] = {14175},
+            [npcKeys.questEnds] = {14175},
+        },
+        [34478] = {
+            [npcKeys.questStarts] = {14167},
+            [npcKeys.questEnds] = {14167},
+        },
+        [34479] = {
+            [npcKeys.questStarts] = {14170},
+            [npcKeys.questEnds] = {14170},
+        },
+        [34480] = {
+            [npcKeys.questStarts] = {14176},
+            [npcKeys.questEnds] = {14176},
+        },
+        [34481] = {
+            [npcKeys.questStarts] = {14168},
+            [npcKeys.questEnds] = {14168},
+        },
+        [34482] = {
+            [npcKeys.questStarts] = {14177},
+            [npcKeys.questEnds] = {14177},
+        },
+        [34483] = {
+            [npcKeys.questStarts] = {14171},
+            [npcKeys.questEnds] = {14171},
+        },
+        [34484] = {
+            [npcKeys.questStarts] = {14169},
+            [npcKeys.questEnds] = {14169},
+        },
+        [35256] = {
+            [npcKeys.questStarts] = {14166},
+            [npcKeys.questEnds] = {14166},
+        },
+        [35260] = {
+            [npcKeys.questStarts] = {14172},
+            [npcKeys.questEnds] = {14172},
+        },
+        [35261] = {
+            [npcKeys.questStarts] = {14173},
+            [npcKeys.questEnds] = {14173},
+        },
+        [36624] = {
+            [npcKeys.questStarts] = {14444,24461,24476,24480,24522,24795,24796},
+            [npcKeys.questEnds] = {14441,14443,24454,24461,24476,24480,24553,24595},
+        },
+        [37582] = {
+            [npcKeys.questStarts] = {24500},
+        },
+        [37597] = {
+            [npcKeys.questStarts] = {24499,24683},
+            [npcKeys.questEnds] = {24510,24683},
+        },
+        [37779] = {
+            [npcKeys.questStarts] = {24802},
+        },
+    }
+end
 
 -- This should allow manual fix for NPC availability
 function QuestieWotlkNpcFixes:LoadFactionFixes()

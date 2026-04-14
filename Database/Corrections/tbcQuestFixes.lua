@@ -42,6 +42,7 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
         },
         [100] = {
+            [questKeys.startedBy] = {{7007},{113791}},
             [questKeys.childQuests] = {},
         },
         [123] = { -- The Collector
@@ -230,7 +231,7 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.objectivesText] = {"Bring 20 Unpopped Darkmist Eyes to \"Swamp Eye\" Jarl at the Swamplight Manor.",},
         },
         [1220] = {
-            [questKeys.startedBy] = {{23951}},
+            [questKeys.startedBy] = {{4947,23951}},
         },
         [1268] = { -- Suspicious Hoofprints
             [questKeys.startedBy] = {nil,{187273}},
@@ -465,6 +466,7 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.requiredRaces] = raceIDs.ORC + raceIDs.TROLL,
         },
         [1978] = { -- The Deathstalkers
+            [questKeys.startedBy] = {{6467}},
             [questKeys.requiredRaces] = raceIDs.UNDEAD,
         },
         [1998] = { -- Fenwick Thatros
@@ -1097,7 +1099,7 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.requiredLevel] = 61,
         },
         [8410] = {
-            [questKeys.startedBy] = {{3032,13417,20407,23127,},nil,nil,},
+            [questKeys.startedBy] = {{986,3030,3031,3032,3344,3403,13417,17219,17519,17520,20407,23127}},
         },
         [8411] = { -- Mastering the Elements
             [questKeys.name] = "Mastering the Elements",
@@ -2300,6 +2302,7 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.objectives] = {{{17824,nil,Questie.ICON_TYPE_TALK}}},
         },
         [9757] = { -- Seek Huntress Kella Nightbow
+            [questKeys.startedBy] = {{895,3596,4146,4205,5117,5515,11807,16738,17110}},
             [questKeys.requiredRaces] = raceIDs.DRAENEI,
             [questKeys.breadcrumbForQuestId] = 9591,
         },
@@ -3433,6 +3436,22 @@ function QuestieTBCQuestFixes:Load()
         [10687] = {
             [questKeys.preQuestSingle] = {10552},
         },
+        [10693] = {
+            [questKeys.startedBy] = {{21968}},
+            [questKeys.finishedBy] = {{21968}},
+        },
+        [10698] = {
+            [questKeys.startedBy] = {{21968}},
+            [questKeys.finishedBy] = {{21968}},
+        },
+        [10699] = {
+            [questKeys.startedBy] = {{21969}},
+            [questKeys.finishedBy] = {{21969}},
+        },
+        [10700] = {
+            [questKeys.startedBy] = {{21969}},
+            [questKeys.finishedBy] = {{21969}},
+        },
         [10707] = { -- The Ata'mal Terrace
             [questKeys.objectivesText] = {"Go to the top of the Ata'mal Terrace in Shadowmoon Valley and obtain the Heart of Fury. Return to Akama at the Warden's Cage in Shadowmoon Valley when you've completed this task."},
             [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_EVENT, l10n("Kill the 3 Shadowmoon Soulstealers to force Shadowlord Deathwail to land"), 0, {{"object", 185125}}}},
@@ -3683,6 +3702,7 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.preQuestSingle] = {10915,10852},
         },
         [10842] = {
+            [questKeys.finishedBy] = {{21638,22278}},
             [questKeys.preQuestSingle] = {10915,10852},
             [questKeys.objectives] = {{{21638}}},
         },
@@ -3721,6 +3741,9 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_SLAY, l10n("Kill Razaani ethereals to lure Nexus-Prince Razaan out"), 0, {{"monster", 20601}, {"monster", 20609}, {"monster", 20614}}},
                                            {nil, Questie.ICON_TYPE_SLAY, l10n("Kill Nexus-Prince Razaan to spawn the Collection of Souls"), 0, {{"monster", 21057}}},
             },
+        },
+        [10871] = {
+            [questKeys.startedBy] = {{22112}},
         },
         [10872] = {
             [questKeys.name] = "Zuluhed the Whacked",
@@ -3914,6 +3937,7 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_OBJECT, l10n("Open the prison"), 0, {{"object", 184998}}}},
         },
         [10974] = {
+            [questKeys.finishedBy] = {{20482,22919}},
             [questKeys.requiredMinRep] = {933,21000},
         },
         [10975] = {
@@ -4513,12 +4537,12 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.preQuestSingle] = {11220},
         },
         [11439] = {
-            [questKeys.startedBy] = {},
+            [questKeys.startedBy] = {{24519}},
             [questKeys.exclusiveTo] = {11360,11440},
             [questKeys.requiredSourceItems] = {32971},
         },
         [11440] = {
-            [questKeys.startedBy] = {},
+            [questKeys.startedBy] = {{24519}},
             [questKeys.exclusiveTo] = {11360,11439},
             [questKeys.requiredSourceItems] = {32971},
         },
@@ -4543,12 +4567,12 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.finishedBy] = {{24711}},
         },
         [11449] = {
-            [questKeys.startedBy] = {},
+            [questKeys.startedBy] = {{23973}},
             [questKeys.exclusiveTo] = {11361,11450},
             [questKeys.requiredSourceItems] = {32971},
         },
         [11450] = {
-            [questKeys.startedBy] = {},
+            [questKeys.startedBy] = {{23973}},
             [questKeys.exclusiveTo] = {11361,11449},
             [questKeys.requiredSourceItems] = {32971},
         },
@@ -5274,7 +5298,7 @@ function QuestieTBCQuestFixes:Load()
         },
         [11882] = {
             [questKeys.startedBy] = {{25962}},
-            [questKeys.finishedBy] = {{25975}},
+            [questKeys.finishedBy] = {{25975,26113}},
         },
         [11885] = {
             [questKeys.objectives] = {{{23161},{23165},{23163},{23162}}},
