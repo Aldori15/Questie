@@ -17,6 +17,8 @@ local QuestieClassicItemDrops = QuestieLoader:ImportModule("QuestieClassicItemDr
 local QuestieTBCItemDrops = QuestieLoader:ImportModule("QuestieTBCItemDrops")
 ---@type QuestieWotlkItemDrops
 local QuestieWotlkItemDrops = QuestieLoader:ImportModule("QuestieWotlkItemDrops")
+---@type QuestieWotlkAcoreItemDrops
+local QuestieWotlkAcoreItemDrops = QuestieLoader:ImportModule("QuestieWotlkAcoreItemDrops")
 
 DropDB.tableWowhead = nil
 DropDB.tablePserver = nil
@@ -41,8 +43,8 @@ function DropDB:Initialize()
         DropDB.sourcePserver = "cmangos"
     elseif Questie.IsWotlk then
         DropDB.tableWowhead = loadstring(QuestieWotlkItemDrops.wowheadData)()
-        DropDB.tablePserver = loadstring(QuestieWotlkItemDrops.cmangosData)()
-        DropDB.sourcePserver = "cmangos"
+        DropDB.tablePserver = loadstring(QuestieWotlkAcoreItemDrops.data)()
+        DropDB.sourcePserver = "azerothcore"
     else
         Questie:Error("ItemDrops: Unknown Expansion!")
     end

@@ -450,6 +450,8 @@ function QuestieTooltips:GetTooltip(key)
                             if Questie.db.profile.debugEnabled and dropRateData and dropRateData[2] then
                                 if dropRateData[2] == "cmangos" then
                                     dropIcon = "|T" .. dropIconPath .. "cmangos.blp:" .. dropIconSize .. "|t "
+                                elseif dropRateData[2] == "azerothcore" then
+                                    dropIcon = "|T" .. dropIconPath .. "azerothcore.blp:" .. dropIconSize .. "|t "
                                 elseif dropRateData[2] == "mangos3" then
                                     dropIcon = "|T" .. dropIconPath .. "mangos3.blp:" .. dropIconSize .. "|t "
                                 elseif dropRateData[2] == "wowhead" then
