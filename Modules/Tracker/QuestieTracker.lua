@@ -1220,7 +1220,7 @@ function QuestieTracker:Update()
                                 if complete == 1 or (#quest.Objectives == 0 and quest.isComplete == true and completionText == nil and complete ~= -1) then
                                     line.label:SetText(Questie:Colorize(l10n("Quest Complete!"), "28FF28"))
                                 elseif complete == -1 then
-                                    line.label:SetText(Questie:Colorize(l10n("Quest Failed") .. "!", "red"))
+                                    line.label:SetText(Questie:Colorize(l10n("Quest Failed!"), "red"))
                                 end
 
                                 -- Check and measure Objective text width and update tracker width
