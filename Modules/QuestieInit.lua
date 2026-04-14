@@ -312,7 +312,11 @@ QuestieInit.Stages[3] = function() -- run as a coroutine
     WorldMapButton.Initialize()
     coYield()
     -- Seed the quest log baseline before live quest events are registered.
-    local _, changes = QuestLogCache.CheckForChanges(nil)
+    local cacheMiss, changes = QuestLogCache.CheckForChanges(nil)
+    if cacheMiss then
+        Questie:Debug(Questie.DEBUG_CRITICAL, "QuestieInit: Game Cache did not fill in time, waiting for valid cache.")
+        changes = QuestieInit.WaitForValidGameCache()
+    end
     QuestEventHandler.InitQuestLogStates(changes)
     coYield()
     QuestEventHandler:RegisterEvents()
@@ -411,6 +415,35 @@ end
 -- ********************************************************************************
 
 
+
+--- We really want to wait for the cache to be filled before we continue.
+--- Other addons can interfere with the cache and we need to make sure it's correct.
+---@return table<number, boolean>|nil
+function QuestieInit.WaitForValidGameCache()
+    local doWait = true
+    local retries = 0
+    local changes
+
+    local timer
+    timer = C_Timer.NewTicker(1, function()
+        local cacheMiss, newChanges = QuestLogCache.CheckForChanges(nil)
+        if (not cacheMiss) or retries >= 3 then
+            if retries == 3 then
+                Questie:Debug(Questie.DEBUG_CRITICAL, "QuestieInit: Game Cache did not become valid in 3 seconds, continuing with initialization.")
+            end
+            doWait = false
+            timer:Cancel()
+        end
+        changes = newChanges
+        retries = retries + 1
+    end)
+
+    while doWait do
+        coYield()
+    end
+
+    return changes
+end
 
 function QuestieInit:LoadDatabase(key)
     if QuestieDB[key] then
