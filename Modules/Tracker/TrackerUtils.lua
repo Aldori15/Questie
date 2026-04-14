@@ -406,7 +406,7 @@ end
 
 ---@param zoneId number Zone ID number
 ---@return string @Zone Name (Localized) or "Unknown Zone"
-local function GetZoneNameByIDFallback(zoneId)
+local function GetLocalizedZoneNameFromLookup(zoneId)
     if zoneCache[zoneId] then
         return zoneCache[zoneId]
     end
@@ -417,9 +417,20 @@ local function GetZoneNameByIDFallback(zoneId)
 
     for _, zone in pairs(l10n.zoneLookup) do
         if zone[zoneId] then
-            zoneCache[zoneId] = zone[zoneId]
+            zoneCache[zoneId] = l10n(zone[zoneId])
             return zoneCache[zoneId]
         end
+    end
+
+    return nil
+end
+
+---@param zoneId number Zone ID number
+---@return string @Zone Name (Localized) or "Unknown Zone"
+local function GetZoneNameByIDFallback(zoneId)
+    local localizedZoneName = GetLocalizedZoneNameFromLookup(zoneId)
+    if localizedZoneName then
+        return localizedZoneName
     end
 
     Questie:Debug(Questie.DEBUG_CRITICAL, "[GetZoneNameByIDFallback]: Unable to find a zone name for zoneId", zoneId)
@@ -434,10 +445,13 @@ function TrackerUtils:GetZoneNameByID(zoneId)
         return zoneCache[zoneId]
     end
 
-    if C_Map.GetAreaInfo(zoneId) then
+    local localizedZoneName = GetLocalizedZoneNameFromLookup(zoneId)
+    if localizedZoneName then
+        zoneCache[zoneId] = localizedZoneName
+    elseif C_Map.GetAreaInfo(zoneId) then
         zoneCache[zoneId] = C_Map.GetAreaInfo(zoneId)
     elseif ZoneDB:GetLocalizedDungeonName(zoneId) then
-        zoneCache[zoneId] = ZoneDB:GetLocalizedDungeonName(zoneId)
+        zoneCache[zoneId] = l10n(ZoneDB:GetLocalizedDungeonName(zoneId))
     else
         zoneCache[zoneId] = GetZoneNameByIDFallback(zoneId)
     end
