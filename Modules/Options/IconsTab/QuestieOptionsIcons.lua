@@ -688,8 +688,8 @@ function QuestieOptions.tabs.icons:Initialize()
                         step = 0.01,
                         get = function(info) return QuestieOptions:GetProfileValue(info); end,
                         set = function (info, value)
-                            QuestieMap:RescaleTownsfolkIcons()
                             QuestieOptions:SetProfileValue(info, value)
+                            QuestieMap:RescaleTownsfolkIcons()
                         end,
                     },
                     globalMiniMapTownsfolkScale = {
@@ -703,8 +703,8 @@ function QuestieOptions.tabs.icons:Initialize()
                         step = 0.01,
                         get = function(info) return QuestieOptions:GetProfileValue(info); end,
                         set = function (info, value)
-                            QuestieMap:RescaleTownsfolkIcons()
                             QuestieOptions:SetProfileValue(info, value)
+                            QuestieMap:RescaleTownsfolkIcons()
                         end,
                     },
                     spacer_scale = QuestieOptionsUtils:Spacer(5.3),
