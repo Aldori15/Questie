@@ -2892,7 +2892,7 @@ function QuestieWotlkQuestFixes:Load()
             [questKeys.requiredSourceItems] = {},
         },
         [12686] = { -- Zero Tolerance
-            [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_EVENT, l10n("Use Scepter of Empowerment to mind control Servant of Drakuru",Questie.ICON_TYPE_INTERACT), 0, {{"monster", 28802}}}},
+            [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_INTERACT, l10n("Use Scepter of Empowerment to mind control Servant of Drakuru"), 0, {{"monster", 28802}}}},
             [questKeys.requiredSourceItems] = {},
         },
         [12687] = {
@@ -2909,7 +2909,7 @@ function QuestieWotlkQuestFixes:Load()
             [questKeys.exclusiveTo] = {12710},
             [questKeys.requiredSourceItems] = {38699},
             [questKeys.objectives] = {{{28844},{28873,nil,Questie.ICON_TYPE_EVENT}}},
-            [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_EVENT, l10n("Use Scepter of Command",Questie.ICON_TYPE_INTERACT), 0, {{"monster", 28843}}}},
+            [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_INTERACT, l10n("Use Scepter of Command"), 0, {{"monster", 28843}}}},
         },
         [12692] = {
             [questKeys.requiredMinRep] = {1104,9000},
