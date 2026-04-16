@@ -554,6 +554,30 @@ local dungeonLocales = {
         ["zhTW"] = "冰封大廳",
         ["zhCN"] = "冰封大殿",
     },
+    ["Upper Blackrock Spire"] = {
+        ["enUS"] = true,
+        ["deDE"] = "Obere Schwarzfelsspitze",
+        ["esES"] = "Cumbre de Roca Negra Superior",
+        ["esMX"] = "Cumbre de Roca Negra Superior",
+        ["frFR"] = "Sommet du pic Rochenoire",
+        ["koKR"] = "검은바위 첨탑 상층",
+        ["ptBR"] = "Pico da Rocha Negra Superior",
+        ["ruRU"] = "Верхняя часть пика Черной горы",
+        ["zhCN"] = "黑石塔上层",
+        ["zhTW"] = "黑石塔上層",
+    },
+    ["Lower Blackrock Spire"] = {
+        ["enUS"] = true,
+        ["deDE"] = "Untere Schwarzfelsspitze",
+        ["esES"] = "Cumbre de Roca Negra Inferior",
+        ["esMX"] = "Cumbre de Roca Negra Inferior",
+        ["frFR"] = "Bas du pic Rochenoire",
+        ["koKR"] = "검은바위 첨탑 하층",
+        ["ptBR"] = "Pico da Rocha Negra Inferior",
+        ["ruRU"] = "Нижняя часть пика Черной горы",
+        ["zhCN"] = "黑石塔下层",
+        ["zhTW"] = "黑石塔下層",
+    },
 }
 
 for k, v in pairs(dungeonLocales) do

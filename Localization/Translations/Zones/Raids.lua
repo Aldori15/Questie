@@ -255,6 +255,30 @@ local raidLocales = {
         ["zhTW"] = "冰冠城塞",
         ["zhCN"] = "冰冠堡垒",
     },
+    ["The Ruby Sanctum"] = {
+        ["enUS"] = true,
+        ["deDE"] = "Das Rubinsanktum",
+        ["esES"] = "El Sagrario Rubí",
+        ["esMX"] = "El Sagrario Rubí",
+        ["frFR"] = "Le sanctum Rubis",
+        ["koKR"] = "루비 성소",
+        ["ptBR"] = "Santuário Rubi",
+        ["ruRU"] = "Рубиновое святилище",
+        ["zhCN"] = "红玉圣殿",
+        ["zhTW"] = "晶紅聖所",
+    },
+    ["Scarlet Enclave"] = {
+        ["enUS"] = true,
+        ["deDE"] = "Scharlachrote Enklave",
+        ["esES"] = "Enclave Escarlata",
+        ["esMX"] = "Enclave Escarlata",
+        ["frFR"] = "Enclave Écarlate",
+        ["koKR"] = "붉은십자군 초소",
+        ["ptBR"] = "Enclave Escarlate",
+        ["ruRU"] = "Анклав Алого ордена",
+        ["zhCN"] = "血色领地",
+        ["zhTW"] = "血色領區",
+    },
 }
 
 for k, v in pairs(raidLocales) do
