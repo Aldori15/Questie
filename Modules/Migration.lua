@@ -163,6 +163,10 @@ local migrationFunctions = {
             autoAccept.rejectSharedInBattleground = false
         end
     end,
+    [18] = function()
+        Questie.db.profile.questObjectiveColors = true
+        Questie.db.profile.questMinimapObjectiveColors = true
+    end,
 }
 
 function Migration:Migrate()
