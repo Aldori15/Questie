@@ -2066,8 +2066,8 @@ function QuestieTracker:UntrackQuestId(questId)
     end
 
     if Questie.db.profile.hideUntrackedQuestsMapIcons then
-        -- Hides objective icons for untracked quests.
-        QuestieQuest:ToggleNotes(false)
+        -- Re-evaluate icon visibility without forcing a full notes rebuild.
+        QuestieQuest:RefreshQuestIconVisibility()
 
         -- Removes objective tooltips for untracked quests.
         QuestieTooltips:RemoveQuest(questId)
@@ -2139,11 +2139,9 @@ function QuestieTracker:AQW_Insert(index, expire)
 
             -- Unhide quest icons when retracking quests.
             if Questie.db.profile.hideUntrackedQuestsMapIcons then
-                -- Shows objective icons for tracked quests.
-                QuestieQuest:ToggleNotes(true)
-
-                -- Readd objective tooltips for tracked quests.
+                -- Rebuild the tracked quest only, then refresh visibility.
                 QuestieQuest:PopulateObjectiveNotes(quest)
+                QuestieQuest:RefreshQuestIconVisibility()
             end
         else
             if Questie.IsSoD then
