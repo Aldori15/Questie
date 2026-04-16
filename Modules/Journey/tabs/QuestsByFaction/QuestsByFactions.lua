@@ -436,6 +436,7 @@ function _QuestieJourney.questsByFaction:CollectFactionQuests(factionId)
     local temp = {}
 
     local playerlevel = UnitLevel("player")
+    local HIDE_ON_MAP = QuestieQuestBlacklist.HIDE_ON_MAP
     local hiddenQuests = QuestieCorrections.hiddenQuests
     local DoableStates = QuestieDB.DoableStates
 
@@ -514,7 +515,7 @@ function _QuestieJourney.questsByFaction:CollectFactionQuests(factionId)
                 -- reused the logic from AvailableQuests.lua _DrawChildQuests
                 -- if this is modified, also make sure the changes are reflected in the other file(s)
                     local requiredRaces = QuestieDB.QueryQuestSingle(questId, "requiredRaces")
-                    if (not Questie.db.char.complete[questId]) and (not hiddenQuests[questId]) and (QuestiePlayer.HasRequiredRace(requiredRaces)) then
+                    if (not Questie.db.char.complete[questId]) and ((not hiddenQuests[questId]) or hiddenQuests[questId] == HIDE_ON_MAP) and (QuestiePlayer.HasRequiredRace(requiredRaces)) then
                         -- some childQuest remain completed after abandoning and retaking parentQuest
                         -- here we are checking against 
                         local childQuestExclusiveTo = QuestieDB.QueryQuestSingle(questId, "exclusiveTo")

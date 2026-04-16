@@ -3,7 +3,11 @@ local QuestieQuestBlacklist = QuestieLoader:CreateModule("QuestieQuestBlacklist"
 ---@type QuestieCorrections
 local QuestieCorrections = QuestieLoader:ImportModule("QuestieCorrections")
 
----@return table<QuestId, boolean>
+local HIDE_ON_MAP = "HIDE_ON_MAP"
+
+QuestieQuestBlacklist.HIDE_ON_MAP = HIDE_ON_MAP
+
+---@return table<QuestId, boolean|string>
 function QuestieQuestBlacklist:Load()
     local questsToBlacklist = {
         [7462] = true, -- Duplicate of 7877. See #1583
@@ -831,36 +835,36 @@ function QuestieQuestBlacklist:Load()
         -----------------------------------------------
 
         -- corrupted windblossom
-        [2523] = true,
-        [2878] = true,
-        [3363] = true,
-        [4113] = true,
-        [4114] = true,
-        [4116] = true,
-        [4118] = true,
-        [4401] = true,
-        [4464] = true,
-        [4465] = true,
-        [996] = true,
-        [998] = true,
-        [1514] = true,
-        [4115] = true,
-        [4221] = true,
-        [4222] = true,
-        [4343] = true,
-        [4403] = true,
-        [4466] = true,
-        [4467] = true,
-        [4117] = true,
-        [4443] = true,
-        [4444] = true,
-        [4445] = true,
-        [4446] = true,
-        [4461] = true,
-        [4119] = true,
-        [4447] = true,
-        [4448] = true,
-        [4462] = true,
+        [2523] = HIDE_ON_MAP,
+        [2878] = HIDE_ON_MAP,
+        [3363] = HIDE_ON_MAP,
+        [4113] = HIDE_ON_MAP,
+        [4114] = HIDE_ON_MAP,
+        [4116] = HIDE_ON_MAP,
+        [4118] = HIDE_ON_MAP,
+        [4401] = HIDE_ON_MAP,
+        [4464] = HIDE_ON_MAP,
+        [4465] = HIDE_ON_MAP,
+        [996] = HIDE_ON_MAP,
+        [998] = HIDE_ON_MAP,
+        [1514] = HIDE_ON_MAP,
+        [4115] = HIDE_ON_MAP,
+        [4221] = HIDE_ON_MAP,
+        [4222] = HIDE_ON_MAP,
+        [4343] = HIDE_ON_MAP,
+        [4403] = HIDE_ON_MAP,
+        [4466] = HIDE_ON_MAP,
+        [4467] = HIDE_ON_MAP,
+        [4117] = HIDE_ON_MAP,
+        [4443] = HIDE_ON_MAP,
+        [4444] = HIDE_ON_MAP,
+        [4445] = HIDE_ON_MAP,
+        [4446] = HIDE_ON_MAP,
+        [4461] = HIDE_ON_MAP,
+        [4119] = HIDE_ON_MAP,
+        [4447] = HIDE_ON_MAP,
+        [4448] = HIDE_ON_MAP,
+        [4462] = HIDE_ON_MAP,
 
         --Darkmoon Faire
         [7905] = true,
