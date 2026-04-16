@@ -124,19 +124,34 @@ function QuestieQuest:RefreshQuestIconVisibility()
     _QuestieQuest:ShowQuestIcons()
 end
 
+local function _GetValidQuestFrame(questId, frameList, frameName)
+    local icon = _G[frameName]
+    if icon and icon.data then
+        return icon
+    end
+
+    if frameList then
+        frameList[frameName] = nil
+    end
+
+    if QuestieMap.questIdFrames[questId] and not next(QuestieMap.questIdFrames[questId]) then
+        QuestieMap.questIdFrames[questId] = nil
+    end
+
+    return nil
+end
+
 function _QuestieQuest:ShowQuestIcons()
     local trackerHiddenQuests = Questie.db.char.TrackerHiddenQuests
     for questId, frameList in pairs(QuestieMap.questIdFrames) do
         if (not trackerHiddenQuests) or (not trackerHiddenQuests[questId]) then -- Skip quests which are completely hidden from the Tracker menu
             for _, frameName in pairs(frameList) do -- this may seem a bit expensive, but its actually really fast due to the order things are checked
                 ---@type IconFrame
-                local icon = _G[frameName];
-                if not icon.data then
-                    error("Desync! Icon has not been removed correctly, but has already been reset. Skipping frame \"" .. frameName .. "\" for quest " .. questId)
-                else
+                local icon = _GetValidQuestFrame(questId, frameList, frameName)
+                if icon then
                     local objectiveString = tostring(questId) .. " " .. tostring(icon.data.ObjectiveIndex)
                     if (not Questie.db.char.TrackerHiddenObjectives) or (not Questie.db.char.TrackerHiddenObjectives[objectiveString]) then
-                        if icon ~= nil and icon.hidden and (not icon:ShouldBeHidden()) then
+                        if icon.hidden and (not icon:ShouldBeHidden()) then
                             icon:FakeShow()
 
                             if icon.data.lineFrames then
@@ -171,10 +186,10 @@ function _QuestieQuest:ShowManualIcons()
 end
 
 function _QuestieQuest:HideQuestIcons()
-    for _, frameList in pairs(QuestieMap.questIdFrames) do
+    for questId, frameList in pairs(QuestieMap.questIdFrames) do
         for _, frameName in pairs(frameList) do -- this may seem a bit expensive, but its actually really fast due to the order things are checked
-            local icon = _G[frameName];
-            if icon ~= nil and (not icon.hidden) and icon:ShouldBeHidden() then -- check for function to make sure its a frame
+            local icon = _GetValidQuestFrame(questId, frameList, frameName)
+            if icon and (not icon.hidden) and icon:ShouldBeHidden() then -- check for function to make sure its a frame
                 -- Hides Objective Icons
                 icon:FakeHide()
 
@@ -184,10 +199,12 @@ function _QuestieQuest:HideQuestIcons()
                     end
                 end
             end
-            if (icon.data.QuestData.FadeIcons or (icon.data.ObjectiveData and icon.data.ObjectiveData.FadeIcons)) and icon.data.Type ~= "complete" then
-                icon:FadeOut()
-            else
-                icon:FadeIn()
+            if icon then
+                if (icon.data.QuestData.FadeIcons or (icon.data.ObjectiveData and icon.data.ObjectiveData.FadeIcons)) and icon.data.Type ~= "complete" then
+                    icon:FadeOut()
+                else
+                    icon:FadeIn()
+                end
             end
         end
     end
@@ -494,7 +511,7 @@ function QuestieQuest:AcceptQuest(questId)
 
             -- Run a delayed refresh so newly accepted quests are
             -- guaranteed visible without manual collapse/expand.
-            C_Timer.After(0.30, function()
+            C_Timer.After(0.20, function()
                 QuestieCombatQueue:Queue(function()
                     QuestieTracker:Update()
                 end)
@@ -551,7 +568,7 @@ function QuestieQuest:CompleteQuest(questId)
 
     -- Turn-in flow can update tracker before quest log header counters settle.
     -- Run a short delayed refresh to keep the header/count in sync.
-    C_Timer.After(0.30, function()
+    C_Timer.After(0.20, function()
         QuestieCombatQueue:Queue(function()
             QuestieTracker:Update()
         end)
@@ -599,7 +616,7 @@ function QuestieQuest:AbandonedQuest(questId)
 
         -- Abandon flow can update tracker before quest log header counters settle.
         -- Run a short delayed refresh to keep the header/count in sync.
-        C_Timer.After(0.30, function()
+        C_Timer.After(0.20, function()
             QuestieCombatQueue:Queue(function()
                 QuestieTracker:Update()
             end)

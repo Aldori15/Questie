@@ -473,7 +473,7 @@ function AvailableQuests.RebuildAll(callback, fastRefresh)
     end
 
     for i = 1, #questIds do
-        AvailableQuests.RemoveQuest(questIds[i])
+        AvailableQuests.RemoveAvailableQuest(questIds[i])
     end
 
     AvailableQuests.CalculateAndDrawAll(callback, fastRefresh)
@@ -522,7 +522,7 @@ function AvailableQuests.PruneByCurrentLevelFilter()
         local isRepeatableQuest = QuestieDB.IsRepeatable(questId)
         if _IsHiddenByTrivialRepeatableSetting(questId, isRepeatableQuest, showTrivialRepeatableQuests) or
             (not _IsLevelRequirementsFulfilledForAvailable(questId, minLevel, maxLevel, playerLevel, isRepeatableQuest)) then
-            AvailableQuests.RemoveQuest(questId)
+            AvailableQuests.RemoveAvailableQuest(questId)
         end
     end
 end
@@ -598,6 +598,14 @@ _RemoveQuestFromNpcAvailability = function(questId, quest)
 end
 
 ---@param questId QuestId
+function AvailableQuests.RemoveAvailableQuest(questId)
+    availableQuests[questId] = nil
+    _RemoveQuestFromNpcAvailability(questId, QuestieDB.GetQuest(questId))
+    QuestieMap:UnloadQuestFrames(questId, nil, "available")
+    QuestieTooltips:RemoveAvailableQuest(questId)
+end
+
+---@param questId QuestId
 function AvailableQuests.RemoveQuest(questId)
     availableQuests[questId] = nil
     _RemoveQuestFromNpcAvailability(questId, QuestieDB.GetQuest(questId))
@@ -613,7 +621,7 @@ function AvailableQuests.RemoveQuestsForToday(npcId, questIds)
     local removedAnyQuest = false
     for _, questId in pairs(questIds) do
         if availableQuests[questId] or QuestieMap.questIdFrames[questId] or QuestieTooltips.lookupKeysByQuestId[questId] then
-            AvailableQuests.RemoveQuest(questId)
+            AvailableQuests.RemoveAvailableQuest(questId)
             removedAnyQuest = true
         end
         if availableQuestsByNpc[npcId] then
@@ -1003,7 +1011,7 @@ _SyncAvailableQuestDisplay = function(previousAvailableQuests, nextAvailableQues
 
     for questId in pairs(previousAvailableQuests) do
         if not nextAvailableQuests[questId] then
-            AvailableQuests.RemoveQuest(questId)
+            AvailableQuests.RemoveAvailableQuest(questId)
         end
 
         questCount = questCount + 1

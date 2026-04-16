@@ -263,6 +263,56 @@ function QuestieTooltips:RemoveQuest(questId)
     QuestieTooltips.lookupKeysByQuestId[questId] = nil
 end
 
+---@param questId number
+function QuestieTooltips:RemoveAvailableQuest(questId)
+    if (not QuestieTooltips.lookupKeysByQuestId[questId]) then
+        return
+    end
+
+    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieTooltips:RemoveAvailableQuest]", questId)
+
+    local removedAnyKey
+    for key in pairs(QuestieTooltips.lookupKeysByQuestId[questId] or {}) do
+        local removedForKey = false
+        local remainingForKey = false
+
+        for tooltipKey, tooltipData in pairs(QuestieTooltips.lookupByKey[key] or {}) do
+            if tooltipData.questId == questId and tooltipData.name and tooltipData.type ~= "Finisher" then
+                QuestieTooltips.lookupByKey[key][tooltipKey] = nil
+                removedForKey = true
+            elseif QuestieTooltips.lookupByKey[key][tooltipKey] then
+                remainingForKey = true
+            end
+        end
+
+        if removedForKey then
+            removedAnyKey = true
+            if not remainingForKey then
+                QuestieTooltips.lookupByKey[key] = nil
+            end
+
+            if QuestieTooltips.lookupByKey[key] == nil then
+                QuestieTooltips.lookupKeysByQuestId[questId][key] = nil
+            else
+                local hasQuestEntriesForKey = false
+                for _, tooltipData in pairs(QuestieTooltips.lookupByKey[key]) do
+                    if tooltipData.questId == questId then
+                        hasQuestEntriesForKey = true
+                        break
+                    end
+                end
+                if not hasQuestEntriesForKey then
+                    QuestieTooltips.lookupKeysByQuestId[questId][key] = nil
+                end
+            end
+        end
+    end
+
+    if removedAnyKey and not next(QuestieTooltips.lookupKeysByQuestId[questId]) then
+        QuestieTooltips.lookupKeysByQuestId[questId] = nil
+    end
+end
+
 -- This function contains the rules for formatting text for drop rate tooltips.
 ---@param rate number
 ---@return string

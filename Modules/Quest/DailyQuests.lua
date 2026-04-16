@@ -111,7 +111,7 @@ function _DailyQuests:HandleDailyQuests(possibleQuestIds, currentQuestId, type)
         else
             -- If the quest is not in the questlog remove all frames
             if (GetQuestLogIndexByID(questId) == 0) then
-                AvailableQuests.RemoveQuest(questId)
+                AvailableQuests.RemoveAvailableQuest(questId)
             end
             Questie.db.char.hiddenDailies[type][questId] = true;
         end

@@ -143,16 +143,18 @@ function QuestieMap:GetFramesForQuest(questId)
     return frames
 end
 
-function QuestieMap:UnloadQuestFrames(questId, iconType)
+function QuestieMap:UnloadQuestFrames(questId, iconType, noteType)
     if QuestieMap.questIdFrames[questId] then
-        if not iconType then
+        if (not iconType) and (not noteType) then
             for _, frame in pairs(QuestieMap:GetFramesForQuest(questId)) do
                 frame:Unload();
             end
             QuestieMap.questIdFrames[questId] = nil;
         else
             for name, frame in pairs(QuestieMap:GetFramesForQuest(questId)) do
-                if frame and frame.data and frame.data.Icon == iconType then
+                if frame and frame.data
+                    and ((not iconType) or frame.data.Icon == iconType)
+                    and ((not noteType) or frame.data.Type == noteType) then
                     frame:Unload();
                     QuestieMap.questIdFrames[questId][name] = nil
                     _G[name] = nil
