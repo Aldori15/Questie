@@ -316,13 +316,23 @@ function QuestieTBCNpcFixes:Load()
             [npcKeys.questEnds] = {211,5066,5090,5091,5092,5097,5237,8415,8416,8418,10373},
         },
         [10839] = { -- Argent Officer Garush
-            [npcKeys.questStarts] = {5402,5403,5406,5503},
+            [npcKeys.questStarts] = {5405,5406,5407,5408},
+            [npcKeys.questEnds] = {5405,5406,5407,5408,6029},
+        },
+        [10840] = { -- Argent Officer Pureheart
+            [npcKeys.questStarts] = {5401,5402,5403,5404},
+            [npcKeys.questEnds] = {5401,5402,5403,5404,6028},
         },
         [10857] = { -- Argent Quartermaster Lightspark
             [npcKeys.questStarts] = {5507,5521},
+            [npcKeys.questEnds] = {5507,5521},
         },
         [11036] = { -- Leonid Barthalomew the Revered
             [npcKeys.questEnds] = {5243,5462,5464,5522,64037,64064,64128},
+        },
+        [11039] = { -- Duke Nicholas Zverenhoff
+            [npcKeys.questStarts] = {5251,5263,5264,5503,5508,5509,5510},
+            [npcKeys.questEnds] = {5251,5262,5263,5503,5508,5509,5510,6030},
         },
         [11401] = { -- Priestess Alathea
             [npcKeys.questStarts] = {5627,5640,5647,5672,5678},
@@ -509,7 +519,7 @@ function QuestieTBCNpcFixes:Load()
             [npcKeys.questEnds] = {63448,63767,65284,65561,93823,96253},
         },
         [16646] = { -- Alamma
-            [npcKeys.questStarts] = {3001,4738,4968,10605},
+            [npcKeys.questStarts] = {3001,4738,4968,8419,10605},
         },
         [16647] = { -- Talionia
             [npcKeys.questStarts] = {9529,10789,10790},

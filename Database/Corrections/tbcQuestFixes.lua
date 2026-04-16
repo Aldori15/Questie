@@ -614,6 +614,18 @@ function QuestieTBCQuestFixes:Load()
         [3741] = {
             [questKeys.requiredRaces] = raceIDs.NONE,
         },
+        [3763] = { -- Assisting Arch Druid Staghelm
+            [questKeys.exclusiveTo] = {3789,3790,10520},
+        },
+        [3764] = { -- Un'Goro Soil
+            [questKeys.breadcrumbs] = {3763,3789,3790,10520},
+        },
+        [3789] = { -- Assisting Arch Druid Staghelm
+            [questKeys.exclusiveTo] = {3763,3790,10520},
+        },
+        [3790] = { -- Assisting Arch Druid Staghelm
+            [questKeys.exclusiveTo] = {3763,3789,10520},
+        },
         [3803] = { -- Morrowgrain to Darnassus
             [questKeys.startedBy] = {{4217}},
         },
@@ -688,21 +700,66 @@ function QuestieTBCQuestFixes:Load()
         [5056] = { -- Shy-Rotam
             [questKeys.requiredRaces] = raceIDs.NONE,
         },
+        [5066] = { -- A Call to Arms: The Plaguelands!
+            [questKeys.exclusiveTo] = {5090,5091,10373},
+        },
+        [5090] = { -- A Call to Arms: The Plaguelands!
+            [questKeys.exclusiveTo] = {5066,5091,10373},
+        },
+        [5091] = { -- A Call to Arms: The Plaguelands!
+            [questKeys.exclusiveTo] = {5066,5090,10373},
+        },
+        [5092] = { -- Clear the Way
+            [questKeys.breadcrumbs] = {5066,5090,5091,10373},
+        },
+        [5093] = { -- A Call to Arms: The Plaguelands!
+            [questKeys.exclusiveTo] = {5094,5095,10374},
+        },
+        [5094] = { -- A Call to Arms: The Plaguelands!
+            [questKeys.exclusiveTo] = {5093,5095,10374},
+        },
+        [5095] = { -- A Call to Arms: The Plaguelands!
+            [questKeys.exclusiveTo] = {5093,5094,10374},
+        },
+        [5096] = { -- Scarlet Diversions
+            [questKeys.breadcrumbs] = {5093,5094,5095,10374},
+        },
+        [5149] = { -- Pamela's Doll
+            [questKeys.reputationReward] = {},
+        },
         [5168] = {
             [questKeys.preQuestSingle] = {5210},
         },
-        [5401] = {
-            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
+        [5401] = { -- Argent Dawn Commission
             [questKeys.exclusiveTo] = {5405,5503},
         },
-        [5405] = {
-            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
+        [5402] = { -- Minion's Scourgestones
+            [questKeys.startedBy] = {{10840}},
+            [questKeys.finishedBy] = {{10840}},
+        },
+        [5403] = { -- Invader's Scourgestones
+            [questKeys.startedBy] = {{10840}},
+            [questKeys.finishedBy] = {{10840}},
+        },
+        [5405] = { -- Argent Dawn Commission
+            [questKeys.startedBy] = {{10839}},
+            [questKeys.finishedBy] = {{10839}},
             [questKeys.exclusiveTo] = {5401,5503},
+        },
+        [5407] = { -- Invader's Scourgestones
+            [questKeys.startedBy] = {{10839}},
+            [questKeys.finishedBy] = {{10839}},
+        },
+        [5408] = { -- Minion's Scourgestones
+            [questKeys.startedBy] = {{10839}},
+            [questKeys.finishedBy] = {{10839}},
         },
         [5502] = {
             [questKeys.questLevel] = -1,
         },
-        [5503] = {
+        [5503] = { -- Argent Dawn Commission
+            [questKeys.startedBy] = {{11039}},
+            [questKeys.finishedBy] = {{11039}},
             [questKeys.exclusiveTo] = {5401,5405},
         },
         [5621] = { -- Garments of the Moon
@@ -1005,6 +1062,29 @@ function QuestieTBCQuestFixes:Load()
         [8122] = {
             [questKeys.triggerEnd] = {"Hold Five Bases in Arathi Basin", {[zoneIDs.ARATHI_HIGHLANDS]={{73.2,30}}}},
         },
+        [8193] = { -- Master Angler
+            [questKeys.questLevel] = -1,
+        },
+        [8194] = { -- Apprentice Angler
+            [questKeys.questLevel] = -1,
+        },
+        [8221] = { -- Rare Fish - Keefer's Angelfish
+            [questKeys.questLevel] = -1,
+        },
+        [8224] = { -- Rare Fish - Dezian Queenfish
+            [questKeys.questLevel] = -1,
+        },
+        [8225] = { -- Rare Fish - Brownell's Blue Striped Racer
+            [questKeys.questLevel] = -1,
+        },
+        [8228] = { -- Could I get a Fishing Flier?
+            [questKeys.questLevel] = -1,
+            [questKeys.zoneOrSort] = sortKeys.FISHING,
+        },
+        [8229] = { -- Could I get a Fishing Flier?
+            [questKeys.questLevel] = -1,
+            [questKeys.zoneOrSort] = sortKeys.FISHING,
+        },
         [8233] = { -- A Simple Request
             [questKeys.requiredRaces] = raceIDs.NONE,
         },
@@ -1109,6 +1189,9 @@ function QuestieTBCQuestFixes:Load()
         },
         [8413] = {
             [questKeys.requiredRaces] = raceIDs.NONE,
+        },
+        [8419] = { -- An Imp's Request
+            [questKeys.startedBy] = {{461,988,3326,4563,4565,5171,5172,5173,16646,16647,16648,23534}},
         },
         [8423] = {
             [questKeys.preQuestSingle] = {},
@@ -2995,13 +3078,13 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.requiredLevel] = 16,
             [questKeys.breadcrumbForQuestId] = 9491,
         },
-        [10373] = {
-            [questKeys.startedBy] = {{20722}},
+        [10373] = { -- A Call to Arms: The Plaguelands!
             [questKeys.exclusiveTo] = {5066,5090,5091},
+            [questKeys.breadcrumbForQuestId] = 5092,
         },
-        [10374] = {
-            [questKeys.startedBy] = {{20724}},
+        [10374] = { -- A Call to Arms: The Plaguelands!
             [questKeys.exclusiveTo] = {5093,5094,5095},
+            [questKeys.breadcrumbForQuestId] = 5096,
         },
         [10382] = {
             [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_EVENT, l10n("Speak with Gryphoneer Windbellow"), 0, {{"monster", 20235}}}},
@@ -3230,9 +3313,10 @@ function QuestieTBCQuestFixes:Load()
         [10519] = {
             [questKeys.objectives] = {{{21183,nil,Questie.ICON_TYPE_TALK}}},
         },
-        [10520] = {
-            [questKeys.startedBy] = {{16739}},
-            [questKeys.exclusiveTo] = {3516,3789,3790},
+        [10520] = { -- Assisting Arch Druid Staghelm
+            [questKeys.requiredLevel] = 47,
+            [questKeys.exclusiveTo] = {3763,3789,3790},
+            [questKeys.breadcrumbForQuestId] = 3764,
         },
         [10522] = {
             [questKeys.requiredSourceItems] = {30426},
