@@ -650,8 +650,8 @@ function QuestieOptions.tabs.icons:Initialize()
                     globalScale = {
                         type = "range",
                         order = 5.1,
-                        name = function() return l10n('Map Icons'); end,
-                        desc = function() return l10n('How large the map icons are.\n(Default: %s)', optionsDefaults.profile.globalScale); end,
+                        name = function() return l10n('Quest/Objective Map Scale'); end,
+                        desc = function() return l10n('How large the quest/objective map icons are.\n(Default: %s)', optionsDefaults.profile.globalScale); end,
                         width = 1.55,
                         min = 0.01,
                         max = 4,
@@ -665,8 +665,8 @@ function QuestieOptions.tabs.icons:Initialize()
                     globalMiniMapScale = {
                         type = "range",
                         order = 5.2,
-                        name = function() return l10n('Minimap Icons'); end,
-                        desc = function() return l10n('How large the minimap icons are.\n(Default: %s)', optionsDefaults.profile.globalMiniMapScale); end,
+                        name = function() return l10n('Quest/Objective Minimap Scale'); end,
+                        desc = function() return l10n('How large the quest/objective minimap icons are.\n(Default: %s)', optionsDefaults.profile.globalMiniMapScale); end,
                         width = 1.55,
                         min = 0.01,
                         max = 4,
@@ -741,8 +741,8 @@ function QuestieOptions.tabs.icons:Initialize()
                     availableScale = {
                         type = "range",
                         order = 5.4,
-                        name = function() return l10n('Quest Icons'); end,
-                        desc = function() return l10n('How large the available/complete icons are. Affects both map and minimap icons.\n(Default: %s)', optionsDefaults.profile.availableScale); end,
+                        name = function() return l10n('Available/Complete Quest Icons'); end,
+                        desc = function() return l10n('How large the available/complete quest icons are. Affects both map and minimap icons.\n(Default: %s)', optionsDefaults.profile.availableScale); end,
                         width = 3.1,
                         min = 0.01,
                         max = 4,
