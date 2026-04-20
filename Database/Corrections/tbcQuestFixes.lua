@@ -2329,8 +2329,7 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.requiredLevel] = 61,
         },
         [9704] = { -- Slain by the Wretched
-            [questKeys.breadcrumbs] = {8347},
-            [questKeys.preQuestSingle] = {},
+            [questKeys.preQuestSingle] = {8347},
         },
         [9711] = {
             [questKeys.objectives] = {{{17664,nil,Questie.ICON_TYPE_INTERACT}}},
