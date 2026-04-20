@@ -292,6 +292,11 @@ function _Qframe:UpdateTexture(texture)
     end
 
     self.texture:SetTexture(texture)
+    if self.data and self.data.TexCoords then
+        self.texture:SetTexCoord(unpack(self.data.TexCoords))
+    else
+        self.texture:SetTexCoord(0, 1, 0, 1)
+    end
     --self.data.Icon = texture;
     local colors = { 1, 1, 1 }
 
@@ -347,6 +352,7 @@ function _Qframe:Unload()
 
     if (self.texture) then
         self.texture:SetVertexColor(1, 1, 1, 1)
+        self.texture:SetTexCoord(0, 1, 0, 1)
     end
     self.miniMapIcon = nil;
     self:SetScript("OnUpdate", nil)

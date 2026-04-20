@@ -167,6 +167,10 @@ local migrationFunctions = {
         Questie.db.profile.questObjectiveColors = true
         Questie.db.profile.questMinimapObjectiveColors = true
     end,
+    [19] = function()
+        Questie.db.profile.townsfolkConfig = Questie.db.profile.townsfolkConfig or {}
+        Questie.db.profile.townsfolkConfig["Meeting Stones"] = false
+    end,
 }
 
 function Migration:Migrate()

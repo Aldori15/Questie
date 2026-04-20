@@ -5,6 +5,14 @@ local _MeetingStones = {}
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
 
+local function _NormalizeMeetingStoneName(name)
+    if not name then
+        return nil
+    end
+
+    return strlower(name)
+end
+
 
 ---@param objectId number
 ---@return string?, string?
@@ -16,6 +24,91 @@ function MeetingStones:GetLocalizedDungeonNameAndLevelRangeByObjectId(objectId)
     end
 
     return l10n(tableEntry.name), tableEntry.range
+end
+
+---@param dungeonName string
+---@return string?
+function MeetingStones:GetLevelRangeByDungeonName(dungeonName)
+    if not dungeonName then
+        return nil
+    end
+
+    if not _MeetingStones.levelRangesByName then
+        _MeetingStones.levelRangesByName = {}
+
+        for _, tableEntry in pairs(_MeetingStones.levelRanges) do
+            _MeetingStones.levelRangesByName[_NormalizeMeetingStoneName(tableEntry.name)] = tableEntry.range
+        end
+
+        local aliases = {
+            ["The Blood Furnace"] = "Hellfire Citadel",
+            ["Hellfire Ramparts"] = "Hellfire Citadel",
+            ["The Shattered Halls"] = "Hellfire Citadel",
+            ["Blackrock Depths"] = "Blackrock Mountain",
+            ["Blackrock Spire"] = "Blackrock Mountain",
+            ["The Steamvault"] = "Coilfang Reservoir",
+            ["The Underbog"] = "Coilfang Reservoir",
+            ["The Slave Pens"] = "Coilfang Reservoir",
+            ["The Eye"] = "Tempest Keep",
+            ["The Mechanar"] = "Tempest Keep",
+            ["The Botanica"] = "Tempest Keep",
+            ["The Arcatraz"] = "Tempest Keep",
+            ["Mana-Tombs"] = "Auchindoun",
+            ["Auchenai Crypts"] = "Auchindoun",
+            ["Sethekk Halls"] = "Auchindoun",
+            ["Shadow Labyrinth"] = "Auchindoun",
+            ["Old Hillsbrad Foothills"] = "Caverns of Time",
+            ["The Black Morass"] = "Caverns of Time",
+            ["Hyjal Summit"] = "Caverns of Time",
+            ["Blackwing Lair"] = "Blackrock Mountain",
+            ["Molten Core"] = "Blackrock Mountain",
+            ["Serpentshrine Cavern"] = "Coilfang Reservoir",
+            ["Black Temple"] = "The Black Temple",
+            ["Temple of Ahn'Qiraj"] = "Ahn'Qiraj",
+            ["Ruins of Ahn'Qiraj"] = "Ahn'Qiraj",
+            ["The Eye of Eternity"] = "Wyrmrest Temple",
+            ["The Obsidian Sanctum"] = "Wyrmrest Temple",
+            ["The Ruby Sanctum"] = "Wyrmrest Temple",
+            ["Ahn'kahet: The Old Kingdom"] = "Azjol-Nerub",
+            ["The Oculus"] = "The Nexus",
+            ["Halls of Stone"] = "Ulduar",
+            ["Halls of Lightning"] = "Ulduar",
+            ["The Forge of Souls"] = "The Frozen Halls",
+            ["Pit of Saron"] = "The Frozen Halls",
+            ["Halls of Reflection"] = "The Frozen Halls",
+        }
+
+        local supplementalRanges = {
+            ["Onyxia's Lair"] = "(60)",
+            ["Zul'Gurub"] = "(60)",
+            ["Temple of Ahn'Qiraj"] = "(60)",
+            ["Ruins of Ahn'Qiraj"] = "(60)",
+            ["Molten Core"] = "(60)",
+            ["Blackwing Lair"] = "(60)",
+            ["Naxxramas"] = "(80)",
+            ["The Eye"] = "(70)",
+            ["Hyjal Summit"] = "(70)",
+            ["Serpentshrine Cavern"] = "(70)",
+            ["Ulduar"] = "(80)",
+            ["The Violet Hold"] = "(75-80)",
+            ["The Culling of Stratholme"] = "(75-80)",
+            ["Trial of the Champion"] = "(78-80)",
+            ["Trial of the Crusader"] = "(80)",
+        }
+
+        for aliasName, sourceName in pairs(aliases) do
+            local range = _MeetingStones.levelRangesByName[_NormalizeMeetingStoneName(sourceName)]
+            if range then
+                _MeetingStones.levelRangesByName[_NormalizeMeetingStoneName(aliasName)] = range
+            end
+        end
+
+        for instanceName, levelRange in pairs(supplementalRanges) do
+            _MeetingStones.levelRangesByName[_NormalizeMeetingStoneName(instanceName)] = levelRange
+        end
+    end
+
+    return _MeetingStones.levelRangesByName[_NormalizeMeetingStoneName(dungeonName)]
 end
 
 _MeetingStones.levelRanges = {

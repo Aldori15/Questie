@@ -160,6 +160,7 @@ Modules\Map\QuestieMapUtils.lua
 #Modules\Map\HBDHooks.lua
 Modules\Map\WeaponMasterSkills.lua
 Modules\Map\Moonwell.lua
+Modules\Map\InstanceLocations.lua
 
 # Quest
 Modules\Quest\AvailableQuests.lua

@@ -182,6 +182,18 @@ function QuestieMap.utils:MapExplorationUpdate()
     end
 end
 
+local function _GetManualScaleProfile(frame, isMinimap)
+    if not frame.isManualIcon then
+        return isMinimap and Questie.db.profile.globalMiniMapScale or Questie.db.profile.globalScale
+    end
+
+    if frame.data and frame.data.ManualScaleType == "instance" then
+        return isMinimap and Questie.db.profile.globalMiniMapInstanceScale or Questie.db.profile.globalInstanceScale
+    end
+
+    return isMinimap and Questie.db.profile.globalMiniMapTownsfolkScale or Questie.db.profile.globalTownsfolkScale
+end
+
 --- Rescale a single icon
 ---@param frameRef string|IconFrame @The global name/iconRef of the icon frame, e.g. "QuestieFrame1"
 ---@param mapScale number? @Scale value for the final size of the Icon
@@ -196,12 +208,11 @@ function QuestieMap.utils:RescaleIcon(frameRef, mapScale)
             frame.data.IconScale = frame.data:GetIconScale();
             local scale
             if frame.miniMapIcon then
-                -- Use globalMiniMapTownsfolkScale for townsfolk icons, globalMiniMapScale for quest icons
-                local scaleProfile = frame.isManualIcon and Questie.db.profile.globalMiniMapTownsfolkScale or Questie.db.profile.globalMiniMapScale
+                local scaleProfile = _GetManualScaleProfile(frame, true)
                 scale = 16 * (frame.data.IconScale or 1) * (scaleProfile or 0.7);
             else
                 --? If you ever chanage this logic, make sure you change the logic in QuestieMap:ProcessQueue() too!
-                local scaleProfile = frame.isManualIcon and Questie.db.profile.globalTownsfolkScale or Questie.db.profile.globalScale
+                local scaleProfile = _GetManualScaleProfile(frame, false)
                 scale = (16 * (frame.data.IconScale or 1) * (scaleProfile or 0.7)) * iconScale;
             end
 
