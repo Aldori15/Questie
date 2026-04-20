@@ -755,9 +755,8 @@ local function UpdateWorldMap(force)
     local uiMapID = QuestieCompat.GetCurrentUiMapID()
     if not uiMapID then return end
 
-    local scale = WorldMapButton:GetScale()
-    worldmapWidth  = WorldMapButton:GetWidth()*scale
-    worldmapHeight = WorldMapButton:GetHeight()*scale
+    worldmapWidth  = WorldMapButton:GetWidth()
+    worldmapHeight = WorldMapButton:GetHeight()
 
     local mapScale = QuestieMap.GetScaleValue()
     local shouldRescale = force or worldMapLayoutDirty or mapScale ~= lastWorldMapScale
