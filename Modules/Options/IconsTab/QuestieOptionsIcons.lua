@@ -707,6 +707,36 @@ function QuestieOptions.tabs.icons:Initialize()
                             QuestieMap:RescaleTownsfolkIcons()
                         end,
                     },
+                    globalInstanceScale = {
+                        type = "range",
+                        order = 5.32,
+                        name = function() return l10n('Instance Icons'); end,
+                        desc = function() return l10n('How large the instance map icons are.\n(Default: %s)', optionsDefaults.profile.globalInstanceScale); end,
+                        width = 1.55,
+                        min = 0.01,
+                        max = 4,
+                        step = 0.01,
+                        get = function(info) return QuestieOptions:GetProfileValue(info); end,
+                        set = function (info, value)
+                            QuestieOptions:SetProfileValue(info, value)
+                            QuestieMap:RescaleManualIcons()
+                        end,
+                    },
+                    globalMiniMapInstanceScale = {
+                        type = "range",
+                        order = 5.33,
+                        name = function() return l10n('Minimap Instance Icons'); end,
+                        desc = function() return l10n('How large the instance minimap icons are.\n(Default: %s)', optionsDefaults.profile.globalMiniMapInstanceScale); end,
+                        width = 1.55,
+                        min = 0.01,
+                        max = 4,
+                        step = 0.01,
+                        get = function(info) return QuestieOptions:GetProfileValue(info); end,
+                        set = function (info, value)
+                            QuestieOptions:SetProfileValue(info, value)
+                            QuestieMap:RescaleManualIcons()
+                        end,
+                    },
                     spacer_scale = QuestieOptionsUtils:Spacer(5.3),
                     availableScale = {
                         type = "range",

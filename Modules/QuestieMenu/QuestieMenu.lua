@@ -17,6 +17,8 @@ local MeetingStones = QuestieLoader:ImportModule("MeetingStones")
 local QuestieProfessions = QuestieLoader:ImportModule("QuestieProfessions")
 ---@type QuestieQuest
 local QuestieQuest = QuestieLoader:ImportModule("QuestieQuest")
+---@type InstanceLocations
+local InstanceLocations = QuestieLoader:ImportModule("InstanceLocations")
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
 ---@type QuestieCorrections
@@ -38,6 +40,11 @@ local LibDropDown = QuestieCompat.LibUIDropDownMenu or LibStub:GetLibrary("LibUI
 local tinsert = tinsert
 
 local professionKeys = QuestieProfessions.professionKeys
+local _instanceIconAtlas = QuestieLib.AddonPath .. "Icons\\instance_icons.blp"
+local _instanceIconTexCoords = {
+    dungeon = {0.912109, 0.955078, 0.0449219, 0.0664062},
+    raid = {0.689453, 0.732422, 0.166016, 0.1875},
+}
 
 local _townsfolk_texturemap = {
     ["Flight Master"] = "Interface\\Minimap\\tracking\\flightmaster",
@@ -243,23 +250,68 @@ local function buildLocalized(key, localizedText)
     }
 end
 
+function QuestieMenu.buildInstancesMenu()
+    return {
+        build("Meeting Stones"),
+        {
+            text = l10n("Dungeon Locations"),
+            func = function()
+                InstanceLocations:Toggle("dungeon")
+            end,
+            icon = _instanceIconAtlas,
+            tCoordLeft = _instanceIconTexCoords.dungeon[1],
+            tCoordRight = _instanceIconTexCoords.dungeon[2],
+            tCoordTop = _instanceIconTexCoords.dungeon[3],
+            tCoordBottom = _instanceIconTexCoords.dungeon[4],
+            notCheckable = false,
+            checked = Questie.db.profile.showDungeonLocations,
+            isNotRadio = true,
+            keepShownOnClick = true
+        },
+        {
+            text = l10n("Raid Locations"),
+            func = function()
+                InstanceLocations:Toggle("raid")
+            end,
+            icon = _instanceIconAtlas,
+            tCoordLeft = _instanceIconTexCoords.raid[1],
+            tCoordRight = _instanceIconTexCoords.raid[2],
+            tCoordTop = _instanceIconTexCoords.raid[3],
+            tCoordBottom = _instanceIconTexCoords.raid[4],
+            notCheckable = false,
+            checked = Questie.db.profile.showRaidLocations,
+            isNotRadio = true,
+            keepShownOnClick = true
+        }
+    }
+end
+
 function QuestieMenu:OnLogin(forceRemove) -- toggle all icons
     if (not Questie.db.profile.townsfolkConfig) then
         Questie.db.profile.townsfolkConfig = {
             ["Flight Master"] = true,
             ["Mailbox"] = true,
-            ["Meeting Stones"] = true,
+            ["Meeting Stones"] = false,
             ["Moonwell"] = false
         }
-    elseif Questie.db.profile.townsfolkConfig["Moonwell"] == nil then
-        Questie.db.profile.townsfolkConfig["Moonwell"] = false
+    else
+        if Questie.db.profile.townsfolkConfig["Meeting Stones"] == nil then
+            Questie.db.profile.townsfolkConfig["Meeting Stones"] = false
+        end
+
+        if Questie.db.profile.townsfolkConfig["Moonwell"] == nil then
+            Questie.db.profile.townsfolkConfig["Moonwell"] = false
+        end
     end
+
     for key in pairs(Questie.db.profile.townsfolkConfig) do
         if forceRemove then
             toggle(key, forceRemove)
         end
         toggle(key)
     end
+
+    InstanceLocations:OnLogin(forceRemove)
 end
 
 local div = { -- from libEasyMenu code
@@ -384,10 +436,14 @@ end
 function QuestieMenu.buildTownsfolkMenu()
     local townsfolkMenu = {}
     for key in pairs(Questie.db.global.townsfolk) do
-        tinsert(townsfolkMenu, build(key))
+        if key ~= "Meeting Stones" then
+            tinsert(townsfolkMenu, build(key))
+        end
     end
     for key in pairs(Questie.db.char.townsfolk) do
-        tinsert(townsfolkMenu, build(key))
+        if key ~= "Meeting Stones" then
+            tinsert(townsfolkMenu, build(key))
+        end
     end
     return townsfolkMenu
 end
@@ -432,6 +488,7 @@ function QuestieMenu:Show(hideDelay)
     end, icon=QuestieLib.AddonPath.."Icons\\event.blp", notCheckable=false, checked=Questie.db.profile.enableObjectives, isNotRadio=true, keepShownOnClick=true})
     tinsert(menuTable, {text= l10n("Profession Trainer"), func = function() end, keepShownOnClick=true, hasArrow=true, menuList=QuestieMenu.buildProfessionMenu(), notCheckable=true})
     tinsert(menuTable, {text= l10n("Vendor"), func = function() end, keepShownOnClick=true, hasArrow=true, menuList=QuestieMenu.buildVendorMenu(), notCheckable=true})
+    tinsert(menuTable, {text = l10n("Instances"), func = function() end, keepShownOnClick = true, hasArrow = true, menuList = QuestieMenu.buildInstancesMenu(), notCheckable = true})
 
     tinsert(menuTable, div)
 
@@ -474,6 +531,7 @@ function QuestieMenu:ShowTownsfolk(hideDelay)
         QuestieMenu.menuTowns = LibDropDown:Create_UIDropDownMenu("QuestieTownsfolkMenuFrameTownsfolk", UIParent)
     end
     local menuTable = QuestieMenu.buildTownsfolkMenu()
+    tinsert(menuTable, {text = l10n("Instances"), func = function() end, keepShownOnClick = true, hasArrow = true, menuList = QuestieMenu.buildInstancesMenu(), notCheckable = true})
     tinsert(menuTable, {text= l10n('Cancel'), func=function() end})
     LibDropDown:EasyMenu(menuTable, QuestieMenu.menuTowns, "cursor", -80, -15, "MENU", hideDelay)
 end

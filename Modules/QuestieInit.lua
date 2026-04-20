@@ -19,6 +19,8 @@ local QuestieProfessions = QuestieLoader:ImportModule("QuestieProfessions")
 local QuestieTracker = QuestieLoader:ImportModule("QuestieTracker")
 ---@type QuestieMap
 local QuestieMap = QuestieLoader:ImportModule("QuestieMap")
+---@type InstanceLocations
+local InstanceLocations = QuestieLoader:ImportModule("InstanceLocations")
 ---@type QuestieLib
 local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
 ---@type QuestiePlayer
@@ -310,6 +312,8 @@ QuestieInit.Stages[3] = function() -- run as a coroutine
     QuestieQuest:Initialize()
     coYield()
     WorldMapButton.Initialize()
+    coYield()
+    InstanceLocations.Initialize()
     coYield()
     -- Seed the quest log baseline before live quest events are registered.
     local cacheMiss, changes = QuestLogCache.CheckForChanges(nil)

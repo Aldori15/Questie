@@ -117,6 +117,7 @@ function MapIconTooltip:Show()
     local npcAndObjectOrder = {};
     local questOrder = {};
     local manualOrder = {}
+    local manualOrderSeen = {}
 
     self.data.touchedPins = {}
     ---@param icon IconFrame
@@ -188,7 +189,11 @@ function MapIconTooltip:Show()
                     questOrder[iconData.CustomTooltipData.Title] = {}
                     tinsert(questOrder[iconData.CustomTooltipData.Title], iconData.CustomTooltipData.Body);
                 elseif iconData.ManualTooltipData then
-                    manualOrder[iconData.ManualTooltipData.Title] = iconData.ManualTooltipData
+                    local title = iconData.ManualTooltipData.Title
+                    if not manualOrderSeen[title] then
+                        manualOrderSeen[title] = true
+                        tinsert(manualOrder, iconData.ManualTooltipData)
+                    end
                 end
             end
         end
@@ -451,15 +456,46 @@ function MapIconTooltip:Show()
             self:AddLine("             ")
         end
 
-        for title, data in pairs(self.manualOrder) do
+        table.sort(self.manualOrder, function(left, right)
+            local leftOrder = left.SortOrder or 99
+            local rightOrder = right.SortOrder or 99
+            if leftOrder ~= rightOrder then
+                return leftOrder < rightOrder
+            end
+
+            local leftName = left.SortName or left.Title or ""
+            local rightName = right.SortName or right.Title or ""
+            return leftName < rightName
+        end)
+
+        local isFirstManualEntry = true
+        local hasShownManualShiftHint = false
+        for _, data in ipairs(self.manualOrder) do
+            local title = data.Title
+            local showBodyOnShift = data.showBodyOnShift
+
+            if shift and not isFirstManualEntry then
+                self:AddLine(" ")
+            end
+            isFirstManualEntry = false
+
             local body = data.Body
-            self:AddLine(title)
-            for _, stringOrTable in ipairs(body) do
-                local dataType = type(stringOrTable)
-                if dataType == "string" then
-                    self:AddLine(stringOrTable)
-                elseif dataType == "table" then
-                    self:AddDoubleLine(stringOrTable[1], '|cFFffffff' .. stringOrTable[2] .. '|r') --normal, white
+            if showBodyOnShift and (not shift) then
+                if not hasShownManualShiftHint then
+                    self:AddDoubleLine(title, "(" .. l10n('Hold Shift') .. ")", 1, 1, 1, 0.43, 0.43, 0.43)
+                    hasShownManualShiftHint = true
+                else
+                    self:AddLine(title)
+                end
+            else
+                self:AddLine(title)
+                for _, stringOrTable in ipairs(body) do
+                    local dataType = type(stringOrTable)
+                    if dataType == "string" then
+                        self:AddLine(stringOrTable)
+                    elseif dataType == "table" then
+                        self:AddDoubleLine(stringOrTable[1], '|cFFffffff' .. stringOrTable[2] .. '|r') --normal, white
+                    end
                 end
             end
             if self.miniMapIcon == false and not data.disableShiftToRemove then
