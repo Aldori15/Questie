@@ -98,18 +98,6 @@ local searchLocales = {
         ["esES"] = "No hay datos de aparición disponibles.",
         ["frFR"] = "Aucune donnée de spawn disponible.",
     },
-    ["Recommended Quest Level: "] = {
-        ["ptBR"] = "Nível recomendado para a missão:",
-        ["ruRU"] = "Рекомендуемый уровень для выполнения задания: ",
-        ["deDE"] = "Empfohlenes Questlevel: ",
-        ["koKR"] = "추천 퀘스트 레벨: ",
-        ["esMX"] = "Nivel recomendado para la misión: ",
-        ["enUS"] = true,
-        ["zhCN"] = "建议等级：",
-        ["zhTW"] = "任務推薦等級: ",
-        ["esES"] = "Nivel recomendado para la misión: ",
-        ["frFR"] = "Niveau recommandé : ",
-    },
     ["Ends the following quests:"] = {
         ["ptBR"] = "Termina as seguintes missões:",
         ["ruRU"] = "Завершает следующие задания:",
