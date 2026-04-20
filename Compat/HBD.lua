@@ -224,7 +224,6 @@ local rotateMinimap = GetCVar("rotateMinimap") == "1"
 
 -- is the minimap indoors or outdoors
 local indoors = GetCVar("minimapZoom")+0 == pins.Minimap:GetZoom() and "outdoor" or "indoor"
-local minimapIndoorHint = indoors == "indoor"
 
 local minimapPinCount, queueFullUpdate = 0, false
 ---@type unknown, MinimapShapes?
@@ -232,26 +231,9 @@ local minimapScale, minimapShape, mapRadius, minimapWidth, minimapHeight, mapSin
 local lastZoom, lastFacing, lastXY, lastYY
 local worldMapLayoutDirty = true
 local worldMapRefreshPending = false
+local minimapZoomProbeReady = false
+local minimapZoomProbeScheduled = false
 local lastWorldMapUiMapID, lastWorldMapWidth, lastWorldMapHeight, lastWorldMapScale
-
-local function RefreshMinimapIndoorState(indoorHint)
-    if indoorHint ~= nil then
-        minimapIndoorHint = indoorHint
-    end
-
-    local outdoorZoom = tonumber(GetCVar("minimapZoom"))
-    local indoorZoom = tonumber(GetCVar("minimapInsideZoom"))
-    local currentZoom = pins.Minimap:GetZoom()
-
-    if outdoorZoom and indoorZoom and outdoorZoom ~= indoorZoom then
-        minimapIndoorHint = outdoorZoom ~= currentZoom
-    elseif minimapIndoorHint == nil then
-        minimapIndoorHint = false
-    end
-
-    indoors = minimapIndoorHint and "indoor" or "outdoor"
-    return minimapIndoorHint
-end
 
 local function _HasTrackedMinimapPins()
     return next(minimapPins) ~= nil or next(activeMinimapPins) ~= nil
@@ -601,7 +583,15 @@ end
 
 local function UpdateMinimapZoom()
     if not MinimapRadiusAPI then
-        RefreshMinimapIndoorState()
+        if not minimapZoomProbeReady then
+            return
+        end
+        local zoom = pins.Minimap:GetZoom()
+        if GetCVar("minimapZoom") == GetCVar("minimapInsideZoom") then
+            pins.Minimap:SetZoom(zoom < 2 and zoom + 1 or zoom - 1)
+        end
+        indoors = GetCVar("minimapZoom")+0 == pins.Minimap:GetZoom() and "outdoor" or "indoor"
+        pins.Minimap:SetZoom(zoom)
     end
 end
 
@@ -732,8 +722,26 @@ local function UpdateMinimap()
     UpdateMinimapPins()
 end
 
-function pins:IsMinimapInside()
-    return RefreshMinimapIndoorState()
+local function ScheduleInitialMinimapZoomProbe()
+    if minimapZoomProbeReady or minimapZoomProbeScheduled then
+        return
+    end
+
+    minimapZoomProbeScheduled = true
+
+    if not C_Timer or not C_Timer.After then
+        minimapZoomProbeReady = true
+        minimapZoomProbeScheduled = false
+        UpdateMinimap()
+        return
+    end
+
+    -- Delay the zoom probe until the client has finished restoring its saved minimap zoom.
+    C_Timer.After(1, function()
+        minimapZoomProbeReady = true
+        minimapZoomProbeScheduled = false
+        UpdateMinimap()
+    end)
 end
 
 local function HideWorldMapPins()
@@ -848,13 +856,6 @@ local function OnEventHandler(frame, event, ...)
         QuestieCompat.ClearCachedPlayerPositions()
     end
 
-    local indoorHint
-    if event == "ZONE_CHANGED_INDOORS" then
-        indoorHint = true
-    elseif event == "ZONE_CHANGED" then
-        indoorHint = false
-    end
-
     if event == "CVAR_UPDATE" then
         local cvar, value = ...
         if cvar == "ROTATE_MINIMAP" then
@@ -862,7 +863,8 @@ local function OnEventHandler(frame, event, ...)
             queueFullUpdate = true
         end
     elseif event == "MINIMAP_UPDATE_ZOOM" then
-        RefreshMinimapIndoorState(indoorHint)
+        minimapZoomProbeReady = true
+        minimapZoomProbeScheduled = false
         UpdateMinimap()
     elseif event == "PLAYER_LOGIN" then
         -- recheck cvars after login
@@ -870,13 +872,12 @@ local function OnEventHandler(frame, event, ...)
         EnsureWorldMapLifecycleHooks()
     elseif event == "PLAYER_ENTERING_WORLD" then
         EnsureWorldMapLifecycleHooks()
-        RefreshMinimapIndoorState(indoorHint)
-        UpdateMinimap()
+        UpdateMinimapPins()
+        ScheduleInitialMinimapZoomProbe()
         UpdateWorldMap()
     elseif event == "WORLD_MAP_UPDATE" then
         UpdateWorldMap()
     elseif string.find(event, "ZONE_CHANGED") then
-        RefreshMinimapIndoorState(indoorHint)
         UpdateMinimap()
         UpdateWorldMap()
     end

@@ -516,16 +516,27 @@ function _MapIconTooltip:IsMinimapInside()
         return isLastMinimapInside
     end
 
-    if HBDPins and HBDPins.IsMinimapInside then
-        isLastMinimapInside = HBDPins:IsMinimapInside()
-    else
-        local outdoorZoom = tonumber(GetCVar("minimapZoom"))
-        local indoorZoom = tonumber(GetCVar("minimapInsideZoom"))
-        isLastMinimapInside = outdoorZoom and indoorZoom and outdoorZoom ~= indoorZoom and indoorZoom == Minimap:GetZoom() or false
+    local tempzoom = 0;
+    if (GetCVar("minimapZoom") == GetCVar("minimapInsideZoom")) then
+        if (GetCVar("minimapInsideZoom") + 0 >= 3) then
+            Minimap:SetZoom(Minimap:GetZoom() - 1);
+            tempzoom = 1;
+        else
+            Minimap:SetZoom(Minimap:GetZoom() + 1);
+            tempzoom = -1;
+        end
     end
-
-    lastMinimapInsideCheckTimestamp = GetTime()
-    return isLastMinimapInside
+    if (GetCVar("minimapInsideZoom") + 0 == Minimap:GetZoom()) then
+        Minimap:SetZoom(Minimap:GetZoom() + tempzoom);
+        isLastMinimapInside = true
+        lastMinimapInsideCheckTimestamp = GetTime()
+        return true
+    else
+        isLastMinimapInside = false
+        lastMinimapInsideCheckTimestamp = GetTime()
+        Minimap:SetZoom(Minimap:GetZoom() + tempzoom);
+        return false
+    end
 end
 
 --- Get the quest tag to display in the tooltip
