@@ -2903,9 +2903,23 @@ function QuestieCompat.GetClassColor(classFilename)
 	return 1, 1, 1, "ffffffff";
 end
 
+local function IsWorldMapFrameDescendant(frame)
+    local current = frame
+
+    while current do
+        if current == WorldMapButton or current == WorldMapFrame then
+            return true
+        end
+
+        current = current.GetParent and current:GetParent() or nil
+    end
+
+    return false
+end
+
 -- handle tooltip based on the parent frame
 function QuestieCompat.SetupTooltip(frame, OnHide)
-    if (frame:GetParent() == WorldMapFrame) then
+    if IsWorldMapFrameDescendant(frame) then
         WorldMapPOIFrame.allowBlobTooltip = OnHide and true or false
         QuestieCompat.Tooltip = WorldMapTooltip
     else

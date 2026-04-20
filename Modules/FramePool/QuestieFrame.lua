@@ -42,17 +42,16 @@ function QuestieFramePool.Qframe:New(frameId, OnEnter)
         Questie:Debug(Questie.DEBUG_CRITICAL, "[QuestieFramePool] Over 5000 frames... maybe there is a leak?", frameId)
     end
 
-    newFrame.glow = CreateFrame("Button", "QuestieFrame" .. frameId .. "Glow", newFrame) -- glow frame
-    newFrame.glow:SetFrameStrata("FULLSCREEN");
-    newFrame.glow:SetWidth(18)                                                           -- Set these to whatever height/width is needed
-    newFrame.glow:SetHeight(18)
-
-
     newFrame:SetFrameStrata("FULLSCREEN");
     newFrame:SetWidth(16)  -- Set these to whatever height/width is needed
     newFrame:SetHeight(16) -- for your Texture
     newFrame:SetPoint("CENTER", -8, -8)
     newFrame:EnableMouse(true)
+
+    local glowt = newFrame:CreateTexture(nil, "ARTWORK", nil, -1)
+    glowt:SetWidth(18)
+    glowt:SetHeight(18)
+    glowt:SetPoint("CENTER", newFrame, 0, 0)
 
     local newTexture = newFrame:CreateTexture(nil, "OVERLAY", nil, 0)
     --t:SetTexture("Interface\\Icons\\INV_Misc_Eye_02.blp")
@@ -65,11 +64,6 @@ function QuestieFramePool.Qframe:New(frameId, OnEnter)
         newTexture:SetTexelSnappingBias(0)
         newTexture:SetSnapToPixelGrid(false)
     end
-
-    local glowt = newFrame.glow:CreateTexture(nil, "OVERLAY", nil, -1)
-    glowt:SetWidth(18)
-    glowt:SetHeight(18)
-    glowt:SetAllPoints(newFrame.glow)
 
     ---@class IconTexture : Texture
     newFrame.texture = newTexture;
@@ -86,6 +80,7 @@ function QuestieFramePool.Qframe:New(frameId, OnEnter)
     --We save the colors to the texture object, this way we don't need to use GetVertexColor
     newFrame.texture:SetVertexColor(1, 1, 1, 1);
 
+    newFrame.glow = glowt
     newFrame.glowTexture = glowt
     newFrame.glowTexture.OLDSetVertexColor = newFrame.glowTexture.SetVertexColor;
     function newFrame.glowTexture:SetVertexColor(r, g, b, a)
@@ -102,8 +97,7 @@ function QuestieFramePool.Qframe:New(frameId, OnEnter)
 
     newFrame.glowTexture:SetTexture(Questie.icons["glow"])
     newFrame.glow:Hide()
-    newFrame.glow:SetPoint("CENTER", -9, -9) -- 2 pixels bigger than normal icon
-    newFrame.glow:EnableMouse(false)
+    newFrame.glow:SetPoint("CENTER", newFrame, 0, 0) -- 2 pixels bigger than normal icon
 
     newFrame:SetScript("OnEnter", OnEnter);        --Script Toolip
     newFrame:SetScript("OnLeave", _Qframe.OnLeave) --Script Exit Tooltip
@@ -262,10 +256,6 @@ function _Qframe:BaseOnShow()
         local _, _, _, alpha = self.texture:GetVertexColor()
         self.glowTexture:SetVertexColor(data.ObjectiveData.Color[1], data.ObjectiveData.Color[2], data.ObjectiveData.Color[3], alpha or 1)
         self.glow:Show()
-        local frameLevel = self:GetFrameLevel()
-        if frameLevel > 0 then
-            self.glow:SetFrameLevel(frameLevel - 1)
-        end
     end
 end
 
