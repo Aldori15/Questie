@@ -433,7 +433,8 @@ StaticPopupDialogs["QUESTIE_RESET_CONFIRM"] = {
         if textField then
             textField:SetText(confirmText)
         end
-        self:SetFrameStrata("FULLSCREEN_DIALOG")
+        self:SetFrameStrata("TOOLTIP")
+        self:SetFrameLevel(1000)
         self:Raise()
     end,
     timeout = 0,
@@ -456,7 +457,8 @@ StaticPopupDialogs["QUESTIE_JOURNEY_RESET_CONFIRM"] = {
         if textField then
             textField:SetText(confirmText)
         end
-        self:SetFrameStrata("FULLSCREEN_DIALOG")
+        self:SetFrameStrata("TOOLTIP")
+        self:SetFrameLevel(1000)
         self:Raise()
     end,
     timeout = 0,
@@ -483,7 +485,8 @@ StaticPopupDialogs["QUESTIE_RECOMPILE_DATABASE_CONFIRM"] = {
         if textField then
             textField:SetText(confirmText)
         end
-        self:SetFrameStrata("FULLSCREEN_DIALOG")
+        self:SetFrameStrata("TOOLTIP")
+        self:SetFrameLevel(1000)
         self:Raise()
     end,
     timeout = 0,
