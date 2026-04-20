@@ -31,7 +31,7 @@ function QuestieMap.utils:SetDrawOrder(frame)
             frameLevel = frameLevel - 1 -- This is to make sure that manual icons are always below other icons
         end
         local frameStrata = WorldMapFrame:GetFrameStrata()
-        frame:SetParent(WorldMapFrame)
+        frame:SetParent(WorldMapButton)
         frame:SetFrameStrata(frameStrata)
         frame:SetFrameLevel(frameLevel)
     end
