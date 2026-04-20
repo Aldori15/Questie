@@ -126,15 +126,6 @@ function QuestieTBCQuestFixes:Load()
         [729] = {
             [questKeys.requiredLevel] = 15,
         },
-        [748] = {
-            [questKeys.requiredRaces] = raceIDs.TAUREN,
-        },
-        [756] = {
-            [questKeys.requiredRaces] = raceIDs.TAUREN,
-        },
-        [759] = {
-            [questKeys.requiredRaces] = raceIDs.TAUREN,
-        },
         [794] = { -- Burning Blade Medallion
             [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
         },

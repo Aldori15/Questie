@@ -88,6 +88,15 @@ function QuestieWotlkQuestFixes:Load()
         [648] = {
             [questKeys.triggerEnd] = {"Escort OOX-17/TN to safety", {[zoneIDs.TANARIS]={{61,53}}}},
         },
+        [748] = {
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
+        },
+        [756] = {
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
+        },
+        [759] = {
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
+        },
         [768] = {
             [questKeys.requiredSkill] = {393,1},
         },
