@@ -678,6 +678,18 @@ QuestieCompat.UiMapData =
 		["instance"] = 0,
 		["name"] = "Undercity",
 	},
+    [2257] =
+    {
+        [1] = 1791.6035,
+        [2] = 3680.4307,
+        [3] = 413.0965,
+        [4] = -4849.3992,
+        ["mapType"] = 3,
+        ["parentMapID"] = 1415,
+        ["mapID"] = 2257,
+        ["instance"] = 0,
+        ["name"] = "Deeprun Tram",
+    },
     [1459] =
 	{
 		[1] = 4237.4998779297,

@@ -266,6 +266,8 @@ local zoneNameToUiMapIdOverrides = {
     ["Circle of Wills"] = 126,
     ["Sewer Exit Pipe"] = 126,
     ["Dalaran Arena"] = 126,
+    ["Deeprun Tram"] = 2257,
+    ["The Deeprun Tram"] = 2257,
 }
 
 local function NormalizeMapKey(mapID, mapLevel)
