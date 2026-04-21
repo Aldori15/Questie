@@ -540,14 +540,18 @@ function AvailableQuests.DrawAvailableQuest(quest) -- prevent recursion
                 if item.npcDrops then
                     for _, npcId in pairs(item.npcDrops) do
                         local npc = QuestieDB:GetNPC(npcId)
-                        _AddStarter(npc, quest, "im_" .. npcId)
+                        if npc then
+                            _AddStarter(npc, quest, "im_" .. npcId)
+                        end
                     end
                 end
 
                 if item.objectDrops then
                     for _, objectId in pairs(item.objectDrops) do
                         local object = QuestieDB:GetObject(objectId)
-                        _AddStarter(object, quest, "io_" .. objectId)
+                        if object then
+                            _AddStarter(object, quest, "io_" .. objectId)
+                        end
                     end
                 end
             end
@@ -558,8 +562,9 @@ function AvailableQuests.DrawAvailableQuest(quest) -- prevent recursion
         local gameObjects = quest.Starts["GameObject"]
         for i = 1, #gameObjects do
             local obj = QuestieDB:GetObject(gameObjects[i])
-
-            _AddStarter(obj, quest, "o_" .. obj.id)
+            if obj then
+                _AddStarter(obj, quest, "o_" .. obj.id)
+            end
         end
     end
     if (quest.Starts["NPC"]) then
@@ -568,14 +573,16 @@ function AvailableQuests.DrawAvailableQuest(quest) -- prevent recursion
         for i = 1, #npcs do
             local npc = QuestieDB:GetNPC(npcs[i])
 
-            if trackNpcAvailability then
-                if (not availableQuestsByNpc[npc.id]) then
-                    availableQuestsByNpc[npc.id] = {}
+            if npc then
+                if trackNpcAvailability then
+                    if (not availableQuestsByNpc[npc.id]) then
+                        availableQuestsByNpc[npc.id] = {}
+                    end
+                    availableQuestsByNpc[npc.id][quest.Id] = true
                 end
-                availableQuestsByNpc[npc.id][quest.Id] = true
-            end
 
-            _AddStarter(npc, quest, "m_" .. npc.id)
+                _AddStarter(npc, quest, "m_" .. npc.id)
+            end
         end
     end
 end
