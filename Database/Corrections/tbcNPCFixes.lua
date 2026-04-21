@@ -386,6 +386,11 @@ function QuestieTBCNpcFixes:Load()
             [npcKeys.questStarts] = {8367,8388,11339,11340,11341,11342,95457},
             [npcKeys.questEnds] = {8367,8388,11339,11340,11341,11342,95457},
         },
+        [215350] = { -- Horde Warbringer (TBC)
+            [npcKeys.name] = "Horde Warbringer",
+            [npcKeys.questStarts] = {8367,8388,11339,11340,11341,11342},
+            [npcKeys.questEnds] = {8367,8388,11339,11340,11341,11342},
+        },
         [15351] = { -- Alliance Brigadier General
             [npcKeys.spawns] = {
                 [zoneIDs.IRONFORGE]={{70.41,91.10}},
@@ -396,6 +401,11 @@ function QuestieTBCNpcFixes:Load()
             },
             [npcKeys.questStarts] = {8371,8385,11335,11336,11337,11338,64845,95455},
             [npcKeys.questEnds] = {8371,8385,11335,11336,11337,11338,64845,95455},
+        },
+        [215351] = { -- Alliance Brigadier General (TBC)
+            [npcKeys.name] = "Alliance Brigadier General",
+            [npcKeys.questStarts] = {8371,8385,11335,11336,11337,11338},
+            [npcKeys.questEnds] = {8371,8385,11335,11336,11337,11338},
         },
         [15493] = {
             [npcKeys.spawns] = {[3430]={{46.8,46.4}}},

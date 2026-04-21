@@ -293,6 +293,13 @@ function QuestieObjectFixes:Load()
             [objectKeys.spawns] = {[zoneIDs.DIRE_MAUL]={{-1,-1}}},
             [objectKeys.zoneID] = zoneIDs.DIRE_MAUL,
         },
+        [179553] = { -- Core Fragment
+            [objectKeys.spawns] = {[zoneIDs.BLACKROCK_DEPTHS] = {{-1,-1}}},
+        },
+        [179562] = { -- Ancient Heated Blade
+            [objectKeys.spawns] = {[zoneIDs.ONYXIAS_LAIR] = {{-1,-1}}},
+            [objectKeys.zoneID] = zoneIDs.ONYXIAS_LAIR,
+        },
         [179703] = { -- Cache of the Firelord
             [objectKeys.questStarts] = {7632},
         },

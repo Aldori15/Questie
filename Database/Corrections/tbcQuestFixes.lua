@@ -975,10 +975,13 @@ function QuestieTBCQuestFixes:Load()
         [7485] = { -- Libram of Protection
             [questKeys.reputationReward] = {{factionIDs.SHEN_DRALAR,500}},
         },
-        [7583] = {
+        [7508] = { -- The Forging of Quel'Serrar
+            [questKeys.requiredLevel] = 60,
+        },
+        [7583] = { -- Suppression
             [questKeys.preQuestGroup] = {7581,7582},
         },
-        [7623] = {
+        [7623] = { -- Lord Banehollow
             [questKeys.preQuestSingle] = {},
         },
         [7792] = {
@@ -1850,7 +1853,7 @@ function QuestieTBCQuestFixes:Load()
         [9339] = {
             [questKeys.objectivesText] = {},
         },
-        [9355] = {
+        [9355] = { -- A Job for an Intelligent Man
             [questKeys.preQuestSingle] = {10143,10483},
         },
         [9358] = { -- Ranger Sareyn
@@ -2118,7 +2121,7 @@ function QuestieTBCQuestFixes:Load()
         [9555] = { -- Call of Fire
             [questKeys.requiredRaces] = raceIDs.DRAENEI,
         },
-        [9558] = {
+        [9558] = { -- The Longbeards
             [questKeys.preQuestSingle] = {10143,10483},
         },
         [9560] = {
@@ -2673,10 +2676,10 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.preQuestGroup] = {9934,9868,10011},
             [questKeys.preQuestSingle] = {},
         },
-        [10047] = {
+        [10047] = { -- The Path of Glory
             [questKeys.preQuestSingle] = {10143,10483},
         },
-        [10050] = {
+        [10050] = { -- Unyielding Souls
             [questKeys.preQuestSingle] = {10143,10483},
         },
         [10051] = {
@@ -2685,7 +2688,7 @@ function QuestieTBCQuestFixes:Load()
         [10052] = {
             [questKeys.triggerEnd] = {"Escort Isla Starmane to safety", {[zoneIDs.TEROKKAR_FOREST]={{67.51,37.28}}}},
         },
-        [10058] = {
+        [10058] = { -- An Old Gift
             [questKeys.preQuestSingle] = {10143,10483},
         },
         [10063] = {
@@ -2748,7 +2751,7 @@ function QuestieTBCQuestFixes:Load()
         [10077] = {
             [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
         },
-        [10079] = {
+        [10079] = { -- When This Mine's a-Rockin'
             [questKeys.preQuestSingle] = {10143,10483},
         },
         [10085] = {
@@ -2772,8 +2775,9 @@ function QuestieTBCQuestFixes:Load()
         [10105] = {
             [questKeys.exclusiveTo] = {9796},
         },
-        [10106] = {
+        [10106] = { -- Hellfire Fortifications A
             [questKeys.questLevel] = -1,
+            [questKeys.preQuestSingle] = {10143,10483}, -- double check 10143
             [questKeys.requiredMaxRep] = {},
             [questKeys.objectives] = {{{19028,nil,Questie.ICON_TYPE_EVENT},{19029,nil,Questie.ICON_TYPE_EVENT},{19032,nil,Questie.ICON_TYPE_EVENT}}},
         },
@@ -2783,8 +2787,9 @@ function QuestieTBCQuestFixes:Load()
         [10108] = {
             [questKeys.objectives] = {{{18261,nil,Questie.ICON_TYPE_TALK}}},
         },
-        [10110] = {
+        [10110] = { -- Hellfire Fortifications H
             [questKeys.questLevel] = -1,
+            [questKeys.preQuestSingle] = {10124}, -- double check. if there are others, put them in addition to existing
             [questKeys.requiredMaxRep] = {},
             [questKeys.objectives] = {{{19028,nil,Questie.ICON_TYPE_EVENT},{19029,nil,Questie.ICON_TYPE_EVENT},{19032,nil,Questie.ICON_TYPE_EVENT}}},
         },
@@ -2797,6 +2802,9 @@ function QuestieTBCQuestFixes:Load()
         },
         [10114] = {
             [questKeys.exclusiveTo] = {9854,9857,9789},
+        },
+        [10119] = { -- Through the Dark Portal
+            [questKeys.breadcrumbForQuestId] = 10288,
         },
         [10120] = {
             [questKeys.preQuestSingle] = {},
@@ -2811,6 +2819,9 @@ function QuestieTBCQuestFixes:Load()
         [10146] = {
             [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_TALK, l10n("Speak with Wing Commander Dabir'ee"), 0, {{"monster", 19409}}}},
             [questKeys.objectives] = {nil,{{183350},{183351}}},
+        },
+        [10160] = { -- Know your Enemy
+            [questKeys.breadcrumbForQuestId] = 10482,
         },
         [10162] = {
             [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_TALK, l10n("Speak with Wing Commander Brack"), 0, {{"monster", 19401}}}},
@@ -2939,9 +2950,9 @@ function QuestieTBCQuestFixes:Load()
         [10283] = {
             [questKeys.objectives] = {nil,{{182589}}},
         },
-        [10288] = {
+        [10288] = { -- Arrival in Outland
             [questKeys.preQuestSingle] = {},
-            [questKeys.nextQuestInChain] = 0,
+            [questKeys.breadcrumbs] = {10119},
         },
         [10291] = {
             [questKeys.preQuestSingle] = {},
@@ -3038,11 +3049,13 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.finishedBy] = {{14725}},
             [questKeys.reputationReward] = {{factionIDs.DARNASSUS,350}},
         },
-        [10357] = {
+        [10357] = { -- A Donation of Runecloth
             [questKeys.preQuestGroup] = {7792,7798,10356},
+            [questKeys.nextQuestInChain] = 10358,
         },
-        [10362] = {
+        [10362] = { -- A Donation of Runecloth
             [questKeys.preQuestGroup] = {10359,10360,10361},
+            [questKeys.nextQuestInChain] = 10363,
         },
         [10365] = {
             [questKeys.objectives] = {nil,{{184312}},{{29411}}},
@@ -3264,6 +3277,12 @@ function QuestieTBCQuestFixes:Load()
         [10481] = {
             [questKeys.objectives] = {{{21060,nil,Questie.ICON_TYPE_INTERACT}}},
             [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_EVENT, l10n("Use the Totem of Spirits on Enraged Air Spirits"), 0, {{"monster", 21060}}}},
+        },
+        [10482] = { -- Fel Orc Scavengers
+            [questKeys.breadcrumbs] = {10160},
+        },
+        [10483] = { -- Ill Omens
+            [questKeys.nextQuestInChain] = 10484,
         },
         [10488] = {
             [questKeys.objectives] = {{{20748,nil,Questie.ICON_TYPE_INTERACT}}},

@@ -34,4 +34,5 @@
     <Script file="QuestReward.lua"/>
     <Script file="UiMapData.lua"/>
     <Script file="HBD.lua"/>
+    <Script file="AzerothCoreCorrections.lua"/>
 </Ui>

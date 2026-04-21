@@ -1,8 +1,17 @@
 import argparse
 import json
 import re
+import sys
 from itertools import product
 from pathlib import Path
+from typing import Optional
+
+
+TOOLS_DIR = Path(__file__).resolve().parent
+if str(TOOLS_DIR) not in sys.path:
+    sys.path.insert(0, str(TOOLS_DIR))
+
+from validate_acore_quest_metadata import load_acore_sql_table
 
 
 TARGET_TABLES = {
@@ -11,6 +20,63 @@ TARGET_TABLES = {
     "gameobject_queststarter": ("start", "object"),
     "gameobject_questender": ("end", "object"),
 }
+
+RELATION_SOURCE_ID_ALIASES = {
+    "creature": {
+        102055: 2055,
+    },
+}
+
+RELATION_EXPORT_FILES = tuple(TARGET_TABLES)
+
+
+def empty_relation():
+    return {
+        "start": {"creature": set(), "object": set(), "item": set()},
+        "end": {"creature": set(), "object": set()},
+    }
+
+
+def validate_lua_fragment(fragment: str, label: str):
+    balance = 0
+    in_string = None
+    escaped = False
+
+    for line_number, line in enumerate(fragment.splitlines(), start=1):
+        index = 0
+
+        if in_string is None and line.lstrip().startswith("--"):
+            continue
+
+        while index < len(line):
+            char = line[index]
+
+            if in_string is not None:
+                if escaped:
+                    escaped = False
+                elif char == "\\":
+                    escaped = True
+                elif char == in_string:
+                    in_string = None
+                index += 1
+                continue
+
+            if char == "-" and index + 1 < len(line) and line[index + 1] == "-":
+                break
+
+            if char in ('"', "'"):
+                in_string = char
+            elif char == "{":
+                balance += 1
+            elif char == "}":
+                balance -= 1
+                if balance < 0:
+                    raise ValueError(f"{label} has an unmatched closing brace on line {line_number}.")
+
+            index += 1
+
+    if balance != 0:
+        raise ValueError(f"{label} has unbalanced braces ({balance:+d}).")
 
 INSERT_RE = re.compile(
     r"(?P<kind>INSERT INTO|REPLACE INTO)\s+`(?P<table>creature_queststarter|creature_questender|gameobject_queststarter|gameobject_questender)`.*?VALUES\s*(?P<values>.*?);",
@@ -244,7 +310,11 @@ def extract_return_table(lua_file_text: str):
     raise ValueError("Could not extract return table")
 
 
-def parse_delete_pairs(where_clause: str):
+def normalize_relation_source_id(source_type: str, source_id: int) -> int:
+    return RELATION_SOURCE_ID_ALIASES.get(source_type, {}).get(source_id, source_id)
+
+
+def parse_delete_pairs(where_clause: str, source_type: Optional[str] = None):
     id_match = re.search(r"`id`\s+IN\s*\(([^)]+)\)|`id`\s*=\s*(\d+)", where_clause, re.IGNORECASE)
     quest_match = re.search(r"`quest`\s+IN\s*\(([^)]+)\)|`quest`\s*=\s*(\d+)", where_clause, re.IGNORECASE)
 
@@ -253,7 +323,10 @@ def parse_delete_pairs(where_clause: str):
 
     ids = parse_number_list(id_match.group(1)) if id_match.group(1) else {int(id_match.group(2))}
     quests = parse_number_list(quest_match.group(1)) if quest_match.group(1) else {int(quest_match.group(2))}
-    return {(source_id, quest_id) for source_id, quest_id in product(ids, quests)}
+    pairs = {(source_id, quest_id) for source_id, quest_id in product(ids, quests)}
+    if source_type:
+        return {(normalize_relation_source_id(source_type, source_id), quest_id) for source_id, quest_id in pairs}
+    return pairs
 
 
 def apply_sql_file(path: Path, state):
@@ -264,52 +337,97 @@ def apply_sql_file(path: Path, state):
 
     for match in DELETE_RE.finditer(text):
         table = match.group("table").lower()
-        state[table].difference_update(parse_delete_pairs(match.group("where")))
+        relation_type, source_type = TARGET_TABLES[table]
+        state[table].difference_update(parse_delete_pairs(match.group("where"), source_type))
 
     for match in INSERT_RE.finditer(text):
         table = match.group("table").lower()
-        state[table].update((int(left), int(right)) for left, right in PAIR_RE.findall(match.group("values")))
+        relation_type, source_type = TARGET_TABLES[table]
+        state[table].update(
+            (
+                normalize_relation_source_id(source_type, int(left)),
+                int(right),
+            )
+            for left, right in PAIR_RE.findall(match.group("values"))
+        )
 
 
-def load_acore_relations(acore_source: Path):
+def load_acore_relations(acore_source: Path, quest_template_sql: Optional[Path] = None):
     state = {table: set() for table in TARGET_TABLES}
     base_dir = acore_source / "data" / "sql" / "base" / "db_world"
     updates_dir = acore_source / "data" / "sql" / "updates" / "db_world"
 
-    for table in TARGET_TABLES:
-        apply_sql_file(base_dir / f"{table}.sql", state)
+    relation_export_dir = quest_template_sql.parent if quest_template_sql else None
+    relation_export_files = {}
+    if relation_export_dir:
+        for table in RELATION_EXPORT_FILES:
+            export_path = relation_export_dir / f"{table}.sql"
+            if export_path.exists():
+                relation_export_files[table] = export_path
 
-    for update_file in sorted(updates_dir.glob("*.sql")):
-        apply_sql_file(update_file, state)
+    if len(relation_export_files) == len(RELATION_EXPORT_FILES):
+        for table in RELATION_EXPORT_FILES:
+            apply_sql_file(relation_export_files[table], state)
+    else:
+        for table in TARGET_TABLES:
+            apply_sql_file(base_dir / f"{table}.sql", state)
+
+        for update_file in sorted(updates_dir.glob("*.sql")):
+            apply_sql_file(update_file, state)
 
     per_quest = {}
     for table, pairs in state.items():
         relation_type, source_type = TARGET_TABLES[table]
         for source_id, quest_id in pairs:
-            relation = per_quest.setdefault(
-                quest_id,
-                {
-                    "start": {"creature": set(), "object": set()},
-                    "end": {"creature": set(), "object": set()},
-                },
-            )
+            relation = per_quest.setdefault(quest_id, empty_relation())
             relation[relation_type][source_type].add(source_id)
+
+    item_template_export = None
+    if quest_template_sql:
+        candidate = quest_template_sql.parent / "item_template.sql"
+        if candidate.exists():
+            item_template_export = candidate
+
+    if item_template_export:
+        for item_id, row in load_acore_sql_table(
+            acore_source,
+            "item_template",
+            item_template_export,
+            key_column="entry",
+        ).items():
+            start_quest = int(row.get("startquest") or row.get("StartQuest") or 0)
+            if start_quest <= 0:
+                continue
+
+            relation = per_quest.setdefault(start_quest, empty_relation())
+            relation["start"]["item"].add(item_id)
+    else:
+        for quest_id, row in load_acore_sql_table(acore_source, "quest_template").items():
+            start_item = int(row.get("StartItem") or 0)
+            if start_item <= 0:
+                continue
+
+            relation = per_quest.setdefault(quest_id, empty_relation())
+            relation["start"]["item"].add(start_item)
     return per_quest
 
 
 def extract_relation_sources(value):
     if not isinstance(value, list):
-        return {"creature": set(), "object": set()}
+        return {"creature": set(), "object": set(), "item": set()}
 
     creature = set()
     obj = set()
+    item = set()
 
     if len(value) > 0 and isinstance(value[0], list):
         creature = {int(entry) for entry in value[0] if isinstance(entry, int)}
     if len(value) > 1 and isinstance(value[1], list):
         obj = {int(entry) for entry in value[1] if isinstance(entry, int)}
+    if len(value) > 2 and isinstance(value[2], list):
+        item = {int(entry) for entry in value[2] if isinstance(entry, int)}
 
-    return {"creature": creature, "object": obj}
+    return {"creature": creature, "object": obj, "item": item}
 
 
 def load_questie_relations(quest_db_path: Path):
@@ -372,32 +490,36 @@ def load_quest_relation_overrides(fix_file_path: Path):
 
 def apply_relation_overrides(questie_relations, overrides):
     for quest_id, override in overrides.items():
-        relation = questie_relations.setdefault(
-            quest_id,
-            {
-                "start": {"creature": set(), "object": set()},
-                "end": {"creature": set(), "object": set()},
-            },
-        )
+        relation = questie_relations.setdefault(quest_id, empty_relation())
         for relation_type, value in override.items():
             relation[relation_type] = value
 
 
 def format_relation_table(source_map):
-    creature = sorted(source_map["creature"])
-    obj = sorted(source_map["object"])
+    creature = sorted(source_map.get("creature", set()))
+    obj = sorted(source_map.get("object", set()))
+    item = sorted(source_map.get("item", set()))
 
-    if not creature and not obj:
+    if not creature and not obj and not item:
         return "{}"
 
-    parts = []
-    if creature:
-        parts.append("{" + ",".join(str(value) for value in creature) + "}")
-    else:
-        parts.append("nil")
+    if not item:
+        parts = []
+        if creature:
+            parts.append("{" + ",".join(str(value) for value in creature) + "}")
+        elif obj:
+            parts.append("nil")
 
-    if obj:
-        parts.append("{" + ",".join(str(value) for value in obj) + "}")
+        if obj:
+            parts.append("{" + ",".join(str(value) for value in obj) + "}")
+
+        return "{" + ",".join(parts) + "}"
+
+    parts = [
+        "{" + ",".join(str(value) for value in creature) + "}" if creature else "nil",
+        "{" + ",".join(str(value) for value in obj) + "}" if obj else "nil",
+        "{" + ",".join(str(value) for value in item) + "}",
+    ]
 
     return "{" + ",".join(parts) + "}"
 
@@ -409,16 +531,13 @@ def build_lua_suggestions(mismatches, acore_relations):
         relation = by_quest.setdefault(quest_id, {})
         relation[mismatch["relationType"]] = acore_relations.get(
             quest_id,
-            {
-                "start": {"creature": set(), "object": set()},
-                "end": {"creature": set(), "object": set()},
-            },
+            empty_relation(),
         )[mismatch["relationType"]]
 
     lines = [
         "-- REVIEW BEFORE APPLYING.",
-        "-- Generated from AzerothCore static quest relation tables only.",
-        "-- Item starts, scripted starts, events, phasing, and intentional Questie divergences still need manual review.",
+        "-- Generated from AzerothCore static quest relation tables and item_template.startquest.",
+        "-- Scripted starts, events, phasing, and intentional Questie divergences still need manual review.",
         "",
     ]
 
@@ -439,23 +558,12 @@ def compare_relations(acore_relations, questie_relations):
     all_quest_ids = sorted(set(acore_relations) | set(questie_relations))
 
     for quest_id in all_quest_ids:
-        acore = acore_relations.get(
-            quest_id,
-            {
-                "start": {"creature": set(), "object": set()},
-                "end": {"creature": set(), "object": set()},
-            },
-        )
-        questie = questie_relations.get(
-            quest_id,
-            {
-                "start": {"creature": set(), "object": set()},
-                "end": {"creature": set(), "object": set()},
-            },
-        )
+        acore = acore_relations.get(quest_id, empty_relation())
+        questie = questie_relations.get(quest_id, empty_relation())
 
         for relation_type in ("start", "end"):
-            for source_type in ("creature", "object"):
+            source_types = ("creature", "object", "item") if relation_type == "start" else ("creature", "object")
+            for source_type in source_types:
                 acore_set = acore[relation_type][source_type]
                 questie_set = questie[relation_type][source_type]
                 if acore_set != questie_set:
@@ -477,6 +585,7 @@ def build_summary(mismatches):
         "total": len(mismatches),
         "startCreature": 0,
         "startObject": 0,
+        "startItem": 0,
         "endCreature": 0,
         "endObject": 0,
     }
@@ -492,6 +601,10 @@ def main():
     parser = argparse.ArgumentParser(description="Validate Questie WotLK quest starter/finisher data against AzerothCore SQL.")
     parser.add_argument("--acore-source", default=r"P:\AC\source", help="Path to the AzerothCore source tree")
     parser.add_argument("--quest-db", default="Database/Wotlk/wotlkQuestDB.lua", help="Path to the Questie WotLK quest DB")
+    parser.add_argument(
+        "--quest-template-sql",
+        help="Optional HeidiSQL export for quest_template; sibling relation exports and item_template.sql will be used when present",
+    )
     parser.add_argument(
         "--quest-fixes",
         nargs="*",
@@ -509,8 +622,9 @@ def main():
 
     acore_source = Path(args.acore_source)
     quest_db_path = Path(args.quest_db)
+    quest_template_sql = Path(args.quest_template_sql) if args.quest_template_sql else None
 
-    acore_relations = load_acore_relations(acore_source)
+    acore_relations = load_acore_relations(acore_source, quest_template_sql)
     questie_relations = load_questie_relations(quest_db_path)
     for fix_file in args.quest_fixes:
         apply_relation_overrides(questie_relations, load_quest_relation_overrides(Path(fix_file)))
@@ -520,9 +634,12 @@ def main():
     print("AzerothCore quest relation validation")
     print(f"AzerothCore source: {acore_source}")
     print(f"Quest DB: {quest_db_path}")
+    if quest_template_sql:
+        print(f"Quest template export: {quest_template_sql}")
     print(f"Total mismatches: {summary['total']}")
     print(f"  start/creature: {summary['startCreature']}")
     print(f"  start/object:   {summary['startObject']}")
+    print(f"  start/item:     {summary['startItem']}")
     print(f"  end/creature:   {summary['endCreature']}")
     print(f"  end/object:     {summary['endObject']}")
 
@@ -556,7 +673,9 @@ def main():
     if args.suggest_lua:
         suggestion_path = Path(args.suggest_lua)
         suggestion_path.parent.mkdir(parents=True, exist_ok=True)
-        suggestion_path.write_text(build_lua_suggestions(mismatches, acore_relations), encoding="utf-8")
+        suggestion_text = build_lua_suggestions(mismatches, acore_relations)
+        validate_lua_fragment(suggestion_text, str(suggestion_path))
+        suggestion_path.write_text(suggestion_text, encoding="utf-8")
         print(f"Lua suggestions written to {suggestion_path}")
 
 
