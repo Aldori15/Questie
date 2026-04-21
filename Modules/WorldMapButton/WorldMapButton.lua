@@ -17,6 +17,41 @@ local mapButton
 local lastWorldMapButtonEffectiveScale
 local lastWorldMapFrameEffectiveScale
 
+local function _GetOccupiedTopRightOffset(worldMapButtonFrame, worldMapFrame)
+    local occupiedOffset
+
+    local function ConsiderFrame(frame)
+        if not frame or frame == mapButton or not frame.IsShown or not frame:IsShown() then
+            return
+        end
+
+        local point, relativeFrame, relativePoint, xOffset = frame:GetPoint(1)
+        if not point or xOffset == nil then
+            return
+        end
+
+        if (relativeFrame == worldMapButtonFrame or relativeFrame == worldMapFrame) and
+            (point == "TOPRIGHT" or point == "RIGHT") and
+            (relativePoint == "TOPRIGHT" or relativePoint == "RIGHT" or relativePoint == nil) then
+            if occupiedOffset == nil or xOffset < occupiedOffset then
+                occupiedOffset = xOffset
+            end
+        end
+    end
+
+    for _, child in next, { worldMapButtonFrame:GetChildren() } do
+        ConsiderFrame(child)
+    end
+
+    if worldMapFrame and worldMapFrame ~= worldMapButtonFrame then
+        for _, child in next, { worldMapFrame:GetChildren() } do
+            ConsiderFrame(child)
+        end
+    end
+
+    return occupiedOffset
+end
+
 local function RefreshWorldMapButtonLayout()
     if not mapButton then
         return
@@ -31,16 +66,34 @@ local function RefreshWorldMapButtonLayout()
     local parentEffectiveScale = worldMapButtonFrame.GetEffectiveScale and worldMapButtonFrame:GetEffectiveScale() or worldMapButtonFrame:GetScale() or 1
     local targetEffectiveScale = worldMapFrame and worldMapFrame.GetEffectiveScale and worldMapFrame:GetEffectiveScale() or parentEffectiveScale
     local buttonScale = 1
+    local point, _, relativePoint, xOffset, yOffset = mapButton:GetPoint(1)
+    local occupiedOffset = _GetOccupiedTopRightOffset(worldMapButtonFrame, worldMapFrame)
+    local buttonWidth = mapButton.GetWidth and mapButton:GetWidth() or 32
+    local buttonGap = 4
 
     if parentEffectiveScale and parentEffectiveScale > 0 then
         buttonScale = targetEffectiveScale / parentEffectiveScale
+    end
+
+    if not point then
+        point = "TOPRIGHT"
+        relativePoint = "TOPRIGHT"
+        xOffset = -4
+        yOffset = -4
+    end
+
+    if occupiedOffset ~= nil then
+        local collisionOffset = occupiedOffset - buttonWidth - buttonGap
+        if not xOffset or collisionOffset < xOffset then
+            xOffset = collisionOffset
+        end
     end
 
     mapButton:SetParent(worldMapButtonFrame)
     mapButton:ClearAllPoints()
     mapButton:SetFrameStrata("TOOLTIP")
     mapButton:SetFrameLevel(worldMapButtonFrame:GetFrameLevel() + 1)
-    mapButton:SetPoint("TOPRIGHT", worldMapButtonFrame, "TOPRIGHT", -4, -4)
+    mapButton:SetPoint(point, worldMapButtonFrame, relativePoint or point, xOffset or -4, yOffset or -4)
     mapButton:SetScale(buttonScale)
 
     lastWorldMapButtonEffectiveScale = parentEffectiveScale
