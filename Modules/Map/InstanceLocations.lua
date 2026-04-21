@@ -14,6 +14,8 @@ local QuestieMap = QuestieLoader:ImportModule("QuestieMap")
 local MeetingStones = QuestieLoader:ImportModule("MeetingStones")
 ---@type ZoneDB
 local ZoneDB = QuestieLoader:ImportModule("ZoneDB")
+---@type l10n
+local l10n = QuestieLoader:ImportModule("l10n")
 
 --- COMPATIBILITY ---
 local C_Map = QuestieCompat.C_Map
@@ -204,10 +206,10 @@ end
 
 local function _GetTypeLabel(kind)
     if kind == "raid" then
-        return LFG_TYPE_RAID or "Raid"
+        return l10n("Raid")
     end
 
-    return LFG_TYPE_DUNGEON or "Dungeon"
+    return l10n("Dungeon")
 end
 
 local function _GetGroupSizeLabel(entry)
@@ -216,6 +218,16 @@ local function _GetGroupSizeLabel(entry)
     end
 
     return RAID_GROUP_SIZES[entry.sourceAreaId]
+end
+
+local function _GetInstanceNames(areaId, dungeonEntry)
+    local sourceName = SUPPLEMENTAL_INSTANCE_NAMES[areaId] or (dungeonEntry and dungeonEntry[1]) or ZoneDB:GetLocalizedDungeonName(areaId) or C_Map.GetAreaInfo(areaId)
+
+    if sourceName then
+        return sourceName, l10n(sourceName)
+    end
+
+    return nil, nil
 end
 
 local function _BuildTooltipTitle(entry, iconType)
@@ -228,7 +240,7 @@ local function _BuildTooltipTitle(entry, iconType)
     end
 
     if groupSizeLabel then
-        title = title .. " [" .. typeLabel .. ", " .. groupSizeLabel .. "]"
+        title = title .. " [" .. typeLabel .. ", " .. l10n(groupSizeLabel) .. "]"
     else
         title = title .. " [" .. typeLabel .. "]"
     end
@@ -331,15 +343,12 @@ local function _DrawEntry(entry)
     QuestieMap.utils:RescaleIcon(iconMinimap)
 end
 
-local function _GetInstanceName(areaId, dungeonEntry)
-    return SUPPLEMENTAL_INSTANCE_NAMES[areaId] or (dungeonEntry and dungeonEntry[1]) or ZoneDB:GetLocalizedDungeonName(areaId) or C_Map.GetAreaInfo(areaId)
-end
-
-local function _GetLookupNames(name, dungeonEntry)
+local function _GetLookupNames(...)
     local lookupNames = {}
     local seenNames = {}
 
-    for _, lookupName in ipairs({name, dungeonEntry and dungeonEntry[1]}) do
+    for index = 1, select("#", ...) do
+        local lookupName = select(index, ...)
         local normalizedName = _NormalizeInstanceName(lookupName)
 
         if normalizedName and (not seenNames[normalizedName]) then
@@ -376,13 +385,13 @@ local function _BuildEntries()
         local locations = ZoneDB:GetDungeonLocation(areaId)
         if locations then
             local kind = RAID_AREA_IDS[areaId] and "raid" or "dungeon"
-            local name = _GetInstanceName(areaId, dungeonEntry)
-            local lookupNames = _GetLookupNames(name, dungeonEntry)
-            local levelRange = MeetingStones:GetLevelRangeByDungeonName(name)
+            local sourceName, localizedName = _GetInstanceNames(areaId, dungeonEntry)
+            local lookupNames = _GetLookupNames(sourceName, localizedName)
+            local levelRange = MeetingStones:GetLevelRangeByDungeonName(sourceName)
 
             for _, location in ipairs(locations) do
                 local locationAreaId, x, y = location[1], location[2], location[3]
-                local key = kind .. ":" .. name .. ":" .. tostring(locationAreaId) .. ":" .. tostring(x) .. ":" .. tostring(y)
+                local key = kind .. ":" .. localizedName .. ":" .. tostring(locationAreaId) .. ":" .. tostring(x) .. ":" .. tostring(y)
 
                 if not seen[key] then
                     seen[key] = true
@@ -395,7 +404,7 @@ local function _BuildEntries()
                         x = x,
                         y = y,
                         kind = kind,
-                        name = name,
+                        name = localizedName,
                         levelRange = levelRange,
                         lookupNames = lookupNames,
                     })
