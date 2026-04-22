@@ -28,30 +28,27 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [415] = {
-            [questKeys.startedBy] = {{2055}},
+            [questKeys.startedBy] = {{1872}},
         },
 
         [467] = {
-            [questKeys.finishedBy] = {{2055}},
+            [questKeys.startedBy] = {{1340}},
         },
 
         [550] = {
-            [questKeys.finishedBy] = {{2055}},
+            [questKeys.startedBy] = {{2215}},
         },
 
         [558] = {
-            [questKeys.startedBy] = {{2055}},
+            [questKeys.startedBy] = {},
         },
 
         [615] = {
-            [questKeys.startedBy] = {{2055}},
-            [questKeys.finishedBy] = {{2055}},
+            [questKeys.startedBy] = {},
         },
 
         [781] = {
             [questKeys.startedBy] = {},
-            [questKeys.startedBy] = {{2055}},
-            [questKeys.finishedBy] = {{2055}},
         },
 
         [910] = {
@@ -3625,13 +3622,13 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [28] = {
             [questKeys.objectivesText] = {"Find a Shrine Bauble in Lake Elune'ara, and take it to the Shrine of Remulos in northwestern Moonglade.  Once there, use the Shrine Bauble.","","You must speak with Tajarri at the shrine afterwards in order to complete the trial."},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.specialFlags] = 34,
         },
 
         [29] = {
             [questKeys.objectivesText] = {"Find a Shrine Bauble in Lake Elune'ara, and take it to the Shrine of Remulos in northwestern Moonglade.  Once there, use the Shrine Bauble.","","You must speak with Tajarri at the shrine afterwards in order to complete the trial."},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.specialFlags] = 34,
         },
 
@@ -5607,7 +5604,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [934] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.preQuestSingle] = {933},
         },
 
@@ -5912,7 +5909,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [1090] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.questFlags] = 3,
         },
 
@@ -6276,7 +6273,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [1249] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.nextQuestInChain] = 0,
         },
 
@@ -6432,7 +6429,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [1324] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.nextQuestInChain] = 0,
         },
 
@@ -6559,7 +6556,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [1447] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [1452] = {
@@ -6865,7 +6862,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [1640] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.preQuestSingle] = {1639},
         },
 
@@ -7275,7 +7272,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [1950] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [1952] = {
@@ -7461,7 +7458,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [2278] = {
             [questKeys.objectivesText] = {"Speak with stone watcher and learn what ancient lore it keeps.  Once you have learned what lore it has to offer, activate the Discs of Norgannon."},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [2279] = {
@@ -7555,7 +7552,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [2460] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.breadcrumbs] = {},
         },
 
@@ -7582,7 +7579,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [2520] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [2521] = {
@@ -7594,7 +7591,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [2561] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [2581] = {
@@ -7638,7 +7635,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [2744] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.questFlags] = 10,
         },
 
@@ -7647,7 +7644,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [2755] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [2757] = {
@@ -7663,7 +7660,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [2765] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.preQuestSingle] = {2761,2762,2763},
         },
 
@@ -7700,11 +7697,11 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [2784] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [2801] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [2841] = {
@@ -7716,7 +7713,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [2843] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [2847] = {
@@ -8326,7 +8323,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [3141] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [3161] = {
@@ -8363,7 +8360,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [3321] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.preQuestSingle] = {2771,2772,2773},
         },
 
@@ -8444,7 +8441,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [3377] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [3383] = {
@@ -8518,7 +8515,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [3441] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.nextQuestInChain] = 0,
         },
 
@@ -8527,7 +8524,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [3453] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [3454] = {
@@ -8718,7 +8715,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [3625] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [3628] = {
@@ -8835,7 +8832,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [3702] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.questFlags] = 10,
         },
 
@@ -9008,11 +9005,11 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [3982] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [4001] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [4003] = {
@@ -9184,7 +9181,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [4185] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.preQuestSingle] = {4184},
         },
 
@@ -9202,7 +9199,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [4224] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [4242] = {
@@ -9265,7 +9262,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [4342] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.questFlags] = 10,
         },
 
@@ -9578,7 +9575,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [4786] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.questFlags] = 2,
         },
 
@@ -9609,7 +9606,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [4866] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [4867] = {
@@ -9650,7 +9647,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [4964] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.preQuestSingle] = {4962},
             [questKeys.exclusiveTo] = {4975},
             [questKeys.questFlags] = 2,
@@ -9662,7 +9659,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [4966] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [4967] = {
@@ -9691,7 +9688,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [4975] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.preQuestSingle] = {4963},
             [questKeys.exclusiveTo] = {4964},
             [questKeys.questFlags] = 2,
@@ -9876,7 +9873,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [5126] = {
             [questKeys.requiredClasses] = 0,
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.requiredSkill] = {164,285},
         },
 
@@ -10805,7 +10802,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [5721] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [5724] = {
@@ -10819,7 +10816,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [5727] = {
             [questKeys.requiredRaces] = 690,
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [5728] = {
@@ -10835,7 +10832,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [5742] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.preQuestSingle] = {5542,5543,5544},
         },
 
@@ -10997,12 +10994,12 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [5929] = {
             [questKeys.objectivesText] = {"Seek out the Great Bear Spirit in northwestern Moonglade and learn what it has to share with you about the nature of the bear.  When finished, return to Dendrite Starblaze in Nighthaven, Moonglade."},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [5930] = {
             [questKeys.objectivesText] = {"Seek out the Great Bear Spirit in northwestern Moonglade and learn what it has to share with you about the nature of the bear.  When finished, return to Dendrite Starblaze in Nighthaven, Moonglade."},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [5941] = {
@@ -11019,13 +11016,13 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [6001] = {
             [questKeys.objectivesText] = {"Use the Cenarion Moondust on the Moonkin Stone of Auberdine to bring forth Lunaclaw.  From there, you must face Lunaclaw and earn the strength of body and heart it possesses.","","Speak with Mathrengyl Bearwalker in Darnassus when you are done."},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.questFlags] = 0,
         },
 
         [6002] = {
             [questKeys.objectivesText] = {"Use the Cenarion Lunardust on the Moonkin Stone between Mulgore and the Barrens to bring forth Lunaclaw.  From there, you must face Lunaclaw and earn the strength of body and heart it possesses.","","Speak with Turak Runetotem in Thunder Bluff when you are done."},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [6003] = {
@@ -11381,6 +11378,10 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.questFlags] = 8,
         },
 
+        [6403] = {
+            [questKeys.questFlags] = 74,
+        },
+
         [6501] = {
             [questKeys.objectives] = {nil,nil,{{16662}}},
         },
@@ -11434,7 +11435,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [6568] = {
-            [questKeys.objectivesText] = {"Deliver Rexxars Testament to Myranda the Hag in the Western Plaguelands."},
+            [questKeys.objectivesText] = {"Deliver Rexxar's Testament to Myranda the Hag in the Western Plaguelands."},
             [questKeys.objectives] = {nil,nil,{{16785}}},
         },
 
@@ -11443,6 +11444,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [6601] = {
+            [questKeys.objectivesText] = {"It would appear as if the charade is over. ","You know that the Amulet of Draconic Subversion that Myranda the Hag created for you will not function inside Blackrock Spire. ","Perhaps you should find Rexxar and explain your predicament. Show him the Dull Drakefire Amulet. Hopefully he will know what to do next."},
             [questKeys.objectives] = {nil,nil,{{16888}}},
         },
 
@@ -11672,7 +11674,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [7001] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [7003] = {
@@ -11690,7 +11692,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [7027] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [7028] = {
@@ -11891,12 +11893,12 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [7481] = {
             [questKeys.objectivesText] = {"Search Dire Maul for Kariel Winthalus. Report back to Sage Korolusk at Camp Mojache with whatever information that you may find."},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [7482] = {
             [questKeys.objectivesText] = {"Search Dire Maul for Kariel Winthalus. Report back to Scholar Runethorn at Feathermoon with whatever information that you may find."},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [7483] = {
@@ -12074,7 +12076,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [7631] = {
             [questKeys.objectivesText] = {"Read Mor'zul's Instructions.  Summon a Xorothian Dreadsteed, defeat it, then bind its spirit to you."},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.requiredSourceItems] = {},
             [questKeys.preQuestSingle] = {7629},
         },
@@ -12944,13 +12946,13 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [8149] = {
             [questKeys.requiredRaces] = 0,
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [8150] = {
             [questKeys.requiredRaces] = 0,
             [questKeys.objectivesText] = {"Travel to Grom's Monument in the Demon Fall Canyon of Ashenvale and use Grom's Tribute at the base of the monument.  Return to Javnir Nashak outside Orgrimmar before the Harvest Festival is over."},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [8152] = {
@@ -13407,7 +13409,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [8373] = {
             [questKeys.objectivesText] = {"Use a Stink Bomb Cleaner to remove any Forsaken Stink Bomb that's been dropped on Southshore.  Return to Sergeant Hartman in Southshore when you're done."},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [8374] = {
@@ -13816,7 +13818,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8488] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [8490] = {
@@ -15220,7 +15222,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8945] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.specialFlags] = 2,
         },
 
@@ -15488,42 +15490,34 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9054] = {
-            [questKeys.requiredClasses] = 8,
             [questKeys.specialFlags] = 0,
         },
 
         [9055] = {
-            [questKeys.requiredClasses] = 8,
             [questKeys.specialFlags] = 0,
         },
 
         [9056] = {
-            [questKeys.requiredClasses] = 8,
             [questKeys.specialFlags] = 0,
         },
 
         [9057] = {
-            [questKeys.requiredClasses] = 8,
             [questKeys.specialFlags] = 0,
         },
 
         [9058] = {
-            [questKeys.requiredClasses] = 8,
             [questKeys.specialFlags] = 0,
         },
 
         [9059] = {
-            [questKeys.requiredClasses] = 8,
             [questKeys.specialFlags] = 0,
         },
 
         [9060] = {
-            [questKeys.requiredClasses] = 8,
             [questKeys.specialFlags] = 0,
         },
 
         [9061] = {
-            [questKeys.requiredClasses] = 8,
             [questKeys.specialFlags] = 0,
         },
 
@@ -15551,125 +15545,101 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9068] = {
-            [questKeys.requiredClasses] = 0,
             [questKeys.specialFlags] = 0,
         },
 
         [9069] = {
-            [questKeys.requiredClasses] = 0,
             [questKeys.specialFlags] = 0,
         },
 
         [9070] = {
-            [questKeys.requiredClasses] = 0,
             [questKeys.specialFlags] = 0,
         },
 
         [9071] = {
-            [questKeys.requiredClasses] = 0,
             [questKeys.specialFlags] = 0,
         },
 
         [9072] = {
-            [questKeys.requiredClasses] = 0,
             [questKeys.specialFlags] = 0,
         },
 
         [9073] = {
-            [questKeys.requiredClasses] = 0,
             [questKeys.specialFlags] = 0,
         },
 
         [9074] = {
-            [questKeys.requiredClasses] = 0,
             [questKeys.specialFlags] = 0,
         },
 
         [9075] = {
-            [questKeys.requiredClasses] = 0,
             [questKeys.specialFlags] = 0,
         },
 
         [9077] = {
-            [questKeys.requiredClasses] = 128,
             [questKeys.specialFlags] = 0,
         },
 
         [9078] = {
-            [questKeys.requiredClasses] = 0,
             [questKeys.specialFlags] = 0,
         },
 
         [9079] = {
-            [questKeys.requiredClasses] = 128,
             [questKeys.specialFlags] = 0,
         },
 
         [9080] = {
-            [questKeys.requiredClasses] = 128,
             [questKeys.objectivesText] = {"Rohan the Assassin at Light's Hope Chapel in the Eastern Plaguelands will make Bonescythe Pauldrons if you bring him the following: 1 Desecrated Pauldrons, 12 Wartorn Leather Scraps, 5 Cured Rugged Hides, 1 Nexus Crystal and 50 gold pieces. "},
             [questKeys.specialFlags] = 0,
         },
 
         [9081] = {
-            [questKeys.requiredClasses] = 128,
             [questKeys.objectivesText] = {"Rohan the Assassin at Light's Hope Chapel in the Eastern Plaguelands will make Bonescythe Sabatons if you bring him the following: 1 Desecrated Sabatons, 12 Wartorn Leather Scraps, 3 Cured Rugged Hides, 2 Nexus Crystals and 25 gold pieces. "},
             [questKeys.specialFlags] = 0,
         },
 
         [9082] = {
-            [questKeys.requiredClasses] = 128,
             [questKeys.objectivesText] = {"Rohan the Assassin at Light's Hope Chapel in the Eastern Plaguelands will make Bonescythe Gauntlets if you bring him the following: 1 Desecrated Gauntlets, 8 Wartorn Leather Scraps, 1 Arcanite Bar and 5 Cured Rugged Hides. "},
             [questKeys.specialFlags] = 0,
         },
 
         [9083] = {
-            [questKeys.requiredClasses] = 128,
             [questKeys.specialFlags] = 0,
         },
 
         [9084] = {
-            [questKeys.requiredClasses] = 128,
             [questKeys.specialFlags] = 0,
         },
 
         [9086] = {
-            [questKeys.requiredClasses] = 0,
             [questKeys.specialFlags] = 0,
         },
 
         [9087] = {
-            [questKeys.requiredClasses] = 0,
             [questKeys.specialFlags] = 0,
         },
 
         [9088] = {
-            [questKeys.requiredClasses] = 0,
             [questKeys.specialFlags] = 0,
         },
 
         [9089] = {
-            [questKeys.requiredClasses] = 0,
             [questKeys.specialFlags] = 0,
         },
 
         [9090] = {
-            [questKeys.requiredClasses] = 0,
             [questKeys.specialFlags] = 0,
         },
 
         [9091] = {
-            [questKeys.requiredClasses] = 0,
             [questKeys.specialFlags] = 0,
         },
 
         [9092] = {
-            [questKeys.requiredClasses] = 0,
             [questKeys.specialFlags] = 0,
         },
 
         [9093] = {
-            [questKeys.requiredClasses] = 0,
             [questKeys.specialFlags] = 0,
         },
 
@@ -15679,122 +15649,98 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9095] = {
-            [questKeys.requiredClasses] = 0,
             [questKeys.specialFlags] = 0,
         },
 
         [9096] = {
-            [questKeys.requiredClasses] = 0,
             [questKeys.specialFlags] = 0,
         },
 
         [9097] = {
-            [questKeys.requiredClasses] = 0,
             [questKeys.specialFlags] = 0,
         },
 
         [9098] = {
-            [questKeys.requiredClasses] = 0,
             [questKeys.specialFlags] = 0,
         },
 
         [9099] = {
-            [questKeys.requiredClasses] = 0,
             [questKeys.specialFlags] = 0,
         },
 
         [9100] = {
-            [questKeys.requiredClasses] = 0,
             [questKeys.specialFlags] = 0,
         },
 
         [9101] = {
-            [questKeys.requiredClasses] = 0,
             [questKeys.specialFlags] = 0,
         },
 
         [9102] = {
-            [questKeys.requiredClasses] = 0,
             [questKeys.specialFlags] = 0,
         },
 
         [9103] = {
-            [questKeys.requiredClasses] = 0,
             [questKeys.specialFlags] = 0,
         },
 
         [9104] = {
-            [questKeys.requiredClasses] = 0,
             [questKeys.specialFlags] = 0,
         },
 
         [9105] = {
-            [questKeys.requiredClasses] = 0,
             [questKeys.specialFlags] = 0,
         },
 
         [9106] = {
-            [questKeys.requiredClasses] = 0,
             [questKeys.specialFlags] = 0,
         },
 
         [9107] = {
-            [questKeys.requiredClasses] = 0,
             [questKeys.specialFlags] = 0,
         },
 
         [9108] = {
-            [questKeys.requiredClasses] = 0,
             [questKeys.specialFlags] = 0,
         },
 
         [9109] = {
-            [questKeys.requiredClasses] = 0,
             [questKeys.specialFlags] = 0,
         },
 
         [9110] = {
-            [questKeys.requiredClasses] = 0,
             [questKeys.specialFlags] = 0,
         },
 
         [9111] = {
-            [questKeys.requiredClasses] = 0,
             [questKeys.specialFlags] = 0,
         },
 
         [9112] = {
-            [questKeys.requiredClasses] = 0,
             [questKeys.specialFlags] = 0,
         },
 
         [9113] = {
-            [questKeys.requiredClasses] = 0,
             [questKeys.specialFlags] = 0,
         },
 
         [9114] = {
-            [questKeys.requiredClasses] = 0,
             [questKeys.specialFlags] = 0,
         },
 
         [9115] = {
-            [questKeys.requiredClasses] = 0,
             [questKeys.specialFlags] = 0,
         },
 
         [9116] = {
-            [questKeys.requiredClasses] = 0,
             [questKeys.specialFlags] = 0,
         },
 
         [9117] = {
-            [questKeys.requiredClasses] = 0,
             [questKeys.specialFlags] = 0,
         },
 
         [9118] = {
-            [questKeys.requiredClasses] = 0,
             [questKeys.specialFlags] = 0,
         },
 
@@ -16233,6 +16179,10 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.breadcrumbForQuestId] = 0,
         },
 
+        [9259] = {
+            [questKeys.questFlags] = 0,
+        },
+
         [9260] = {
             [questKeys.questLevel] = 10,
             [questKeys.questFlags] = 8,
@@ -16262,6 +16212,14 @@ QuestieCompat.RegisterCorrection("questData", function()
         [9265] = {
             [questKeys.questFlags] = 8,
             [questKeys.specialFlags] = 0,
+        },
+
+        [9266] = {
+            [questKeys.questFlags] = 0,
+        },
+
+        [9268] = {
+            [questKeys.questFlags] = 0,
         },
 
         [9269] = {
@@ -16738,7 +16696,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9400] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.preQuestSingle] = {10388},
         },
 
@@ -17678,7 +17636,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9711] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [9713] = {
@@ -18191,7 +18149,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9962] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.nextQuestInChain] = 0,
             [questKeys.specialFlags] = 2,
         },
@@ -18205,7 +18163,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9967] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.nextQuestInChain] = 0,
             [questKeys.specialFlags] = 2,
         },
@@ -18215,7 +18173,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9970] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.nextQuestInChain] = 0,
             [questKeys.specialFlags] = 2,
         },
@@ -18225,13 +18183,13 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9972] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.nextQuestInChain] = 0,
             [questKeys.specialFlags] = 2,
         },
 
         [9973] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.nextQuestInChain] = 0,
             [questKeys.specialFlags] = 2,
         },
@@ -18245,7 +18203,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9977] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.specialFlags] = 2,
         },
 
@@ -18379,7 +18337,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [10044] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.preQuestSingle] = {9868,9934,10011},
         },
 
@@ -18520,11 +18478,11 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [10107] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [10108] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [10110] = {
@@ -18664,7 +18622,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [10172] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [10173] = {
@@ -18784,7 +18742,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [10231] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.questFlags] = 138,
         },
 
@@ -18916,7 +18874,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [10297] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [10299] = {
@@ -19494,7 +19452,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [10519] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.questFlags] = 138,
         },
 
@@ -19584,7 +19542,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [10577] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [10579] = {
@@ -19745,7 +19703,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [10646] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.preQuestSingle] = {10641,10668,10669},
             [questKeys.questFlags] = 138,
         },
@@ -19819,7 +19777,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [10682] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [10683] = {
@@ -19888,7 +19846,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [10722] = {
             [questKeys.objectivesText] = {"Collect enough Costume Scraps from wyrmcultists to create an Overseer Disguise.  Use the disguise to attend the meeting with Kolphis Darkscale."},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.requiredSourceItems] = {},
         },
 
@@ -20153,7 +20111,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [10814] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.questFlags] = 130,
         },
 
@@ -20553,7 +20511,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [10968] = {
             [questKeys.objectivesText] = {"Take your orphan, Dornaa, to visit Farseer Nobundo at the Crystal Hall inside of the Exodar, which is on Azuremyst Isle.  Make sure to call for her if she is not present when you arrive.","","Remember that you can use your map inside the city."},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [10971] = {
@@ -20847,7 +20805,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11058] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [11059] = {
@@ -20860,7 +20818,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11064] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [11065] = {
@@ -20873,23 +20831,23 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11067] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [11068] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [11069] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [11070] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [11071] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [11072] = {
@@ -20918,7 +20876,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11080] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [11081] = {
@@ -21118,7 +21076,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11142] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.nextQuestInChain] = 11222,
         },
 
@@ -21254,7 +21212,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11198] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [11202] = {
@@ -21943,7 +21901,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11460] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [11462] = {
@@ -21980,7 +21938,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11472] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.requiredSourceItems] = {34127,40946},
         },
 
@@ -22025,7 +21983,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11491] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [11493] = {
@@ -22033,11 +21991,11 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11495] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [11496] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.questFlags] = 138,
             [questKeys.specialFlags] = 34,
         },
@@ -22100,7 +22058,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11523] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.preQuestSingle] = {11496},
             [questKeys.specialFlags] = 35,
         },
@@ -22579,7 +22537,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11705] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [11706] = {
@@ -22587,7 +22545,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11708] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.preQuestSingle] = {11707},
         },
 
@@ -22669,7 +22627,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11878] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [11880] = {
@@ -22972,7 +22930,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12012] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.requiredSourceItems] = {35828},
         },
 
@@ -23021,7 +22979,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12028] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.requiredSourceItems] = {35907},
         },
 
@@ -23035,11 +22993,11 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12032] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [12033] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.preQuestSingle] = {},
         },
 
@@ -23364,7 +23322,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12150] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [12151] = {
@@ -23799,7 +23757,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12301] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.requiredSourceItems] = {37577},
         },
 
@@ -23852,7 +23810,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12321] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [12323] = {
@@ -24252,25 +24210,25 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12427] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.preQuestSingle] = {12178,12413,12422},
             [questKeys.nextQuestInChain] = 12428,
         },
 
         [12428] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [12429] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [12430] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [12431] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [12432] = {
@@ -24358,7 +24316,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12470] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.requiredSourceItems] = {37923},
         },
 
@@ -24368,7 +24326,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12473] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [12476] = {
@@ -24515,13 +24473,13 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12536] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.requiredSourceItems] = {},
             [questKeys.preQuestSingle] = {12531,12535},
         },
 
         [12537] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.requiredSourceItems] = {38510},
         },
 
@@ -24616,7 +24574,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12573] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.requiredSourceItems] = {40364},
             [questKeys.preQuestSingle] = {12571,12572},
         },
@@ -24875,7 +24833,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12665] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [12668] = {
@@ -24937,7 +24895,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12687] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [12690] = {
@@ -25035,7 +24993,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12721] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.requiredSourceItems] = {39434},
         },
 
@@ -25259,7 +25217,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12807] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.preQuestSingle] = {12806},
         },
 
@@ -25346,7 +25304,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12842] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [12847] = {
@@ -25394,7 +25352,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12864] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [12865] = {
@@ -25556,22 +25514,22 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12932] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.exclusiveTo] = {12954},
             [questKeys.nextQuestInChain] = 0,
         },
 
         [12933] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.preQuestSingle] = {},
         },
 
         [12935] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [12936] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [12937] = {
@@ -25620,7 +25578,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12948] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [12950] = {
@@ -25633,7 +25591,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12954] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.nextQuestInChain] = 0,
         },
 
@@ -25662,7 +25620,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12973] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [12974] = {
@@ -25841,7 +25799,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [13047] = {
             [questKeys.objectivesText] = {"Meet Thorim near the Temple of Wisdom.  Report the outcome of the fight to King Jokkum in Dun Niffelem."},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.preQuestSingle] = {13005,13035},
         },
 
@@ -26014,7 +25972,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13141] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.requiredSourceItems] = {43243},
         },
 
@@ -26199,23 +26157,23 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13215] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [13216] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [13217] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [13218] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [13219] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [13220] = {
@@ -26564,7 +26522,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13343] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.requiredSourceItems] = {44450},
         },
 
@@ -26656,7 +26614,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13377] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [13380] = {
@@ -27838,25 +27796,25 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13954] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.preQuestSingle] = {13929},
             [questKeys.exclusiveTo] = {},
         },
 
         [13955] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.preQuestSingle] = {13930},
             [questKeys.exclusiveTo] = {},
         },
 
         [13956] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.preQuestSingle] = {13929},
             [questKeys.exclusiveTo] = {},
         },
 
         [13957] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.preQuestSingle] = {13930},
             [questKeys.exclusiveTo] = {},
         },
@@ -27879,7 +27837,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [14016] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.questFlags] = 138,
         },
 
@@ -28289,6 +28247,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [14351] = {
+            [questKeys.objectivesText] = {"Take Darthalia's Sealed Commendation to Varimathras in the Undercity."},
             [questKeys.objectives] = {nil,nil,{{3701}}},
         },
 
@@ -28787,17 +28746,17 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [24749] = {
             [questKeys.requiredClasses] = 35,
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [24756] = {
             [questKeys.requiredClasses] = 35,
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [24757] = {
             [questKeys.requiredClasses] = 35,
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.nextQuestInChain] = 0,
         },
 
@@ -28955,7 +28914,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [24873] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.exclusiveTo] = {},
         },
 
@@ -28979,7 +28938,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [24878] = {
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.exclusiveTo] = {},
         },
 
@@ -29353,7 +29312,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredRaces] = 0,
             [questKeys.requiredClasses] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.sourceItemId] = 0,
             [questKeys.preQuestSingle] = {},
             [questKeys.nextQuestInChain] = 0,
@@ -29372,7 +29331,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 0,
             [questKeys.requiredRaces] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.preQuestSingle] = {},
         },
 
@@ -29381,7 +29340,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 0,
             [questKeys.requiredRaces] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.preQuestSingle] = {},
         },
 
@@ -29390,7 +29349,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 0,
             [questKeys.requiredRaces] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.preQuestSingle] = {},
         },
 
@@ -29399,7 +29358,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 0,
             [questKeys.requiredRaces] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
@@ -29409,7 +29368,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 0,
             [questKeys.requiredRaces] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.preQuestSingle] = {},
         },
 
@@ -29433,7 +29392,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 0,
             [questKeys.requiredRaces] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.preQuestSingle] = {},
         },
 
@@ -29443,7 +29402,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredRaces] = 0,
             [questKeys.requiredClasses] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.preQuestSingle] = {},
         },
 
@@ -29452,7 +29411,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 0,
             [questKeys.requiredRaces] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.preQuestSingle] = {},
         },
 
@@ -29462,7 +29421,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredRaces] = 0,
             [questKeys.requiredClasses] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.preQuestSingle] = {},
         },
 
@@ -29471,7 +29430,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 0,
             [questKeys.requiredRaces] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.preQuestSingle] = {},
         },
 
@@ -29481,7 +29440,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredRaces] = 0,
             [questKeys.requiredClasses] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.preQuestSingle] = {},
         },
 
@@ -29490,7 +29449,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 0,
             [questKeys.requiredRaces] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
@@ -29500,7 +29459,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 0,
             [questKeys.requiredRaces] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
@@ -29511,7 +29470,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredRaces] = 0,
             [questKeys.requiredClasses] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
@@ -29543,7 +29502,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredRaces] = 0,
             [questKeys.requiredClasses] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.sourceItemId] = 0,
             [questKeys.preQuestSingle] = {},
             [questKeys.nextQuestInChain] = 0,
@@ -29556,7 +29515,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredRaces] = 0,
             [questKeys.requiredClasses] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.preQuestSingle] = {},
             [questKeys.nextQuestInChain] = 0,
             [questKeys.questFlags] = 0,
@@ -29568,7 +29527,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredRaces] = 0,
             [questKeys.requiredClasses] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.preQuestSingle] = {},
             [questKeys.nextQuestInChain] = 0,
             [questKeys.questFlags] = 0,
@@ -29580,7 +29539,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredRaces] = 0,
             [questKeys.requiredClasses] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.preQuestSingle] = {},
             [questKeys.nextQuestInChain] = 0,
             [questKeys.questFlags] = 0,
@@ -29602,7 +29561,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 0,
             [questKeys.requiredRaces] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
@@ -29653,7 +29612,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredRaces] = 0,
             [questKeys.requiredClasses] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
             [questKeys.nextQuestInChain] = 0,
@@ -29665,7 +29624,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredRaces] = 0,
             [questKeys.requiredClasses] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.requiredSourceItems] = {},
             [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
@@ -29688,7 +29647,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredRaces] = 0,
             [questKeys.requiredClasses] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.requiredSourceItems] = {},
             [questKeys.preQuestSingle] = {},
             [questKeys.nextQuestInChain] = 0,
@@ -29700,7 +29659,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredRaces] = 0,
             [questKeys.requiredClasses] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.requiredSourceItems] = {},
             [questKeys.preQuestSingle] = {},
         },
@@ -29711,7 +29670,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredRaces] = 0,
             [questKeys.requiredClasses] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.requiredSourceItems] = {},
             [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
@@ -29723,7 +29682,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredRaces] = 0,
             [questKeys.requiredClasses] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
             [questKeys.nextQuestInChain] = 0,
@@ -29972,7 +29931,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 0,
             [questKeys.requiredRaces] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [70398] = {
@@ -29980,7 +29939,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 0,
             [questKeys.requiredRaces] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [70401] = {
@@ -29988,7 +29947,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 0,
             [questKeys.requiredRaces] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [70411] = {
@@ -30004,7 +29963,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 0,
             [questKeys.requiredRaces] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [70735] = {
@@ -30012,7 +29971,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 0,
             [questKeys.requiredRaces] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [70736] = {
@@ -30020,7 +29979,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 0,
             [questKeys.requiredRaces] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [70737] = {
@@ -30037,7 +29996,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredRaces] = 0,
             [questKeys.requiredClasses] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [70762] = {
@@ -30054,7 +30013,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredRaces] = 0,
             [questKeys.requiredClasses] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [70765] = {
@@ -30063,7 +30022,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredRaces] = 0,
             [questKeys.requiredClasses] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [70865] = {
@@ -30078,7 +30037,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 0,
             [questKeys.requiredRaces] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [70870] = {
@@ -30086,7 +30045,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 0,
             [questKeys.requiredRaces] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [78136] = {
@@ -30116,7 +30075,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 0,
             [questKeys.requiredRaces] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [78151] = {
@@ -30124,7 +30083,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 0,
             [questKeys.requiredRaces] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [78157] = {
@@ -30132,7 +30091,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 0,
             [questKeys.requiredRaces] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [78158] = {
@@ -30141,7 +30100,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredRaces] = 0,
             [questKeys.requiredClasses] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [78164] = {
@@ -30149,7 +30108,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 0,
             [questKeys.requiredRaces] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [78166] = {
@@ -30165,7 +30124,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 0,
             [questKeys.requiredRaces] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [78168] = {
@@ -30188,7 +30147,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 0,
             [questKeys.requiredClasses] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [78221] = {
@@ -30196,7 +30155,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 0,
             [questKeys.requiredClasses] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [78222] = {
@@ -30205,7 +30164,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredRaces] = 0,
             [questKeys.requiredClasses] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [78223] = {
@@ -30223,7 +30182,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredRaces] = 0,
             [questKeys.requiredClasses] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
         },
 
         [78225] = {
@@ -30249,7 +30208,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.questLevel] = 0,
             [questKeys.requiredLevel] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.questFlags] = 0,
             [questKeys.specialFlags] = 0,
         },
@@ -30258,7 +30217,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.questLevel] = 0,
             [questKeys.requiredLevel] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.questFlags] = 0,
             [questKeys.specialFlags] = 0,
         },
@@ -30268,7 +30227,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 0,
             [questKeys.requiredRaces] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.specialFlags] = 0,
         },
 
@@ -30277,7 +30236,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 0,
             [questKeys.requiredRaces] = 0,
             [questKeys.objectivesText] = {},
-            [questKeys.objectives] = {},
+            [questKeys.objectives] = nil,
             [questKeys.specialFlags] = 0,
         },
 

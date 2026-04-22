@@ -776,32 +776,30 @@ def lua_string_literal(value):
 
 def format_objectives_value(value):
     categories = list(value or ())
-    if not categories:
-        return "{}"
+    if categories:
+        last_non_empty = -1
+        for index, category in enumerate(categories[:3]):
+            if category:
+                last_non_empty = index
 
-    last_non_empty = -1
-    for index, category in enumerate(categories[:3]):
-        if category:
-            last_non_empty = index
+        if last_non_empty >= 0:
+            parts = []
+            for index in range(last_non_empty + 1):
+                category = categories[index] if index < len(categories) else ()
+                if not category:
+                    parts.append("nil")
+                    continue
 
-    if last_non_empty < 0:
-        return "{}"
+                records = []
+                for record in category:
+                    if not record:
+                        continue
+                    records.append("{" + ",".join(str(int(item)) for item in record) + "}")
+                parts.append("{" + ",".join(records) + "}")
 
-    parts = []
-    for index in range(last_non_empty + 1):
-        category = categories[index] if index < len(categories) else ()
-        if not category:
-            parts.append("nil")
-            continue
+            return "{" + ",".join(parts) + "}"
 
-        records = []
-        for record in category:
-            if not record:
-                continue
-            records.append("{" + ",".join(str(int(item)) for item in record) + "}")
-        parts.append("{" + ",".join(records) + "}")
-
-    return "{" + ",".join(parts) + "}"
+    return "nil"
 
 
 def get_sql_row_key(row, key_column):
