@@ -136,7 +136,14 @@ end
 ---@param showState boolean @ Whether to show (Complete/Failed)
 ---@param blizzLike boolean? @Compatibility flag used by older 3.3.5 callers
 function QuestieLib:GetColoredQuestName(questId, showLevel, showState, blizzLike)
+    if type(questId) ~= "number" then
+        return l10n("Unknown")
+    end
+
     local name = QuestieDB.QueryQuestSingle(questId, "name")
+    if not name or name == "" then
+        name = l10n("Quest") .. " " .. questId
+    end
     local level, _ = QuestieLib.GetTbcLevel(questId);
 
     if showLevel then

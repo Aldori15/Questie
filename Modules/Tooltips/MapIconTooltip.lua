@@ -572,10 +572,16 @@ end
 
 function _MapIconTooltip:GetAvailableOrCompleteTooltip(icon)
     local tip = {};
-    tip.type = _GetQuestTag(icon.data)
-    tip.title = QuestieLib:GetColoredQuestName(icon.data.Id, Questie.db.profile.enableTooltipsQuestLevel, false, true)
-    tip.subData = icon.data.QuestData.Description
-    tip.questId = icon.data.Id;
+    local iconData = icon.data or {}
+    if iconData.Id then
+        tip.type = _GetQuestTag(iconData)
+        tip.title = QuestieLib:GetColoredQuestName(iconData.Id, Questie.db.profile.enableTooltipsQuestLevel, false, true)
+    else
+        tip.type = iconData.Type == "complete" and "(" .. l10n("Complete") .. ")" or "(" .. l10n("Available") .. ")"
+        tip.title = iconData.Name or l10n("Unknown")
+    end
+    tip.subData = iconData.QuestData and iconData.QuestData.Description
+    tip.questId = iconData.Id;
 
     return tip
 end
