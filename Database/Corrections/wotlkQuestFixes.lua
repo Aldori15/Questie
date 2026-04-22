@@ -30,6 +30,7 @@ QuestieCorrections.killCreditObjectiveFirst[13404] = true
 QuestieCorrections.killCreditObjectiveFirst[13406] = true
 QuestieCorrections.killCreditObjectiveFirst[24498] = true
 QuestieCorrections.killCreditObjectiveFirst[24507] = true
+QuestieCorrections.questTooltipHints[6681] = "Speak to the npc and select \"<Take the letter>\", then read the letter to start the quest."
 
 function QuestieWotlkQuestFixes:Load()
     _QuestieWotlkQuestFixes:InsertMissingQuestIds()

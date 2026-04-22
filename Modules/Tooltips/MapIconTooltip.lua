@@ -294,6 +294,11 @@ function MapIconTooltip:Show()
                     end
                 end
 
+                local questTooltipHint = QuestieCorrections.questTooltipHints[questData.questId]
+                if questTooltipHint then
+                    self:AddLine("  " .. questTooltipHint, 0.60, 0.78, 1.00)
+                end
+
                 local nextQuestInChain = QuestieDB.QueryQuestSingle(questData.questId, "nextQuestInChain")
                 if shift and nextQuestInChain > 0 and Questie.db.profile.enableTooltipsNextInChain and (not QuestieCorrections.hiddenQuests[nextQuestInChain]) then
                     -- add quest chain info
