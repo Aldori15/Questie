@@ -16,6 +16,24 @@ local KButtons = QuestieCompat.KButtons or LibStub("Krowi_WorldMapButtons-1.4")
 local mapButton
 local lastWorldMapButtonEffectiveScale
 local lastWorldMapFrameEffectiveScale
+local isRefreshingWorldMapButtonLayout
+local childScanFailed
+
+local function _GetChildrenSafely(frame)
+    if childScanFailed or not frame or not frame.GetChildren then
+        return
+    end
+
+    local ok, children = pcall(function()
+        return { frame:GetChildren() }
+    end)
+
+    if ok then
+        return children
+    end
+
+    childScanFailed = true
+end
 
 local function _GetOccupiedTopRightOffset(worldMapButtonFrame, worldMapFrame)
     local occupiedOffset
@@ -39,13 +57,19 @@ local function _GetOccupiedTopRightOffset(worldMapButtonFrame, worldMapFrame)
         end
     end
 
-    for _, child in next, { worldMapButtonFrame:GetChildren() } do
-        ConsiderFrame(child)
+    local worldMapButtonChildren = _GetChildrenSafely(worldMapButtonFrame)
+    if worldMapButtonChildren then
+        for _, child in next, worldMapButtonChildren do
+            ConsiderFrame(child)
+        end
     end
 
     if worldMapFrame and worldMapFrame ~= worldMapButtonFrame then
-        for _, child in next, { worldMapFrame:GetChildren() } do
-            ConsiderFrame(child)
+        local worldMapChildren = _GetChildrenSafely(worldMapFrame)
+        if worldMapChildren then
+            for _, child in next, worldMapChildren do
+                ConsiderFrame(child)
+            end
         end
     end
 
@@ -53,7 +77,7 @@ local function _GetOccupiedTopRightOffset(worldMapButtonFrame, worldMapFrame)
 end
 
 local function RefreshWorldMapButtonLayout()
-    if not mapButton then
+    if isRefreshingWorldMapButtonLayout or not mapButton then
         return
     end
 
@@ -61,6 +85,8 @@ local function RefreshWorldMapButtonLayout()
     if not worldMapButtonFrame then
         return
     end
+
+    isRefreshingWorldMapButtonLayout = true
 
     local worldMapFrame = _G.WorldMapFrame or worldMapButtonFrame:GetParent()
     local parentEffectiveScale = worldMapButtonFrame.GetEffectiveScale and worldMapButtonFrame:GetEffectiveScale() or worldMapButtonFrame:GetScale() or 1
@@ -89,7 +115,10 @@ local function RefreshWorldMapButtonLayout()
         end
     end
 
-    mapButton:SetParent(worldMapButtonFrame)
+    if mapButton:GetParent() ~= worldMapButtonFrame then
+        mapButton:SetParent(worldMapButtonFrame)
+    end
+
     mapButton:ClearAllPoints()
     mapButton:SetFrameStrata("TOOLTIP")
     mapButton:SetFrameLevel(worldMapButtonFrame:GetFrameLevel() + 1)
@@ -98,6 +127,7 @@ local function RefreshWorldMapButtonLayout()
 
     lastWorldMapButtonEffectiveScale = parentEffectiveScale
     lastWorldMapFrameEffectiveScale = targetEffectiveScale
+    isRefreshingWorldMapButtonLayout = nil
 end
 
 local function EnsureWorldMapButtonHooks()
