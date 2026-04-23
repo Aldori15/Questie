@@ -43,5 +43,7 @@ l10n.questCategoryLookup = {
     [-374] = "Noblegarden",
     [-375] = "Pilgrim's Bounty",
     [-376] = "Love is in the Air",
+    [-380] = "Children's Week",
     [-641] = "Nightmare Incursions",
+    [-1000] = "Special", -- for actual "Special" quests that are not part of events
 };
