@@ -22,6 +22,8 @@ local QuestieCorrections = QuestieLoader:ImportModule("QuestieCorrections")
 local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
 ---@type QuestieLink
 local QuestieLink = QuestieLoader:ImportModule("QuestieLink")
+---@type TrackerUtils
+local TrackerUtils = QuestieLoader:ImportModule("TrackerUtils")
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
 
@@ -32,7 +34,7 @@ local stringsub = string.sub
 
 local AceGUI = LibStub("AceGUI-3.0");
 
-local _HandleTreeItemClick
+local _HandleTreeItemClick, _FindFirstSpawn
 local lastOpenSearch = "quest"
 local _selected = 0
 
@@ -93,18 +95,18 @@ end
 ---Takes a frame and adds a paragraph with a header text and a list of links to other search results
 ---@param frame AceGUIWidget The frame to work on
 ---@param linkType string The type of result to link to (npc|object|quest|item)
----@param lookupObject table Table of IDs (npc|object|quest|item)
+---@param lookup table Table of IDs (npc|object|quest|item)
 ---@param header string The text header to show above the links
 ---@param query function The function used to get link name from
-local function AddLinkedParagraph(frame, linkType, lookupObject, header, query)
-    if lookupObject and #lookupObject > 0 then
+local function AddLinkedParagraph(frame, linkType, lookup, header, query)
+    if lookup and #lookup > 0 then
         local group = AceGUI:Create("InlineGroup");
         group:SetFullWidth(true);
         group:SetLayout("flow");
         group:SetTitle(header);
         frame:AddChild(group);
 
-        for _,id in pairs(lookupObject) do
+        for _,id in pairs(lookup) do
             id = abs(id)
             local link = AceGUI:Create("InteractiveLabel")
             local name = query(id, "name") or tostring(id)
@@ -135,6 +137,27 @@ local function AddLinkedParagraph(frame, linkType, lookupObject, header, query)
                 link:SetCallback("OnLeave", _HideLinkedResultTooltip)
             end
             group:AddChild(link);
+        end
+
+        if TomTom and TomTom.AddWaypoint then
+            for _, id in pairs(lookup) do
+                id = abs(id)
+                local spawns = query(id, "spawns")
+                if spawns then
+                    local zone, x, y = _FindFirstSpawn(spawns)
+                    if zone then
+                        local name = query(id, "name")
+                        QuestieJourneyUtils:Spacer(group)
+                        local button = AceGUI:Create("Button")
+                        button:SetText(l10n("Set |cFF54e33bTomTom|r Target"))
+                        button:SetCallback("OnClick", function()
+                            TrackerUtils:SetTomTomTarget(name, zone, x, y)
+                        end)
+                        group:AddChild(button)
+                        break
+                    end
+                end
+            end
         end
     end
 end
@@ -184,6 +207,24 @@ local function CreateShowHideButton(id)
         self:SetCallback("OnClick", function() self:RemoveFromMap(self) end)
     end
     return button
+end
+
+--- Finds the first valid spawn location from a spawns table
+---@param spawns table<AreaId, CoordPair[]>
+---@return AreaId|nil zone
+---@return number|nil x
+---@return number|nil y
+_FindFirstSpawn = function(spawns)
+    for zoneId, coords in pairs(spawns) do
+        if coords and coords[1] then
+            local x = coords[1][1]
+            local y = coords[1][2]
+            if x and y and (x ~= -1 or y ~= -1) then
+                return zoneId, x, y
+            end
+        end
+    end
+    return nil, nil, nil
 end
 
 local function rec(theTable, ret, indent)
@@ -321,6 +362,7 @@ function QuestieSearchResults:QuestDetailsFrame(details, id)
         -- TODO change to linked paragraph once item details page exists
         AddLinkedParagraph(details, "item", startedBy[3], l10n("Items starting this quest"), QuestieDB.QueryItemSingle)
     end
+    
     if finishedBy then
         -- quest finishers
         QuestieJourneyUtils:AddLine(details, "")
