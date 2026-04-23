@@ -326,18 +326,6 @@ local searchLocales = {
         ["esES"] = "Inicia las siguientes misiones:",
         ["frFR"] = "Commence les quêtes suivantes :",
     },
-    ["Minimum Required Level for Quest: "] = {
-        ["ptBR"] = "Nível mínimo necessário para a missão:",
-        ["ruRU"] = "Минимальный уровень для принятия задания: ",
-        ["deDE"] = "Benötigtes Mindestlevel für diese: ",
-        ["koKR"] = "수행가능한 최소 레벨: ",
-        ["esMX"] = "Nivel mínimo requerido para la misión: ",
-        ["enUS"] = true,
-        ["zhCN"] = "最低等级：",
-        ["zhTW"] = "最低需求等級: ",
-        ["esES"] = "Nivel mínimo requerido para la misión: ",
-        ["frFR"] = "Niveau minimum requis pour la quête : ",
-    },
     ["Difficulty Range: %s"] = {
         ["ptBR"] = "Dificuldade: %s",
         ["ruRU"] = "Диапазон сложности: %s",
