@@ -3860,6 +3860,9 @@ function QuestieQuestFixes:Load()
             [questKeys.preQuestSingle] = {},
             [questKeys.breadcrumbs] = {7562},
         },
+        [7583] = { -- Suppression
+            [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_INTERACT, l10n("Imprison the Doomguard Commander"), 0, {{"monster", 12396}}}},
+        },
         [7604] = {
             [questKeys.specialFlags] = 0,
         },
@@ -5716,7 +5719,7 @@ function QuestieQuestFixes:Load()
             [questKeys.preQuestSingle] = {9121,9122,9123},
         },
         [9121] = { -- The Dread Citadel - Naxxramas
-            [questKeys.requiredMinRep] = {529,0}, -- uh?
+            [questKeys.requiredMinRep] = {factionIDs.ARGENT_DAWN,0}, -- uh?
             [questKeys.nextQuestInChain] = 9033,
         },
         [9122] = { -- The Dread Citadel - Naxxramas
@@ -5726,46 +5729,46 @@ function QuestieQuestFixes:Load()
             [questKeys.nextQuestInChain] = 9033,
         },
         [9124] = { -- Cryptstalker Armor Doesn't Make Itself...
-            [questKeys.requiredMinRep] = {529,3000},
+            [questKeys.requiredMinRep] = {factionIDs.ARGENT_DAWN,3000},
             [questKeys.nextQuestInChain] = 9125,
         },
         [9125] = { -- Crypt Fiend Parts
-            [questKeys.requiredMinRep] = {529,3000},
+            [questKeys.requiredMinRep] = {factionIDs.ARGENT_DAWN,3000},
         },
         [9126] = { -- Bonescythe Digs
-            [questKeys.requiredMinRep] = {529,3000},
+            [questKeys.requiredMinRep] = {factionIDs.ARGENT_DAWN,3000},
             [questKeys.nextQuestInChain] = 9127,
         },
         [9127] = { -- Bone Fragments
-            [questKeys.requiredMinRep] = {529,3000},
+            [questKeys.requiredMinRep] = {factionIDs.ARGENT_DAWN,3000},
         },
         [9128] = { -- The Elemental Equation
-            [questKeys.requiredMinRep] = {529,3000},
+            [questKeys.requiredMinRep] = {factionIDs.ARGENT_DAWN,3000},
             [questKeys.nextQuestInChain] = 9129,
         },
         [9129] = { -- Core of Elements
-            [questKeys.requiredMinRep] = {529,3000},
+            [questKeys.requiredMinRep] = {factionIDs.ARGENT_DAWN,3000},
         },
         [9131] = { -- Binding the Dreadnaught
-            [questKeys.requiredMinRep] = {529,3000},
+            [questKeys.requiredMinRep] = {factionIDs.ARGENT_DAWN,3000},
             [questKeys.nextQuestInChain] = 9132,
         },
         [9132] = { -- Dark Iron Scraps
-            [questKeys.requiredMinRep] = {529,3000},
+            [questKeys.requiredMinRep] = {factionIDs.ARGENT_DAWN,3000},
         },
         [9136] = { -- Savage Flora
-            [questKeys.requiredMinRep] = {529,3000},
+            [questKeys.requiredMinRep] = {factionIDs.ARGENT_DAWN,3000},
             [questKeys.nextQuestInChain] = 9137,
         },
         [9137] = { -- Savage Fronds
-            [questKeys.requiredMinRep] = {529,3000},
+            [questKeys.requiredMinRep] = {factionIDs.ARGENT_DAWN,3000},
         },
         [9141] = { -- They Call Me "The Rooster"
-            [questKeys.requiredMinRep] = {529,3000},
+            [questKeys.requiredMinRep] = {factionIDs.ARGENT_DAWN,3000},
             [questKeys.nextQuestInChain] = 9142,
         },
         [9142] = { -- Craftsman's Writ
-            [questKeys.requiredMinRep] = {529,3000},
+            [questKeys.requiredMinRep] = {factionIDs.ARGENT_DAWN,3000},
         },
         [9153] = {
             [questKeys.requiredLevel] = 50,

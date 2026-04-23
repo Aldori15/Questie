@@ -43,16 +43,17 @@ function QuestieQuestBlacklist:Load()
         [535] = QuestieCorrections.WOTLK_ONLY, -- Valik
         [2000] = true, -- Not in the game - #4487
         -- Welcome! quests (Collectors Edition)
+        [5101] = true,
         [5805] = true,
         [5841] = true,
         [5842] = true,
         [5843] = true,
         [5844] = true,
         [5847] = true,
-        --Stray quests
-        [3861] = true, --CLUCK!
-        --World event quests
-        --Fetched from https://classic.wowhead.com/world-event-quests
+        -- Special quests
+        [3861] = HIDE_ON_MAP, -- CLUCK!
+        -- World event quests
+        -- Fetched from https://classic.wowhead.com/world-event-quests
         [7904] = true,
         [8571] = true,
         [7930] = true,
@@ -498,6 +499,7 @@ function QuestieQuestBlacklist:Load()
         [11926] = true,
         [11933] = true,
         [11935] = true,
+        [11937] = true,
         [11947] = true,
         [11948] = true,
         [11952] = true,
