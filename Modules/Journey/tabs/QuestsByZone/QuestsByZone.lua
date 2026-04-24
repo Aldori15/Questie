@@ -35,7 +35,7 @@ local C_Timer = QuestieCompat.C_Timer
 ---@param zoneTree table @The zone tree table
 function _QuestieJourney.questsByZone:RestoreSavedQuestSelection(treeFrame, zoneTree)
     local savedSelection = _QuestieJourney.lastZoneSelection[3]
-    if not savedSelection then return end
+    if not savedSelection or not zoneTree then return end
 
     local sel, questId = strsplit("\001", savedSelection)
     if not questId then return end
