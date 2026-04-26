@@ -47,6 +47,18 @@ function l10n:InitializeLocaleOverride()
     end
 end
 
+function l10n:CompactTranslations()
+    for _, translationEntry in pairs(l10n.translations) do
+        if type(translationEntry) == "table" then
+            for translationLocale in pairs(translationEntry) do
+                if translationLocale ~= locale then
+                    translationEntry[translationLocale] = nil
+                end
+            end
+        end
+    end
+end
+
 local function GetLookupEntries(lookup)
     if type(lookup) == "function" then
         return lookup() or {}

@@ -13,12 +13,15 @@ function QuestieCleanup:Run()
     QuestieDB.objectData = nil
     QuestieDB.itemData = nil
 
-    -- clean up lang
+    self:ClearLocalization()
+
+    -- we call this here to make sure there isn't a lag spike later on
+    collectgarbage()
+end
+
+function QuestieCleanup:ClearLocalization()
     l10n.itemLookup = nil
     l10n.npcNameLookup = nil
     l10n.objectLookup = nil
     l10n.questLookup = nil
-
-    -- we call this here to make sure there isn't a lag spike later on
-    collectgarbage()
 end

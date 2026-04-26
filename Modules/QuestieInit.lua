@@ -196,6 +196,7 @@ QuestieInit.Stages[1] = function() -- run as a coroutine
     IsleOfQuelDanas.Initialize() -- This has to happen before option init
 
     QuestieProfessions:Init()
+    l10n:CompactTranslations()
     QuestXP.Init()
     coYield()
 
@@ -230,6 +231,10 @@ QuestieInit.Stages[1] = function() -- run as a coroutine
         coYield()
         QuestieCorrections:MinimalInit()
     end
+
+    -- The remaining init path no longer needs the source lookup blobs after database setup.
+    QuestieCleanup:ClearLocalization()
+    collectgarbage()
 
     local dbCompiledCount = Questie.IsSoD and Questie.db.global.sod.dbCompiledCount or Questie.db.global.dbCompiledCount
 
