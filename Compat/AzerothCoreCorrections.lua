@@ -10,6 +10,7 @@ if QuestieCompat.WOW_PROJECT_ID < QuestieCompat.WOW_PROJECT_WRATH_CLASSIC then r
 
 QuestieCompat.RegisterCorrection("questData", function()
     local questKeys = QuestieDB.questKeys
+    local raceIDs = QuestieDB.raceKeys
     local profKeys = QuestieProfessions.professionKeys
 
     -- AzerothCore quest relation parity.
@@ -3264,7 +3265,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [77] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [78] = {
@@ -3677,7 +3678,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [254] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
@@ -4002,7 +4003,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [403] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.specialFlags] = 0,
         },
 
@@ -4097,7 +4098,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [452] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [453] = {
@@ -4127,7 +4128,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [460] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {nil,nil,{{3317}}},
         },
 
@@ -4201,7 +4202,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [492] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.objectives] = {nil,nil,{{3460}}},
         },
 
@@ -4245,7 +4246,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [508] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {nil,nil,{{3498}}},
         },
 
@@ -4364,7 +4365,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [558] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.preQuestSingle] = {1479},
         },
 
@@ -4679,7 +4680,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [748] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.nextQuestInChain] = 0,
         },
 
@@ -4712,7 +4713,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [756] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.nextQuestInChain] = 0,
         },
 
@@ -4726,7 +4727,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [759] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.nextQuestInChain] = 0,
         },
 
@@ -4748,7 +4749,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [770] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [771] = {
@@ -4868,7 +4869,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [805] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.questFlags] = 8,
         },
 
@@ -5134,7 +5135,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [927] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {nil,nil,{{5179}}},
             [questKeys.nextQuestInChain] = 0,
         },
@@ -5202,11 +5203,11 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [949] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [950] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {nil,nil,{{5272}}},
             [questKeys.nextQuestInChain] = 0,
         },
@@ -5216,14 +5217,14 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [960] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.preQuestSingle] = {},
             [questKeys.parentQuest] = 944,
             [questKeys.specialFlags] = 0,
         },
 
         [961] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.preQuestSingle] = {},
             [questKeys.parentQuest] = 944,
             [questKeys.questFlags] = 65544,
@@ -5235,7 +5236,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [968] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {nil,nil,{{5352}}},
         },
 
@@ -5326,15 +5327,15 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [1001] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [1002] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [1003] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [1007] = {
@@ -5355,7 +5356,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [1014] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
         },
 
         [1020] = {
@@ -5484,7 +5485,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [1098] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
         },
 
         [1100] = {
@@ -5501,7 +5502,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         [1102] = {
             [questKeys.questLevel] = 34,
             [questKeys.requiredLevel] = 29,
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
         },
 
         [1103] = {
@@ -5578,7 +5579,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [1127] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.parentQuest] = 0,
             [questKeys.specialFlags] = 0,
         },
@@ -5618,7 +5619,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [1142] = {
-            [questKeys.requiredRaces] = 1101,
+            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
         },
 
         [1145] = {
@@ -6188,7 +6189,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [1478] = {
-            [questKeys.requiredRaces] = 16,
+            [questKeys.requiredRaces] = raceIDs.UNDEAD,
         },
 
         [1479] = {
@@ -6219,7 +6220,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [1499] = {
-            [questKeys.requiredRaces] = 130,
+            [questKeys.requiredRaces] = raceIDs.TROLL + raceIDs.ORC,
             [questKeys.preQuestSingle] = {1485},
         },
 
@@ -6237,7 +6238,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [1506] = {
-            [questKeys.requiredRaces] = 2,
+            [questKeys.requiredRaces] = raceIDs.ORC,
         },
 
         [1508] = {
@@ -6277,41 +6278,41 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [1516] = {
-            [questKeys.requiredRaces] = 130,
+            [questKeys.requiredRaces] = raceIDs.TROLL + raceIDs.ORC,
             [questKeys.nextQuestInChain] = 1517,
             [questKeys.questFlags] = 8,
         },
 
         [1517] = {
-            [questKeys.requiredRaces] = 130,
+            [questKeys.requiredRaces] = raceIDs.TROLL + raceIDs.ORC,
             [questKeys.preQuestSingle] = {1516},
             [questKeys.nextQuestInChain] = 1518,
             [questKeys.questFlags] = 0,
         },
 
         [1518] = {
-            [questKeys.requiredRaces] = 130,
+            [questKeys.requiredRaces] = raceIDs.TROLL + raceIDs.ORC,
             [questKeys.objectives] = {nil,nil,{{6656}}},
             [questKeys.requiredSourceItems] = {},
             [questKeys.questFlags] = 0,
         },
 
         [1519] = {
-            [questKeys.requiredRaces] = 32,
+            [questKeys.requiredRaces] = raceIDs.TAUREN,
             [questKeys.nextQuestInChain] = 1520,
             [questKeys.questFlags] = 8,
             [questKeys.specialFlags] = 4,
         },
 
         [1520] = {
-            [questKeys.requiredRaces] = 32,
+            [questKeys.requiredRaces] = raceIDs.TAUREN,
             [questKeys.preQuestSingle] = {1519},
             [questKeys.nextQuestInChain] = 1521,
             [questKeys.questFlags] = 0,
         },
 
         [1521] = {
-            [questKeys.requiredRaces] = 32,
+            [questKeys.requiredRaces] = raceIDs.TAUREN,
             [questKeys.objectives] = {nil,nil,{{6656}}},
             [questKeys.requiredSourceItems] = {},
             [questKeys.questFlags] = 0,
@@ -6390,12 +6391,12 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [1598] = {
-            [questKeys.requiredRaces] = 1,
+            [questKeys.requiredRaces] = raceIDs.HUMAN,
             [questKeys.exclusiveTo] = {},
         },
 
         [1599] = {
-            [questKeys.requiredRaces] = 64,
+            [questKeys.requiredRaces] = raceIDs.GNOME,
             [questKeys.exclusiveTo] = {},
             [questKeys.questFlags] = 8,
         },
@@ -6499,14 +6500,14 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [1678] = {
-            [questKeys.requiredRaces] = 68,
+            [questKeys.requiredRaces] = raceIDs.GNOME + raceIDs.DWARF,
             [questKeys.preQuestSingle] = {1679},
             [questKeys.exclusiveTo] = {},
             [questKeys.breadcrumbs] = {},
         },
 
         [1679] = {
-            [questKeys.requiredRaces] = 68,
+            [questKeys.requiredRaces] = raceIDs.GNOME + raceIDs.DWARF,
             [questKeys.exclusiveTo] = {1638,1684,9582},
             [questKeys.breadcrumbForQuestId] = 0,
         },
@@ -6655,7 +6656,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [1801] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
         },
 
         [1802] = {
@@ -6663,7 +6664,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [1803] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
         },
 
         [1804] = {
@@ -6672,7 +6673,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [1805] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.objectives] = {nil,nil,{{7006},{6930}}},
             [questKeys.exclusiveTo] = {1804},
         },
@@ -6743,11 +6744,11 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [1858] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
         },
 
         [1859] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.exclusiveTo] = {1885,9532},
             [questKeys.breadcrumbForQuestId] = 0,
         },
@@ -6757,7 +6758,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [1861] = {
-            [questKeys.requiredRaces] = 1,
+            [questKeys.requiredRaces] = raceIDs.HUMAN,
             [questKeys.preQuestSingle] = {1860},
         },
 
@@ -6778,28 +6779,28 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [1885] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.exclusiveTo] = {1859,9532},
             [questKeys.nextQuestInChain] = 1886,
             [questKeys.breadcrumbForQuestId] = 0,
         },
 
         [1886] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.preQuestSingle] = {1885},
             [questKeys.nextQuestInChain] = 1898,
             [questKeys.breadcrumbs] = {},
         },
 
         [1898] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.objectives] = {nil,nil,{{7231}}},
             [questKeys.preQuestSingle] = {1886},
             [questKeys.nextQuestInChain] = 1899,
         },
 
         [1899] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.preQuestSingle] = {1898},
             [questKeys.nextQuestInChain] = 1978,
         },
@@ -6854,23 +6855,23 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [1963] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.preQuestSingle] = {1859},
             [questKeys.breadcrumbs] = {},
         },
 
         [1978] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.objectives] = {nil,nil,{{7294}}},
             [questKeys.preQuestSingle] = {1899},
         },
 
         [1998] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
         },
 
         [1999] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.requiredSourceItems] = {},
         },
 
@@ -7046,7 +7047,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [2318] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectivesText] = {"Find someone who can translate the paladin's journal.  The closest location that might have someone is Kargath, in the Badlands."},
         },
 
@@ -7064,7 +7065,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [2358] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [2378] = {
@@ -7093,7 +7094,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [2399] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [2439] = {
@@ -7355,7 +7356,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [2881] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.specialFlags] = 0,
         },
 
@@ -7521,7 +7522,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [2986] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.breadcrumbForQuestId] = 0,
         },
 
@@ -7546,7 +7547,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [2996] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.nextQuestInChain] = 0,
         },
 
@@ -7567,7 +7568,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [3001] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.nextQuestInChain] = 0,
         },
 
@@ -7650,61 +7651,61 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [3091] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.objectives] = {nil,nil,{{9547}}},
             [questKeys.questFlags] = 0,
             [questKeys.specialFlags] = 4,
         },
 
         [3092] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.objectives] = {nil,nil,{{9565}}},
             [questKeys.questFlags] = 0,
             [questKeys.specialFlags] = 4,
         },
 
         [3093] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.objectives] = {nil,nil,{{9552}}},
             [questKeys.questFlags] = 0,
         },
 
         [3094] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.objectives] = {nil,nil,{{9581}}},
             [questKeys.questFlags] = 0,
             [questKeys.specialFlags] = 4,
         },
 
         [3095] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {nil,nil,{{9546}}},
             [questKeys.questFlags] = 0,
         },
 
         [3096] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {nil,nil,{{9559}}},
             [questKeys.preQuestSingle] = {364},
             [questKeys.questFlags] = 0,
         },
 
         [3097] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {nil,nil,{{9569}}},
             [questKeys.preQuestSingle] = {364},
             [questKeys.questFlags] = 0,
         },
 
         [3098] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {nil,nil,{{9574}}},
             [questKeys.preQuestSingle] = {364},
             [questKeys.questFlags] = 0,
         },
 
         [3099] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {nil,nil,{{9578}}},
             [questKeys.questFlags] = 0,
         },
@@ -7802,35 +7803,35 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [3116] = {
-            [questKeys.requiredRaces] = 1101,
+            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
             [questKeys.objectives] = {nil,nil,{{9545}}},
             [questKeys.questFlags] = 0,
             [questKeys.specialFlags] = 4,
         },
 
         [3117] = {
-            [questKeys.requiredRaces] = 1101,
+            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
             [questKeys.objectives] = {nil,nil,{{9567}}},
             [questKeys.questFlags] = 0,
             [questKeys.specialFlags] = 4,
         },
 
         [3118] = {
-            [questKeys.requiredRaces] = 1101,
+            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
             [questKeys.objectives] = {nil,nil,{{9551}}},
             [questKeys.questFlags] = 0,
             [questKeys.specialFlags] = 4,
         },
 
         [3119] = {
-            [questKeys.requiredRaces] = 1101,
+            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
             [questKeys.objectives] = {nil,nil,{{9557}}},
             [questKeys.questFlags] = 0,
             [questKeys.specialFlags] = 4,
         },
 
         [3120] = {
-            [questKeys.requiredRaces] = 1101,
+            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
             [questKeys.objectives] = {nil,nil,{{9580}}},
             [questKeys.questFlags] = 0,
             [questKeys.specialFlags] = 4,
@@ -8121,7 +8122,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [3512] = {
-            [questKeys.requiredRaces] = 1791,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE + raceIDs.ALL_ALLIANCE,
         },
 
         [3513] = {
@@ -8288,7 +8289,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [3631] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
         },
 
         [3632] = {
@@ -8492,7 +8493,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [3901] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.objectivesText] = {"Kill 12 Rattlecage Skeletons, and then return to Shadow Priest Sarvis in Deathknell when you are done."},
             [questKeys.questFlags] = 8,
         },
@@ -8619,27 +8620,27 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [4108] = {
-            [questKeys.requiredRaces] = 1101,
+            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
             [questKeys.preQuestSingle] = {4103},
         },
 
         [4109] = {
-            [questKeys.requiredRaces] = 1101,
+            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
             [questKeys.preQuestSingle] = {4104},
         },
 
         [4110] = {
-            [questKeys.requiredRaces] = 1101,
+            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
             [questKeys.preQuestSingle] = {4105},
         },
 
         [4111] = {
-            [questKeys.requiredRaces] = 1101,
+            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
             [questKeys.preQuestSingle] = {4106},
         },
 
         [4112] = {
-            [questKeys.requiredRaces] = 1101,
+            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
             [questKeys.preQuestSingle] = {4107},
         },
 
@@ -8824,7 +8825,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [4362] = {
-            [questKeys.requiredRaces] = 1101,
+            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
         },
 
         [4401] = {
@@ -8901,7 +8902,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [4489] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
         },
 
         [4490] = {
@@ -9084,7 +9085,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [4738] = {
-            [questKeys.requiredRaces] = 1101,
+            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
             [questKeys.exclusiveTo] = {},
         },
 
@@ -9094,7 +9095,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [4740] = {
             [questKeys.requiredLevel] = 15,
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectivesText] = {"Find and slay the murloc known as Murkdeep.  The creature is thought to be defending the murloc huts south of Auberdine along the water.","","Report the death of Murkdeep to Sentinel Glynda Nal'Shea in Auberdine."},
         },
 
@@ -9145,7 +9146,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [4813] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [4822] = {
@@ -9216,12 +9217,12 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [4967] = {
-            [questKeys.requiredRaces] = 1101,
+            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
             [questKeys.exclusiveTo] = {},
         },
 
         [4968] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.exclusiveTo] = {},
         },
 
@@ -9253,7 +9254,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [4983] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {nil,nil,{{12652}}},
         },
 
@@ -9272,7 +9273,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [5002] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {nil,nil,{{12770}}},
         },
 
@@ -9680,42 +9681,42 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [5401] = {
-            [questKeys.requiredRaces] = 1101,
+            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
             [questKeys.exclusiveTo] = {},
         },
 
         [5402] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.preQuestSingle] = {},
         },
 
         [5403] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.preQuestSingle] = {},
         },
 
         [5404] = {
-            [questKeys.requiredRaces] = 1101,
+            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
             [questKeys.preQuestSingle] = {},
         },
 
         [5405] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.exclusiveTo] = {},
         },
 
         [5406] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.preQuestSingle] = {},
         },
 
         [5407] = {
-            [questKeys.requiredRaces] = 1101,
+            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
             [questKeys.preQuestSingle] = {},
         },
 
         [5408] = {
-            [questKeys.requiredRaces] = 1101,
+            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
             [questKeys.preQuestSingle] = {},
         },
 
@@ -9871,25 +9872,25 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [5623] = {
-            [questKeys.requiredRaces] = 1101,
+            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
             [questKeys.exclusiveTo] = {5626,9586},
             [questKeys.breadcrumbForQuestId] = 0,
         },
 
         [5624] = {
-            [questKeys.requiredRaces] = 1101,
+            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
             [questKeys.preQuestSingle] = {5623},
             [questKeys.breadcrumbs] = {},
         },
 
         [5625] = {
-            [questKeys.requiredRaces] = 1101,
+            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
             [questKeys.preQuestSingle] = {5626},
             [questKeys.breadcrumbs] = {},
         },
 
         [5626] = {
-            [questKeys.requiredRaces] = 1101,
+            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
             [questKeys.exclusiveTo] = {5623,9586},
             [questKeys.breadcrumbForQuestId] = 0,
         },
@@ -9951,37 +9952,37 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [5641] = {
-            [questKeys.requiredRaces] = 1028,
+            [questKeys.requiredRaces] = raceIDs.DRAENEI + raceIDs.DWARF,
         },
 
         [5645] = {
-            [questKeys.requiredRaces] = 1028,
+            [questKeys.requiredRaces] = raceIDs.DRAENEI + raceIDs.DWARF,
         },
 
         [5647] = {
-            [questKeys.requiredRaces] = 1028,
+            [questKeys.requiredRaces] = raceIDs.DRAENEI + raceIDs.DWARF,
         },
 
         [5648] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.preQuestSingle] = {5649},
             [questKeys.breadcrumbs] = {},
         },
 
         [5649] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.exclusiveTo] = {5651,9489},
             [questKeys.breadcrumbForQuestId] = 0,
         },
 
         [5650] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.preQuestSingle] = {5651},
             [questKeys.breadcrumbs] = {},
         },
 
         [5651] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.exclusiveTo] = {5649,9489},
             [questKeys.breadcrumbForQuestId] = 0,
         },
@@ -10363,25 +10364,25 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [5726] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.nextQuestInChain] = 0,
         },
 
         [5727] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.objectives] = nil,
         },
 
         [5728] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
         },
 
         [5729] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
         },
 
         [5730] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
         },
 
         [5742] = {
@@ -10390,7 +10391,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [5761] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
         },
 
         [5762] = {
@@ -10446,27 +10447,27 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [5882] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.preQuestSingle] = {4102},
         },
 
         [5883] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.preQuestSingle] = {4102},
         },
 
         [5884] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.preQuestSingle] = {4102},
         },
 
         [5885] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.preQuestSingle] = {4102},
         },
 
         [5886] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.preQuestSingle] = {4102},
         },
 
@@ -10564,7 +10565,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [5961] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
         },
 
         [6001] = {
@@ -11297,7 +11298,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [7162] = {
-            [questKeys.requiredRaces] = 1101,
+            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
             [questKeys.requiredMinRep] = false,
             [questKeys.breadcrumbs] = {},
         },
@@ -11425,18 +11426,18 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [7426] = {
             [questKeys.requiredLevel] = 51,
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [7427] = {
             [questKeys.requiredLevel] = 51,
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.preQuestSingle] = {7401},
         },
 
         [7428] = {
             [questKeys.requiredLevel] = 51,
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.preQuestSingle] = {7402},
         },
 
@@ -11564,7 +11565,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [7562] = {
-            [questKeys.requiredRaces] = 595,
+            [questKeys.requiredRaces] = raceIDs.BLOOD_ELF + raceIDs.GNOME + raceIDs.UNDEAD + raceIDs.ORC + raceIDs.HUMAN,
             [questKeys.breadcrumbForQuestId] = 0,
         },
 
@@ -11700,21 +11701,21 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [7668] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectivesText] = {"Use the Divination Scryer in the heart of the Great Ossuary's basement in the Scholomance.  Doing so will bring forth spirits you must fight.  Defeating these spirits will summon forth Death Knight Darkreaver; defeat him.","","Bring Darkreaver's Head to Sagorne Creststrider in the Valley of Wisdom, Orgrimmar."},
             [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [7669] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.preQuestSingle] = {},
             [questKeys.specialFlags] = 0,
         },
 
         [7670] = {
             [questKeys.questLevel] = -1,
-            [questKeys.requiredRaces] = 1029,
+            [questKeys.requiredRaces] = raceIDs.DRAENEI + raceIDs.DWARF + raceIDs.HUMAN,
             [questKeys.nextQuestInChain] = 0,
         },
 
@@ -12020,7 +12021,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [7848] = {
-            [questKeys.requiredRaces] = 1101,
+            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
         },
 
         [7850] = {
@@ -12132,7 +12133,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [7926] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {nil,nil,{{19338}}},
         },
 
@@ -12498,12 +12499,12 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8149] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = nil,
         },
 
         [8150] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectivesText] = {"Travel to Grom's Monument in the Demon Fall Canyon of Ashenvale and use Grom's Tribute at the base of the monument.  Return to Javnir Nashak outside Orgrimmar before the Harvest Festival is over."},
             [questKeys.objectives] = nil,
         },
@@ -12663,7 +12664,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8259] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [8261] = {
@@ -12709,11 +12710,11 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8271] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [8272] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [8274] = {
@@ -12741,7 +12742,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8289] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.specialFlags] = 0,
         },
 
@@ -12754,7 +12755,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8296] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [8299] = {
@@ -12892,7 +12893,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8344] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.exclusiveTo] = {},
         },
 
@@ -13382,20 +13383,20 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8492] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [8493] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectivesText] = {"Bring 20 Copper Bars to Sergeant Stonebrow in Ironforge."},
         },
 
         [8494] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [8495] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectivesText] = {"Bring 20 Iron Bars to Corporal Carnes in Ironforge."},
         },
 
@@ -13416,7 +13417,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8499] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [8500] = {
@@ -13434,7 +13435,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8503] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [8504] = {
@@ -13442,7 +13443,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8505] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [8506] = {
@@ -13454,7 +13455,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8509] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [8510] = {
@@ -13462,70 +13463,70 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8511] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [8512] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectivesText] = {"Bring 10 Light Leather to Bonnie Stoneflayer in Ironforge."},
         },
 
         [8513] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [8514] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectivesText] = {"Bring 10 Medium Leather to Private Porter in Ironforge."},
         },
 
         [8515] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [8516] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectivesText] = {"Bring 10 Thick Leather to Marta Finespindle in Ironforge."},
         },
 
         [8517] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [8518] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectivesText] = {"Bring 20 Linen Bandages to Sentinel Silversky in Ironforge."},
         },
 
         [8520] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [8521] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectivesText] = {"Bring 20 Silk Bandages to Nurse Stonefield in Ironforge."},
         },
 
         [8522] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [8523] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectivesText] = {"Bring 20 Runecloth Bandages to Keeper Moonshade in Ironforge."},
         },
 
         [8524] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [8525] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectivesText] = {"Bring 20 Rainbow Fin Albacore to Slicky Gastronome in Ironforge."},
         },
 
         [8526] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [8527] = {
@@ -13533,11 +13534,11 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8528] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [8529] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectivesText] = {"Bring 20 Spotted Yellowtail to Huntress Swiftriver in Ironforge."},
         },
 
@@ -13553,11 +13554,11 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8532] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [8533] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectivesText] = {"Bring 20 copper bars to Miner Cromwell in Orgrimmar."},
         },
 
@@ -13603,11 +13604,11 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8542] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [8543] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectivesText] = {"Bring 20 tin bars to Grunt Maug in Orgrimmar."},
         },
 
@@ -13618,11 +13619,11 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8545] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [8546] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectivesText] = {"Bring 20 Mithril Bars to Senior Sergeant T'kelah in Orgrimmar."},
         },
 
@@ -13635,17 +13636,17 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8549] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [8550] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectivesText] = {"Bring 20 Peacebloom to Herbalist Proudfeather in Orgrimmar."},
         },
 
         [8551] = {
             [questKeys.questLevel] = 47,
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
         },
 
         [8552] = {
@@ -13746,20 +13747,20 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8580] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [8581] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectivesText] = {"Bring 20 Firebloom to Batrider Pele'keiki in Orgrimmar."},
         },
 
         [8582] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [8583] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectivesText] = {"Bring 20 Purple Lotus to Apothecary Jezel in Orgrimmar."},
         },
 
@@ -13768,20 +13769,20 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8588] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [8589] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectivesText] = {"Bring 10 Heavy Leather to Skinner Jamani in Orgrimmar."},
         },
 
         [8590] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [8591] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectivesText] = {"Bring 10 Thick Leather to Sergeant Umala in Orgrimmar."},
         },
 
@@ -13817,11 +13818,11 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8600] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [8601] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectivesText] = {"Bring 10 Rugged Leather to Doctor Serratus in Orgrimmar."},
         },
 
@@ -13838,56 +13839,56 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8604] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [8605] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectivesText] = {"Bring 20 Wool Bandages to Healer Longrunner in Orgrimmar."},
         },
 
         [8607] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [8608] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectivesText] = {"Bring 20 Mageweave Bandages to Lady Callow in Orgrimmar."},
         },
 
         [8609] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [8610] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectivesText] = {"Bring 20 Runecloth Bandages to Stoneguard Clayhoof in Orgrimmar."},
         },
 
         [8611] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [8612] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectivesText] = {"Bring 20 Lean Wolf Steaks to Bloodguard Rawtar in Orgrimmar."},
         },
 
         [8613] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [8614] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectivesText] = {"Bring 20 Spotted Yellowtail to Fisherman Lin'do in Orgrimmar."},
         },
 
         [8615] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [8616] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectivesText] = {"Bring 20 Baked Salmon to Chief Sharpclaw in Orgrimmar."},
             [questKeys.preQuestSingle] = {8615},
         },
@@ -14247,7 +14248,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8746] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.objectivesText] = {"Find Metzen the Reindeer.  Use the notes provided to you for clues as to where he is being held.","","When you find Metzen, have the Pouch of Reindeer Dust in your possession so you can sprinkle some of the dust on him; this should free Metzen from his bonds of captivity.","","Return the Pouch of Reindeer Dust to Kaymard Copperpinch in Orgrimmar once Metzen is freed."},
             [questKeys.requiredSourceItems] = {},
         },
@@ -14313,7 +14314,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8762] = {
-            [questKeys.requiredRaces] = 1101,
+            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
             [questKeys.objectivesText] = {"Find Metzen the Reindeer.  Use the notes provided to you for clues as to where he is being held.","","When you find Metzen, have the Pouch of Reindeer Dust in your possession so you can sprinkle some of the dust on him; this should free Metzen from his bonds of captivity.","","Return the Pouch of Reindeer Dust to Wulmort Jinglepocket in Ironforge once Metzen is freed."},
             [questKeys.requiredSourceItems] = {},
         },
@@ -14568,7 +14569,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8874] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectivesText] = {"Talk to the Lunar Festival Harbinger in the entrance to the Undercity.  You can also talk to Lunar Festival Harbingers in other capital cities."},
             [questKeys.exclusiveTo] = {8870,8871,8872,8873,8875},
             [questKeys.breadcrumbForQuestId] = 0,
@@ -14883,7 +14884,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8981] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [8982] = {
@@ -14939,7 +14940,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8993] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [9015] = {
@@ -15477,7 +15478,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9177] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {nil,nil,{{22627}}},
             [questKeys.preQuestSingle] = {},
         },
@@ -15491,7 +15492,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9180] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.objectives] = {nil,nil,{{22627}}},
         },
 
@@ -15836,7 +15837,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9289] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.preQuestSingle] = {},
             [questKeys.specialFlags] = 4,
         },
@@ -16329,7 +16330,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9421] = {
-            [questKeys.requiredRaces] = 1024,
+            [questKeys.requiredRaces] = raceIDs.DRAENEI,
             [questKeys.preQuestSingle] = {9280},
             [questKeys.questFlags] = 65664,
             [questKeys.specialFlags] = 4,
@@ -16377,7 +16378,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9446] = {
-            [questKeys.requiredRaces] = 1101,
+            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
             [questKeys.objectivesText] = {"Escort Anchorite Truuen to Uther's Tomb in the Western Plaguelands.  Afterward, speak with High Priestess MacDonnell at Chillwind Camp in the Western Plaguelands."},
         },
 
@@ -16428,36 +16429,36 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9460] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
         },
 
         [9461] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [9462] = {
-            [questKeys.requiredRaces] = 1101,
+            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
             [questKeys.breadcrumbForQuestId] = 0,
         },
 
         [9464] = {
-            [questKeys.requiredRaces] = 1101,
+            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
             [questKeys.breadcrumbs] = {},
         },
 
         [9465] = {
-            [questKeys.requiredRaces] = 1101,
+            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
         },
 
         [9467] = {
-            [questKeys.requiredRaces] = 1101,
+            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
             [questKeys.objectivesText] = {"Retrieve Hauteur's Ashes and then return them and the Ritual Torch to Temper at Emberglade on Azuremyst Isle.  Remember that you can use the Orb of Returning to teleport back to Temper once you have the ashes."},
             [questKeys.requiredSourceItems] = {},
             [questKeys.nextQuestInChain] = 0,
         },
 
         [9468] = {
-            [questKeys.requiredRaces] = 1101,
+            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
             [questKeys.objectives] = {nil,nil,{{23688}}},
         },
 
@@ -16466,7 +16467,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9474] = {
-            [questKeys.requiredRaces] = 1101,
+            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
         },
 
         [9477] = {
@@ -16525,15 +16526,15 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9487] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [9488] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
         },
 
         [9489] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.exclusiveTo] = {5649,5651},
             [questKeys.specialFlags] = 32,
         },
@@ -16545,7 +16546,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9495] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
         },
 
         [9497] = {
@@ -16573,7 +16574,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9502] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.breadcrumbForQuestId] = 0,
         },
 
@@ -16653,7 +16654,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9532] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.exclusiveTo] = {1859,1885},
         },
 
@@ -16709,7 +16710,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9555] = {
-            [questKeys.requiredRaces] = 1101,
+            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
         },
 
         [9557] = {
@@ -16926,7 +16927,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9618] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.objectives] = {nil,nil,{{23919}}},
         },
 
@@ -17120,7 +17121,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9676] = {
-            [questKeys.requiredRaces] = 512,
+            [questKeys.requiredRaces] = raceIDs.BLOOD_ELF,
             [questKeys.questFlags] = 136,
             [questKeys.specialFlags] = 4,
         },
@@ -17420,7 +17421,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9846] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
         },
 
         [9847] = {
@@ -17961,19 +17962,19 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [10074] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [10075] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [10076] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [10077] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [10078] = {
@@ -18391,7 +18392,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [10279] = {
-            [questKeys.requiredRaces] = 1791,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE + raceIDs.ALL_ALLIANCE,
         },
 
         [10280] = {
@@ -18668,12 +18669,12 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [10371] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.exclusiveTo] = {},
         },
 
         [10372] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.exclusiveTo] = {2379},
             [questKeys.breadcrumbForQuestId] = 0,
         },
@@ -19573,7 +19574,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [10779] = {
-            [questKeys.requiredRaces] = 1024,
+            [questKeys.requiredRaces] = raceIDs.DRAENEI,
         },
 
         [10785] = {
@@ -19970,7 +19971,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [10945] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectivesText] = {"Take your orphan, Salandria, to Sporeggar in Zangarmarsh.  Make sure to call for her if she is not present when you arrive.  Then, speak with Hch'uu."},
             [questKeys.questFlags] = 138,
         },
@@ -19989,27 +19990,27 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [10950] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectivesText] = {"Take your orphan, Dornaa, to the Meeting Stone at the Ring of Observance in the middle of Auchindoun.  Auchindoun, in turn, is in the middle of Terokkar Forest's Bone Wastes.  Make sure to call for her if she is not present when you arrive."},
         },
 
         [10951] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectivesText] = {"Take your orphan, Salandria, up the steps of the Stair of Destiny to stand before the Dark Portal in Hellfire Peninsula.  Make sure to call for her if she is not present when you arrive."},
         },
 
         [10952] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectivesText] = {"Take your orphan, Dornaa, up the steps of the Stair of Destiny to stand before the Dark Portal in Hellfire Peninsula.  Make sure to call for her if she is not present when you arrive."},
         },
 
         [10953] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectivesText] = {"Take your orphan, Salandria, to the Throne of the Elements in Nagrand.  Make sure to call for her if she is not present when you arrive.  Then, speak with Elementalist Sharvak."},
         },
 
         [10954] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectivesText] = {"Take your orphan, Dornaa, to Aeris Landing in Nagrand.  Make sure to call for her if she is not present when you arrive.  Then, speak with Jheel."},
         },
 
@@ -20027,7 +20028,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [10960] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectivesText] = {"Take your orphan, Salandria, to the paladin trainers in Silvermoon City's Farstriders' Square.  Make sure to call for her if she is not present when you arrive.  Then, speak with Lady Liadrin, the Blood Knight Matriarch.","","Remember that you can use your map inside the city, and speak to the guards to find the paladin trainers."},
             [questKeys.preQuestSingle] = {10945},
             [questKeys.specialFlags] = 0,
@@ -20053,12 +20054,12 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [10966] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.preQuestSingle] = {10968},
         },
 
         [10967] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.preQuestSingle] = {11975},
         },
 
@@ -20340,15 +20341,15 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11053] = {
-            [questKeys.requiredRaces] = 1791,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE + raceIDs.ALL_ALLIANCE,
         },
 
         [11054] = {
-            [questKeys.requiredRaces] = 1791,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE + raceIDs.ALL_ALLIANCE,
         },
 
         [11055] = {
-            [questKeys.requiredRaces] = 1791,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE + raceIDs.ALL_ALLIANCE,
             [questKeys.objectives] = {{{23311}},nil,{{32680}}},
             [questKeys.specialFlags] = 33,
         },
@@ -20417,11 +20418,11 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11075] = {
-            [questKeys.requiredRaces] = 1791,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE + raceIDs.ALL_ALLIANCE,
         },
 
         [11076] = {
-            [questKeys.requiredRaces] = 1791,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE + raceIDs.ALL_ALLIANCE,
         },
 
         [11078] = {
@@ -20437,7 +20438,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11084] = {
-            [questKeys.requiredRaces] = 1791,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE + raceIDs.ALL_ALLIANCE,
         },
 
         [11086] = {
@@ -20465,7 +20466,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11092] = {
-            [questKeys.requiredRaces] = 1791,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE + raceIDs.ALL_ALLIANCE,
         },
 
         [11093] = {
@@ -20496,7 +20497,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11098] = {
-            [questKeys.requiredRaces] = 1791,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE + raceIDs.ALL_ALLIANCE,
             [questKeys.objectives] = {nil,nil,{{32848}}},
         },
 
@@ -20541,7 +20542,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11107] = {
-            [questKeys.requiredRaces] = 1791,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE + raceIDs.ALL_ALLIANCE,
         },
 
         [11115] = {
@@ -20870,7 +20871,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11242] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {nil,nil,{{33277}}},
             [questKeys.preQuestSingle] = {},
         },
@@ -21286,7 +21287,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11403] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {nil,nil,{{33277}}},
             [questKeys.preQuestSingle] = {},
         },
@@ -21642,7 +21643,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11531] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {nil,nil,{{34474}}},
         },
 
@@ -21759,7 +21760,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11558] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.requiredSourceItems] = {},
         },
 
@@ -23959,12 +23960,12 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12513] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.exclusiveTo] = {},
         },
 
         [12515] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.exclusiveTo] = {},
         },
 
@@ -24349,7 +24350,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12652] = {
-            [questKeys.requiredRaces] = 1791,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE + raceIDs.ALL_ALLIANCE,
             [questKeys.objectives] = {{{28591}}},
             [questKeys.requiredSourceItems] = {38701},
             [questKeys.preQuestSingle] = {},
@@ -25111,22 +25112,22 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12944] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.questFlags] = 65536,
         },
 
         [12945] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.questFlags] = 65536,
         },
 
         [12946] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.questFlags] = 65536,
         },
 
         [12947] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.questFlags] = 65536,
         },
 
@@ -26290,42 +26291,42 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13433] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.questFlags] = 65536,
         },
 
         [13434] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.questFlags] = 65536,
         },
 
         [13435] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.questFlags] = 65536,
         },
 
         [13436] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.questFlags] = 65536,
         },
 
         [13437] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.questFlags] = 65536,
         },
 
         [13438] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.questFlags] = 65536,
         },
 
         [13439] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.questFlags] = 65536,
         },
 
         [13448] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.questFlags] = 65536,
         },
 
@@ -26358,42 +26359,42 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13464] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.questFlags] = 65536,
         },
 
         [13465] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.questFlags] = 65536,
         },
 
         [13466] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.questFlags] = 65536,
         },
 
         [13467] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.questFlags] = 65536,
         },
 
         [13468] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.questFlags] = 65536,
         },
 
         [13469] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.questFlags] = 65536,
         },
 
         [13470] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.questFlags] = 65536,
         },
 
         [13471] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.questFlags] = 65536,
         },
 
@@ -26402,12 +26403,12 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13473] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.questFlags] = 65536,
         },
 
         [13474] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.questFlags] = 65536,
         },
 
@@ -26462,7 +26463,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13501] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.questFlags] = 65536,
         },
 
@@ -26488,7 +26489,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13548] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.questFlags] = 65536,
         },
 
@@ -27270,7 +27271,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13906] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectivesText] = {"Return 20 Venomhide Baby Teeth,  the Venomhide Hatchling, 20 Runecloth, 20 Rugged Leather, and 80 gold to Mor'vek in the southeastern part of the Marshlands in Un'Goro Crater."},
             [questKeys.objectives] = {nil,nil,{{46362},{47196},{14047},{8170}}},
         },
@@ -27300,12 +27301,12 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13931] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {nil,nil,{{33955}}},
         },
 
         [13932] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {nil,nil,{{33955}}},
         },
 
@@ -27344,7 +27345,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13952] = {
-            [questKeys.requiredRaces] = 1,
+            [questKeys.requiredRaces] = raceIDs.HUMAN,
             [questKeys.exclusiveTo] = {14166,14167,14168,14169,14170,14171,14172,14173,14174,14175,14176,14177},
         },
 
@@ -27385,7 +27386,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13986] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {nil,nil,{{46775}}},
         },
 
@@ -27395,7 +27396,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [14022] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [14023] = {
@@ -27408,7 +27409,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [14036] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [14037] = {
@@ -27464,91 +27465,91 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [14074] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.requiredMinRep] = false,
             [questKeys.exclusiveTo] = {},
         },
 
         [14076] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.requiredSourceItems] = {46893},
             [questKeys.requiredMinRep] = false,
             [questKeys.exclusiveTo] = {},
         },
 
         [14077] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {{{34852}},nil,{{46870}}},
             [questKeys.requiredMinRep] = false,
             [questKeys.exclusiveTo] = {},
         },
 
         [14079] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {nil,nil,{{46875}}},
             [questKeys.questFlags] = 0,
         },
 
         [14080] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {{{34838}}},
             [questKeys.requiredMinRep] = false,
             [questKeys.exclusiveTo] = {},
         },
 
         [14081] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {nil,nil,{{46882}}},
             [questKeys.questFlags] = 0,
         },
 
         [14082] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {nil,nil,{{46879}}},
         },
 
         [14083] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {nil,nil,{{46877}}},
             [questKeys.questFlags] = 0,
         },
 
         [14084] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {nil,nil,{{46878}}},
             [questKeys.questFlags] = 0,
         },
 
         [14085] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {nil,nil,{{46876}}},
             [questKeys.questFlags] = 0,
         },
 
         [14086] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {nil,nil,{{46880}}},
             [questKeys.questFlags] = 0,
         },
 
         [14087] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {nil,nil,{{46884}}},
         },
 
         [14088] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {nil,nil,{{46883}}},
         },
 
         [14089] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {nil,nil,{{46881}}},
             [questKeys.questFlags] = 0,
         },
 
         [14090] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {{{34899}}},
             [questKeys.requiredSourceItems] = {46885},
             [questKeys.requiredMinRep] = false,
@@ -27556,7 +27557,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [14092] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.requiredSourceItems] = {46893},
             [questKeys.requiredMinRep] = false,
             [questKeys.exclusiveTo] = {},
@@ -27567,12 +27568,12 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [14096] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.requiredMinRep] = false,
         },
 
         [14100] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [14101] = {
@@ -27614,30 +27615,30 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [14111] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [14112] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.requiredMinRep] = false,
             [questKeys.exclusiveTo] = {},
         },
 
         [14136] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.requiredMinRep] = false,
             [questKeys.exclusiveTo] = {},
         },
 
         [14140] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {{{34838}}},
             [questKeys.requiredMinRep] = false,
             [questKeys.exclusiveTo] = {},
         },
 
         [14141] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {{{34899}}},
             [questKeys.requiredSourceItems] = {46885},
             [questKeys.requiredMinRep] = false,
@@ -27645,25 +27646,25 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [14142] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.requiredMinRep] = false,
         },
 
         [14143] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.requiredMinRep] = false,
             [questKeys.exclusiveTo] = {},
         },
 
         [14144] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {{{34852}},nil,{{46870}}},
             [questKeys.requiredMinRep] = false,
             [questKeys.exclusiveTo] = {},
         },
 
         [14145] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.requiredMinRep] = false,
             [questKeys.exclusiveTo] = {},
         },
@@ -27674,7 +27675,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [14152] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.requiredMinRep] = false,
             [questKeys.exclusiveTo] = {},
         },
@@ -27684,11 +27685,11 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [14163] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [14164] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [14166] = {
@@ -27696,27 +27697,27 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [14167] = {
-            [questKeys.requiredRaces] = 4,
+            [questKeys.requiredRaces] = raceIDs.DWARF,
             [questKeys.exclusiveTo] = {13952,14166,14168,14169,14170,14171,14172,14173,14174,14175,14176,14177},
         },
 
         [14168] = {
-            [questKeys.requiredRaces] = 64,
+            [questKeys.requiredRaces] = raceIDs.GNOME,
             [questKeys.exclusiveTo] = {13952,14166,14167,14169,14170,14171,14172,14173,14174,14175,14176,14177},
         },
 
         [14169] = {
-            [questKeys.requiredRaces] = 1024,
+            [questKeys.requiredRaces] = raceIDs.DRAENEI,
             [questKeys.exclusiveTo] = {13952,14166,14167,14168,14170,14171,14172,14173,14174,14175,14176,14177},
         },
 
         [14170] = {
-            [questKeys.requiredRaces] = 8,
+            [questKeys.requiredRaces] = raceIDs.NIGHT_ELF,
             [questKeys.exclusiveTo] = {13952,14166,14167,14168,14169,14171,14172,14173,14174,14175,14176,14177},
         },
 
         [14171] = {
-            [questKeys.requiredRaces] = 512,
+            [questKeys.requiredRaces] = raceIDs.BLOOD_ELF,
             [questKeys.exclusiveTo] = {13952,14166,14167,14168,14169,14170,14172,14173,14174,14175,14176,14177},
         },
 
@@ -27729,54 +27730,54 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [14174] = {
-            [questKeys.requiredRaces] = 16,
+            [questKeys.requiredRaces] = raceIDs.UNDEAD,
             [questKeys.exclusiveTo] = {13952,14166,14167,14168,14169,14170,14171,14172,14173,14175,14176,14177},
         },
 
         [14175] = {
-            [questKeys.requiredRaces] = 2,
+            [questKeys.requiredRaces] = raceIDs.ORC,
             [questKeys.exclusiveTo] = {13952,14166,14167,14168,14169,14170,14171,14172,14173,14174,14176,14177},
         },
 
         [14176] = {
-            [questKeys.requiredRaces] = 32,
+            [questKeys.requiredRaces] = raceIDs.TAUREN,
             [questKeys.exclusiveTo] = {13952,14166,14167,14168,14169,14170,14171,14172,14173,14174,14175,14177},
         },
 
         [14177] = {
-            [questKeys.requiredRaces] = 128,
+            [questKeys.requiredRaces] = raceIDs.TROLL,
             [questKeys.exclusiveTo] = {13952,14166,14167,14168,14169,14170,14171,14172,14173,14174,14175,14176},
         },
 
         [14178] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.requiredMaxLevel] = 0,
         },
 
         [14179] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.exclusiveTo] = {13427,14178,14180},
             [questKeys.requiredMaxLevel] = 0,
         },
 
         [14180] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.requiredMaxLevel] = 0,
         },
 
         [14181] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.requiredMaxLevel] = 0,
         },
 
         [14182] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectivesText] = {"Win an Eye of the Storm battleground match and return to a Horde Warbringer at any Horde capital city, Wintergrasp, Dalaran,  or Shattrath."},
             [questKeys.requiredMaxLevel] = 0,
         },
 
         [14183] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.requiredMaxLevel] = 0,
         },
 
@@ -27794,7 +27795,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [14350] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {6145},
         },
@@ -27810,44 +27811,44 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [14353] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.objectivesText] = {"Bring Ambassador Malcin's Head to Varimathras in the Undercity."},
             [questKeys.preQuestSingle] = {14352},
         },
 
         [14355] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.objectivesText] = {"Kill High Inquisitor Whitemane, Scarlet Commander Mograine, Herod, the Scarlet Champion and Houndmaster Loksey and then report back to Varimathras in the Undercity."},
         },
 
         [14356] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.objectivesText] = {"Bring the books Spells of Shadow and Incantations from the Nether to Varimathras in Undercity."},
         },
 
         [14409] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {nil,nil,{{49335}}},
         },
 
         [14418] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.objectives] = {nil,nil,{{7294}}},
         },
 
         [14419] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.objectives] = {nil,nil,{{7231}}},
         },
 
         [14420] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.preQuestSingle] = {1885},
             [questKeys.breadcrumbs] = {},
         },
 
         [14421] = {
-            [questKeys.requiredRaces] = 690,
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
         },
 
         [14437] = {
@@ -27869,7 +27870,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [14483] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {nil,nil,{{49641}}},
         },
 
@@ -27938,12 +27939,12 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [24428] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {nil,nil,{{49644}}},
         },
 
         [24429] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {nil,nil,{{49643}}},
         },
 
@@ -28003,14 +28004,14 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [24536] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {{{37558}}},
             [questKeys.requiredSourceItems] = {50131},
             [questKeys.preQuestSingle] = {24805},
         },
 
         [24541] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.sourceItemId] = 0,
             [questKeys.questFlags] = 2,
         },
@@ -28069,7 +28070,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [24576] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [24594] = {
@@ -28083,7 +28084,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [24597] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [24598] = {
@@ -28091,32 +28092,32 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [24609] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [24610] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [24611] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.questFlags] = 4104,
         },
 
         [24612] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [24613] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [24614] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [24615] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [24629] = {
@@ -28135,94 +28136,94 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [24638] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {{{38035},{37214}}},
             [questKeys.requiredSourceItems] = {50130},
             [questKeys.exclusiveTo] = {},
         },
 
         [24645] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {{{38035},{37917}}},
             [questKeys.requiredSourceItems] = {50130},
             [questKeys.exclusiveTo] = {},
         },
 
         [24647] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {{{38035},{37984}}},
             [questKeys.requiredSourceItems] = {50130},
             [questKeys.exclusiveTo] = {},
         },
 
         [24648] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {{{38035},{38006}}},
             [questKeys.requiredSourceItems] = {50130},
             [questKeys.exclusiveTo] = {},
         },
 
         [24649] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {{{38035},{38016}}},
             [questKeys.requiredSourceItems] = {50130},
             [questKeys.exclusiveTo] = {},
         },
 
         [24650] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {{{38035},{38023}}},
             [questKeys.requiredSourceItems] = {50130},
             [questKeys.exclusiveTo] = {},
         },
 
         [24651] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {{{38035},{38030}}},
             [questKeys.requiredSourceItems] = {50130},
             [questKeys.exclusiveTo] = {},
         },
 
         [24652] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {{{38035},{38032}}},
             [questKeys.requiredSourceItems] = {50130},
             [questKeys.exclusiveTo] = {},
         },
 
         [24655] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {{{37558}}},
             [questKeys.requiredSourceItems] = {50131},
             [questKeys.preQuestSingle] = {24804},
         },
 
         [24656] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.sourceItemId] = 0,
             [questKeys.questFlags] = 2,
         },
 
         [24657] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [24658] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {{{38035},{37214}}},
             [questKeys.requiredSourceItems] = {50130},
             [questKeys.exclusiveTo] = {},
         },
 
         [24659] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {{{38035},{37917}}},
             [questKeys.requiredSourceItems] = {50130},
             [questKeys.exclusiveTo] = {},
         },
 
         [24660] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {{{38035},{37984}}},
             [questKeys.requiredSourceItems] = {50130},
             [questKeys.exclusiveTo] = {},
@@ -28240,35 +28241,35 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [24662] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {{{38035},{38006}}},
             [questKeys.requiredSourceItems] = {50130},
             [questKeys.exclusiveTo] = {},
         },
 
         [24663] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {{{38035},{38016}}},
             [questKeys.requiredSourceItems] = {50130},
             [questKeys.exclusiveTo] = {},
         },
 
         [24664] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {{{38035},{38023}}},
             [questKeys.requiredSourceItems] = {50130},
             [questKeys.exclusiveTo] = {},
         },
 
         [24665] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {{{38035},{38030}}},
             [questKeys.requiredSourceItems] = {50130},
             [questKeys.exclusiveTo] = {},
         },
 
         [24666] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {{{38035},{38032}}},
             [questKeys.requiredSourceItems] = {50130},
             [questKeys.exclusiveTo] = {},
@@ -28280,7 +28281,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [24745] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {nil,nil,{{50320}}},
         },
 
@@ -28322,11 +28323,11 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [24792] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [24793] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [24795] = {
@@ -28365,11 +28366,11 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [24804] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [24805] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [24819] = {
@@ -28425,19 +28426,19 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [24848] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [24849] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [24850] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [24851] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [24857] = {
@@ -28452,12 +28453,12 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [24870] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.exclusiveTo] = {},
         },
 
         [24871] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.exclusiveTo] = {},
         },
 
@@ -28481,12 +28482,12 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [24876] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.exclusiveTo] = {},
         },
 
         [24877] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.exclusiveTo] = {},
         },
 
@@ -28556,7 +28557,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [25212] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.requiredSourceItems] = {52541},
         },
 
@@ -28571,7 +28572,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [25229] = {
             [questKeys.requiredLevel] = 0,
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {{{39623},{39466}}},
             [questKeys.requiredSourceItems] = {52566},
         },
@@ -28619,7 +28620,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [25283] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectivesText] = {"Use the Gnomish Playback Device in front of Ozzie Togglevolt north of Kharanos,Milli Featherwhistle at Steelgrill Depot and Tog Rustsprocket outside the Kharanos Inn.  Return to Toby Ziegear when all the speeches have been given."},
             [questKeys.requiredSourceItems] = {52709},
             [questKeys.preQuestSingle] = {25295},
@@ -28632,13 +28633,13 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [25286] = {
             [questKeys.questLevel] = 75,
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.exclusiveTo] = {},
         },
 
         [25287] = {
             [questKeys.questLevel] = 75,
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {nil,nil,{{52731}}},
             [questKeys.preQuestSingle] = {},
         },
@@ -28722,7 +28723,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         [25393] = {
             [questKeys.questLevel] = 75,
             [questKeys.requiredLevel] = 0,
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.preQuestSingle] = {},
         },
 
@@ -28780,37 +28781,37 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [25444] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [25445] = {
             [questKeys.questLevel] = 78,
             [questKeys.requiredLevel] = 0,
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {{{40428}}},
         },
 
         [25446] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectivesText] = {"While riding a bat,use the Sack o' Frogs to place 12 attuned frogs on the markers in the Echo Isles."},
             [questKeys.requiredSourceItems] = {53637},
             [questKeys.nextQuestInChain] = 0,
         },
 
         [25461] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {{{40257},{40260}}},
             [questKeys.requiredSourceItems] = {54215},
             [questKeys.nextQuestInChain] = 0,
         },
 
         [25470] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectivesText] = {"While imbued with the Spirit of the Tiger,lure the Tiger Matriarch out of hiding and use your new abilities to best it in combat."},
         },
 
         [25480] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {{{40387}}},
             [questKeys.nextQuestInChain] = 0,
         },
@@ -28820,11 +28821,11 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [25495] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [25500] = {
-            [questKeys.requiredRaces] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {nil,nil,{{52731}}},
             [questKeys.exclusiveTo] = {},
             [questKeys.nextQuestInChain] = 0,
