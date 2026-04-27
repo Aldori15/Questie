@@ -1009,6 +1009,7 @@ function QuestieQuestBlacklist:Load()
         [10871] = true, -- Ally of the Netherwing
         [10872] = true, -- Zuluhed the Whacked
         [10925] = true, -- Evil Draws Near
+        [11425] = true, -- Test Quest - Craig
 
         -- <NYI> quests
         [3482] = true, -- <NYI> <TXT> The Pocked Black Box
