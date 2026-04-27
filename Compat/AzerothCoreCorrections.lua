@@ -1,5 +1,7 @@
 ---@type QuestieDB
 local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
+---@type QuestieProfessions
+local QuestieProfessions = QuestieLoader:ImportModule("QuestieProfessions")
 
 if QuestieCompat.WOW_PROJECT_ID < QuestieCompat.WOW_PROJECT_WRATH_CLASSIC then return end
 
@@ -8,6 +10,7 @@ if QuestieCompat.WOW_PROJECT_ID < QuestieCompat.WOW_PROJECT_WRATH_CLASSIC then r
 
 QuestieCompat.RegisterCorrection("questData", function()
     local questKeys = QuestieDB.questKeys
+    local profKeys = QuestieProfessions.professionKeys
 
     -- AzerothCore quest relation parity.
     local relationCorrections = {
@@ -3968,7 +3971,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [384] = {
-            [questKeys.requiredSkill] = {185,1},
+            [questKeys.requiredSkill] = {profKeys.COOKING,1},
             [questKeys.questFlags] = 8,
         },
 
@@ -4604,7 +4607,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [715] = {
-            [questKeys.requiredSkill] = {171,0},
+            [questKeys.requiredSkill] = {profKeys.ALCHEMY,0},
         },
 
         [717] = {
@@ -6379,11 +6382,11 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [1580] = {
-            [questKeys.requiredSkill] = {356,1},
+            [questKeys.requiredSkill] = {profKeys.FISHING,1},
         },
 
         [1582] = {
-            [questKeys.requiredSkill] = {165,70},
+            [questKeys.requiredSkill] = {profKeys.LEATHERWORKING,70},
         },
 
         [1598] = {
@@ -6398,7 +6401,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [1618] = {
-            [questKeys.requiredSkill] = {164,70},
+            [questKeys.requiredSkill] = {profKeys.BLACKSMITHING,70},
         },
 
         [1638] = {
@@ -7267,7 +7270,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [2847] = {
-            [questKeys.requiredSkill] = {165,225},
+            [questKeys.requiredSkill] = {profKeys.LEATHERWORKING,225},
         },
 
         [2851] = {
@@ -7284,7 +7287,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [2854] = {
-            [questKeys.requiredSkill] = {165,225},
+            [questKeys.requiredSkill] = {profKeys.LEATHERWORKING,225},
         },
 
         [2858] = {
@@ -8009,7 +8012,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [3385] = {
-            [questKeys.requiredSkill] = {197,250},
+            [questKeys.requiredSkill] = {profKeys.TAILORING,250},
         },
 
         [3401] = {
@@ -8019,7 +8022,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [3402] = {
-            [questKeys.requiredSkill] = {197,1},
+            [questKeys.requiredSkill] = {profKeys.TAILORING,1},
         },
 
         [3403] = {
@@ -9406,7 +9409,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [5103] = {
             [questKeys.requiredSourceItems] = {},
-            [questKeys.requiredSkill] = {164,275},
+            [questKeys.requiredSkill] = {profKeys.BLACKSMITHING,275},
         },
 
         [5122] = {
@@ -9424,11 +9427,11 @@ QuestieCompat.RegisterCorrection("questData", function()
         [5126] = {
             [questKeys.requiredClasses] = 0,
             [questKeys.objectives] = nil,
-            [questKeys.requiredSkill] = {164,285},
+            [questKeys.requiredSkill] = {profKeys.BLACKSMITHING,285},
         },
 
         [5127] = {
-            [questKeys.requiredSkill] = {164,285},
+            [questKeys.requiredSkill] = {profKeys.BLACKSMITHING,285},
         },
 
         [5128] = {
@@ -12549,15 +12552,15 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8193] = {
-            [questKeys.requiredSkill] = {356,150},
+            [questKeys.requiredSkill] = {profKeys.FISHING,150},
         },
 
         [8194] = {
-            [questKeys.requiredSkill] = {356,150},
+            [questKeys.requiredSkill] = {profKeys.FISHING,150},
         },
 
         [8221] = {
-            [questKeys.requiredSkill] = {356,150},
+            [questKeys.requiredSkill] = {profKeys.FISHING,150},
         },
 
         [8222] = {
@@ -12569,11 +12572,11 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8224] = {
-            [questKeys.requiredSkill] = {356,150},
+            [questKeys.requiredSkill] = {profKeys.FISHING,150},
         },
 
         [8225] = {
-            [questKeys.requiredSkill] = {356,150},
+            [questKeys.requiredSkill] = {profKeys.FISHING,150},
         },
 
         [8226] = {
@@ -12587,12 +12590,12 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8228] = {
-            [questKeys.requiredSkill] = {356,150},
+            [questKeys.requiredSkill] = {profKeys.FISHING,150},
             [questKeys.questFlags] = 0,
         },
 
         [8229] = {
-            [questKeys.requiredSkill] = {356,150},
+            [questKeys.requiredSkill] = {profKeys.FISHING,150},
             [questKeys.questFlags] = 0,
         },
 
@@ -14432,7 +14435,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8798] = {
-            [questKeys.requiredSkill] = {202,1},
+            [questKeys.requiredSkill] = {profKeys.ENGINEERING,1},
         },
 
         [8799] = {
@@ -16974,11 +16977,11 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9635] = {
-            [questKeys.requiredSkill] = {202,300},
+            [questKeys.requiredSkill] = {profKeys.ENGINEERING,300},
         },
 
         [9636] = {
-            [questKeys.requiredSkill] = {202,300},
+            [questKeys.requiredSkill] = {profKeys.ENGINEERING,300},
         },
 
         [9644] = {
@@ -19703,16 +19706,16 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [10831] = {
-            [questKeys.requiredSkill] = {197,325},
+            [questKeys.requiredSkill] = {profKeys.TAILORING,325},
         },
 
         [10832] = {
             [questKeys.objectives] = {nil,nil,{{31741},{31742}}},
-            [questKeys.requiredSkill] = {197,325},
+            [questKeys.requiredSkill] = {profKeys.TAILORING,325},
         },
 
         [10833] = {
-            [questKeys.requiredSkill] = {197,325},
+            [questKeys.requiredSkill] = {profKeys.TAILORING,325},
             [questKeys.specialFlags] = 32,
         },
 
@@ -27125,11 +27128,11 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13825] = {
-            [questKeys.requiredSkill] = {185,1},
+            [questKeys.requiredSkill] = {profKeys.COOKING,1},
         },
 
         [13826] = {
-            [questKeys.requiredSkill] = {356,1},
+            [questKeys.requiredSkill] = {profKeys.FISHING,1},
         },
 
         [13827] = {
