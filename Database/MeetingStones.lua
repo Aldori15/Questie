@@ -5,6 +5,9 @@ local _MeetingStones = {}
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
 
+--- COMPATIBILITY ---
+local strlower = string.lower
+
 local function _NormalizeMeetingStoneName(name)
     if not name then
         return nil

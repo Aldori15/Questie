@@ -18,6 +18,8 @@ local l10n = QuestieLoader:ImportModule("l10n")
 local C_Timer = QuestieCompat.C_Timer
 local WorldMapFrame = QuestieCompat.WorldMapFrame
 
+local math_max, math_min = math.max, math.min
+
 local HBDPins = QuestieCompat.HBDPins or LibStub("HereBeDragonsQuestie-Pins-2.0")
 
 -- set pins parent to QuestieFrameGroup for easier compatibility with other addons
@@ -296,8 +298,8 @@ function QuestieFramePool:CreateLine(iconFrame, startX, startY, endX, endY, line
     width = abs(startX - endX) + lineWidth * 4
     height = abs(startY - endY) + lineWidth * 4
 
-    local framePosX = max(startX, endX) - lineWidth * 2 - width / 2
-    local framePosY = min(startY, endY) + lineWidth * 2 + height / 2
+    local framePosX = math_max(startX, endX) - lineWidth * 2 - width / 2
+    local framePosY = math_min(startY, endY) + lineWidth * 2 + height / 2
 
     lineFrame:SetHeight(height);
     lineFrame:SetWidth(width);

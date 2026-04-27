@@ -52,6 +52,9 @@ local GetItemInfo = QuestieCompat.GetItemInfo
 
 local LSM30 = LibStub("LibSharedMedia-3.0")
 
+local math_max = math.max
+local strfind = string.find
+
 -- Local Vars
 local trackerLineWidth = 0
 local trackerMarginRight = 30
@@ -576,7 +579,7 @@ local function _UpdateLineWidth(line, objectiveMarginLeft)
 
     -- If the line width is less than the minimum Tracker width then don't wrap text
     if unboundedWidth + objectiveMarginLeft < contentMaxWidth then
-        trackerLineWidth = math.max(trackerLineWidth, unboundedWidth + objectiveMarginLeft)
+        trackerLineWidth = math_max(trackerLineWidth, unboundedWidth + objectiveMarginLeft)
     else
          -- We use the fontSize as reliable way to determine the line height. GetStringHeight can be inconsistent
         local _, fontSize = line.label:GetFont()
@@ -584,7 +587,7 @@ local function _UpdateLineWidth(line, objectiveMarginLeft)
         line.label:SetHeight(lineHeight)
         line:SetHeight(line.label:GetHeight() + (Questie.db.profile.trackerQuestPadding + 2))
 
-        trackerLineWidth = math.max(trackerLineWidth, line.label:GetWrappedWidth() + objectiveMarginLeft)
+        trackerLineWidth = math_max(trackerLineWidth, line.label:GetWrappedWidth() + objectiveMarginLeft)
     end
 end
 
@@ -720,7 +723,7 @@ function QuestieTracker:Update()
                     line:SetWidth(line.label:GetWidth())
 
                     -- Compare largest text Label in the tracker with current Label, then save widest width
-                    trackerLineWidth = math.max(trackerLineWidth, line.label:GetUnboundedStringWidth() + trackerMarginLeft)
+                    trackerLineWidth = math_max(trackerLineWidth, line.label:GetUnboundedStringWidth() + trackerMarginLeft)
 
                     -- Setup Min/Max Button
                     line.expandZone:ClearAllPoints()
@@ -828,7 +831,7 @@ function QuestieTracker:Update()
                     line:SetWidth(line.label:GetWidth() + questMarginLeft)
 
                     -- Compare largest text Label in the tracker with current Label, then save widest width
-                    trackerLineWidth = math.max(trackerLineWidth, line.label:GetUnboundedStringWidth() + questMarginLeft)
+                    trackerLineWidth = math_max(trackerLineWidth, line.label:GetUnboundedStringWidth() + questMarginLeft)
 
                     -- Adds 4 pixels between Quest Title and first Objective
                     line:SetHeight(line.label:GetHeight() + 4)
@@ -967,7 +970,7 @@ function QuestieTracker:Update()
                                 altButton.line:SetWidth(altButton.line.label:GetWidth() + questMarginLeft + questItemButtonSize)
 
                                 -- Re-compare largest text Label in the tracker with Secondary Button/Quest and current Label, then save widest width
-                                trackerLineWidth = math.max(trackerLineWidth, altButton.line.label:GetUnboundedStringWidth() + questMarginLeft + questItemButtonSize)
+                                trackerLineWidth = math_max(trackerLineWidth, altButton.line.label:GetUnboundedStringWidth() + questMarginLeft + questItemButtonSize)
                             elseif altButton:GetAlpha() == 0 then
                                 -- Set Quest Title linePool
                                 altButton.line.label:ClearAllPoints()
@@ -981,7 +984,7 @@ function QuestieTracker:Update()
                                 altButton.line:SetWidth(altButton.line.label:GetWidth() + questMarginLeft)
 
                                 -- Re-compare largest text Label in the tracker with current Label, then save widest width
-                                trackerLineWidth = math.max(trackerLineWidth, altButton.line.label:GetUnboundedStringWidth() + questMarginLeft)
+                                trackerLineWidth = math_max(trackerLineWidth, altButton.line.label:GetUnboundedStringWidth() + questMarginLeft)
                             end
 
                             -- Attach button to Quest Title linePool
@@ -1076,24 +1079,24 @@ function QuestieTracker:Update()
                             -- Reserve enough width for "MM Minutes SS Seconds" so timer text
                             -- does not intermittently truncate when seconds change.
                             local timerSampleText = SecondsToTime(3599, false, true)
-                            if not string.find(timerSampleText, "Seconds?") then
+                            if not strfind(timerSampleText, "Seconds?") then
                                 timerSampleText = timerSampleText .. " 0 Seconds"
                             end
                             line.label:SetText(Questie:Colorize(timerSampleText, "lightBlue"))
                             local timerReserveWidth = line.label:GetUnboundedStringWidth()
                             line.timerReserveWidth = timerReserveWidth + 2
                             line.label:SetText(timerLabelText or "")
-                            local timerLabelWidth = math.max(line.label:GetUnboundedStringWidth(), timerReserveWidth)
+                            local timerLabelWidth = math_max(line.label:GetUnboundedStringWidth(), timerReserveWidth)
 
                             -- Check and measure Timer text width and update tracker width
                             QuestieTracker:UpdateWidth(timerLabelWidth + lineLabelWidthQBC)
 
                             -- Set Timer Label and Line widths. We add 40 pixels, because timers start with "15 Minutes" and will then be "14 Minutes 59 Seconds" right after.
-                            line.label:SetWidth(math.max(trackerBaseFrame:GetWidth() - lineLabelBaseFrameQBC + 40, timerReserveWidth + 2))
+                            line.label:SetWidth(math_max(trackerBaseFrame:GetWidth() - lineLabelBaseFrameQBC + 40, timerReserveWidth + 2))
                             line:SetWidth(line.label:GetWidth() + lineWidthQBC)
 
                             -- Compare largest text Label in the tracker with current Label, then save widest width
-                            trackerLineWidth = math.max(trackerLineWidth, timerLabelWidth + lineWidthQBC)
+                            trackerLineWidth = math_max(trackerLineWidth, timerLabelWidth + lineWidthQBC)
 
                             line:SetHeight(line.label:GetHeight() + 1)
                             
@@ -1231,7 +1234,7 @@ function QuestieTracker:Update()
                                 line:SetWidth(line.label:GetWidth() + lineWidthQBC)
 
                                 -- Compare largest text Label in the tracker with current Label, then save widest width
-                                trackerLineWidth = math.max(trackerLineWidth, line.label:GetUnboundedStringWidth() + lineWidthQBC)
+                                trackerLineWidth = math_max(trackerLineWidth, line.label:GetUnboundedStringWidth() + lineWidthQBC)
                             end
 
                             -- Set Objective state
@@ -1334,7 +1337,7 @@ function QuestieTracker:Update()
                         line:SetWidth(line.label:GetWidth())
 
                         -- Compare largest text Label in the tracker with current Label, then save widest width
-                        trackerLineWidth = math.max(trackerLineWidth, line.label:GetUnboundedStringWidth() + trackerMarginLeft)
+                        trackerLineWidth = math_max(trackerLineWidth, line.label:GetUnboundedStringWidth() + trackerMarginLeft)
 
                         -- Setup Min/Max Button
                         line.expandZone:ClearAllPoints()
@@ -1409,7 +1412,7 @@ function QuestieTracker:Update()
                         line:SetWidth(line.label:GetWidth() + questMarginLeft)
 
                         -- Compare largest text Label in the tracker with current Label, then save widest width
-                        trackerLineWidth = math.max(trackerLineWidth, line.label:GetUnboundedStringWidth() + questMarginLeft)
+                        trackerLineWidth = math_max(trackerLineWidth, line.label:GetUnboundedStringWidth() + questMarginLeft)
 
                         -- Adds 4 pixels between Achievement Title and first Objective
                         line:SetHeight(line.label:GetHeight() + 4)
@@ -1495,7 +1498,7 @@ function QuestieTracker:Update()
 
                                     -- Set Objectives with more than one Objective number criteria
                                     if not (completed or quantityNeeded == 1 or quantityProgress == quantityNeeded) then
-                                        if string.find(quantityString, "|") then
+                                        if strfind(quantityString, "|") then
                                             quantityString = quantityString:gsub("/%s?", "/")
                                         else
                                             quantityString = quantityProgress .. "/" .. quantityNeeded
@@ -1525,7 +1528,7 @@ function QuestieTracker:Update()
                                             line:SetWidth(line.label:GetWidth() + objectiveMarginLeft)
 
                                             -- Compare largest text Label in the tracker with current Label, then save widest width
-                                            trackerLineWidth = math.max(trackerLineWidth, line.label:GetUnboundedStringWidth() + objectiveMarginLeft)
+                                            trackerLineWidth = math_max(trackerLineWidth, line.label:GetUnboundedStringWidth() + objectiveMarginLeft)
 
                                             -- Adds 1 pixel between split Objectives
                                             line:SetHeight(line.label:GetHeight() + 1)
@@ -1568,7 +1571,7 @@ function QuestieTracker:Update()
                                             line:SetWidth(line.label:GetWidth() + objectiveMarginLeft)
 
                                             -- Compare largest text Label in the tracker with current Label, then save widest width
-                                            trackerLineWidth = math.max(trackerLineWidth, line.label:GetUnboundedStringWidth() + objectiveMarginLeft)
+                                            trackerLineWidth = math_max(trackerLineWidth, line.label:GetUnboundedStringWidth() + objectiveMarginLeft)
                                         end
 
                                         -- Set Objectives with a single Objective number criteria
@@ -1597,7 +1600,7 @@ function QuestieTracker:Update()
                                         line:SetWidth(line.label:GetWidth() + objectiveMarginLeft)
 
                                         -- Compare largest text Label in the tracker with current Label, then save widest width
-                                        trackerLineWidth = math.max(trackerLineWidth, line.label:GetUnboundedStringWidth() + objectiveMarginLeft)
+                                        trackerLineWidth = math_max(trackerLineWidth, line.label:GetUnboundedStringWidth() + objectiveMarginLeft)
                                     end
 
                                     -- Adds 1 pixel between multiple Objectives
@@ -1743,7 +1746,7 @@ function QuestieTracker:UpdateFormatting()
             line.label:SetWidth(trackerBaseFrame:GetWidth() - questMarginLeft - trackerMarginRight)
             line:SetWidth(line.label:GetWidth() + questMarginLeft)
 
-            trackerLineWidth = math.max(trackerLineWidth, line.label:GetUnboundedStringWidth() + questMarginLeft)
+            trackerLineWidth = math_max(trackerLineWidth, line.label:GetUnboundedStringWidth() + questMarginLeft)
         end)
         QuestieTracker:UpdateHeight()
         TrackerQuestFrame:Update()

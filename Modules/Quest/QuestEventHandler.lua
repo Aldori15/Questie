@@ -41,6 +41,7 @@ local GetQuestLogTitle = QuestieCompat.GetQuestLogTitle
 local GetItemInfo = QuestieCompat.GetItemInfo
 
 local tableRemove = table.remove
+local strfind = string.find
 
 local QUEST_LOG_STATES = {
     QUEST_ACCEPTED = "QUEST_ACCEPTED",
@@ -148,7 +149,7 @@ function QuestEventHandler:RegisterEvents()
 
                 for i = 1, STATICPOPUP_NUMDIALOGS do
                     frame = _G["StaticPopup" .. i]
-                    if (frame:IsShown()) and ((frame.text.text_arg1 == text_arg1) or (string.find(frame.text:GetText(), text_arg1))) then
+                    if (frame:IsShown()) and ((frame.text.text_arg1 == text_arg1) or (strfind(frame.text:GetText(), text_arg1))) then
                         text = _G[frame:GetName() .. "Text"]
                         break
                     end

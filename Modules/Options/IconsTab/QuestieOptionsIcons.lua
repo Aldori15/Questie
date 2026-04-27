@@ -24,6 +24,8 @@ local AvailableQuests = QuestieLoader:ImportModule("AvailableQuests");
 --- COMPATIBILITY ---
 local C_Timer = QuestieCompat.C_Timer
 
+local math_max = math.max
+
 QuestieOptions.tabs.icons = {...}
 local optionsDefaults = QuestieOptionsDefaults:Load()
 
@@ -34,7 +36,7 @@ local _GetIconThemesSort
 local _availableRefreshTicker
 
 local function _FlushDrawQueue()
-    local queueSize = math.max(#QuestieMap._mapDrawQueue, #QuestieMap._minimapDrawQueue)
+    local queueSize = math_max(#QuestieMap._mapDrawQueue, #QuestieMap._minimapDrawQueue)
     local iterations = 1
 
     if queueSize > 800 then

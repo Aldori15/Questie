@@ -75,6 +75,8 @@ local C_Timer = QuestieCompat.C_Timer
 
 local tinsert = table.insert
 local type = type
+local strlower = string.lower
+local strfind = string.find
 local _WithinDates, _LoadDarkmoonFaire, _GetDarkmoonFaireLocation,
     _GetDarkmoonFaireLocationForDate, _GetDarkmoonFaireEventName,
     _IsEventQuestVisible, _GetCalendarEventName, _GetActiveCalendarEvents,
@@ -171,9 +173,9 @@ _GetCalendarEventName = function(name, texture)
     end
 
     if type(texture) == "string" then
-        local normalizedTexture = string.lower(texture)
+        local normalizedTexture = strlower(texture)
         for keyword, eventName in pairs(CALENDAR_EVENT_TEXTURE_ALIASES) do
-            if string.find(normalizedTexture, keyword, 1, true) then
+            if strfind(normalizedTexture, keyword, 1, true) then
                 return eventName
             end
         end

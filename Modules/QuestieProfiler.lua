@@ -3,6 +3,8 @@ local QuestieProfiler = QuestieLoader:CreateModule("Profiler")
 --- COMPATIBILITY ---
 local C_Timer = QuestieCompat.C_Timer
 local BackdropTemplateMixin = not QuestieCompat.Is335 and BackdropTemplateMixin
+local strlower = string.lower
+local strlen = string.len
 
 QuestieProfiler.hooks = {}
 QuestieProfiler.alreadyHooked = {}
@@ -59,7 +61,7 @@ function QuestieProfiler:HookFunction(key, val, table, name)
         end
         return unpack(ret)
     end
-    QuestieProfiler.lowerCaseLookup[lookupKey] = string.lower(lookupKey)
+    QuestieProfiler.lowerCaseLookup[lookupKey] = strlower(lookupKey)
     tinsert(QuestieProfiler.hooks, hook)
     table[key] = hook.override
     QuestieProfiler.hookedFunctionCount = QuestieProfiler.hookedFunctionCount + 1
@@ -76,9 +78,9 @@ function QuestieProfiler:HookTable(table, name)
                 else
                     lookupKey = name .. "." .. tostring(key)
                 end
-                if string.len(lookupKey) < string.len(QuestieProfiler.shortestName[val]) then
+                if strlen(lookupKey) < strlen(QuestieProfiler.shortestName[val]) then
                     QuestieProfiler.shortestName[val] = lookupKey
-                    QuestieProfiler.lowerCaseLookup[lookupKey] = string.lower(lookupKey)
+                    QuestieProfiler.lowerCaseLookup[lookupKey] = strlower(lookupKey)
                     --print("Shorter name: " .. lookupKey)
                 end
             end
@@ -274,7 +276,7 @@ function QuestieProfiler:CreateUI()
                 local calls = callCount[ncall] + QuestieProfiler.hookCallCount[call]
                 timeCount[ncall] = time
                 callCount[ncall] = calls
-                QuestieProfiler.lowerCaseLookup[ncall] = string.lower(ncall)
+                QuestieProfiler.lowerCaseLookup[ncall] = strlower(ncall)
                 if time > highestMS then
                     highestMS = time
                 end
@@ -314,8 +316,8 @@ function QuestieProfiler:CreateUI()
             --print("Highest calls: " .. QuestieProfiler.highestCalls)
             local callstr = QuestieProfiler.shortestName[QuestieProfiler.lookupToHook[call]] or call
 
-            if (string.len(callstr) > 64) then
-                callstr = "..." .. string.sub(callstr, string.len(callstr) - 64)
+            if (strlen(callstr) > 64) then
+                callstr = "..." .. string.sub(callstr, strlen(callstr) - 64)
             end
 
             line[1]:SetText(color .. callstr)
@@ -456,15 +458,15 @@ function QuestieProfiler:CreateUI()
     end)
     local function clearFocus()
         search:ClearFocus()
-        if string.len(search:GetText()) == 0 then
+        if strlen(search:GetText()) == 0 then
             search:SetText("\124cFF888888Filter...")
         end
     end
     search:SetAutoFocus(false)
     search:SetScript("OnEscapePressed", clearFocus)
     search:HookScript(QuestieCompat.Is335 and "OnTextChanged" or "OnKeyUp", function(self, userInput)
-        local txt = string.lower(search:GetText())
-        if string.len(txt) == 0 or userInput == false then
+        local txt = strlower(search:GetText())
+        if strlen(txt) == 0 or userInput == false then
             txt = nil
         end
         QuestieProfiler.searchFilter = txt

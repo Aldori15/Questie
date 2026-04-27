@@ -12,7 +12,8 @@ local _G = getfenv(0)
 local tonumber, type, string, table = _G.tonumber, _G.type, _G.string, _G.table
 local tinsert = table.insert
 local strsub, strlen, strmatch, gsub = _G.strsub, _G.strlen, _G.strmatch, _G.gsub
-local max, match = _G.max, _G.match
+local math_max, math_min = math.max, math.min
+local match = _G.match
 local securecall, issecure = _G.securecall, _G.issecure
 local wipe = table.wipe
 -- WoW
@@ -1316,7 +1317,7 @@ function lib:UIDropDownMenu_AddButton(info, level)
 
     button.minWidth = info.minWidth;
 
-    width = max(lib:UIDropDownMenu_GetButtonWidth(button), info.minWidth or 0);
+    width = math_max(lib:UIDropDownMenu_GetButtonWidth(button), info.minWidth or 0);
     --Set maximum button width
     if (width > (listFrame and listFrame.maxWidth or 0)) then
         listFrame.maxWidth = width;
@@ -1373,7 +1374,7 @@ end
 function lib:UIDropDownMenu_GetButtonWidth(button)
     local minWidth = button.minWidth or 0;
     if button.customFrame and button.customFrame:IsShown() then
-        return math.max(minWidth, button.customFrame:GetPreferredEntryWidth());
+        return math_max(minWidth, button.customFrame:GetPreferredEntryWidth());
     end
 
     if not button:IsShown() then
@@ -1412,7 +1413,7 @@ function lib:UIDropDownMenu_GetButtonWidth(button)
         width = width + button.padding;
     end
 
-    return math.max(minWidth, width);
+    return math_max(minWidth, width);
 end
 
 function lib:UIDropDownMenu_Refresh(frame, useValue, dropdownLevel)

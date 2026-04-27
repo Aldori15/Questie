@@ -1,4 +1,5 @@
 local band = bit.band
+local strlower = string.lower
 
 -------------------------
 --Import modules.
@@ -94,7 +95,7 @@ function Questie:Colorize(str, color)
 end
 
 function Questie:GetClassColor(class)
-    class = string.lower(class);
+    class = strlower(class);
 
     if class == 'druid' then
         return '|cFFFF7D0A';

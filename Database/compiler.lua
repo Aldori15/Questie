@@ -14,7 +14,7 @@ local l10n = QuestieLoader:ImportModule("l10n")
 local WOW_PROJECT_ID = QuestieCompat.WOW_PROJECT_ID
 
 local type = type
-local abs, min, floor = math.abs, math.min, math.floor
+local abs, math_min, floor = math.abs, math.min, math.floor
 local lshift = bit.lshift
 local bitband = bit.band
 local tableSort = table.sort
@@ -942,7 +942,7 @@ function QuestieDBCompiler:DecodePointerMap(stream)
     local ret = {}
     local i = 0
     while i < count do
-        for _ = 1, min(768, count-i) do -- steps per yield
+        for _ = 1, math_min(768, count-i) do -- steps per yield
             ret[stream:ReadInt24()] = stream:ReadInt24()
         end
         i = i + 768
@@ -997,7 +997,7 @@ function QuestieDBCompiler:CompileTableCoroutine(tbl, types, order, lookup, data
 
         local ticks = entriesPerTick or TICKS_PER_YIELD
         if Questie.db.profile.debugEnabled then
-            ticks = min(ticks, TICKS_PER_YIELD_DEBUG)
+            ticks = math_min(ticks, TICKS_PER_YIELD_DEBUG)
         end
 
         for _ = 0, ticks do

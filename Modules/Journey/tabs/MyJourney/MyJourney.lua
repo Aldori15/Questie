@@ -17,6 +17,7 @@ local CALENDAR_FULLDATE_MONTH_NAMES = QuestieCompat.CALENDAR_FULLDATE_MONTH_NAME
 
 local AceGUI = LibStub("AceGUI-3.0");
 local journeyTreeFrame
+local math_max = math.max
 
 -- manage the journey tree
 function _QuestieJourney.myJourney:ManageTree(container)
@@ -145,12 +146,12 @@ function _QuestieJourney:GetMonthAndYearOfLatestEntry()
     if not next(years) then
         return nil, nil
     end
-    local maxYear = math.max(unpack(years))
+    local maxYear = math_max(unpack(years))
 
     for month, _ in pairs(journeyEntries[maxYear]) do
         table.insert(months, month)
     end
-    local maxMonth = math.max(unpack(months))
+    local maxMonth = math_max(unpack(months))
 
     return maxMonth, maxYear
 end

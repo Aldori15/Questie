@@ -137,8 +137,9 @@ end
 local WORLD_MAP_ID = 947
 
 -- upvalue lua api
-local cos, sin, max = math.cos, math.sin, math.max
+local cos, sin, math_max = math.cos, math.sin, math.max
 local type, pairs = type, pairs
+local strfind = string.find
 
 -- upvalue wow api
 local GetPlayerFacing = GetPlayerFacing
@@ -270,7 +271,7 @@ local function drawMinimapPin(pin, data)
     if isRound then
         dist = (diffX*diffX + diffY*diffY) / 0.9^2
     else
-        dist = max(diffX*diffX, diffY*diffY) / 0.9^2
+        dist = math_max(diffX*diffX, diffY*diffY) / 0.9^2
     end
 
     -- if distance > 1, then adapt node position to slide on the border
@@ -877,7 +878,7 @@ local function OnEventHandler(frame, event, ...)
         UpdateWorldMap()
     elseif event == "WORLD_MAP_UPDATE" then
         UpdateWorldMap()
-    elseif string.find(event, "ZONE_CHANGED") then
+    elseif strfind(event, "ZONE_CHANGED") then
         UpdateMinimap()
         UpdateWorldMap()
     end

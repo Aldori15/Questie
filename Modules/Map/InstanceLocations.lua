@@ -19,6 +19,7 @@ local l10n = QuestieLoader:ImportModule("l10n")
 
 --- COMPATIBILITY ---
 local C_Map = QuestieCompat.C_Map
+local strlower = string.lower
 
 local HBD_PINS_WORLDMAP_SHOW_WORLD = 3
 

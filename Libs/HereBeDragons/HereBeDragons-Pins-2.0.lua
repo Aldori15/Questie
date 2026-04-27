@@ -34,7 +34,7 @@ pins.Minimap = pins.Minimap or Minimap
 local WORLD_MAP_ID = 947
 
 -- upvalue lua api
-local cos, sin, max = math.cos, math.sin, math.max
+local cos, sin, math_max = math.cos, math.sin, math.max
 local type, pairs = type, pairs
 
 -- upvalue wow api
@@ -149,7 +149,7 @@ local function drawMinimapPin(pin, data)
     if isRound then
         dist = (diffX*diffX + diffY*diffY) / 0.9^2
     else
-        dist = max(diffX*diffX, diffY*diffY) / 0.9^2
+        dist = math_max(diffX*diffX, diffY*diffY) / 0.9^2
     end
 
     -- if distance > 1, then adapt node position to slide on the border

@@ -26,6 +26,7 @@ local stringSub = string.sub
 local stringGsub = string.gsub
 local strim = string.trim
 local smatch = string.match
+local strfind = string.find
 local tonumber = tonumber
 local getCurrentTimestamp = GetServerTime or time
 
@@ -793,7 +794,7 @@ function QuestieLib:TextWrap(line, prefix, combineTrailing, desiredWidth)
                 local lastLine = string.sub(useLine, endIndex - 2, strlen(useLine))
 
                 --Does the line not contain any space we combine it into the previous line
-                if (not string.find(lastLine, " ")) then
+                if (not strfind(lastLine, " ")) then
                     newLine = string.sub(useLine, startIndex, strlen(useLine))
                     --print("NL1", newLine)
                     table.insert(lines, prefix .. newLine)

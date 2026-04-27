@@ -26,6 +26,7 @@ local GetClassColor = QuestieCompat.GetClassColor
 local C_Map = QuestieCompat.C_Map
 
 local tinsert = table.insert
+local strfind = string.find
 local zoneNameToAreaIds
 QuestieTooltips.lastGametooltip = ""
 QuestieTooltips.lastGametooltipCount = -1;
@@ -552,7 +553,7 @@ function QuestieTooltips:GetTooltip(key)
                 if objectivePlayerName == playerName and anotherPlayer then -- Add current player name to own objective
                     local _, classFilename = UnitClass("player");
                     local _, _, _, argbHex = GetClassColor(classFilename)
-                    local dropIndex = string.find(objectiveInfo.text, "  |cFF999999")
+                    local dropIndex = strfind(objectiveInfo.text, "  |cFF999999")
                     local playerString = " (|c" .. argbHex .. objectivePlayerName .. "|r" .. objectiveInfo.color .. ")|r"
                     if dropIndex then
                         objectiveInfo.text = objectiveInfo.text:sub(1,dropIndex-1)..playerString.." "..objectiveInfo.text:sub(dropIndex+1) -- Ensures drop data is shown after player name

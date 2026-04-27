@@ -102,6 +102,8 @@ local minimapShapes = {
 	["TRICORNER-BOTTOMRIGHT"] = {false, true, true, true},
 }
 
+local math_max, math_min = math.max, math.min
+
 local function updatePosition(button)
 	local angle = math.rad(button.db and button.db.minimapPos or button.minimapPos or 225)
 	local x, y, q = math.cos(angle), math.sin(angle), 1
@@ -113,8 +115,8 @@ local function updatePosition(button)
 		x, y = x*80, y*80
 	else
 		local diagRadius = 103.13708498985 --math.sqrt(2*(80)^2)-10
-		x = math.max(-80, math.min(x*diagRadius, 80))
-		y = math.max(-80, math.min(y*diagRadius, 80))
+		x = math_max(-80, math_min(x*diagRadius, 80))
+		y = math_max(-80, math_min(y*diagRadius, 80))
 	end
 	button:SetPoint("CENTER", Minimap, "CENTER", x, y)
 end

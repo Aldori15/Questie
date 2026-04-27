@@ -67,6 +67,10 @@ local ipairs = ipairs;
 local tremove = table.remove;
 local tunpack = unpack;
 
+local math_max = math.max;
+local math_min = math.min;
+local string = string;
+
 local function _IsSpawnVisible(spawn)
     return Phasing.IsSpawnVisible(spawn and spawn[3])
 end
@@ -401,7 +405,7 @@ function QuestieMap.ProcessQueue()
     end
 
     local scaleValue = QuestieMap.GetScaleValue()
-    local queueSize = math.max(#mapDrawQueue, #minimapDrawQueue)
+    local queueSize = math_max(#mapDrawQueue, #minimapDrawQueue)
     local maxPerTick = 24
 
     if queueSize > 600 then
@@ -412,7 +416,7 @@ function QuestieMap.ProcessQueue()
         maxPerTick = 48
     end
 
-    for _ = 1, math.min(maxPerTick, queueSize) do
+    for _ = 1, math_min(maxPerTick, queueSize) do
         local mapDrawCall = tremove(mapDrawQueue, 1);
         if mapDrawCall then
             local frame = mapDrawCall[2];
@@ -758,7 +762,7 @@ _MinimapIconFadeLogic = function(self)
                 local distance = QuestieLib:Euclid(QuestieMap.playerX, QuestieMap.playerY, x, y) / 10;
 
                 if (distance > profile.fadeLevel) then
-                    local fade = 1 - (math.min(10, (distance - profile.fadeLevel)) * normalizedValue);
+                    local fade = 1 - (math_min(10, (distance - profile.fadeLevel)) * normalizedValue);
                     self:SetFade(fade)
                 elseif (distance < profile.fadeOverPlayerDistance) and profile.fadeOverPlayer then
                     local fadeAmount = profile.fadeOverPlayerLevel + distance * (1 - profile.fadeOverPlayerLevel) / profile.fadeOverPlayerDistance

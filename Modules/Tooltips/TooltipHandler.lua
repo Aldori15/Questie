@@ -10,6 +10,8 @@ local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 --- COMPATIBILITY ---
 local UnitGUID = QuestieCompat.UnitGUID
 
+local strfind = string.find
+
 local lastGuid
 
 local function _AreQuestieTooltipsEnabled()
@@ -134,7 +136,7 @@ function _QuestieTooltips:AddObjectDataToTooltip(name)
                     -- Quest has objectives
                     for index, line in pairs (tooltipData) do
                         if index > 1 and (not alreadyAddedObjectiveLines[line]) then -- skip the first entry, it's the title
-                            local _, _, acquired, needed = string.find(line, "(%d+)/(%d+)")
+                            local _, _, acquired, needed = strfind(line, "(%d+)/(%d+)")
                             -- We need "tonumber", because acquired can contain parts of the color string
                             if acquired and tonumber(acquired) == tonumber(needed) then
                                 -- We don't want to show completed objectives on game objects

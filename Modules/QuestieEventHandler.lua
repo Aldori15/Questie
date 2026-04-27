@@ -49,6 +49,7 @@ local AvailableQuests = QuestieLoader:ImportModule("AvailableQuests")
 --- COMPATIBILITY ---
 local C_Timer = QuestieCompat.C_Timer
 local UnitInParty = QuestieCompat.UnitInParty
+local strfind = string.find
 
 local questAcceptedMessage = string.gsub(ERR_QUEST_ACCEPTED_S, "(%%s)", "(.+)")
 local questCompletedMessage = string.gsub(ERR_QUEST_COMPLETE_S, "(%%s)", "(.+)")
@@ -373,9 +374,9 @@ end
 ---@param message string The message value from the CHAT_MSG_SYSTEM event
 function _EventHandler:ChatMsgSystem(message)
     -- When a new quest is accepted or completed quest is turned in, update the LibDataBroker text with the appropriate message
-    if string.find(message, questCompletedMessage) == 1 or string.find(message, questAcceptedMessage) == 1 then
+    if strfind(message, questCompletedMessage) == 1 or strfind(message, questAcceptedMessage) == 1 then
         MinimapIcon:UpdateText(message)
-    elseif string.find(message, FACTION_STANDING_CHANGED_PATTERN) then -- When you discover a new faction or increase standing eg. Neutral -> Friendly
+    elseif strfind(message, FACTION_STANDING_CHANGED_PATTERN) then -- When you discover a new faction or increase standing eg. Neutral -> Friendly
         QuestieReputation:Update()
     end
 end

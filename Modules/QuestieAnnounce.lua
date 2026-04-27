@@ -17,6 +17,8 @@ local IsInRaid = QuestieCompat.IsInRaid
 local LE_PARTY_CATEGORY_INSTANCE = QuestieCompat.LE_PARTY_CATEGORY_INSTANCE
 local C_Timer = QuestieCompat.C_Timer
 
+local strfind = string.find
+
 local itemCache = {} -- cache data since this happens on item looted it could happen a lot with auto loot
 
 local alreadySentBandaid = {} -- TODO: rewrite the entire thing its a lost cause
@@ -34,7 +36,7 @@ local function SafeAddMessageEventFilter(event, filter)
     end)
     if not success then
         -- If ChatFrameUtil isn't ready yet, retry after a short delay
-        if err and string.find(err, "CreateSecureFiltersArray") then
+        if err and strfind(err, "CreateSecureFiltersArray") then
             C_Timer.After(0.1, function()
                 SafeAddMessageEventFilter(event, filter)
             end)
@@ -136,19 +138,19 @@ local function _ClearObjectiveStateForQuest(questId)
     local prefix = tostring(questId) .. "\001"
 
     for key in pairs(_has_seen_incomplete) do
-        if string.find(key, prefix, 1, true) == 1 then
+        if strfind(key, prefix, 1, true) == 1 then
             _has_seen_incomplete[key] = nil
         end
     end
 
     for key in pairs(_has_sent_announce) do
-        if string.find(key, prefix, 1, true) == 1 then
+        if strfind(key, prefix, 1, true) == 1 then
             _has_sent_announce[key] = nil
         end
     end
 
     for key in pairs(_announced_progress) do
-        if string.find(key, prefix, 1, true) == 1 then
+        if strfind(key, prefix, 1, true) == 1 then
             _announced_progress[key] = nil
         end
     end

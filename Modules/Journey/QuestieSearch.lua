@@ -4,6 +4,10 @@ local QuestieSearch = QuestieLoader:CreateModule("QuestieSearch");
 ---@type QuestieDB
 local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 
+--- COMPATIBILITY ---
+local strlower = string.lower
+local strfind = string.find
+
 QuestieSearch.types = {"npc", "object", "item", "quest"}
 
 -- Save search results, so the next search has a smaller set to search
@@ -111,11 +115,11 @@ function QuestieSearch:Search(rawQuery, searchType, queryType)
 
     local lastResults = QuestieSearch.LastResult[searchType]
     if isTextSearch then
-        local queryToFind = string.lower(sanitizedQuery)
+        local queryToFind = strlower(sanitizedQuery)
         for id, _ in pairs(databaseKeys) do
             local name = databaseQueryHandle(id, "name") -- Some entries don't have a 'name' because of the way we load corrections
             if strictSearch then
-                if name and (string.lower(name) == queryToFind) then -- strict search
+                if name and (strlower(name) == queryToFind) then -- strict search
                     -- We have a search result or a favourite to display
                     searchCount = searchCount + 1;
                     QuestieSearch.LastResult[searchType][id] = true;
@@ -124,7 +128,7 @@ function QuestieSearch:Search(rawQuery, searchType, queryType)
                     QuestieSearch.LastResult[searchType][id] = nil;
                 end
             else
-                if name and string.find(string.lower(name), queryToFind) then -- fuzzy search
+                if name and strfind(strlower(name), queryToFind) then -- fuzzy search
                     -- We have a search result or a favourite to display
                     searchCount = searchCount + 1;
                     QuestieSearch.LastResult[searchType][id] = true;
@@ -146,7 +150,7 @@ function QuestieSearch:Search(rawQuery, searchType, queryType)
                     lastResults[id] = nil;
                 end
             else
-                if string.find(tostring(id), sanitizedQuery) then -- fuzzy search
+                if strfind(tostring(id), sanitizedQuery) then -- fuzzy search
                     -- We have a search result or a favourite to display
                     searchCount = searchCount + 1;
                     lastResults[id] = true;

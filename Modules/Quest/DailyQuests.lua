@@ -18,15 +18,16 @@ local QuestiePlayer = QuestieLoader:ImportModule("QuestiePlayer");
 local nhcDailyIds, hcDailyIds, cookingDailyIds, fishingDailyIds, pvpDailyIds
 
 local lastCheck
+local strfind = string.find
 
 ---@param message string
 ---@return nil
 function DailyQuests:FilterDailies(message, _, _)
     if message and Questie.db.profile.showRepeatableQuests and QuestiePlayer.GetPlayerLevel() == 70 then
         -- If the REPUTABLE message is empty, i.e contains "::::::::::" we don't count it as a check.
-        if (not lastCheck) and not string.find(message, "::::::::::") then
+        if (not lastCheck) and not strfind(message, "::::::::::") then
             lastCheck = GetTime();
-        elseif lastCheck and GetTime() - lastCheck < 10 and not string.find(message, "::::::::::") then
+        elseif lastCheck and GetTime() - lastCheck < 10 and not strfind(message, "::::::::::") then
             lastCheck = GetTime();
             return;
         end

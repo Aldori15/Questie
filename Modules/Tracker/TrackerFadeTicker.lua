@@ -10,6 +10,7 @@ local TrackerLinePool = QuestieLoader:ImportModule("TrackerLinePool")
 
 --- COMPATIBILITY ---
 local C_Timer = QuestieCompat.C_Timer
+local math_min = math.min
 
 local fadeTicker
 local fadeTickerDirection
@@ -35,9 +36,9 @@ function TrackerFadeTicker.Start()
                     -- Un-fade the background and border(if enabled)
                     if (Questie.db.char.isTrackerExpanded and Questie.db.profile.trackerBackdropEnabled and Questie.db.profile.trackerBackdropFader) then
                         local c = Questie.db.profile.trackerBackdropColor
-                        trackerBaseFrame:SetBackdropColor(c.r, c.g, c.b, math.min(c.a, fadeTickerValue * 3.3))
+                        trackerBaseFrame:SetBackdropColor(c.r, c.g, c.b, math_min(c.a, fadeTickerValue * 3.3))
                         if Questie.db.profile.trackerBorderEnabled then
-                            trackerBaseFrame:SetBackdropBorderColor(1, 1, 1, math.min(c.a, fadeTickerValue * 3.3))
+                            trackerBaseFrame:SetBackdropBorderColor(1, 1, 1, math_min(c.a, fadeTickerValue * 3.3))
                         end
                     end
 
@@ -78,9 +79,9 @@ function TrackerFadeTicker.Start()
                     -- Fade the background and border(if enabled)
                     if (Questie.db.char.isTrackerExpanded and Questie.db.profile.trackerBackdropEnabled and Questie.db.profile.trackerBackdropFader) then
                         local c = Questie.db.profile.trackerBackdropColor
-                        trackerBaseFrame:SetBackdropColor(c.r, c.g, c.b, math.min(c.a, fadeTickerValue * 3.3))
+                        trackerBaseFrame:SetBackdropColor(c.r, c.g, c.b, math_min(c.a, fadeTickerValue * 3.3))
                         if Questie.db.profile.trackerBorderEnabled then
-                            trackerBaseFrame:SetBackdropBorderColor(1, 1, 1, math.min(c.a, fadeTickerValue * 3.3))
+                            trackerBaseFrame:SetBackdropBorderColor(1, 1, 1, math_min(c.a, fadeTickerValue * 3.3))
                         end
                     end
 

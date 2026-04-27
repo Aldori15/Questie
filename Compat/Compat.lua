@@ -139,6 +139,9 @@ QuestieCompat.ChrClasses = {
 local activeTimers = {}
 local inactiveTimers = {}
 
+local math_max = math.max
+local strfind = string.find
+
 local function timerCancel(id)
     local timer = activeTimers[id]
     if not timer then return end
@@ -2343,7 +2346,7 @@ local function applyObjectiveProgressToQuestieCache(objectiveName, numFulfilled)
                     local oldFulfilled = tonumber(objective.numFulfilled) or 0
                     if numFulfilled > oldFulfilled then
                         objective.numFulfilled = numFulfilled
-                        objective.raw_numFulfilled = math.max(tonumber(objective.raw_numFulfilled) or 0, numFulfilled)
+                        objective.raw_numFulfilled = math_max(tonumber(objective.raw_numFulfilled) or 0, numFulfilled)
                         if objective.numRequired then
                             local isFinished = numFulfilled >= objective.numRequired
                             objective.finished = isFinished
@@ -2387,7 +2390,7 @@ QuestieCompat.C_QuestLog = {
                             -- Never let cached fallback reduce an already newer value.
                             local questLogFulfilled = tonumber(numFulfilled)
                             if questLogFulfilled then
-                                numFulfilled = math.max(questLogFulfilled, fulfilled)
+                                numFulfilled = math_max(questLogFulfilled, fulfilled)
                                 if questLogFulfilled >= fulfilled then
                                     questObjectivesCache[objectiveName] = nil
                                 end
@@ -3400,7 +3403,7 @@ function QuestieCompat.UiInfoMessage(event, ...)
         MinimapIcon:UpdateText(message)
     else
         for _, pattern in pairs(chatMessagePattern.questInfo) do
-            if string.find(message, pattern) then
+            if strfind(message, pattern) then
                 MinimapIcon:UpdateText(message)
                 break
             end
@@ -3419,7 +3422,7 @@ local playerName = UnitName("player")
 local emptyName = ""
 function QuestieCompat.ChatMessageLoot(message)
     for _, pattern in pairs(chatMessagePattern.playerLoot) do
-        if string.find(message, pattern) then
+        if strfind(message, pattern) then
             return playerName
         end
     end

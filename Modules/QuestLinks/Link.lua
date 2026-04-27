@@ -22,6 +22,7 @@ local ZoneDB = QuestieLoader:ImportModule("ZoneDB")
 local GetQuestLink = QuestieCompat.GetQuestLink
 local CALENDAR_WEEKDAY_NAMES = QuestieCompat.CALENDAR_WEEKDAY_NAMES
 local CALENDAR_FULLDATE_MONTH_NAMES = QuestieCompat.CALENDAR_FULLDATE_MONTH_NAMES
+local strfind = string.find
 
 QuestieLink.lastItemRefTooltip = ""
 local activeTooltip = ItemRefTooltip
@@ -146,7 +147,7 @@ end
 _ExtractQuestieLink = function(...)
     for i = 1, select("#", ...) do
         local value = select(i, ...)
-        if type(value) == "string" and string.find(value, "questie:%d+") then
+        if type(value) == "string" and strfind(value, "questie:%d+") then
             return value
         end
     end

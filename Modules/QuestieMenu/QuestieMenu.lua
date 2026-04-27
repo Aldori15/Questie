@@ -38,6 +38,8 @@ local C_Timer = QuestieCompat.C_Timer
 local LibDropDown = QuestieCompat.LibUIDropDownMenu or LibStub:GetLibrary("LibUIDropDownMenuQuestie-4.0")
 
 local tinsert = tinsert
+local strlower = string.lower
+local math_max = math.max
 
 local professionKeys = QuestieProfessions.professionKeys
 local _instanceIconAtlas = QuestieLib.AddonPath .. "Icons\\instance_icons.blp"
@@ -88,7 +90,7 @@ local _availableRefreshTicker
 local function _FlushDrawQueue()
     -- Drain part of the queue immediately so freshly enabled townsfolk icons
     -- appear sooner instead of waiting only for the periodic queue ticker.
-    local queueSize = math.max(#QuestieMap._mapDrawQueue, #QuestieMap._minimapDrawQueue)
+    local queueSize = math_max(#QuestieMap._mapDrawQueue, #QuestieMap._minimapDrawQueue)
     local iterations = 1
 
     if queueSize > 800 then
