@@ -1958,7 +1958,16 @@ QuestieDB.classKeys = {
 }
 
 QuestieDB.specialFlags = {
+    NONE = 0,
     REPEATABLE = 1,
+    EXPLORATION_OR_EVENT = 2,
+    AUTO_ACCEPT = 4,
+    DUNGEON_FINDER_QUEST = 8,
+    MONTHLY = 16,
+    SPELL_CAST = 32,
+    NO_REP_SPILLOVER = 64,
+    CAN_FAIL_IN_ANY_STATE = 128,
+    NO_LOREMASTER_COUNT = 256,
 }
 
 _QuestieDB.questCache = {}; -- stores quest objects so they dont need to be regenerated
