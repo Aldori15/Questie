@@ -11,6 +11,7 @@ if QuestieCompat.WOW_PROJECT_ID < QuestieCompat.WOW_PROJECT_WRATH_CLASSIC then r
 QuestieCompat.RegisterCorrection("questData", function()
     local questKeys = QuestieDB.questKeys
     local raceIDs = QuestieDB.raceKeys
+    local classIDs = QuestieDB.classKeys
     local profKeys = QuestieProfessions.professionKeys
 
     -- AzerothCore quest relation parity.
@@ -4801,7 +4802,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [792] = {
-            [questKeys.requiredClasses] = 1279,
+            [questKeys.requiredClasses] = classIDs.DRUID + classIDs.MAGE + classIDs.SHAMAN + classIDs.DEATH_KNIGHT + classIDs.PRIEST + classIDs.ROGUE + classIDs.HUNTER + classIDs.PALADIN + classIDs.WARRIOR,
             [questKeys.objectivesText] = {"Kill 12 Vile Familiars.$b$bReturn to Zureetha Fargaze outside the Den."},
             [questKeys.questFlags] = 8,
         },
@@ -5273,7 +5274,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         [987] = {
             [questKeys.questLevel] = 30,
             [questKeys.requiredLevel] = 30,
-            [questKeys.requiredClasses] = 64,
+            [questKeys.requiredClasses] = classIDs.SHAMAN,
             [questKeys.questFlags] = 8,
         },
 
@@ -6356,21 +6357,21 @@ QuestieCompat.RegisterCorrection("questData", function()
         [1533] = {
             [questKeys.questLevel] = 30,
             [questKeys.requiredLevel] = 30,
-            [questKeys.requiredClasses] = 64,
+            [questKeys.requiredClasses] = classIDs.SHAMAN,
             [questKeys.questFlags] = 8,
         },
 
         [1537] = {
             [questKeys.questLevel] = 30,
             [questKeys.requiredLevel] = 30,
-            [questKeys.requiredClasses] = 64,
+            [questKeys.requiredClasses] = classIDs.SHAMAN,
             [questKeys.questFlags] = 8,
         },
 
         [1538] = {
             [questKeys.questLevel] = 30,
             [questKeys.requiredLevel] = 30,
-            [questKeys.requiredClasses] = 64,
+            [questKeys.requiredClasses] = classIDs.SHAMAN,
             [questKeys.questFlags] = 8,
         },
 
@@ -6458,14 +6459,14 @@ QuestieCompat.RegisterCorrection("questData", function()
         [1659] = {
             [questKeys.questLevel] = 30,
             [questKeys.requiredLevel] = 30,
-            [questKeys.requiredClasses] = 2,
+            [questKeys.requiredClasses] = classIDs.PALADIN,
             [questKeys.questFlags] = 8,
         },
 
         [1660] = {
             [questKeys.questLevel] = 30,
             [questKeys.requiredLevel] = 30,
-            [questKeys.requiredClasses] = 2,
+            [questKeys.requiredClasses] = classIDs.PALADIN,
             [questKeys.questFlags] = 8,
         },
 
@@ -6476,21 +6477,21 @@ QuestieCompat.RegisterCorrection("questData", function()
         [1662] = {
             [questKeys.questLevel] = 40,
             [questKeys.requiredLevel] = 40,
-            [questKeys.requiredClasses] = 2,
+            [questKeys.requiredClasses] = classIDs.PALADIN,
             [questKeys.questFlags] = 8,
         },
 
         [1663] = {
             [questKeys.questLevel] = 40,
             [questKeys.requiredLevel] = 40,
-            [questKeys.requiredClasses] = 2,
+            [questKeys.requiredClasses] = classIDs.PALADIN,
             [questKeys.questFlags] = 8,
         },
 
         [1664] = {
             [questKeys.questLevel] = 40,
             [questKeys.requiredLevel] = 40,
-            [questKeys.requiredClasses] = 2,
+            [questKeys.requiredClasses] = classIDs.PALADIN,
             [questKeys.questFlags] = 8,
         },
 
@@ -6628,7 +6629,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [1782] = {
-            [questKeys.requiredClasses] = 0,
+            [questKeys.requiredClasses] = classIDs.NONE,
         },
 
         [1789] = {
@@ -6884,7 +6885,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [2020] = {
-            [questKeys.requiredClasses] = 8,
+            [questKeys.requiredClasses] = classIDs.ROGUE,
             [questKeys.objectives] = {nil,nil,{{7389}}},
             [questKeys.questFlags] = 8,
         },
@@ -6896,7 +6897,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         [2058] = {
             [questKeys.questLevel] = 1,
             [questKeys.requiredLevel] = 1,
-            [questKeys.requiredClasses] = 8,
+            [questKeys.requiredClasses] = classIDs.ROGUE,
             [questKeys.objectives] = {nil,nil,{{7425}}},
             [questKeys.questFlags] = 8,
         },
@@ -6904,7 +6905,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         [2059] = {
             [questKeys.questLevel] = 1,
             [questKeys.requiredLevel] = 1,
-            [questKeys.requiredClasses] = 8,
+            [questKeys.requiredClasses] = classIDs.ROGUE,
             [questKeys.objectives] = {nil,nil,{{7425}}},
             [questKeys.questFlags] = 8,
         },
@@ -7583,7 +7584,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         [3023] = {
             [questKeys.questLevel] = 30,
             [questKeys.requiredLevel] = 30,
-            [questKeys.requiredClasses] = 2,
+            [questKeys.requiredClasses] = classIDs.PALADIN,
             [questKeys.questFlags] = 8,
         },
 
@@ -7773,7 +7774,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         [3111] = {
             [questKeys.questLevel] = 1,
             [questKeys.requiredLevel] = 1,
-            [questKeys.requiredClasses] = 128,
+            [questKeys.requiredClasses] = classIDs.MAGE,
             [questKeys.objectivesText] = {"Speak to Marrek Stromnur inside Anvilmar."},
             [questKeys.objectives] = {nil,nil,{{9572}}},
             [questKeys.sourceItemId] = 9572,
@@ -9426,7 +9427,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [5126] = {
-            [questKeys.requiredClasses] = 0,
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.objectives] = nil,
             [questKeys.requiredSkill] = {profKeys.BLACKSMITHING,285},
         },
@@ -9990,7 +9991,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         [5653] = {
             [questKeys.questLevel] = -1,
             [questKeys.requiredLevel] = 10,
-            [questKeys.requiredClasses] = 16,
+            [questKeys.requiredClasses] = classIDs.PRIEST,
             [questKeys.objectivesText] = {"Speak to Ur'kyo in Orgrimmar."},
             [questKeys.nextQuestInChain] = 5652,
             [questKeys.questFlags] = 8,
@@ -10023,14 +10024,14 @@ QuestieCompat.RegisterCorrection("questData", function()
         [5664] = {
             [questKeys.questLevel] = 15,
             [questKeys.requiredLevel] = 15,
-            [questKeys.requiredClasses] = 16,
+            [questKeys.requiredClasses] = classIDs.PRIEST,
             [questKeys.questFlags] = 8,
         },
 
         [5665] = {
             [questKeys.questLevel] = 15,
             [questKeys.requiredLevel] = 15,
-            [questKeys.requiredClasses] = 16,
+            [questKeys.requiredClasses] = classIDs.PRIEST,
             [questKeys.objectivesText] = {"Speak to Priestess Alathea in Darnassus."},
             [questKeys.nextQuestInChain] = 5664,
             [questKeys.questFlags] = 8,
@@ -10039,7 +10040,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         [5666] = {
             [questKeys.questLevel] = 15,
             [questKeys.requiredLevel] = 15,
-            [questKeys.requiredClasses] = 16,
+            [questKeys.requiredClasses] = classIDs.PRIEST,
             [questKeys.objectivesText] = {"Speak to Priestess Alathea in Darnassus."},
             [questKeys.nextQuestInChain] = 5664,
             [questKeys.questFlags] = 8,
@@ -10048,7 +10049,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         [5667] = {
             [questKeys.questLevel] = 15,
             [questKeys.requiredLevel] = 15,
-            [questKeys.requiredClasses] = 16,
+            [questKeys.requiredClasses] = classIDs.PRIEST,
             [questKeys.objectivesText] = {"Speak to Priestess Alathea in Darnassus."},
             [questKeys.nextQuestInChain] = 5664,
             [questKeys.questFlags] = 8,
@@ -10057,14 +10058,14 @@ QuestieCompat.RegisterCorrection("questData", function()
         [5668] = {
             [questKeys.questLevel] = 15,
             [questKeys.requiredLevel] = 15,
-            [questKeys.requiredClasses] = 16,
+            [questKeys.requiredClasses] = classIDs.PRIEST,
             [questKeys.questFlags] = 8,
         },
 
         [5669] = {
             [questKeys.questLevel] = 15,
             [questKeys.requiredLevel] = 15,
-            [questKeys.requiredClasses] = 16,
+            [questKeys.requiredClasses] = classIDs.PRIEST,
             [questKeys.objectivesText] = {"Speak to High Priestess Laurena in Stormwind."},
             [questKeys.nextQuestInChain] = 5668,
             [questKeys.questFlags] = 8,
@@ -10073,7 +10074,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         [5670] = {
             [questKeys.questLevel] = 15,
             [questKeys.requiredLevel] = 15,
-            [questKeys.requiredClasses] = 16,
+            [questKeys.requiredClasses] = classIDs.PRIEST,
             [questKeys.objectivesText] = {"Speak to High Priestess Laurena in Stormwind."},
             [questKeys.nextQuestInChain] = 5668,
             [questKeys.questFlags] = 8,
@@ -10082,7 +10083,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         [5671] = {
             [questKeys.questLevel] = 15,
             [questKeys.requiredLevel] = 15,
-            [questKeys.requiredClasses] = 16,
+            [questKeys.requiredClasses] = classIDs.PRIEST,
             [questKeys.objectivesText] = {"Speak to High Priestess Laurena in Stormwind."},
             [questKeys.nextQuestInChain] = 5668,
             [questKeys.questFlags] = 8,
@@ -10091,14 +10092,14 @@ QuestieCompat.RegisterCorrection("questData", function()
         [5681] = {
             [questKeys.questLevel] = 25,
             [questKeys.requiredLevel] = 25,
-            [questKeys.requiredClasses] = 16,
+            [questKeys.requiredClasses] = classIDs.PRIEST,
             [questKeys.questFlags] = 8,
         },
 
         [5682] = {
             [questKeys.questLevel] = 25,
             [questKeys.requiredLevel] = 25,
-            [questKeys.requiredClasses] = 16,
+            [questKeys.requiredClasses] = classIDs.PRIEST,
             [questKeys.objectivesText] = {"Speak with High Priestess Alathea in Darnassus."},
             [questKeys.nextQuestInChain] = 5681,
             [questKeys.questFlags] = 8,
@@ -10107,7 +10108,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         [5683] = {
             [questKeys.questLevel] = 25,
             [questKeys.requiredLevel] = 25,
-            [questKeys.requiredClasses] = 16,
+            [questKeys.requiredClasses] = classIDs.PRIEST,
             [questKeys.objectivesText] = {"Speak to High Priestess Alathea in Darnassus."},
             [questKeys.nextQuestInChain] = 5681,
             [questKeys.questFlags] = 8,
@@ -10116,7 +10117,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         [5684] = {
             [questKeys.questLevel] = 25,
             [questKeys.requiredLevel] = 25,
-            [questKeys.requiredClasses] = 16,
+            [questKeys.requiredClasses] = classIDs.PRIEST,
             [questKeys.objectivesText] = {"Speak to High Priestess Alathea in Darnassus."},
             [questKeys.nextQuestInChain] = 5681,
             [questKeys.questFlags] = 8,
@@ -10125,14 +10126,14 @@ QuestieCompat.RegisterCorrection("questData", function()
         [5685] = {
             [questKeys.questLevel] = 25,
             [questKeys.requiredLevel] = 25,
-            [questKeys.requiredClasses] = 16,
+            [questKeys.requiredClasses] = classIDs.PRIEST,
             [questKeys.questFlags] = 8,
         },
 
         [5686] = {
             [questKeys.questLevel] = 25,
             [questKeys.requiredLevel] = 25,
-            [questKeys.requiredClasses] = 16,
+            [questKeys.requiredClasses] = classIDs.PRIEST,
             [questKeys.objectivesText] = {"Speak to High Priestess Laurena in Stormwind."},
             [questKeys.nextQuestInChain] = 5685,
             [questKeys.questFlags] = 8,
@@ -10141,7 +10142,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         [5687] = {
             [questKeys.questLevel] = 25,
             [questKeys.requiredLevel] = 25,
-            [questKeys.requiredClasses] = 16,
+            [questKeys.requiredClasses] = classIDs.PRIEST,
             [questKeys.objectivesText] = {"Speak to High Priestess Laurena in Stormwind."},
             [questKeys.nextQuestInChain] = 5685,
             [questKeys.questFlags] = 8,
@@ -10150,14 +10151,14 @@ QuestieCompat.RegisterCorrection("questData", function()
         [5688] = {
             [questKeys.questLevel] = 15,
             [questKeys.requiredLevel] = 15,
-            [questKeys.requiredClasses] = 16,
+            [questKeys.requiredClasses] = classIDs.PRIEST,
             [questKeys.questFlags] = 8,
         },
 
         [5689] = {
             [questKeys.questLevel] = 15,
             [questKeys.requiredLevel] = 15,
-            [questKeys.requiredClasses] = 16,
+            [questKeys.requiredClasses] = classIDs.PRIEST,
             [questKeys.objectivesText] = {"Speak to Ur'kyo in Orgrimmar."},
             [questKeys.nextQuestInChain] = 5688,
             [questKeys.questFlags] = 8,
@@ -10166,7 +10167,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         [5690] = {
             [questKeys.questLevel] = 15,
             [questKeys.requiredLevel] = 15,
-            [questKeys.requiredClasses] = 16,
+            [questKeys.requiredClasses] = classIDs.PRIEST,
             [questKeys.nextQuestInChain] = 5688,
             [questKeys.questFlags] = 8,
         },
@@ -10174,14 +10175,14 @@ QuestieCompat.RegisterCorrection("questData", function()
         [5691] = {
             [questKeys.questLevel] = 15,
             [questKeys.requiredLevel] = 15,
-            [questKeys.requiredClasses] = 16,
+            [questKeys.requiredClasses] = classIDs.PRIEST,
             [questKeys.questFlags] = 8,
         },
 
         [5692] = {
             [questKeys.questLevel] = 15,
             [questKeys.requiredLevel] = 15,
-            [questKeys.requiredClasses] = 16,
+            [questKeys.requiredClasses] = classIDs.PRIEST,
             [questKeys.objectivesText] = {"Speak to Aelthalyste in the Undercity."},
             [questKeys.nextQuestInChain] = 5691,
             [questKeys.questFlags] = 8,
@@ -10190,7 +10191,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         [5693] = {
             [questKeys.questLevel] = 15,
             [questKeys.requiredLevel] = 15,
-            [questKeys.requiredClasses] = 16,
+            [questKeys.requiredClasses] = classIDs.PRIEST,
             [questKeys.objectivesText] = {"Speak to Aelthalyste in the Undercity."},
             [questKeys.nextQuestInChain] = 5691,
             [questKeys.questFlags] = 8,
@@ -10199,14 +10200,14 @@ QuestieCompat.RegisterCorrection("questData", function()
         [5694] = {
             [questKeys.questLevel] = 35,
             [questKeys.requiredLevel] = 35,
-            [questKeys.requiredClasses] = 16,
+            [questKeys.requiredClasses] = classIDs.PRIEST,
             [questKeys.questFlags] = 8,
         },
 
         [5695] = {
             [questKeys.questLevel] = 35,
             [questKeys.requiredLevel] = 35,
-            [questKeys.requiredClasses] = 16,
+            [questKeys.requiredClasses] = classIDs.PRIEST,
             [questKeys.objectivesText] = {"Speak to Priestesss Alathea in Darnassus."},
             [questKeys.nextQuestInChain] = 5694,
             [questKeys.questFlags] = 8,
@@ -10215,7 +10216,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         [5696] = {
             [questKeys.questLevel] = 35,
             [questKeys.requiredLevel] = 35,
-            [questKeys.requiredClasses] = 16,
+            [questKeys.requiredClasses] = classIDs.PRIEST,
             [questKeys.objectivesText] = {"Speak to Prietess Alathea in Darnassus."},
             [questKeys.nextQuestInChain] = 5694,
             [questKeys.questFlags] = 8,
@@ -10224,7 +10225,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         [5697] = {
             [questKeys.questLevel] = 35,
             [questKeys.requiredLevel] = 35,
-            [questKeys.requiredClasses] = 16,
+            [questKeys.requiredClasses] = classIDs.PRIEST,
             [questKeys.objectivesText] = {"Speak to Priestess Alathea in Darnassus."},
             [questKeys.nextQuestInChain] = 5694,
             [questKeys.questFlags] = 8,
@@ -10233,14 +10234,14 @@ QuestieCompat.RegisterCorrection("questData", function()
         [5698] = {
             [questKeys.questLevel] = 35,
             [questKeys.requiredLevel] = 35,
-            [questKeys.requiredClasses] = 16,
+            [questKeys.requiredClasses] = classIDs.PRIEST,
             [questKeys.questFlags] = 8,
         },
 
         [5699] = {
             [questKeys.questLevel] = 35,
             [questKeys.requiredLevel] = 35,
-            [questKeys.requiredClasses] = 16,
+            [questKeys.requiredClasses] = classIDs.PRIEST,
             [questKeys.objectivesText] = {"Speak to High Priestess Laurena in Stormwind."},
             [questKeys.nextQuestInChain] = 5698,
             [questKeys.questFlags] = 8,
@@ -10249,7 +10250,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         [5700] = {
             [questKeys.questLevel] = 35,
             [questKeys.requiredLevel] = 35,
-            [questKeys.requiredClasses] = 16,
+            [questKeys.requiredClasses] = classIDs.PRIEST,
             [questKeys.objectivesText] = {"Speak to High Priestess Laurena in Stormwind."},
             [questKeys.nextQuestInChain] = 5698,
             [questKeys.questFlags] = 8,
@@ -10258,14 +10259,14 @@ QuestieCompat.RegisterCorrection("questData", function()
         [5701] = {
             [questKeys.questLevel] = 25,
             [questKeys.requiredLevel] = 25,
-            [questKeys.requiredClasses] = 16,
+            [questKeys.requiredClasses] = classIDs.PRIEST,
             [questKeys.questFlags] = 8,
         },
 
         [5702] = {
             [questKeys.questLevel] = 25,
             [questKeys.requiredLevel] = 25,
-            [questKeys.requiredClasses] = 16,
+            [questKeys.requiredClasses] = classIDs.PRIEST,
             [questKeys.objectivesText] = {"Speak to Ur'kyo in Orgrimmar."},
             [questKeys.nextQuestInChain] = 5701,
             [questKeys.questFlags] = 8,
@@ -10274,7 +10275,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         [5703] = {
             [questKeys.questLevel] = 25,
             [questKeys.requiredLevel] = 25,
-            [questKeys.requiredClasses] = 16,
+            [questKeys.requiredClasses] = classIDs.PRIEST,
             [questKeys.objectivesText] = {"Speak to Ur'kyo in Orgrimmar."},
             [questKeys.nextQuestInChain] = 5701,
             [questKeys.questFlags] = 8,
@@ -10283,14 +10284,14 @@ QuestieCompat.RegisterCorrection("questData", function()
         [5704] = {
             [questKeys.questLevel] = 25,
             [questKeys.requiredLevel] = 25,
-            [questKeys.requiredClasses] = 16,
+            [questKeys.requiredClasses] = classIDs.PRIEST,
             [questKeys.questFlags] = 8,
         },
 
         [5705] = {
             [questKeys.questLevel] = 25,
             [questKeys.requiredLevel] = 25,
-            [questKeys.requiredClasses] = 16,
+            [questKeys.requiredClasses] = classIDs.PRIEST,
             [questKeys.objectivesText] = {"Speak to Aelthalyste in the Undercity."},
             [questKeys.nextQuestInChain] = 5704,
             [questKeys.questFlags] = 8,
@@ -10299,7 +10300,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         [5706] = {
             [questKeys.questLevel] = 25,
             [questKeys.requiredLevel] = 25,
-            [questKeys.requiredClasses] = 16,
+            [questKeys.requiredClasses] = classIDs.PRIEST,
             [questKeys.objectivesText] = {"Speak to Aelthalyste in the Undercity."},
             [questKeys.nextQuestInChain] = 5704,
             [questKeys.questFlags] = 8,
@@ -10308,14 +10309,14 @@ QuestieCompat.RegisterCorrection("questData", function()
         [5707] = {
             [questKeys.questLevel] = 35,
             [questKeys.requiredLevel] = 35,
-            [questKeys.requiredClasses] = 16,
+            [questKeys.requiredClasses] = classIDs.PRIEST,
             [questKeys.questFlags] = 8,
         },
 
         [5708] = {
             [questKeys.questLevel] = 35,
             [questKeys.requiredLevel] = 35,
-            [questKeys.requiredClasses] = 16,
+            [questKeys.requiredClasses] = classIDs.PRIEST,
             [questKeys.objectivesText] = {"Speak to Aelthalyste in the Undercity."},
             [questKeys.nextQuestInChain] = 5707,
             [questKeys.questFlags] = 8,
@@ -10324,7 +10325,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         [5709] = {
             [questKeys.questLevel] = 35,
             [questKeys.requiredLevel] = 35,
-            [questKeys.requiredClasses] = 16,
+            [questKeys.requiredClasses] = classIDs.PRIEST,
             [questKeys.objectivesText] = {"Speak to Aelthalyste in the Undercity."},
             [questKeys.nextQuestInChain] = 5707,
             [questKeys.questFlags] = 8,
@@ -10333,14 +10334,14 @@ QuestieCompat.RegisterCorrection("questData", function()
         [5710] = {
             [questKeys.questLevel] = 35,
             [questKeys.requiredLevel] = 35,
-            [questKeys.requiredClasses] = 16,
+            [questKeys.requiredClasses] = classIDs.PRIEST,
             [questKeys.questFlags] = 8,
         },
 
         [5711] = {
             [questKeys.questLevel] = 35,
             [questKeys.requiredLevel] = 35,
-            [questKeys.requiredClasses] = 16,
+            [questKeys.requiredClasses] = classIDs.PRIEST,
             [questKeys.objectivesText] = {"Speak to Ur'kyo in Orgrimmar."},
             [questKeys.nextQuestInChain] = 5710,
             [questKeys.questFlags] = 8,
@@ -10349,7 +10350,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         [5712] = {
             [questKeys.questLevel] = 35,
             [questKeys.requiredLevel] = 35,
-            [questKeys.requiredClasses] = 16,
+            [questKeys.requiredClasses] = classIDs.PRIEST,
             [questKeys.objectivesText] = {"Speak to Ur'kyo in Orgrimmar."},
             [questKeys.nextQuestInChain] = 5710,
             [questKeys.questFlags] = 8,
@@ -11057,7 +11058,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         [6702] = {
             [questKeys.questLevel] = 33,
             [questKeys.requiredLevel] = 100,
-            [questKeys.requiredClasses] = 8,
+            [questKeys.requiredClasses] = classIDs.ROGUE,
             [questKeys.objectivesText] = {"TXT"},
             [questKeys.questFlags] = 8,
         },
@@ -11065,14 +11066,14 @@ QuestieCompat.RegisterCorrection("questData", function()
         [6703] = {
             [questKeys.questLevel] = 33,
             [questKeys.requiredLevel] = 25,
-            [questKeys.requiredClasses] = 8,
+            [questKeys.requiredClasses] = classIDs.ROGUE,
             [questKeys.questFlags] = 8,
         },
 
         [6704] = {
             [questKeys.questLevel] = 45,
             [questKeys.requiredLevel] = 100,
-            [questKeys.requiredClasses] = 8,
+            [questKeys.requiredClasses] = classIDs.ROGUE,
             [questKeys.objectivesText] = {"TXT"},
             [questKeys.questFlags] = 8,
         },
@@ -11080,14 +11081,14 @@ QuestieCompat.RegisterCorrection("questData", function()
         [6705] = {
             [questKeys.questLevel] = 45,
             [questKeys.requiredLevel] = 35,
-            [questKeys.requiredClasses] = 8,
+            [questKeys.requiredClasses] = classIDs.ROGUE,
             [questKeys.questFlags] = 8,
         },
 
         [6706] = {
             [questKeys.questLevel] = 52,
             [questKeys.requiredLevel] = 100,
-            [questKeys.requiredClasses] = 8,
+            [questKeys.requiredClasses] = classIDs.ROGUE,
             [questKeys.objectivesText] = {"TXT"},
             [questKeys.questFlags] = 8,
         },
@@ -11095,14 +11096,14 @@ QuestieCompat.RegisterCorrection("questData", function()
         [6707] = {
             [questKeys.questLevel] = 52,
             [questKeys.requiredLevel] = 45,
-            [questKeys.requiredClasses] = 8,
+            [questKeys.requiredClasses] = classIDs.ROGUE,
             [questKeys.questFlags] = 8,
         },
 
         [6708] = {
             [questKeys.questLevel] = 60,
             [questKeys.requiredLevel] = 100,
-            [questKeys.requiredClasses] = 8,
+            [questKeys.requiredClasses] = classIDs.ROGUE,
             [questKeys.objectivesText] = {"TXT"},
             [questKeys.questFlags] = 8,
         },
@@ -11110,14 +11111,14 @@ QuestieCompat.RegisterCorrection("questData", function()
         [6709] = {
             [questKeys.questLevel] = 60,
             [questKeys.requiredLevel] = 55,
-            [questKeys.requiredClasses] = 8,
+            [questKeys.requiredClasses] = classIDs.ROGUE,
             [questKeys.questFlags] = 8,
         },
 
         [6710] = {
             [questKeys.questLevel] = 1,
             [questKeys.requiredLevel] = 1,
-            [questKeys.requiredClasses] = 8,
+            [questKeys.requiredClasses] = classIDs.ROGUE,
             [questKeys.objectivesText] = {"TXT"},
             [questKeys.questFlags] = 8,
         },
@@ -11125,7 +11126,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         [6711] = {
             [questKeys.questLevel] = 1,
             [questKeys.requiredLevel] = 1,
-            [questKeys.requiredClasses] = 8,
+            [questKeys.requiredClasses] = classIDs.ROGUE,
             [questKeys.questFlags] = 8,
         },
 
@@ -11527,7 +11528,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [7507] = {
-            [questKeys.requiredClasses] = 0,
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.objectivesText] = {"Return Foror's Compendium of Dragon Slaying to the Athenaeum."},
             [questKeys.objectives] = {nil,nil,{{18401}}},
             [questKeys.nextQuestInChain] = 0,
@@ -11535,7 +11536,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [7508] = {
-            [questKeys.requiredClasses] = 0,
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.objectives] = {nil,nil,{{18513}}},
             [questKeys.questFlags] = 0,
         },
@@ -12512,7 +12513,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         [8152] = {
             [questKeys.questLevel] = 52,
             [questKeys.requiredLevel] = 50,
-            [questKeys.requiredClasses] = 4,
+            [questKeys.requiredClasses] = classIDs.HUNTER,
             [questKeys.objectivesText] = {"Speak with Ogtinc in Azshara."},
             [questKeys.nextQuestInChain] = 8151,
         },
@@ -12976,7 +12977,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8381] = {
-            [questKeys.requiredClasses] = 384,
+            [questKeys.requiredClasses] = classIDs.WARLOCK + classIDs.MAGE,
         },
 
         [8383] = {
@@ -14320,7 +14321,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8767] = {
-            [questKeys.requiredClasses] = 0,
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.exclusiveTo] = {},
         },
 
@@ -14415,7 +14416,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [8788] = {
             [questKeys.requiredLevel] = 1,
-            [questKeys.requiredClasses] = 0,
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.exclusiveTo] = {},
         },
 
@@ -15696,12 +15697,12 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9250] = {
-            [questKeys.requiredClasses] = 0,
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.objectives] = {nil,nil,{{22727}}},
         },
 
         [9251] = {
-            [questKeys.requiredClasses] = 0,
+            [questKeys.requiredClasses] = classIDs.NONE,
         },
 
         [9252] = {
@@ -15725,7 +15726,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9257] = {
-            [questKeys.requiredClasses] = 0,
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.objectives] = {{{16387}},nil,{{22737}}},
         },
 
@@ -15777,17 +15778,17 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9269] = {
-            [questKeys.requiredClasses] = 0,
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.objectives] = {{{16387}},nil,{{22737}}},
         },
 
         [9270] = {
-            [questKeys.requiredClasses] = 0,
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.objectives] = {{{16387}},nil,{{22737}}},
         },
 
         [9271] = {
-            [questKeys.requiredClasses] = 0,
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.objectives] = {{{16387}},nil,{{22737}}},
         },
 
@@ -16834,7 +16835,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         [9596] = {
             [questKeys.questLevel] = 10,
             [questKeys.requiredLevel] = 10,
-            [questKeys.requiredClasses] = 128,
+            [questKeys.requiredClasses] = classIDs.MAGE,
             [questKeys.objectivesText] = {"<NYI>Log description."},
             [questKeys.objectives] = {{{14885}}},
             [questKeys.questFlags] = 136,
@@ -16843,7 +16844,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         [9597] = {
             [questKeys.questLevel] = 12,
             [questKeys.requiredLevel] = 12,
-            [questKeys.requiredClasses] = 2,
+            [questKeys.requiredClasses] = classIDs.PALADIN,
             [questKeys.objectivesText] = {"<NYI>Log description."},
             [questKeys.questFlags] = 128,
         },
@@ -17133,7 +17134,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         [9679] = {
             [questKeys.questLevel] = -1,
             [questKeys.requiredLevel] = 12,
-            [questKeys.requiredClasses] = 2,
+            [questKeys.requiredClasses] = classIDs.PALADIN,
             [questKeys.objectivesText] = {"Report to Knight-Lord Bloodvalor in Silvermoon City."},
             [questKeys.nextQuestInChain] = 9679,
             [questKeys.questFlags] = 136,
@@ -17249,7 +17250,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         [9745] = {
             [questKeys.questLevel] = 60,
             [questKeys.requiredLevel] = 60,
-            [questKeys.requiredClasses] = 2,
+            [questKeys.requiredClasses] = classIDs.PALADIN,
             [questKeys.questFlags] = 136,
         },
 
@@ -19059,7 +19060,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         [10549] = {
             [questKeys.questLevel] = 18,
             [questKeys.requiredLevel] = 16,
-            [questKeys.requiredClasses] = 8,
+            [questKeys.requiredClasses] = classIDs.ROGUE,
             [questKeys.objectivesText] = {"Eralan in Tranquillien wants you to retrieve the Archeologist's Shrunken Head from one of the chests in Zeb'Tela or Zeb'Nowa."},
             [questKeys.objectives] = {nil,nil,{{30503}}},
             [questKeys.questFlags] = 136,
@@ -19131,7 +19132,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [10591] = {
-            [questKeys.requiredClasses] = 2,
+            [questKeys.requiredClasses] = classIDs.PALADIN,
             [questKeys.questFlags] = 136,
         },
 
@@ -24274,7 +24275,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         [12626] = {
             [questKeys.questLevel] = 55,
             [questKeys.requiredLevel] = 55,
-            [questKeys.requiredClasses] = 32,
+            [questKeys.requiredClasses] = classIDs.DEATH_KNIGHT,
             [questKeys.objectivesText] = {"Deliver Corvus' Report to Scourge Commander Thalanor at the garrison floor of Ebon Hold."},
             [questKeys.objectives] = {nil,nil,{{38654}}},
             [questKeys.sourceItemId] = 38654,
@@ -26204,13 +26205,13 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13408] = {
-            [questKeys.requiredClasses] = 0,
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.preQuestSingle] = {10143},
             [questKeys.nextQuestInChain] = 0,
         },
 
         [13409] = {
-            [questKeys.requiredClasses] = 0,
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.nextQuestInChain] = 0,
         },
 
@@ -27077,7 +27078,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13794] = {
-            [questKeys.requiredClasses] = 1503,
+            [questKeys.requiredClasses] = classIDs.DRUID + classIDs.WARLOCK + classIDs.MAGE + classIDs.SHAMAN + classIDs.PRIEST + classIDs.ROGUE + classIDs.HUNTER + classIDs.PALADIN + classIDs.WARRIOR,
             [questKeys.preQuestSingle] = {},
         },
 
@@ -28021,11 +28022,11 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [24547] = {
-            [questKeys.requiredClasses] = 35,
+            [questKeys.requiredClasses] = classIDs.DEATH_KNIGHT + classIDs.PALADIN + classIDs.WARRIOR,
         },
 
         [24548] = {
-            [questKeys.requiredClasses] = 35,
+            [questKeys.requiredClasses] = classIDs.DEATH_KNIGHT + classIDs.PALADIN + classIDs.WARRIOR,
             [questKeys.nextQuestInChain] = 0,
         },
 
@@ -28074,12 +28075,12 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [24594] = {
-            [questKeys.requiredClasses] = 1519,
+            [questKeys.requiredClasses] = classIDs.DRUID + classIDs.WARLOCK + classIDs.MAGE + classIDs.SHAMAN + classIDs.DEATH_KNIGHT + classIDs.ROGUE + classIDs.HUNTER + classIDs.PALADIN + classIDs.WARRIOR,
             [questKeys.requiredSourceItems] = {49889},
         },
 
         [24596] = {
-            [questKeys.requiredClasses] = 16,
+            [questKeys.requiredClasses] = classIDs.PRIEST,
             [questKeys.requiredSourceItems] = {49889},
         },
 
@@ -28276,7 +28277,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [24743] = {
-            [questKeys.requiredClasses] = 35,
+            [questKeys.requiredClasses] = classIDs.DEATH_KNIGHT + classIDs.PALADIN + classIDs.WARRIOR,
             [questKeys.nextQuestInChain] = 0,
         },
 
@@ -28294,22 +28295,22 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [24748] = {
-            [questKeys.requiredClasses] = 35,
+            [questKeys.requiredClasses] = classIDs.DEATH_KNIGHT + classIDs.PALADIN + classIDs.WARRIOR,
             [questKeys.objectives] = {{{38153}}},
         },
 
         [24749] = {
-            [questKeys.requiredClasses] = 35,
+            [questKeys.requiredClasses] = classIDs.DEATH_KNIGHT + classIDs.PALADIN + classIDs.WARRIOR,
             [questKeys.objectives] = nil,
         },
 
         [24756] = {
-            [questKeys.requiredClasses] = 35,
+            [questKeys.requiredClasses] = classIDs.DEATH_KNIGHT + classIDs.PALADIN + classIDs.WARRIOR,
             [questKeys.objectives] = nil,
         },
 
         [24757] = {
-            [questKeys.requiredClasses] = 35,
+            [questKeys.requiredClasses] = classIDs.DEATH_KNIGHT + classIDs.PALADIN + classIDs.WARRIOR,
             [questKeys.objectives] = nil,
             [questKeys.nextQuestInChain] = 0,
         },
