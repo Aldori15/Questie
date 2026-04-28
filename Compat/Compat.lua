@@ -142,6 +142,8 @@ local inactiveTimers = {}
 local math_max = math.max
 local strfind = string.find
 
+local MIN_TIMER_DURATION = 0.01
+
 local function timerCancel(id)
     local timer = activeTimers[id]
     if not timer then return end
@@ -180,7 +182,7 @@ QuestieCompat.C_Timer = {
         	timer:SetScript("OnFinished", timerOnFinished)
         end
 
-        if duration < 0.01 then duration = 0.01 end
+        if duration < MIN_TIMER_DURATION then duration = MIN_TIMER_DURATION end
         timer:SetDuration(duration)
 
         timer.callback = callback
@@ -237,6 +239,15 @@ local worldMapInteractionSuppressUntil = 0
 local playerPositionCache = {}
 local stablePlayerWorldPositionCache = {}
 local minimapPlayerWorldPositionCache = {}
+local PLAYER_POSITION_CACHE_TTL = 0.01
+local MIN_ZONE_COORD = -0.25
+local MAX_ZONE_COORD = 1.25
+
+local function IsValidZoneCoords(x, y)
+    if not x or not y then return false end
+    return x >= MIN_ZONE_COORD and x <= MAX_ZONE_COORD and y >= MIN_ZONE_COORD and y <= MAX_ZONE_COORD
+end
+
 local GetDisplayedWorldMapName
 local minimapChildToParentRebaseUiMapId = {
     [467] = true,
@@ -512,7 +523,7 @@ local function GetPlayerWorldPositionFromUnitPosition(actualUiMapID)
     if validationUiMapID and QuestieCompat.HBD and QuestieCompat.HBD.GetZoneCoordinatesFromWorld then
         local zoneX, zoneY = QuestieCompat.HBD:GetZoneCoordinatesFromWorld(rawX, rawY, validationUiMapID, true)
 
-        if zoneX and zoneY and zoneX >= -0.25 and zoneX <= 1.25 and zoneY >= -0.25 and zoneY <= 1.25 then
+        if IsValidZoneCoords(zoneX, zoneY) then
             return rawX, rawY, rawInstanceID, validationUiMapID
         end
     end
@@ -1227,7 +1238,7 @@ local function GetValidatedResolvedMinimapWorldPosition(resolvedUiMapID, x, y, a
 
     if actualUiMapID and QuestieCompat.HBD and QuestieCompat.HBD.GetZoneCoordinatesFromWorld then
         local zoneX, zoneY = QuestieCompat.HBD:GetZoneCoordinatesFromWorld(worldX, worldY, actualUiMapID, true)
-        if not zoneX or not zoneY or zoneX < -0.25 or zoneX > 1.25 or zoneY < -0.25 or zoneY > 1.25 then
+        if not IsValidZoneCoords(zoneX, zoneY) then
             return nil, nil, nil
         end
     end
@@ -1351,12 +1362,26 @@ end
 -- https://wowpedia.fandom.com/wiki/API_C_Map.GetPlayerMapPosition?oldid=2167175
 function QuestieCompat.GetCurrentPlayerPosition()
     local contextKey = GetPlayerPositionCacheContextKey()
-    local cachedUiMapID, cachedX, cachedY = TryGetCachedPlayerPosition(playerPositionCache, 0.01, contextKey)
+    local cachedUiMapID, cachedX, cachedY = TryGetCachedPlayerPosition(playerPositionCache, PLAYER_POSITION_CACHE_TTL, contextKey)
     if cachedUiMapID ~= nil then
         return cachedUiMapID, cachedX, cachedY
     end
 
-	local x, y = GetPlayerMapPosition("player");
+    -- Try using UnitPosition + HBD to derive player's zone-relative coordinates
+    -- This avoids changing the current map zoom/selection which can cause UI churn.
+    local actualUiMapID = ResolveUiMapIDByZoneTexts()
+    if actualUiMapID and (type(UnitPosition) == "function") and QuestieCompat.HBD and QuestieCompat.HBD.GetZoneCoordinatesFromWorld then
+        local worldX, worldY, instanceID, unitUiMapID = GetPlayerWorldPositionFromUnitPosition(actualUiMapID)
+        if worldX and worldY and unitUiMapID then
+            local zoneX, zoneY = QuestieCompat.HBD:GetZoneCoordinatesFromWorld(worldX, worldY, unitUiMapID, true)
+            if IsValidZoneCoords(zoneX, zoneY) then
+                StoreCachedPlayerPosition(playerPositionCache, contextKey, unitUiMapID, zoneX, zoneY)
+                return unitUiMapID, zoneX, zoneY
+            end
+        end
+    end
+
+    local x, y = GetPlayerMapPosition("player");
     local function NormalizeResolvedPlayerUiMapID(resolvedUiMapID)
         if resolvedUiMapID and IsWorldMapOnlyUiMap(resolvedUiMapID) and not WorldMapFrame:IsVisible() then
             return nil
@@ -1600,7 +1625,7 @@ end
 
 function QuestieCompat.GetCurrentPlayerStableWorldPosition()
     local contextKey = GetPlayerPositionCacheContextKey()
-    local cachedWorldX, cachedWorldY, cachedInstanceID, cachedUiMapID = TryGetCachedPlayerPosition(stablePlayerWorldPositionCache, 0.01, contextKey)
+    local cachedWorldX, cachedWorldY, cachedInstanceID, cachedUiMapID = TryGetCachedPlayerPosition(stablePlayerWorldPositionCache, PLAYER_POSITION_CACHE_TTL, contextKey)
     if cachedWorldX ~= nil then
         return cachedWorldX, cachedWorldY, cachedInstanceID, cachedUiMapID
     end
@@ -1689,7 +1714,7 @@ end
 
 function QuestieCompat.GetCurrentPlayerMinimapWorldPosition()
     local contextKey = GetPlayerPositionCacheContextKey()
-    local cachedWorldX, cachedWorldY, cachedInstanceID, cachedUiMapID = TryGetCachedPlayerPosition(minimapPlayerWorldPositionCache, 0.01, contextKey)
+    local cachedWorldX, cachedWorldY, cachedInstanceID, cachedUiMapID = TryGetCachedPlayerPosition(minimapPlayerWorldPositionCache, PLAYER_POSITION_CACHE_TTL, contextKey)
     if cachedWorldX ~= nil then
         return cachedWorldX, cachedWorldY, cachedInstanceID, cachedUiMapID
     end
@@ -1939,7 +1964,7 @@ local function GetCurrentActualPlayerZonePosition()
     for _, targetUiMapID in ipairs(targetUiMapIDs) do
         if targetUiMapID and worldX and worldY and QuestieCompat.HBD and QuestieCompat.HBD.GetZoneCoordinatesFromWorld then
             local zoneX, zoneY = QuestieCompat.HBD:GetZoneCoordinatesFromWorld(worldX, worldY, targetUiMapID, true)
-            if zoneX and zoneY and zoneX >= -0.25 and zoneX <= 1.25 and zoneY >= -0.25 and zoneY <= 1.25 then
+            if IsValidZoneCoords(zoneX, zoneY) then
                 return targetUiMapID, zoneX, zoneY
             end
         end
