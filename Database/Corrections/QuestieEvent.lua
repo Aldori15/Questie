@@ -80,7 +80,8 @@ local strfind = string.find
 local _WithinDates, _LoadDarkmoonFaire, _GetDarkmoonFaireLocation,
     _GetDarkmoonFaireLocationForDate, _GetDarkmoonFaireEventName,
     _IsEventQuestVisible, _GetCalendarEventName, _GetActiveCalendarEvents,
-    _PrimeCalendar, _RefreshAvailableQuests, _CancelInitializeTimer
+    _IsCalendarEventMonthPlausible, _PrimeCalendar, _RefreshAvailableQuests,
+    _CancelInitializeTimer
 
 local EVENT_INIT_INITIAL_DELAY = 1
 local EVENT_INIT_RETRY_INTERVAL = 1
@@ -128,6 +129,20 @@ local CALENDAR_EVENT_TEXTURE_ALIASES = {
     ["valentine"] = "Love is in the Air",
     ["winterveil"] = "Winter Veil",
     ["christmas"] = "Winter Veil",
+}
+
+local CALENDAR_EVENT_PLAUSIBLE_MONTHS = {
+    ["Brewfest"] = {9, 10},
+    ["Children's Week"] = {4, 5},
+    ["Day of the Dead"] = {11, 11},
+    ["Harvest Festival"] = {9, 10},
+    ["Hallow's End"] = {10, 11},
+    ["Love is in the Air"] = {2, 2},
+    ["Lunar Festival"] = {1, 3},
+    ["Midsummer"] = {6, 7},
+    ["Noblegarden"] = {3, 4},
+    ["Pilgrim's Bounty"] = {11, 11},
+    ["Winter Veil"] = {12, 1},
 }
 
 local DMF_LOCATIONS = {
@@ -184,6 +199,22 @@ _GetCalendarEventName = function(name, texture)
     return nil
 end
 
+_IsCalendarEventMonthPlausible = function(eventName, month)
+    local plausibleMonths = CALENDAR_EVENT_PLAUSIBLE_MONTHS[eventName]
+    if not plausibleMonths then
+        return true
+    end
+
+    local startMonth = plausibleMonths[1]
+    local endMonth = plausibleMonths[2]
+
+    if startMonth <= endMonth then
+        return month >= startMonth and month <= endMonth
+    end
+
+    return month >= startMonth or month <= endMonth
+end
+
 _GetActiveCalendarEvents = function()
     local activeEvents = {}
 
@@ -192,7 +223,7 @@ _GetActiveCalendarEvents = function()
     end
 
     local currentDate = C_DateAndTime.GetCurrentCalendarTime()
-    if not currentDate or not currentDate.monthDay then
+    if not currentDate or not currentDate.month or not currentDate.monthDay then
         return activeEvents
     end
 
@@ -201,7 +232,7 @@ _GetActiveCalendarEvents = function()
         local name, description, texture = CalendarGetHolidayInfo(0, currentDate.monthDay, index)
         if name then
             local eventName = _GetCalendarEventName(name, texture)
-            if eventName then
+            if eventName and _IsCalendarEventMonthPlausible(eventName, currentDate.month) then
                 activeEvents[eventName] = true
             end
         end
