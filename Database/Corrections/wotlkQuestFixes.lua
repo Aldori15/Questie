@@ -30,7 +30,9 @@ QuestieCorrections.killCreditObjectiveFirst[13404] = true
 QuestieCorrections.killCreditObjectiveFirst[13406] = true
 QuestieCorrections.killCreditObjectiveFirst[24498] = true
 QuestieCorrections.killCreditObjectiveFirst[24507] = true
+
 QuestieCorrections.questTooltipHints[6681] = "Speak to the npc and select \"<Take the letter>\", then read the letter to start the quest."
+QuestieCorrections.questTooltipHints[9212] = "Inside the Amani Catacombs.  Entrances to the NW and NE."
 
 function QuestieWotlkQuestFixes:Load()
     _QuestieWotlkQuestFixes:InsertMissingQuestIds()
