@@ -35,5 +35,6 @@
     <Script file="UiMapData.lua"/>
     <Script file="HBD.lua"/>
     <Script file="AzerothCoreCorrections.lua"/>
+    <Script file="AzerothCoreItemCorrections.lua"/>
     <Script file="AzerothCoreNPCCorrections.lua"/>
 </Ui>
