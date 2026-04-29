@@ -189,11 +189,21 @@ function MapIconTooltip:Show()
                 elseif iconData.CustomTooltipData then
                     questOrder[iconData.CustomTooltipData.Title] = {}
                     tinsert(questOrder[iconData.CustomTooltipData.Title], iconData.CustomTooltipData.Body);
-                elseif iconData.ManualTooltipData then
-                    local title = iconData.ManualTooltipData.Title
-                    if not manualOrderSeen[title] then
-                        manualOrderSeen[title] = true
-                        tinsert(manualOrder, iconData.ManualTooltipData)
+                elseif icon.ManualTooltipData or iconData.ManualTooltipData then
+                    local manualTooltipData = icon.ManualTooltipData or iconData.ManualTooltipData
+                    local title = manualTooltipData.Title
+                    local manualKey = title
+                    if manualTooltipData.Body then
+                        for _, line in ipairs(manualTooltipData.Body) do
+                            if type(line) == "table" and line[1] == "Coordinates:" then
+                                manualKey = title .. "|" .. line[2]
+                                break
+                            end
+                        end
+                    end
+                    if not manualOrderSeen[manualKey] then
+                        manualOrderSeen[manualKey] = true
+                        tinsert(manualOrder, manualTooltipData)
                     end
                 end
             end

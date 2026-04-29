@@ -75,6 +75,28 @@ local function _IsSpawnVisible(spawn)
     return Phasing.IsSpawnVisible(spawn and spawn[3])
 end
 
+local function _CopyManualTooltipDataWithCoordinates(data, x, y)
+    local tooltipData = data.ManualTooltipData
+    if not tooltipData then
+        return nil
+    end
+
+    local copy = {}
+    for key, value in pairs(tooltipData) do
+        if key ~= "Body" then
+            copy[key] = value
+        end
+    end
+
+    copy.Body = {}
+    for _, line in ipairs(tooltipData.Body or {}) do
+        tinsert(copy.Body, line)
+    end
+    tinsert(copy.Body, { "Coordinates:", string.format("%.2f, %.2f", x, y) })
+
+    return copy
+end
+
 local alreadyErroredDungeonZones = {}
 
 local function _GetDistanceToNearestResolvedSpawn(zone, spawn, playerX, playerY, playerI)
@@ -633,6 +655,7 @@ function QuestieMap:DrawManualIcon(data, areaID, x, y, typ)
     local icon = QuestieFramePool:GetFrame()
     icon.isManualIcon = true
     icon.data = data
+    icon.ManualTooltipData = _CopyManualTooltipDataWithCoordinates(data, x, y)
     icon.x = x
     icon.y = y
     icon.AreaID = areaID -- used by QuestieFramePool
@@ -665,6 +688,7 @@ function QuestieMap:DrawManualIcon(data, areaID, x, y, typ)
     iconMinimap:SetWidth(16 * ((data:GetIconScale() or 0.7) * (Questie.db.profile.globalMiniMapTownsfolkScale or 0.7)))
     iconMinimap:SetHeight(16 * ((data:GetIconScale() or 0.7) * (Questie.db.profile.globalMiniMapTownsfolkScale or 0.7)))
     iconMinimap.data = data
+    iconMinimap.ManualTooltipData = _CopyManualTooltipDataWithCoordinates(data, x, y)
     iconMinimap.x = x
     iconMinimap.y = y
     iconMinimap.AreaID = areaID -- used by QuestieFramePool
