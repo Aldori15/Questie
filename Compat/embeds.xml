@@ -34,7 +34,7 @@
     <Script file="QuestReward.lua"/>
     <Script file="UiMapData.lua"/>
     <Script file="HBD.lua"/>
-    <Script file="AzerothCoreCorrections.lua"/>
+    <Script file="AzerothCoreQuestCorrections.lua"/>
     <Script file="AzerothCoreItemCorrections.lua"/>
     <Script file="AzerothCoreNPCCorrections.lua"/>
     <Script file="AzerothCoreObjectCorrections.lua"/>
