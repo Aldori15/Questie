@@ -37,4 +37,5 @@
     <Script file="AzerothCoreCorrections.lua"/>
     <Script file="AzerothCoreItemCorrections.lua"/>
     <Script file="AzerothCoreNPCCorrections.lua"/>
+    <Script file="AzerothCoreObjectCorrections.lua"/>
 </Ui>
