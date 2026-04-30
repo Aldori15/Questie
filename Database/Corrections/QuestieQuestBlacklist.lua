@@ -1464,16 +1464,6 @@ function QuestieQuestBlacklist:Load()
         [13359] = false, -- Where Dragons Fell
     }
 
-    if Questie.IsSoM then
-        Questie:Debug(Questie.DEBUG_DEVELOP, "Blacklisting SoM quests...")
-        local questsByPhase = QuestieQuestBlacklist:GetSoMQuestsToBlacklist()
-        for phase= 1, #questsByPhase do
-            for questId, _ in pairs(questsByPhase[phase]) do
-                questsToBlacklist[questId] = true
-            end
-        end
-    end
-
     return questsToBlacklist
 end
 
