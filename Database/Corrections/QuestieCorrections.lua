@@ -19,8 +19,6 @@ local QuestieNPCBlacklist = QuestieLoader:ImportModule("QuestieNPCBlacklist")
 local QuestieItemBlacklist = QuestieLoader:ImportModule("QuestieItemBlacklist")
 ---@type HardcoreBlacklist
 local HardcoreBlacklist = QuestieLoader:ImportModule("HardcoreBlacklist")
----@type SeasonOfDiscovery
-local SeasonOfDiscovery = QuestieLoader:ImportModule("SeasonOfDiscovery")
 
 ---@type QuestieQuestFixes
 local QuestieQuestFixes = QuestieLoader:ImportModule("QuestieQuestFixes")
@@ -76,8 +74,6 @@ QuestieCorrections.TBC_ONLY = 1 -- Hide only in TBC
 QuestieCorrections.CLASSIC_ONLY = 2 -- Hide only in Classic
 QuestieCorrections.WOTLK_ONLY = 3 -- Hide only in Wotlk
 QuestieCorrections.TBC_AND_WOTLK = 4 -- Hide in TBC and Wotlk
-QuestieCorrections.SOD_ONLY = 5 -- Hide when *not* Season of Discovery; use for SoD-only quests
-QuestieCorrections.HIDE_SOD = 6 -- Hide when Season of Discovery; use to hide quests that are not available in SoD
 QuestieCorrections.CLASSIC_AND_TBC = 7 -- Hide in both Classic and TBC
 
 QuestieCorrections.killCreditObjectiveFirst = {} -- Only used for TBC quests
@@ -92,7 +88,6 @@ local function filterExpansion(values)
     local isClassic = Questie.IsClassic
     local isTBC = Questie.IsTBC
     local isWotlk = Questie.IsWotlk
-    local isSoD = Questie.IsSoD
     for k, v in pairs(values) do
         if v == QuestieCorrections.WOTLK_ONLY then
             if isWotlk then
@@ -114,18 +109,6 @@ local function filterExpansion(values)
             end
         elseif v == QuestieCorrections.TBC_AND_WOTLK then
             if isTBC or isWotlk then
-                values[k] = true
-            else
-                values[k] = nil
-            end
-        elseif v == QuestieCorrections.SOD_ONLY then
-            if not isSoD then
-                values[k] = true
-            else
-                values[k] = nil
-            end
-        elseif v == QuestieCorrections.HIDE_SOD then
-            if isSoD then
                 values[k] = true
             else
                 values[k] = nil
@@ -187,11 +170,6 @@ do
             addOverride(QuestieDB.objectDataOverrides, QuestieWotlkObjectFixes:LoadFactionFixes())
         end
 
-        -- Season of Discovery Corrections
-        if Questie.IsSoD then
-            addOverride(QuestieDB.questDataOverrides, SeasonOfDiscovery:LoadFactionQuestFixes())
-        end
-
         QuestieCorrections.questItemBlacklist = filterExpansion(QuestieItemBlacklist:Load())
         QuestieCorrections.questNPCBlacklist = filterExpansion(QuestieNPCBlacklist:Load())
         QuestieCorrections.hiddenQuests = filterExpansion(QuestieQuestBlacklist:Load())
@@ -214,13 +192,6 @@ do
                 if (QuestieCorrections.hiddenQuests[id] == nil) then
                     QuestieCorrections.hiddenQuests[id] = hide
                 end
-            end
-        end
-
-        -- Hardcore Blacklist
-        if (Questie.IsHardcore) then
-            for id, _ in pairs(HardcoreBlacklist:Load()) do
-                QuestieCorrections.hiddenQuests[id] = true
             end
         end
 
@@ -287,17 +258,6 @@ function QuestieCorrections:Initialize(validationTables)
         _LoadCorrections("itemData", QuestieWotlkItemFixes:LoadReverseStartQuestFixes(), QuestieDB.itemKeysReversed, validationTables)
         _LoadCorrections("objectData", QuestieWotlkObjectFixes:Load(), QuestieDB.objectKeysReversed, validationTables)
         _LoadCorrections("objectData", QuestieWotlkObjectFixes:LoadReverseLinkFixes(), QuestieDB.objectKeysReversed, validationTables)
-    end
-
-    if Questie.IsSoD then
-        _LoadCorrections("questData", SeasonOfDiscovery:LoadBaseQuests(), QuestieDB.questKeysReversed, validationTables)
-        _LoadCorrections("questData", SeasonOfDiscovery:LoadQuests(), QuestieDB.questKeysReversed, validationTables)
-        _LoadCorrections("npcData", SeasonOfDiscovery:LoadBaseNPCs(), QuestieDB.npcKeysReversed, validationTables)
-        _LoadCorrections("npcData", SeasonOfDiscovery:LoadNPCs(), QuestieDB.npcKeysReversed, validationTables)
-        _LoadCorrections("itemData", SeasonOfDiscovery:LoadBaseItems(), QuestieDB.itemKeysReversed, validationTables)
-        _LoadCorrections("itemData", SeasonOfDiscovery:LoadItems(), QuestieDB.itemKeysReversed, validationTables)
-        _LoadCorrections("objectData", SeasonOfDiscovery:LoadBaseObjects(), QuestieDB.objectKeysReversed, validationTables)
-        _LoadCorrections("objectData", SeasonOfDiscovery:LoadObjects(), QuestieDB.objectKeysReversed, validationTables)
     end
 
     --- Corrections that apply to all versions

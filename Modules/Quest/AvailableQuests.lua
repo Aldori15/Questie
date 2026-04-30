@@ -973,8 +973,7 @@ _CalculateAvailableQuests = function()
             ((not showDungeonQuests) and QuestieDB.IsDungeonQuest(questId)) or      -- Don't show dungeon quests if option is disabled
             ((not showRaidQuests) and QuestieDB.IsRaidQuest(questId)) or            -- Don't show raid quests if option is disabled
             ((not showAQWarEffortQuests) and aqWarEffortQuests[questId]) or         -- Don't show AQ War Effort quests if the option disabled
-            (Questie.IsClassic and currentIsleOfQuelDanasQuests[questId]) or        -- Don't show Isle of Quel'Danas quests for Era/HC/SoX
-            (Questie.IsSoD and QuestieDB.IsRuneAndShouldBeHidden(questId))          -- Don't show SoD Rune quests with the option disabled
+            (Questie.IsClassic and currentIsleOfQuelDanasQuests[questId])           -- Don't show Isle of Quel'Danas quests for Era/HC/SoX
         ) then
             nextAvailableQuestSet[questId] = nil
             return
@@ -1212,9 +1211,7 @@ end
 
 ---@param quest Quest
 _GetQuestIcon = function(quest)
-    if Questie.IsSoD == true and QuestieDB.IsSoDRuneQuest(quest.Id) then
-        return Questie.ICON_TYPE_SODRUNE
-    elseif QuestieDB.IsActiveEventQuest(quest.Id) then
+    if QuestieDB.IsActiveEventQuest(quest.Id) then
         return Questie.ICON_TYPE_EVENTQUEST
     end
     if QuestieDB.IsPvPQuest(quest.Id) then
@@ -1340,7 +1337,7 @@ end
 _HasProperDistanceToAlreadyAddedSpawns = function(coords, alreadyAddedSpawns)
     for _, alreadyAdded in pairs(alreadyAddedSpawns) do
         local distance = QuestieLib.GetSpawnDistance(alreadyAdded, coords)
-        -- 29 seems like a good distance. The "Undying Laborer" in Westfall shows both spawns for the "Horn of Lordaeron" rune
+        -- 29 seems like a good distance
         if distance < 29 then
             return false
         end

@@ -17,7 +17,7 @@ local globalXPMultiplier = 1
 local isDiscovererDelightActive = false
 
 function QuestXP.Init()
-    if (Questie.IsWotlk or Questie.IsSoD) and globalXPMultiplier == 1 then
+    if (Questie.IsWotlk) and globalXPMultiplier == 1 then
         for i = 1, 40 do
             local _, _, _, _, _, _, _, _, _, buffSpellId = UnitBuff("player", i)
 

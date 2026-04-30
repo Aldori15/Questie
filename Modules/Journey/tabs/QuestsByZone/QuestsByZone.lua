@@ -465,7 +465,7 @@ function _QuestieJourney.questsByZone:CategorizeQuests(quests)
             end
 
             -- AQ War Effort quests (one-time world event that has ended for all realms)
-            if (not Questie.IsSoD) and QuestieQuestBlacklist.AQWarEffortQuests[questId] then
+            if QuestieQuestBlacklist.AQWarEffortQuests[questId] then
                 tinsert(zoneTree[6].children, temp)
                 unobtainableCounter = unobtainableCounter + 1
             end

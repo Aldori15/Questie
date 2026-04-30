@@ -577,8 +577,6 @@ local function _GetQuestTag(quest)
         elseif (questType == 1 or questType == 62 or questType == 81 or questType == 82 or questType == 83) then
             -- Dungeon or Legendary or Raid or Group(Elite)
             return "(" .. questTag .. ")";
-        elseif (Questie.IsSoD and QuestieDB.IsSoDRuneQuest(quest.Id)) then
-            return "(" .. l10n("Rune") .. ")";
         else
             return "(" .. l10n("Available") .. ")";
         end

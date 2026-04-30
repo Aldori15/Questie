@@ -352,57 +352,6 @@ function QuestieOptions.tabs.icons:Initialize()
                             QuestieQuest:SmoothReset()
                         end,
                     },
-                    sod_rune_options = {
-                        type = "header",
-                        order = 2.091,
-                        width = "normal",
-                        hidden = (not Questie.IsSoD),
-                        name = function() return l10n('Season of Discovery Runes'); end,
-                    },
-                    showSoDRunes = {
-                        type = "toggle",
-                        order = 2.092,
-                        hidden = (not Questie.IsSoD),
-                        name = function() return l10n('Show Runes'); end,
-                        desc = function() return l10n('When this is enabled, the locations of Season of Discovery Runes and Rune quests will be shown on the map/minimap.'); end,
-                        width = "full",
-                        disabled = function()
-                            return (not Questie.db.profile.enabled);
-                            end,
-                        get = function(info) return Questie.db.profile.showSoDRunes end,
-                        set = function(info, value)
-                            Questie.db.profile.showSoDRunes = value
-                            QuestieQuest:ToggleNotes(value)
-                            QuestieQuest:SmoothReset()
-                        end,
-                    },
-                    sodRuneSelection = {
-                        type = "group",
-                        order = 2.093,
-                        name = "",
-                        hidden = (not Questie.IsSoD),
-                        disabled = function() return not Questie.db.profile.showSoDRunes end,
-                        args = {
-                            phase1 = {
-                                type = "toggle",
-                                name = l10n("Phase 1"),
-                                get = function() return Questie.db.profile.showRunesOfPhase.phase1; end,
-                                set = function(info, value)
-                                    Questie.db.profile.showRunesOfPhase.phase1 = value
-                                    QuestieQuest:SmoothReset()
-                                end,
-                            },
-                            phase2 = {
-                                type = "toggle",
-                                name = l10n("Phase 2"),
-                                get = function() return Questie.db.profile.showRunesOfPhase.phase2; end,
-                                set = function(info, value)
-                                    Questie.db.profile.showRunesOfPhase.phase2 = value
-                                    QuestieQuest:SmoothReset()
-                                end,
-                            },
-                        },
-                    },
                     townsfolk_options = {
                         type = "header",
                         order = 2.10,

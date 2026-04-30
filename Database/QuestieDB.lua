@@ -2004,11 +2004,7 @@ function QuestieDB:Initialize()
         button1 = l10n("Recompile Database"),
         button2 = l10n("Don't show again"),
         OnAccept = function()
-            if Questie.IsSoD then
-                Questie.db.global.sod.dbIsCompiled = false
-            else
-                Questie.db.global.dbIsCompiled = false
-            end
+            Questie.db.global.dbIsCompiled = false
             ReloadUI()
         end,
         OnDecline = function()
@@ -2025,27 +2021,17 @@ function QuestieDB:Initialize()
 
     InitializeQuestTagInfoCorrections()
 
-    -- For now we store both, the SoD database and the Era/HC database
+    -- For now we store the Era/HC database
     local npcBin, npcPtrs, questBin, questPtrs, objBin, objPtrs, itemBin, itemPtrs
-    if Questie.IsSoD then
-        npcBin = Questie.db.global.sod.npcBin
-        npcPtrs = Questie.db.global.sod.npcPtrs
-        questBin = Questie.db.global.sod.questBin
-        questPtrs = Questie.db.global.sod.questPtrs
-        objBin = Questie.db.global.sod.objBin
-        objPtrs = Questie.db.global.sod.objPtrs
-        itemBin = Questie.db.global.sod.itemBin
-        itemPtrs = Questie.db.global.sod.itemPtrs
-    else
-        npcBin = Questie.db.global.npcBin
-        npcPtrs = Questie.db.global.npcPtrs
-        questBin = Questie.db.global.questBin
-        questPtrs = Questie.db.global.questPtrs
-        objBin = Questie.db.global.objBin
-        objPtrs = Questie.db.global.objPtrs
-        itemBin = Questie.db.global.itemBin
-        itemPtrs = Questie.db.global.itemPtrs
-    end
+
+    npcBin = Questie.db.global.npcBin
+    npcPtrs = Questie.db.global.npcPtrs
+    questBin = Questie.db.global.questBin
+    questPtrs = Questie.db.global.questPtrs
+    objBin = Questie.db.global.objBin
+    objPtrs = Questie.db.global.objPtrs
+    itemBin = Questie.db.global.itemBin
+    itemPtrs = Questie.db.global.itemPtrs
 
     QuestieDB.QueryNPC = QuestieDBCompiler:GetDBHandle(npcBin, npcPtrs, QuestieDBCompiler:BuildSkipMap(QuestieDB.npcCompilerTypes, QuestieDB.npcCompilerOrder), QuestieDB.npcKeys, QuestieDB.npcDataOverrides)
     QuestieDB.QueryQuest = QuestieDBCompiler:GetDBHandle(questBin, questPtrs, QuestieDBCompiler:BuildSkipMap(QuestieDB.questCompilerTypes, QuestieDB.questCompilerOrder), QuestieDB.questKeys, QuestieDB.questDataOverrides)
@@ -2320,11 +2306,6 @@ function QuestieDB.IsLevelRequirementsFulfilled(questId, minLevel, maxLevel, pla
     if (Questie.db.profile.lowLevelStyle ~= Questie.LOWLEVEL_RANGE) and
         minLevel > requiredLevel and
         QuestieEvent.activeQuests[questId]  then
-        return true
-    end
-
-    if (Questie.IsSoD == true) and (QuestieDB.IsSoDRuneQuest(questId) == true) and (requiredLevel <= playerLevel) then
-        -- Season of Discovery Rune quests are still shown when trivial
         return true
     end
 
@@ -2724,7 +2705,7 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
     end
 
     -- AQ War Effort quests (one-time world event that has ended for all realms)
-    if (not Questie.IsSoD) and QuestieQuestBlacklist.AQWarEffortQuests[questId] then
+    if QuestieQuestBlacklist.AQWarEffortQuests[questId] then
         if returnText and returnBrief then
             return l10n("Unavailable")..l10n(": ")..l10n("Event inactive"), true, DoableStates.EVENT_INACTIVE
         elseif returnText then

@@ -191,11 +191,7 @@ function QuestieOptions.tabs.advanced:Initialize()
                     end
 
                     if previousLocale ~= Questie.db.global.questieLocale then
-                        if Questie.IsSoD then
-                            Questie.db.global.sod.dbIsCompiled = nil -- recompile db with new lang if locale changed
-                        else
-                            Questie.db.global.dbIsCompiled = nil -- recompile db with new lang if locale changed
-                        end
+                        Questie.db.global.dbIsCompiled = nil -- recompile db with new lang if locale changed
                         StaticPopup_Show("QUESTIE_LANG_CHANGED_RELOAD")
                     end
                 end,
@@ -415,11 +411,7 @@ StaticPopupDialogs["QUESTIE_RESET_CONFIRM"] = {
         Questie.db.profile.migrationVersion = nil
         Questie.db.profile.minimap.hide = optionsDefaults.profile.minimap.hide
 
-        if Questie.IsSoD then
-            Questie.db.global.sod.dbIsCompiled = false
-        else
-            Questie.db.global.dbIsCompiled = false
-        end
+        Questie.db.global.dbIsCompiled = false
 
         Questie.db.char.hidden = nil
         Questie.db.char.hiddenDailies = optionsDefaults.char.hiddenDailies
@@ -472,11 +464,7 @@ StaticPopupDialogs["QUESTIE_RECOMPILE_DATABASE_CONFIRM"] = {
     button1 = YES,
     button2 = NO,
     OnAccept = function(self)
-        if Questie.IsSoD then
-            Questie.db.global.sod.dbIsCompiled = false
-        else
-            Questie.db.global.dbIsCompiled = false
-        end
+        Questie.db.global.dbIsCompiled = false
         ReloadUI()
     end,
     OnShow = function(self)

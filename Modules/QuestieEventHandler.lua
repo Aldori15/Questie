@@ -41,8 +41,6 @@ local QuestieInit = QuestieLoader:ImportModule("QuestieInit")
 local MinimapIcon = QuestieLoader:ImportModule("MinimapIcon")
 ---@type QuestgiverFrame
 local QuestgiverFrame = QuestieLoader:ImportModule("QuestgiverFrame")
----@type QuestieDebugOffer
-local QuestieDebugOffer = QuestieLoader:ImportModule("QuestieDebugOffer")
 ---@type AvailableQuests
 local AvailableQuests = QuestieLoader:ImportModule("AvailableQuests")
 
@@ -161,7 +159,6 @@ function QuestieEventHandler:RegisterLateEvents()
     Questie:RegisterEvent("QUEST_DETAIL", function(...) -- When the quest is presented!
         AvailableQuests.ValidateAvailableQuestsFromQuestDetail()
         QuestieAuto.QUEST_DETAIL(...)
-        if Questie.IsSoD then QuestieDebugOffer.QuestDialog(...) end;
     end)
     Questie:RegisterEvent("QUEST_PROGRESS", QuestieAuto.QUEST_PROGRESS)
     Questie:RegisterEvent("GOSSIP_SHOW", function(...)
@@ -178,7 +175,6 @@ function QuestieEventHandler:RegisterLateEvents()
     Questie:RegisterEvent("GOSSIP_CLOSED", QuestieAuto.GOSSIP_CLOSED)               -- Called twice when the stopping to talk to an NPC
     Questie:RegisterEvent("QUEST_COMPLETE", function(...)                           -- When complete window shows
         QuestieAuto.QUEST_COMPLETE(...)
-        if Questie.IsSoD then QuestieDebugOffer.QuestDialog(...) end;
     end)
 
     -- UI Achievement Events
@@ -263,11 +259,6 @@ function QuestieEventHandler:RegisterLateEvents()
         end)
     end
 
-    -- Questie Debug Offer
-    if Questie.IsSoD then
-        Questie:RegisterEvent("LOOT_OPENED", QuestieDebugOffer.LootWindow)
-    end
-
     -- Questie Comms Events
 
     -- Party join event for QuestieComms, Use bucket to hinder this from spamming (Ex someone using a raid invite addon etc)
@@ -280,7 +271,6 @@ function QuestieEventHandler:RegisterLateEvents()
     Questie:RegisterEvent("NAME_PLATE_UNIT_REMOVED", QuestieNameplate.NameplateDestroyed)
     Questie:RegisterEvent("PLAYER_TARGET_CHANGED", function(...)
         QuestieNameplate:DrawTargetFrame()
-        --if Questie.IsSoD then QuestieDebugOffer.NPCTarget() end;
     end)
 
     -- quest announce

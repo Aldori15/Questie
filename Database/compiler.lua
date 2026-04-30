@@ -32,7 +32,7 @@ local coYield = coroutine.yield
 local coRunning = coroutine.running
 
 -- Bump when compiler field types/order change to invalidate cached binary DB blobs.
-QuestieDBCompiler.compiledSchemaVersion = 19
+QuestieDBCompiler.compiledSchemaVersion = 20
 
 ---@alias CompilerTypes
 ---| "u8"
@@ -1008,13 +1008,8 @@ function QuestieDBCompiler:CompileTableCoroutine(tbl, types, order, lookup, data
 
             index = index + 1
             if index == count then
-                if Questie.IsSoD then
-                    Questie.db.global.sod[databaseKey.."Bin"] = stream:Save()
-                    Questie.db.global.sod[databaseKey.."Ptrs"] = QuestieDBCompiler:EncodePointerMap(stream, pointerMap)
-                else
-                    Questie.db.global[databaseKey.."Bin"] = stream:Save()
-                    Questie.db.global[databaseKey.."Ptrs"] = QuestieDBCompiler:EncodePointerMap(stream, pointerMap)
-                end
+                Questie.db.global[databaseKey.."Bin"] = stream:Save()
+                Questie.db.global[databaseKey.."Ptrs"] = QuestieDBCompiler:EncodePointerMap(stream, pointerMap)
                 stream:finished() -- relief memory pressure
                 return
             end
@@ -1118,30 +1113,17 @@ function QuestieDBCompiler:Compile()
 
     Questie.db.global.dbCompiledExpansion = WOW_PROJECT_ID
 
-    if Questie.IsSoD then
-        Questie.db.global.sod.dbCompiledOnVersion = QuestieLib:GetAddonVersionString()
-        Questie.db.global.sod.dbCompiledLang = l10n:GetUILocale()
-        Questie.db.global.sod.dbCompiledSchemaVersion = QuestieDBCompiler.compiledSchemaVersion
-        Questie.db.global.sod.dbIsCompiled = true
-        Questie.db.global.sod.dbCompiledCount = (Questie.db.global.sod.dbCompiledCount or 0) + 1
-    else
-        Questie.db.global.dbCompiledOnVersion = QuestieLib:GetAddonVersionString()
-        Questie.db.global.dbCompiledLang = l10n:GetUILocale()
-        Questie.db.global.dbCompiledSchemaVersion = QuestieDBCompiler.compiledSchemaVersion
-        Questie.db.global.dbIsCompiled = true
-        Questie.db.global.dbCompiledCount = (Questie.db.global.dbCompiledCount or 0) + 1
-    end
+    Questie.db.global.dbCompiledOnVersion = QuestieLib:GetAddonVersionString()
+    Questie.db.global.dbCompiledLang = l10n:GetUILocale()
+    Questie.db.global.dbCompiledSchemaVersion = QuestieDBCompiler.compiledSchemaVersion
+    Questie.db.global.dbIsCompiled = true
+    Questie.db.global.dbCompiledCount = (Questie.db.global.dbCompiledCount or 0) + 1
 end
 
 function QuestieDBCompiler:ValidateNPCs()
     local npcBin, npcPtrs
-    if Questie.IsSoD then
-        npcBin = Questie.db.global.sod.npcBin
-        npcPtrs = Questie.db.global.sod.npcPtrs
-    else
-        npcBin = Questie.db.global.npcBin
-        npcPtrs = Questie.db.global.npcPtrs
-    end
+    npcBin = Questie.db.global.npcBin
+    npcPtrs = Questie.db.global.npcPtrs
     local validator = QuestieDBCompiler:GetDBHandle(npcBin, npcPtrs, QuestieDBCompiler:BuildSkipMap(QuestieDB.npcCompilerTypes, QuestieDB.npcCompilerOrder))
 
     local count = 0
@@ -1183,13 +1165,8 @@ end
 
 function QuestieDBCompiler:ValidateObjects()
     local objBin, objPtrs
-    if Questie.IsSoD then
-        objBin = Questie.db.global.sod.objBin
-        objPtrs = Questie.db.global.sod.objPtrs
-    else
-        objBin = Questie.db.global.objBin
-        objPtrs = Questie.db.global.objPtrs
-    end
+    objBin = Questie.db.global.objBin
+    objPtrs = Questie.db.global.objPtrs
     local validator = QuestieDBCompiler:GetDBHandle(objBin, objPtrs, QuestieDBCompiler:BuildSkipMap(QuestieDB.objectCompilerTypes, QuestieDB.objectCompilerOrder))
 
     local count = 0
@@ -1232,21 +1209,13 @@ function QuestieDBCompiler:ValidateObjects()
 
 function QuestieDBCompiler:ValidateItems()
     local itemBin, objBin, npcBin, objPtrs, itemPtrs, npcPtrs
-    if Questie.IsSoD then
-        itemBin = Questie.db.global.sod.itemBin
-        itemPtrs = Questie.db.global.sod.itemPtrs
-        objBin = Questie.db.global.sod.objBin
-        objPtrs = Questie.db.global.sod.objPtrs
-        npcBin = Questie.db.global.sod.npcBin
-        npcPtrs = Questie.db.global.sod.npcPtrs
-    else
-        itemBin = Questie.db.global.itemBin
-        itemPtrs = Questie.db.global.itemPtrs
-        objBin = Questie.db.global.objBin
-        objPtrs = Questie.db.global.objPtrs
-        npcBin = Questie.db.global.npcBin
-        npcPtrs = Questie.db.global.npcPtrs
-    end
+
+    itemBin = Questie.db.global.itemBin
+    itemPtrs = Questie.db.global.itemPtrs
+    objBin = Questie.db.global.objBin
+    objPtrs = Questie.db.global.objPtrs
+    npcBin = Questie.db.global.npcBin
+    npcPtrs = Questie.db.global.npcPtrs
 
     local validator = QuestieDBCompiler:GetDBHandle(itemBin, itemPtrs, QuestieDBCompiler:BuildSkipMap(QuestieDB.itemCompilerTypes, QuestieDB.itemCompilerOrder))
     local obj = QuestieDBCompiler:GetDBHandle(objBin, objPtrs, QuestieDBCompiler:BuildSkipMap(QuestieDB.objectCompilerTypes, QuestieDB.objectCompilerOrder))
@@ -1350,13 +1319,8 @@ end
 
 function QuestieDBCompiler:ValidateQuests()
     local questBin, questPtrs
-    if Questie.IsSoD then
-        questBin = Questie.db.global.sod.questBin
-        questPtrs = Questie.db.global.sod.questPtrs
-    else
-        questBin = Questie.db.global.questBin
-        questPtrs = Questie.db.global.questPtrs
-    end
+    questBin = Questie.db.global.questBin
+    questPtrs = Questie.db.global.questPtrs
     local validator = QuestieDBCompiler:GetDBHandle(questBin, questPtrs, QuestieDBCompiler:BuildSkipMap(QuestieDB.questCompilerTypes, QuestieDB.questCompilerOrder))
 
     local playerLevel = UnitLevel("player")

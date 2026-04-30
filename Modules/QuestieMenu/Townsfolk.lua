@@ -267,10 +267,6 @@ function Townsfolk.PostBoot() -- post DB boot (use queries here)
         5565, 16583, -- WARLOCK
         17034, 17026, 17035, 17021, 17038, 17036, 17037, -- DRUID
     }
-    
-    if Questie.IsSoD then
-        table.insert(reagents, 212160) -- In SoD the Chronoboon Displacer is sold by reagent vendors
-    end
 
     -- populate vendor IDs from db
     if #reagents > 0 then

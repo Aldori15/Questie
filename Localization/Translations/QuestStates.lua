@@ -98,18 +98,6 @@ local questStateLocales = {
         ["zhCN"] = "精英",
         ["zhTW"] = "精英",
     },
-    ["Rune"] = {
-        ["ptBR"] = "Runa",
-        ["ruRU"] = "Руна",
-        ["deDE"] = true,
-        ["koKR"] = "룬",
-        ["esMX"] = "Runa",
-        ["enUS"] = true,
-        ["zhCN"] = false,
-        ["zhTW"] = "符文",
-        ["esES"] = "Runa",
-        ["frFR"] = true,
-    },
     ["Daily"] = {
         ["enUS"] = true,
         ["deDE"] = "Täglich",

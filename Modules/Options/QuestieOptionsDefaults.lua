@@ -153,13 +153,6 @@ function QuestieOptionsDefaults:Load()
             showPvPQuests = true,
             showItemStartQuests = false,
             showAQWarEffortQuests = false,
-            showSoDRunes = false,
-            showRunesOfPhase = {
-                phase1 = false,
-                phase2 = false,
-                phase3 = false,
-                phase4 = false,
-            },
             showQuestsInNpcTooltip = true,
             trackerEnabled = true,
             ldbDisplayText = "Questie",

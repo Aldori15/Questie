@@ -87,8 +87,6 @@ local Tutorial = QuestieLoader:ImportModule("Tutorial")
 local WorldMapButton = QuestieLoader:ImportModule("WorldMapButton")
 ---@type AvailableQuests
 local AvailableQuests = QuestieLoader:ImportModule("AvailableQuests")
----@type SeasonOfDiscovery
-local SeasonOfDiscovery = QuestieLoader:ImportModule("SeasonOfDiscovery")
 ---@type QuestieAnnounce
 local QuestieAnnounce = QuestieLoader:ImportModule("QuestieAnnounce")
 ---@type DropDB
@@ -203,22 +201,11 @@ QuestieInit.Stages[1] = function() -- run as a coroutine
     local dbCompiled = false
 
     local dbIsCompiled, dbCompiledOnVersion, dbCompiledLang, dbCompiledSchemaVersion
-    if Questie.IsSoD then
-        dbIsCompiled = Questie.db.global.sod.dbIsCompiled or false
-        dbCompiledOnVersion = Questie.db.global.sod.dbCompiledOnVersion
-        dbCompiledLang = Questie.db.global.sod.dbCompiledLang
-        dbCompiledSchemaVersion = Questie.db.global.sod.dbCompiledSchemaVersion
-    else
-        dbIsCompiled = Questie.db.global.dbIsCompiled or false
-        dbCompiledOnVersion = Questie.db.global.dbCompiledOnVersion
-        dbCompiledLang = Questie.db.global.dbCompiledLang
-        dbCompiledSchemaVersion = Questie.db.global.dbCompiledSchemaVersion
-    end
 
-    if Questie.IsSoD then
-        coYield()
-        SeasonOfDiscovery.Initialize()
-    end
+    dbIsCompiled = Questie.db.global.dbIsCompiled or false
+    dbCompiledOnVersion = Questie.db.global.dbCompiledOnVersion
+    dbCompiledLang = Questie.db.global.dbCompiledLang
+    dbCompiledSchemaVersion = Questie.db.global.dbCompiledSchemaVersion
 
     -- Check if the DB needs to be recompiled
     if (not dbIsCompiled) or (QuestieLib:GetAddonVersionString() ~= dbCompiledOnVersion) or (l10n:GetUILocale() ~= dbCompiledLang) or (dbCompiledSchemaVersion ~= QuestieDBCompiler.compiledSchemaVersion) or (Questie.db.global.dbCompiledExpansion ~= WOW_PROJECT_ID) then
@@ -236,7 +223,7 @@ QuestieInit.Stages[1] = function() -- run as a coroutine
     QuestieCleanup:ClearLocalization()
     collectgarbage()
 
-    local dbCompiledCount = Questie.IsSoD and Questie.db.global.sod.dbCompiledCount or Questie.db.global.dbCompiledCount
+    local dbCompiledCount = Questie.db.global.dbCompiledCount
 
     if (not Questie.db.char.townsfolk) or (dbCompiledCount ~= Questie.db.char.townsfolkVersion) or (Questie.db.char.townsfolkClass ~= UnitClass("player")) then
         Questie.db.char.townsfolkVersion = dbCompiledCount

@@ -41,8 +41,6 @@ local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 local QuestLogCache = QuestieLoader:ImportModule("QuestLogCache")
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
----@type QuestieDebugOffer
-local QuestieDebugOffer = QuestieLoader:ImportModule("QuestieDebugOffer")
 
 --- COMPATIBILITY ---
 local C_Timer = QuestieCompat.C_Timer
@@ -2147,11 +2145,7 @@ function QuestieTracker:AQW_Insert(index, expire)
                 QuestieQuest:RefreshQuestIconVisibility()
             end
         else
-            if Questie.IsSoD then
-                QuestieDebugOffer.QuestTracking(questId)
-            else
-                Questie:Error("Missing quest " .. tostring(questId) .. "," .. tostring(expire) .. " during tracker update")
-            end
+            Questie:Error("Missing quest " .. tostring(questId) .. "," .. tostring(expire) .. " during tracker update")
         end
     end
     QuestieCombatQueue:Queue(function()

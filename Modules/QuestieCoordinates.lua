@@ -3,6 +3,8 @@ local QuestieCoords = QuestieLoader:CreateModule("QuestieCoords");
 
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
+---@type ZoneDB
+local ZoneDB = QuestieLoader:ImportModule("ZoneDB")
 
 --- COMPATIBILITY ---
 local C_Timer = QuestieCompat.C_Timer
@@ -182,7 +184,10 @@ function QuestieCoords:WriteCoords()
 
         local worldmapCoordsText = "Cursor: "..format(precision.. " X, ".. precision .." Y  ", curX, curY);
 
-        worldmapCoordsText = worldmapCoordsText.."|  Player: "..format(precision.. " X , ".. precision .." Y", posX, posY);
+        worldmapCoordsText = worldmapCoordsText.." | Player: "..format(precision.. " X , ".. precision .." Y", posX, posY);
+        worldmapCoordsText = worldmapCoordsText.." | UIMapID: "..position.uiMapID;
+        worldmapCoordsText = worldmapCoordsText.." | MapAreaID: "..GetCurrentMapAreaID();
+
         -- Add text to world map
         if QuestieCompat.Is335 and WorldMapFrameTitle then
             if WorldMapFrameTitle:IsShown() then

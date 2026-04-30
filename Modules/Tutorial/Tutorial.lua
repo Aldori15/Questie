@@ -6,8 +6,4 @@ function Tutorial.Initialize()
     if (Questie.IsWotlk or QuestieCompat.Is335) and GetCVar("questPOI") ~= nil and (not Questie.db.global.tutorialObjectiveTypeChosen) then
         Tutorial.CreateChooseObjectiveTypeFrame()
     end
-
-    if Questie.IsSoD and (not Questie.db.profile.tutorialShowRunesDone) then
-        Tutorial.ShowRunes()
-    end
 end

@@ -162,8 +162,6 @@ function QuestieSlash.HandleCommands(input)
         local gameType = ""
         if Questie.IsWotlk then
             gameType = "Wrath"
-        elseif Questie.IsSoD then -- seasonal checks must be made before non-seasonal for that client, since IsEra resolves true in SoD
-            gameType = "SoD"
         elseif Questie.IsEra then
             gameType = "Era"
         end
