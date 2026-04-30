@@ -3087,6 +3087,7 @@ end
 
 local function drawLineOnShow(self)
     local line = self.line
+    if not (line and line.startX and line.startY and line.endX and line.endY and line.thickness) then return end
     DrawLine(line, self, line.startX, line.startY, line.endX, line.endY, line.thickness*15, 1.2, "TOPLEFT");
 end
 

@@ -782,7 +782,11 @@ local function UpdateWorldMap(force)
         icon:Hide()
         --icon:ClearAllPoints()
 
-        if shouldRescale then
+        if icon.type == "line" then
+            if icon.UpdateLineGeometry then
+                icon:UpdateLineGeometry()
+            end
+        elseif shouldRescale then
             QuestieMap.utils:RescaleIcon(icon, mapScale)
         end
         HandleWorldMapPin(icon, data, uiMapID)
