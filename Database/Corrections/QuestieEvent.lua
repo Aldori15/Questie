@@ -80,8 +80,8 @@ local strfind = string.find
 local _WithinDates, _LoadDarkmoonFaire, _GetDarkmoonFaireLocation,
     _GetDarkmoonFaireLocationForDate, _GetDarkmoonFaireEventName,
     _IsEventQuestVisible, _GetCalendarEventName, _GetActiveCalendarEvents,
-    _IsCalendarEventMonthPlausible, _PrimeCalendar, _RefreshAvailableQuests,
-    _CancelInitializeTimer
+    _IsCalendarEventMonthPlausible, _IsCalendarEventActiveNow, _PrimeCalendar,
+    _RefreshAvailableQuests, _CancelInitializeTimer
 
 local EVENT_INIT_INITIAL_DELAY = 1
 local EVENT_INIT_RETRY_INTERVAL = 1
@@ -102,12 +102,14 @@ local CALENDAR_EVENT_NAME_ALIASES = {
     ["Feast of Winter Veil"] = "Winter Veil",
     ["Harvest Festival"] = "Harvest Festival",
     ["Hallow's End"] = "Hallow's End",
+    ["Kalu'ak Fishing Derby"] = "Kalu'ak Fishing Derby",
     ["Love is in the Air"] = "Love is in the Air",
     ["Lunar Festival"] = "Lunar Festival",
     ["Midsummer"] = "Midsummer",
     ["Midsummer Fire Festival"] = "Midsummer",
     ["Noblegarden"] = "Noblegarden",
     ["Pilgrim's Bounty"] = "Pilgrim's Bounty",
+    ["Stranglethorn Fishing Extravaganza"] = "Stranglethorn Fishing Extravaganza",
     ["Winter Veil"] = "Winter Veil",
 }
 
@@ -143,6 +145,12 @@ local CALENDAR_EVENT_PLAUSIBLE_MONTHS = {
     ["Noblegarden"] = {3, 4},
     ["Pilgrim's Bounty"] = {11, 11},
     ["Winter Veil"] = {12, 1},
+}
+
+local CALENDAR_EVENT_TIME_WINDOWS = {
+    -- QuestieEvent initializes once, so timed fishing events need to activate before the actual contest starts.
+    ["Kalu'ak Fishing Derby"] = {startHour = 2, endHour = 15},
+    ["Stranglethorn Fishing Extravaganza"] = {startHour = 2, endHour = 17},
 }
 
 local DMF_LOCATIONS = {
@@ -215,6 +223,19 @@ _IsCalendarEventMonthPlausible = function(eventName, month)
     return month >= startMonth or month <= endMonth
 end
 
+_IsCalendarEventActiveNow = function(eventName, currentDate)
+    local timeWindow = CALENDAR_EVENT_TIME_WINDOWS[eventName]
+    if not timeWindow then
+        return true
+    end
+
+    if not currentDate or not currentDate.hour then
+        return true
+    end
+
+    return currentDate.hour >= timeWindow.startHour and currentDate.hour < timeWindow.endHour
+end
+
 _GetActiveCalendarEvents = function()
     local activeEvents = {}
 
@@ -232,7 +253,7 @@ _GetActiveCalendarEvents = function()
         local name, description, texture = CalendarGetHolidayInfo(0, currentDate.monthDay, index)
         if name then
             local eventName = _GetCalendarEventName(name, texture)
-            if eventName and _IsCalendarEventMonthPlausible(eventName, currentDate.month) then
+            if eventName and _IsCalendarEventMonthPlausible(eventName, currentDate.month) and _IsCalendarEventActiveNow(eventName, currentDate) then
                 activeEvents[eventName] = true
             end
         end
@@ -879,6 +900,12 @@ tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7930}) -- 5 Tickets - Darkm
 tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7931}) -- 5 Tickets - Minor Darkmoon Prize
 tinsert(QuestieEvent.eventQuests, {"Darkmoon Faire", 7936}) -- 50 Tickets - Last Year's Mutton
 
+-- Stranglethorn Fishing Extravaganza
+tinsert(QuestieEvent.eventQuests, {"Stranglethorn Fishing Extravaganza", 8193}) -- Master Angler
+tinsert(QuestieEvent.eventQuests, {"Stranglethorn Fishing Extravaganza", 8221}) -- Rare Fish - Keefer's Angelfish
+tinsert(QuestieEvent.eventQuests, {"Stranglethorn Fishing Extravaganza", 8224}) -- Rare Fish - Dezian Queenfish
+tinsert(QuestieEvent.eventQuests, {"Stranglethorn Fishing Extravaganza", 8225}) -- Rare Fish - Brownell's Blue Striped Racer
+
 -- New TBC event quests
 
 tinsert(QuestieEvent.eventQuests, {"Children's Week", 10942}) -- Children's Week
@@ -1388,6 +1415,10 @@ tinsert(QuestieEvent.eventQuests, {"Day of the Dead", 14174}) -- The Grateful De
 tinsert(QuestieEvent.eventQuests, {"Day of the Dead", 14175}) -- The Grateful Dead -- Orc
 tinsert(QuestieEvent.eventQuests, {"Day of the Dead", 14176}) -- The Grateful Dead -- Tauren
 tinsert(QuestieEvent.eventQuests, {"Day of the Dead", 14177}) -- The Grateful Dead -- Troll
+
+-- Kalu'ak Fishing Derby
+tinsert(QuestieEvent.eventQuests, {"Kalu'ak Fishing Derby", 24803, nil, nil, QuestieCorrections.CLASSIC_AND_TBC}) -- Kalu'ak Fishing Derby
+tinsert(QuestieEvent.eventQuests, {"Kalu'ak Fishing Derby", 24806, nil, nil, QuestieCorrections.CLASSIC_AND_TBC}) -- Better Luck Next Time
 
 tinsert(QuestieEvent.eventQuests, {"Brewfest", 13931}) -- Another Year, Another Souvenir. -- Doesn't seem to be in the game
 tinsert(QuestieEvent.eventQuests, {"Brewfest", 13932}) -- Another Year, Another Souvenir. -- Doesn't seem to be in the game
