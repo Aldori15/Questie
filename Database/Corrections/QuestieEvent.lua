@@ -244,6 +244,10 @@ end
 _PrimeCalendar = function()
     if OpenCalendar then
         OpenCalendar()
+    elseif QuestieCompat.Is335 and ToggleCalendar then
+        -- since this actually opens the calendar, we need to toggle it twice
+        ToggleCalendar()
+        ToggleCalendar()
     end
 
     if CalendarSetMonth then
