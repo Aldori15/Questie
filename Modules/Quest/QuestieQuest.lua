@@ -517,7 +517,7 @@ function QuestieQuest:AcceptQuest(questId)
                 end)
             end)
 
-            AvailableQuests.CalculateAndDrawAll()
+            AvailableQuests.CalculateAndDrawAll(nil, true)
         else
             Questie:Debug(Questie.DEBUG_INFO, "[QuestieQuest] Accepted Quest:", questId, " Warning: Quest already exists, not adding")
         end
@@ -575,7 +575,7 @@ function QuestieQuest:CompleteQuest(questId)
     end)
 
     -- TODO: Should this be done first? Because CalculateAndDrawAll looks at QuestieMap.questIdFrames[QuestId] to add available
-    AvailableQuests.CalculateAndDrawAll()
+    AvailableQuests.CalculateAndDrawAll(nil, true)
 
     Questie:Debug(Questie.DEBUG_INFO, "[QuestieQuest] Completed Quest:", questId)
 end
@@ -622,7 +622,7 @@ function QuestieQuest:AbandonedQuest(questId)
             end)
         end)
 
-        AvailableQuests.CalculateAndDrawAll()
+        AvailableQuests.CalculateAndDrawAll(nil, true)
 
         Questie:Debug(Questie.DEBUG_INFO, "[QuestieQuest] Abandoned Quest:", questId)
     end
@@ -693,7 +693,7 @@ function QuestieQuest:UpdateQuest(questId)
 
                 QuestieQuest:PopulateQuestLogInfo(quest)
                 QuestieQuest:PopulateObjectiveNotes(quest)
-                AvailableQuests.CalculateAndDrawAll()
+                AvailableQuests.CalculateAndDrawAll(nil, true)
             else
                 -- Sometimes objective(s) are all complete but the quest doesn't get flagged as "1". So far the only
                 -- quests I've found that does this are quests involving an item(s). Checks all objective(s) and if they

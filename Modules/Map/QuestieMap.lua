@@ -442,16 +442,21 @@ function QuestieMap.ProcessQueue()
         local mapDrawCall = tremove(mapDrawQueue, 1);
         if mapDrawCall then
             local frame = mapDrawCall[2];
-            HBDPins:AddWorldMapIconMap(tunpack(mapDrawCall));
+            if frame._needsUnload then
+                frame._loaded = true
+                frame:Unload()
+            else
+                HBDPins:AddWorldMapIconMap(tunpack(mapDrawCall));
 
-            --? If you ever chanage this logic, make sure you change the logic in QuestieMap.utils:RescaleIcon function too!
-            local scaleProfile = _GetManualScaleProfile(frame)
-            local size = (16 * (frame.data.IconScale or 1) * (scaleProfile or 0.7)) * scaleValue;
-            frame:SetSize(size, size)
+                --? If you ever chanage this logic, make sure you change the logic in QuestieMap.utils:RescaleIcon function too!
+                local scaleProfile = _GetManualScaleProfile(frame)
+                local size = (16 * (frame.data.IconScale or 1) * (scaleProfile or 0.7)) * scaleValue;
+                frame:SetSize(size, size)
 
-            QuestieMap.utils:SetDrawOrder(frame);
+                QuestieMap.utils:SetDrawOrder(frame);
 
-            mapDrawCall[2]._loaded = true
+                mapDrawCall[2]._loaded = true
+            end
             if mapDrawCall[2]._needsUnload then
                 mapDrawCall[2]:Unload()
             end
@@ -460,11 +465,16 @@ function QuestieMap.ProcessQueue()
         local minimapDrawCall = tremove(minimapDrawQueue, 1);
         if minimapDrawCall then
             local frame = minimapDrawCall[2];
-            HBDPins:AddMinimapIconMap(tunpack(minimapDrawCall));
+            if frame._needsUnload then
+                frame._loaded = true
+                frame:Unload()
+            else
+                HBDPins:AddMinimapIconMap(tunpack(minimapDrawCall));
 
-            QuestieMap.utils:SetDrawOrder(frame);
+                QuestieMap.utils:SetDrawOrder(frame);
 
-            minimapDrawCall[2]._loaded = true
+                minimapDrawCall[2]._loaded = true
+            end
             if minimapDrawCall[2]._needsUnload then
                 minimapDrawCall[2]:Unload()
             end

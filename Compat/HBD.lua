@@ -232,6 +232,7 @@ local minimapScale, minimapShape, mapRadius, minimapWidth, minimapHeight, mapSin
 local lastZoom, lastFacing, lastXY, lastYY
 local worldMapLayoutDirty = true
 local worldMapRefreshPending = false
+local minimapRefreshPending = false
 local minimapZoomProbeReady = false
 local minimapZoomProbeScheduled = false
 local lastWorldMapUiMapID, lastWorldMapWidth, lastWorldMapHeight, lastWorldMapScale
@@ -723,6 +724,24 @@ local function UpdateMinimap()
     UpdateMinimapPins()
 end
 
+local function QueueMinimapRefresh()
+    queueFullUpdate = true
+    if minimapRefreshPending then
+        return
+    end
+
+    if not C_Timer or not C_Timer.After then
+        UpdateMinimapPins(true)
+        return
+    end
+
+    minimapRefreshPending = true
+    C_Timer.After(0.01, function()
+        minimapRefreshPending = false
+        UpdateMinimapPins(true)
+    end)
+end
+
 local function ScheduleInitialMinimapZoomProbe()
     if minimapZoomProbeReady or minimapZoomProbeScheduled then
         return
@@ -936,7 +955,7 @@ function pins:AddMinimapIconWorld(ref, icon, instanceID, x, y, floatOnEdge)
     t.showInParentZone = nil
 
     minimapPins[icon] = t
-    queueFullUpdate = true
+    QueueMinimapRefresh()
 
     icon:SetParent(pins.MinimapGroup or pins.Minimap)
 end
@@ -986,14 +1005,17 @@ end
 -- @param ref Reference to your addon to track the icon under (ie. your "self" or string identifier)
 -- @param icon Icon Frame
 function pins:RemoveMinimapIcon(ref, icon)
-    if not ref or not icon or not minimapPinRegistry[ref] then return end
-    minimapPinRegistry[ref][icon] = nil
+    if not ref or not icon then return end
+    if minimapPinRegistry[ref] then
+        minimapPinRegistry[ref][icon] = nil
+    end
     if minimapPins[icon] then
         recycle(minimapPins[icon])
         minimapPins[icon] = nil
-        activeMinimapPins[icon] = nil
     end
+    activeMinimapPins[icon] = nil
     icon:Hide()
+    QueueMinimapRefresh()
 end
 
 --- Remove all minimap icons belonging to your addon (as tracked by "ref")
@@ -1001,12 +1023,15 @@ end
 function pins:RemoveAllMinimapIcons(ref)
     if not ref or not minimapPinRegistry[ref] then return end
     for icon in pairs(minimapPinRegistry[ref]) do
-        recycle(minimapPins[icon])
-        minimapPins[icon] = nil
+        if minimapPins[icon] then
+            recycle(minimapPins[icon])
+            minimapPins[icon] = nil
+        end
         activeMinimapPins[icon] = nil
         icon:Hide()
     end
     wipe(minimapPinRegistry[ref])
+    QueueMinimapRefresh()
 end
 
 --- Set the minimap object to position the pins on. Needs to support the usual functions a Minimap-type object exposes.
