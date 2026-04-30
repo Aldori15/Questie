@@ -17,8 +17,6 @@ local QuestieQuestBlacklist = QuestieLoader:ImportModule("QuestieQuestBlacklist"
 local QuestieNPCBlacklist = QuestieLoader:ImportModule("QuestieNPCBlacklist")
 ---@type QuestieItemBlacklist
 local QuestieItemBlacklist = QuestieLoader:ImportModule("QuestieItemBlacklist")
----@type HardcoreBlacklist
-local HardcoreBlacklist = QuestieLoader:ImportModule("HardcoreBlacklist")
 
 ---@type QuestieQuestFixes
 local QuestieQuestFixes = QuestieLoader:ImportModule("QuestieQuestFixes")

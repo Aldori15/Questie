@@ -74,7 +74,3 @@ Questie.IsEra = Questie.IsClassic and (not C_Seasons.HasActiveSeason())
 --- Addon is running on Classic "Vanilla" client and on any Seasonal realm (see: https://wowpedia.fandom.com/wiki/API_C_Seasons.GetActiveSeason )
 ---@type boolean
 Questie.IsEraSeasonal = Questie.IsClassic and C_Seasons.HasActiveSeason()
-
---- Addon is running on a HardCore realm specifically
----@type boolean
-Questie.IsHardcore = C_GameRules and C_GameRules.IsHardcoreActive()
