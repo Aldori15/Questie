@@ -386,18 +386,6 @@ local mapOptionsLocales = {
         ["esES"] = "Cuántos decimales de precisión tienen que tener las coordenadas en el mapa para el jugador y el ratón.\n(Por defecto: %s)",
         ["frFR"] = "Définis combien de décimales sont à inclure dans les coordonnées du joueur et du curseur.\n(Par défaut : %s)",
     },
-    ["Setting clustering value, clusterLevelHotzone set to %s : Redrawing!"] = {
-        ["ptBR"] = "Valor de cluster dos parâmetros da, clusterLevelHotzone definido como% s: Redrawing!",
-        ["ruRU"] = "Группировка значков: %s. Перерисовка",
-        ["deDE"] = "Clusterlevel geändert auf %s : Zeichne neu!",
-        ["koKR"] = "클러스터링 값 설정 중, 클러스터 레벨 핫존이 %s로 설정됨: Redrawing!",
-        ["esMX"] = "Configuración NYI valor de agrupamiento, nivel de agrupamiento establecido a %s : Redibujando!",
-        ["enUS"] = true,
-        ["zhCN"] = "设置群集值，clusterLevelHotzone设置为 %s : 重新绘制中!",
-        ["zhTW"] = "設定密集度，clusterLevelHotzone 設為 %s : 重新繪製中!",
-        ["esES"] = "Configuración NYI valor de agrupamiento, nivel de agrupamiento establecido a %s : Redibujando!",
-        ["frFR"] = "Réglage de la valeur de fusionnement, clusterLevelHotzone réglée sur %s : réorganisation !",
-    },
 }
 
 for k, v in pairs(mapOptionsLocales) do

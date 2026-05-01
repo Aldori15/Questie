@@ -124,6 +124,10 @@ local migrationFunctions = {
         Questie.db.profile.townsfolkConfig = Questie.db.profile.townsfolkConfig or {}
         Questie.db.profile.townsfolkConfig["Meeting Stones"] = false
     end,
+    [20] = function()
+        Questie.db.profile.clusterLevelHotzone = nil
+        Questie.db.profile.objectiveFilterDistance = 2
+    end,
 }
 
 function Migration:Migrate()
