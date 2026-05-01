@@ -6,6 +6,7 @@ function QuestieOptionsDefaults:Load()
         profile = {
             objectiveFilterDistance = 2,
             spawnFilterDistance = 28,
+            availableIconLimit = 30,
             enableIconLimit = false,
             iconLimit = 200,
             availableScale = 1.2,

@@ -542,6 +542,30 @@ local advancedOptionsLocales = {
         ["zhCN"] = "在同一地区内，用于控制触发任务的相同生物或物体之间显示刷新点的最小距离。\n\n警告！数值过低可能导致地图图标过多，影响性能",
         ["zhTW"] = "在同一地區內，用於控制觸發任務的相同生物或物體之間顯示刷新點的最小距離。\n\n警告！數值過低可能導致地圖圖標過多，影響效能",
     },
+    ["Available quest icon limit"] = {
+        ["enUS"] = true,
+        ["deDE"] = "Anzeigelimit für verfügbare Quests",
+        ["esES"] = "Límite de iconos de misiones disponibles",
+        ["esMX"] = "Límite de iconos de misiones disponibles",
+        ["frFR"] = "Limite d'icônes des quêtes disponibles",
+        ["koKR"] = "사용가능한 궤스트 아이콘 제한",
+        ["ptBR"] = "Limite de ícones de missões disponíveis",
+        ["ruRU"] = "Лимит значков доступных заданий",
+        ["zhCN"] = "可接任务图标上限",
+        ["zhTW"] = "可接任務圖示上限",
+    },
+    ["This setting limits the number of icons starting a single quest.\n\nSetting to zero means there is no limit (except through other settings).\n\nWARNING! Setting this to 0 may result in a lot of icons being drawn and can impact map performance!"] = {
+        ["enUS"] = true,
+        ["deDE"] = "Diese Einstellung limitiert die Anzahl an Icons die einen einzelnen Quest starten.\n\nDie Einstellung auf Null setzen bedeutet es gibt kein Limit (außer durch andere Einstellungen).\n\nWARNUNG! Diese Einstellung auf Null zu setzen kann in einer großen Menge an hinzugefügten Icons resultieren und die Leistung der Karte beeinträchtigen!",
+        ["esES"] = "Esta configuración limita la cantidad de iconos que inician una sola misión.\n\nEstablecerlo en cero significa que no hay límite (excepto a través de otras configuraciones).\n\n¡ADVERTENCIA! Establecer esto en 0 puede resultar en una gran cantidad de iconos y afectar el rendimiento del mapa.",
+        ["esMX"] = "Esta configuración limita la cantidad de iconos que inician una sola misión.\n\nEstablecerlo en cero significa que no hay límite (excepto a través de otras configuraciones).\n\n¡ADVERTENCIA! Establecer esto en 0 puede resultar en una gran cantidad de iconos y afectar el rendimiento del mapa.",
+        ["frFR"] = "Ce paramètre limite le nombre d'icônes déclenchant une seule quête.\n\nUne valeur de zéro signifie qu'il n'y a pas de limite (sauf via d'autres paramètres).\n\nATTENTION ! Régler cette valeur sur 0 peut entraîner l'affichage de nombreuses icônes et affecter les performances de la carte.",
+        ["koKR"] = "이 설정은 단일 퀘스트를 시작하는 아이콘의 수를 제한합니다.\n\n0으로 설정하면 제한이 없습니다 (다른 설정을 통한 제한 제외).\n\n경고! 이 값을 0으로 설정하면 매우 많은 아이콘이 표시되어 지도 성능에 영향을 줄 수 있습니다.",
+        ["ptBR"] = "Esta configuração limita o número de ícones que iniciam uma única missão.\n\nDefinir como zero significa que não há limite (exceto por outras configurações).\n\nATENÇÃO! Definir isso como 0 pode resultar em muitos ícones sendo exibidos e afetar o desempenho do mapa.",
+        ["ruRU"] = "Эта настройка ограничивает количество значков, начинающих одно задание.\n\nУстановка значения на ноль означает отсутствие ограничения (за исключением других настроек).\n\nВНИМАНИЕ! Установка значения 0 может привести к отображению большого количества значков и повлиять на производительность карты!",
+        ["zhCN"] = "此设置限制单个任务起始点图标的数量。\n\n设置为零表示没有限制（其他设置除外）。\n\n警告！设置为0可能导致地图上显示大量图标并影响性能！",
+        ["zhTW"] = "此設定限制單一任務起始點圖示的數量。\n\n設定為零表示沒有限制（其他設定除外）。\n\n警告！設定為0可能導致地圖上顯示大量圖示並影響效能！",
+    },
 }
 
 for k, v in pairs(advancedOptionsLocales) do
