@@ -1337,8 +1337,8 @@ end
 _HasProperDistanceToAlreadyAddedSpawns = function(coords, alreadyAddedSpawns)
     for _, alreadyAdded in pairs(alreadyAddedSpawns) do
         local distance = QuestieLib.GetSpawnDistance(alreadyAdded, coords)
-        -- 29 seems like a good distance
-        if distance < 29 then
+        -- 28 seems like a good distance. The NPC Denalan in Teldrassil shows both spawns for the quests.
+        if distance < Questie.db.profile.spawnFilterDistance then
             return false
         end
     end

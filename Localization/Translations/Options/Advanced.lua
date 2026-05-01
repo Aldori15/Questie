@@ -518,6 +518,30 @@ local advancedOptionsLocales = {
         ["zhCN"] = "正在将目标过滤距离设置为%s：重新绘制中！",
         ["zhTW"] = false,
     },
+    ["Available quest filter distance"] = {
+        ["enUS"] = true,
+        ["deDE"] = "Filterdistanz für verfügbare Quests",
+        ["esES"] = "Distancia de filtro de misiones disponibles",
+        ["esMX"] = "Distancia de filtro de misiones disponibles",
+        ["frFR"] = "Distance de filtrage des quêtes disponibles",
+        ["koKR"] = "사용가능한 퀘스트를 거리에 따라 필터",
+        ["ptBR"] = "Distância do filtro de missões disponíveis",
+        ["ruRU"] = "Дистанция фильтра доступных заданий",
+        ["zhCN"] = "可接任务筛选距离",
+        ["zhTW"] = "依距離篩選可接任務",
+    },
+    ["How far away a spawn starting a quest needs to be inside a zone before another spawn of the same creature or object is added.\n\nWARNING! Setting this to lower values may result in a lot of icons being drawn and can impact map performance!"] = {
+        ["enUS"] = true,
+        ["deDE"] = "Wie weit entfernt innerhalb einer Zone ein Spawn der einen Quest startet seien muss bevor ein anderer Spawn derselben Kreatur oder desselben Objektes hinzugefügt wird.\n\nWARNUNG! Diese Einstellung auf niedrigere Werte zu setzen kann in einer großen Menge an hinzugefügten Icons resultieren und die Leistung der Karte beeinträchtigen!",
+        ["esES"] = "La distancia que debe estar un enemigo u objeto que inicia una misión dentro de una zona antes de que se agregue otro enemigo u objeto del mismo tipo.\n\n¡ADVERTENCIA! Establecer un valor bajo puede resultar en muchos iconos dibujados y afectar el rendimiento del mapa.",
+        ["esMX"] = "La distancia que debe estar un enemigo u objeto que inicia una misión dentro de una zona antes de que se agregue otro enemigo u objeto del mismo tipo.\n\n¡ADVERTENCIA! Establecer un valor bajo puede resultar en muchos iconos dibujados y afectar el rendimiento del mapa.",
+        ["frFR"] = "À quelle distance un ennemi ou objet déclenchant une quête doit-il se trouver à l'intérieur d'une zone avant qu'un autre ennemi ou objet du même type soit ajouté.\n\nATTENTION ! Régler cette valeur trop bas peut entraîner l'affichage de nombreuses icônes et affecter les performances de la carte.",
+        ["koKR"] = "퀘스트를 시작하는 스폰이 같은 생물이나 오브젝트의 다른 스폰에 추가되기 전, 영역 내에서 얼마나 떨어져 있어야 하는지를 설정합니다.\n\n경고! 이 값을 너무 낮게 설정할 경우, 매우 많은 아이콘으로 인해 지도에 성능 저하가 발생할 수 있습니다.",
+        ["ptBR"] = "Quão distante um inimigo ou objeto que inicia uma missão precisa estar dentro de uma zona antes que outro inimigo ou objeto do mesmo tipo seja adicionado.\n\nATENÇÃO! Definir um valor muito baixo pode resultar em muitos ícones sendo exibidos e pode afetar o desempenho do mapa.",
+        ["ruRU"] = "Насколько далеко начинающий задание объект должен быть в зоне перед тем, как появится следующий такой же объект.\n\nВНИМАНИЕ! Установка пониженных значений может вызвать отображение большого числа значков, а также сильно повлиять на производительность карты!",
+        ["zhCN"] = "在同一地区内，用于控制触发任务的相同生物或物体之间显示刷新点的最小距离。\n\n警告！数值过低可能导致地图图标过多，影响性能",
+        ["zhTW"] = "在同一地區內，用於控制觸發任務的相同生物或物體之間顯示刷新點的最小距離。\n\n警告！數值過低可能導致地圖圖標過多，影響效能",
+    },
 }
 
 for k, v in pairs(advancedOptionsLocales) do
