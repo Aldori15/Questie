@@ -1350,9 +1350,56 @@ for C in ipairs({GetMapContinents()}) do
     end
 end
 
+local function GetTomTomCZForUiMapID(uiMapID)
+    local uiData = uiMapID and QuestieCompat.UiMapData[uiMapID]
+    if not uiData then
+        return nil
+    end
+
+    return mapIdToCZ[uiData.mapID]
+end
+
+local function GetTomTomDungeonEntranceWaypoint(uiMapID)
+    local areaID
+    if ZoneDB.GetAreaIdByUiMapId then
+        local success, resolvedAreaID = pcall(ZoneDB.GetAreaIdByUiMapId, ZoneDB, uiMapID)
+        if success then
+            areaID = resolvedAreaID
+        end
+    end
+
+    local dungeonLocations = ZoneDB.private and ZoneDB.private.dungeonLocations
+    local subZoneToParentZone = ZoneDB.private and ZoneDB.private.subZoneToParentZone
+    if areaID and dungeonLocations and not dungeonLocations[areaID] and subZoneToParentZone and subZoneToParentZone[areaID] then
+        areaID = subZoneToParentZone[areaID]
+    end
+
+    local entrance = areaID and dungeonLocations and dungeonLocations[areaID] and dungeonLocations[areaID][1]
+    if not entrance then
+        return nil, nil, nil
+    end
+
+    local entranceUiMapID = ZoneDB.GetUiMapIdByAreaId and ZoneDB:GetUiMapIdByAreaId(entrance[1])
+    local entranceCZ = GetTomTomCZForUiMapID(entranceUiMapID)
+    if not entranceCZ then
+        return nil, nil, nil
+    end
+
+    return entranceCZ, entrance[2], entrance[3]
+end
+
 function QuestieCompat.TomTom_AddWaypoint(title, zone, x, y)
-    local CZ = mapIdToCZ[QuestieCompat.UiMapData[zone].mapID]
+    local CZ = GetTomTomCZForUiMapID(zone)
     if (zone == 125) or (zone == 126) then CZ = 3.4 end
+    if not CZ then
+        local entranceCZ, entranceX, entranceY = GetTomTomDungeonEntranceWaypoint(zone)
+        if entranceCZ then
+            CZ = entranceCZ
+            x = entranceX
+            y = entranceY
+        end
+    end
+    if not CZ then return nil end
     -- Force the crazy arrow on 3.3.5 so Questie behaves like newer TomTom integrations.
     return TomTom:AddZWaypoint(QuestieCompat.Round(CZ%1 * 10), math.floor(CZ), x, y, title, nil, nil, nil, nil, nil, true)
 end

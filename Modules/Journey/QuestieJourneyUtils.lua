@@ -2,6 +2,8 @@
 local QuestieJourneyUtils = QuestieLoader:CreateModule("QuestieJourneyUtils")
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
+---@type ZoneDB
+local ZoneDB = QuestieLoader:ImportModule("ZoneDB")
 
 local AceGUI = LibStub("AceGUI-3.0");
 
@@ -41,12 +43,43 @@ function QuestieJourneyUtils:AddLine(frame, text)
 end
 
 function QuestieJourneyUtils:GetZoneName(id)
-    local name = l10n("Unknown Zone")
-    for category, data in pairs(l10n.zoneLookup) do
-        if data[id] then
-            name = l10n.zoneLookup[category][id]
-            break
+    local function FindLookupName(lookup, zoneId)
+        for _, data in pairs(lookup or {}) do
+            if data[zoneId] then
+                return data[zoneId]
+            end
+        end
+        return nil
+    end
+
+    local zoneId = id
+    local name = FindLookupName(l10n.zoneLookup, zoneId) or FindLookupName(l10n.zoneCategoryLookup, zoneId)
+    if name then
+        return name
+    end
+
+    local dungeons = ZoneDB.private and ZoneDB.private.dungeons
+    if dungeons and dungeons[zoneId] then
+        return dungeons[zoneId][1]
+    end
+
+    if ZoneDB.GetAreaIdByUiMapId then
+        local success, areaId = pcall(ZoneDB.GetAreaIdByUiMapId, ZoneDB, zoneId)
+        if success and areaId then
+            zoneId = areaId
+            name = FindLookupName(l10n.zoneLookup, zoneId) or FindLookupName(l10n.zoneCategoryLookup, zoneId)
+            if name then
+                return name
+            end
+
+            if dungeons and dungeons[zoneId] then
+                return dungeons[zoneId][1]
+            end
         end
     end
-    return name
+
+    local areaName = C_Map and C_Map.GetAreaInfo and C_Map.GetAreaInfo(zoneId)
+    local uiMapID = ZoneDB.GetUiMapIdByAreaId and ZoneDB:GetUiMapIdByAreaId(zoneId) or zoneId
+    local mapInfo = uiMapID and C_Map and C_Map.GetMapInfo and C_Map.GetMapInfo(uiMapID)
+    return areaName or (mapInfo and mapInfo.name) or l10n("Unknown Zone")
 end
