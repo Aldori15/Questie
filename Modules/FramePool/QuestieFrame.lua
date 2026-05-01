@@ -22,6 +22,23 @@ local HBDPins = QuestieCompat.HBDPins or LibStub("HereBeDragonsQuestie-Pins-2.0"
 QuestieFramePool.Qframe = {}
 
 local _Qframe = {}
+local NON_MONO_OBJECTIVE_GLOW_ALPHA = 0.45
+local reducedObjectiveGlowIconTypes = {
+    [3] = true, -- Questie.ICON_TYPE_EVENT
+    [5] = true, -- Questie.ICON_TYPE_TALK
+    [17] = true, -- Questie.ICON_TYPE_INTERACT
+    [19] = true, -- Questie.ICON_TYPE_MOUNT_UP
+}
+
+local function GetObjectiveGlowAlpha(frame, alpha)
+    alpha = alpha or (frame.texture and frame.texture.a) or 1
+
+    if frame.data and reducedObjectiveGlowIconTypes[frame.data.Icon] then
+        return alpha * NON_MONO_OBJECTIVE_GLOW_ALPHA
+    end
+
+    return alpha
+end
 
 ---@return IconFrame
 function QuestieFramePool.Qframe:New(frameId, OnEnter)
@@ -230,10 +247,11 @@ function _Qframe:GlowUpdate()
             self.glow:SetPoint("CENTER", self, 0, 0)
         end
         if self.data and self.data.ObjectiveData and self.data.ObjectiveData.Color and self.glowTexture then
+            local glowAlpha = GetObjectiveGlowAlpha(self)
             --Due to us now saving the alpha inside of the texture we don't need to check the main texture anymore.
             --The question is is it faster to get and compare or just set straight up?
-            if (self.glowTexture.r ~= self.data.ObjectiveData.Color[1] or self.glowTexture.g ~= self.data.ObjectiveData.Color[2] or self.glowTexture.b ~= self.data.ObjectiveData.Color[3] or self.texture.a ~= self.glowTexture.a) then
-                self.glowTexture:SetVertexColor(self.data.ObjectiveData.Color[1], self.data.ObjectiveData.Color[2], self.data.ObjectiveData.Color[3], self.texture.a or 1)
+            if (self.glowTexture.r ~= self.data.ObjectiveData.Color[1] or self.glowTexture.g ~= self.data.ObjectiveData.Color[2] or self.glowTexture.b ~= self.data.ObjectiveData.Color[3] or glowAlpha ~= self.glowTexture.a) then
+                self.glowTexture:SetVertexColor(self.data.ObjectiveData.Color[1], self.data.ObjectiveData.Color[2], self.data.ObjectiveData.Color[3], glowAlpha)
             end
         end
     end
@@ -254,7 +272,7 @@ function _Qframe:BaseOnShow()
         self.glow:SetHeight(self:GetHeight() * 1.13)
         self.glow:SetPoint("CENTER", self, 0, 0)
         local _, _, _, alpha = self.texture:GetVertexColor()
-        self.glowTexture:SetVertexColor(data.ObjectiveData.Color[1], data.ObjectiveData.Color[2], data.ObjectiveData.Color[3], alpha or 1)
+        self.glowTexture:SetVertexColor(data.ObjectiveData.Color[1], data.ObjectiveData.Color[2], data.ObjectiveData.Color[3], GetObjectiveGlowAlpha(self, alpha))
         self.glow:Show()
     end
 end
@@ -383,7 +401,7 @@ function _Qframe:FadeOut()
         end
         if self.glowTexture then
             local r, g, b = self.glowTexture:GetVertexColor()
-            self.glowTexture:SetVertexColor(r, g, b, Questie.db.profile.iconFadeLevel)
+            self.glowTexture:SetVertexColor(r, g, b, GetObjectiveGlowAlpha(self, Questie.db.profile.iconFadeLevel))
         end
         if self.data.lineFrames then
             for _, lineFrame in pairs(self.data.lineFrames) do
@@ -405,7 +423,7 @@ function _Qframe:FadeIn()
         end
         if self.glowTexture then
             local r, g, b = self.glowTexture:GetVertexColor()
-            self.glowTexture:SetVertexColor(r, g, b, 1)
+            self.glowTexture:SetVertexColor(r, g, b, GetObjectiveGlowAlpha(self, 1))
         end
         if self.data.lineFrames then
             for _, lineFrame in pairs(self.data.lineFrames) do
