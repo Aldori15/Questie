@@ -32,15 +32,15 @@ local AvailableQuests = QuestieLoader:ImportModule("AvailableQuests")
 
 QuestieOptions.tabs.general = { ... }
 local optionsDefaults = QuestieOptionsDefaults:Load()
+local LSM30 = LibStub("LibSharedMedia-3.0")
+local tableSort, stringLower = table.sort, string.lower
 
 local _GetAnnounceChannels
 local _IsAnnounceDisabled
 local _GetQuestSoundChoices
-local _GetQuestSoundChoicesSort
 local _GetObjectiveSoundChoices
-local _GetObjectiveSoundChoicesSort
 local _GetObjectiveProgressSoundChoices
-local _GetObjectiveProgressSoundChoicesSort
+local _GetSortedOptions
 
 function QuestieOptions.tabs.general:Initialize()
     return {
@@ -525,6 +525,15 @@ function QuestieOptions.tabs.general:Initialize()
                 inline = true,
                 name = function() return l10n('Sound Options'); end,
                 args = {
+                    loadCustomSounds = {
+                        type = "toggle",
+                        order = 8.7,
+                        name = function() return l10n("Load custom sounds"); end,
+                        desc = function() return l10n("If checked, sounds added through LibSharedMedia are loaded."); end,
+                        width = 2.5,
+                        get = function () return Questie.db.profile.loadCustomSounds; end,
+                        set = function (_, value) Questie.db.profile.loadCustomSounds = value end
+                    },
                     questCompleteSound = {
                         type = "toggle",
                         order = 9.01,
@@ -551,8 +560,8 @@ function QuestieOptions.tabs.general:Initialize()
                     questCompleteSoundChoice = {
                         type = "select",
                         order = 9.03,
-                        values = _GetQuestSoundChoices(),
-                        sorting = _GetQuestSoundChoicesSort(),
+                        values = _GetQuestSoundChoices,
+                        sorting = _GetSortedOptions(_GetQuestSoundChoices),
                         style = 'dropdown',
                         name = function() return l10n('Quest Complete Sound Selection') end,
                         desc = function() return l10n('The sound you hear when a quest is completed'); end,
@@ -594,8 +603,8 @@ function QuestieOptions.tabs.general:Initialize()
                     objectiveCompleteSoundChoice = {
                         type = "select",
                         order = 9.07,
-                        values = _GetObjectiveSoundChoices(),
-                        sorting = _GetObjectiveSoundChoicesSort(),
+                        values = _GetObjectiveSoundChoices,
+                        sorting = _GetSortedOptions(_GetObjectiveSoundChoices),
                         style = 'dropdown',
                         name = function() return l10n('Objective Complete Sound Selection') end,
                         desc = function() return l10n('The sound you hear when an objective is completed'); end,
@@ -631,8 +640,8 @@ function QuestieOptions.tabs.general:Initialize()
                     objectiveProgressSoundChoice = {
                         type = "select",
                         order = 9.10,
-                        values = _GetObjectiveProgressSoundChoices(),
-                        sorting = _GetObjectiveProgressSoundChoicesSort(),
+                        values = _GetObjectiveProgressSoundChoices,
+                        sorting = _GetSortedOptions(_GetObjectiveProgressSoundChoices),
                         style = 'dropdown',
                         name = function() return l10n('Objective Progress Sound Selection') end,
                         desc = function() return l10n('The sound you hear when you make progress on a quest objective'); end,
@@ -663,7 +672,7 @@ _IsAnnounceDisabled = function()
 end
 
 _GetQuestSoundChoices = function()
-    return {
+    local choices = {
         ["QuestDefault"]     = "Default",
         ["GameDefault"]      = "Game Default",
         ["Troll Male"]       = "Troll Male",
@@ -687,33 +696,14 @@ _GetQuestSoundChoices = function()
         ["Blood Elf Female"] = "Blood Elf Female",
         ["Blood Elf Male"]   = "Blood Elf Male",
     }
-end
 
-_GetQuestSoundChoicesSort = function()
-    return {
-        "QuestDefault",
-        "GameDefault",
-        "Troll Male",
-        "Troll Female",
-        "Tauren Male",
-        "Tauren Female",
-        "Undead Male",
-        "Undead Female",
-        "Orc Male",
-        "Orc Female",
-        "Night Elf Female",
-        "Night Elf Male",
-        "Human Female",
-        "Human Male",
-        "Gnome Male",
-        "Gnome Female",
-        "Dwarf Male",
-        "Dwarf Female",
-        "Draenei Male",
-        "Draenei Female",
-        "Blood Elf Female",
-        "Blood Elf Male",
-    }
+    if Questie.db.profile.loadCustomSounds then
+        for _, sound in pairs(LSM30:List(LSM30.MediaType.SOUND)) do
+            choices[sound] = sound
+        end
+    end
+
+    return choices
 end
 
 _GetObjectiveSoundChoices = function()
@@ -735,29 +725,14 @@ _GetObjectiveSoundChoices = function()
         choices["Humm"] = "Humm"
         choices["Short Circuit"] = "Short Circuit"
     end
-    return choices
-end
 
-_GetObjectiveSoundChoicesSort = function()
-    local sorting = {
-        "ObjectiveDefault",
-        "Map Ping",
-        "Window Close",
-        "Window Open",
-        "Boat Docked",
-        "Bell Toll Alliance",
-        "Bell Toll Horde",
-    }
-    if Questie.IsWotlk or QuestieCompat.Is335 then
-        tinsert(sorting, "Explosion")
-        tinsert(sorting, "Shing!")
-        tinsert(sorting, "Wham!")
-        tinsert(sorting, "Simon Chime")
-        tinsert(sorting, "War Drums")
-        tinsert(sorting, "Humm")
-        tinsert(sorting, "Short Circuit")
+    if Questie.db.profile.loadCustomSounds then
+        for _, sound in pairs(LSM30:List(LSM30.MediaType.SOUND)) do
+            choices[sound] = sound
+        end
     end
-    return sorting
+
+    return choices
 end
 
 _GetObjectiveProgressSoundChoices = function()
@@ -780,28 +755,33 @@ _GetObjectiveProgressSoundChoices = function()
         choices["Humm"] = "Humm"
         choices["Short Circuit"] = "Short Circuit"
     end
+
+    if Questie.db.profile.loadCustomSounds then
+        for _, sound in pairs(LSM30:List(LSM30.MediaType.SOUND)) do
+            choices[sound] = sound
+        end
+    end
+
     return choices
 end
 
-_GetObjectiveProgressSoundChoicesSort = function()
-    local sorting = {
-        "ObjectiveProgress",
-        "ObjectiveDefault",
-        "Map Ping",
-        "Window Close",
-        "Window Open",
-        "Boat Docked",
-        "Bell Toll Alliance",
-        "Bell Toll Horde",
-    }
-    if Questie.IsWotlk or QuestieCompat.Is335 then
-        tinsert(sorting, "Explosion")
-        tinsert(sorting, "Shing!")
-        tinsert(sorting, "Wham!")
-        tinsert(sorting, "Simon Chime")
-        tinsert(sorting, "War Drums")
-        tinsert(sorting, "Humm")
-        tinsert(sorting, "Short Circuit")
+---Sorts options alphabetically, ignoring case.
+---We return a function to allow AceConfig to refetch the options after toggling custom sounds.
+---@param getOptions function
+---@return function
+_GetSortedOptions = function(getOptions)
+    return function()
+        local sorting = {}
+        for key, value in pairs(getOptions()) do
+            tinsert(sorting, {key = key, value = value})
+        end
+        tableSort(sorting, function(a, b)
+            return stringLower(a.value) < stringLower(b.value)
+        end)
+        local sortedKeys = {}
+        for _, pair in ipairs(sorting) do
+            tinsert(sortedKeys, pair.key)
+        end
+        return sortedKeys
     end
-    return sorting
 end

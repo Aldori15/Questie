@@ -159,6 +159,7 @@ function QuestieOptionsDefaults:Load()
             trackerEnabled = true,
             ldbDisplayText = "Questie",
             enableQuestFrameIcons = true,
+            loadCustomSounds = false,
             soundOnQuestComplete = false,
             questCompleteSoundChoiceName = "QuestDefault",
             soundOnObjectiveComplete = false,
