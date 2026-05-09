@@ -442,7 +442,11 @@ function QuestieMap.ProcessQueue()
         local mapDrawCall = tremove(mapDrawQueue, 1);
         if mapDrawCall then
             local frame = mapDrawCall[2];
-            if frame._needsUnload then
+            local frameData = frame.data
+            local frameId = frameData and frameData.Id
+            local frameName = frame:GetName()
+            local orphan = (not frame.isManualIcon) and frameId and not (QuestieMap.questIdFrames[frameId] and QuestieMap.questIdFrames[frameId][frameName])
+            if frame._needsUnload or orphan then
                 frame._loaded = true
                 frame:Unload()
             else
@@ -450,22 +454,23 @@ function QuestieMap.ProcessQueue()
 
                 --? If you ever chanage this logic, make sure you change the logic in QuestieMap.utils:RescaleIcon function too!
                 local scaleProfile = _GetManualScaleProfile(frame)
-                local size = (16 * (frame.data.IconScale or 1) * (scaleProfile or 0.7)) * scaleValue;
+                local size = (16 * (frameData.IconScale or 1) * (scaleProfile or 0.7)) * scaleValue;
                 frame:SetSize(size, size)
 
                 QuestieMap.utils:SetDrawOrder(frame);
 
-                mapDrawCall[2]._loaded = true
-            end
-            if mapDrawCall[2]._needsUnload then
-                mapDrawCall[2]:Unload()
+                frame._loaded = true
             end
         end
 
         local minimapDrawCall = tremove(minimapDrawQueue, 1);
         if minimapDrawCall then
             local frame = minimapDrawCall[2];
-            if frame._needsUnload then
+            local frameData = frame.data
+            local frameId = frameData and frameData.Id
+            local frameName = frame:GetName()
+            local orphan = (not frame.isManualIcon) and frameId and not (QuestieMap.questIdFrames[frameId] and QuestieMap.questIdFrames[frameId][frameName])
+            if frame._needsUnload or orphan then
                 frame._loaded = true
                 frame:Unload()
             else
@@ -473,10 +478,7 @@ function QuestieMap.ProcessQueue()
 
                 QuestieMap.utils:SetDrawOrder(frame);
 
-                minimapDrawCall[2]._loaded = true
-            end
-            if minimapDrawCall[2]._needsUnload then
-                minimapDrawCall[2]:Unload()
+                frame._loaded = true
             end
         end
     end
