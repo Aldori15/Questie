@@ -52,8 +52,6 @@ local QUEST_LOG_STATES = {
 local eventFrame = CreateFrame("Frame", "QuestieQuestEventFrame")
 local questLog = {}
 local questLogUpdateQueueSize = 1
-local skipNextUQLCEvent = false
-local doFullQuestLogScan = false
 local deletedQuestItem = false
 
 --- Registers all events that are required for questing (accepting, removing, objective updates, ...)
@@ -214,15 +212,6 @@ function _QuestEventHandler:QuestAccepted(questLogIndex, questId)
 
     questLog[questId] = {}
 
-    -- Timed quests do not need a full Quest Log Update.
-    -- TODO: Add achievement timers later.
-    local questTimers = GetQuestTimers(questId)
-    if type(questTimers) == "number" then
-        skipNextUQLCEvent = false
-    else
-        skipNextUQLCEvent = true
-    end
-
     QuestieCombatQueue:Queue(function()
         QuestieLib:CacheItemNames(questId)
         _QuestEventHandler:HandleQuestAccepted(questId)
@@ -256,7 +245,6 @@ function _QuestEventHandler:QuestAccepted(questLogIndex, questId)
         end
     end
 
-    Questie:Debug(Questie.DEBUG_DEVELOP, "[Quest Event] QUEST_ACCEPTED - skipNextUQLCEvent - ", skipNextUQLCEvent)
 end
 
 ---@param questId number
@@ -314,25 +302,6 @@ function _QuestEventHandler:QuestTurnedIn(questId, xpReward, moneyReward)
         questLog[questId] = {state = QUEST_LOG_STATES.QUEST_TURNED_IN}
     end
 
-    local parentQuest = QuestieDB.QueryQuestSingle(questId, "parentQuest")
-
-    if parentQuest and parentQuest > 0 then
-        -- Quests like "The Warsong Reports" have child quests which are just turned in. These child quests only
-        -- fire QUEST_TURNED_IN + QUEST_LOG_UPDATE
-        Questie:Debug(Questie.DEBUG_DEVELOP, "Quest:", questId, "Has a Parent Quest - do a full Quest Log check")
-        doFullQuestLogScan = true
-    end
-
-    local itemName, _, _, quality, _, itemID = GetQuestLogRewardInfo(GetNumQuestLogRewards(questId), questId)
-
-    if (itemID ~= nil or itemName ~= nil) and quality == 1 then
-        Questie:Debug(Questie.DEBUG_DEVELOP, "Quest:", questId, "Recieved a possible Quest Item - do a full Quest Log check")
-        doFullQuestLogScan = true
-        skipNextUQLCEvent = false
-    else
-        skipNextUQLCEvent = true
-    end
-
     QuestLogCache.RemoveQuest(questId)
     QuestieQuest:SetObjectivesDirty(questId) -- is this necessary? should whole quest.Objectives be cleared at some point of quest removal?
 
@@ -346,7 +315,6 @@ end
 ---@param isImmediateAbandon boolean|nil
 function _QuestEventHandler:QuestRemoved(questId, isImmediateAbandon)
     Questie:Debug(Questie.DEBUG_DEVELOP, "[Quest Event] QUEST_REMOVED", questId)
-    doFullQuestLogScan = false
 
     if (not questLog[questId]) then
         questLog[questId] = {}
@@ -377,9 +345,6 @@ function _QuestEventHandler:QuestRemoved(questId, isImmediateAbandon)
             end, 1)
         }
     end
-    skipNextUQLCEvent = true
-    Questie:Debug(Questie.DEBUG_DEVELOP, "[Quest Event] QUEST_REMOVED - skipNextUQLCEvent - ", skipNextUQLCEvent)
-
     if isImmediateAbandon then
         _QuestEventHandler:MarkQuestAsAbandoned(questId)
     end
@@ -412,56 +377,25 @@ function _QuestEventHandler:QuestLogUpdate()
         continueQueuing = _QuestLogUpdateQueue:GetFirst()()
     end
 
-    if doFullQuestLogScan then
-        doFullQuestLogScan = false
-        -- Function call updates doFullQuestLogScan. Order matters.
-        _QuestEventHandler:UpdateAllQuests()
-    else
-        QuestieCombatQueue:Queue(function()
-            QuestieTracker:Update()
-        end)
-    end
+    _QuestEventHandler:UpdateAllQuests()
+
+    QuestieCombatQueue:Queue(function()
+        QuestieTracker:Update()
+    end)
 end
 
 --- Fires whenever a quest objective progressed
 ---@param questId number
 function _QuestEventHandler:QuestWatchUpdate(questId)
     Questie:Debug(Questie.DEBUG_DEVELOP, "[Quest Event] QUEST_WATCH_UPDATE", questId)
-
-    -- We do a full scan even though we have the questId because many QUEST_WATCH_UPDATE can fire before
-    -- a QUEST_LOG_UPDATE. Also not every QUEST_WATCH_UPDATE gets a single QUEST_LOG_UPDATE and doing a full
-    -- scan is less error prone
-    doFullQuestLogScan = true
-end
-
-local _UnitQuestLogChangedCallback = function()
-    -- We also check in here because UNIT_QUEST_LOG_CHANGED is fired before the relevant events
-    -- (Accept, removed, ...)
-    if (not skipNextUQLCEvent) then
-        doFullQuestLogScan = true
-    else
-        doFullQuestLogScan = false
-        skipNextUQLCEvent = false
-        Questie:Debug(Questie.DEBUG_INFO, "Skipping UnitQuestLogChanged")
-    end
-    return true
+    -- QUEST_WATCH_UPDATE fires before QUEST_LOG_UPDATE which will always call UpdateAllQuests; nothing to do here.
 end
 
 --- Fires when an objective changed in the quest log of the unitTarget. The required data is not available yet though
 ---@param unitTarget string
 function _QuestEventHandler:UnitQuestLogChanged(unitTarget)
     Questie:Debug(Questie.DEBUG_DEVELOP, "[Quest Event] UNIT_QUEST_LOG_CHANGED", unitTarget)
-    Questie:Debug(Questie.DEBUG_DEVELOP, "[Quest Event] UNIT_QUEST_LOG_CHANGED - skipNextUQLCEvent - ", skipNextUQLCEvent)
-
-    -- There seem to be quests which don't trigger a QUEST_WATCH_UPDATE.
-    -- We don't add a full check to the queue if skipNextUQLCEvent == true (from QUEST_WATCH_UPDATE or QUEST_TURNED_IN)
-    if (not skipNextUQLCEvent) then
-        doFullQuestLogScan = true
-        _QuestLogUpdateQueue:Insert(_UnitQuestLogChangedCallback)
-    else
-        Questie:Debug(Questie.DEBUG_INFO, "Skipping UnitQuestLogChanged")
-    end
-    skipNextUQLCEvent = false
+    -- QUEST_LOG_UPDATE always follows and will unconditionally call UpdateAllQuests; nothing to do here.
 end
 
 --- Does a full scan of the quest log and updates every quest that is in the QUEST_ACCEPTED state and which hash changed
@@ -496,9 +430,6 @@ function _QuestEventHandler:UpdateAllQuests()
     else
         Questie:Debug(Questie.DEBUG_INFO, "Nothing to update")
     end
-
-    -- Do UpdateAllQuests() again at next QUEST_LOG_UPDATE if there was "cacheMiss" (game's cache and addon's cache didn't have all required data yet)
-    doFullQuestLogScan = doFullQuestLogScan or cacheMiss
 end
 
 local lastTimeQuestRelatedFrameClosedEvent = -1
@@ -518,17 +449,12 @@ end
 
 function _QuestEventHandler:ReputationChange()
     Questie:Debug(Questie.DEBUG_DEVELOP, "[Quest Event] CHAT_MSG_COMBAT_FACTION_CHANGE")
-
-    -- Reputational quest progression doesn't fire UNIT_QUEST_LOG_CHANGED event, only QUEST_LOG_UPDATE event.
-    doFullQuestLogScan = true
+    -- Reputational quest progression fires QUEST_LOG_UPDATE which always calls UpdateAllQuests; nothing to do here.
 end
 
 function _QuestEventHandler:CurrencyDisplayUpdate()
     Questie:Debug(Questie.DEBUG_DEVELOP, "[Quest Event] CURRENCY_DISPLAY_UPDATE")
-
-    -- Some quests reward or require currencies without giving us a more specific quest marker event.
-    -- Mark the next quest log update for a full scan so token-based objectives do not stay stale.
-    doFullQuestLogScan = true
+    -- Currency changes fire QUEST_LOG_UPDATE which always calls UpdateAllQuests; nothing to do here.
 end
 
 --- Helper function to insert a callback to the questLogUpdateQueue and increase the index
@@ -619,7 +545,7 @@ function _QuestEventHandler:OnEvent(event, ...)
         _QuestEventHandler:ZoneChangedNewArea()
     elseif event == "NEW_RECIPE_LEARNED" then
         Questie:Debug(Questie.DEBUG_DEVELOP, "[EVENT] NEW_RECIPE_LEARNED (QuestEventHandler)")
-        doFullQuestLogScan = true -- If this event is related to a spell objective, a QUEST_LOG_UPDATE will be fired afterwards
+        -- If this event is related to a spell objective, a QUEST_LOG_UPDATE will be fired afterwards which calls UpdateAllQuests.
     elseif event == "CURRENCY_DISPLAY_UPDATE" then
         _QuestEventHandler:CurrencyDisplayUpdate()
     elseif event == "PLAYER_INTERACTION_MANAGER_FRAME_HIDE" then
