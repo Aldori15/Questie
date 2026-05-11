@@ -25,7 +25,10 @@ function QuestieOptions.tabs.tooltip:Initialize()
                 desc = function() return l10n('When this is enabled, quest info will be added to relevant mob/item tooltips.'); end,
                 width = 1.5,
                 get = function () return Questie.db.profile.enableTooltips; end,
-                set = function (_, value) Questie.db.profile.enableTooltips = value end
+                set = function (_, value)
+                    Questie.db.profile.enableTooltips = value
+                    SetCVar("showQuestTrackingTooltips", tostring(value and 0 or 1))
+                end
             },
             showQuestLevels = {
                 type = "toggle",

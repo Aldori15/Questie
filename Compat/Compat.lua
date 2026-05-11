@@ -3696,9 +3696,8 @@ end
 QuestieCompat.PLAYER_LOGIN = QuestieCompat.ToggleQuestTrackingTooltips
 
 function QuestieCompat:PLAYER_LOGOUT(event)
+	QuestieCompat:ToggleQuestTrackingTooltips(event)
 	if not QuestieCompat.isReloadingUi then
-		QuestieCompat:ToggleQuestTrackingTooltips(event)
-		
 		Questie.db.profile.isInitialLogin = true
 	end
 end
