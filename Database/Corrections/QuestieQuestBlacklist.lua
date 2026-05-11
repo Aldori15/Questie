@@ -713,6 +713,21 @@ function QuestieQuestBlacklist:Load()
         [13931] = true,
         [13932] = true,
 
+        --- Day of the Dead
+        [13952] = true,
+        [14166] = true,
+        [14167] = true,
+        [14168] = true,
+        [14169] = true,
+        [14170] = true,
+        [14171] = true,
+        [14172] = true,
+        [14173] = true,
+        [14174] = true,
+        [14175] = true,
+        [14176] = true,
+        [14177] = true,
+
         -- Lunar Festival
         [13012] = true,
         [13013] = true,
