@@ -27,14 +27,6 @@ function QuestieQuestFixes:LoadMissingQuests()
     QuestieDB.questData[7668] = {} -- Add missing quest index
     QuestieDB.questData[7669] = {} -- Add missing quest index
     QuestieDB.questData[7670] = {} -- Add missing quest index #1432
-
-    QuestieDB.questData[65593] = {} -- Hearts of the Lovers
-    QuestieDB.questData[65597] = {} -- The Binding
-    QuestieDB.questData[65601] = {} -- Love Hurts
-    QuestieDB.questData[65602] = {} -- What Is Love?
-    QuestieDB.questData[65603] = {} -- The Binding
-    QuestieDB.questData[65604] = {} -- The Binding
-    QuestieDB.questData[65610] = {} -- Wish You Were Here
 end
 
 function QuestieQuestFixes:Load()
@@ -5972,116 +5964,6 @@ function QuestieQuestFixes:Load()
             [questKeys.objectives] = {{{18199,nil,Questie.ICON_TYPE_EVENT}}},
             [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_OBJECT, l10n("Silithyst"),0,{{"object", 181597},{"object", 181598}}}},
         },
-        ----- Warlock Incubus quest chain -----
-        [65593] = { -- Hearts of the Lovers
-            [questKeys.name] = "Hearts of the Lovers",
-            [questKeys.startedBy] = {{5693}},
-            [questKeys.finishedBy] = {{5675}},
-            [questKeys.requiredLevel] = 20,
-            [questKeys.questLevel] = -1,
-            [questKeys.nextQuestInChain] = 65597,
-            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
-            [questKeys.requiredClasses] = classIDs.WARLOCK,
-            [questKeys.objectivesText] = {"Bring the hearts of Avelina Lilly and Isaac Pearson to Carendin Halgar in the Temple of the Damned."},
-            [questKeys.objectives] = {nil,nil,{{190179},{190180}}},
-            [questKeys.preQuestSingle] = {1472},
-            [questKeys.exclusiveTo] = {1507},
-            [questKeys.zoneOrSort] = sortKeys.WARLOCK,
-        },
-        [65597] = { -- The Binding
-            [questKeys.name] = "The Binding",
-            [questKeys.startedBy] = {{5675}},
-            [questKeys.finishedBy] = {{5675}},
-            [questKeys.requiredLevel] = 20,
-            [questKeys.questLevel] = -1,
-            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
-            [questKeys.requiredClasses] = classIDs.WARLOCK,
-            [questKeys.objectivesText] = {"Using the Lovers' Hearts, summon and subdue an incubus, then return the Lovers' Hearts to Carendin Halgar in the Magic Quarter of the Undercity."},
-            [questKeys.objectives] = {{{185335}}},
-            [questKeys.preQuestSingle] = {65593},
-            [questKeys.requiredSourceItems] = {190181},
-            [questKeys.exclusiveTo] = {1507},
-            [questKeys.zoneOrSort] = sortKeys.WARLOCK,
-            [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_EVENT, l10n("Summon the Incubus"), 0, {{"object", 37097}}}},
-        },
-        [65601] = { -- Love Hurts
-            [questKeys.name] = "Love Hurts",
-            [questKeys.startedBy] = {{5909}},
-            [questKeys.finishedBy] = {{3363}},
-            [questKeys.requiredLevel] = 20,
-            [questKeys.questLevel] = -1,
-            [questKeys.nextQuestInChain] = 65610,
-            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
-            [questKeys.requiredClasses] = classIDs.WARLOCK,
-            [questKeys.objectivesText] = {"Speak with Magar in Orgrimmar."},
-            [questKeys.preQuestSingle] = {1507},
-            [questKeys.exclusiveTo] = {1472},
-            [questKeys.zoneOrSort] = sortKeys.WARLOCK,
-        },
-        [65602] = { -- What Is Love?
-            [questKeys.name] = "What Is Love?",
-            [questKeys.startedBy] = {{6244}},
-            [questKeys.finishedBy] = {{6122}},
-            [questKeys.requiredLevel] = 20,
-            [questKeys.questLevel] = -1,
-            [questKeys.nextQuestInChain] = 65603,
-            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
-            [questKeys.requiredClasses] = classIDs.WARLOCK,
-            [questKeys.objectivesText] = {"Retrieve the Wooden Figurine and bring it to Gakin the Darkbinder in the Mage Quarter of Stormwind."},
-            [questKeys.preQuestSingle] = {1716},
-            [questKeys.objectives] = {nil,nil,{{190309}}},
-            [questKeys.exclusiveTo] = {},
-            [questKeys.zoneOrSort] = sortKeys.WARLOCK,
-            [questKeys.requiredSourceItems] = {190307,190308},
-            [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_INTERACT, l10n("Light the Unlit Torch near a fire and use the Burning Torch to set the Archaeologist's Cart on fire."), 0, {{"object", 400002}}}},
-        },
-        [65603] = { -- The Binding
-            [questKeys.name] = "The Binding",
-            [questKeys.startedBy] = {{6122}},
-            [questKeys.finishedBy] = {{6122}},
-            [questKeys.requiredLevel] = 20,
-            [questKeys.questLevel] = -1,
-            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
-            [questKeys.requiredClasses] = classIDs.WARLOCK,
-            [questKeys.objectivesText] = {"Using the Wooden Figurine, summon and subdue an incubus, then return the Wooden Figurine to Gakin the Darkbinder in the Slaughtered Lamb."},
-            [questKeys.objectives] = {{{185335}}},
-            [questKeys.preQuestSingle] = {65602},
-            [questKeys.requiredSourceItems] = {190186},
-            [questKeys.exclusiveTo] = {},
-            [questKeys.zoneOrSort] = sortKeys.WARLOCK,
-            [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_EVENT, l10n("Summon the Incubus"), 0, {{"object", 92015}}}},
-        },
-        [65604] = { -- The Binding
-            [questKeys.name] = "The Binding",
-            [questKeys.startedBy] = {{5875}},
-            [questKeys.finishedBy] = {{5875}},
-            [questKeys.requiredLevel] = 20,
-            [questKeys.questLevel] = -1,
-            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
-            [questKeys.requiredClasses] = classIDs.WARLOCK,
-            [questKeys.objectivesText] = {"Using the Withered Scarf, summon and subdue an incubus, then return the Withered Scarf to Gan'rul Bloodeye in Orgrimmar."},
-            [questKeys.objectives] = {{{185335}}},
-            [questKeys.preQuestSingle] = {65610},
-            [questKeys.requiredSourceItems] = {190187},
-            [questKeys.exclusiveTo] = {1472},
-            [questKeys.zoneOrSort] = sortKeys.WARLOCK,
-            [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_EVENT, l10n("Summon the Incubus"), 0, {{"object", 105576}}}},
-        },
-        [65610] = { -- Wish You Were Here
-            [questKeys.name] = "Wish You Were Here",
-            [questKeys.startedBy] = {{3363}},
-            [questKeys.finishedBy] = {{5875}},
-            [questKeys.requiredLevel] = 20,
-            [questKeys.questLevel] = -1,
-            [questKeys.nextQuestInChain] = 65604,
-            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
-            [questKeys.requiredClasses] = classIDs.WARLOCK,
-            [questKeys.objectivesText] = {"Investigate Fallen Sky Lake in Ashenvale and report your findings to Gan'rul Bloodeye in Orgrimmar."},
-            [questKeys.preQuestSingle] = {65601},
-            [questKeys.objectives] = {nil,nil,{{190232}}},
-            [questKeys.exclusiveTo] = {1472},
-            [questKeys.zoneOrSort] = sortKeys.WARLOCK,
-        },
     }
 end
 
@@ -6214,5 +6096,3 @@ function QuestieQuestFixes:LoadFactionFixes()
         return questFixesAlliance
     end
 end
-
-
