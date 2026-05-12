@@ -42,7 +42,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [550] = {
-            [questKeys.startedBy] = {{2215}},
+            [questKeys.finishedBy] = {},
         },
 
         [558] = {
@@ -83,9 +83,14 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.finishedBy] = {},
         },
 
-        [1133] = {
-            [questKeys.startedBy] = {{4456}},
-            [questKeys.finishedBy] = {{3845}},
+        [1132] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [1135] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
         [1155] = {
@@ -96,12 +101,22 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.startedBy] = {},
         },
 
+        [1470] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
         [1479] = {
             [questKeys.startedBy] = {},
         },
 
         [1480] = {
             [questKeys.startedBy] = {nil,nil,{6766,20310}},
+        },
+
+        [1485] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
         [1505] = {
@@ -116,9 +131,14 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.startedBy] = {},
         },
 
-        [1661] = {
-            [questKeys.startedBy] = {{6171}},
-            [questKeys.finishedBy] = {{6171}},
+        [1598] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [1599] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
         [1684] = {
@@ -146,15 +166,15 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [1886] = {
-            [questKeys.startedBy] = {{6467}},
+            [questKeys.finishedBy] = {},
         },
 
         [1898] = {
-            [questKeys.startedBy] = {{6467}},
+            [questKeys.finishedBy] = {},
         },
 
         [1899] = {
-            [questKeys.startedBy] = {{6522}},
+            [questKeys.finishedBy] = {},
         },
 
         [1947] = {
@@ -168,10 +188,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         [1962] = {
             [questKeys.startedBy] = {{4576}},
             [questKeys.finishedBy] = {{4576}},
-        },
-
-        [1978] = {
-            [questKeys.finishedBy] = {{2425,36517}},
         },
 
         [2383] = {
@@ -194,12 +210,9 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.startedBy] = {nil,nil,{9572}},
         },
 
-        [3121] = {
-            [questKeys.finishedBy] = {{3216}},
-        },
-
-        [3122] = {
-            [questKeys.startedBy] = {{3216}},
+        [3631] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
         [3638] = {
@@ -256,33 +269,62 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.startedBy] = {nil,{164909}},
         },
 
-        [4182] = {
-            [questKeys.startedBy] = {{9562}},
-            [questKeys.finishedBy] = {{9562}},
+        [4223] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
-        [4183] = {
-            [questKeys.startedBy] = {{9562}},
-            [questKeys.finishedBy] = {{344}},
+        [4224] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
-        [4184] = {
-            [questKeys.startedBy] = {{344}},
-            [questKeys.finishedBy] = {{1748,29611}},
+        [4241] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
-        [4185] = {
-            [questKeys.startedBy] = {{1748,29611}},
-            [questKeys.finishedBy] = {{1748}},
-        },
-
-        [4186] = {
-            [questKeys.startedBy] = {{1748}},
-            [questKeys.finishedBy] = {{344}},
+        [4242] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
         [4264] = {
-            [questKeys.startedBy] = {nil,nil,{11446}},
+            [questKeys.finishedBy] = {},
+        },
+
+        [4282] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [4322] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [4485] = {
+            [questKeys.startedBy] = {{5491}},
+        },
+
+        [4487] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [4488] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [4489] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [4490] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
         [4738] = {
@@ -487,17 +529,28 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.startedBy] = {{3596,4146,4205,5117,16738,17110}},
         },
 
-        [6186] = {
-            [questKeys.finishedBy] = {{1748}},
-        },
-
-        [6187] = {
-            [questKeys.startedBy] = {{1748}},
-            [questKeys.finishedBy] = {{1748}},
+        [6144] = {
+            [questKeys.finishedBy] = {{36273}},
         },
 
         [6402] = {
-            [questKeys.finishedBy] = {{12580,17804}},
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [6403] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [6501] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [6502] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
         [6521] = {
@@ -529,43 +582,64 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.startedBy] = {{5515}},
         },
 
+        [6804] = {
+            [questKeys.startedBy] = {},
+        },
+
         [7042] = {
             [questKeys.startedBy] = {{13434}},
         },
 
-        [7122] = {
-            [questKeys.startedBy] = {{12096,13777}},
+        [7281] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
-        [7124] = {
-            [questKeys.startedBy] = {{12097,13776}},
+        [7282] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
-        [7364] = {
-            [questKeys.startedBy] = {{14188}},
-            [questKeys.finishedBy] = {{14188}},
+        [7301] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
-        [7365] = {
-            [questKeys.startedBy] = {{14187}},
-            [questKeys.finishedBy] = {{14187}},
+        [7302] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
-        [7424] = {
+        [7490] = {
+            [questKeys.finishedBy] = {},
+        },
+
+        [7491] = {
             [questKeys.startedBy] = {},
             [questKeys.finishedBy] = {},
         },
 
         [7495] = {
-            [questKeys.finishedBy] = {{1748,29611}},
+            [questKeys.finishedBy] = {},
         },
 
         [7496] = {
-            [questKeys.startedBy] = {{1748}},
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
         [7507] = {
-            [questKeys.startedBy] = {nil,nil,{18401}},
+            [questKeys.finishedBy] = {},
+        },
+
+        [7508] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [7509] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
         [7561] = {
@@ -584,10 +658,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         [7669] = {
             [questKeys.startedBy] = {{928}},
             [questKeys.finishedBy] = {{928}},
-        },
-
-        [7781] = {
-            [questKeys.finishedBy] = {{1748}},
         },
 
         [7788] = {
@@ -721,272 +791,41 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.finishedBy] = {},
         },
 
+        [8344] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
         [8356] = {
             [questKeys.startedBy] = {},
         },
 
         [8367] = {
-            [questKeys.startedBy] = {{215350}},
-            [questKeys.finishedBy] = {{215350}},
-        },
-
-        [8368] = {
-            [questKeys.startedBy] = {{115350}},
-            [questKeys.finishedBy] = {{115350}},
-        },
-
-        [8369] = {
-            [questKeys.startedBy] = {{115350}},
-            [questKeys.finishedBy] = {{115350}},
-        },
-
-        [8370] = {
-            [questKeys.startedBy] = {{115350}},
-            [questKeys.finishedBy] = {{115350}},
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
         [8371] = {
-            [questKeys.startedBy] = {{215351}},
-            [questKeys.finishedBy] = {{215351}},
-        },
-
-        [8372] = {
-            [questKeys.startedBy] = {{115351}},
-            [questKeys.finishedBy] = {{115351}},
-        },
-
-        [8374] = {
-            [questKeys.startedBy] = {{115351}},
-            [questKeys.finishedBy] = {{115351}},
-        },
-
-        [8375] = {
-            [questKeys.startedBy] = {{115351}},
-            [questKeys.finishedBy] = {{115351}},
-        },
-
-        [8383] = {
-            [questKeys.startedBy] = {{115351}},
-            [questKeys.finishedBy] = {{115351}},
-        },
-
-        [8384] = {
-            [questKeys.startedBy] = {{115351}},
-            [questKeys.finishedBy] = {{115351}},
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
         [8385] = {
-            [questKeys.startedBy] = {{215351}},
-            [questKeys.finishedBy] = {{215351}},
-        },
-
-        [8386] = {
-            [questKeys.startedBy] = {{115351}},
-            [questKeys.finishedBy] = {{115351}},
-        },
-
-        [8387] = {
-            [questKeys.startedBy] = {{115350}},
-            [questKeys.finishedBy] = {{115350}},
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
         [8388] = {
-            [questKeys.startedBy] = {{215350}},
-            [questKeys.finishedBy] = {{215350}},
-        },
-
-        [8389] = {
-            [questKeys.startedBy] = {{115350}},
-            [questKeys.finishedBy] = {{115350}},
-        },
-
-        [8390] = {
-            [questKeys.startedBy] = {{115350}},
-            [questKeys.finishedBy] = {{115350}},
-        },
-
-        [8391] = {
-            [questKeys.startedBy] = {{115351}},
-            [questKeys.finishedBy] = {{115351}},
-        },
-
-        [8392] = {
-            [questKeys.startedBy] = {{115351}},
-            [questKeys.finishedBy] = {{115351}},
-        },
-
-        [8393] = {
-            [questKeys.startedBy] = {{115351}},
-            [questKeys.finishedBy] = {{115351}},
-        },
-
-        [8394] = {
-            [questKeys.startedBy] = {{115351}},
-            [questKeys.finishedBy] = {{115351}},
-        },
-
-        [8395] = {
-            [questKeys.startedBy] = {{115351}},
-            [questKeys.finishedBy] = {{115351}},
-        },
-
-        [8396] = {
-            [questKeys.startedBy] = {{115351}},
-            [questKeys.finishedBy] = {{115351}},
-        },
-
-        [8397] = {
-            [questKeys.startedBy] = {{115351}},
-            [questKeys.finishedBy] = {{115351}},
-        },
-
-        [8398] = {
-            [questKeys.startedBy] = {{115351}},
-            [questKeys.finishedBy] = {{115351}},
-        },
-
-        [8399] = {
-            [questKeys.startedBy] = {{115351}},
-            [questKeys.finishedBy] = {{115351}},
-        },
-
-        [8400] = {
-            [questKeys.startedBy] = {{115351}},
-            [questKeys.finishedBy] = {{115351}},
-        },
-
-        [8401] = {
-            [questKeys.startedBy] = {{115351}},
-            [questKeys.finishedBy] = {{115351}},
-        },
-
-        [8402] = {
-            [questKeys.startedBy] = {{115351}},
-            [questKeys.finishedBy] = {{115351}},
-        },
-
-        [8403] = {
-            [questKeys.startedBy] = {{115351}},
-            [questKeys.finishedBy] = {{115351}},
-        },
-
-        [8404] = {
-            [questKeys.startedBy] = {{115351}},
-            [questKeys.finishedBy] = {{115351}},
-        },
-
-        [8405] = {
-            [questKeys.startedBy] = {{115351}},
-            [questKeys.finishedBy] = {{115351}},
-        },
-
-        [8406] = {
-            [questKeys.startedBy] = {{115351}},
-            [questKeys.finishedBy] = {{115351}},
-        },
-
-        [8407] = {
-            [questKeys.startedBy] = {{115351}},
-            [questKeys.finishedBy] = {{115351}},
-        },
-
-        [8408] = {
-            [questKeys.startedBy] = {{115351}},
-            [questKeys.finishedBy] = {{115351}},
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
         [8415] = {
             [questKeys.startedBy] = {{928}},
         },
 
-        [8426] = {
-            [questKeys.startedBy] = {{115350}},
-            [questKeys.finishedBy] = {{115350}},
-        },
-
-        [8427] = {
-            [questKeys.startedBy] = {{115350}},
-            [questKeys.finishedBy] = {{115350}},
-        },
-
-        [8428] = {
-            [questKeys.startedBy] = {{115350}},
-            [questKeys.finishedBy] = {{115350}},
-        },
-
-        [8429] = {
-            [questKeys.startedBy] = {{115350}},
-            [questKeys.finishedBy] = {{115350}},
-        },
-
-        [8430] = {
-            [questKeys.startedBy] = {{115350}},
-            [questKeys.finishedBy] = {{115350}},
-        },
-
-        [8431] = {
-            [questKeys.startedBy] = {{115350}},
-            [questKeys.finishedBy] = {{115350}},
-        },
-
-        [8432] = {
-            [questKeys.startedBy] = {{115350}},
-            [questKeys.finishedBy] = {{115350}},
-        },
-
-        [8433] = {
-            [questKeys.startedBy] = {{115350}},
-            [questKeys.finishedBy] = {{115350}},
-        },
-
-        [8434] = {
-            [questKeys.startedBy] = {{115350}},
-            [questKeys.finishedBy] = {{115350}},
-        },
-
-        [8435] = {
-            [questKeys.startedBy] = {{115350}},
-            [questKeys.finishedBy] = {{115350}},
-        },
-
-        [8436] = {
-            [questKeys.startedBy] = {{115350}},
-            [questKeys.finishedBy] = {{115350}},
-        },
-
-        [8437] = {
-            [questKeys.startedBy] = {{115350}},
-            [questKeys.finishedBy] = {{115350}},
-        },
-
-        [8438] = {
-            [questKeys.startedBy] = {{115350}},
-            [questKeys.finishedBy] = {{115350}},
-        },
-
-        [8439] = {
-            [questKeys.startedBy] = {{115350}},
-            [questKeys.finishedBy] = {{115350}},
-        },
-
-        [8440] = {
-            [questKeys.startedBy] = {{115350}},
-            [questKeys.finishedBy] = {{115350}},
-        },
-
-        [8441] = {
-            [questKeys.startedBy] = {{115350}},
-            [questKeys.finishedBy] = {{115350}},
-        },
-
-        [8442] = {
-            [questKeys.startedBy] = {{115350}},
-            [questKeys.finishedBy] = {{115350}},
-        },
-
-        [8443] = {
-            [questKeys.startedBy] = {{115350}},
-            [questKeys.finishedBy] = {{115350}},
+        [8419] = {
+            [questKeys.startedBy] = {{461,988,3324,3325,3326,4563,4564,4565,5171,5172,5173,5495,5496,16646,16647,16648,23534}},
         },
 
         [8575] = {
@@ -994,6 +833,11 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8579] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [8743] = {
             [questKeys.startedBy] = {},
             [questKeys.finishedBy] = {},
         },
@@ -1015,30 +859,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.finishedBy] = {},
         },
 
-        [8792] = {
-            [questKeys.startedBy] = {{15702,15703,15704,21155}},
-        },
-
-        [8793] = {
-            [questKeys.startedBy] = {},
-            [questKeys.finishedBy] = {},
-        },
-
-        [8794] = {
-            [questKeys.startedBy] = {},
-            [questKeys.finishedBy] = {},
-        },
-
-        [8795] = {
-            [questKeys.startedBy] = {{15707,15708,15709,21156}},
-            [questKeys.finishedBy] = {{15701}},
-        },
-
         [8796] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [8797] = {
             [questKeys.startedBy] = {},
         },
 
@@ -1189,14 +1010,373 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.finishedBy] = {},
         },
 
+        [9034] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9036] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9037] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9038] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9039] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9040] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9041] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9042] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9043] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9044] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9046] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9047] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9048] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9049] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9050] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9054] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9055] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9056] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9057] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9058] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9059] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9060] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9061] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9068] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9069] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9070] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9071] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9072] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9073] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9074] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9075] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9077] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9078] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9079] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9080] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9081] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9082] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9083] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9084] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9086] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9087] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9088] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9089] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9090] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9091] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9092] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9093] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
         [9094] = {
-            [questKeys.startedBy] = {{616786}},
-            [questKeys.finishedBy] = {{616786}},
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9095] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9096] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9097] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9098] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9099] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9100] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9101] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9102] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9103] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9104] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9105] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9106] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9107] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9108] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9109] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9110] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9111] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9112] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9113] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9114] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9115] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9116] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9117] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9118] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [9120] = {
+            [questKeys.finishedBy] = {},
         },
 
         [9154] = {
-            [questKeys.startedBy] = {{616241,616255}},
-            [questKeys.finishedBy] = {{616281}},
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
         [9177] = {
@@ -1204,76 +1384,28 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.finishedBy] = {},
         },
 
-        [9260] = {
-            [questKeys.startedBy] = {{16478,616478}},
-            [questKeys.finishedBy] = {{16478,616478}},
+        [9229] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
-        [9261] = {
-            [questKeys.startedBy] = {{16484,616484}},
-            [questKeys.finishedBy] = {{16484,616484}},
+        [9230] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
-        [9262] = {
-            [questKeys.startedBy] = {{16495,616495}},
-            [questKeys.finishedBy] = {{16495,616495}},
-        },
-
-        [9263] = {
-            [questKeys.startedBy] = {{16493,616493}},
-            [questKeys.finishedBy] = {{16493,616493}},
-        },
-
-        [9264] = {
-            [questKeys.startedBy] = {{16490,616490}},
-            [questKeys.finishedBy] = {{16490,616490}},
-        },
-
-        [9265] = {
-            [questKeys.startedBy] = {{16494,616494}},
-            [questKeys.finishedBy] = {{16494,616494}},
-        },
-
-        [9292] = {
-            [questKeys.finishedBy] = {{16478,616478}},
-        },
-
-        [9295] = {
-            [questKeys.finishedBy] = {{16281,616281}},
-        },
-
-        [9299] = {
-            [questKeys.finishedBy] = {{16281,616281}},
-        },
-
-        [9300] = {
-            [questKeys.finishedBy] = {{16281,616281}},
-        },
-
-        [9301] = {
-            [questKeys.finishedBy] = {{16281,616281}},
-        },
-
-        [9302] = {
-            [questKeys.finishedBy] = {{16281,616281}},
-        },
-
-        [9304] = {
-            [questKeys.finishedBy] = {{16281,616281}},
-        },
-
-        [9310] = {
-            [questKeys.finishedBy] = {{16494,616494}},
+        [9232] = {
+            [questKeys.startedBy] = {},
         },
 
         [9317] = {
-            [questKeys.startedBy] = {{616786}},
-            [questKeys.finishedBy] = {{616786}},
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
         [9318] = {
-            [questKeys.startedBy] = {{616786}},
-            [questKeys.finishedBy] = {{616786}},
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
         [9319] = {
@@ -1282,13 +1414,13 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9320] = {
-            [questKeys.startedBy] = {{616787}},
-            [questKeys.finishedBy] = {{616787}},
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
         [9321] = {
-            [questKeys.startedBy] = {{616786}},
-            [questKeys.finishedBy] = {{616786}},
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
         [9322] = {
@@ -1302,28 +1434,28 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9333] = {
-            [questKeys.startedBy] = {{616787}},
-            [questKeys.finishedBy] = {{616787}},
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
         [9334] = {
-            [questKeys.startedBy] = {{616787}},
-            [questKeys.finishedBy] = {{616787}},
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
         [9335] = {
-            [questKeys.startedBy] = {{616787}},
-            [questKeys.finishedBy] = {{616787}},
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
         [9336] = {
-            [questKeys.startedBy] = {{616787}},
-            [questKeys.finishedBy] = {{616787}},
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
         [9337] = {
-            [questKeys.startedBy] = {{616786}},
-            [questKeys.finishedBy] = {{616786}},
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
         [9339] = {
@@ -1331,13 +1463,13 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9341] = {
-            [questKeys.startedBy] = {{616786}},
-            [questKeys.finishedBy] = {{616786}},
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
         [9343] = {
-            [questKeys.startedBy] = {{616787}},
-            [questKeys.finishedBy] = {{616787}},
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
         [9365] = {
@@ -1373,17 +1505,8 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.startedBy] = {{17717}},
         },
 
-        [9712] = {
-            [questKeys.startedBy] = {{17717}},
-            [questKeys.finishedBy] = {{17717}},
-        },
-
         [10169] = {
             [questKeys.startedBy] = {},
-        },
-
-        [10445] = {
-            [questKeys.startedBy] = {{19935}},
         },
 
         [10460] = {
@@ -1450,13 +1573,8 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.startedBy] = {{19935}},
         },
 
-        [10500] = {
-            [questKeys.startedBy] = {},
-            [questKeys.finishedBy] = {},
-        },
-
         [10501] = {
-            [questKeys.startedBy] = {},
+            [questKeys.startedBy] = {{21156}},
             [questKeys.finishedBy] = {},
         },
 
@@ -1478,15 +1596,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [10872] = {
             [questKeys.finishedBy] = {},
-        },
-
-        [10888] = {
-            [questKeys.startedBy] = {{18481}},
-        },
-
-        [10901] = {
-            [questKeys.startedBy] = {{22421}},
-            [questKeys.finishedBy] = {{22421}},
         },
 
         [10942] = {
@@ -1586,54 +1695,44 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.startedBy] = {nil,nil,{33121}},
         },
 
-        [11222] = {
-            [questKeys.startedBy] = {{4968}},
-            [questKeys.finishedBy] = {{1748}},
-        },
-
-        [11223] = {
-            [questKeys.startedBy] = {{1748}},
-            [questKeys.finishedBy] = {{4968}},
-        },
-
         [11335] = {
-            [questKeys.startedBy] = {{215351}},
-            [questKeys.finishedBy] = {{215351}},
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
         [11336] = {
-            [questKeys.startedBy] = {{215351}},
-            [questKeys.finishedBy] = {{215351}},
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
         [11337] = {
-            [questKeys.startedBy] = {{215351}},
-            [questKeys.finishedBy] = {{215351}},
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
         [11338] = {
-            [questKeys.startedBy] = {{215351}},
-            [questKeys.finishedBy] = {{215351}},
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
         [11339] = {
-            [questKeys.startedBy] = {{215350}},
-            [questKeys.finishedBy] = {{215350}},
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
         [11340] = {
-            [questKeys.startedBy] = {{215350}},
-            [questKeys.finishedBy] = {{215350}},
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
         [11341] = {
-            [questKeys.startedBy] = {{215350}},
-            [questKeys.finishedBy] = {{215350}},
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
         [11342] = {
-            [questKeys.startedBy] = {{215350}},
-            [questKeys.finishedBy] = {{215350}},
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
         [11356] = {
@@ -1666,14 +1765,117 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.startedBy] = {},
         },
 
+        [11496] = {
+            [questKeys.startedBy] = {},
+        },
+
+        [11513] = {
+            [questKeys.startedBy] = {},
+        },
+
+        [11514] = {
+            [questKeys.startedBy] = {},
+        },
+
+        [11517] = {
+            [questKeys.startedBy] = {},
+        },
+
+        [11520] = {
+            [questKeys.startedBy] = {},
+        },
+
+        [11521] = {
+            [questKeys.startedBy] = {},
+        },
+
+        [11523] = {
+            [questKeys.startedBy] = {},
+        },
+
+        [11524] = {
+            [questKeys.startedBy] = {},
+        },
+
+        [11525] = {
+            [questKeys.startedBy] = {},
+        },
+
         [11528] = {
             [questKeys.startedBy] = {},
             [questKeys.finishedBy] = {},
         },
 
+        [11532] = {
+            [questKeys.startedBy] = {},
+        },
+
+        [11533] = {
+            [questKeys.startedBy] = {},
+        },
+
         [11534] = {
             [questKeys.startedBy] = {},
-            [questKeys.finishedBy] = {},
+        },
+
+        [11535] = {
+            [questKeys.startedBy] = {},
+        },
+
+        [11536] = {
+            [questKeys.startedBy] = {},
+        },
+
+        [11537] = {
+            [questKeys.startedBy] = {},
+        },
+
+        [11538] = {
+            [questKeys.startedBy] = {},
+        },
+
+        [11539] = {
+            [questKeys.startedBy] = {},
+        },
+
+        [11540] = {
+            [questKeys.startedBy] = {},
+        },
+
+        [11541] = {
+            [questKeys.startedBy] = {},
+        },
+
+        [11542] = {
+            [questKeys.startedBy] = {},
+        },
+
+        [11543] = {
+            [questKeys.startedBy] = {},
+        },
+
+        [11544] = {
+            [questKeys.startedBy] = {},
+        },
+
+        [11545] = {
+            [questKeys.startedBy] = {},
+        },
+
+        [11546] = {
+            [questKeys.startedBy] = {},
+        },
+
+        [11547] = {
+            [questKeys.startedBy] = {},
+        },
+
+        [11548] = {
+            [questKeys.startedBy] = {},
+        },
+
+        [11549] = {
+            [questKeys.startedBy] = {},
         },
 
         [11551] = {
@@ -2425,6 +2627,66 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.finishedBy] = {{31091}},
         },
 
+        [13245] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [13246] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [13247] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [13248] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [13249] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [13250] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [13251] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [13252] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [13253] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [13254] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [13255] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [13256] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
         [13267] = {
             [questKeys.finishedBy] = {{32518}},
         },
@@ -2458,21 +2720,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13429] = {
-            [questKeys.startedBy] = {},
-            [questKeys.finishedBy] = {},
-        },
-
-        [13430] = {
-            [questKeys.startedBy] = {},
-            [questKeys.finishedBy] = {},
-        },
-
-        [13431] = {
-            [questKeys.startedBy] = {},
-            [questKeys.finishedBy] = {},
-        },
-
-        [13432] = {
             [questKeys.startedBy] = {},
             [questKeys.finishedBy] = {},
         },
@@ -2626,24 +2873,14 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.finishedBy] = {nil,{194080}},
         },
 
-        [13475] = {
-            [questKeys.startedBy] = {{115350}},
-            [questKeys.finishedBy] = {{115350}},
-        },
-
         [13476] = {
-            [questKeys.startedBy] = {{115350}},
-            [questKeys.finishedBy] = {{115350}},
-        },
-
-        [13477] = {
-            [questKeys.startedBy] = {{115351}},
-            [questKeys.finishedBy] = {{115351}},
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
         [13478] = {
-            [questKeys.startedBy] = {{115351}},
-            [questKeys.finishedBy] = {{115351}},
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
         [13483] = {
@@ -2799,7 +3036,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13966] = {
-            [questKeys.startedBy] = {nil, nil, {46740}},
+            [questKeys.startedBy] = {nil,nil,{46740}},
         },
 
         [14022] = {
@@ -2859,45 +3096,13 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.finishedBy] = {},
         },
 
-        [14351] = {
-            [questKeys.startedBy] = {},
-            [questKeys.finishedBy] = {{2425,36273}},
-        },
-
-        [14352] = {
-            [questKeys.finishedBy] = {{2425,36273}},
-        },
-
-        [14353] = {
-            [questKeys.finishedBy] = {{2425,36273}},
-        },
-
-        [14355] = {
-            [questKeys.finishedBy] = {{2425,36273}},
-        },
-
-        [14356] = {
-            [questKeys.finishedBy] = {{2425,36273}},
-        },
-
-        [14418] = {
+        [14199] = {
             [questKeys.startedBy] = {},
             [questKeys.finishedBy] = {},
         },
 
-        [14419] = {
-            [questKeys.startedBy] = {},
-            [questKeys.finishedBy] = {},
-        },
-
-        [14420] = {
-            [questKeys.startedBy] = {},
-            [questKeys.finishedBy] = {},
-        },
-
-        [14421] = {
-            [questKeys.startedBy] = {},
-            [questKeys.finishedBy] = {},
+        [14330] = {
+            [questKeys.startedBy] = {nil,nil,{38567}},
         },
 
         [24216] = {
@@ -3134,18 +3339,17 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [6] = {
-            [questKeys.questFlags] = 8,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [7] = {
-            [questKeys.objectivesText] = {"Kill 10 Kobold Vermin, then return to Marshal McBride."},
             [questKeys.nextQuestInChain] = 0,
-            [questKeys.questFlags] = 8,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [8] = {
             [questKeys.objectives] = {nil,nil,{{7628}}},
-            [questKeys.questFlags] = 0,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [11] = {
@@ -3153,19 +3357,16 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [15] = {
-            [questKeys.objectivesText] = {"Kill 10 Kobold Workers, then report back to Marshal McBride."},
-            [questKeys.questFlags] = 8,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [18] = {
-            [questKeys.objectivesText] = {"Bring 12 Red Burlap Bandanas to Deputy Willem outside the Northshire Abbey."},
-            [questKeys.questFlags] = 8,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [21] = {
-            [questKeys.objectivesText] = {"Kill 12 Kobold Laborers, then return to Marshal McBride at Northshire Abbey."},
             [questKeys.nextQuestInChain] = 0,
-            [questKeys.questFlags] = 8,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [23] = {
@@ -3201,9 +3402,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [33] = {
-            [questKeys.objectivesText] = {"Bring 8 pieces of Tough Wolf Meat to Eagan Peltskinner outside Northshire Abbey."},
-            [questKeys.objectives] = {nil,nil,{{750}}},
-            [questKeys.questFlags] = 8,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [34] = {
@@ -3224,7 +3423,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [54] = {
             [questKeys.objectives] = {nil,nil,{{745}}},
-            [questKeys.questFlags] = 0,
         },
 
         [55] = {
@@ -3299,16 +3497,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [96] = {
-            [questKeys.objectivesText] = {"Bring the Shard of Water to Islen Waterseer in the Barrens."},
             [questKeys.objectives] = {nil,nil,{{7813}}},
-        },
-
-        [98] = {
-            [questKeys.questLevel] = 35,
-        },
-
-        [100] = {
-            [questKeys.objectivesText] = {"Speak to the Minor Manifestation of Water in Silverpine Forest."},
         },
 
         [106] = {
@@ -3368,10 +3557,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [125] = {
             [questKeys.nextQuestInChain] = 0,
-        },
-
-        [126] = {
-            [questKeys.questLevel] = 25,
         },
 
         [129] = {
@@ -3478,10 +3663,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.nextQuestInChain] = 0,
         },
 
-        [169] = {
-            [questKeys.requiredLevel] = 15,
-        },
-
         [170] = {
             [questKeys.questFlags] = 8,
             [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
@@ -3498,10 +3679,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [179] = {
             [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
-        },
-
-        [180] = {
-            [questKeys.requiredLevel] = 15,
         },
 
         [182] = {
@@ -3543,13 +3720,8 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectives] = {nil,nil,{{4085}}},
         },
 
-        [212] = {
-            [questKeys.objectivesText] = {"Kill a Cold Eye Basilisk, get a Chilled Basilisk Haunch, and return it to Angus Stern in the Blue Recluse.","","<You must not release your spirit to succeed in this quest.>"},
-            [questKeys.questFlags] = 9,
-        },
-
         [216] = {
-            [questKeys.objectivesText] = {"Take down 12 Thistlefur Avengers and 12 Thistlefur Shaman; most are located east of Zoram Strand in Thistlefur Village.  Once completed, return to Karang Amakkar at Zoram'gar Outpost, Ashenvale."},
+            [questKeys.objectivesText] = {"Take down 8 Thistlefur Avengers and 8 Thistlefur Shaman; most are located east of Zoram Strand in Thistlefur Village.  Once completed, return to Karang Amakkar at Zoram'gar Outpost, Ashenvale."},
         },
 
         [217] = {
@@ -3562,7 +3734,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [220] = {
-            [questKeys.objectivesText] = {"Bring the Vial of Purest Water to Islen Waterseer in the Barrens."},
             [questKeys.objectives] = {nil,nil,{{7810}}},
         },
 
@@ -3574,33 +3745,11 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.nextQuestInChain] = 0,
         },
 
-        [225] = {
-            [questKeys.questLevel] = 35,
-            [questKeys.requiredLevel] = 28,
-        },
-
-        [227] = {
-            [questKeys.questLevel] = 35,
-            [questKeys.requiredLevel] = 28,
-        },
-
-        [228] = {
-            [questKeys.questLevel] = 35,
-            [questKeys.requiredLevel] = 28,
-        },
-
-        [229] = {
-            [questKeys.questLevel] = 35,
-            [questKeys.requiredLevel] = 28,
-        },
-
         [230] = {
             [questKeys.objectives] = {nil,nil,{{2161}}},
         },
 
         [231] = {
-            [questKeys.questLevel] = 35,
-            [questKeys.requiredLevel] = 28,
             [questKeys.objectives] = {nil,nil,{{2162}}},
         },
 
@@ -3663,10 +3812,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectives] = {nil,nil,{{1083}}},
         },
 
-        [249] = {
-            [questKeys.questLevel] = 27,
-        },
-
         [251] = {
             [questKeys.objectives] = {nil,nil,{{1637}}},
         },
@@ -3683,10 +3828,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
-        },
-
-        [256] = {
-            [questKeys.requiredLevel] = 17,
         },
 
         [258] = {
@@ -3743,10 +3884,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectives] = {nil,nil,{{2609}}},
         },
 
-        [275] = {
-            [questKeys.objectivesText] = {"Kill 12 Fen Creepers, then return to Rethiel the Greenwarden in the Wetlands."},
-        },
-
         [280] = {
             [questKeys.objectives] = {nil,nil,{{2610}}},
         },
@@ -3800,11 +3937,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [303] = {
-            [questKeys.objectivesText] = {"Motley Garmason at Dun Modr wants you to kill 15 Dark Iron Dwarves,  5 Dark Iron Tunnelers, 5 Dark Iron Saboteurs and 5 Dark Iron Demolitionists."},
-        },
-
-        [304] = {
-            [questKeys.questLevel] = 34,
+            [questKeys.objectivesText] = {"Motley Garmason at Dun Modr wants you to kill 10 Dark Iron Dwarves,  5 Dark Iron Tunnelers, 5 Dark Iron Saboteurs and 5 Dark Iron Demolitionists."},
         },
 
         [306] = {
@@ -3934,13 +4067,12 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [363] = {
             [questKeys.breadcrumbForQuestId] = 0,
-            [questKeys.questFlags] = 8,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [364] = {
-            [questKeys.objectivesText] = {"Shadow Priest Sarvis wants you to kill 8 Mindless Zombies and 8 Wretched Zombies."},
             [questKeys.breadcrumbs] = {},
-            [questKeys.questFlags] = 8,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [366] = {
@@ -3951,26 +4083,29 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectives] = {nil,nil,{{2874}}},
         },
 
+        [374] = {
+            [questKeys.preQuestSingle] = {},
+        },
+
         [376] = {
-            [questKeys.questFlags] = 8,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [380] = {
-            [questKeys.objectivesText] = {"Executor Arren wants you to kill 10 Young Night Web Spiders and 8 Night Web Spiders."},
-            [questKeys.questFlags] = 8,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [381] = {
-            [questKeys.questFlags] = 8,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [382] = {
-            [questKeys.questFlags] = 8,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [383] = {
             [questKeys.objectives] = {nil,nil,{{2885}}},
-            [questKeys.questFlags] = 0,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [384] = {
@@ -3994,10 +4129,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [396] = {
             [questKeys.objectives] = {nil,nil,{{2956}}},
-        },
-
-        [398] = {
-            [questKeys.requiredLevel] = 6,
         },
 
         [400] = {
@@ -4075,10 +4206,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectives] = {nil,nil,{{3234}}},
         },
 
-        [442] = {
-            [questKeys.questLevel] = 24,
-        },
-
         [443] = {
             [questKeys.preQuestSingle] = {438},
         },
@@ -4109,13 +4236,11 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [456] = {
-            [questKeys.objectivesText] = {"Kill 7 Young Nightsabers and 7 Young Thistle Boars and return to Conservator Ilthalaine."},
             [questKeys.nextQuestInChain] = 0,
             [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [457] = {
-            [questKeys.objectivesText] = {"Conservator Ilthalaine needs you to kill 7 Mangy Nightsabers and 7 Thistle Boars."},
             [questKeys.questFlags] = 8,
             [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
@@ -4147,13 +4272,11 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [464] = {
-            [questKeys.questLevel] = 28,
             [questKeys.preQuestSingle] = {473},
             [questKeys.breadcrumbs] = {},
         },
 
         [465] = {
-            [questKeys.questLevel] = 31,
             [questKeys.objectives] = {nil,nil,{{3339}}},
         },
 
@@ -4166,13 +4289,8 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [473] = {
-            [questKeys.questLevel] = 28,
             [questKeys.preQuestSingle] = {},
             [questKeys.breadcrumbForQuestId] = 0,
-        },
-
-        [474] = {
-            [questKeys.questLevel] = 32,
         },
 
         [478] = {
@@ -4239,10 +4357,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectives] = {nil,nil,{{3704}}},
         },
 
-        [504] = {
-            [questKeys.objectivesText] = {"Slay 15 Crushridge Warmongers, then return to Marshal Redpath in Southshore."},
-        },
-
         [507] = {
             [questKeys.questFlags] = 8,
         },
@@ -4270,10 +4384,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [515] = {
             [questKeys.objectives] = {nil,nil,{{3508},{3388},{3509},{3510}}},
-        },
-
-        [518] = {
-            [questKeys.objectivesText] = {"Kill 14 Crushridge Maulers for Melisara in Tarren Mill."},
         },
 
         [521] = {
@@ -4305,7 +4415,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [532] = {
-            [questKeys.objectivesText] = {"Kill Magistrate Burnside and 5 Hillsbrad Councilmen.  Destroy the Hillsbrad Proclamation.  Steal the Hillsbrad Town Registry.  Report back to Darthalia in Tarren Mill afterwards."},
+            [questKeys.objectivesText] = {"Kill Magistrate Burnside and 4 Hillsbrad Councilmen.  Destroy the Hillsbrad Proclamation.  Steal the Hillsbrad Town Registry.  Report back to Darthalia in Tarren Mill afterwards."},
             [questKeys.specialFlags] = specialFlags.SPELL_CAST,
         },
 
@@ -4323,13 +4433,12 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.parentQuest] = 0,
         },
 
-        [541] = {
-            [questKeys.objectivesText] = {"Travel to Dun Garok and kill 10 Mountaineers, 4 Riflemen, 2 Priests and Captain Ironhill and report back to Darthalia in Tarren Mill."},
-            [questKeys.nextQuestInChain] = 550,
-        },
-
         [542] = {
             [questKeys.objectives] = {nil,nil,{{3660}}},
+        },
+
+        [546] = {
+            [questKeys.preQuestSingle] = {},
         },
 
         [548] = {
@@ -4343,7 +4452,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [550] = {
-            [questKeys.objectivesText] = {"Take Darthalia's Sealed Commendation to Varimathras in the Undercity."},
             [questKeys.objectives] = {nil,nil,{{3701}}},
             [questKeys.preQuestSingle] = {541},
         },
@@ -4362,10 +4470,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectives] = {nil,nil,{{3706}}},
         },
 
-        [555] = {
-            [questKeys.objectives] = {nil,nil,{{3712},{3713}}},
-        },
-
         [558] = {
             [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.preQuestSingle] = {1479},
@@ -4380,12 +4484,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [566] = {
-            [questKeys.requiredLevel] = 35,
             [questKeys.preQuestSingle] = {},
-        },
-
-        [567] = {
-            [questKeys.requiredLevel] = 19,
         },
 
         [573] = {
@@ -4412,11 +4511,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.preQuestSingle] = {585,586},
         },
 
-        [594] = {
-            [questKeys.questLevel] = 45,
-            [questKeys.requiredLevel] = 45,
-        },
-
         [598] = {
             [questKeys.preQuestSingle] = {596},
         },
@@ -4426,16 +4520,8 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.nextQuestInChain] = 0,
         },
 
-        [604] = {
-            [questKeys.questLevel] = 43,
-        },
-
         [607] = {
             [questKeys.objectives] = {nil,nil,{{3922}}},
-        },
-
-        [608] = {
-            [questKeys.questLevel] = 45,
         },
 
         [611] = {
@@ -4450,20 +4536,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.questFlags] = 8,
         },
 
-        [614] = {
-            [questKeys.questLevel] = 47,
-        },
-
-        [615] = {
-            [questKeys.questLevel] = 50,
-        },
-
-        [618] = {
-            [questKeys.questLevel] = 50,
-        },
-
         [619] = {
-            [questKeys.questLevel] = 52,
             [questKeys.requiredLevel] = 1,
             [questKeys.parentQuest] = 0,
         },
@@ -4480,11 +4553,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectives] = {nil,nil,{{4028}}},
         },
 
-        [630] = {
-            [questKeys.questLevel] = 51,
-            [questKeys.requiredLevel] = 45,
-        },
-
         [632] = {
             [questKeys.objectives] = {nil,nil,{{4429}}},
         },
@@ -4495,6 +4563,10 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [639] = {
             [questKeys.preQuestSingle] = {638},
+        },
+
+        [640] = {
+            [questKeys.objectivesText] = {"Retrieve the 5 Sigil Fragments from the defenders in Stromgarde, and bring them to Tor'gan in Hammerfall."},
         },
 
         [641] = {
@@ -4519,8 +4591,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [654] = {
             [questKeys.objectivesText] = {"Acquire untested samples for 8 basilisks, 8 hyenas, and 8 scorpions.  Bring the testing kit back to Chief Engineer Bilgewhizzle in Gadgetzan before the power source runs out."},
-            [questKeys.objectives] = {nil,nil,{{9440},{9441},{9438},{8523}}},
-            [questKeys.requiredSourceItems] = {9437,9439,9442},
         },
 
         [666] = {
@@ -4552,28 +4622,12 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.breadcrumbs] = {},
         },
 
-        [679] = {
-            [questKeys.objectivesText] = {"Kill 15 Boulderfist Shaman and 3 Boulderfist Lords and return to Drum Fel in the Hammerfall outpost."},
-        },
-
         [680] = {
             [questKeys.preQuestSingle] = {},
         },
 
-        [682] = {
-            [questKeys.objectivesText] = {"Bring 15 Stromgarde Badges to Captain Nials at Refuge Pointe."},
-        },
-
         [683] = {
             [questKeys.objectives] = {nil,nil,{{4514}}},
-        },
-
-        [684] = {
-            [questKeys.requiredLevel] = 30,
-        },
-
-        [685] = {
-            [questKeys.requiredLevel] = 30,
         },
 
         [690] = {
@@ -4679,6 +4733,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [747] = {
             [questKeys.questFlags] = 8,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [748] = {
@@ -4688,6 +4743,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [750] = {
             [questKeys.questFlags] = 8,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [751] = {
@@ -4697,6 +4753,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         [752] = {
             [questKeys.breadcrumbForQuestId] = 0,
             [questKeys.questFlags] = 8,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [753] = {
@@ -4704,6 +4761,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.preQuestSingle] = {752},
             [questKeys.breadcrumbs] = {},
             [questKeys.questFlags] = 0,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [754] = {
@@ -4712,6 +4770,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [755] = {
             [questKeys.questFlags] = 8,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [756] = {
@@ -4720,8 +4779,8 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [757] = {
-            [questKeys.objectivesText] = {"Kill Bristlebacks in Brambleblade Ravine and bring 12 Bristleback Belts to Chief Hawkwind in Camp Narache."},
             [questKeys.questFlags] = 8,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [758] = {
@@ -4738,6 +4797,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.nextQuestInChain] = 0,
             [questKeys.breadcrumbForQuestId] = 0,
             [questKeys.questFlags] = 0,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [767] = {
@@ -4770,6 +4830,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [780] = {
             [questKeys.questFlags] = 8,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [781] = {
@@ -4779,7 +4840,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [783] = {
-            [questKeys.questFlags] = 8,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [787] = {
@@ -4788,24 +4849,20 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [788] = {
-            [questKeys.objectivesText] = {"Kill 10 Mottled Boars then return to Gornek at the Den."},
             [questKeys.breadcrumbs] = {},
-            [questKeys.questFlags] = 8,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [789] = {
-            [questKeys.objectivesText] = {"Get 10 Scorpid Worker Tails for Gornek in the Den."},
-            [questKeys.questFlags] = 8,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [790] = {
-            [questKeys.questFlags] = 8,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [792] = {
-            [questKeys.requiredClasses] = classIDs.DRUID + classIDs.MAGE + classIDs.SHAMAN + classIDs.DEATH_KNIGHT + classIDs.PRIEST + classIDs.ROGUE + classIDs.HUNTER + classIDs.PALADIN + classIDs.WARRIOR,
-            [questKeys.objectivesText] = {"Kill 12 Vile Familiars.$b$bReturn to Zureetha Fargaze outside the Den."},
-            [questKeys.questFlags] = 8,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [793] = {
@@ -4815,7 +4872,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [794] = {
-            [questKeys.questFlags] = 8,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [796] = {
@@ -4867,12 +4924,12 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [804] = {
-            [questKeys.questFlags] = 0,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [805] = {
             [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
-            [questKeys.questFlags] = 8,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [807] = {
@@ -5050,10 +5107,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectives] = {nil,nil,{{5080}}},
         },
 
-        [895] = {
-            [questKeys.requiredLevel] = 11,
-        },
-
         [897] = {
             [questKeys.objectives] = {nil,nil,{{5138}}},
         },
@@ -5160,7 +5213,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [934] = {
-            [questKeys.objectives] = nil,
             [questKeys.preQuestSingle] = {933},
         },
 
@@ -5242,12 +5294,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectives] = {nil,nil,{{5352}}},
         },
 
-        [969] = {
-            [questKeys.objectivesText] = {"Collect 10 Frostmaul Shards for Witch Doctor Mau'ari in Everlook."},
-        },
-
         [971] = {
-            [questKeys.requiredLevel] = 10,
             [questKeys.questFlags] = 8,
         },
 
@@ -5317,7 +5364,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [996] = {
-            [questKeys.specialFlags] = specialFlags.NO_LOREMASTER_COUNT + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.NO_LOREMASTER_COUNT,
         },
 
         [997] = {
@@ -5325,7 +5372,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [998] = {
-            [questKeys.specialFlags] = specialFlags.NO_LOREMASTER_COUNT + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.NO_LOREMASTER_COUNT,
         },
 
         [1001] = {
@@ -5395,12 +5442,8 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectives] = {nil,nil,{{5520},{5521}}},
         },
 
-        [1045] = {
-            [questKeys.objectives] = {{{3696},{3932}}},
-        },
-
-        [1048] = {
-            [questKeys.requiredLevel] = 33,
+        [1046] = {
+            [questKeys.objectives] = {nil,nil,{{5388}}},
         },
 
         [1052] = {
@@ -5491,19 +5534,10 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [1100] = {
-            [questKeys.questLevel] = 34,
-            [questKeys.requiredLevel] = 29,
             [questKeys.objectives] = {nil,nil,{{5790}}},
         },
 
-        [1101] = {
-            [questKeys.questLevel] = 34,
-            [questKeys.requiredLevel] = 29,
-        },
-
         [1102] = {
-            [questKeys.questLevel] = 34,
-            [questKeys.requiredLevel] = 29,
             [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
         },
 
@@ -5520,11 +5554,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [1107] = {
             [questKeys.preQuestSingle] = {1105},
-        },
-
-        [1109] = {
-            [questKeys.questLevel] = 33,
-            [questKeys.requiredLevel] = 30,
         },
 
         [1111] = {
@@ -5601,7 +5630,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [1130] = {
-            [questKeys.preQuestSingle] = {882},
             [questKeys.breadcrumbForQuestId] = 0,
         },
 
@@ -5611,7 +5639,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [1132] = {
-            [questKeys.objectivesText] = {"Speak with Fiora Longears in Theramore."},
             [questKeys.breadcrumbForQuestId] = 0,
         },
 
@@ -5695,47 +5722,11 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.questFlags] = 8,
         },
 
-        [1166] = {
-            [questKeys.questLevel] = 43,
-            [questKeys.requiredLevel] = 38,
-        },
-
-        [1168] = {
-            [questKeys.questLevel] = 43,
-            [questKeys.requiredLevel] = 38,
-            [questKeys.objectivesText] = {"Tharg in Brackenwall Village wants you to kill 15 Firemane Scouts, 15 Firemane Ash Tails, and 5 Firemane Scalebanes."},
-        },
-
-        [1169] = {
-            [questKeys.questLevel] = 43,
-            [questKeys.requiredLevel] = 38,
-            [questKeys.objectivesText] = {"Draz'Zilb in Brackenwall Village would like you to bring him 15 Searing Tongues and 15 Searing Hearts."},
-        },
-
-        [1170] = {
-            [questKeys.questLevel] = 43,
-            [questKeys.requiredLevel] = 38,
-        },
-
-        [1171] = {
-            [questKeys.questLevel] = 43,
-            [questKeys.requiredLevel] = 38,
-        },
-
-        [1172] = {
-            [questKeys.questLevel] = 45,
-            [questKeys.requiredLevel] = 38,
-        },
-
         [1174] = {
             [questKeys.questLevel] = 1,
             [questKeys.requiredLevel] = 1,
             [questKeys.objectives] = {nil,nil,{{5768}}},
             [questKeys.questFlags] = 8,
-        },
-
-        [1177] = {
-            [questKeys.objectivesText] = {"Mudcrush Durtfeet in northern Dustwallow wants 12 Mirefin Heads."},
         },
 
         [1179] = {
@@ -5769,19 +5760,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         [1200] = {
             [questKeys.preQuestSingle] = {1198},
             [questKeys.breadcrumbs] = {},
-        },
-
-        [1203] = {
-            [questKeys.objectivesText] = {"Bring a Moonsteel Broadsword to Jarl in Dustwallow Marsh."},
-            [questKeys.objectives] = {nil,nil,{{3853}}},
-        },
-
-        [1205] = {
-            [questKeys.questLevel] = 45,
-        },
-
-        [1206] = {
-            [questKeys.objectivesText] = {"Bring 40 Unpopped Darkmist Eyes to \"Swamp Eye\" Jarl at the Swamplight Manor."},
         },
 
         [1218] = {
@@ -5838,7 +5816,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [1252] = {
-            [questKeys.questLevel] = 40,
             [questKeys.objectives] = {nil,nil,{{5950}}},
             [questKeys.preQuestSingle] = {},
         },
@@ -5968,20 +5945,12 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.exclusiveTo] = {1282},
         },
 
-        [1318] = {
-            [questKeys.requiredLevel] = 60,
-        },
-
         [1319] = {
             [questKeys.objectives] = {nil,nil,{{5919}}},
         },
 
         [1321] = {
             [questKeys.objectives] = {nil,nil,{{5919}}},
-        },
-
-        [1322] = {
-            [questKeys.objectivesText] = {"Acquire 6 Acidic Venom Sacs for Do'gol in Brackenwall Village."},
         },
 
         [1324] = {
@@ -6016,10 +5985,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [1371] = {
             [questKeys.nextQuestInChain] = 0,
-        },
-
-        [1383] = {
-            [questKeys.objectivesText] = {"Apothecary Faustin at Beggar's Haunt needs 5 Shadow Panther Hearts, Mire Lord Fungus and a Deepstrider Tumor."},
         },
 
         [1388] = {
@@ -6060,10 +6025,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         [1423] = {
             [questKeys.objectives] = {nil,nil,{{6172}}},
             [questKeys.specialFlags] = specialFlags.NONE,
-        },
-
-        [1424] = {
-            [questKeys.objectivesText] = {"Fel'zerul in Stonard wants you to gather 10 Atal'ai Artifacts."},
         },
 
         [1425] = {
@@ -6140,7 +6101,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.preQuestSingle] = {},
             [questKeys.parentQuest] = 1520,
             [questKeys.questFlags] = 65536,
-            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.AUTO_ACCEPT,
         },
 
         [1463] = {
@@ -6148,7 +6109,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.preQuestSingle] = {},
             [questKeys.parentQuest] = 1517,
             [questKeys.questFlags] = 65536,
-            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.AUTO_ACCEPT,
         },
 
         [1464] = {
@@ -6203,7 +6164,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [1483] = {
-            [questKeys.objectivesText] = {"Speak with Ziz Fizziks in Windshear Crag."},
             [questKeys.breadcrumbForQuestId] = 0,
         },
 
@@ -6222,7 +6182,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [1499] = {
-            [questKeys.requiredRaces] = raceIDs.TROLL + raceIDs.ORC,
+            [questKeys.requiredRaces] = raceIDs.ORC + raceIDs.TROLL,
             [questKeys.preQuestSingle] = {1485},
         },
 
@@ -6271,7 +6231,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [1514] = {
-            [questKeys.specialFlags] = specialFlags.NO_LOREMASTER_COUNT + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.NO_LOREMASTER_COUNT,
         },
 
         [1515] = {
@@ -6280,23 +6240,23 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [1516] = {
-            [questKeys.requiredRaces] = raceIDs.TROLL + raceIDs.ORC,
+            [questKeys.requiredRaces] = raceIDs.ORC + raceIDs.TROLL,
             [questKeys.nextQuestInChain] = 1517,
-            [questKeys.questFlags] = 8,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [1517] = {
-            [questKeys.requiredRaces] = raceIDs.TROLL + raceIDs.ORC,
+            [questKeys.requiredRaces] = raceIDs.ORC + raceIDs.TROLL,
             [questKeys.preQuestSingle] = {1516},
             [questKeys.nextQuestInChain] = 1518,
-            [questKeys.questFlags] = 0,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [1518] = {
-            [questKeys.requiredRaces] = raceIDs.TROLL + raceIDs.ORC,
+            [questKeys.requiredRaces] = raceIDs.ORC + raceIDs.TROLL,
             [questKeys.objectives] = {nil,nil,{{6656}}},
             [questKeys.requiredSourceItems] = {},
-            [questKeys.questFlags] = 0,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [1519] = {
@@ -6311,6 +6271,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.preQuestSingle] = {1519},
             [questKeys.nextQuestInChain] = 1521,
             [questKeys.questFlags] = 0,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [1521] = {
@@ -6318,6 +6279,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectives] = {nil,nil,{{6656}}},
             [questKeys.requiredSourceItems] = {},
             [questKeys.questFlags] = 0,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [1522] = {
@@ -6351,7 +6313,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [1530] = {
-            [questKeys.objectivesText] = {"Find Brine in Southern Barrens."},
             [questKeys.breadcrumbs] = {},
         },
 
@@ -6400,7 +6361,8 @@ QuestieCompat.RegisterCorrection("questData", function()
         [1599] = {
             [questKeys.requiredRaces] = raceIDs.GNOME,
             [questKeys.exclusiveTo] = {},
-            [questKeys.questFlags] = 8,
+            [questKeys.questFlags] = 16392,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [1618] = {
@@ -6447,6 +6409,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         [1656] = {
             [questKeys.objectives] = {nil,nil,{{7626}}},
             [questKeys.questFlags] = 0,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [1657] = {
@@ -6502,14 +6465,14 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [1678] = {
-            [questKeys.requiredRaces] = raceIDs.GNOME + raceIDs.DWARF,
+            [questKeys.requiredRaces] = raceIDs.DWARF + raceIDs.GNOME,
             [questKeys.preQuestSingle] = {1679},
             [questKeys.exclusiveTo] = {},
             [questKeys.breadcrumbs] = {},
         },
 
         [1679] = {
-            [questKeys.requiredRaces] = raceIDs.GNOME + raceIDs.DWARF,
+            [questKeys.requiredRaces] = raceIDs.DWARF + raceIDs.GNOME,
             [questKeys.exclusiveTo] = {1638,1684,9582},
             [questKeys.breadcrumbForQuestId] = 0,
         },
@@ -6790,7 +6753,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         [1886] = {
             [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.preQuestSingle] = {1885},
-            [questKeys.nextQuestInChain] = 1898,
             [questKeys.breadcrumbs] = {},
         },
 
@@ -6798,13 +6760,11 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.objectives] = {nil,nil,{{7231}}},
             [questKeys.preQuestSingle] = {1886},
-            [questKeys.nextQuestInChain] = 1899,
         },
 
         [1899] = {
             [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.preQuestSingle] = {1898},
-            [questKeys.nextQuestInChain] = 1978,
         },
 
         [1918] = {
@@ -6921,7 +6881,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [2158] = {
-            [questKeys.questFlags] = 8,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [2159] = {
@@ -6937,7 +6897,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [2161] = {
             [questKeys.objectives] = {nil,nil,{{7629}}},
-            [questKeys.questFlags] = 0,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [2198] = {
@@ -7093,6 +7053,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         [2383] = {
             [questKeys.objectives] = {nil,nil,{{12635}}},
             [questKeys.questFlags] = 0,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [2399] = {
@@ -7143,7 +7104,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [2523] = {
-            [questKeys.specialFlags] = specialFlags.NO_LOREMASTER_COUNT + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.NO_LOREMASTER_COUNT,
         },
 
         [2561] = {
@@ -7244,10 +7205,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.preQuestSingle] = {2760},
         },
 
-        [2781] = {
-            [questKeys.requiredLevel] = 39,
-        },
-
         [2782] = {
             [questKeys.objectives] = {nil,nil,{{8724}}},
         },
@@ -7337,16 +7294,12 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectives] = {nil,nil,{{9245}}},
         },
 
-        [2875] = {
-            [questKeys.requiredLevel] = 40,
-        },
-
         [2876] = {
             [questKeys.objectives] = {nil,nil,{{9250}}},
         },
 
         [2878] = {
-            [questKeys.specialFlags] = specialFlags.NO_LOREMASTER_COUNT + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.NO_LOREMASTER_COUNT,
         },
 
         [2879] = {
@@ -7354,6 +7307,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [2880] = {
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.nextQuestInChain] = 0,
         },
 
@@ -7670,6 +7624,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.objectives] = {nil,nil,{{9552}}},
             [questKeys.questFlags] = 0,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [3094] = {
@@ -7683,6 +7638,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {nil,nil,{{9546}}},
             [questKeys.questFlags] = 0,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [3096] = {
@@ -7690,6 +7646,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectives] = {nil,nil,{{9559}}},
             [questKeys.preQuestSingle] = {364},
             [questKeys.questFlags] = 0,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [3097] = {
@@ -7697,6 +7654,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectives] = {nil,nil,{{9569}}},
             [questKeys.preQuestSingle] = {364},
             [questKeys.questFlags] = 0,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [3098] = {
@@ -7704,42 +7662,49 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectives] = {nil,nil,{{9574}}},
             [questKeys.preQuestSingle] = {364},
             [questKeys.questFlags] = 0,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [3099] = {
             [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectives] = {nil,nil,{{9578}}},
             [questKeys.questFlags] = 0,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [3100] = {
             [questKeys.objectives] = {nil,nil,{{9542}}},
             [questKeys.questFlags] = 0,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [3101] = {
             [questKeys.objectives] = {nil,nil,{{9570}}},
             [questKeys.questFlags] = 0,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [3102] = {
             [questKeys.objectives] = {nil,nil,{{9555}}},
-            [questKeys.questFlags] = 0,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [3103] = {
             [questKeys.objectives] = {nil,nil,{{9548}}},
             [questKeys.questFlags] = 0,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [3104] = {
             [questKeys.objectives] = {nil,nil,{{9571}}},
             [questKeys.questFlags] = 0,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [3105] = {
             [questKeys.objectives] = {nil,nil,{{9576}}},
             [questKeys.questFlags] = 0,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [3106] = {
@@ -7840,17 +7805,14 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [3121] = {
-            [questKeys.objectivesText] = {"Take the Shrunken Head to Neeru Fireblade in Orgrimmar."},
             [questKeys.objectives] = {nil,nil,{{9629}}},
         },
 
         [3122] = {
-            [questKeys.objectivesText] = {"Deliver Neeru's Herb Pouch to Witch Doctor Uzer'i in Feralas."},
             [questKeys.objectives] = {nil,nil,{{9628}}},
         },
 
         [3123] = {
-            [questKeys.objectivesText] = {"This will be a test; both of the ritual I performed, and of your abilities. Take this vessel, $N. With it, you will have the power to shrink and capture a creature inside of it.","","Travel to the Hinterlands and look for creatures known as Wildkin that were once pets of the night elf goddess Elune. The vicious, primitive, or savage owlbeasts are your targets, $N. Kill 10, and use the muisek vessel to shrink and capture them before their spirits can escape."},
             [questKeys.objectives] = {nil,nil,{{9594},{9618}}},
         },
 
@@ -7883,23 +7845,19 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [3161] = {
-            [questKeys.objectives] = {nil,nil,{{8443},{9978}}},
             [questKeys.requiredSourceItems] = {9978},
         },
 
         [3181] = {
-            [questKeys.questLevel] = 48,
             [questKeys.objectives] = {nil,nil,{{10005}}},
         },
 
         [3182] = {
-            [questKeys.questLevel] = 48,
             [questKeys.objectives] = {nil,nil,{{10005}}},
             [questKeys.nextQuestInChain] = 0,
         },
 
         [3201] = {
-            [questKeys.questLevel] = 48,
             [questKeys.objectives] = {nil,nil,{{10022}}},
         },
 
@@ -7911,7 +7869,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [3301] = {
-            [questKeys.objectivesText] = {"Speak with Mura Runetotem in the Sepulcher."},
             [questKeys.objectives] = {nil,nil,{{10414}}},
         },
 
@@ -7920,18 +7877,13 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.preQuestSingle] = {2771,2772,2773},
         },
 
-        [3341] = {
-            [questKeys.questLevel] = 42,
-            [questKeys.requiredLevel] = 37,
-        },
-
         [3361] = {
             [questKeys.questFlags] = 8,
             [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [3363] = {
-            [questKeys.specialFlags] = specialFlags.NO_LOREMASTER_COUNT + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.NO_LOREMASTER_COUNT,
         },
 
         [3364] = {
@@ -7951,12 +7903,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectives] = {nil,nil,{{10441}}},
         },
 
-        [3367] = {
-            [questKeys.questLevel] = 48,
-        },
-
         [3368] = {
-            [questKeys.questLevel] = 48,
             [questKeys.objectives] = {nil,nil,{{10443}}},
         },
 
@@ -7969,12 +7916,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [3371] = {
-            [questKeys.questLevel] = 55,
             [questKeys.objectivesText] = {"Return to the Searing Gorge and find Dorius's archaeology unit. "},
-        },
-
-        [3372] = {
-            [questKeys.questLevel] = 52,
         },
 
         [3373] = {
@@ -7994,6 +7936,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [3376] = {
             [questKeys.questFlags] = 8,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [3377] = {
@@ -8124,7 +8067,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [3512] = {
-            [questKeys.requiredRaces] = raceIDs.ALL_HORDE + raceIDs.ALL_ALLIANCE,
+            [questKeys.requiredRaces] = raceIDs.HUMAN + raceIDs.ORC + raceIDs.DWARF + raceIDs.NIGHT_ELF + raceIDs.UNDEAD + raceIDs.TAUREN + raceIDs.GNOME + raceIDs.TROLL + raceIDs.BLOOD_ELF + raceIDs.DRAENEI,
         },
 
         [3513] = {
@@ -8225,7 +8168,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [3566] = {
-            [questKeys.questLevel] = 52,
             [questKeys.objectivesText] = {"Slay Lathoric the Black and Obsidion, and return to Thorius in Ironforge with the Head of Lathoric the Black and the Heart of Obsidion. "},
         },
 
@@ -8282,6 +8224,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectives] = {nil,nil,{{10789}}},
             [questKeys.exclusiveTo] = {3526,3630,3632,3633,3634,3635,3637,4181},
             [questKeys.nextQuestInChain] = 3639,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE,
         },
 
         [3630] = {
@@ -8316,11 +8259,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectives] = {nil,nil,{{10789}}},
             [questKeys.exclusiveTo] = {3526,3629,3630,3632,3633,3634,3637,4181},
             [questKeys.nextQuestInChain] = 3643,
-        },
-
-        [3636] = {
-            [questKeys.questLevel] = 42,
-            [questKeys.requiredLevel] = 39,
         },
 
         [3637] = {
@@ -8496,29 +8434,28 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [3901] = {
             [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
-            [questKeys.objectivesText] = {"Kill 12 Rattlecage Skeletons, and then return to Shadow Priest Sarvis in Deathknell when you are done."},
-            [questKeys.questFlags] = 8,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [3902] = {
-            [questKeys.questFlags] = 8,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [3903] = {
             [questKeys.preQuestSingle] = {33},
             [questKeys.breadcrumbForQuestId] = 0,
-            [questKeys.questFlags] = 8,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [3904] = {
             [questKeys.preQuestSingle] = {3903},
             [questKeys.breadcrumbs] = {},
-            [questKeys.questFlags] = 8,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [3905] = {
             [questKeys.objectives] = {nil,nil,{{11125}}},
-            [questKeys.questFlags] = 0,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [3908] = {
@@ -8592,10 +8529,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectivesText] = {"Find and slay Golem Lord Argelmach. Return his head to Lotwil. You will also need to collect 10 Intact Elemental Cores from the Ragereaver Golems and Warbringer Constructs protecting Argelmach. You know this because you are psychic. "},
         },
 
-        [4082] = {
-            [questKeys.requiredLevel] = 50,
-        },
-
         [4103] = {
             [questKeys.preQuestSingle] = {4101},
             [questKeys.specialFlags] = specialFlags.NONE,
@@ -8647,31 +8580,31 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [4113] = {
-            [questKeys.specialFlags] = specialFlags.NO_LOREMASTER_COUNT + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.NO_LOREMASTER_COUNT,
         },
 
         [4114] = {
-            [questKeys.specialFlags] = specialFlags.NO_LOREMASTER_COUNT + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.NO_LOREMASTER_COUNT,
         },
 
         [4115] = {
-            [questKeys.specialFlags] = specialFlags.NO_LOREMASTER_COUNT + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.NO_LOREMASTER_COUNT,
         },
 
         [4116] = {
-            [questKeys.specialFlags] = specialFlags.NO_LOREMASTER_COUNT + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.NO_LOREMASTER_COUNT,
         },
 
         [4117] = {
-            [questKeys.specialFlags] = specialFlags.NO_LOREMASTER_COUNT + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.NO_LOREMASTER_COUNT,
         },
 
         [4118] = {
-            [questKeys.specialFlags] = specialFlags.NO_LOREMASTER_COUNT + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.NO_LOREMASTER_COUNT,
         },
 
         [4119] = {
-            [questKeys.specialFlags] = specialFlags.NO_LOREMASTER_COUNT + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.NO_LOREMASTER_COUNT,
         },
 
         [4123] = {
@@ -8747,11 +8680,11 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [4221] = {
-            [questKeys.specialFlags] = specialFlags.NO_LOREMASTER_COUNT + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.NO_LOREMASTER_COUNT,
         },
 
         [4222] = {
-            [questKeys.specialFlags] = specialFlags.NO_LOREMASTER_COUNT + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.NO_LOREMASTER_COUNT,
         },
 
         [4224] = {
@@ -8823,7 +8756,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [4343] = {
-            [questKeys.specialFlags] = specialFlags.NO_LOREMASTER_COUNT + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.NO_LOREMASTER_COUNT,
         },
 
         [4362] = {
@@ -8831,40 +8764,39 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [4401] = {
-            [questKeys.specialFlags] = specialFlags.NO_LOREMASTER_COUNT + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.NO_LOREMASTER_COUNT,
         },
 
         [4402] = {
-            [questKeys.objectivesText] = {"Bring Galgar 10 Cactus Apples. You remember him saying that they could be found near cactuses."},
-            [questKeys.questFlags] = 8,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [4403] = {
-            [questKeys.specialFlags] = specialFlags.NO_LOREMASTER_COUNT + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.NO_LOREMASTER_COUNT,
         },
 
         [4443] = {
-            [questKeys.specialFlags] = specialFlags.NO_LOREMASTER_COUNT + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.NO_LOREMASTER_COUNT,
         },
 
         [4444] = {
-            [questKeys.specialFlags] = specialFlags.NO_LOREMASTER_COUNT + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.NO_LOREMASTER_COUNT,
         },
 
         [4445] = {
-            [questKeys.specialFlags] = specialFlags.NO_LOREMASTER_COUNT + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.NO_LOREMASTER_COUNT,
         },
 
         [4446] = {
-            [questKeys.specialFlags] = specialFlags.NO_LOREMASTER_COUNT + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.NO_LOREMASTER_COUNT,
         },
 
         [4447] = {
-            [questKeys.specialFlags] = specialFlags.NO_LOREMASTER_COUNT + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.NO_LOREMASTER_COUNT,
         },
 
         [4448] = {
-            [questKeys.specialFlags] = specialFlags.NO_LOREMASTER_COUNT + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.NO_LOREMASTER_COUNT,
         },
 
         [4451] = {
@@ -8872,27 +8804,27 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [4461] = {
-            [questKeys.specialFlags] = specialFlags.NO_LOREMASTER_COUNT + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.NO_LOREMASTER_COUNT,
         },
 
         [4462] = {
-            [questKeys.specialFlags] = specialFlags.NO_LOREMASTER_COUNT + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.NO_LOREMASTER_COUNT,
         },
 
         [4464] = {
-            [questKeys.specialFlags] = specialFlags.NO_LOREMASTER_COUNT + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.NO_LOREMASTER_COUNT,
         },
 
         [4465] = {
-            [questKeys.specialFlags] = specialFlags.NO_LOREMASTER_COUNT + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.NO_LOREMASTER_COUNT,
         },
 
         [4466] = {
-            [questKeys.specialFlags] = specialFlags.NO_LOREMASTER_COUNT + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.NO_LOREMASTER_COUNT,
         },
 
         [4467] = {
-            [questKeys.specialFlags] = specialFlags.NO_LOREMASTER_COUNT + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.NO_LOREMASTER_COUNT,
         },
 
         [4485] = {
@@ -8931,12 +8863,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         [4495] = {
             [questKeys.nextQuestInChain] = 0,
             [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
-        },
-
-        [4501] = {
-            [questKeys.requiredLevel] = 49,
-            [questKeys.objectivesText] = {"Kill 10 Pterrordax and 15 Frenzied Pterrordax, then speak to Spraggle Frock at Marshal's Refuge."},
-            [questKeys.objectives] = {{{9166},{9167}}},
         },
 
         [4508] = {
@@ -9019,7 +8945,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         [4641] = {
             [questKeys.objectivesText] = {"Speak with Gornek. You recall Kaltunk marking your map with his location and mentioning that Gornek resided in the Den, a building to the west. ",""},
             [questKeys.breadcrumbForQuestId] = 0,
-            [questKeys.questFlags] = 8,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [4642] = {
@@ -9096,7 +9022,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [4740] = {
-            [questKeys.requiredLevel] = 15,
             [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.objectivesText] = {"Find and slay the murloc known as Murkdeep.  The creature is thought to be defending the murloc huts south of Auberdine along the water.","","Report the death of Murkdeep to Sentinel Glynda Nal'Shea in Auberdine."},
         },
@@ -9194,17 +9119,17 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [4962] = {
             [questKeys.objectives] = {nil,nil,{{12647},{12648}}},
-            [questKeys.preQuestSingle] = {1799},
+            [questKeys.parentQuest] = 1799,
         },
 
         [4963] = {
             [questKeys.objectives] = {nil,nil,{{12646},{12649}}},
-            [questKeys.preQuestSingle] = {1799},
+            [questKeys.parentQuest] = 1799,
         },
 
         [4964] = {
             [questKeys.objectives] = nil,
-            [questKeys.preQuestSingle] = {4962},
+            [questKeys.preQuestSingle] = {4976},
             [questKeys.exclusiveTo] = {4975},
             [questKeys.questFlags] = 2,
             [questKeys.specialFlags] = specialFlags.EXPLORATION_OR_EVENT,
@@ -9233,7 +9158,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [4971] = {
-            [questKeys.objectivesText] = {"Use the Temporal Displacer near one of Andorhal's silos and uncover Temporal Parasites.","","Slay 15 Temporal Parasites, and then return the Temporal Displacer to Chromie in the Andorhal Inn, Western Plaguelands."},
             [questKeys.objectives] = {{{10717}},nil,{{12627}}},
             [questKeys.nextQuestInChain] = 0,
         },
@@ -9245,7 +9169,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [4975] = {
             [questKeys.objectives] = nil,
-            [questKeys.preQuestSingle] = {4963},
+            [questKeys.preQuestSingle] = {4976},
             [questKeys.exclusiveTo] = {4964},
             [questKeys.questFlags] = 2,
             [questKeys.specialFlags] = specialFlags.EXPLORATION_OR_EVENT,
@@ -9291,10 +9215,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         [5023] = {
             [questKeys.objectivesText] = {"Check with the Royal Overseers of the Undercity to learn the whereabouts of a Jeremiah Felstone.  There is usually a census officer located near guild and tabard registration."},
             [questKeys.objectives] = {nil,nil,{{12724}}},
-        },
-
-        [5041] = {
-            [questKeys.preQuestSingle] = {871},
         },
 
         [5047] = {
@@ -9449,10 +9369,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.preQuestSingle] = {},
         },
 
-        [5147] = {
-            [questKeys.requiredLevel] = 25,
-        },
-
         [5148] = {
             [questKeys.preQuestSingle] = {},
         },
@@ -9521,10 +9437,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [5210] = {
             [questKeys.objectives] = {nil,nil,{{13202}}},
-        },
-
-        [5212] = {
-            [questKeys.objectivesText] = {"Recover 20 Plagued Flesh Samples from Stratholme and return them to Betina Bigglezink. You suspect that any creature in Stratholme would have said flesh sample."},
         },
 
         [5216] = {
@@ -9639,6 +9551,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [5261] = {
             [questKeys.questFlags] = 8,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [5262] = {
@@ -9729,7 +9642,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         [5441] = {
             [questKeys.objectivesText] = {"Use the Foreman's Blackjack on Lazy Peons when they're sleeping.  Wake up 5 peons, then return the Foreman's Blackjack to Foreman Thazz'ril in the Valley of Trials."},
             [questKeys.objectives] = {{{10556}},nil,{{16114}}},
-            [questKeys.questFlags] = 0,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT + specialFlags.SPELL_CAST,
         },
 
         [5462] = {
@@ -9747,11 +9660,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [5465] = {
             [questKeys.objectives] = {nil,nil,{{13624}}},
-        },
-
-        [5501] = {
-            [questKeys.questLevel] = 39,
-            [questKeys.requiredLevel] = 33,
         },
 
         [5502] = {
@@ -9954,15 +9862,15 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [5641] = {
-            [questKeys.requiredRaces] = raceIDs.DRAENEI + raceIDs.DWARF,
+            [questKeys.requiredRaces] = raceIDs.DWARF + raceIDs.DRAENEI,
         },
 
         [5645] = {
-            [questKeys.requiredRaces] = raceIDs.DRAENEI + raceIDs.DWARF,
+            [questKeys.requiredRaces] = raceIDs.DWARF + raceIDs.DRAENEI,
         },
 
         [5647] = {
-            [questKeys.requiredRaces] = raceIDs.DRAENEI + raceIDs.DWARF,
+            [questKeys.requiredRaces] = raceIDs.DWARF + raceIDs.DRAENEI,
         },
 
         [5648] = {
@@ -10355,10 +10263,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectivesText] = {"Speak to Ur'kyo in Orgrimmar."},
             [questKeys.nextQuestInChain] = 5710,
             [questKeys.questFlags] = 8,
-        },
-
-        [5721] = {
-            [questKeys.objectives] = nil,
         },
 
         [5724] = {
@@ -10786,6 +10690,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [6181] = {
+            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
             [questKeys.objectives] = {nil,nil,{{15998}}},
         },
 
@@ -10806,18 +10711,17 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [6261] = {
+            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
             [questKeys.objectives] = {nil,nil,{{16115}}},
         },
 
         [6281] = {
+            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
             [questKeys.objectives] = {nil,nil,{{15998}}},
         },
 
-        [6284] = {
-            [questKeys.requiredLevel] = 15,
-        },
-
         [6285] = {
+            [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
             [questKeys.objectives] = {nil,nil,{{16115}}},
         },
 
@@ -10927,15 +10831,15 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [6394] = {
-            [questKeys.questFlags] = 8,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
         [6395] = {
-            [questKeys.questFlags] = 8,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT + specialFlags.SPELL_CAST,
         },
 
-        [6403] = {
-            [questKeys.questFlags] = 74,
+        [6481] = {
+            [questKeys.objectives] = {{{11920}},nil,{{16603}}},
         },
 
         [6501] = {
@@ -10946,12 +10850,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredSourceItems] = {},
         },
 
-        [6521] = {
-            [questKeys.objectivesText] = {"Bring Ambassador Malcin's Head to Varimathras in the Undercity."},
-        },
-
         [6522] = {
-            [questKeys.objectivesText] = {"Take the Small Scroll to Varimathras in the Undercity."},
             [questKeys.objectives] = {nil,nil,{{17008}}},
         },
 
@@ -10986,12 +10885,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.questFlags] = 10,
         },
 
-        [6567] = {
-            [questKeys.objectivesText] = {"Seek out Rexxar. The Warchief has instructed you as to his whereabouts. Search the paths of Desolace, between the Stonetalon Mountains and Feralas."},
-        },
-
         [6568] = {
-            [questKeys.objectivesText] = {"Deliver Rexxar's Testament to Myranda the Hag in the Western Plaguelands."},
             [questKeys.objectives] = {nil,nil,{{16785}}},
         },
 
@@ -11000,12 +10894,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [6601] = {
-            [questKeys.objectivesText] = {"It would appear as if the charade is over. ","You know that the Amulet of Draconic Subversion that Myranda the Hag created for you will not function inside Blackrock Spire. ","Perhaps you should find Rexxar and explain your predicament. Show him the Dull Drakefire Amulet. Hopefully he will know what to do next."},
             [questKeys.objectives] = {nil,nil,{{16888}}},
-        },
-
-        [6602] = {
-            [questKeys.objectivesText] = {"Travel to Blackrock Spire and slay General Drakkisath. Gather his blood and return it to Rexxar."},
         },
 
         [6607] = {
@@ -11023,6 +10912,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [6621] = {
             [questKeys.objectivesText] = {"Place Karang's Banner on the Foulweald Totem Mound.  Do not let the furbolgs destroy the banner.  Defeat Chief Murgut and bring Murgut's Totem to Karang Amakkar at Zoram'gar."},
+            [questKeys.objectives] = {nil,nil,{{16976},{16972}}},
         },
 
         [6622] = {
@@ -11187,10 +11077,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 1,
         },
 
-        [6848] = {
-            [questKeys.requiredLevel] = 51,
-        },
-
         [6861] = {
             [questKeys.objectivesText] = {"Master Engineer Zinfizzlex wants you to bring him the following:","","*30 Thorium Bars.","","*50 Mithril Bars.","","*75 Iron bars.","","*1 Steamsaw."},
         },
@@ -11251,10 +11137,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectives] = nil,
         },
 
-        [7028] = {
-            [questKeys.objectivesText] = {"Collect 25 Theradric Crystal Carvings for Willow in Desolace."},
-        },
-
         [7043] = {
             [questKeys.objectivesText] = {"Locate and return the Stolen Treats to Wulmort Jinglepocket in Ironforge.  It was last thought to be in the possession of the Abominable Greench, found somewhere in the snowy regions of the Alterac Mountains."},
         },
@@ -11279,6 +11161,14 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [7069] = {
             [questKeys.questFlags] = 8,
+        },
+
+        [7081] = {
+            [questKeys.specialFlags] = specialFlags.REPEATABLE,
+        },
+
+        [7082] = {
+            [questKeys.specialFlags] = specialFlags.REPEATABLE,
         },
 
         [7121] = {
@@ -11307,12 +11197,10 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [7181] = {
             [questKeys.objectives] = {{{12159}}},
-            [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [7202] = {
             [questKeys.objectives] = {{{12159}}},
-            [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [7223] = {
@@ -11333,61 +11221,12 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.breadcrumbForQuestId] = 0,
         },
 
-        [7301] = {
-            [questKeys.specialFlags] = specialFlags.EXPLORATION_OR_EVENT,
-        },
-
-        [7302] = {
-            [questKeys.specialFlags] = specialFlags.EXPLORATION_OR_EVENT,
-        },
-
-        [7321] = {
-            [questKeys.objectives] = {nil,nil,{{3712},{3713}}},
-        },
-
-        [7361] = {
-            [questKeys.requiredLevel] = 51,
-        },
-
-        [7362] = {
-            [questKeys.requiredLevel] = 51,
-        },
-
         [7363] = {
-            [questKeys.requiredLevel] = 51,
             [questKeys.objectivesText] = {"You have been tasked with slaying opposing human players in Alterac Valley.","","Kill a human and return to Commander Louis Philips (who wanders between the front lines and Frostwolf keep) with a  Human Bone Chip.","","A cure for the human condition is close at hand!"},
         },
 
         [7364] = {
-            [questKeys.requiredLevel] = 51,
             [questKeys.objectivesText] = {"You have been tasked with slaying opposing tauren players in Alterac Valley.","","Kill a tauren and return to Dirk Swindle at Dun'Baldar with a  Tauren Hoof."},
-        },
-
-        [7365] = {
-            [questKeys.requiredLevel] = 51,
-        },
-
-        [7366] = {
-            [questKeys.requiredLevel] = 51,
-        },
-
-        [7367] = {
-            [questKeys.specialFlags] = specialFlags.NONE,
-        },
-
-        [7368] = {
-            [questKeys.specialFlags] = specialFlags.NONE,
-        },
-
-        [7381] = {
-            [questKeys.preQuestSingle] = {7181},
-            [questKeys.specialFlags] = specialFlags.NONE,
-        },
-
-        [7382] = {
-            [questKeys.requiredLevel] = 51,
-            [questKeys.preQuestSingle] = {7202},
-            [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [7384] = {
@@ -11398,53 +11237,18 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.questFlags] = 8,
         },
 
-        [7401] = {
-            [questKeys.requiredLevel] = 51,
-        },
-
-        [7402] = {
-            [questKeys.requiredLevel] = 51,
-        },
-
-        [7421] = {
-            [questKeys.requiredLevel] = 51,
-        },
-
-        [7422] = {
-            [questKeys.requiredLevel] = 51,
-        },
-
-        [7423] = {
-            [questKeys.requiredLevel] = 51,
-        },
-
-        [7424] = {
-            [questKeys.requiredLevel] = 51,
-        },
-
-        [7425] = {
-            [questKeys.requiredLevel] = 51,
-        },
-
         [7426] = {
-            [questKeys.requiredLevel] = 51,
             [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [7427] = {
-            [questKeys.requiredLevel] = 51,
             [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.preQuestSingle] = {7401},
         },
 
         [7428] = {
-            [questKeys.requiredLevel] = 51,
             [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.preQuestSingle] = {7402},
-        },
-
-        [7462] = {
-            [questKeys.requiredLevel] = 57,
         },
 
         [7481] = {
@@ -11458,17 +11262,14 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [7483] = {
-            [questKeys.requiredLevel] = 57,
             [questKeys.preQuestSingle] = {},
         },
 
         [7484] = {
-            [questKeys.requiredLevel] = 57,
             [questKeys.preQuestSingle] = {},
         },
 
         [7485] = {
-            [questKeys.requiredLevel] = 57,
             [questKeys.preQuestSingle] = {},
         },
 
@@ -11485,11 +11286,15 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [7493] = {
-            [questKeys.preQuestSingle] = {7490},
+            [questKeys.preQuestSingle] = {24429},
         },
 
         [7495] = {
             [questKeys.objectives] = {nil,nil,{{18423}}},
+        },
+
+        [7497] = {
+            [questKeys.preQuestSingle] = {24428},
         },
 
         [7498] = {
@@ -11533,23 +11338,14 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectivesText] = {"Return Foror's Compendium of Dragon Slaying to the Athenaeum."},
             [questKeys.objectives] = {nil,nil,{{18401}}},
             [questKeys.nextQuestInChain] = 0,
-            [questKeys.questFlags] = 0,
         },
 
         [7508] = {
             [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.objectives] = {nil,nil,{{18513}}},
-            [questKeys.questFlags] = 0,
-        },
-
-        [7509] = {
-            [questKeys.questFlags] = 64,
-            [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [7521] = {
-            [questKeys.questLevel] = 60,
-            [questKeys.requiredLevel] = 60,
             [questKeys.objectivesText] = {"To free Thunderaan the Windseeker from his prison, you must present the right and left halves of the Bindings of the Wind Seeker, 10 bars of Elementium, and the Essence of the Firelord to Highlord Demitrian. "},
             [questKeys.preQuestSingle] = {7522},
         },
@@ -11567,7 +11363,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [7562] = {
-            [questKeys.requiredRaces] = raceIDs.BLOOD_ELF + raceIDs.GNOME + raceIDs.UNDEAD + raceIDs.ORC + raceIDs.HUMAN,
+            [questKeys.requiredRaces] = raceIDs.HUMAN + raceIDs.ORC + raceIDs.UNDEAD + raceIDs.GNOME + raceIDs.BLOOD_ELF,
             [questKeys.breadcrumbForQuestId] = 0,
         },
 
@@ -11611,14 +11407,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectivesText] = {"Purchase Xorothian Stardust from Ur'dan inside the Shadow Hold at Jaedenar in Felwood.  Bring it to Gorzeeki Wildeyes in the Burning Steppes."},
         },
 
-        [7626] = {
-            [questKeys.objectivesText] = {"Bring 10 Elixirs of Shadow Power to Gorzeeki Wildeyes in the Burning Steppes."},
-        },
-
-        [7628] = {
-            [questKeys.objectivesText] = {"Bring 35 Black Dragonscales to Gorzeeki Wildeyes in the Burning Steppes."},
-        },
-
         [7629] = {
             [questKeys.objectivesText] = {"Bring the Imp in a Jar to the alchemy lab in the Scholomance.  After the parchment is created, return the jar to Gorzeeki Wildeyes."},
             [questKeys.objectives] = {{{14500}},nil,{{18688}}},
@@ -11626,7 +11414,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [7630] = {
-            [questKeys.objectivesText] = {"Bring 3 Arcanite Bars to Gorzeeki in the Burning Steppes."},
             [questKeys.preQuestSingle] = {7626,7627,7628},
         },
 
@@ -11717,22 +11504,8 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [7670] = {
             [questKeys.questLevel] = -1,
-            [questKeys.requiredRaces] = raceIDs.DRAENEI + raceIDs.DWARF + raceIDs.HUMAN,
+            [questKeys.requiredRaces] = raceIDs.HUMAN + raceIDs.DWARF + raceIDs.DRAENEI,
             [questKeys.nextQuestInChain] = 0,
-        },
-
-        [7675] = {
-            [questKeys.questLevel] = 1,
-            [questKeys.requiredLevel] = 60,
-        },
-
-        [7676] = {
-            [questKeys.questLevel] = 1,
-            [questKeys.requiredLevel] = 60,
-        },
-
-        [7703] = {
-            [questKeys.requiredLevel] = 60,
         },
 
         [7704] = {
@@ -11780,12 +11553,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectives] = {nil,nil,{{19018}}},
         },
 
-        [7788] = {
-            [questKeys.questLevel] = 29,
-        },
-
         [7789] = {
-            [questKeys.questLevel] = 29,
             [questKeys.exclusiveTo] = {7874,7875,7876,7922,7923,7924,7925,8293,8294},
         },
 
@@ -11904,10 +11672,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.specialFlags] = specialFlags.NO_REP_SPILLOVER,
         },
 
-        [7815] = {
-            [questKeys.objectivesText] = {"Katoom the Angler at Revantusk Village in the Hinterlands wants you to kill 15 Saltwater Snapjaw turtles. Return to him when you have completed this task."},
-        },
-
         [7817] = {
             [questKeys.questLevel] = 60,
             [questKeys.specialFlags] = specialFlags.NO_REP_SPILLOVER,
@@ -11964,14 +11728,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.specialFlags] = specialFlags.NO_REP_SPILLOVER,
         },
 
-        [7828] = {
-            [questKeys.objectivesText] = {"Huntsman Markhor at Revantusk Village in the Hinterlands wants you to kill 15 Silvermane Stalkers and 15 Silvermane Howlers. Return to him once the task is complete.","","Markhor mentioned that the wolves hide in the wilds of the Hinterlands."},
-        },
-
-        [7829] = {
-            [questKeys.objectivesText] = {"Huntsman Markhor at Revantusk Village in the Hinterlands wants you to kill 20 Savage Owlbeasts. Return to him once the task is complete.","","Markhor mentioned that the Savage Owlbeasts occupy the wilds of the Hinterlands."},
-        },
-
         [7831] = {
             [questKeys.questLevel] = 60,
             [questKeys.specialFlags] = specialFlags.NO_REP_SPILLOVER,
@@ -12006,46 +11762,12 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.questLevel] = 60,
         },
 
-        [7841] = {
-            [questKeys.objectivesText] = {"Otho Moji'ko at Revantusk Village in the Hinterlands wants you to slaughter 15 Highvale Scouts, 5 Highvale Outrunners, 5 Highvale Rangers and 2 Highvale Marksman. Return to him when this task is complete.","","You can find the Highvale high elves at the Quel'Danil Lodge in the northwestern region of the Hinterlands."},
-        },
-
-        [7842] = {
-            [questKeys.objectivesText] = {"Otho Moji'ko at Revantusk Village in the Hinterlands wants you to bring him 10 Long Elegant Feather from the gryphons that inhabit the Hinterlands. Return to him once this task is complete.","","Gryphons are known to inhabit every region of the Hinterlands."},
-        },
-
-        [7844] = {
-            [questKeys.objectivesText] = {"Mystic Yayo'jin at Revantusk Village in the Hinterlands wants you to kill 30 Vilebranch Scalpers and 15 Vilebranch Soothsayers. Return to her when this task is complete.","","Yayo'jin indicated that these trolls could be found near the Shaol'watha and Agol'watha temples in the north by northeastern region of the Hinterlands."},
-        },
-
         [7846] = {
             [questKeys.specialFlags] = specialFlags.REPEATABLE,
         },
 
         [7848] = {
             [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
-        },
-
-        [7850] = {
-            [questKeys.objectivesText] = {"Primal Torntusk at Revantusk Village in the Hinterlands wants you to recover 10 Vessels of Tainted Blood from Jintha'alor. Return to Primal Torntusk when this task is complete."},
-        },
-
-        [7861] = {
-            [questKeys.requiredLevel] = 46,
-            [questKeys.objectivesText] = {"You have been ordered to slay Vile Priestess Hexx and 20 Vilebranch Aman'zasi Guards. See Primal Torntusk at Revantusk Village in the Hinterlands once this task is complete.","","Vile Priestess Hexx and the Aman'zasi Guards can be found atop Jintha'alor in the Hinterlands."},
-        },
-
-        [7862] = {
-            [questKeys.requiredLevel] = 46,
-            [questKeys.objectivesText] = {"You have been tasked with the decimation of 20 Vilebranch Berserkers, 3 Vilebranch Shadow Hunters, 3 Vilebranch Blood Drinkers, and 2 Vilebranch Soul Eaters.","","Should you complete this task, return to Primal Torntusk at Revantusk Village in the Hinterlands."},
-        },
-
-        [7865] = {
-            [questKeys.questLevel] = 60,
-        },
-
-        [7868] = {
-            [questKeys.questLevel] = 60,
         },
 
         [7869] = {
@@ -12056,35 +11778,16 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.questFlags] = 8,
         },
 
-        [7871] = {
-            [questKeys.questLevel] = 39,
-        },
-
-        [7872] = {
-            [questKeys.questLevel] = 49,
-        },
-
-        [7873] = {
-            [questKeys.questLevel] = 59,
-        },
-
         [7874] = {
-            [questKeys.questLevel] = 39,
             [questKeys.exclusiveTo] = {7789,7875,7876,7922,7923,7924,7925,8293,8294},
         },
 
         [7875] = {
-            [questKeys.questLevel] = 49,
             [questKeys.exclusiveTo] = {7789,7874,7876,7922,7923,7924,7925,8293,8294},
         },
 
         [7876] = {
-            [questKeys.questLevel] = 59,
             [questKeys.exclusiveTo] = {7789,7874,7875,7922,7923,7924,7925,8293,8294},
-        },
-
-        [7877] = {
-            [questKeys.requiredLevel] = 57,
         },
 
         [7885] = {
@@ -12192,7 +11895,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [7961] = {
-            [questKeys.objectivesText] = {"Collect 160 Unlucky Wabbit Feet from the Waskily Wabbits."},
             [questKeys.objectives] = {nil,nil,{{46395}}},
         },
 
@@ -12225,254 +11927,116 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.questFlags] = 8,
         },
 
-        [8041] = {
-            [questKeys.requiredLevel] = 60,
-        },
-
-        [8042] = {
-            [questKeys.requiredLevel] = 60,
-        },
-
-        [8043] = {
-            [questKeys.requiredLevel] = 60,
-        },
-
-        [8045] = {
-            [questKeys.requiredLevel] = 60,
-        },
-
-        [8046] = {
-            [questKeys.requiredLevel] = 60,
-        },
-
-        [8047] = {
-            [questKeys.requiredLevel] = 60,
-        },
-
-        [8048] = {
-            [questKeys.requiredLevel] = 60,
-        },
-
-        [8049] = {
-            [questKeys.requiredLevel] = 60,
-        },
-
-        [8050] = {
-            [questKeys.requiredLevel] = 60,
-        },
-
-        [8051] = {
-            [questKeys.requiredLevel] = 60,
-        },
-
-        [8052] = {
-            [questKeys.requiredLevel] = 60,
-        },
-
         [8053] = {
-            [questKeys.questLevel] = 61,
-            [questKeys.requiredLevel] = 60,
             [questKeys.objectivesText] = {"Bring Jin'rokh the Breaker Primal Hakkari Bindings.  You must also have a reputation equal to or greater than Friendly with the Zandalar Tribe.","","Jin'rokh the Breaker is located on Yojamba Isle, Stranglethorn Vale."},
         },
 
         [8054] = {
-            [questKeys.questLevel] = 61,
-            [questKeys.requiredLevel] = 60,
             [questKeys.objectivesText] = {"Bring Jin'rokh the Breaker a Primal Hakkari Shawl.  You must also have a reputation equal to or greater than Honored with the Zandalar Tribe.","","Jin'rokh the Breaker is located on Yojamba Isle, Stranglethorn Vale."},
         },
 
         [8055] = {
-            [questKeys.questLevel] = 61,
-            [questKeys.requiredLevel] = 60,
             [questKeys.objectivesText] = {"Bring Jin'rokh the Breaker a Primal Hakkari Tabard.  You must also have a reputation equal to or greater than Revered with the Zandalar Tribe.","","Jin'rokh the Breaker is located on Yojamba Isle, Stranglethorn Vale."},
         },
 
         [8056] = {
-            [questKeys.requiredLevel] = 60,
             [questKeys.objectivesText] = {"Bring Maywiki of Zuldazar a Primal Hakkari Armsplint.  You must also have a reputation equal to or greater than Friendly with the Zandalar Tribe.","","Maywiki of Zuldazar is located on Yojamba Isle, Stranglethorn Vale."},
         },
 
         [8057] = {
-            [questKeys.requiredLevel] = 60,
             [questKeys.objectivesText] = {"Bring Maywiki of Zuldazar a Primal Hakkari Stanchion.  You must also have a reputation equal to or greater than Friendly with the Zandalar Tribe.","","Maywiki of Zuldazar is located on Yojamba Isle, Stranglethorn Vale."},
         },
 
         [8058] = {
-            [questKeys.requiredLevel] = 60,
             [questKeys.objectivesText] = {"Bring Jin'rokh the Breaker a Primal Hakkari Armsplint.  You must also have a reputation equal to or greater than Friendly with the Zandalar Tribe.","","Jin'rokh the Breaker is located on Yojamba Isle, Stranglethorn Vale."},
         },
 
         [8059] = {
-            [questKeys.requiredLevel] = 60,
             [questKeys.objectivesText] = {"Bring Al'tabim the All-Seeing a Primal Hakkari Stanchion.  You must also have a reputation equal to or greater than Friendly with the Zandalar Tribe.","","Al'tabim the All-Seeing is located on Yojamba Isle, Stranglethorn Vale."},
         },
 
         [8060] = {
-            [questKeys.requiredLevel] = 60,
             [questKeys.objectivesText] = {"Bring Al'tabim the All-Seeing Primal Hakkari Bindings.  You must also have a reputation equal to or greater than Friendly with the Zandalar Tribe.","","Al'tabim the All-Seeing is located on Yojamba Isle, Stranglethorn Vale."},
         },
 
         [8061] = {
-            [questKeys.requiredLevel] = 60,
             [questKeys.objectivesText] = {"Bring Al'tabim the All-Seeing a Primal Hakkari Stanchion.  You must also have a reputation equal to or greater than Friendly with the Zandalar Tribe.","","Al'tabim the All-Seeing is located on Yojamba Isle, Stranglethorn Vale."},
         },
 
         [8062] = {
-            [questKeys.requiredLevel] = 60,
             [questKeys.objectivesText] = {"Bring the following Paragons of Power from Zul'Gurub to Falthir the Sightless: A Primal Hakkari Bindings.  You must also have a reputation equal to or greater than Friendly with the Zandalar Tribe.","","Falthir the Sightless is located on Yojamba Isle, Stranglethorn Vale."},
         },
 
         [8063] = {
-            [questKeys.requiredLevel] = 60,
             [questKeys.objectivesText] = {"Bring Falthir the Sightless a Primal Hakkari Armsplint.  You must also have a reputation equal to or greater than Friendly with the Zandalar Tribe.","","Falthir the Sightless is located on Yojamba Isle, Stranglethorn Vale."},
         },
 
         [8064] = {
-            [questKeys.requiredLevel] = 60,
             [questKeys.objectivesText] = {"Bring Maywiki of Zuldazar a Primal Hakkari Sash.  Maywiki of Zuldazar is located on Yojamba Isle, Stranglethorn Vale. You must also be Honored with Zandalar."},
         },
 
         [8065] = {
-            [questKeys.requiredLevel] = 60,
             [questKeys.objectivesText] = {"Bring Maywiki of Zuldazar a Primal Hakkari Tabard.  Maywiki of Zuldazar is located on Yojamba Isle, Stranglethorn Vale. You must also be Revered with Zandalar."},
         },
 
         [8066] = {
-            [questKeys.requiredLevel] = 60,
             [questKeys.objectivesText] = {"Bring the following Paragons of Power from Zul'Gurub to Falthir the Sightless: A Primal Hakkari Shawl.  You must also have a reputation equal to or greater than Honored with the Zandalar Tribe.","","Falthir the Sightless is located on Yojamba Isle, Stranglethorn Vale."},
         },
 
         [8067] = {
-            [questKeys.requiredLevel] = 60,
             [questKeys.objectivesText] = {"Bring the following Paragons of Power from Zul'Gurub to Falthir the Sightless: A Primal Hakkari Aegis.  You must also have a reputation equal to or greater than Revered with the Zandalar Tribe.","","Falthir the Sightless is located on Yojamba Isle, Stranglethorn Vale."},
         },
 
         [8068] = {
-            [questKeys.requiredLevel] = 60,
             [questKeys.objectivesText] = {"Bring Al'tabim the All-Seeing a Primal Hakkari Shawl.  You must also have a reputation equal to or greater than Honored with the Zandalar Tribe.","","Al'tabim the All-Seeing is located on Yojamba Isle, Stranglethorn Vale."},
         },
 
         [8069] = {
-            [questKeys.requiredLevel] = 60,
             [questKeys.objectivesText] = {"Bring Al'tabim the All-Seeing a Primal Hakkari Kossack.  You must also have a reputation equal to or greater than Revered with the Zandalar Tribe.","","Al'tabim the All-Seeing is located on Yojamba Isle, Stranglethorn Vale."},
         },
 
         [8070] = {
-            [questKeys.requiredLevel] = 60,
             [questKeys.objectivesText] = {"Bring Al'tabim the All-Seeing a Primal Hakkari Sash.  You must also have a reputation equal to or greater than Honored with the Zandalar Tribe.","","Al'tabim the All-Seeing is located on Yojamba Isle, Stranglethorn Vale."},
         },
 
         [8071] = {
-            [questKeys.requiredLevel] = 60,
             [questKeys.objectivesText] = {"Bring Al'tabim the All-Seeing a Primal Hakkari Aegis.  You must also have a reputation equal to or greater than Revered with the Zandalar Tribe.","","Al'tabim the All-Seeing is located on Yojamba Isle, Stranglethorn Vale."},
         },
 
         [8072] = {
-            [questKeys.requiredLevel] = 60,
             [questKeys.objectivesText] = {"Bring Falthir the Sightless a Primal Hakkari Girdle.  You must also have a reputation equal to or greater than Honored with the Zandalar Tribe.","","Falthir the Sightless is located on Yojamba Isle, Stranglethorn Vale."},
         },
 
         [8073] = {
-            [questKeys.requiredLevel] = 60,
             [questKeys.objectivesText] = {"Bring Falthir the Sightless a Primal Hakkari Aegis.  You must also have a reputation equal to or greater than Revered with the Zandalar Tribe.","","Falthir the Sightless is located on Yojamba Isle, Stranglethorn Vale."},
         },
 
         [8074] = {
-            [questKeys.requiredLevel] = 60,
             [questKeys.objectivesText] = {"Bring Maywiki of Zuldazar a Primal Hakkari Girdle.  You must also have a reputation equal to or greater than Honored with the Zandalar Tribe.","","Maywiki of Zuldazar is located on Yojamba Isle, Stranglethorn Vale."},
         },
 
         [8075] = {
-            [questKeys.requiredLevel] = 60,
             [questKeys.objectivesText] = {"Bring Maywiki of Zuldazar a Primal Hakkari Tabard.  You must also have a reputation equal to or greater than Revered with the Zandalar Tribe.","","Maywiki of Zuldazar is located on Yojamba Isle, Stranglethorn Vale."},
         },
 
         [8076] = {
-            [questKeys.requiredLevel] = 60,
             [questKeys.objectivesText] = {"Bring Al'tabim the All-Seeing a Primal Hakkari Sash.  You must also have a reputation equal to or greater than Honored with the Zandalar Tribe.","","Al'tabim the All-Seeing is located on Yojamba Isle, Stranglethorn Vale."},
         },
 
         [8077] = {
-            [questKeys.requiredLevel] = 60,
             [questKeys.objectivesText] = {"Bring Al'tabim the All-Seeing a Primal Hakkari Kossack.  You must also have a reputation equal to or greater than Revered with the Zandalar Tribe.","","Al'tabim the All-Seeing is located on Yojamba Isle, Stranglethorn Vale."},
         },
 
         [8078] = {
-            [questKeys.requiredLevel] = 60,
             [questKeys.objectivesText] = {"Bring Jin'rokh the Breaker a Primal Hakkari Girdle.  You must also have a reputation equal to or greater than Honored with the Zandalar Tribe.","","Jin'rokh the Breaker is located on Yojamba Isle, Stranglethorn Vale."},
         },
 
         [8079] = {
-            [questKeys.requiredLevel] = 60,
             [questKeys.objectivesText] = {"Bring Jin'rokh the Breaker a Primal Hakkari Kossack.  You must also have a reputation equal to or greater than Revered with the Zandalar Tribe.","","Jin'rokh the Breaker is located on Yojamba Isle, Stranglethorn Vale."},
-        },
-
-        [8101] = {
-            [questKeys.requiredLevel] = 60,
-        },
-
-        [8102] = {
-            [questKeys.requiredLevel] = 60,
-        },
-
-        [8103] = {
-            [questKeys.requiredLevel] = 60,
-        },
-
-        [8104] = {
-            [questKeys.requiredLevel] = 60,
-        },
-
-        [8106] = {
-            [questKeys.requiredLevel] = 60,
-        },
-
-        [8107] = {
-            [questKeys.requiredLevel] = 60,
-        },
-
-        [8108] = {
-            [questKeys.requiredLevel] = 60,
-        },
-
-        [8109] = {
-            [questKeys.requiredLevel] = 60,
-        },
-
-        [8110] = {
-            [questKeys.requiredLevel] = 60,
-        },
-
-        [8111] = {
-            [questKeys.requiredLevel] = 60,
-        },
-
-        [8112] = {
-            [questKeys.requiredLevel] = 60,
-        },
-
-        [8113] = {
-            [questKeys.requiredLevel] = 60,
         },
 
         [8114] = {
             [questKeys.preQuestSingle] = {8105},
-        },
-
-        [8116] = {
-            [questKeys.requiredLevel] = 60,
-        },
-
-        [8117] = {
-            [questKeys.requiredLevel] = 60,
-        },
-
-        [8118] = {
-            [questKeys.requiredLevel] = 60,
-        },
-
-        [8119] = {
-            [questKeys.requiredLevel] = 60,
         },
 
         [8121] = {
@@ -12480,24 +12044,11 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8123] = {
-            [questKeys.questLevel] = 59,
             [questKeys.exclusiveTo] = {8124,8160,8161,8162,8163,8164,8165,8299,8300},
         },
 
         [8124] = {
             [questKeys.exclusiveTo] = {8123,8160,8161,8162,8163,8164,8165,8299,8300},
-        },
-
-        [8145] = {
-            [questKeys.requiredLevel] = 60,
-        },
-
-        [8146] = {
-            [questKeys.requiredLevel] = 60,
-        },
-
-        [8147] = {
-            [questKeys.requiredLevel] = 60,
         },
 
         [8149] = {
@@ -12524,17 +12075,14 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8160] = {
-            [questKeys.questLevel] = 49,
             [questKeys.exclusiveTo] = {8123,8124,8161,8162,8163,8164,8165,8299,8300},
         },
 
         [8161] = {
-            [questKeys.questLevel] = 39,
             [questKeys.exclusiveTo] = {8123,8124,8160,8162,8163,8164,8165,8299,8300},
         },
 
         [8162] = {
-            [questKeys.questLevel] = 29,
             [questKeys.exclusiveTo] = {8123,8124,8160,8161,8163,8164,8165,8299,8300},
         },
 
@@ -12674,7 +12222,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8262] = {
-            [questKeys.questLevel] = 60,
             [questKeys.requiredMinRep] = {509,21000},
         },
 
@@ -12683,27 +12230,22 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8265] = {
-            [questKeys.questLevel] = 60,
             [questKeys.requiredMinRep] = {510,21000},
         },
 
         [8266] = {
-            [questKeys.questLevel] = 39,
             [questKeys.exclusiveTo] = {8267},
         },
 
         [8267] = {
-            [questKeys.requiredLevel] = 40,
             [questKeys.exclusiveTo] = {8266},
         },
 
         [8268] = {
-            [questKeys.questLevel] = 39,
             [questKeys.exclusiveTo] = {8269},
         },
 
         [8269] = {
-            [questKeys.requiredLevel] = 40,
             [questKeys.exclusiveTo] = {8268},
         },
 
@@ -12907,7 +12449,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         [8346] = {
             [questKeys.objectives] = {{{15468}}},
             [questKeys.questFlags] = 136,
-            [questKeys.specialFlags] = specialFlags.SPELL_CAST + specialFlags.AUTO_ACCEPT,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT + specialFlags.SPELL_CAST,
         },
 
         [8347] = {
@@ -12941,25 +12483,21 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8354] = {
-            [questKeys.specialFlags] = specialFlags.EXPLORATION_OR_EVENT + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.EXPLORATION_OR_EVENT,
         },
 
         [8368] = {
-            [questKeys.exclusiveTo] = {},
+            [questKeys.exclusiveTo] = {8389,8426,8427,8428,8429,8430,8431,8432,8433,8434,8435},
             [questKeys.requiredMaxLevel] = 0,
         },
 
-        [8369] = {
-            [questKeys.specialFlags] = specialFlags.NONE,
-        },
-
         [8370] = {
-            [questKeys.exclusiveTo] = {},
+            [questKeys.exclusiveTo] = {8390,8436,8437,8438,8439,8440,8441,8442,8443},
             [questKeys.requiredMaxLevel] = 0,
         },
 
         [8372] = {
-            [questKeys.exclusiveTo] = {},
+            [questKeys.exclusiveTo] = {8386,8399,8400,8401,8402,8403,8404,8405,8406,8407,8408},
             [questKeys.requiredMaxLevel] = 0,
         },
 
@@ -12969,16 +12507,12 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8374] = {
-            [questKeys.exclusiveTo] = {},
+            [questKeys.exclusiveTo] = {8384,8391,8392,8393,8394,8395,8396,8397,8398},
             [questKeys.requiredMaxLevel] = 0,
         },
 
-        [8375] = {
-            [questKeys.specialFlags] = specialFlags.NONE,
-        },
-
         [8381] = {
-            [questKeys.requiredClasses] = classIDs.WARLOCK + classIDs.MAGE,
+            [questKeys.requiredClasses] = classIDs.MAGE + classIDs.WARLOCK,
         },
 
         [8383] = {
@@ -12987,11 +12521,13 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [8384] = {
             [questKeys.preQuestSingle] = {8374},
+            [questKeys.exclusiveTo] = {8374,8391,8392,8393,8394,8395,8396,8397,8398},
             [questKeys.requiredMaxLevel] = 0,
         },
 
         [8386] = {
             [questKeys.preQuestSingle] = {8372},
+            [questKeys.exclusiveTo] = {8372,8399,8400,8401,8402,8403,8404,8405,8406,8407,8408},
             [questKeys.requiredMaxLevel] = 0,
         },
 
@@ -13001,107 +12537,116 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [8389] = {
             [questKeys.preQuestSingle] = {8368},
+            [questKeys.exclusiveTo] = {8368,8426,8427,8428,8429,8430,8431,8432,8433,8434,8435},
             [questKeys.requiredMaxLevel] = 0,
         },
 
         [8390] = {
             [questKeys.preQuestSingle] = {8370},
+            [questKeys.exclusiveTo] = {8370,8436,8437,8438,8439,8440,8441,8442,8443},
             [questKeys.requiredMaxLevel] = 0,
         },
 
         [8391] = {
             [questKeys.preQuestSingle] = {8393},
+            [questKeys.exclusiveTo] = {8374,8384,8392,8393,8394,8395,8396,8397,8398},
             [questKeys.requiredMaxLevel] = 0,
         },
 
         [8392] = {
             [questKeys.preQuestSingle] = {8394},
+            [questKeys.exclusiveTo] = {8374,8384,8391,8393,8394,8395,8396,8397,8398},
             [questKeys.requiredMaxLevel] = 0,
         },
 
         [8393] = {
-            [questKeys.exclusiveTo] = {},
+            [questKeys.exclusiveTo] = {8374,8384,8391,8392,8394,8395,8396,8397,8398},
             [questKeys.requiredMaxLevel] = 0,
         },
 
         [8394] = {
-            [questKeys.exclusiveTo] = {},
+            [questKeys.exclusiveTo] = {8374,8384,8391,8392,8393,8395,8396,8397,8398},
             [questKeys.requiredMaxLevel] = 0,
         },
 
         [8395] = {
-            [questKeys.exclusiveTo] = {},
+            [questKeys.exclusiveTo] = {8374,8384,8391,8392,8393,8394,8396,8397,8398},
             [questKeys.requiredMaxLevel] = 0,
         },
 
         [8396] = {
-            [questKeys.exclusiveTo] = {},
+            [questKeys.exclusiveTo] = {8374,8384,8391,8392,8393,8394,8395,8397,8398},
         },
 
         [8397] = {
             [questKeys.preQuestSingle] = {8395},
+            [questKeys.exclusiveTo] = {8374,8384,8391,8392,8393,8394,8395,8396,8398},
             [questKeys.requiredMaxLevel] = 0,
         },
 
         [8398] = {
             [questKeys.preQuestSingle] = {8396},
+            [questKeys.exclusiveTo] = {8374,8384,8391,8392,8393,8394,8395,8396,8397},
         },
 
         [8399] = {
-            [questKeys.exclusiveTo] = {},
+            [questKeys.exclusiveTo] = {8372,8386,8400,8401,8402,8403,8404,8405,8406,8407,8408},
             [questKeys.requiredMaxLevel] = 0,
         },
 
         [8400] = {
-            [questKeys.exclusiveTo] = {},
+            [questKeys.exclusiveTo] = {8372,8386,8399,8401,8402,8403,8404,8405,8406,8407,8408},
             [questKeys.requiredMaxLevel] = 0,
         },
 
         [8401] = {
-            [questKeys.exclusiveTo] = {},
+            [questKeys.exclusiveTo] = {8372,8386,8399,8400,8402,8403,8404,8405,8406,8407,8408},
             [questKeys.requiredMaxLevel] = 0,
         },
 
         [8402] = {
-            [questKeys.exclusiveTo] = {},
+            [questKeys.exclusiveTo] = {8372,8386,8399,8400,8401,8403,8404,8405,8406,8407,8408},
             [questKeys.requiredMaxLevel] = 0,
         },
 
         [8403] = {
-            [questKeys.exclusiveTo] = {},
+            [questKeys.exclusiveTo] = {8372,8386,8399,8400,8401,8402,8404,8405,8406,8407,8408},
         },
 
         [8404] = {
             [questKeys.preQuestSingle] = {8399},
+            [questKeys.exclusiveTo] = {8372,8386,8399,8400,8401,8402,8403,8405,8406,8407,8408},
             [questKeys.requiredMaxLevel] = 0,
         },
 
         [8405] = {
             [questKeys.preQuestSingle] = {8400},
+            [questKeys.exclusiveTo] = {8372,8386,8399,8400,8401,8402,8403,8404,8406,8407,8408},
             [questKeys.requiredMaxLevel] = 0,
         },
 
         [8406] = {
             [questKeys.preQuestSingle] = {8401},
+            [questKeys.exclusiveTo] = {8372,8386,8399,8400,8401,8402,8403,8404,8405,8407,8408},
             [questKeys.requiredMaxLevel] = 0,
         },
 
         [8407] = {
             [questKeys.preQuestSingle] = {8402},
+            [questKeys.exclusiveTo] = {8372,8386,8399,8400,8401,8402,8403,8404,8405,8406,8408},
             [questKeys.requiredMaxLevel] = 0,
         },
 
         [8408] = {
             [questKeys.preQuestSingle] = {8403},
+            [questKeys.exclusiveTo] = {8372,8386,8399,8400,8401,8402,8403,8404,8405,8406,8407},
         },
 
         [8410] = {
-            [questKeys.questLevel] = 50,
             [questKeys.exclusiveTo] = {},
         },
 
         [8411] = {
-            [questKeys.questLevel] = 50,
             [questKeys.exclusiveTo] = {},
         },
 
@@ -13113,16 +12658,11 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.breadcrumbs] = {8415},
         },
 
-        [8415] = {
-            [questKeys.questLevel] = 50,
-        },
-
         [8416] = {
             [questKeys.objectives] = {nil,nil,{{20612}}},
         },
 
         [8417] = {
-            [questKeys.questLevel] = 50,
             [questKeys.breadcrumbForQuestId] = 0,
         },
 
@@ -13130,94 +12670,99 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.breadcrumbs] = {},
         },
 
-        [8424] = {
-            [questKeys.questLevel] = 53,
-        },
-
         [8426] = {
-            [questKeys.exclusiveTo] = {},
+            [questKeys.exclusiveTo] = {8368,8389,8427,8428,8429,8430,8431,8432,8433,8434,8435},
             [questKeys.requiredMaxLevel] = 0,
         },
 
         [8427] = {
-            [questKeys.exclusiveTo] = {},
+            [questKeys.exclusiveTo] = {8368,8389,8426,8428,8429,8430,8431,8432,8433,8434,8435},
             [questKeys.requiredMaxLevel] = 0,
         },
 
         [8428] = {
-            [questKeys.exclusiveTo] = {},
+            [questKeys.exclusiveTo] = {8368,8389,8426,8427,8429,8430,8431,8432,8433,8434,8435},
             [questKeys.requiredMaxLevel] = 0,
         },
 
         [8429] = {
-            [questKeys.exclusiveTo] = {},
+            [questKeys.exclusiveTo] = {8368,8389,8426,8427,8428,8430,8431,8432,8433,8434,8435},
             [questKeys.requiredMaxLevel] = 0,
         },
 
         [8430] = {
-            [questKeys.exclusiveTo] = {},
+            [questKeys.exclusiveTo] = {8368,8389,8426,8427,8428,8429,8431,8432,8433,8434,8435},
         },
 
         [8431] = {
             [questKeys.preQuestSingle] = {8426},
+            [questKeys.exclusiveTo] = {8368,8389,8426,8427,8428,8429,8430,8432,8433,8434,8435},
             [questKeys.requiredMaxLevel] = 0,
         },
 
         [8432] = {
             [questKeys.preQuestSingle] = {8427},
+            [questKeys.exclusiveTo] = {8368,8389,8426,8427,8428,8429,8430,8431,8433,8434,8435},
             [questKeys.requiredMaxLevel] = 0,
         },
 
         [8433] = {
             [questKeys.preQuestSingle] = {8428},
+            [questKeys.exclusiveTo] = {8368,8389,8426,8427,8428,8429,8430,8431,8432,8434,8435},
             [questKeys.requiredMaxLevel] = 0,
         },
 
         [8434] = {
             [questKeys.preQuestSingle] = {8429},
+            [questKeys.exclusiveTo] = {8368,8389,8426,8427,8428,8429,8430,8431,8432,8433,8435},
             [questKeys.requiredMaxLevel] = 0,
         },
 
         [8435] = {
             [questKeys.preQuestSingle] = {8430},
+            [questKeys.exclusiveTo] = {8368,8389,8426,8427,8428,8429,8430,8431,8432,8433,8434},
         },
 
         [8436] = {
-            [questKeys.exclusiveTo] = {},
+            [questKeys.exclusiveTo] = {8370,8390,8437,8438,8439,8440,8441,8442,8443},
             [questKeys.requiredMaxLevel] = 0,
         },
 
         [8437] = {
-            [questKeys.exclusiveTo] = {},
+            [questKeys.exclusiveTo] = {8370,8390,8436,8438,8439,8440,8441,8442,8443},
             [questKeys.requiredMaxLevel] = 0,
         },
 
         [8438] = {
-            [questKeys.exclusiveTo] = {},
+            [questKeys.exclusiveTo] = {8370,8390,8436,8437,8439,8440,8441,8442,8443},
             [questKeys.requiredMaxLevel] = 0,
         },
 
         [8439] = {
-            [questKeys.exclusiveTo] = {},
+            [questKeys.exclusiveTo] = {8370,8390,8436,8437,8438,8440,8441,8442,8443},
         },
 
         [8440] = {
             [questKeys.preQuestSingle] = {8436},
+            [questKeys.exclusiveTo] = {8370,8390,8436,8437,8438,8439,8441,8442,8443},
             [questKeys.requiredMaxLevel] = 0,
         },
 
         [8441] = {
             [questKeys.preQuestSingle] = {8437},
+            [questKeys.exclusiveTo] = {8370,8390,8436,8437,8438,8439,8440,8442,8443},
             [questKeys.requiredMaxLevel] = 0,
         },
 
         [8442] = {
             [questKeys.preQuestSingle] = {8438},
+            [questKeys.exclusiveTo] = {8370,8390,8436,8437,8438,8439,8440,8441,8443},
             [questKeys.requiredMaxLevel] = 0,
         },
 
         [8443] = {
             [questKeys.preQuestSingle] = {8439},
+            [questKeys.exclusiveTo] = {8370,8390,8436,8437,8438,8439,8440,8441,8442},
         },
 
         [8444] = {
@@ -13390,7 +12935,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [8493] = {
             [questKeys.requiredRaces] = raceIDs.NONE,
-            [questKeys.objectivesText] = {"Bring 20 Copper Bars to Sergeant Stonebrow in Ironforge."},
         },
 
         [8494] = {
@@ -13399,7 +12943,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [8495] = {
             [questKeys.requiredRaces] = raceIDs.NONE,
-            [questKeys.objectivesText] = {"Bring 20 Iron Bars to Corporal Carnes in Ironforge."},
         },
 
         [8496] = {
@@ -13422,10 +12965,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
-        [8500] = {
-            [questKeys.objectivesText] = {"Bring 20 Thorium Bars to Dame Twinbraid in Ironforge."},
-        },
-
         [8501] = {
             [questKeys.objectivesText] = {"Kill 30 Hive'Ashi Stingers and report back to Commander Mar'alith at Cenarion Hold in Silithus.  You must also bring Combat Task Briefing XII in order to complete this quest."},
             [questKeys.objectives] = {{{11698}},nil,{{20941}}},
@@ -13440,16 +12979,8 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
-        [8504] = {
-            [questKeys.objectivesText] = {"Bring 20 Stranglekelp to Private Draxlegauge in Ironforge."},
-        },
-
         [8505] = {
             [questKeys.requiredRaces] = raceIDs.NONE,
-        },
-
-        [8506] = {
-            [questKeys.objectivesText] = {"Bring 20 Purple Lotus to Master Nightsong in Ironforge."},
         },
 
         [8507] = {
@@ -13460,17 +12991,12 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
-        [8510] = {
-            [questKeys.objectivesText] = {"Bring 20 Arthas' Tears to Sergeant Major Germaine in Ironforge."},
-        },
-
         [8511] = {
             [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [8512] = {
             [questKeys.requiredRaces] = raceIDs.NONE,
-            [questKeys.objectivesText] = {"Bring 10 Light Leather to Bonnie Stoneflayer in Ironforge."},
         },
 
         [8513] = {
@@ -13479,7 +13005,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [8514] = {
             [questKeys.requiredRaces] = raceIDs.NONE,
-            [questKeys.objectivesText] = {"Bring 10 Medium Leather to Private Porter in Ironforge."},
         },
 
         [8515] = {
@@ -13488,7 +13013,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [8516] = {
             [questKeys.requiredRaces] = raceIDs.NONE,
-            [questKeys.objectivesText] = {"Bring 10 Thick Leather to Marta Finespindle in Ironforge."},
         },
 
         [8517] = {
@@ -13497,7 +13021,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [8518] = {
             [questKeys.requiredRaces] = raceIDs.NONE,
-            [questKeys.objectivesText] = {"Bring 20 Linen Bandages to Sentinel Silversky in Ironforge."},
         },
 
         [8520] = {
@@ -13506,7 +13029,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [8521] = {
             [questKeys.requiredRaces] = raceIDs.NONE,
-            [questKeys.objectivesText] = {"Bring 20 Silk Bandages to Nurse Stonefield in Ironforge."},
         },
 
         [8522] = {
@@ -13515,7 +13037,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [8523] = {
             [questKeys.requiredRaces] = raceIDs.NONE,
-            [questKeys.objectivesText] = {"Bring 20 Runecloth Bandages to Keeper Moonshade in Ironforge."},
         },
 
         [8524] = {
@@ -13524,15 +13045,10 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [8525] = {
             [questKeys.requiredRaces] = raceIDs.NONE,
-            [questKeys.objectivesText] = {"Bring 20 Rainbow Fin Albacore to Slicky Gastronome in Ironforge."},
         },
 
         [8526] = {
             [questKeys.requiredRaces] = raceIDs.NONE,
-        },
-
-        [8527] = {
-            [questKeys.objectivesText] = {"Bring 20 Roast Raptor to Sarah Sadwhistle in Ironforge."},
         },
 
         [8528] = {
@@ -13541,7 +13057,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [8529] = {
             [questKeys.requiredRaces] = raceIDs.NONE,
-            [questKeys.objectivesText] = {"Bring 20 Spotted Yellowtail to Huntress Swiftriver in Ironforge."},
         },
 
         [8530] = {
@@ -13561,7 +13076,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [8533] = {
             [questKeys.requiredRaces] = raceIDs.NONE,
-            [questKeys.objectivesText] = {"Bring 20 copper bars to Miner Cromwell in Orgrimmar."},
         },
 
         [8534] = {
@@ -13611,7 +13125,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [8543] = {
             [questKeys.requiredRaces] = raceIDs.NONE,
-            [questKeys.objectivesText] = {"Bring 20 tin bars to Grunt Maug in Orgrimmar."},
         },
 
         [8544] = {
@@ -13626,7 +13139,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [8546] = {
             [questKeys.requiredRaces] = raceIDs.NONE,
-            [questKeys.objectivesText] = {"Bring 20 Mithril Bars to Senior Sergeant T'kelah in Orgrimmar."},
         },
 
         [8547] = {
@@ -13635,6 +13147,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [8548] = {
             [questKeys.objectivesText] = {"Bring 5 Cenarion Combat Badges, 3 Cenarion Logistics Badges and 7 Cenarion Tactical Badges to Vargus at Cenarion Hold in Silithus.  You must also attain Friendly reputation with Cenarion Circle to be able to complete this quest."},
+            [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [8549] = {
@@ -13643,29 +13156,15 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [8550] = {
             [questKeys.requiredRaces] = raceIDs.NONE,
-            [questKeys.objectivesText] = {"Bring 20 Peacebloom to Herbalist Proudfeather in Orgrimmar."},
         },
 
         [8551] = {
-            [questKeys.questLevel] = 47,
             [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
         },
 
         [8552] = {
             [questKeys.objectives] = {nil,nil,{{3985}}},
             [questKeys.specialFlags] = specialFlags.REPEATABLE,
-        },
-
-        [8553] = {
-            [questKeys.questLevel] = 50,
-        },
-
-        [8554] = {
-            [questKeys.questLevel] = 50,
-        },
-
-        [8555] = {
-            [questKeys.objectivesText] = {"Speak with Anachronos."},
         },
 
         [8556] = {
@@ -13722,22 +13221,21 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [8572] = {
             [questKeys.objectivesText] = {"Bring 7 Cenarion Combat Badges, 4 Cenarion Logistics Badges and 4 Cenarion Tactical Badges to Vargus at Cenarion Hold in Silithus.  You must also attain Honored reputation with Cenarion Circle to be able to complete this quest."},
+            [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [8573] = {
             [questKeys.objectivesText] = {"Bring 15 Cenarion Combat Badges, 20 Cenarion Logistics Badges, 20 Cenarion Tactical Badges and 1 Mark of Cenarius to Vargus at Cenarion Hold in Silithus.  You must also attain Exalted reputation with Cenarion Circle to be able to complete this quest."},
+            [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [8574] = {
             [questKeys.objectivesText] = {"Bring 15 Cenarion Combat Badges, 20 Cenarion Logistics Badges, 17 Cenarion Tactical Badges and 1 Mark of Remulos to Vargus at Cenarion Hold in Silithus.  You must also attain Revered reputation with Cenarion Circle to be able to complete this quest."},
+            [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [8575] = {
             [questKeys.objectives] = {nil,nil,{{20949}}},
-        },
-
-        [8576] = {
-            [questKeys.objectivesText] = {"We need to figure out what Azuregos wrote in this ledger."},
         },
 
         [8577] = {
@@ -13754,7 +13252,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [8581] = {
             [questKeys.requiredRaces] = raceIDs.NONE,
-            [questKeys.objectivesText] = {"Bring 20 Firebloom to Batrider Pele'keiki in Orgrimmar."},
         },
 
         [8582] = {
@@ -13763,7 +13260,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [8583] = {
             [questKeys.requiredRaces] = raceIDs.NONE,
-            [questKeys.objectivesText] = {"Bring 20 Purple Lotus to Apothecary Jezel in Orgrimmar."},
         },
 
         [8587] = {
@@ -13776,7 +13272,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [8589] = {
             [questKeys.requiredRaces] = raceIDs.NONE,
-            [questKeys.objectivesText] = {"Bring 10 Heavy Leather to Skinner Jamani in Orgrimmar."},
         },
 
         [8590] = {
@@ -13785,7 +13280,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [8591] = {
             [questKeys.requiredRaces] = raceIDs.NONE,
-            [questKeys.objectivesText] = {"Bring 10 Thick Leather to Sergeant Umala in Orgrimmar."},
         },
 
         [8592] = {
@@ -13825,7 +13319,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [8601] = {
             [questKeys.requiredRaces] = raceIDs.NONE,
-            [questKeys.objectivesText] = {"Bring 10 Rugged Leather to Doctor Serratus in Orgrimmar."},
         },
 
         [8602] = {
@@ -13846,7 +13339,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [8605] = {
             [questKeys.requiredRaces] = raceIDs.NONE,
-            [questKeys.objectivesText] = {"Bring 20 Wool Bandages to Healer Longrunner in Orgrimmar."},
         },
 
         [8607] = {
@@ -13855,16 +13347,16 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [8608] = {
             [questKeys.requiredRaces] = raceIDs.NONE,
-            [questKeys.objectivesText] = {"Bring 20 Mageweave Bandages to Lady Callow in Orgrimmar."},
         },
 
         [8609] = {
             [questKeys.requiredRaces] = raceIDs.NONE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE,
         },
 
         [8610] = {
             [questKeys.requiredRaces] = raceIDs.NONE,
-            [questKeys.objectivesText] = {"Bring 20 Runecloth Bandages to Stoneguard Clayhoof in Orgrimmar."},
+            [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [8611] = {
@@ -13873,7 +13365,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [8612] = {
             [questKeys.requiredRaces] = raceIDs.NONE,
-            [questKeys.objectivesText] = {"Bring 20 Lean Wolf Steaks to Bloodguard Rawtar in Orgrimmar."},
         },
 
         [8613] = {
@@ -13882,7 +13373,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [8614] = {
             [questKeys.requiredRaces] = raceIDs.NONE,
-            [questKeys.objectivesText] = {"Bring 20 Spotted Yellowtail to Fisherman Lin'do in Orgrimmar."},
         },
 
         [8615] = {
@@ -13891,7 +13381,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [8616] = {
             [questKeys.requiredRaces] = raceIDs.NONE,
-            [questKeys.objectivesText] = {"Bring 20 Baked Salmon to Chief Sharpclaw in Orgrimmar."},
             [questKeys.preQuestSingle] = {8615},
         },
 
@@ -14237,7 +13726,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8740] = {
-            [questKeys.objectivesText] = {"Slay Twilight Marauder Morna and 5 Twilight Marauders.  Report to Windcaller Proudhorn when your task is finished.  You must also bring Tactical Task Briefing IX in order to complete this quest."},
+            [questKeys.objectivesText] = {"Slay Twilight Marauder Morna and 2 Twilight Marauders.  Report to Windcaller Proudhorn when your task is finished.  You must also bring Tactical Task Briefing IX in order to complete this quest."},
             [questKeys.objectives] = {{{15541},{15542}},nil,{{20944}}},
         },
 
@@ -14426,14 +13915,17 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8795] = {
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.exclusiveTo] = {},
         },
 
         [8796] = {
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.exclusiveTo] = {},
         },
 
         [8797] = {
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.exclusiveTo] = {},
         },
 
@@ -14778,7 +14270,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8945] = {
-            [questKeys.objectives] = nil,
             [questKeys.specialFlags] = specialFlags.EXPLORATION_OR_EVENT,
         },
 
@@ -14947,7 +14438,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [9015] = {
             [questKeys.objectivesText] = {"Travel to the Ring of the Law in Blackrock Depths and place the Banner of Provocation in its center as you are sentenced by High Justice Grimstone.  Slay Theldren and his gladiators and return to Anthion Harmon in the Eastern Plaguelands with the first piece of Lord Valthalak's amulet."},
-            [questKeys.objectives] = {nil,nil,{{22047}}},
+            [questKeys.objectives] = {{{16166}},nil,{{22047}}},
         },
 
         [9020] = {
@@ -14973,7 +14464,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9033] = {
-            [questKeys.objectives] = {{{351048},{351012},{351024},{351059}}},
             [questKeys.nextQuestInChain] = 0,
         },
 
@@ -15046,34 +14536,42 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9054] = {
+            [questKeys.requiredClasses] = classIDs.ROGUE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9055] = {
+            [questKeys.requiredClasses] = classIDs.ROGUE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9056] = {
+            [questKeys.requiredClasses] = classIDs.ROGUE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9057] = {
+            [questKeys.requiredClasses] = classIDs.ROGUE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9058] = {
+            [questKeys.requiredClasses] = classIDs.ROGUE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9059] = {
+            [questKeys.requiredClasses] = classIDs.ROGUE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9060] = {
+            [questKeys.requiredClasses] = classIDs.ROGUE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9061] = {
+            [questKeys.requiredClasses] = classIDs.ROGUE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
@@ -15101,202 +14599,250 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9068] = {
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9069] = {
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9070] = {
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9071] = {
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9072] = {
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9073] = {
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9074] = {
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9075] = {
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9077] = {
+            [questKeys.requiredClasses] = classIDs.MAGE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9078] = {
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9079] = {
+            [questKeys.requiredClasses] = classIDs.MAGE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9080] = {
+            [questKeys.requiredClasses] = classIDs.MAGE,
             [questKeys.objectivesText] = {"Rohan the Assassin at Light's Hope Chapel in the Eastern Plaguelands will make Bonescythe Pauldrons if you bring him the following: 1 Desecrated Pauldrons, 12 Wartorn Leather Scraps, 5 Cured Rugged Hides, 1 Nexus Crystal and 50 gold pieces. "},
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9081] = {
+            [questKeys.requiredClasses] = classIDs.MAGE,
             [questKeys.objectivesText] = {"Rohan the Assassin at Light's Hope Chapel in the Eastern Plaguelands will make Bonescythe Sabatons if you bring him the following: 1 Desecrated Sabatons, 12 Wartorn Leather Scraps, 3 Cured Rugged Hides, 2 Nexus Crystals and 25 gold pieces. "},
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9082] = {
+            [questKeys.requiredClasses] = classIDs.MAGE,
             [questKeys.objectivesText] = {"Rohan the Assassin at Light's Hope Chapel in the Eastern Plaguelands will make Bonescythe Gauntlets if you bring him the following: 1 Desecrated Gauntlets, 8 Wartorn Leather Scraps, 1 Arcanite Bar and 5 Cured Rugged Hides. "},
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9083] = {
+            [questKeys.requiredClasses] = classIDs.MAGE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9084] = {
+            [questKeys.requiredClasses] = classIDs.MAGE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9086] = {
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9087] = {
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9088] = {
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9089] = {
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9090] = {
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9091] = {
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9092] = {
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9093] = {
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9094] = {
-            [questKeys.objectivesText] = {"Collect 30 Necrotic Runes."},
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.preQuestSingle] = {},
         },
 
         [9095] = {
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9096] = {
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9097] = {
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9098] = {
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9099] = {
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9100] = {
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9101] = {
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9102] = {
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9103] = {
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9104] = {
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9105] = {
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9106] = {
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9107] = {
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9108] = {
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9109] = {
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9110] = {
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9111] = {
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9112] = {
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9113] = {
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9114] = {
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9115] = {
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9116] = {
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9117] = {
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9118] = {
+            [questKeys.requiredClasses] = classIDs.NONE,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
@@ -15595,18 +15141,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectives] = {nil,nil,{{22624},{13757}}},
         },
 
-        [9208] = {
-            [questKeys.requiredLevel] = 60,
-        },
-
-        [9209] = {
-            [questKeys.requiredLevel] = 60,
-        },
-
-        [9210] = {
-            [questKeys.requiredLevel] = 60,
-        },
-
         [9211] = {
             [questKeys.requiredMinRep] = false,
         },
@@ -15630,63 +15164,38 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.questFlags] = 8,
         },
 
+        [9232] = {
+            [questKeys.preQuestSingle] = {},
+        },
+
         [9233] = {
             [questKeys.objectives] = {nil,nil,{{22719}}},
             [questKeys.requiredMinRep] = false,
             [questKeys.preQuestSingle] = {},
         },
 
-        [9234] = {
-            [questKeys.preQuestSingle] = {9233},
-        },
-
-        [9235] = {
-            [questKeys.preQuestSingle] = {9233},
-        },
-
         [9236] = {
-            [questKeys.preQuestSingle] = {9233},
+            [questKeys.requiredMinRep] = {529,42000},
         },
 
         [9237] = {
-            [questKeys.preQuestSingle] = {9233},
-        },
-
-        [9238] = {
-            [questKeys.preQuestSingle] = {9233},
-        },
-
-        [9239] = {
-            [questKeys.preQuestSingle] = {9233},
+            [questKeys.requiredMinRep] = {529,42000},
         },
 
         [9240] = {
-            [questKeys.preQuestSingle] = {9233},
+            [questKeys.requiredMinRep] = {529,42000},
         },
 
         [9241] = {
             [questKeys.objectivesText] = {"Craftsman Wilhelm at Light's Hope Chapel in the Eastern Plaguelands wants 4 Frozen Runes, 12 Enchanted Leather, 3 Essence of Water, 3 Cured Rugged Hides and 200 gold. "},
-            [questKeys.preQuestSingle] = {9233},
-        },
-
-        [9242] = {
-            [questKeys.preQuestSingle] = {9233},
         },
 
         [9243] = {
-            [questKeys.preQuestSingle] = {9233},
-        },
-
-        [9244] = {
-            [questKeys.preQuestSingle] = {9233},
-        },
-
-        [9245] = {
-            [questKeys.preQuestSingle] = {9233},
+            [questKeys.requiredMinRep] = {529,42000},
         },
 
         [9246] = {
-            [questKeys.preQuestSingle] = {9233},
+            [questKeys.requiredMinRep] = {529,42000},
         },
 
         [9247] = {
@@ -15735,47 +15244,20 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.breadcrumbForQuestId] = 0,
         },
 
-        [9259] = {
-            [questKeys.questFlags] = 0,
-        },
-
-        [9260] = {
-            [questKeys.questLevel] = 10,
-            [questKeys.questFlags] = 8,
-            [questKeys.specialFlags] = specialFlags.NONE,
-        },
-
         [9261] = {
-            [questKeys.questFlags] = 8,
-            [questKeys.specialFlags] = specialFlags.NONE,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [9262] = {
-            [questKeys.questFlags] = 8,
-            [questKeys.specialFlags] = specialFlags.NONE,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [9263] = {
-            [questKeys.questFlags] = 8,
-            [questKeys.specialFlags] = specialFlags.NONE,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [9264] = {
-            [questKeys.questFlags] = 8,
-            [questKeys.specialFlags] = specialFlags.NONE,
-        },
-
-        [9265] = {
-            [questKeys.questFlags] = 8,
-            [questKeys.specialFlags] = specialFlags.NONE,
-        },
-
-        [9266] = {
-            [questKeys.questFlags] = 0,
-        },
-
-        [9268] = {
-            [questKeys.questFlags] = 0,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
 
         [9269] = {
@@ -15863,7 +15345,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9294] = {
-            [questKeys.specialFlags] = specialFlags.SPELL_CAST + specialFlags.AUTO_ACCEPT,
+            [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT + specialFlags.SPELL_CAST,
         },
 
         [9295] = {
@@ -15987,25 +15469,29 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9317] = {
-            [questKeys.objectivesText] = {"Collect 8 Necrotic Runes."},
+            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
             [questKeys.preQuestSingle] = {},
+            [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9318] = {
             [questKeys.questLevel] = -1,
-            [questKeys.objectivesText] = {"Collect 8 Necrotic Runes."},
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.preQuestSingle] = {},
+            [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9320] = {
-            [questKeys.objectivesText] = {"Collect 15 Necrotic Runes."},
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.preQuestSingle] = {},
+            [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9321] = {
             [questKeys.questLevel] = -1,
-            [questKeys.objectivesText] = {"Collect 15 Necrotic Runes."},
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.preQuestSingle] = {},
+            [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9324] = {
@@ -16037,32 +15523,37 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9333] = {
-            [questKeys.objectivesText] = {"Collect 30 Necrotic Runes."},
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.preQuestSingle] = {},
+            [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9334] = {
             [questKeys.questLevel] = -1,
-            [questKeys.objectivesText] = {"Collect 8 Necrotic Runes."},
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.preQuestSingle] = {},
+            [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9335] = {
             [questKeys.questLevel] = -1,
-            [questKeys.objectivesText] = {"Collect 8 Necrotic Runes."},
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.preQuestSingle] = {},
+            [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9336] = {
             [questKeys.questLevel] = -1,
-            [questKeys.objectivesText] = {"Collect 15 Necrotic Runes."},
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.preQuestSingle] = {},
+            [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9337] = {
             [questKeys.questLevel] = -1,
-            [questKeys.objectivesText] = {"Collect 15 Necrotic Runes."},
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.preQuestSingle] = {},
+            [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9339] = {
@@ -16072,14 +15563,16 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [9341] = {
             [questKeys.questLevel] = -1,
-            [questKeys.objectivesText] = {"Collect 10 Necrotic Runes."},
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.preQuestSingle] = {},
+            [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9343] = {
             [questKeys.questLevel] = -1,
-            [questKeys.objectivesText] = {"Collect 10 Necrotic Runes."},
+            [questKeys.requiredRaces] = raceIDs.NONE,
             [questKeys.preQuestSingle] = {},
+            [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [9344] = {
@@ -16310,14 +15803,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.questFlags] = 8,
         },
 
-        [9415] = {
-            [questKeys.requiredLevel] = 1,
-        },
-
-        [9416] = {
-            [questKeys.requiredLevel] = 1,
-        },
-
         [9417] = {
             [questKeys.preQuestSingle] = {9558},
         },
@@ -16327,7 +15812,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9419] = {
-            [questKeys.requiredLevel] = 1,
             [questKeys.preQuestSingle] = {9415},
         },
 
@@ -16989,7 +16473,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [9644] = {
             [questKeys.objectivesText] = {"Go to the Master's Terrace in Karazhan and touch the Blackened Urn to summon Nightbane.  Retrieve the Faint Arcane Essence from Nightbane's corpse and bring it to Archmage Alturus."},
-            [questKeys.sourceItemId] = 24140,
         },
 
         [9645] = {
@@ -17139,10 +16622,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectivesText] = {"Report to Knight-Lord Bloodvalor in Silvermoon City."},
             [questKeys.nextQuestInChain] = 9679,
             [questKeys.questFlags] = 136,
-        },
-
-        [9684] = {
-            [questKeys.objectivesText] = {"Use the Shimmering Vessel on M'uru to fill it and return to Knight-Lord Bloodvalor in Silvermoon City."},
         },
 
         [9685] = {
@@ -17525,22 +17004,22 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [9884] = {
             [questKeys.exclusiveTo] = {9885,9886,9887},
-            [questKeys.specialFlags] = specialFlags.MONTHLY + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.MONTHLY,
         },
 
         [9885] = {
             [questKeys.exclusiveTo] = {9884,9886,9887},
-            [questKeys.specialFlags] = specialFlags.MONTHLY + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.MONTHLY,
         },
 
         [9886] = {
             [questKeys.exclusiveTo] = {9884,9885,9887},
-            [questKeys.specialFlags] = specialFlags.MONTHLY + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.MONTHLY,
         },
 
         [9887] = {
             [questKeys.exclusiveTo] = {9884,9885,9886},
-            [questKeys.specialFlags] = specialFlags.MONTHLY + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.MONTHLY,
         },
 
         [9889] = {
@@ -18394,7 +17873,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [10279] = {
-            [questKeys.requiredRaces] = raceIDs.ALL_HORDE + raceIDs.ALL_ALLIANCE,
+            [questKeys.requiredRaces] = raceIDs.HUMAN + raceIDs.ORC + raceIDs.DWARF + raceIDs.NIGHT_ELF + raceIDs.UNDEAD + raceIDs.TAUREN + raceIDs.GNOME + raceIDs.TROLL + raceIDs.BLOOD_ELF + raceIDs.DRAENEI,
         },
 
         [10280] = {
@@ -19813,7 +19292,8 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [10879] = {
-            [questKeys.objectives] = {{{22375}}},
+            [questKeys.objectives] = nil,
+            [questKeys.specialFlags] = specialFlags.EXPLORATION_OR_EVENT,
         },
 
         [10880] = {
@@ -19830,10 +19310,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [10887] = {
             [questKeys.objectivesText] = {"Help Akuno find his way to the Refugee Caravan.  Speak to Mekeda after you've completed this quest."},
-        },
-
-        [10888] = {
-            [questKeys.preQuestSingle] = {10884,10885,10886},
         },
 
         [10890] = {
@@ -19921,7 +19397,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [10923] = {
             [questKeys.objectivesText] = {"Oakun wants you to take the Dread Relic to the Writhing Mound.  Once there, kill Auchenai Death-Speakers and Auchenai Doomsayers to collect 20 Doom Skulls.  Then find the Writhing Mound Summoning Circle and use the Dread Relic to summon and destroy Teribus the Cursed.  Return to Oakun when the deed is done."},
-            [questKeys.objectives] = {{{22441}},nil,{{31811}}},
+            [questKeys.objectives] = {{{22441}},nil,{{31811},{31811}}},
             [questKeys.questFlags] = 0,
             [questKeys.specialFlags] = specialFlags.NONE,
         },
@@ -19985,10 +19461,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [10947] = {
             [questKeys.objectivesText] = {"Go to the Caverns of Time in Tanaris and gain access to the Battle of Mount Hyjal.  Once inside, defeat Rage Winterchill and bring the Time-Phased Phylactery to Akama in Shadowmoon Valley."},
-        },
-
-        [10949] = {
-            [questKeys.nextQuestInChain] = 10985,
         },
 
         [10950] = {
@@ -20343,17 +19815,17 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11053] = {
-            [questKeys.requiredRaces] = raceIDs.ALL_HORDE + raceIDs.ALL_ALLIANCE,
+            [questKeys.requiredRaces] = raceIDs.HUMAN + raceIDs.ORC + raceIDs.DWARF + raceIDs.NIGHT_ELF + raceIDs.UNDEAD + raceIDs.TAUREN + raceIDs.GNOME + raceIDs.TROLL + raceIDs.BLOOD_ELF + raceIDs.DRAENEI,
         },
 
         [11054] = {
-            [questKeys.requiredRaces] = raceIDs.ALL_HORDE + raceIDs.ALL_ALLIANCE,
+            [questKeys.requiredRaces] = raceIDs.HUMAN + raceIDs.ORC + raceIDs.DWARF + raceIDs.NIGHT_ELF + raceIDs.UNDEAD + raceIDs.TAUREN + raceIDs.GNOME + raceIDs.TROLL + raceIDs.BLOOD_ELF + raceIDs.DRAENEI,
         },
 
         [11055] = {
-            [questKeys.requiredRaces] = raceIDs.ALL_HORDE + raceIDs.ALL_ALLIANCE,
+            [questKeys.requiredRaces] = raceIDs.HUMAN + raceIDs.ORC + raceIDs.DWARF + raceIDs.NIGHT_ELF + raceIDs.UNDEAD + raceIDs.TAUREN + raceIDs.GNOME + raceIDs.TROLL + raceIDs.BLOOD_ELF + raceIDs.DRAENEI,
             [questKeys.objectives] = {{{23311}},nil,{{32680}}},
-            [questKeys.specialFlags] = specialFlags.SPELL_CAST + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.SPELL_CAST,
         },
 
         [11057] = {
@@ -20420,11 +19892,11 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11075] = {
-            [questKeys.requiredRaces] = raceIDs.ALL_HORDE + raceIDs.ALL_ALLIANCE,
+            [questKeys.requiredRaces] = raceIDs.HUMAN + raceIDs.ORC + raceIDs.DWARF + raceIDs.NIGHT_ELF + raceIDs.UNDEAD + raceIDs.TAUREN + raceIDs.GNOME + raceIDs.TROLL + raceIDs.BLOOD_ELF + raceIDs.DRAENEI,
         },
 
         [11076] = {
-            [questKeys.requiredRaces] = raceIDs.ALL_HORDE + raceIDs.ALL_ALLIANCE,
+            [questKeys.requiredRaces] = raceIDs.HUMAN + raceIDs.ORC + raceIDs.DWARF + raceIDs.NIGHT_ELF + raceIDs.UNDEAD + raceIDs.TAUREN + raceIDs.GNOME + raceIDs.TROLL + raceIDs.BLOOD_ELF + raceIDs.DRAENEI,
         },
 
         [11078] = {
@@ -20440,7 +19912,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11084] = {
-            [questKeys.requiredRaces] = raceIDs.ALL_HORDE + raceIDs.ALL_ALLIANCE,
+            [questKeys.requiredRaces] = raceIDs.HUMAN + raceIDs.ORC + raceIDs.DWARF + raceIDs.NIGHT_ELF + raceIDs.UNDEAD + raceIDs.TAUREN + raceIDs.GNOME + raceIDs.TROLL + raceIDs.BLOOD_ELF + raceIDs.DRAENEI,
         },
 
         [11086] = {
@@ -20468,7 +19940,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11092] = {
-            [questKeys.requiredRaces] = raceIDs.ALL_HORDE + raceIDs.ALL_ALLIANCE,
+            [questKeys.requiredRaces] = raceIDs.HUMAN + raceIDs.ORC + raceIDs.DWARF + raceIDs.NIGHT_ELF + raceIDs.UNDEAD + raceIDs.TAUREN + raceIDs.GNOME + raceIDs.TROLL + raceIDs.BLOOD_ELF + raceIDs.DRAENEI,
         },
 
         [11093] = {
@@ -20499,7 +19971,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11098] = {
-            [questKeys.requiredRaces] = raceIDs.ALL_HORDE + raceIDs.ALL_ALLIANCE,
+            [questKeys.requiredRaces] = raceIDs.HUMAN + raceIDs.ORC + raceIDs.DWARF + raceIDs.NIGHT_ELF + raceIDs.UNDEAD + raceIDs.TAUREN + raceIDs.GNOME + raceIDs.TROLL + raceIDs.BLOOD_ELF + raceIDs.DRAENEI,
             [questKeys.objectives] = {nil,nil,{{32848}}},
         },
 
@@ -20544,7 +20016,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11107] = {
-            [questKeys.requiredRaces] = raceIDs.ALL_HORDE + raceIDs.ALL_ALLIANCE,
+            [questKeys.requiredRaces] = raceIDs.HUMAN + raceIDs.ORC + raceIDs.DWARF + raceIDs.NIGHT_ELF + raceIDs.UNDEAD + raceIDs.TAUREN + raceIDs.GNOME + raceIDs.TROLL + raceIDs.BLOOD_ELF + raceIDs.DRAENEI,
         },
 
         [11115] = {
@@ -20633,7 +20105,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [11142] = {
             [questKeys.objectives] = nil,
-            [questKeys.nextQuestInChain] = 11222,
         },
 
         [11146] = {
@@ -20828,7 +20299,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11222] = {
-            [questKeys.objectivesText] = {"Speak to Highlord Bolvar Fordragon in Stormwind Keep."},
             [questKeys.preQuestSingle] = {11142},
         },
 
@@ -21127,37 +20597,11 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11335] = {
-            [questKeys.requiredLevel] = 61,
             [questKeys.questFlags] = 4098,
         },
 
-        [11336] = {
-            [questKeys.requiredLevel] = 61,
-        },
-
-        [11337] = {
-            [questKeys.requiredLevel] = 61,
-        },
-
-        [11338] = {
-            [questKeys.requiredLevel] = 61,
-        },
-
-        [11339] = {
-            [questKeys.requiredLevel] = 61,
-        },
-
-        [11340] = {
-            [questKeys.requiredLevel] = 61,
-        },
-
         [11341] = {
-            [questKeys.requiredLevel] = 61,
             [questKeys.objectivesText] = {"Win an Eye of the Storm battleground match and return to a Horde Warbringer at any Horde capital city, Wintergrasp, Dalaran,  or Shattrath."},
-        },
-
-        [11342] = {
-            [questKeys.requiredLevel] = 61,
         },
 
         [11343] = {
@@ -21552,8 +20996,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [11496] = {
             [questKeys.objectives] = nil,
-            [questKeys.questFlags] = 138,
-            [questKeys.specialFlags] = specialFlags.EXPLORATION_OR_EVENT + specialFlags.SPELL_CAST,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.EXPLORATION_OR_EVENT + specialFlags.SPELL_CAST,
         },
 
         [11501] = {
@@ -21574,18 +21017,16 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [11513] = {
             [questKeys.preQuestSingle] = {11517},
-            [questKeys.questFlags] = 136,
-            [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [11514] = {
-            [questKeys.preQuestSingle] = {11513},
+            [questKeys.preQuestSingle] = {11534},
         },
 
         [11515] = {
             [questKeys.objectivesText] = {"Magistrix Seyla at the Throne of Kil'jaeden wants you to kill 4 Emaciated Felbloods by using the Fel Siphon on them.  You will need Demonic Blood from nearby Wrath Heralds to power the Fel Siphon."},
             [questKeys.objectives] = {{{24955}},nil,{{34257}}},
-            [questKeys.specialFlags] = specialFlags.SPELL_CAST + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.SPELL_CAST,
         },
 
         [11516] = {
@@ -21597,15 +21038,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.exclusiveTo] = {},
         },
 
-        [11520] = {
-            [questKeys.questFlags] = 136,
-            [questKeys.specialFlags] = specialFlags.NONE,
-        },
-
-        [11521] = {
-            [questKeys.preQuestSingle] = {11520},
-        },
-
         [11522] = {
             [questKeys.questLevel] = 70,
             [questKeys.requiredLevel] = 70,
@@ -21615,19 +21047,15 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [11523] = {
             [questKeys.objectives] = nil,
-            [questKeys.preQuestSingle] = {11496},
-            [questKeys.specialFlags] = specialFlags.SPELL_CAST + specialFlags.EXPLORATION_OR_EVENT + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.EXPLORATION_OR_EVENT + specialFlags.SPELL_CAST,
         },
 
         [11524] = {
             [questKeys.objectives] = {{{24991}},nil,{{34368}}},
-            [questKeys.questFlags] = 128,
-            [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [11525] = {
             [questKeys.objectives] = {{{24991}},nil,{{34368}}},
-            [questKeys.preQuestSingle] = {11524},
         },
 
         [11526] = {
@@ -21652,94 +21080,50 @@ QuestieCompat.RegisterCorrection("questData", function()
         [11532] = {
             [questKeys.objectivesText] = {"Battlemage Arynna wants you to speak to Ayren Cloudbreaker when you're ready to fly over the Dead Scar.  Once there, use the Arcane Charges to kill 2 Pit Overlords, 3 Eredar Sorcerers and 12 Wrath Enforcers."},
             [questKeys.objectives] = {{{25031},{25033},{25030}},nil,{{34475}}},
-            [questKeys.questFlags] = 128,
-            [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [11533] = {
             [questKeys.objectivesText] = {"Battlemage Arynna wants you to speak to Ayren Cloudbreaker when you're ready to fly over the Dead Scar.  Once there, use the Arcane Charges to kill 2 Pit Overlords, 3 Eredar Sorcerers and 12 Wrath Enforcers."},
             [questKeys.objectives] = {{{25031},{25033},{25030}},nil,{{34475}}},
-            [questKeys.preQuestSingle] = {11532},
         },
 
         [11534] = {
             [questKeys.exclusiveTo] = {},
         },
 
-        [11535] = {
-            [questKeys.questFlags] = 136,
-            [questKeys.specialFlags] = specialFlags.NONE,
-        },
-
-        [11536] = {
-            [questKeys.preQuestSingle] = {11544},
-        },
-
         [11537] = {
             [questKeys.objectivesText] = {"Harbinger Inuuro wants you to slay 6 Burning Legion Demons and the Emissary of Hate in Dawning Square.  Use the Shattered Sun Banner to impale the Emissary of Hate's corpse."},
             [questKeys.objectives] = {{{25065},{25068}},nil,{{34414}}},
-            [questKeys.preQuestSingle] = {11538},
         },
 
         [11538] = {
             [questKeys.objectivesText] = {"Harbinger Inuuro wants you to slay 6 Burning Legion Demons and the Emissary of Hate in Dawning Square or the Sun's Reach Armory.  Use the Shattered Sun Banner to impale the Emissary of Hate's corpse."},
             [questKeys.objectives] = {{{25065},{25068}},nil,{{34414}}},
-            [questKeys.questFlags] = 128,
-            [questKeys.specialFlags] = specialFlags.NONE,
-        },
-
-        [11539] = {
-            [questKeys.questFlags] = 136,
-            [questKeys.specialFlags] = specialFlags.NONE,
-        },
-
-        [11540] = {
-            [questKeys.preQuestSingle] = {11539},
         },
 
         [11541] = {
             [questKeys.objectives] = {{{25086}}},
-            [questKeys.preQuestSingle] = {11520},
         },
 
         [11542] = {
             [questKeys.objectivesText] = {"Vindicator Kaalan at the Sun's Reach Armory wants you to speak to Ayren Cloudbreaker and fly over the Dawnblade reinforcement fleet.  Use the Flaming Oil to set the ship sails on fire as you fly and once you land, slay 6 Dawnblade Reservists."},
             [questKeys.objectives] = {{{25090},{25091},{25092},{25087}},nil,{{34489}}},
-            [questKeys.questFlags] = 128,
-            [questKeys.specialFlags] = specialFlags.SPELL_CAST,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.SPELL_CAST,
         },
 
         [11543] = {
             [questKeys.objectivesText] = {"Vindicator Kaalan at the Sun's Reach Armory wants you to speak to Ayren Cloudbreaker and fly over the Dawnblade reinforcement fleet.  Use the Flaming Oil to set the ship sails on fire as you fly and once you land, slay 6 Dawnblade Reservists."},
             [questKeys.objectives] = {{{25090},{25091},{25092},{25087}},nil,{{34489}}},
-            [questKeys.preQuestSingle] = {11542},
-            [questKeys.specialFlags] = specialFlags.SPELL_CAST + specialFlags.REPEATABLE,
-        },
-
-        [11544] = {
-            [questKeys.preQuestSingle] = {11535},
-            [questKeys.questFlags] = 136,
-            [questKeys.specialFlags] = specialFlags.NONE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.SPELL_CAST,
         },
 
         [11545] = {
             [questKeys.requiredMaxRep] = false,
-            [questKeys.questFlags] = 136,
-            [questKeys.specialFlags] = specialFlags.NONE,
-        },
-
-        [11546] = {
-            [questKeys.preQuestSingle] = {11521},
         },
 
         [11547] = {
             [questKeys.objectives] = {{{25156},{25154},{25157}},nil,{{34533}}},
-            [questKeys.preQuestSingle] = {11513},
-            [questKeys.specialFlags] = specialFlags.SPELL_CAST + specialFlags.REPEATABLE,
-        },
-
-        [11548] = {
-            [questKeys.preQuestSingle] = {11545},
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.SPELL_CAST,
         },
 
         [11549] = {
@@ -22067,7 +21451,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [11691] = {
             [questKeys.questFlags] = 5120,
-            [questKeys.specialFlags] = specialFlags.EXPLORATION_OR_EVENT + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.EXPLORATION_OR_EVENT,
         },
 
         [11693] = {
@@ -22188,7 +21572,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [11880] = {
             [questKeys.objectives] = {{{25882}},nil,{{35233}}},
-            [questKeys.specialFlags] = specialFlags.SPELL_CAST + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.SPELL_CAST,
         },
 
         [11881] = {
@@ -22271,20 +21655,20 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [11921] = {
             [questKeys.preQuestSingle] = {11731},
-            [questKeys.specialFlags] = specialFlags.EXPLORATION_OR_EVENT + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.EXPLORATION_OR_EVENT,
         },
 
         [11924] = {
-            [questKeys.specialFlags] = specialFlags.EXPLORATION_OR_EVENT + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.EXPLORATION_OR_EVENT,
         },
 
         [11925] = {
-            [questKeys.specialFlags] = specialFlags.EXPLORATION_OR_EVENT + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.EXPLORATION_OR_EVENT,
         },
 
         [11926] = {
             [questKeys.preQuestSingle] = {11922},
-            [questKeys.specialFlags] = specialFlags.EXPLORATION_OR_EVENT + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.EXPLORATION_OR_EVENT,
         },
 
         [11933] = {
@@ -22652,10 +22036,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.preQuestSingle] = {12318},
         },
 
-        [12063] = {
-            [questKeys.preQuestSingle] = {},
-        },
-
         [12067] = {
             [questKeys.objectives] = {nil,nil,{{36756}}},
             [questKeys.questFlags] = 128,
@@ -22829,7 +22209,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {11131},
             [questKeys.questFlags] = 4170,
-            [questKeys.specialFlags] = specialFlags.EXPLORATION_OR_EVENT + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.EXPLORATION_OR_EVENT,
         },
 
         [12136] = {
@@ -22852,7 +22232,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {11219},
             [questKeys.questFlags] = 4170,
-            [questKeys.specialFlags] = specialFlags.EXPLORATION_OR_EVENT + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.EXPLORATION_OR_EVENT,
         },
 
         [12140] = {
@@ -23796,10 +23176,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
-        [12435] = {
-            [questKeys.objectivesText] = {"Speak with Lord Afrasastrasz at Wyrmrest Temple."},
-        },
-
         [12436] = {
             [questKeys.objectivesText] = {"Provisioner Lorkran at Conquest Hold wants you to obtain 5 Succulent Venison from  the nearby Tallhorn Stag."},
         },
@@ -23929,7 +23305,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         [12502] = {
             [questKeys.requiredSourceItems] = {38544},
             [questKeys.exclusiveTo] = {},
-            [questKeys.specialFlags] = specialFlags.SPELL_CAST + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.SPELL_CAST,
         },
 
         [12503] = {
@@ -24187,7 +23563,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectives] = {{{28330}}},
             [questKeys.requiredSourceItems] = {38566},
             [questKeys.exclusiveTo] = {},
-            [questKeys.specialFlags] = specialFlags.SPELL_CAST + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.SPELL_CAST,
         },
 
         [12589] = {
@@ -24200,7 +23576,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectives] = {{{28352}}},
             [questKeys.requiredSourceItems] = {38574},
             [questKeys.exclusiveTo] = {},
-            [questKeys.specialFlags] = specialFlags.SPELL_CAST + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.SPELL_CAST,
         },
 
         [12592] = {
@@ -24267,10 +23643,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         [12620] = {
             [questKeys.requiredSourceItems] = {38684},
             [questKeys.preQuestSingle] = {12617},
-        },
-
-        [12622] = {
-            [questKeys.preQuestSingle] = {},
         },
 
         [12626] = {
@@ -24352,7 +23724,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12652] = {
-            [questKeys.requiredRaces] = raceIDs.ALL_HORDE + raceIDs.ALL_ALLIANCE,
+            [questKeys.requiredRaces] = raceIDs.HUMAN + raceIDs.ORC + raceIDs.DWARF + raceIDs.NIGHT_ELF + raceIDs.UNDEAD + raceIDs.TAUREN + raceIDs.GNOME + raceIDs.TROLL + raceIDs.BLOOD_ELF + raceIDs.DRAENEI,
             [questKeys.objectives] = {{{28591}}},
             [questKeys.requiredSourceItems] = {38701},
             [questKeys.preQuestSingle] = {},
@@ -24372,7 +23744,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [12662] = {
             [questKeys.requiredSourceItems] = {39041},
-            [questKeys.preQuestSingle] = {},
         },
 
         [12663] = {
@@ -25629,7 +25000,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13183] = {
-            [questKeys.specialFlags] = specialFlags.EXPLORATION_OR_EVENT + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.EXPLORATION_OR_EVENT,
         },
 
         [13185] = {
@@ -25806,63 +25177,51 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13245] = {
-            [questKeys.objectivesText] = {"Archmage Timear in Dalaran wants you to return with the Axe of the Plunderer.","","This quest may only be completed on Heroic difficulty."},
-            [questKeys.questFlags] = 4232,
+            [questKeys.exclusiveTo] = {13246,13247,13248,13249,13250,13251,13252,13253,13254,13255,13256},
         },
 
         [13246] = {
-            [questKeys.objectivesText] = {"Archmage Timear in Dalaran wants you to return with Keristrasza's Broken Heart.","","This quest may only be completed on Heroic difficulty."},
-            [questKeys.questFlags] = 4232,
+            [questKeys.exclusiveTo] = {13245,13247,13248,13249,13250,13251,13252,13253,13254,13255,13256},
         },
 
         [13247] = {
-            [questKeys.objectivesText] = {"Archmage Timear in Dalaran wants you to return with a Ley Line Tuner.","","This quest may only be completed on Heroic difficulty."},
-            [questKeys.questFlags] = 4232,
+            [questKeys.exclusiveTo] = {13245,13246,13248,13249,13250,13251,13252,13253,13254,13255,13256},
         },
 
         [13248] = {
-            [questKeys.objectivesText] = {"Archmage Timear in Dalaran wants you to return with the Locket of the Deceased Queen.","","This quest may only be completed on Heroic difficulty."},
-            [questKeys.questFlags] = 4232,
+            [questKeys.exclusiveTo] = {13245,13246,13247,13249,13250,13251,13252,13253,13254,13255,13256},
         },
 
         [13249] = {
-            [questKeys.objectivesText] = {"Archmage Timear in Dalaran wants you to return with the Prophet's Enchanted Tiki.","","This quest may only be completed on Heroic difficulty."},
-            [questKeys.questFlags] = 4232,
+            [questKeys.exclusiveTo] = {13245,13246,13247,13248,13250,13251,13252,13253,13254,13255,13256},
         },
 
         [13250] = {
-            [questKeys.objectivesText] = {"Archmage Timear in Dalaran wants you to return with the Mojo Remnant of Akali.","","This quest may only be completed on Heroic difficulty."},
-            [questKeys.questFlags] = 4232,
+            [questKeys.exclusiveTo] = {13245,13246,13247,13248,13249,13251,13252,13253,13254,13255,13256},
         },
 
         [13251] = {
-            [questKeys.objectivesText] = {"Archmage Timear in Dalaran wants you to return with the Artifact from the Nathrezim Homeworld.","","This quest may only be completed on Heroic difficulty."},
-            [questKeys.questFlags] = 4232,
+            [questKeys.exclusiveTo] = {13245,13246,13247,13248,13249,13250,13252,13253,13254,13255,13256},
         },
 
         [13252] = {
-            [questKeys.objectivesText] = {"Archmage Timear in Dalaran wants you to return with the Curse of Flesh Disc.","","This quest may only be completed on Heroic difficulty."},
-            [questKeys.questFlags] = 4232,
+            [questKeys.exclusiveTo] = {13245,13246,13247,13248,13249,13250,13251,13253,13254,13255,13256},
         },
 
         [13253] = {
-            [questKeys.objectivesText] = {"Archmage Timear in Dalaran wants you to return with the Celestial Ruby Ring.","","This quest may only be completed on Heroic difficulty."},
-            [questKeys.questFlags] = 4232,
+            [questKeys.exclusiveTo] = {13245,13246,13247,13248,13249,13250,13251,13252,13254,13255,13256},
         },
 
         [13254] = {
-            [questKeys.objectivesText] = {"Archmage Timear in Dalaran wants you to return with the Idle Crown of Anub'arak.","","This quest may only be completed on Heroic difficulty."},
-            [questKeys.questFlags] = 4232,
+            [questKeys.exclusiveTo] = {13245,13246,13247,13248,13249,13250,13251,13252,13253,13255,13256},
         },
 
         [13255] = {
-            [questKeys.objectivesText] = {"Archmage Timear in Dalaran wants you to return with the Faceless One's Withered Brain.","","This quest may only be completed on Heroic difficulty."},
-            [questKeys.questFlags] = 4232,
+            [questKeys.exclusiveTo] = {13245,13246,13247,13248,13249,13250,13251,13252,13253,13254,13256},
         },
 
         [13256] = {
-            [questKeys.objectivesText] = {"Archmage Timear in Dalaran wants you to return with the Head of Cyanigosa.","","This quest may only be completed on Heroic difficulty."},
-            [questKeys.questFlags] = 4232,
+            [questKeys.exclusiveTo] = {13245,13246,13247,13248,13249,13250,13251,13252,13253,13254,13255},
         },
 
         [13261] = {
@@ -26283,6 +25642,10 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.exclusiveTo] = {},
         },
 
+        [13430] = {
+            [questKeys.preQuestSingle] = {10884,10885,10886},
+        },
+
         [13431] = {
             [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
@@ -26415,29 +25778,19 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13475] = {
-            [questKeys.requiredLevel] = 51,
-            [questKeys.objectives] = {nil,nil,{{20558},{20559},{20560}}},
-            [questKeys.preQuestSingle] = {13476},
-            [questKeys.specialFlags] = specialFlags.REPEATABLE,
+            [questKeys.objectives] = {nil,nil,{{42425},{20559},{20558},{29024},{20560},{47395}}},
         },
 
         [13476] = {
-            [questKeys.requiredLevel] = 51,
-            [questKeys.objectivesText] = {"Bring 3 Alterac Valley Marks of Honor, 3 Arathi Basin Marks of Honor and 3 Warsong Gulch Marks of Honor to a Horde Warbringer outside the battlegrounds."},
-            [questKeys.objectives] = {nil,nil,{{20558},{20559},{20560}}},
+            [questKeys.objectives] = {nil,nil,{{20558},{20559},{42425},{29024},{20560},{47395}}},
         },
 
         [13477] = {
-            [questKeys.requiredLevel] = 51,
-            [questKeys.objectives] = {nil,nil,{{20558},{20559},{20560}}},
-            [questKeys.preQuestSingle] = {13478},
-            [questKeys.specialFlags] = specialFlags.REPEATABLE,
+            [questKeys.objectives] = {nil,nil,{{42425},{20559},{20558},{29024},{20560},{47395}}},
         },
 
         [13478] = {
-            [questKeys.requiredLevel] = 51,
-            [questKeys.objectivesText] = {"Bring 3 Alterac Valley Mark of Honor, 3 Arathi Basin Mark of Honor and 3 Warsong Gulch Mark of Honor to an Alliance Brigadier General outside the battlegrounds."},
-            [questKeys.objectives] = {nil,nil,{{20558},{20559},{20560}}},
+            [questKeys.objectives] = {nil,nil,{{42425},{20559},{20558},{29024},{20560},{47395}}},
         },
 
         [13479] = {
@@ -27079,7 +26432,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13794] = {
-            [questKeys.requiredClasses] = classIDs.DRUID + classIDs.WARLOCK + classIDs.MAGE + classIDs.SHAMAN + classIDs.PRIEST + classIDs.ROGUE + classIDs.HUNTER + classIDs.PALADIN + classIDs.WARRIOR,
+            [questKeys.requiredClasses] = classIDs.WARRIOR + classIDs.PALADIN + classIDs.HUNTER + classIDs.ROGUE + classIDs.PRIEST + classIDs.SHAMAN + classIDs.MAGE + classIDs.WARLOCK + classIDs.DRUID,
             [questKeys.preQuestSingle] = {},
         },
 
@@ -27784,8 +27137,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [14199] = {
-            [questKeys.objectivesText] = {"Archmage Timear in Dalaran wants you to return with a Fragment of the Black Knight's Soul.","","This quest may only be completed on Heroic difficulty."},
-            [questKeys.questFlags] = 4232,
+            [questKeys.exclusiveTo] = {},
         },
 
         [14203] = {
@@ -27803,29 +27155,24 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [14351] = {
-            [questKeys.objectivesText] = {"Take Darthalia's Sealed Commendation to Varimathras in the Undercity."},
             [questKeys.objectives] = {nil,nil,{{3701}}},
         },
 
         [14352] = {
-            [questKeys.objectivesText] = {"Take the Small Scroll to Varimathras in the Undercity."},
             [questKeys.objectives] = {nil,nil,{{49205}}},
         },
 
         [14353] = {
             [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
-            [questKeys.objectivesText] = {"Bring Ambassador Malcin's Head to Varimathras in the Undercity."},
             [questKeys.preQuestSingle] = {14352},
         },
 
         [14355] = {
             [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
-            [questKeys.objectivesText] = {"Kill High Inquisitor Whitemane, Scarlet Commander Mograine, Herod, the Scarlet Champion and Houndmaster Loksey and then report back to Varimathras in the Undercity."},
         },
 
         [14356] = {
             [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
-            [questKeys.objectivesText] = {"Bring the books Spells of Shadow and Incantations from the Nether to Varimathras in Undercity."},
         },
 
         [14409] = {
@@ -28023,11 +27370,11 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [24547] = {
-            [questKeys.requiredClasses] = classIDs.DEATH_KNIGHT + classIDs.PALADIN + classIDs.WARRIOR,
+            [questKeys.requiredClasses] = classIDs.WARRIOR + classIDs.PALADIN + classIDs.DEATH_KNIGHT,
         },
 
         [24548] = {
-            [questKeys.requiredClasses] = classIDs.DEATH_KNIGHT + classIDs.PALADIN + classIDs.WARRIOR,
+            [questKeys.requiredClasses] = classIDs.WARRIOR + classIDs.PALADIN + classIDs.DEATH_KNIGHT,
             [questKeys.nextQuestInChain] = 0,
         },
 
@@ -28076,7 +27423,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [24594] = {
-            [questKeys.requiredClasses] = classIDs.DRUID + classIDs.WARLOCK + classIDs.MAGE + classIDs.SHAMAN + classIDs.DEATH_KNIGHT + classIDs.ROGUE + classIDs.HUNTER + classIDs.PALADIN + classIDs.WARRIOR,
+            [questKeys.requiredClasses] = classIDs.WARRIOR + classIDs.PALADIN + classIDs.HUNTER + classIDs.ROGUE + classIDs.DEATH_KNIGHT + classIDs.SHAMAN + classIDs.MAGE + classIDs.WARLOCK + classIDs.DRUID,
             [questKeys.requiredSourceItems] = {49889},
         },
 
@@ -28278,7 +27625,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [24743] = {
-            [questKeys.requiredClasses] = classIDs.DEATH_KNIGHT + classIDs.PALADIN + classIDs.WARRIOR,
+            [questKeys.requiredClasses] = classIDs.WARRIOR + classIDs.PALADIN + classIDs.DEATH_KNIGHT,
             [questKeys.nextQuestInChain] = 0,
         },
 
@@ -28296,32 +27643,32 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [24748] = {
-            [questKeys.requiredClasses] = classIDs.DEATH_KNIGHT + classIDs.PALADIN + classIDs.WARRIOR,
+            [questKeys.requiredClasses] = classIDs.WARRIOR + classIDs.PALADIN + classIDs.DEATH_KNIGHT,
             [questKeys.objectives] = {{{38153}}},
         },
 
         [24749] = {
-            [questKeys.requiredClasses] = classIDs.DEATH_KNIGHT + classIDs.PALADIN + classIDs.WARRIOR,
+            [questKeys.requiredClasses] = classIDs.WARRIOR + classIDs.PALADIN + classIDs.DEATH_KNIGHT,
             [questKeys.objectives] = nil,
         },
 
         [24756] = {
-            [questKeys.requiredClasses] = classIDs.DEATH_KNIGHT + classIDs.PALADIN + classIDs.WARRIOR,
+            [questKeys.requiredClasses] = classIDs.WARRIOR + classIDs.PALADIN + classIDs.DEATH_KNIGHT,
             [questKeys.objectives] = nil,
         },
 
         [24757] = {
-            [questKeys.requiredClasses] = classIDs.DEATH_KNIGHT + classIDs.PALADIN + classIDs.WARRIOR,
+            [questKeys.requiredClasses] = classIDs.WARRIOR + classIDs.PALADIN + classIDs.DEATH_KNIGHT,
             [questKeys.objectives] = nil,
             [questKeys.nextQuestInChain] = 0,
         },
 
         [24789] = {
-            [questKeys.specialFlags] = specialFlags.DUNGEON_FINDER_QUEST + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.DUNGEON_FINDER_QUEST,
         },
 
         [24791] = {
-            [questKeys.specialFlags] = specialFlags.DUNGEON_FINDER_QUEST + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.DUNGEON_FINDER_QUEST,
         },
 
         [24792] = {
@@ -28518,7 +27865,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [24923] = {
-            [questKeys.specialFlags] = specialFlags.DUNGEON_FINDER_QUEST + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.DUNGEON_FINDER_QUEST,
         },
 
         [25055] = {
@@ -28819,7 +28166,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [25483] = {
-            [questKeys.specialFlags] = specialFlags.MONTHLY + specialFlags.DUNGEON_FINDER_QUEST + specialFlags.REPEATABLE,
+            [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.DUNGEON_FINDER_QUEST + specialFlags.MONTHLY,
         },
 
         [25495] = {
@@ -28841,7 +28188,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         [26034] = {
             [questKeys.preQuestSingle] = {},
         },
-
     }
 
     return QuestieCompat.Merge(relationCorrections, metadataCorrections, true)

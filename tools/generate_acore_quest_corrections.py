@@ -2,13 +2,6 @@ import argparse
 from pathlib import Path
 
 
-MANUAL_QUEST_OVERRIDES = {
-    13966: {
-        "startedBy": "{nil, nil, {46740}}",
-    },
-}
-
-
 TABLE_INDENT = "        "
 FIELD_INDENT = "            "
 
@@ -60,19 +53,10 @@ def append_fragment(lines, fragment: str):
         lines.append(f"{TABLE_INDENT}{line}" if line else "")
 
 
-def build_table_block(name: str, suggestions: str, include_manual_overrides: bool):
+def build_table_block(name: str, suggestions: str):
     lines = [f"    local {name} = {{"]
 
     append_fragment(lines, suggestions)
-
-    if include_manual_overrides and MANUAL_QUEST_OVERRIDES:
-        lines.append("")
-        lines.append(f"{TABLE_INDENT}-- Manual AzerothCore quest-start overrides not covered by the relation report.")
-        for quest_id in sorted(MANUAL_QUEST_OVERRIDES):
-            lines.append(f"{TABLE_INDENT}[{quest_id}] = {{")
-            for field_name, value_expr in MANUAL_QUEST_OVERRIDES[quest_id].items():
-                lines.append(f"{FIELD_INDENT}[questKeys.{field_name}] = {value_expr},")
-            lines.append(f"{TABLE_INDENT}" + "},")
 
     lines.append("    }")
     lines.append("")
@@ -83,6 +67,8 @@ def build_module_text(relation_suggestions: str, metadata_suggestions: str) -> s
     lines = [
         "---@type QuestieDB",
         'local QuestieDB = QuestieLoader:ImportModule("QuestieDB")',
+        "---@type QuestieProfessions",
+        'local QuestieProfessions = QuestieLoader:ImportModule("QuestieProfessions")',
         "",
         "if QuestieCompat.WOW_PROJECT_ID < QuestieCompat.WOW_PROJECT_WRATH_CLASSIC then return end",
         "",
@@ -91,13 +77,17 @@ def build_module_text(relation_suggestions: str, metadata_suggestions: str) -> s
         "",
         'QuestieCompat.RegisterCorrection("questData", function()',
         "    local questKeys = QuestieDB.questKeys",
+        "    local raceIDs = QuestieDB.raceKeys",
+        "    local classIDs = QuestieDB.classKeys",
+        "    local specialFlags = QuestieDB.specialFlags",
+        "    local profKeys = QuestieProfessions.professionKeys",
         "",
     ]
 
     lines.append("    -- AzerothCore quest relation parity.")
-    lines.extend(build_table_block("relationCorrections", relation_suggestions, include_manual_overrides=True))
+    lines.extend(build_table_block("relationCorrections", relation_suggestions))
     lines.append("    -- AzerothCore quest metadata parity.")
-    lines.extend(build_table_block("metadataCorrections", metadata_suggestions, include_manual_overrides=False))
+    lines.extend(build_table_block("metadataCorrections", metadata_suggestions))
     lines.extend([
         "    return QuestieCompat.Merge(relationCorrections, metadataCorrections, true)",
         "end)",

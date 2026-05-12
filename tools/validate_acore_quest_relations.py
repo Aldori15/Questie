@@ -11,7 +11,11 @@ TOOLS_DIR = Path(__file__).resolve().parent
 if str(TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(TOOLS_DIR))
 
-from validate_acore_quest_metadata import load_acore_sql_table
+from validate_acore_quest_metadata import (
+    get_excluded_module_sql_roots,
+    load_acore_sql_table,
+    load_module_created_quest_ids,
+)
 
 
 TARGET_TABLES = {
@@ -28,6 +32,16 @@ RELATION_SOURCE_ID_ALIASES = {
 }
 
 RELATION_EXPORT_FILES = tuple(TARGET_TABLES)
+
+MANUAL_ACORE_RELATION_OVERRIDES = {
+    13966: {
+        "start": {
+            "creature": set(),
+            "object": set(),
+            "item": {46740},
+        },
+    },
+}
 
 
 def empty_relation():
@@ -192,7 +206,7 @@ class LuaTableParser:
 def parse_number_list(value: str):
     if not value:
         return set()
-    return {int(part.strip()) for part in value.split(",") if part.strip()}
+    return {int(part.strip()) for part in value.split(",") if re.fullmatch(r"\s*\d+\s*", part)}
 
 
 def split_top_level_lua_table(lua_table: str):
@@ -352,10 +366,51 @@ def apply_sql_file(path: Path, state):
         )
 
 
-def load_acore_relations(acore_source: Path, quest_template_sql: Optional[Path] = None):
+def load_core_relation_state(acore_source: Path):
     state = {table: set() for table in TARGET_TABLES}
     base_dir = acore_source / "data" / "sql" / "base" / "db_world"
     updates_dir = acore_source / "data" / "sql" / "updates" / "db_world"
+
+    for table in TARGET_TABLES:
+        apply_sql_file(base_dir / f"{table}.sql", state)
+
+    for update_file in sorted(updates_dir.glob("*.sql")):
+        apply_sql_file(update_file, state)
+
+    return state
+
+
+def load_excluded_module_relation_state(acore_source: Path):
+    state = {table: set() for table in TARGET_TABLES}
+
+    for sql_root in get_excluded_module_sql_roots(acore_source):
+        for sql_file in sorted(sql_root.rglob("*.sql"), key=lambda path: str(path).lower()):
+            apply_sql_file(sql_file, state)
+
+    return state
+
+
+def remove_excluded_module_relations(state, acore_source: Path):
+    module_quest_ids = load_module_created_quest_ids(acore_source)
+    core_state = load_core_relation_state(acore_source)
+    excluded_module_state = load_excluded_module_relation_state(acore_source)
+
+    for table in TARGET_TABLES:
+        state[table] = {
+            pair
+            for pair in state[table]
+            if pair[1] not in module_quest_ids
+            and (pair not in excluded_module_state[table] or pair in core_state[table])
+        }
+
+        # If the exported DB had an excluded module installed, the module may have deleted
+        # a core relation. AzerothCore core remains the source of truth for this generator.
+        state[table].update(core_state[table])
+
+
+def load_acore_relations(acore_source: Path, quest_template_sql: Optional[Path] = None):
+    state = {table: set() for table in TARGET_TABLES}
+    module_quest_ids = load_module_created_quest_ids(acore_source)
 
     relation_export_dir = quest_template_sql.parent if quest_template_sql else None
     relation_export_files = {}
@@ -369,11 +424,9 @@ def load_acore_relations(acore_source: Path, quest_template_sql: Optional[Path] 
         for table in RELATION_EXPORT_FILES:
             apply_sql_file(relation_export_files[table], state)
     else:
-        for table in TARGET_TABLES:
-            apply_sql_file(base_dir / f"{table}.sql", state)
+        state = load_core_relation_state(acore_source)
 
-        for update_file in sorted(updates_dir.glob("*.sql")):
-            apply_sql_file(update_file, state)
+    remove_excluded_module_relations(state, acore_source)
 
     per_quest = {}
     for table, pairs in state.items():
@@ -388,27 +441,21 @@ def load_acore_relations(acore_source: Path, quest_template_sql: Optional[Path] 
         if candidate.exists():
             item_template_export = candidate
 
-    if item_template_export:
-        for item_id, row in load_acore_sql_table(
-            acore_source,
-            "item_template",
-            item_template_export,
-            key_column="entry",
-        ).items():
-            start_quest = int(row.get("startquest") or row.get("StartQuest") or 0)
-            if start_quest <= 0:
-                continue
+    item_rows = load_acore_sql_table(
+        acore_source,
+        "item_template",
+        item_template_export,
+        key_column="entry",
+    )
+    for item_id, row in item_rows.items():
+        start_quest = int(row.get("startquest") or row.get("StartQuest") or 0)
+        if start_quest <= 0:
+            continue
+        if start_quest in module_quest_ids:
+            continue
 
-            relation = per_quest.setdefault(start_quest, empty_relation())
-            relation["start"]["item"].add(item_id)
-    else:
-        for quest_id, row in load_acore_sql_table(acore_source, "quest_template").items():
-            start_item = int(row.get("StartItem") or 0)
-            if start_item <= 0:
-                continue
-
-            relation = per_quest.setdefault(quest_id, empty_relation())
-            relation["start"]["item"].add(start_item)
+        relation = per_quest.setdefault(start_quest, empty_relation())
+        relation["start"]["item"].add(item_id)
     return per_quest
 
 
@@ -493,6 +540,17 @@ def apply_relation_overrides(questie_relations, overrides):
         relation = questie_relations.setdefault(quest_id, empty_relation())
         for relation_type, value in override.items():
             relation[relation_type] = value
+
+
+def apply_acore_relation_overrides(acore_relations):
+    for quest_id, override in MANUAL_ACORE_RELATION_OVERRIDES.items():
+        relation = acore_relations.setdefault(quest_id, empty_relation())
+        for relation_type, source_map in override.items():
+            relation[relation_type] = {
+                "creature": set(source_map.get("creature", set())),
+                "object": set(source_map.get("object", set())),
+                "item": set(source_map.get("item", set())),
+            }
 
 
 def format_relation_table(source_map):
@@ -625,6 +683,7 @@ def main():
     quest_template_sql = Path(args.quest_template_sql) if args.quest_template_sql else None
 
     acore_relations = load_acore_relations(acore_source, quest_template_sql)
+    apply_acore_relation_overrides(acore_relations)
     questie_relations = load_questie_relations(quest_db_path)
     for fix_file in args.quest_fixes:
         apply_relation_overrides(questie_relations, load_quest_relation_overrides(Path(fix_file)))

@@ -21,6 +21,10 @@ QUESTIE_RUNTIME_FLAGS = {
     "VANILLA": False,
 }
 
+EXCLUDED_MODULE_NAMES = {
+    "mod-individual-progression",
+}
+
 FIELD_ORDER = [
     "questLevel",
     "requiredLevel",
@@ -1017,7 +1021,7 @@ def apply_sql_update(statement, table_name, rows, key_column="ID"):
     ids = set()
     for in_values, single_value in id_matches:
         if in_values:
-            ids.update(int(part.strip()) for part in in_values.split(",") if part.strip())
+            ids.update(int(part.strip()) for part in in_values.split(",") if re.fullmatch(r"\s*-?\d+\s*", part))
         elif single_value:
             ids.add(int(single_value))
 
@@ -1069,7 +1073,7 @@ def apply_sql_delete(statement, table_name, rows, key_column="ID"):
         re.IGNORECASE,
     ):
         if in_values:
-            ids.update(int(part.strip()) for part in in_values.split(",") if part.strip())
+            ids.update(int(part.strip()) for part in in_values.split(",") if re.fullmatch(r"\s*-?\d+\s*", part))
         elif single_value:
             ids.add(int(single_value))
 
@@ -1077,7 +1081,68 @@ def apply_sql_delete(statement, table_name, rows, key_column="ID"):
         rows.pop(quest_id, None)
 
 
-def load_acore_sql_table(source_root, table_name, base_file_override=None, key_column="ID"):
+def extract_statement_key_ids(statement, table_name, columns, key_column="ID"):
+    insert_match = re.search(
+        rf"(?:INSERT INTO|REPLACE INTO)\s+`?{re.escape(table_name)}`?(?:\s*\((?P<columns>.*?)\))?\s*VALUES\s*(?P<values>.*)$",
+        statement,
+        re.IGNORECASE | re.DOTALL,
+    )
+    if insert_match:
+        statement_columns = columns
+        if insert_match.group("columns"):
+            statement_columns = [
+                column_match.group(1)
+                for column_match in re.finditer(r"`([^`]+)`", insert_match.group("columns"))
+            ]
+        if key_column not in statement_columns:
+            return set()
+
+        key_index = statement_columns.index(key_column)
+        ids = set()
+        for row_text in split_sql_rows(insert_match.group("values")):
+            row_values = split_sql_values(row_text)
+            if key_index >= len(row_values):
+                continue
+            try:
+                ids.add(int(parse_sql_value(row_values[key_index])))
+            except Exception:
+                continue
+        return ids
+
+    id_matches = []
+    update_match = re.search(
+        rf"UPDATE\s+`?{re.escape(table_name)}`?\s+SET\s+.*?\s+WHERE\s+(?P<where>.*)$",
+        statement,
+        re.IGNORECASE | re.DOTALL,
+    )
+    delete_match = re.search(
+        rf"DELETE FROM\s+`?{re.escape(table_name)}`?\s+WHERE\s+(?P<where>.*)$",
+        statement,
+        re.IGNORECASE | re.DOTALL,
+    )
+    if update_match:
+        where_clause = update_match.group("where")
+    elif delete_match:
+        where_clause = delete_match.group("where")
+    else:
+        return set()
+
+    key_pattern = re.escape(key_column)
+    id_matches = re.findall(
+        rf"`?{key_pattern}`?\s+IN\s*\(([^)]+)\)|`?{key_pattern}`?\s*=\s*(-?\d+)",
+        where_clause,
+        re.IGNORECASE,
+    )
+    ids = set()
+    for in_values, single_value in id_matches:
+        if in_values:
+            ids.update(int(part.strip()) for part in in_values.split(",") if re.fullmatch(r"\s*-?\d+\s*", part))
+        elif single_value:
+            ids.add(int(single_value))
+    return ids
+
+
+def load_acore_sql_table(source_root, table_name, base_file_override=None, key_column="ID", include_modules=False):
     if base_file_override:
         base_file = Path(base_file_override)
         updates_dir = None
@@ -1087,8 +1152,10 @@ def load_acore_sql_table(source_root, table_name, base_file_override=None, key_c
         updates_dir = source_root / "data" / "sql" / "updates" / "db_world"
         module_sql_roots = []
         modules_dir = source_root / "modules"
-        if modules_dir.exists():
+        if include_modules and modules_dir.exists():
             for module_dir in sorted((path for path in modules_dir.iterdir() if path.is_dir()), key=lambda path: path.name.lower()):
+                if module_dir.name in EXCLUDED_MODULE_NAMES:
+                    continue
                 for relative_root in ("data/sql/world/base", "data/sql/world/updates"):
                     sql_root = module_dir / relative_root
                     if sql_root.exists():
@@ -1123,9 +1190,106 @@ def load_acore_sql_table(source_root, table_name, base_file_override=None, key_c
     return rows
 
 
+def get_excluded_module_sql_roots(source_root):
+    modules_dir = source_root / "modules"
+    if not modules_dir.exists():
+        return []
+
+    roots = []
+    for module_name in sorted(EXCLUDED_MODULE_NAMES):
+        module_dir = modules_dir / module_name
+        if not module_dir.exists():
+            continue
+        for relative_root in ("data/sql/world/base", "data/sql/world/updates"):
+            sql_root = module_dir / relative_root
+            if sql_root.exists():
+                roots.append(sql_root)
+    return roots
+
+
+def load_excluded_module_touched_quest_ids(source_root, table_name, key_column="ID"):
+    columns = extract_sql_columns(source_root / "data" / "sql" / "base" / "db_world" / f"{table_name}.sql", table_name)
+    touched_ids = set()
+
+    for sql_root in get_excluded_module_sql_roots(source_root):
+        for sql_file in sorted(sql_root.rglob("*.sql"), key=lambda path: str(path).lower()):
+            text = strip_sql_comments(sql_file.read_text(encoding="utf-8"))
+            if not re.search(rf"\b{re.escape(table_name)}\b", text, re.IGNORECASE):
+                continue
+
+            for statement in split_sql_statements(text):
+                if not re.search(rf"\b{re.escape(table_name)}\b", statement, re.IGNORECASE):
+                    continue
+                touched_ids.update(extract_statement_key_ids(statement, table_name, columns, key_column))
+
+    return touched_ids
+
+
+def restore_excluded_module_metadata_rows(exported_rows, source_rows, source_root, table_name):
+    for quest_id in load_excluded_module_touched_quest_ids(source_root, table_name):
+        if quest_id in source_rows:
+            exported_rows[quest_id] = dict(source_rows[quest_id])
+        else:
+            exported_rows.pop(quest_id, None)
+
+
+def load_module_created_quest_ids(source_root):
+    module_quest_ids = set()
+    columns_cache = {}
+
+    for sql_root in get_excluded_module_sql_roots(source_root):
+        for sql_file in sorted(sql_root.rglob("*.sql"), key=lambda path: str(path).lower()):
+            text = strip_sql_comments(sql_file.read_text(encoding="utf-8"))
+            if not re.search(r"\bquest_template\b", text, re.IGNORECASE):
+                continue
+
+            for statement in split_sql_statements(text):
+                insert_match = re.search(
+                    r"(?:INSERT INTO|REPLACE INTO)\s+`?quest_template`?(?:\s*\((?P<columns>.*?)\))?\s*VALUES\s*(?P<values>.*)$",
+                    statement,
+                    re.IGNORECASE | re.DOTALL,
+                )
+                if not insert_match:
+                    continue
+
+                if insert_match.group("columns"):
+                    columns = [
+                        column_match.group(1)
+                        for column_match in re.finditer(r"`([^`]+)`", insert_match.group("columns"))
+                    ]
+                else:
+                    columns = columns_cache.setdefault(
+                        "quest_template",
+                        extract_sql_columns(source_root / "data" / "sql" / "base" / "db_world" / "quest_template.sql", "quest_template"),
+                    )
+                row_id = columns.index("ID") if "ID" in columns else 0
+
+                for row_text in split_sql_rows(insert_match.group("values")):
+                    row_values = split_sql_values(row_text)
+                    if row_id >= len(row_values):
+                        continue
+                    try:
+                        quest_id = int(parse_sql_value(row_values[row_id]))
+                    except Exception:
+                        continue
+                    module_quest_ids.add(quest_id)
+
+    core_quest_ids = set(load_acore_sql_table(source_root, "quest_template"))
+    return module_quest_ids - core_quest_ids
+
+
 def derive_acore_metadata(source_root, quest_template_sql=None, quest_template_addon_sql=None):
-    quest_rows = load_acore_sql_table(source_root, "quest_template", quest_template_sql)
-    addon_rows = load_acore_sql_table(source_root, "quest_template_addon", quest_template_addon_sql)
+    source_quest_rows = load_acore_sql_table(source_root, "quest_template")
+    source_addon_rows = load_acore_sql_table(source_root, "quest_template_addon")
+    quest_rows = load_acore_sql_table(source_root, "quest_template", quest_template_sql) if quest_template_sql else dict(source_quest_rows)
+    addon_rows = load_acore_sql_table(source_root, "quest_template_addon", quest_template_addon_sql) if quest_template_addon_sql else dict(source_addon_rows)
+    restore_excluded_module_metadata_rows(quest_rows, source_quest_rows, source_root, "quest_template")
+    restore_excluded_module_metadata_rows(addon_rows, source_addon_rows, source_root, "quest_template_addon")
+
+    module_quest_ids = load_module_created_quest_ids(source_root)
+    for quest_id in module_quest_ids:
+        quest_rows.pop(quest_id, None)
+        addon_rows.pop(quest_id, None)
 
     quest_ids = set(quest_rows) | set(addon_rows)
     combined_rows = {}
@@ -1161,6 +1325,9 @@ def derive_acore_metadata(source_root, quest_template_sql=None, quest_template_a
 
     acore_metadata = {}
     for quest_id, row in combined_rows.items():
+        if quest_id in module_quest_ids:
+            continue
+
         metadata = {field: default_field_value(field) for field in FIELD_ORDER}
 
         metadata["questLevel"] = normalize_int(row.get("QuestLevel"))
@@ -1239,8 +1406,72 @@ def compare_metadata(acore_metadata, questie_metadata):
     return mismatches, summary
 
 
-def format_lua_value(field, value):
+def format_named_bitmask(value, constants, prefix, exact_names=()):
+    value = normalize_int(value)
+    exact_lookup = {constant_value: name for name, constant_value in constants.items()}
+
+    for name in exact_names:
+        if constants.get(name) == value:
+            return f"{prefix}.{name}"
+
+    if value in exact_lookup and value == 0:
+        return f"{prefix}.{exact_lookup[value]}"
+
+    parts = []
+    remainder = value
+    for name, constant_value in constants.items():
+        if name in exact_names or name.startswith("ALL_") or constant_value == 0:
+            continue
+        if constant_value > 0 and constant_value & (constant_value - 1) == 0 and value & constant_value:
+            parts.append(f"{prefix}.{name}")
+            remainder &= ~constant_value
+
+    if not parts:
+        if value in exact_lookup:
+            return f"{prefix}.{exact_lookup[value]}"
+        return str(value)
+
+    if remainder:
+        parts.append(str(remainder))
+
+    return " + ".join(parts)
+
+
+def format_required_skill(value, constants):
+    if not value:
+        return "{}"
+
+    skill, level = value
+    profession_lookup = {profession_id: name for name, profession_id in constants["profKeys"].items()}
+    skill_expr = f"profKeys.{profession_lookup[skill]}" if skill in profession_lookup else str(skill)
+    return "{" + f"{skill_expr},{level}" + "}"
+
+
+def format_lua_value(field, value, constants):
     kind = FIELD_KIND[field]
+    if field == "requiredRaces":
+        return format_named_bitmask(
+            value,
+            constants["raceIDs"],
+            "raceIDs",
+            exact_names=("NONE", "ALL_ALLIANCE", "ALL_HORDE"),
+        )
+    if field == "requiredClasses":
+        return format_named_bitmask(
+            value,
+            constants["classIDs"],
+            "classIDs",
+            exact_names=("NONE", "ALL_CLASSES"),
+        )
+    if field == "specialFlags":
+        return format_named_bitmask(
+            value,
+            constants["specialFlags"],
+            "specialFlags",
+            exact_names=("NONE",),
+        )
+    if field == "requiredSkill":
+        return format_required_skill(value, constants)
     if kind == "int":
         return str(normalize_int(value))
     if kind == "rep":
@@ -1260,7 +1491,7 @@ def format_lua_value(field, value):
     raise ValueError(f"Unsupported field kind: {kind}")
 
 
-def build_lua_suggestions(mismatches, acore_metadata):
+def build_lua_suggestions(mismatches, acore_metadata, constants):
     by_quest = defaultdict(dict)
     empty_entry = {field: default_field_value(field) for field in FIELD_ORDER}
 
@@ -1282,7 +1513,7 @@ def build_lua_suggestions(mismatches, acore_metadata):
         for field in FIELD_ORDER:
             if field not in by_quest[quest_id]:
                 continue
-            lines.append(f"    [questKeys.{field}] = {format_lua_value(field, by_quest[quest_id][field])},")
+            lines.append(f"    [questKeys.{field}] = {format_lua_value(field, by_quest[quest_id][field], constants)},")
         lines.append("},")
         lines.append("")
 
@@ -1369,7 +1600,7 @@ def main():
     if args.suggest_lua:
         suggestion_path = Path(args.suggest_lua)
         suggestion_path.parent.mkdir(parents=True, exist_ok=True)
-        suggestion_path.write_text(build_lua_suggestions(mismatches, acore_metadata), encoding="utf-8")
+        suggestion_path.write_text(build_lua_suggestions(mismatches, acore_metadata, constants), encoding="utf-8")
         print(f"Lua suggestions written to {suggestion_path}")
 
 
