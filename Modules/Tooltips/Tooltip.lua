@@ -379,7 +379,12 @@ local function _FetchTooltipsForGroupMembers(key, tooltipData)
                         local color = QuestieLib:GetRGBForObjective(objective)
 
                         if objective.required then
-                            text = "   " .. color .. tostring(objective.fulfilled) .. "/" .. tostring(objective.required) .. " " .. objective.text;
+                            local questProgress = tostring(objective.fulfilled) .. "/" .. tostring(objective.required)
+                            if Questie.db.profile.showQuestProgressFirst then
+                                text = "   " .. color .. questProgress .. " " .. objective.text;
+                            else
+                                text = "   " .. color .. objective.text .. ": " .. questProgress;
+                            end
                         else
                             text = "   " .. color .. objective.text;
                         end
@@ -514,7 +519,12 @@ function QuestieTooltips:GetTooltip(key)
                             dropRateText = "  |cFF999999" .. dropIcon .. "[" .. FormatDropText(dropRateData[1]) .. "%]|r";
                         end
                         if objective.Needed and ((not finishedAndUnacceptedQuests[questId]) or objective.Collected ~= objective.Needed) then
-                            text = "   " .. color .. tostring(objective.Collected) .. "/" .. tostring(objective.Needed) .. " " .. tostring(objective.Description) .. dropRateText;
+                            local questProgress = tostring(objective.Collected) .. "/" .. tostring(objective.Needed)
+                            if Questie.db.profile.showQuestProgressFirst then
+                                text = "   " .. color .. questProgress .. " " .. tostring(objective.Description) .. dropRateText;
+                            else
+                                text = "   " .. color .. tostring(objective.Description) .. ": " .. questProgress .. dropRateText;
+                            end
                             tooltipData[questId].objectivesText[objectiveIndex][playerName] = { ["color"] = color, ["text"] = text };
                         else
                             text = "   " .. color .. tostring(objective.Description) .. dropRateText;
