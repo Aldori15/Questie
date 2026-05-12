@@ -154,10 +154,10 @@ function QuestieProfessions:HasProfessionAndRankLevel(requiredRanks)
         local profession = requiredRanks[i][1]
         local rankLevel = requiredRanks[i][2]
         if _HasProfession(profession) then
+            hasProfession = true
             if _HasRankLevel(profession, rankLevel) then
                 return true, true
             end
-            hasProfession = true
         end
     end
     return hasProfession, false
@@ -441,6 +441,12 @@ QuestieProfessions.rankKeys = {
       [4] = 28895, -- 225-300
       [5] = 28897, -- 300-375
       [6] = 51311, -- 375-450
+    },
+    [762] = { -- Riding
+      [1] = 33388, -- 1-75 - Apprentice
+      [2] = 33391, -- 75-150 - Journeyman
+      [3] = 34090, -- 150-225 - Expert
+      [4] = 34091, -- 225-300 - Artisan
     },
     [773] = { -- Inscription
       [1] = 45357, -- 1-75
