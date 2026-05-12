@@ -3692,7 +3692,7 @@ end
 function QuestieCompat:ToggleQuestTrackingTooltips(event)
     if event:find("LOGOUT") then
         SetCVar("showQuestTrackingTooltips", "1")
-    elseif Questie.db and Questie.db.profile and Questie.db.profile.enableTooltips ~= false then
+    elseif Questie.db.profile.enableTooltips ~= false then
         SetCVar("showQuestTrackingTooltips", "0")
     end
 end
