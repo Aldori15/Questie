@@ -3690,8 +3690,11 @@ end
 
 -- disable builtin quest progress tooltips, re-enable on logout
 function QuestieCompat:ToggleQuestTrackingTooltips(event)
-    local value = tostring(event:find("LOGOUT") and 1 or 0)
-    SetCVar("showQuestTrackingTooltips", value)
+    if event:find("LOGOUT") then
+        SetCVar("showQuestTrackingTooltips", "1")
+    elseif Questie.db and Questie.db.profile and Questie.db.profile.enableTooltips ~= false then
+        SetCVar("showQuestTrackingTooltips", "0")
+    end
 end
 QuestieCompat.PLAYER_LOGIN = QuestieCompat.ToggleQuestTrackingTooltips
 
