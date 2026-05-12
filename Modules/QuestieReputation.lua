@@ -53,6 +53,17 @@ function QuestieReputation:Update(isInit)
     return factionChanged, newFaction
 end
 
+QuestieReputation.factionsStartingBelowNeutral = {
+    [87] = true, -- Bloodsail Buccaneers
+    [576] = true, -- Timbermaw Hold
+    [910] = true, -- Brood of Nozdormu
+    [941] = true, -- The Maghar
+    [970] = true, -- Sporeggar
+    [978] = true, -- Kurenai
+    [1015] = true, -- Netherwing
+    [1119] = true, -- The Sons of Hodir
+}
+
 ---@return boolean
 _ReachedNewStanding = function(previousValues, standingId)
     return (not previousValues) -- New faction
@@ -85,6 +96,10 @@ function QuestieReputation:HasFactionAndReputationLevel(requiredMinRep, required
         if playerReputations[minFactionID] then
             hasMinFaction = true
             aboveMinRep = playerReputations[minFactionID][2] >= reqMinValue
+        -- Consider undiscovered factions to be at 0 reputation in this check unless they start below neutral
+        elseif not QuestieReputation.factionsStartingBelowNeutral[minFactionID] then
+            hasMinFaction = true
+            aboveMinRep = 0 >= reqMinValue
         end
     else
         -- If requiredMinRep is nil, we don't care about the reputation aka it fullfils it
@@ -98,9 +113,10 @@ function QuestieReputation:HasFactionAndReputationLevel(requiredMinRep, required
         if playerReputations[maxFactionID] then
             hasMaxFaction = true
             belowMaxRep = playerReputations[maxFactionID][2] < reqMaxValue
-        elseif maxFactionID == QuestieDB.factionIDs.DARKMOON_FAIRE then
+        -- Consider undiscovered factions to be at 0 reputation in this check unless they start below neutral
+        elseif not QuestieReputation.factionsStartingBelowNeutral[maxFactionID] then
             hasMaxFaction = true
-            belowMaxRep = true
+            belowMaxRep = 0 < reqMaxValue
         end
     else
         -- If requiredMaxRep is nil, we don't care about the reputation aka it fullfils it
