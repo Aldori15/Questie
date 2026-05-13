@@ -17,6 +17,8 @@ local TrackerUtils = QuestieLoader:ImportModule("TrackerUtils")
 local l10n = QuestieLoader:ImportModule("l10n")
 ---@type ZoneDB
 local ZoneDB = QuestieLoader:ImportModule("ZoneDB")
+---@type QuestieReputation
+local QuestieReputation = QuestieLoader:ImportModule("QuestieReputation")
 
 --- COMPATIBILITY ---
 local GetQuestLink = QuestieCompat.GetQuestLink
@@ -333,6 +335,8 @@ _AddQuestRequirements = function (quest)
                     local objectiveName
                     if currentObjective.Type == "monster" then
                         objectiveName = QuestieDB.QueryNPCSingle(currentObjective.Id, "name")
+                    elseif currentObjective.Type == "reputation" then
+                        objectiveName = QuestieReputation.GetFactionName(currentObjective.Id)
                     else
                         objectiveName = QuestieDB.QueryItemSingle(currentObjective.Id, "name")
                     end
