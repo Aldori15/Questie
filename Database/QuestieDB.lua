@@ -3413,10 +3413,16 @@ function QuestieDB.GetQuest(questId) -- /dump QuestieDB.GetQuest(867)
                 local spawnList = {}
 
                 for _, ref in pairs(o[5]) do
-                    for k, v in pairs(_QuestieQuest.objectiveSpawnListCallTable[ref[1]](ref[2], specialObjective)) do
-                        -- we want to be able to override the icon in the corrections (e.g. Questie.ICON_TYPE_OBJECT on objects instead of Questie.ICON_TYPE_LOOT)
-                        v.Icon = o[2]
-                        spawnList[k] = v
+                    local sourceHandler = _QuestieQuest.objectiveSpawnListCallTable[ref[1]]
+                    local sourceList = sourceHandler and sourceHandler(ref[2], specialObjective)
+                    if not sourceList then
+                        Questie:Error("Missing extra objective data for", tostring(ref[1]), "'", specialObjective.Description, "'", tostring(ref[2]))
+                    else
+                        for k, v in pairs(sourceList) do
+                            -- we want to be able to override the icon in the corrections (e.g. Questie.ICON_TYPE_OBJECT on objects instead of Questie.ICON_TYPE_LOOT)
+                            v.Icon = o[2]
+                            spawnList[k] = v
+                        end
                     end
                 end
 

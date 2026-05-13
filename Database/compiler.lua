@@ -32,7 +32,7 @@ local coYield = coroutine.yield
 local coRunning = coroutine.running
 
 -- Bump when compiler field types/order change to invalidate cached binary DB blobs.
-QuestieDBCompiler.compiledSchemaVersion = 22
+QuestieDBCompiler.compiledSchemaVersion = 23
 
 ---@alias CompilerTypes
 ---| "u8"

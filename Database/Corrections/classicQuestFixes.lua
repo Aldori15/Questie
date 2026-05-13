@@ -393,6 +393,7 @@ function QuestieQuestFixes:Load()
         [558] = {
             [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
             [questKeys.preQuestGroup] = {1687,1479,1558},
+            [questKeys.objectives] = {nil,nil,{{18642,nil,Questie.ICON_TYPE_TALK}}},
             [questKeys.inGroupWith] = nil,
             [questKeys.childQuests] = {},
         },
@@ -649,6 +650,7 @@ function QuestieQuestFixes:Load()
         },
         [925] = {
             [questKeys.preQuestGroup] = {1800,910,911},
+            [questKeys.objectives] = {nil,nil,{{18643,nil,Questie.ICON_TYPE_TALK}}},
             [questKeys.inGroupWith] = nil,
             [questKeys.parentQuest] = 0,
         },
@@ -2813,6 +2815,7 @@ function QuestieQuestFixes:Load()
         },
         [5214] = {
             [questKeys.name] = "The Great Ezra Grimm",
+            [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_OBJECT, l10n("Open the box"), 0, {{"object", 176248}}}},
         },
         [5218] = {
             [questKeys.preQuestSingle] = {5217,5230},

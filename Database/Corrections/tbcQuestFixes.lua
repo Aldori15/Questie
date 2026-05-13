@@ -2526,9 +2526,13 @@ function QuestieTBCQuestFixes:Load()
         [9923] = {
             [questKeys.requiredMinRep] = {978,0},
             [questKeys.requiredSourceItems] = {25490},
+            [questKeys.objectives] = {{{18369,nil,Questie.ICON_TYPE_EVENT}}},
+            [questKeys.extraObjectives] = {{nil,Questie.ICON_TYPE_INTERACT,l10n("Open the cage"),0,{{"object",182349}}}},
         },
         [9924] = {
             [questKeys.requiredSourceItems] = {25509},
+            [questKeys.objectives] = {{{20812,nil,Questie.ICON_TYPE_EVENT}}},
+            [questKeys.extraObjectives] = {{nil,Questie.ICON_TYPE_INTERACT,l10n("Open the cage"),0,{{"object",182350}}}},
         },
         [9927] = {
             [questKeys.objectives] = {nil,nil,nil,nil,{{{17146,17147,17148},17147,nil,Questie.ICON_TYPE_INTERACT}}},
@@ -2580,6 +2584,7 @@ function QuestieTBCQuestFixes:Load()
         },
         [9955] = {
             [questKeys.objectives] = {{{18445,nil,Questie.ICON_TYPE_EVENT}}},
+            [questKeys.extraObjectives] = {{nil,Questie.ICON_TYPE_INTERACT,l10n("Open the cage"),0,{{"object",182521}}}},
         },
         [9956] = {
             [questKeys.requiredMinRep] = {978,0},
@@ -3676,6 +3681,9 @@ function QuestieTBCQuestFixes:Load()
         },
         [10755] = {
             [questKeys.startedBy] = {{22037}},
+        },
+        [10764] = {
+            [questKeys.objectives] = {nil,nil,{{31252,nil,Questie.ICON_TYPE_INTERACT}}},
         },
         [10772] = {
             [questKeys.triggerEnd] = {"The Path of Conquest Discovered", {[zoneIDs.SHADOWMOON_VALLEY]={{51.23,62.75},{52.45,59.19}}}},
