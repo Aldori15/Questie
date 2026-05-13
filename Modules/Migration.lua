@@ -128,6 +128,11 @@ local migrationFunctions = {
         Questie.db.profile.clusterLevelHotzone = nil
         Questie.db.profile.objectiveFilterDistance = 2
     end,
+    [21] = function()
+        if Questie.db.profile.trackerFontOutline == "None" then
+            Questie.db.profile.trackerFontOutline = ""
+        end
+    end,
 }
 
 function Migration:Migrate()
