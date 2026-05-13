@@ -2184,6 +2184,13 @@ end
 
 ---@param questId number
 ---@return boolean
+function QuestieDB.IsMonthlyQuest(questId)
+    local flags = QuestieDB.QueryQuestSingle(questId, "specialFlags")
+    return flags and bitband(flags, QuestieDB.specialFlags.MONTHLY) ~= 0
+end
+
+---@param questId number
+---@return boolean
 function QuestieDB.IsDungeonQuest(questId)
     local questType, _ = QuestieDB.GetQuestTagInfo(questId)
     return questType == 81

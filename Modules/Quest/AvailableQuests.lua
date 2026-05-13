@@ -70,7 +70,7 @@ local function _ClearTable(tbl)
 end
 
 local function _ShouldTrackNpcAvailability(questId)
-    return QuestieDB.IsDailyQuest(questId) or QuestieDB.IsWeeklyQuest(questId)
+    return QuestieDB.IsDailyQuest(questId) or QuestieDB.IsWeeklyQuest(questId) or QuestieDB.IsMonthlyQuest(questId)
 end
 
 local function _ApplyRefreshSpeed(useFastRefresh)
@@ -245,6 +245,10 @@ local function _GetUnavailableQuestBucketForQuest(syncState, questId)
 
     if QuestieDB.IsWeeklyQuest(questId) then
         return _EnsureUnavailableQuestSyncBucket(syncState, "weekly")
+    end
+
+    if QuestieDB.IsMonthlyQuest(questId) then
+        return _EnsureUnavailableQuestSyncBucket(syncState, "monthly")
     end
 end
 
@@ -784,7 +788,7 @@ function AvailableQuests.ValidateAvailableQuestsFromGossipShow()
             end
         end
 
-        if (not isAvailableInGossip) and (QuestieDB.IsDailyQuest(questId) or QuestieDB.IsWeeklyQuest(questId)) then
+        if (not isAvailableInGossip) and (QuestieDB.IsDailyQuest(questId) or QuestieDB.IsWeeklyQuest(questId)) then -- no monthly quests here, those are personal
             tinsert(unavailableQuestsToBroadcast, questId)
         end
     end
@@ -836,7 +840,7 @@ function AvailableQuests.ValidateAvailableQuestsFromQuestDetail()
 
     local unavailableQuestsToBroadcast = {}
     for questId in pairs(availableQuestsByNpc[npcId] or {}) do
-        if questId ~= availableQuestId and (QuestieDB.IsDailyQuest(questId) or QuestieDB.IsWeeklyQuest(questId)) then
+        if questId ~= availableQuestId and (QuestieDB.IsDailyQuest(questId) or QuestieDB.IsWeeklyQuest(questId)) then -- no monthly quests here, those are personal
             tinsert(unavailableQuestsToBroadcast, questId)
         end
     end
@@ -905,7 +909,7 @@ function AvailableQuests.ValidateAvailableQuestsFromQuestGreeting()
 
     local unavailableQuestsToBroadcast = {}
     for questId in pairs(availableQuestsByNpc[npcId] or {}) do
-        if (not availableQuestsInGreeting[questId]) and (QuestieDB.IsDailyQuest(questId) or QuestieDB.IsWeeklyQuest(questId)) then
+        if (not availableQuestsInGreeting[questId]) and (QuestieDB.IsDailyQuest(questId) or QuestieDB.IsWeeklyQuest(questId)) then -- no monthly quests here, those are personal
             tinsert(unavailableQuestsToBroadcast, questId)
         end
     end

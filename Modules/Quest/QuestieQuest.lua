@@ -542,7 +542,7 @@ function QuestieQuest:CompleteQuest(questId)
     if QuestieCompat.Is335 then
         QuestieCompat.SetQuestComplete(questId)
     else
-        Questie.db.char.complete[questId] = (not QuestieDB.IsRepeatable(questId)) or QuestieDB.IsDailyQuest(questId) or QuestieDB.IsWeeklyQuest(questId);
+        Questie.db.char.complete[questId] = (not QuestieDB.IsRepeatable(questId)) or QuestieDB.IsDailyQuest(questId) or QuestieDB.IsWeeklyQuest(questId) or QuestieDB.IsMonthlyQuest(questId);
     end
 
     if allianceChampionMarkerQuests[questId] then

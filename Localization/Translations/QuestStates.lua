@@ -122,6 +122,17 @@ local questStateLocales = {
         ["zhCN"] = "每周",
         ["zhTW"] = "每周",
     },
+    ["Monthly"] = {
+        ["enUS"] = true,
+        ["deDE"] = "Monatlich",
+        ["esES"] = "Mensual",
+        ["esMX"] = "Mensual",
+        ["frFR"] = "Mensuel",
+        ["ptBR"] = "Mensual",
+        ["ruRU"] = "Ежемесячно",
+        ["zhCN"] = "每月任务",
+        ["zhTW"] = "每月任務",
+    },
     ["Heroic"] = {
         ["enUS"] = true,
         ["deDE"] = "Heroisch",
