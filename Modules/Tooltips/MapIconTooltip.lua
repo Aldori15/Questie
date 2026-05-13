@@ -571,9 +571,25 @@ local function _GetQuestTag(quest)
         if (QuestieEvent and QuestieEvent.activeQuests[quest.Id]) then
             return "(" .. l10n("Event") .. ")";
         elseif (questType == 41) then
+            if QuestieDB.IsDailyQuest(quest.Id) then
+                return "(" .. l10n("Daily PvP") .. ")";
+            end
             return "(" .. l10n("PvP") .. ")";
         elseif (QuestieDB.IsMonthlyQuest(quest.Id)) then
             return "(" .. l10n("Monthly") .. ")";
+        elseif (QuestieDB.IsWeeklyQuest(quest.Id)) then
+            -- Weekly raids still show as "Raid"
+            if questType == 62 then
+                return "(" .. questTag .. ")";
+            end
+            return "(" .. (WEEKLY or l10n("Weekly")) .. ")";
+        elseif (QuestieDB.IsDailyQuest(quest.Id)) then
+            if questType == 81 then
+                return "(" .. l10n("Daily Dungeon") .. ")";
+            elseif questType == 85 then
+                return "(" .. l10n("Daily Heroic") .. ")";
+            end
+            return "(" .. (DAILY or l10n("Daily")) .. ")";
         elseif (QuestieDB.IsRepeatable(quest.Id)) then
             return "(" .. l10n("Repeatable") .. ")";
         elseif (questType == 1 or questType == 62 or questType == 81 or questType == 82 or questType == 83) then
