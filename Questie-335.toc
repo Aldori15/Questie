@@ -236,3 +236,8 @@ Modules\QuestieProfiler.lua
 
 # Main
 Questie.lua
+
+# WDM-patch N compatibility: map the patched WorldMapArea IDs 894/895
+# (Sunstrider Isle / Ammen Vale) to Questie's UiMaps 467/468 so quest
+# pins render on the dedicated starter-zone textures.
+Modules\QuestieStartzoneFix.lua
