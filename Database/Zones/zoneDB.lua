@@ -89,7 +89,7 @@ end
 function ZoneDB:GetUiMapIdByAreaId(areaId)
     local uiMapId = areaIdToUiMapId[areaId] or specialZoneIdToUiMapId[areaId]
     if (not uiMapId) then
-        Questie:Debug(Questie.DEBUG_CRITICAL, "No UiMapId found for AreaId: " .. areaId)
+        Questie:Debug(Questie.DEBUG_CRITICAL, "No UiMapId found for AreaId: " .. tostring(areaId))
     end
 
     return uiMapId
