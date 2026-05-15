@@ -3912,6 +3912,11 @@ function QuestieCompat:ADDON_LOADED(event, addon)
         end
     end
 
+    -- Trimitor's WDM patch N assigns different WorldMapArea IDs to the Blood Elf and Draenei
+    -- starter zones (894/895) vs. the HD Client patchmenu values in UiMapData (6455/6456).
+    mapIdToUiMapId[894] = 467  -- Sunstrider Isle (Trimitor's WDM patch N)
+    mapIdToUiMapId[895] = 468  -- Ammen Vale (Trimitor's WDM patch N)
+
     local areaIdToUiMapId = ZoneDB.private and ZoneDB.private.areaIdToUiMapId
 
     -- Build zone-name -> areaId and zone-name -> uiMap using all lookup categories.
