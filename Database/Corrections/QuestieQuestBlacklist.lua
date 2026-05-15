@@ -895,29 +895,6 @@ function QuestieQuestBlacklist:Load()
 
         [8743] = true, -- Bang a Gong! (AQ40 opening quest)
 
-        -- Scourge Invasion
-        [9085] = true, -- Shadows of Doom
-        [9153] = true, -- Under the Shadow
-        [9154] = true, -- Light's Hope Chapel
-        [9247] = true, -- The Keeper's Call
-        [9260] = true, -- Investigate the Scourge of Stormwind
-        [9261] = true, -- Investigate the Scourge of Ironforge
-        [9262] = true, -- Investigate the Scourge of Darnassus
-        [9263] = true, -- Investigate the Scourge of Orgrimmar
-        [9264] = true, -- Investigate the Scourge of Thunder Bluff
-        [9265] = true, -- Investigate the Scourge of the Undercity
-        [9292] = true, -- Cracked Necrotic Crystal
-        [9295] = true, -- Letter from the Front
-        [9296] = true, -- reuse
-        [9297] = true, -- reuse
-        [9298] = true, -- reuse
-        [9299] = true, -- Note from the Front
-        [9300] = true, -- Page from the Front
-        [9301] = true, -- Envelope from the Front
-        [9302] = true, -- Missive from the Front
-        [9304] = true, -- Document from the Front
-        [9310] = true, -- Faint Necrotic Crystal
-
         ----- TBC -------------- TBC quests --------------- TBC -----
         ----- TBC ------------- starting here -------------- TBC -----
 
@@ -1352,21 +1329,6 @@ function QuestieQuestBlacklist:Load()
         [14088] = true, -- durotar (troll)
         [14089] = true, -- tirisfal (undead)
 
-        -- Scourge Invasion (WotLK pre-patch)
-        [12616] = true,
-        [12752] = true,
-        [12753] = true,
-        [12772] = true,
-        [12775] = true,
-        [12777] = true,
-        [12782] = true,
-        [12783] = true,
-        [12784] = true,
-        [12808] = true,
-        [12811] = true,
-        [12816] = true, -- Investigate the Scourge of Silvermoon
-        [12817] = true, -- Investigate the Scourge of Azuremyst
-
         --- Phase 2 Secrets of Ulduar
         [13372] = true, -- 10man EoE keys become unavailable with P2
         [13384] = true, -- 10man EoE keys become unavailable with P2
@@ -1612,6 +1574,45 @@ QuestieQuestBlacklist.AQWarEffortQuests = {
     [8797] = true,
     [10500] = true,
     [10501] = true,
+}
+
+QuestieQuestBlacklist.ScourgeInvasionQuests = {
+    -- Scourge Invasion (Classic Phase 6)
+    [9085] = true, -- Shadows of Doom
+    [9153] = true, -- Under the Shadow
+    [9154] = true, -- Light's Hope Chapel
+    [9247] = true, -- The Keeper's Call
+    [9260] = true, -- Investigate the Scourge of Stormwind
+    [9261] = true, -- Investigate the Scourge of Ironforge
+    [9262] = true, -- Investigate the Scourge of Darnassus
+    [9263] = true, -- Investigate the Scourge of Orgrimmar
+    [9264] = true, -- Investigate the Scourge of Thunder Bluff
+    [9265] = true, -- Investigate the Scourge of the Undercity
+    [9292] = true, -- Cracked Necrotic Crystal
+    [9295] = true, -- Letter from the Front
+    [9296] = true, -- reuse
+    [9297] = true, -- reuse
+    [9298] = true, -- reuse
+    [9299] = true, -- Note from the Front
+    [9300] = true, -- Page from the Front
+    [9301] = true, -- Envelope from the Front
+    [9302] = true, -- Missive from the Front
+    [9304] = true, -- Document from the Front
+    [9310] = true, -- Faint Necrotic Crystal
+    -- Scourge Invasion (WotLK pre-patch)
+    [12616] = true, -- Chamber of Secrets
+    [12752] = true, -- Desperate Research
+    [12753] = true, -- A Desperate Alliance
+    [12772] = true, -- A Desperate Alliance
+    [12775] = true, -- A Desperate Alliance
+    [12777] = true, -- A Desperate Alliance
+    [12782] = true, -- Desperate Research
+    [12783] = true, -- Desperate Research
+    [12784] = true, -- Desperate Research
+    [12808] = true, -- A Desperate Alliance
+    [12811] = true, -- Desperate Research
+    [12816] = true, -- Investigate the Scourge of Silvermoon
+    [12817] = true, -- Investigate the Scourge of Azuremyst
 }
 
 function QuestieQuestBlacklist.LoadAutoBlacklistWotlk()

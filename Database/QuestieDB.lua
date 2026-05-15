@@ -2720,6 +2720,15 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
         end
     end
 
+    -- Scourge Invasion quests (Acore worldstate event)
+    if QuestieQuestBlacklist.ScourgeInvasionQuests[questId] then
+        if returnText and returnBrief then
+            return l10n("Unavailable")..l10n(": ")..l10n("Event inactive"), true, DoableStates.EVENT_INACTIVE
+        elseif returnText then
+            return "Scourge Invasion quest " .. questId .. " is not active", true, DoableStates.EVENT_INACTIVE
+        end
+    end
+
     -- Check character race
     local requiredRaces = QuestieDB.QueryQuestSingle(questId, "requiredRaces")
     if (requiredRaces and not checkRace[requiredRaces]) then

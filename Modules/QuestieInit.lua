@@ -339,6 +339,15 @@ QuestieInit.Stages[3] = function() -- run as a coroutine
         end)
     end
 
+    if Questie.db.profile.showScourgeInvasionQuests and ((not Questie.db.profile.scourgeInvasionWarningPrintDate) or (Questie.db.profile.scourgeInvasionWarningPrintDate < dateToday)) then
+        Questie.db.profile.scourgeInvasionWarningPrintDate = dateToday
+        C_Timer.After(2, function()
+            print("|cffff0000-----------------------------|r")
+            Questie:Print("|cffff0000The Scourge Invasion quests are shown for you. If the worldstate event is not active on your server, you can hide those quests in the Icon settings of Questie!|r");
+            print("|cffff0000-----------------------------|r")
+        end)
+    end
+
     if Questie.IsTBC and (not Questie.db.global.isIsleOfQuelDanasPhaseReminderDisabled) then
         C_Timer.After(2, function()
             Questie:Print(l10n("Current active phase of Isle of Quel'Danas is '%s'. Check the General settings to change the phase or disable this message.", IsleOfQuelDanas.localizedPhaseNames[Questie.db.global.isleOfQuelDanasPhase]))

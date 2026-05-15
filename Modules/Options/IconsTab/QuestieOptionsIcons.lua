@@ -352,6 +352,19 @@ function QuestieOptions.tabs.icons:Initialize()
                             QuestieQuest:SmoothReset()
                         end,
                     },
+                    showScourgeInvasionQuests = {
+                        type = "toggle",
+                        order = 2.095,
+                        name = function() return l10n('Available Scourge Invasion Quests'); end,
+                        desc = function() return l10n('When this is enabled, the locations of the Scourge Invasion quests will be shown on the map/minimap. Enable this if your server has enabled the worldstate.'); end,
+                        width = 1.595,
+                        disabled = function() return (not Questie.db.profile.enabled); end,
+                        get = function(info) return Questie.db.profile.showScourgeInvasionQuests end,
+                        set = function(info, value)
+                            Questie.db.profile.showScourgeInvasionQuests = value
+                            _RunFastAvailableRefresh(true)
+                        end,
+                    },
                     townsfolk_options = {
                         type = "header",
                         order = 2.10,

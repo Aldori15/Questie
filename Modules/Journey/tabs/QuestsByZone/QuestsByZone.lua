@@ -470,6 +470,12 @@ function _QuestieJourney.questsByZone:CategorizeQuests(quests)
                 unobtainableCounter = unobtainableCounter + 1
             end
 
+            -- Scourge Invasion quests (Acore worldstate event)
+            if QuestieQuestBlacklist.ScourgeInvasionQuests[questId] then
+                tinsert(zoneTree[6].children, temp)
+                unobtainableCounter = unobtainableCounter + 1
+            end
+
             -- show manually hidden quests 
             if Questie.db.char.hidden[questId] then
                 if not zoneTree[7] then

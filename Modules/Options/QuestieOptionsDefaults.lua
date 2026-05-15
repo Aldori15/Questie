@@ -155,6 +155,7 @@ function QuestieOptionsDefaults:Load()
             showPvPQuests = true,
             showItemStartQuests = false,
             showAQWarEffortQuests = false,
+            showScourgeInvasionQuests = false,
             showQuestsInNpcTooltip = true,
             trackerEnabled = true,
             ldbDisplayText = "Questie",

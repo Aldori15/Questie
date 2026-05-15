@@ -952,6 +952,7 @@ _CalculateAvailableQuests = function()
     local showRaidQuests = Questie.db.profile.showRaidQuests
     local showPvPQuests = Questie.db.profile.showPvPQuests
     local showAQWarEffortQuests = Questie.db.profile.showAQWarEffortQuests
+    local showScourgeInvasionQuests = Questie.db.profile.showScourgeInvasionQuests
 
     local autoBlacklist = QuestieDB.autoBlacklist
     local hiddenQuests = QuestieCorrections.hiddenQuests
@@ -960,6 +961,7 @@ _CalculateAvailableQuests = function()
     local currentQuestlog = QuestiePlayer.currentQuestlog
     local currentIsleOfQuelDanasQuests = IsleOfQuelDanas.quests[Questie.db.profile.isleOfQuelDanasPhase] or {}
     local aqWarEffortQuests = QuestieQuestBlacklist.AQWarEffortQuests
+    local scourgeInvasionQuests = QuestieQuestBlacklist.ScourgeInvasionQuests
 
     QuestieDB.activeChildQuests = {} -- Reset here so we don't need to keep track in the quest event system
 
@@ -993,6 +995,7 @@ _CalculateAvailableQuests = function()
             ((not showDungeonQuests) and QuestieDB.IsDungeonQuest(questId)) or      -- Don't show dungeon quests if option is disabled
             ((not showRaidQuests) and QuestieDB.IsRaidQuest(questId)) or            -- Don't show raid quests if option is disabled
             ((not showAQWarEffortQuests) and aqWarEffortQuests[questId]) or         -- Don't show AQ War Effort quests if the option disabled
+            ((not showScourgeInvasionQuests) and scourgeInvasionQuests[questId]) or -- Don't show Scourge Invasion quests if the option is disabled
             (Questie.IsClassic and currentIsleOfQuelDanasQuests[questId])           -- Don't show Isle of Quel'Danas quests for Era/HC/SoX
         ) then
             nextAvailableQuestSet[questId] = nil

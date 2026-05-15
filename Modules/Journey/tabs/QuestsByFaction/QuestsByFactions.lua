@@ -708,6 +708,12 @@ function _QuestieJourney.questsByFaction:CollectFactionQuests(factionId)
                 unobtainableCounter = unobtainableCounter + 1
             end
 
+            -- Scourge Invasion quests (Acore worldstate event)
+            if QuestieQuestBlacklist.ScourgeInvasionQuests[questId] then
+                tinsert(factionTree[6].children, temp)
+                unobtainableCounter = unobtainableCounter + 1
+            end
+
             -- show manually hidden quests 
             if Questie.db.char.hidden[questId] then
                 if not factionTree[7] then
