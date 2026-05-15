@@ -206,6 +206,12 @@ _HookChatFrameHyperlinkScripts = function()
 end
 
 function QuestieLink:CreateQuestTooltip(link, tooltip)
+    -- Fixes error when clicking quest links before full init
+    if (not Questie.started) then
+        print(Questie:Colorize(l10n("Please wait a moment for Questie to finish loading")))
+        return
+    end
+
     local questId = _GetQuestIdFromLink(link)
     if not questId then
         return false
