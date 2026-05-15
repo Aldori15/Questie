@@ -105,7 +105,7 @@ local function RefreshWorldMapButtonLayout()
     end
 
     mapButton:ClearAllPoints()
-    mapButton:SetFrameStrata("TOOLTIP")
+    mapButton:SetFrameStrata(worldMapButtonFrame:GetFrameStrata())
     mapButton:SetFrameLevel(worldMapButtonFrame:GetFrameLevel() + 1)
     mapButton:SetPoint("TOPRIGHT", worldMapButtonFrame, "TOPRIGHT", xOffset, yOffset)
     mapButton:SetScale(buttonScale)
