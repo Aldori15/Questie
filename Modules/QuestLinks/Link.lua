@@ -236,14 +236,14 @@ end
 
 ---@param text string
 ---@param wrapText boolean?
-_AddTooltipLine = function (text, wrapText)
+_AddTooltipLine = function(text, wrapText)
     activeTooltip:AddLine(text, 1, 1, 1, wrapText)
 end
 
 ---@param text string
 ---@param color string
 ---@param wrapText boolean?
-_AddColoredTooltipLine = function (text, color, wrapText)
+_AddColoredTooltipLine = function(text, color, wrapText)
     text = Questie:Colorize(text, color)
     activeTooltip:AddLine(text, 1, 1, 1, wrapText)
 end
@@ -268,7 +268,7 @@ _AddQuestTitle = function(quest)
     end
 end
 
-_AddQuestStatus = function (quest)
+_AddQuestStatus = function(quest)
     local DoableStates = QuestieDB.DoableStates
     local eligibilityText, _, returnReason = QuestieDB.IsDoableVerbose(quest.Id, false, true, true)
     if QuestiePlayer.currentQuestlog[quest.Id] then
@@ -297,7 +297,7 @@ _AddQuestStatus = function (quest)
     end
 end
 
-_AddQuestDescription = function (quest)
+_AddQuestDescription = function(quest)
     if quest and quest.Description and quest.Description[1] then
         _AddColoredTooltipLine(quest.Description[1], "white", true)
         if #quest.Description > 2 then
@@ -342,7 +342,7 @@ _GetObjectiveText = function(objectiveId, objectiveType)
 end
 
 ---@param quest Quest
-_AddQuestRequirements = function (quest)
+_AddQuestRequirements = function(quest)
     local questId = quest.Id
     if QuestiePlayer.currentQuestlog[questId] or Questie.db.char.complete[questId] then
         return
@@ -394,7 +394,7 @@ _AddQuestRequirements = function (quest)
     end
 end
 
-_GetQuestStarter = function (quest)
+_GetQuestStarter = function(quest)
     if quest.Starts then
         local starterName, starterZoneName
         if quest.Starts.NPC ~= nil then
@@ -444,7 +444,7 @@ _GetQuestStarter = function (quest)
     return nil, nil
 end
 
-_GetQuestFinisher = function (quest)
+_GetQuestFinisher = function(quest)
     if quest.Finisher and quest.Finisher.Id then
         local finisherName, finisherZoneName
         if quest.Finisher.Type == "monster" then
@@ -475,7 +475,7 @@ _GetQuestFinisher = function (quest)
     return nil, nil
 end
 
-_AddPlayerQuestProgress = function (quest, starterName, starterZoneName, finisherName, finisherZoneName)
+_AddPlayerQuestProgress = function(quest, starterName, starterZoneName, finisherName, finisherZoneName)
     if QuestiePlayer.currentQuestlog[quest.Id] then
         -- On Quest: display quest progress
         if (QuestieDB.IsComplete(quest.Id) == 0) then
