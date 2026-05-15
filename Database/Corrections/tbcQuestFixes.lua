@@ -3189,7 +3189,10 @@ function QuestieTBCQuestFixes:Load()
         [10458] = {
             [questKeys.preQuestSingle] = {},
             [questKeys.objectives] = {{{21050,nil,Questie.ICON_TYPE_INTERACT},{21061,nil,Questie.ICON_TYPE_INTERACT}}},
-            [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_EVENT, l10n("Use the Totem of Spirits on Enraged Earth and Fiery Spirits"), 0, {{"monster", 21050}, {"monster", 21061}}}},
+            [questKeys.extraObjectives] = {
+                {nil, Questie.ICON_TYPE_EVENT, l10n("Use the Totem of Spirits on Enraged Earth and Fiery Spirits"), 1, {{"monster", 21050}}},
+                {nil, Questie.ICON_TYPE_EVENT, l10n("Use the Totem of Spirits on Enraged Earth and Fiery Spirits"), 2, {{"monster", 21061}}},
+            },
         },
         [10460] = {
             [questKeys.startedBy] = {{19935,19936}},
