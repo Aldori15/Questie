@@ -7,6 +7,9 @@ local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 
 local strfind = string.find
 
+-- Compatibility: 2.5.5+ uses ChatFrameUtil.AddMessageEventFilter instead of ChatFrame_AddMessageEventFilter
+local ChatFrameAddMessageEventFilter = ChatFrameUtil and ChatFrameUtil.AddMessageEventFilter or ChatFrame_AddMessageEventFilter
+
 ---------------------------------------------------------------------------------------------------
 -- These must be loaded in order together and loaded before the hook for custom quest links
 -- The Hyperlink hook is located in Link.lua
@@ -81,38 +84,37 @@ ChatFilter.Filter = function(chatFrame, _, msg, playerName, languageName, channe
 end
 
 function ChatFilter:RegisterEvents() -- todo: register immediately and cache calls until db is available
-    -- The message filter that triggers the above local function
     -- Party
-    ChatFrame_AddMessageEventFilter("CHAT_MSG_PARTY", ChatFilter.Filter)
-    ChatFrame_AddMessageEventFilter("CHAT_MSG_PARTY_LEADER", ChatFilter.Filter)
+    ChatFrameAddMessageEventFilter("CHAT_MSG_PARTY", ChatFilter.Filter)
+    ChatFrameAddMessageEventFilter("CHAT_MSG_PARTY_LEADER", ChatFilter.Filter)
 
     -- Raid
-    ChatFrame_AddMessageEventFilter("CHAT_MSG_RAID", ChatFilter.Filter)
-    ChatFrame_AddMessageEventFilter("CHAT_MSG_RAID_LEADER", ChatFilter.Filter)
-    ChatFrame_AddMessageEventFilter("CHAT_MSG_RAID_WARNING", ChatFilter.Filter)
+    ChatFrameAddMessageEventFilter("CHAT_MSG_RAID", ChatFilter.Filter)
+    ChatFrameAddMessageEventFilter("CHAT_MSG_RAID_LEADER", ChatFilter.Filter)
+    ChatFrameAddMessageEventFilter("CHAT_MSG_RAID_WARNING", ChatFilter.Filter)
 
     -- Guild
-    ChatFrame_AddMessageEventFilter("CHAT_MSG_GUILD", ChatFilter.Filter)
-    ChatFrame_AddMessageEventFilter("CHAT_MSG_OFFICER", ChatFilter.Filter)
+    ChatFrameAddMessageEventFilter("CHAT_MSG_GUILD", ChatFilter.Filter)
+    ChatFrameAddMessageEventFilter("CHAT_MSG_OFFICER", ChatFilter.Filter)
 
     -- Battleground
-    ChatFrame_AddMessageEventFilter("CHAT_MSG_INSTANCE_CHAT", ChatFilter.Filter)
-    ChatFrame_AddMessageEventFilter("CHAT_MSG_INSTANCE_CHAT_LEADER", ChatFilter.Filter)
+    ChatFrameAddMessageEventFilter("CHAT_MSG_INSTANCE_CHAT", ChatFilter.Filter)
+    ChatFrameAddMessageEventFilter("CHAT_MSG_INSTANCE_CHAT_LEADER", ChatFilter.Filter)
 
     -- Whisper
-    ChatFrame_AddMessageEventFilter("CHAT_MSG_WHISPER", ChatFilter.Filter)
-    ChatFrame_AddMessageEventFilter("CHAT_MSG_WHISPER_INFORM", ChatFilter.Filter)
+    ChatFrameAddMessageEventFilter("CHAT_MSG_WHISPER", ChatFilter.Filter)
+    ChatFrameAddMessageEventFilter("CHAT_MSG_WHISPER_INFORM", ChatFilter.Filter)
 
     -- Battle Net
-    ChatFrame_AddMessageEventFilter("CHAT_MSG_BN", ChatFilter.Filter)
-    ChatFrame_AddMessageEventFilter("CHAT_MSG_BN_WHISPER", ChatFilter.Filter)
-    ChatFrame_AddMessageEventFilter("CHAT_MSG_BN_WHISPER_INFORM", ChatFilter.Filter)
+    ChatFrameAddMessageEventFilter("CHAT_MSG_BN", ChatFilter.Filter)
+    ChatFrameAddMessageEventFilter("CHAT_MSG_BN_WHISPER", ChatFilter.Filter)
+    ChatFrameAddMessageEventFilter("CHAT_MSG_BN_WHISPER_INFORM", ChatFilter.Filter)
 
     -- Open world
-    ChatFrame_AddMessageEventFilter("CHAT_MSG_CHANNEL", ChatFilter.Filter)
-    ChatFrame_AddMessageEventFilter("CHAT_MSG_SAY", ChatFilter.Filter)
-    ChatFrame_AddMessageEventFilter("CHAT_MSG_YELL", ChatFilter.Filter)
+    ChatFrameAddMessageEventFilter("CHAT_MSG_CHANNEL", ChatFilter.Filter)
+    ChatFrameAddMessageEventFilter("CHAT_MSG_SAY", ChatFilter.Filter)
+    ChatFrameAddMessageEventFilter("CHAT_MSG_YELL", ChatFilter.Filter)
 
     -- Emote
-    ChatFrame_AddMessageEventFilter("CHAT_MSG_EMOTE", ChatFilter.Filter)
+    ChatFrameAddMessageEventFilter("CHAT_MSG_EMOTE", ChatFilter.Filter)
 end
