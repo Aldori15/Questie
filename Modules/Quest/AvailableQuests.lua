@@ -953,6 +953,7 @@ _CalculateAvailableQuests = function()
     local showPvPQuests = Questie.db.profile.showPvPQuests
     local showAQWarEffortQuests = Questie.db.profile.showAQWarEffortQuests
     local showScourgeInvasionQuests = Questie.db.profile.showScourgeInvasionQuests
+    local showSunsReachQuests = Questie.db.profile.showSunsReachQuests
 
     local autoBlacklist = QuestieDB.autoBlacklist
     local hiddenQuests = QuestieCorrections.hiddenQuests
@@ -962,6 +963,7 @@ _CalculateAvailableQuests = function()
     local currentIsleOfQuelDanasQuests = IsleOfQuelDanas.quests[Questie.db.profile.isleOfQuelDanasPhase] or {}
     local aqWarEffortQuests = QuestieQuestBlacklist.AQWarEffortQuests
     local scourgeInvasionQuests = QuestieQuestBlacklist.ScourgeInvasionQuests
+    local sunsReachQuests = QuestieQuestBlacklist.SunsReachQuests
 
     QuestieDB.activeChildQuests = {} -- Reset here so we don't need to keep track in the quest event system
 
@@ -996,7 +998,8 @@ _CalculateAvailableQuests = function()
             ((not showRaidQuests) and QuestieDB.IsRaidQuest(questId)) or            -- Don't show raid quests if option is disabled
             ((not showAQWarEffortQuests) and aqWarEffortQuests[questId]) or         -- Don't show AQ War Effort quests if the option disabled
             ((not showScourgeInvasionQuests) and scourgeInvasionQuests[questId]) or -- Don't show Scourge Invasion quests if the option is disabled
-            (Questie.IsClassic and currentIsleOfQuelDanasQuests[questId])           -- Don't show Isle of Quel'Danas quests for Era/HC/SoX
+            ((not showSunsReachQuests) and sunsReachQuests[questId]) or             -- Hide all Sun's Reach quests if the event is off
+            (showSunsReachQuests and currentIsleOfQuelDanasQuests[questId])         -- Phase-based filtering when event is on
         ) then
             nextAvailableQuestSet[questId] = nil
             return

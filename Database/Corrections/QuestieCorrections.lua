@@ -172,9 +172,9 @@ do
         QuestieCorrections.questNPCBlacklist = filterExpansion(QuestieNPCBlacklist:Load())
         QuestieCorrections.hiddenQuests = filterExpansion(QuestieQuestBlacklist:Load())
 
-        -- TBC Quel Danas Blacklist
-        if Questie.db.global.isleOfQuelDanasPhase == IsleOfQuelDanas.MAX_ISLE_OF_QUEL_DANAS_PHASES then
-            for id, hide in pairs(IsleOfQuelDanas.quests[Questie.db.global.isleOfQuelDanasPhase]) do
+        -- Isle of Quel'Danas Phase Blacklist
+        if Questie.db.profile.isleOfQuelDanasPhase == IsleOfQuelDanas.MAX_ISLE_OF_QUEL_DANAS_PHASES then
+            for id, hide in pairs(IsleOfQuelDanas.quests[Questie.db.profile.isleOfQuelDanasPhase]) do
                 -- This has to be a nil-check, because the value could be false
                 if (QuestieCorrections.hiddenQuests[id] == nil) then
                     QuestieCorrections.hiddenQuests[id] = hide

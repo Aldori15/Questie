@@ -156,6 +156,9 @@ function QuestieOptionsDefaults:Load()
             showItemStartQuests = false,
             showAQWarEffortQuests = false,
             showScourgeInvasionQuests = false,
+            showSunsReachQuests = false,
+            isleOfQuelDanasPhase = 1,
+            isIsleOfQuelDanasPhaseReminderDisabled = false,
             showQuestsInNpcTooltip = true,
             trackerEnabled = true,
             ldbDisplayText = "Questie",
@@ -216,10 +219,6 @@ function QuestieOptionsDefaults:Load()
             isTrackerExpanded = true,
         },
         global = {
-            -- TBC Isle of Quel'Danas
-            isleOfQuelDanasPhase = 1,
-            isIsleOfQuelDanasPhaseReminderDisabled = false,
-            --
             lastDailyRequestResetTime = 0,
             lastDailyRequestDate = "",
             questieLocale = 'enUS',

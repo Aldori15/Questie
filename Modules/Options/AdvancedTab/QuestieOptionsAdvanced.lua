@@ -150,11 +150,7 @@ function QuestieOptions.tabs.advanced:Initialize()
                 order = 1.5,
                 inline = true,
                 width = 0.5,
-                hidden = (not Questie.IsTBC),
                 name = function() return l10n("Quel'Danas Settings"); end,
-                disabled = function()
-                    return (not Questie.db.profile.autoAccept) or (not Questie.db.profile.autoAccept.enabled)
-                end,
                 args = {
                     isleOfQuelDanasPhase = {
                         type = "select",
@@ -164,7 +160,7 @@ function QuestieOptions.tabs.advanced:Initialize()
                         style = 'dropdown',
                         name = function() return l10n("Isle of Quel'Danas Phase") end,
                         desc = function() return l10n("Select the phase fitting your realm progress on the Isle of Quel'Danas"); end,
-                        disabled = function() return (not Questie.IsWotlk) end,
+                        disabled = function() return (not Questie.db.profile.enabled) end,
                         get = function() return Questie.db.profile.isleOfQuelDanasPhase; end,
                         set = function(_, key)
                             Questie.db.profile.isleOfQuelDanasPhase = key
@@ -186,7 +182,7 @@ function QuestieOptions.tabs.advanced:Initialize()
                         order = 1.5,
                         name = function() return l10n('Disable Phase reminder'); end,
                         desc = function() return l10n("Enable or disable the reminder on login to set the Isle of Quel'Danas phase"); end,
-                        disabled = function() return (not Questie.IsWotlk) end,
+                        disabled = function() return (not Questie.db.profile.enabled) end,
                         width = 1,
                         get = function() return Questie.db.profile.isIsleOfQuelDanasPhaseReminderDisabled; end,
                         set = function(_, value)

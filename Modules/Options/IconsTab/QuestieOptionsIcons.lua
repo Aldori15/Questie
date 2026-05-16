@@ -365,6 +365,19 @@ function QuestieOptions.tabs.icons:Initialize()
                             _RunFastAvailableRefresh(true)
                         end,
                     },
+                    showSunsReachQuests = {
+                        type = "toggle",
+                        order = 2.096,
+                        name = function() return l10n('Available Sun\'s Reach Quests'); end,
+                        desc = function() return l10n('When this is enabled, the locations of the Battle for Sun\'s Reach quests will be shown based on the phase set in the Advanced settings. Enable this only if your server has the Sun\'s Reach worldstate event active.'); end,
+                        width = 1.595,
+                        disabled = function() return (not Questie.db.profile.enabled); end,
+                        get = function(info) return Questie.db.profile.showSunsReachQuests end,
+                        set = function(info, value)
+                            Questie.db.profile.showSunsReachQuests = value
+                            _RunFastAvailableRefresh(true)
+                        end,
+                    },
                     townsfolk_options = {
                         type = "header",
                         order = 2.10,

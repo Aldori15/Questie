@@ -1186,9 +1186,6 @@ function QuestieQuestBlacklist:Load()
         [11621] = true, -- Not in the game
         [11179] = true, -- Not in the game
         [11622] = true, -- Not in the game
-        [11551] = true, -- Not in the game
-        [11552] = true, -- Not in the game
-        [11553] = true, -- Not in the game
         [11578] = true, -- Not in the game
         [11579] = true, -- Not in the game
         [11939] = true, -- Not in the game
@@ -1613,6 +1610,25 @@ QuestieQuestBlacklist.ScourgeInvasionQuests = {
     [12811] = true, -- Desperate Research
     [12816] = true, -- Investigate the Scourge of Silvermoon
     [12817] = true, -- Investigate the Scourge of Azuremyst
+}
+
+QuestieQuestBlacklist.SunsReachQuests = {
+    -- Battle for Sun's Reach (Isle of Quel'Danas worldstate event)
+    [11496] = true, -- Sanctum Wards
+    [11513] = true, -- Intercepting the Mana Cells
+    [11520] = true, -- Discovering Your Roots
+    [11524] = true, -- Erratic Behavior
+    [11532] = true, -- Distraction at the Dead Scar
+    [11535] = true, -- Making Ready
+    [11538] = true, -- Battle for the Sun's Reach Armory
+    [11539] = true, -- Taking the Harbor
+    [11542] = true, -- Intercept the Reinforcements
+    [11545] = true, -- A Charitable Donation
+    [11549] = true, -- A Magnanimous Benefactor
+    -- Sunwell Plateau Gates
+    [11551] = true, -- Agamath, the First Gate
+    [11552] = true, -- Rohendor, the Second Gate
+    [11553] = true, -- Archonisus, the Final Gate
 }
 
 function QuestieQuestBlacklist.LoadAutoBlacklistWotlk()
@@ -2108,8 +2124,6 @@ function QuestieQuestBlacklist.LoadAutoBlacklistWotlk()
         -- Eastern Kingdoms -> Isle Of Queldanas (0 -> 4080)
         [11517] = true, --* Report to Nasuun (https://www.wowhead.com/wotlk/quest=11517) (Retail Data)
         [11534] = true, --* Report to Nasuun (https://www.wowhead.com/wotlk/quest=11534) (Retail Data)
-        [11552] = true, --* Rohendor, the Second Gate (https://www.wowhead.com/wotlk/quest=11552) (Retail Data)
-        [11553] = true, --* Archonisus, the Final Gate (https://www.wowhead.com/wotlk/quest=11553) (Retail Data)
 --      [24522] = true, --* Journey To The Sunwell (https://www.wowhead.com/wotlk/quest=24522) (Retail Data)
 --      [24535] = true, --* Thalorien Dawnseeker (https://www.wowhead.com/wotlk/quest=24535) (Retail Data)
 --      [24562] = true, --* Journey To The Sunwell (https://www.wowhead.com/wotlk/quest=24562) (Retail Data)
