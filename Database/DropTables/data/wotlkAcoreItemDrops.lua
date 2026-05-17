@@ -1,7 +1,7 @@
 ---@class QuestieWotlkAcoreItemDrops
 local QuestieWotlkAcoreItemDrops = QuestieLoader:CreateModule("QuestieWotlkAcoreItemDrops")
 
--- Generated from AzerothCore creature_loot_template/reference_loot_template quest-required rows.
+-- Generated from effective AzerothCore creature_loot_template/reference_loot_template quest-required rows.
 
 QuestieWotlkAcoreItemDrops.data = [[return {
     [182] = { -- Garrick's Head

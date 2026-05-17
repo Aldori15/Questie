@@ -1,38 +1,118 @@
 import argparse
 import re
+import sys
 from collections import defaultdict
 from pathlib import Path
 
 
-INSERT_RE = re.compile(
-    r"INSERT INTO `(?P<table>creature_loot_template|reference_loot_template)` VALUES\s*(?P<values>.*?);",
-    re.IGNORECASE | re.DOTALL,
+TOOLS_DIR = Path(__file__).resolve().parent
+if str(TOOLS_DIR) not in sys.path:
+    sys.path.insert(0, str(TOOLS_DIR))
+
+from generate_acore_item_corrections import (  # noqa: E402
+    apply_multirow_delete,
+    apply_multirow_insert,
+    apply_multirow_update,
+    apply_variable_set,
+    extract_sql_columns,
+    parse_insert_sql_value,
+    source_sql_files,
+    split_sql_rows,
+    split_sql_statements,
+    split_sql_values,
+    statement_targets_table,
+    strip_sql_comments,
 )
-ROW_RE = re.compile(
-    r"\((?P<entry>\d+),(?P<item>\d+),(?P<reference>-?\d+),(?P<chance>-?\d+(?:\.\d+)?),(?P<quest_required>\d+),(?P<loot_mode>\d+),(?P<group_id>\d+),(?P<min_count>\d+),(?P<max_count>\d+),'(?:[^'\\]|\\.)*'\)"
-)
+
+
 ITEM_NAME_RE = re.compile(r'^\[(\d+)\]\s*=\s*\{(?:"((?:[^"\\]|\\.)*)"|\'((?:[^\'\\]|\\.)*)\')', re.DOTALL)
 
 
-def load_rows(path: Path, table_name: str):
-    rows = []
-    text = path.read_text(encoding="utf-8")
-    for match in INSERT_RE.finditer(text):
-        if match.group("table").lower() != table_name:
+def normalize_loot_rows(rows):
+    return [
+        {
+            "entry": int(row.get("Entry") or 0),
+            "item": int(row.get("Item") or 0),
+            "reference": int(row.get("Reference") or 0),
+            "chance": float(row.get("Chance") or 0),
+            "quest_required": int(row.get("QuestRequired") or 0),
+            "group_id": int(row.get("GroupId") or 0),
+        }
+        for row in rows
+    ]
+
+
+def skipped_insert_may_affect_quest_required_rows(statement, table_name, default_columns, sql_context):
+    match = re.search(
+        rf"(?:INSERT(?:\s+IGNORE)?\s+INTO|REPLACE\s+INTO)\s+`?{re.escape(table_name)}`?(?:\s*\((?P<columns>.*?)\))?\s*VALUES\s*(?P<values>.*)$",
+        statement,
+        re.IGNORECASE | re.DOTALL,
+    )
+    if not match:
+        return True
+
+    columns = default_columns
+    if match.group("columns"):
+        columns = [column_match.group(1) for column_match in re.finditer(r"`([^`]+)`", match.group("columns"))]
+        canonical_columns = {column.lower(): column for column in default_columns}
+        columns = [canonical_columns.get(column.lower(), column) for column in columns]
+
+    if "QuestRequired" not in columns:
+        return False
+
+    quest_required_index = columns.index("QuestRequired")
+    for row_text in split_sql_rows(match.group("values")):
+        values = split_sql_values(row_text)
+        if quest_required_index >= len(values):
+            return True
+        try:
+            quest_required = int(parse_insert_sql_value(values[quest_required_index], sql_context) or 0)
+        except Exception:
+            return True
+        if quest_required != 0:
+            return True
+
+    return False
+
+
+def load_effective_loot_rows(source_root: Path, table_name: str, key_columns, include_modules=False):
+    base_file = source_root / "data/sql/base/db_world" / f"{table_name}.sql"
+    columns = extract_sql_columns(base_file, table_name)
+    rows = {}
+    skipped_mutations = 0
+    potentially_relevant_skips = 0
+    sql_context = {}
+
+    for path in source_sql_files(source_root, table_name, include_modules):
+        raw_text = path.read_text(encoding="utf-8")
+        if not re.search(rf"\b{re.escape(table_name)}\b|@\w+", raw_text, re.IGNORECASE):
             continue
-        values = match.group("values")
-        for row in ROW_RE.finditer(values):
-            rows.append(
-                {
-                    "entry": int(row.group("entry")),
-                    "item": int(row.group("item")),
-                    "reference": int(row.group("reference")),
-                    "chance": float(row.group("chance")),
-                    "quest_required": int(row.group("quest_required")),
-                    "group_id": int(row.group("group_id")),
-                }
-            )
-    return rows
+        text = strip_sql_comments(raw_text)
+        for statement in split_sql_statements(text):
+            upper = statement.lstrip().upper()
+            if re.match(r"\s*SET\b", statement, re.IGNORECASE):
+                apply_variable_set(statement, sql_context)
+                continue
+            if not statement_targets_table(statement, table_name):
+                continue
+            if upper.startswith(("INSERT", "REPLACE")):
+                skipped = apply_multirow_insert(statement, table_name, columns, rows, key_columns, sql_context)
+                if skipped and skipped_insert_may_affect_quest_required_rows(statement, table_name, columns, sql_context):
+                    potentially_relevant_skips += skipped
+            elif upper.startswith("DELETE"):
+                skipped = apply_multirow_delete(statement, table_name, rows, sql_context)
+                potentially_relevant_skips += skipped
+            elif upper.startswith("UPDATE"):
+                skipped = apply_multirow_update(statement, table_name, rows, sql_context)
+                potentially_relevant_skips += skipped
+            else:
+                skipped = 0
+            skipped_mutations += skipped
+
+    return normalize_loot_rows(list(rows.values())), {
+        "total": skipped_mutations,
+        "potentially_relevant": potentially_relevant_skips,
+    }
 
 
 def build_reference_index(rows):
@@ -117,7 +197,7 @@ def write_output(per_item, item_names, output_path: Path):
         "---@class QuestieWotlkAcoreItemDrops",
         'local QuestieWotlkAcoreItemDrops = QuestieLoader:CreateModule("QuestieWotlkAcoreItemDrops")',
         "",
-        "-- Generated from AzerothCore creature_loot_template/reference_loot_template quest-required rows.",
+        "-- Generated from effective AzerothCore creature_loot_template/reference_loot_template quest-required rows.",
         "",
         "QuestieWotlkAcoreItemDrops.data = [[return {",
     ]
@@ -142,16 +222,34 @@ def main():
     parser.add_argument("--acore-source", default=r"P:\AC\source")
     parser.add_argument("--output", default="Database/DropTables/data/wotlkAcoreItemDrops.lua")
     parser.add_argument("--item-db", default="Database/Wotlk/wotlkItemDB.lua")
+    parser.add_argument("--include-modules", action="store_true", help="Also scan SQL under AzerothCore modules/. This can be slow.")
     args = parser.parse_args()
 
-    base = Path(args.acore_source) / "data" / "sql" / "base" / "db_world"
-    creature_rows = load_rows(base / "creature_loot_template.sql", "creature_loot_template")
-    reference_rows = load_rows(base / "reference_loot_template.sql", "reference_loot_template")
+    source_root = Path(args.acore_source)
+    creature_rows, creature_skip_stats = load_effective_loot_rows(
+        source_root,
+        "creature_loot_template",
+        ("Entry", "Item", "Reference", "GroupId"),
+        args.include_modules,
+    )
+    reference_rows, reference_skip_stats = load_effective_loot_rows(
+        source_root,
+        "reference_loot_template",
+        ("Entry", "Item"),
+        args.include_modules,
+    )
     reference_index = build_reference_index(reference_rows)
     per_item = build_creature_drop_table(creature_rows, reference_index)
     item_names = load_item_names(Path(args.item_db))
     write_output(per_item, item_names, Path(args.output))
     print(f"Wrote {len(per_item)} item rows to {args.output}")
+    potentially_relevant_skips = {
+        "creature_loot_template": creature_skip_stats["potentially_relevant"],
+        "reference_loot_template": reference_skip_stats["potentially_relevant"],
+    }
+    potentially_relevant_skips = {table: count for table, count in potentially_relevant_skips.items() if count}
+    if potentially_relevant_skips:
+        print(f"Potentially relevant skipped SQL mutations: {potentially_relevant_skips}")
 
 
 if __name__ == "__main__":
