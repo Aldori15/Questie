@@ -43,6 +43,7 @@ function QuestieOptionsDefaults:Load()
             dbmHUDShowLoot = false,
             dbmHUDShowInteract = true,
             mapShowHideEnabled = true,
+            worldMapButtonPosition = "TOPRIGHT",
             nameplateTargetFrameEnabled = true,
             nameplateTargetFrameX = -30,
             nameplateTargetFrameY = 25,

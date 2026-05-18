@@ -137,8 +137,8 @@ _CreateOptionsTable = function()
     --coroutine.yield()
     --local minimap_tab = QuestieOptions.tabs.minimap:Initialize()
     --coroutine.yield()
-    --local map_tab = QuestieOptions.tabs.map:Initialize()
-    --coroutine.yield()
+    local map_tab = QuestieOptions.tabs.map:Initialize()
+    coroutine.yield()
     local icons_tab = QuestieOptions.tabs.icons:Initialize()
     coroutine.yield()
     local tracker_tab = QuestieOptions.tabs.tracker:Initialize()
@@ -164,7 +164,7 @@ _CreateOptionsTable = function()
             general_tab = general_tab,
             --social_tab = social_tab,
             --minimap_tab = minimap_tab,
-            --map_tab = map_tab,
+            map_tab = map_tab,
             icons_tab = icons_tab,
             tracker_tab = tracker_tab,
             auto_tab = auto_tab,

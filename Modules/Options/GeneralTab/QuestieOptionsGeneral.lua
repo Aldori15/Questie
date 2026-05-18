@@ -17,8 +17,6 @@ local QuestieMenu = QuestieLoader:ImportModule("QuestieMenu");
 local l10n = QuestieLoader:ImportModule("l10n")
 ---@type QuestieTooltips
 local QuestieTooltips = QuestieLoader:ImportModule("QuestieTooltips");
----@type WorldMapButton
-local WorldMapButton = QuestieLoader:ImportModule("WorldMapButton")
 ---@type QuestieCoords
 local QuestieCoords = QuestieLoader:ImportModule("QuestieCoords");
 ---@type QuestieTracker
@@ -251,19 +249,6 @@ function QuestieOptions.tabs.general:Initialize()
                             Questie.db.profile.enableQuestFrameIcons = value
                         end,
                     },
-                    mapShowHideEnabled = {
-                        type = "toggle",
-                        order = 5.25,
-                        name = function() return l10n('Show Questie Map Button'); end,
-                        desc = function() return l10n('Enable or disable the Show/Hide Questie Button on Map (May fix some Map Addon interactions).'); end,
-                        width = 1.55,
-                        get = function(info) return QuestieOptions:GetProfileValue(info); end,
-                        set = function (info, value)
-                            QuestieOptions:SetProfileValue(info, value)
-
-                            WorldMapButton.Toggle(value)
-                        end,
-                    },
                     minimapButtonEnabled = {
                         type = "toggle",
                         order = 5.3,
@@ -281,22 +266,6 @@ function QuestieOptions.tabs.general:Initialize()
                             end
                         end,
                     },
-                    mapCoordinatesEnabled = {
-                        type = "toggle",
-                        order = 5.4,
-                        name = function() return l10n('Show Map Coordinates'); end,
-                        desc = function() return l10n("Place the Player's coordinates and Cursor's coordinates on the Map's title."); end,
-                        width = 1.55,
-                        get = function(info) return QuestieOptions:GetProfileValue(info); end,
-                        set = function (info, value)
-                            QuestieOptions:SetProfileValue(info, value)
-
-                            if not value then
-                                QuestieCoords:ResetMapText();
-                                QuestieCoords:ResetMiniWorldMapText();
-                            end
-                        end,
-                    },
                     minimapCoordinatesEnabled = {
                         type = "toggle",
                         order = 5.5,
@@ -310,21 +279,6 @@ function QuestieOptions.tabs.general:Initialize()
                             if not value then
                                 QuestieCoords:ResetMinimapText();
                             end
-                        end,
-                    },
-                    mapCoordinatePrecision = {
-                        type = "range",
-                        order = 5.6,
-                        name = function() return l10n('Map Coordinates Decimal Precision'); end,
-                        desc = function() return l10n('How many decimals to include in the precision on the Map for Player and Cursor coordinates.\n(Default: %s)', optionsDefaults.profile.mapCoordinatePrecision); end,
-                        width = 1.4,
-                        min = 0,
-                        max = 5,
-                        step = 1,
-                        disabled = function() return not Questie.db.profile.mapCoordinatesEnabled end,
-                        get = function(info) return QuestieOptions:GetProfileValue(info); end,
-                        set = function (info, value)
-                            QuestieOptions:SetProfileValue(info, value)
                         end,
                     },
                 },

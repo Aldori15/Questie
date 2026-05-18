@@ -36,7 +36,7 @@ local function _GetChildrenSafely(frame)
     childScanFailed = true
 end
 
-local function _GetOccupiedTopRightOffset(worldMapButtonFrame)
+local function _GetOccupiedCornerOffset(worldMapButtonFrame, corner)
     local occupiedOffset
     local parentEffectiveScale = worldMapButtonFrame.GetEffectiveScale and worldMapButtonFrame:GetEffectiveScale() or worldMapButtonFrame:GetScale() or 1
 
@@ -45,12 +45,15 @@ local function _GetOccupiedTopRightOffset(worldMapButtonFrame)
         return
     end
 
+    local isRightSide = (corner == "TOPRIGHT" or corner == "BOTTOMRIGHT")
+    local sideAnchor = isRightSide and "RIGHT" or "LEFT"
+
     for _, child in next, worldMapButtonChildren do
         if child ~= mapButton and child.IsShown and child:IsShown() then
             local point, relativeFrame, relativePoint, xOffset = child:GetPoint(1)
             if relativeFrame == worldMapButtonFrame and xOffset ~= nil and
-                (point == "TOPRIGHT" or point == "RIGHT") and
-                (relativePoint == "TOPRIGHT" or relativePoint == "RIGHT" or relativePoint == nil) then
+                (point == corner or point == sideAnchor) and
+                (relativePoint == corner or relativePoint == sideAnchor or relativePoint == nil) then
                 local childWidth = child.GetWidth and child:GetWidth() or 0
                 local childHeight = child.GetHeight and child:GetHeight() or 0
 
@@ -61,9 +64,18 @@ local function _GetOccupiedTopRightOffset(worldMapButtonFrame)
                         scaleRatio = childEffectiveScale / parentEffectiveScale
                     end
 
-                    local localOffset = xOffset - (childWidth * scaleRatio)
-                    if occupiedOffset == nil or localOffset < occupiedOffset then
-                        occupiedOffset = localOffset
+                    if isRightSide then
+                        -- Push further left: find the leftmost occupied edge
+                        local localOffset = xOffset - (childWidth * scaleRatio)
+                        if occupiedOffset == nil or localOffset < occupiedOffset then
+                            occupiedOffset = localOffset
+                        end
+                    else
+                        -- Push further right: find the rightmost occupied edge
+                        local localOffset = xOffset + (childWidth * scaleRatio)
+                        if occupiedOffset == nil or localOffset > occupiedOffset then
+                            occupiedOffset = localOffset
+                        end
                     end
                 end
             end
@@ -85,17 +97,28 @@ local function RefreshWorldMapButtonLayout()
 
     isRefreshingWorldMapButtonLayout = true
 
+    local corner = (Questie.db and Questie.db.profile and Questie.db.profile.worldMapButtonPosition) or "TOPRIGHT"
+    local isRightSide = (corner == "TOPRIGHT" or corner == "BOTTOMRIGHT")
+    local isTopSide = (corner == "TOPRIGHT" or corner == "TOPLEFT")
+
+    local anchorFrame
+    if corner == "TOPRIGHT" then
+        anchorFrame = worldMapButtonFrame
+    else
+        anchorFrame = _G.WorldMapDetailFrame or worldMapButtonFrame
+    end
+
     local buttonScale = 1
-    local xOffset = -4
-    local yOffset = -4
-    local occupiedGap = -4
+    local xOffset = isRightSide and -4 or 4
+    local yOffset = isTopSide and -4 or 4
+    local occupiedGap = isRightSide and -4 or 4
 
     if WORLDMAP_SETTINGS and WORLDMAP_WINDOWED_SIZE and WORLDMAP_SETTINGS.size == WORLDMAP_WINDOWED_SIZE then
         buttonScale = 1 + WORLDMAP_SETTINGS.size
-        occupiedGap = 15
+        occupiedGap = isRightSide and 15 or -15
     end
 
-    local occupiedOffset = _GetOccupiedTopRightOffset(worldMapButtonFrame)
+    local occupiedOffset = _GetOccupiedCornerOffset(anchorFrame, corner)
     if occupiedOffset ~= nil then
         xOffset = occupiedOffset + occupiedGap
     end
@@ -107,7 +130,7 @@ local function RefreshWorldMapButtonLayout()
     mapButton:ClearAllPoints()
     mapButton:SetFrameStrata(worldMapButtonFrame:GetFrameStrata())
     mapButton:SetFrameLevel(worldMapButtonFrame:GetFrameLevel() + 1)
-    mapButton:SetPoint("TOPRIGHT", worldMapButtonFrame, "TOPRIGHT", xOffset, yOffset)
+    mapButton:SetPoint(corner, anchorFrame, corner, xOffset, yOffset)
     mapButton:SetScale(buttonScale)
 
     lastWorldMapButtonEffectiveScale = worldMapButtonFrame.GetEffectiveScale and worldMapButtonFrame:GetEffectiveScale() or worldMapButtonFrame:GetScale() or 1
@@ -154,6 +177,10 @@ function WorldMapButton.Initialize()
     Questie.WorldMap = {
         Button = mapButton
     }
+end
+
+function WorldMapButton.RefreshLayout()
+    RefreshWorldMapButtonLayout()
 end
 
 ---@param shouldShow boolean
