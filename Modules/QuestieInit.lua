@@ -234,6 +234,8 @@ QuestieInit.Stages[1] = function() -- run as a coroutine
     coYield()
     QuestieDB:Initialize()
 
+    l10n:BuildObjectNameCache()
+
     coYield()
     Tutorial.Initialize()
 
