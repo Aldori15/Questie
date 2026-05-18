@@ -704,6 +704,25 @@ def normalize_objectives(value):
     return tuple(normalized_categories)
 
 
+def extract_kill_credit_objectives(value):
+    if not isinstance(value, (list, tuple)) or len(value) < 5:
+        return ()
+
+    category_value = value[4]
+    if not isinstance(category_value, (list, tuple, set)):
+        return ()
+
+    records = []
+    for record in category_value:
+        if not isinstance(record, (list, tuple, set)) or not record:
+            continue
+        ids = normalize_list(record[0])
+        if ids:
+            records.append(ids)
+
+    return tuple(records)
+
+
 def build_acore_objectives(row):
     creature_objectives = []
     object_objectives = []
@@ -722,6 +741,289 @@ def build_acore_objectives(row):
             item_objectives.append((entry,))
 
     return normalize_objectives([creature_objectives, object_objectives, item_objectives])
+
+
+def build_creature_kill_credit_map(creature_template_rows):
+    kill_credit_map = {}
+
+    for creature_id, row in creature_template_rows.items():
+        credits = {
+            normalize_int(row.get("KillCredit1")),
+            normalize_int(row.get("KillCredit2")),
+        }
+        credits.discard(0)
+        if credits:
+            kill_credit_map[creature_id] = credits
+
+    return kill_credit_map
+
+
+def build_acore_spawned_creature_ids(source_root):
+    spawned_creature_ids = set()
+    table_name = "creature"
+    base_file = source_root / "data" / "sql" / "base" / "db_world" / f"{table_name}.sql"
+    default_columns = extract_sql_columns(base_file, table_name)
+    sql_files = [base_file]
+    sql_files.extend(sorted((source_root / "data" / "sql" / "updates" / "db_world").glob("*.sql")))
+
+    for sql_file in sql_files:
+        raw_text = sql_file.read_text(encoding="utf-8")
+        if not re.search(r"\bcreature\b", raw_text, re.IGNORECASE):
+            continue
+
+        text = strip_sql_comments(raw_text)
+        for statement in split_sql_statements(text):
+            insert_match = re.search(
+                r"(?:INSERT(?:\s+IGNORE)?\s+INTO|REPLACE\s+INTO)\s+`?creature`?(?:\s*\((?P<columns>.*?)\))?\s*VALUES\s*(?P<values>.*)$",
+                statement,
+                re.IGNORECASE | re.DOTALL,
+            )
+            if not insert_match:
+                continue
+
+            statement_columns = default_columns
+            if insert_match.group("columns"):
+                statement_columns = [
+                    column_match.group(1)
+                    for column_match in re.finditer(r"`([^`]+)`", insert_match.group("columns"))
+                ]
+
+            creature_column_indexes = [
+                index
+                for index, column_name in enumerate(statement_columns)
+                if column_name.lower() in {"id", "id1", "id2", "id3"}
+            ]
+            if not creature_column_indexes:
+                continue
+
+            for row_text in split_sql_rows(insert_match.group("values")):
+                row_values = split_sql_values(row_text)
+                if len(row_values) != len(statement_columns):
+                    continue
+                for index in creature_column_indexes:
+                    token = row_values[index].strip()
+                    if re.fullmatch(r"-?\d+", token):
+                        creature_id = int(token)
+                        if creature_id > 0:
+                            spawned_creature_ids.add(creature_id)
+
+    return spawned_creature_ids
+
+
+def flatten_objective_records(records):
+    return tuple(
+        int(entry)
+        for record in (records or ())
+        for entry in (record or ())
+    )
+
+
+def build_objective_display_risks(mismatches, questie_metadata, spawned_creature_ids, creature_template_rows):
+    display_risks = []
+
+    for mismatch in mismatches:
+        if mismatch["field"] != "objectives" or mismatch.get("preservedCreatureDisplay"):
+            continue
+
+        quest_id = mismatch["questId"]
+        questie_entry = questie_metadata.get(quest_id, {})
+        questie_creature_ids = flatten_objective_records(
+            questie_entry.get("objectives", EMPTY_OBJECTIVES)[0]
+        )
+        questie_kill_credit_ids = flatten_objective_records(
+            questie_entry.get("_killCreditObjectives", ())
+        )
+        questie_display_ids = tuple(sorted(set(questie_creature_ids + questie_kill_credit_ids)))
+        acore_creature_ids = flatten_objective_records(mismatch["acore"][0])
+
+        if not acore_creature_ids or not questie_display_ids:
+            continue
+
+        acore_spawned_ids = tuple(
+            creature_id for creature_id in acore_creature_ids if creature_id in spawned_creature_ids
+        )
+        questie_spawned_ids = tuple(
+            creature_id for creature_id in questie_display_ids if creature_id in spawned_creature_ids
+        )
+        if acore_spawned_ids or not questie_spawned_ids:
+            continue
+
+        display_risks.append(
+            {
+                "questId": quest_id,
+                "acoreCreatureIds": list(acore_creature_ids),
+                "acoreCreatureNames": [
+                    creature_template_rows.get(creature_id, {}).get("name", "")
+                    for creature_id in acore_creature_ids
+                ],
+                "questieCreatureIds": list(questie_creature_ids),
+                "questieKillCreditIds": list(questie_kill_credit_ids),
+                "questieSpawnedIds": list(questie_spawned_ids),
+                "questieSpawnedNames": [
+                    creature_template_rows.get(creature_id, {}).get("name", "")
+                    for creature_id in questie_spawned_ids
+                ],
+            }
+        )
+
+    return display_risks
+
+
+def objective_values_have_spawned_display_replacement(
+    acore_objectives,
+    questie_objectives,
+    questie_kill_credit_records,
+    spawned_creature_ids,
+):
+    acore_creatures = acore_objectives[0]
+    questie_creatures = questie_objectives[0]
+
+    acore_creature_ids = flatten_objective_records(acore_creatures)
+    questie_display_ids = tuple(
+        sorted(
+            set(
+                flatten_objective_records(questie_creatures)
+                + flatten_objective_records(questie_kill_credit_records)
+            )
+        )
+    )
+    if not acore_creature_ids or not questie_display_ids:
+        return False
+
+    acore_has_spawned_target = any(
+        creature_id in spawned_creature_ids
+        for creature_id in acore_creature_ids
+    )
+    questie_has_spawned_target = any(
+        creature_id in spawned_creature_ids
+        for creature_id in questie_display_ids
+    )
+    return not acore_has_spawned_target and questie_has_spawned_target
+
+
+def raw_objectives_from_normalized(objectives):
+    raw_categories = []
+    for category in objectives[:3]:
+        if not category:
+            raw_categories.append(None)
+            continue
+        raw_categories.append([list(record) for record in category])
+    return raw_categories
+
+
+def merge_objectives_with_questie_creature_display(acore_objectives, questie_raw_objectives):
+    merged = raw_objectives_from_normalized(acore_objectives)
+    questie_raw_objectives = list(questie_raw_objectives or ())
+
+    if questie_raw_objectives:
+        merged[0] = questie_raw_objectives[0]
+
+    # Preserve Questie's non-SQL display channels. These carry spawned targets,
+    # icon overrides, and spell/event helpers that the static AC objective rows
+    # cannot represent.
+    while len(merged) < len(questie_raw_objectives):
+        merged.append(None)
+    for index in range(3, len(questie_raw_objectives)):
+        merged[index] = questie_raw_objectives[index]
+
+    while merged and merged[-1] is None:
+        merged.pop()
+    return merged
+
+
+def objective_record_is_supported_kill_credit_expansion(acore_record, questie_record, kill_credit_map):
+    if len(acore_record) != 1 or len(questie_record) <= 1:
+        return False
+
+    root_id = acore_record[0]
+    if root_id not in questie_record:
+        return False
+
+    for creature_id in questie_record:
+        if creature_id == root_id:
+            continue
+        if root_id not in kill_credit_map.get(creature_id, set()):
+            return False
+
+    return True
+
+
+def match_supported_creature_objectives(acore_records, questie_records, questie_kill_credit_records, kill_credit_map):
+    if len(acore_records) != len(questie_records) + len(questie_kill_credit_records):
+        return None
+
+    unmatched_questie_records = [
+        ("creature", record)
+        for record in questie_records
+    ] + [
+        ("killCredit", record)
+        for record in questie_kill_credit_records
+    ]
+    preserved_expansions = []
+
+    for acore_record in acore_records:
+        exact_match = next(
+            (
+                candidate
+                for candidate in unmatched_questie_records
+                if candidate[0] == "creature" and candidate[1] == acore_record
+            ),
+            None,
+        )
+        if exact_match is not None:
+            unmatched_questie_records.remove(exact_match)
+            continue
+
+        matching_record = next(
+            (
+                candidate
+                for candidate in unmatched_questie_records
+                if objective_record_is_supported_kill_credit_expansion(
+                    acore_record,
+                    candidate[1],
+                    kill_credit_map,
+                )
+            ),
+            None,
+        )
+        if matching_record is None:
+            return None
+
+        unmatched_questie_records.remove(matching_record)
+        preserved_expansions.append(
+            {
+                "rootId": acore_record[0],
+                "sourceCategory": matching_record[0],
+                "expandedIds": list(matching_record[1]),
+            }
+        )
+
+    if unmatched_questie_records:
+        return None
+
+    return preserved_expansions
+
+
+def objective_values_are_equivalent(acore_objectives, questie_objectives, questie_kill_credit_records, kill_credit_map):
+    if acore_objectives == questie_objectives:
+        return True, []
+
+    acore_creatures, acore_objects, acore_items = acore_objectives
+    questie_creatures, questie_objects, questie_items = questie_objectives
+
+    if acore_objects != questie_objects or acore_items != questie_items:
+        return False, []
+
+    preserved_expansions = match_supported_creature_objectives(
+        acore_creatures,
+        questie_creatures,
+        questie_kill_credit_records,
+        kill_credit_map,
+    )
+    if preserved_expansions is None:
+        return False, []
+
+    return True, preserved_expansions
 
 
 def normalize_field(field, value):
@@ -806,6 +1108,22 @@ def format_objectives_value(value):
     return "nil"
 
 
+def format_raw_lua_value(value):
+    if value is None:
+        return "nil"
+    if value is True:
+        return "true"
+    if value is False:
+        return "false"
+    if isinstance(value, str):
+        return lua_string_literal(value)
+    if isinstance(value, (int, float)):
+        return str(value)
+    if isinstance(value, (list, tuple)):
+        return "{" + ",".join(format_raw_lua_value(item) for item in value) + "}"
+    raise TypeError(f"Unsupported raw Lua value: {value!r}")
+
+
 def get_sql_row_key(row, key_column):
     for candidate in (key_column, key_column.lower(), key_column.upper()):
         value = row.get(candidate)
@@ -876,6 +1194,9 @@ def load_questie_base_metadata(quest_db_path, quest_keys, constants):
                 continue
 
             value = parse_lua_value(row_values[row_index], constants)
+            if field == "objectives":
+                quest_entry["_killCreditObjectives"] = extract_kill_credit_objectives(value)
+                quest_entry["_rawObjectives"] = value
             quest_entry[field] = normalize_field(field, value)
 
         data[quest_id] = quest_entry
@@ -910,6 +1231,9 @@ def load_questie_correction_file(path, constants):
             if value is None:
                 continue
 
+            if field_name == "objectives":
+                quest_override["_killCreditObjectives"] = extract_kill_credit_objectives(value)
+                quest_override["_rawObjectives"] = value
             quest_override[field_name] = normalize_field(field_name, value)
 
     return overrides
@@ -1380,8 +1704,10 @@ def derive_acore_metadata(source_root, quest_template_sql=None, quest_template_a
     return acore_metadata
 
 
-def compare_metadata(acore_metadata, questie_metadata):
+def compare_metadata(acore_metadata, questie_metadata, creature_kill_credits, spawned_creature_ids):
     mismatches = []
+    preserved_objective_expansions = []
+    preserved_display_objectives = []
     all_quest_ids = sorted(set(acore_metadata) | set(questie_metadata))
     summary = Counter()
 
@@ -1392,18 +1718,68 @@ def compare_metadata(acore_metadata, questie_metadata):
         questie = questie_metadata.get(quest_id, empty_entry)
 
         for field in FIELD_ORDER:
+            if field == "objectives":
+                has_display_replacement = objective_values_have_spawned_display_replacement(
+                    acore[field],
+                    questie[field],
+                    questie.get("_killCreditObjectives", ()),
+                    spawned_creature_ids,
+                )
+                if (
+                    acore[field] != questie[field]
+                    and has_display_replacement
+                    and acore[field][1:] == questie[field][1:]
+                ):
+                    preserved_display_objectives.append(
+                        {
+                            "questId": quest_id,
+                            "acore": acore[field],
+                            "questie": questie[field],
+                        }
+                    )
+                    continue
+
+                equivalent, expansions = objective_values_are_equivalent(
+                    acore[field],
+                    questie[field],
+                    questie.get("_killCreditObjectives", ()),
+                    creature_kill_credits,
+                )
+                if equivalent:
+                    if expansions:
+                        preserved_objective_expansions.append(
+                            {
+                                "questId": quest_id,
+                                "expansions": expansions,
+                            }
+                        )
+                    continue
             if acore[field] != questie[field]:
+                mismatch = {
+                    "questId": quest_id,
+                    "field": field,
+                    "acore": acore[field],
+                    "questie": questie[field],
+                }
+                if field == "objectives" and has_display_replacement:
+                    mismatch["suggestedRawObjectives"] = merge_objectives_with_questie_creature_display(
+                        acore[field],
+                        questie.get("_rawObjectives", ()),
+                    )
+                    mismatch["preservedCreatureDisplay"] = True
+                    preserved_display_objectives.append(
+                        {
+                            "questId": quest_id,
+                            "acore": acore[field],
+                            "questie": questie[field],
+                        }
+                    )
                 mismatches.append(
-                    {
-                        "questId": quest_id,
-                        "field": field,
-                        "acore": acore[field],
-                        "questie": questie[field],
-                    }
+                    mismatch
                 )
                 summary[field] += 1
 
-    return mismatches, summary
+    return mismatches, summary, preserved_objective_expansions, preserved_display_objectives
 
 
 def format_named_bitmask(value, constants, prefix, exact_names=()):
@@ -1496,10 +1872,19 @@ def build_lua_suggestions(mismatches, acore_metadata, constants):
     empty_entry = {field: default_field_value(field) for field in FIELD_ORDER}
 
     for mismatch in mismatches:
-        by_quest[mismatch["questId"]][mismatch["field"]] = acore_metadata.get(
-            mismatch["questId"],
-            empty_entry,
-        )[mismatch["field"]]
+        if mismatch["field"] == "objectives" and "suggestedRawObjectives" in mismatch:
+            by_quest[mismatch["questId"]][mismatch["field"]] = (
+                mismatch["suggestedRawObjectives"],
+                True,
+            )
+        else:
+            by_quest[mismatch["questId"]][mismatch["field"]] = (
+                acore_metadata.get(
+                    mismatch["questId"],
+                    empty_entry,
+                )[mismatch["field"]],
+                False,
+            )
 
     lines = [
         "-- REVIEW BEFORE APPLYING.",
@@ -1513,7 +1898,9 @@ def build_lua_suggestions(mismatches, acore_metadata, constants):
         for field in FIELD_ORDER:
             if field not in by_quest[quest_id]:
                 continue
-            lines.append(f"    [questKeys.{field}] = {format_lua_value(field, by_quest[quest_id][field], constants)},")
+            value, is_raw = by_quest[quest_id][field]
+            formatted_value = format_raw_lua_value(value) if is_raw else format_lua_value(field, value, constants)
+            lines.append(f"    [questKeys.{field}] = {formatted_value},")
         lines.append("},")
         lines.append("")
 
@@ -1564,7 +1951,26 @@ def main():
             quest_entry.setdefault(field, default_field_value(field))
 
     acore_metadata = derive_acore_metadata(source_root, quest_template_sql, quest_template_addon_sql)
-    mismatches, field_counts = compare_metadata(acore_metadata, questie_metadata)
+    creature_template_rows = load_acore_sql_table(source_root, "creature_template", key_column="entry")
+    creature_kill_credits = build_creature_kill_credit_map(creature_template_rows)
+    spawned_creature_ids = build_acore_spawned_creature_ids(source_root)
+    (
+        mismatches,
+        field_counts,
+        preserved_objective_expansions,
+        preserved_display_objectives,
+    ) = compare_metadata(
+        acore_metadata,
+        questie_metadata,
+        creature_kill_credits,
+        spawned_creature_ids,
+    )
+    objective_display_risks = build_objective_display_risks(
+        mismatches,
+        questie_metadata,
+        spawned_creature_ids,
+        creature_template_rows,
+    )
     summary = build_summary(mismatches)
 
     print("AzerothCore quest metadata validation")
@@ -1573,6 +1979,9 @@ def main():
     print(f"Total mismatches: {summary['total']}")
     for field in FIELD_ORDER:
         print(f"  {field}: {summary[field]}")
+    print(f"  preservedObjectiveExpansions: {len(preserved_objective_expansions)}")
+    print(f"  preservedDisplayObjectives: {len(preserved_display_objectives)}")
+    print(f"  objectiveDisplayRisks: {len(objective_display_risks)}")
 
     if mismatches:
         print("")
@@ -1588,6 +1997,9 @@ def main():
                 {
                     "summary": summary,
                     "fieldCounts": dict(field_counts),
+                    "preservedObjectiveExpansions": preserved_objective_expansions,
+                    "preservedDisplayObjectives": preserved_display_objectives,
+                    "objectiveDisplayRisks": objective_display_risks,
                     "mismatches": mismatches,
                 },
                 indent=2,

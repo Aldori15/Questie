@@ -13536,7 +13536,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
         },
 
         [8956] = {
-            [itemKeys.npcDrops] = {},
             [itemKeys.relatedQuests] = {8778,8785},
         },
 
@@ -27743,12 +27742,10 @@ QuestieCompat.RegisterCorrection("itemData", function()
         },
 
         [19423] = {
-            [itemKeys.npcDrops] = {},
             [itemKeys.relatedQuests] = {7937},
         },
 
         [19424] = {
-            [itemKeys.npcDrops] = {},
             [itemKeys.relatedQuests] = {7938},
         },
 
@@ -44651,7 +44648,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
         },
 
         [35783] = {
-            [itemKeys.npcDrops] = {},
             [itemKeys.relatedQuests] = {11999,12000},
         },
 
