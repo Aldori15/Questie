@@ -96,6 +96,8 @@ function QuestieFramePool:GetFrame()
     returnFrame.y = nil;
     returnFrame.AreaID = nil;
     returnFrame.UiMapID = nil
+    returnFrame.worldX = nil
+    returnFrame.worldY = nil
 
     if returnFrame.texture then
         returnFrame.texture:SetVertexColor(1, 1, 1, 1)

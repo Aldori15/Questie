@@ -773,11 +773,13 @@ _MinimapIconFadeLogic = function(self)
     if self.miniMapIcon and self.x and self.y and self.texture and self.UiMapID and self.texture.SetVertexColor and HBD and HBD.GetPlayerZonePosition and QuestieLib and QuestieLib.Euclid then
         if (QuestieMap.playerX and QuestieMap.playerY) then
             local x, y
-            if not self.worldX then
+            if self.worldX == nil then
+                -- nil = never tried; false = tried and failed, don't retry
                 x, y = HBD:GetWorldCoordinatesFromZone(self.x / 100, self.y / 100, self.UiMapID)
-                self.worldX = x
-                self.worldY = y
-            else
+                self.worldX = x or false
+                self.worldY = y or false
+            end
+            if self.worldX then
                 x = self.worldX
                 y = self.worldY
             end
