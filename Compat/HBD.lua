@@ -137,7 +137,7 @@ end
 local WORLD_MAP_ID = 947
 
 -- upvalue lua api
-local cos, sin, math_max = math.cos, math.sin, math.max
+local cos, sin, math_max, math_abs = math.cos, math.sin, math.max, math.abs
 local type, pairs = type, pairs
 local strfind = string.find
 
@@ -241,6 +241,25 @@ local function _HasTrackedMinimapPins()
     return next(minimapPins) ~= nil or next(activeMinimapPins) ~= nil
 end
 
+local function _ShouldProcessQuestieMinimapPins()
+    local profile = Questie.db.profile
+    if not profile then
+        return true
+    end
+
+    return profile.enabled and profile.enableMiniMapIcons
+end
+
+local function _ClearActiveMinimapPins()
+    minimapPinCount = 0
+    lastXY, lastYY = nil, nil
+
+    for pin in pairs(activeMinimapPins) do
+        pin:Hide()
+        activeMinimapPins[pin] = nil
+    end
+end
+
 local function drawMinimapPin(pin, data)
     local xDist, yDist = lastXY - data.x, lastYY - data.y
 
@@ -330,26 +349,55 @@ local function GetZoneNameToAreaId()
     return zoneNameToAreaId
 end
 
+local bestAreaIdByUiMapID = {}
 local function GetBestAreaIdForUiMap(uiMapID)
     if not uiMapID then
         return nil
+    end
+
+    if bestAreaIdByUiMapID[uiMapID] ~= nil then
+        return bestAreaIdByUiMapID[uiMapID] or nil
     end
 
     local uiMapData = mapData[uiMapID]
     local zoneName = uiMapData and uiMapData.name
     local namedAreaId = zoneName and GetZoneNameToAreaId()[zoneName]
     if namedAreaId then
+        bestAreaIdByUiMapID[uiMapID] = namedAreaId
         return namedAreaId
     end
 
     if ZoneDB and ZoneDB.GetAreaIdByUiMapId then
         local success, areaId = pcall(ZoneDB.GetAreaIdByUiMapId, ZoneDB, uiMapID)
-        if success then
+        if success and areaId then
+            bestAreaIdByUiMapID[uiMapID] = areaId
             return areaId
         end
     end
 
+    bestAreaIdByUiMapID[uiMapID] = false
     return nil
+end
+
+local parentAreaIdByUiMapID = {}
+local function GetParentAreaIdForUiMap(uiMapID)
+    if not uiMapID then
+        return nil
+    end
+
+    if parentAreaIdByUiMapID[uiMapID] ~= nil then
+        return parentAreaIdByUiMapID[uiMapID] or nil
+    end
+
+    if not ZoneDB or not ZoneDB.GetParentZoneId then
+        return nil
+    end
+
+    local currentAreaId = GetBestAreaIdForUiMap(uiMapID)
+    local parentAreaId = currentAreaId and ZoneDB:GetParentZoneId(currentAreaId)
+    parentAreaIdByUiMapID[uiMapID] = parentAreaId or false
+
+    return parentAreaId
 end
 
 local function IsParentZoneUiMapForNamedSubZone(pinUiMapID, currentUiMapID)
@@ -363,12 +411,7 @@ local function IsParentZoneUiMapForNamedSubZone(pinUiMapID, currentUiMapID)
         return false
     end
 
-    if not ZoneDB or not ZoneDB.GetParentZoneId then
-        return false
-    end
-
-    local currentAreaId = GetBestAreaIdForUiMap(currentUiMapID)
-    local parentAreaId = currentAreaId and ZoneDB:GetParentZoneId(currentAreaId)
+    local parentAreaId = GetParentAreaIdForUiMap(currentUiMapID)
     if not parentAreaId then
         return false
     end
@@ -435,6 +478,11 @@ local function ShouldShowMinimapPinForUiMap(data, currentUiMapID)
 end
 
 local function UpdateMinimapPins(force)
+    if not _ShouldProcessQuestieMinimapPins() then
+        _ClearActiveMinimapPins()
+        return
+    end
+
     if not _HasTrackedMinimapPins() then
         minimapPinCount = 0
         lastXY, lastYY = nil, nil
@@ -495,9 +543,10 @@ local function UpdateMinimapPins(force)
         end
 
         for pin, data in pairs(minimapPins) do
-            if instanceID == data.instanceID
-                and ShouldShowMinimapPinForUiMap(data, currentUiMapID)
-                and math.abs(x-data.x) + math.abs(y-data.y) < 500 then -- questie specific fix
+            if (not pin.hidden)
+                and instanceID == data.instanceID
+                and math_abs(x-data.x) + math_abs(y-data.y) < 500 -- questie specific fix
+                and ShouldShowMinimapPinForUiMap(data, currentUiMapID) then
                 activeMinimapPins[pin] = data
                 data.keep = true
                 -- draw the pin (this may reset data.keep if outside of the map)
@@ -519,6 +568,11 @@ local function UpdateMinimapPins(force)
 end
 
 local function UpdateMinimapIconPosition()
+    if not _ShouldProcessQuestieMinimapPins() then
+        _ClearActiveMinimapPins()
+        return
+    end
+
     if next(activeMinimapPins) == nil then
         minimapPinCount = 0
         return
@@ -854,6 +908,14 @@ end
 local lastFullUpdate = 0
 local lastIconUpdate = 0
 local function OnUpdateHandler(frame, elapsed)
+    if not _ShouldProcessQuestieMinimapPins() then
+        _ClearActiveMinimapPins()
+        lastFullUpdate = 0
+        lastIconUpdate = 0
+        queueFullUpdate = false
+        return
+    end
+
     if not queueFullUpdate and not _HasTrackedMinimapPins() then
         lastFullUpdate = 0
         lastIconUpdate = 0
