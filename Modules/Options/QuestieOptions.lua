@@ -156,7 +156,7 @@ _CreateOptionsTable = function()
     local advanced_tab = QuestieOptions.tabs.advanced:Initialize()
     coroutine.yield()
     return {
-        name = "Questie",
+        name = "Questie-335",
         handler = Questie,
         type = "group",
         childGroups = "tab",
