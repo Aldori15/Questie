@@ -12400,6 +12400,10 @@ QuestieCompat.RegisterCorrection("objectData", function()
             [objectKeys.zoneID] = zoneIDs.DRAGONBLIGHT,
         },
 
+        [191155] = {
+            [objectKeys.zoneID] = 0,
+        },
+
         [191169] = {
             [objectKeys.spawns] = {[zoneIDs.PLAGUELANDS_THE_SCARLET_ENCLAVE] = {{57.95,49}}},
         },
