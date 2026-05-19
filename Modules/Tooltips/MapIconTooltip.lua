@@ -693,8 +693,8 @@ function _MapIconTooltip:GetObjectiveTooltip(icon)
             end
             if anotherPlayer then
                 local name = UnitName("player");
-                local _, classFilename = UnitClass("player");
-                local _, _, _, argbHex = GetClassColor(classFilename)
+                local playerClass = UnitClassBase("player")
+                local _, _, _, argbHex = GetClassColor(playerClass)
                 name = " (|c" .. argbHex .. name .. "|r" .. color .. ")|r";
                 text = text .. name;
             end

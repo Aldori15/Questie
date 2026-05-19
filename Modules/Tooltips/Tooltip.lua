@@ -561,8 +561,8 @@ function QuestieTooltips:GetTooltip(key)
                     end
                 end
                 if objectivePlayerName == playerName and anotherPlayer then -- Add current player name to own objective
-                    local _, classFilename = UnitClass("player");
-                    local _, _, _, argbHex = GetClassColor(classFilename)
+                    local playerClass = UnitClassBase("player")
+                    local _, _, _, argbHex = GetClassColor(playerClass)
                     local dropIndex = strfind(objectiveInfo.text, "  |cFF999999")
                     local playerString = " (|c" .. argbHex .. objectivePlayerName .. "|r" .. objectiveInfo.color .. ")|r"
                     if dropIndex then
