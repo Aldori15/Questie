@@ -34,6 +34,14 @@ function MinimapIcon:Init()
         end
     end
     minimapButton = _LibDBIcon:GetMinimapButton("Questie")
+
+    -- Normalize icon appearance regardless of which LibDBIcon version was loaded.
+    if minimapButton and minimapButton.icon then
+        minimapButton.icon:SetWidth(18)
+        minimapButton.icon:SetHeight(18)
+        minimapButton.icon:ClearAllPoints()
+        minimapButton.icon:SetPoint("CENTER", minimapButton, "CENTER", 0, 1)
+    end
 end
 
 function _MinimapIcon:CreateDataBrokerObject()
