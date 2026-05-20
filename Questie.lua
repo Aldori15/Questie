@@ -115,6 +115,8 @@ function Questie:GetClassColor(class)
         return '|cFF9482C9';
     elseif class == 'warrior' then
         return '|cFFC79C6E';
+    elseif class == 'deathknight' then
+        return '|cFFC41F3B';
     else
         return '|cffff0000'; -- error red
     end
