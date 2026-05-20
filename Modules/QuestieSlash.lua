@@ -161,7 +161,7 @@ function QuestieSlash.HandleCommands(input)
     if mainCommand == "version" then
         local gameType = ""
         if Questie.IsWotlk then
-            gameType = "Wrath"
+            gameType = "WotLK-335"
         elseif Questie.IsEra then
             gameType = "Era"
         end
