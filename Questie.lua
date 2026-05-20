@@ -1,6 +1,3 @@
-local band = bit.band
-local strlower = string.lower
-
 -------------------------
 --Import modules.
 -------------------------
@@ -16,6 +13,9 @@ local TrackerBaseFrame = QuestieLoader:ImportModule("TrackerBaseFrame")
 local QuestieValidateGameCache = QuestieLoader:ImportModule("QuestieValidateGameCache")
 ---@type QuestieLib
 local QuestieLib = QuestieLoader:ImportModule("QuestieLib");
+
+local band = bit.band
+local strlower = string.lower
 
 function Questie:OnInitialize()
     -- This has to happen OnInitialize to be available asap
