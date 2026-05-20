@@ -20,6 +20,8 @@ local QuestieTooltips = QuestieLoader:ImportModule("QuestieTooltips");
 local QuestieMenu = QuestieLoader:ImportModule("QuestieMenu");
 ---@type AvailableQuests
 local AvailableQuests = QuestieLoader:ImportModule("AvailableQuests");
+---@type IsleOfQuelDanas
+local IsleOfQuelDanas = QuestieLoader:ImportModule("IsleOfQuelDanas");
 
 --- COMPATIBILITY ---
 local C_Timer = QuestieCompat.C_Timer
@@ -351,11 +353,17 @@ function QuestieOptions.tabs.icons:Initialize()
                             _RunFastAvailableRefresh(true)
                         end,
                     },
+                    worldstate_options = {
+                        type = "header",
+                        order = 2.10,
+                        width = "normal",
+                        name = function() return l10n('Server Worldstate Events'); end,
+                    },
                     showScourgeInvasionQuests = {
                         type = "toggle",
-                        order = 2.095,
+                        order = 2.11,
                         name = function() return l10n('Available Scourge Invasion Quests'); end,
-                        desc = function() return l10n('When this is enabled, the locations of the Scourge Invasion quests will be shown on the map/minimap. Enable this if your server has enabled the worldstate.'); end,
+                        desc = function() return l10n('When this is enabled, the locations of the Scourge Invasion quests will be shown on the map/minimap. Enable this only if your server has the Scourge Invasion worldstate event active.'); end,
                         width = 1.595,
                         disabled = function() return (not Questie.db.profile.enabled); end,
                         get = function(info) return Questie.db.profile.showScourgeInvasionQuests end,
@@ -366,9 +374,9 @@ function QuestieOptions.tabs.icons:Initialize()
                     },
                     showSunsReachQuests = {
                         type = "toggle",
-                        order = 2.096,
+                        order = 2.12,
                         name = function() return l10n('Available Sun\'s Reach Quests'); end,
-                        desc = function() return l10n('When this is enabled, the locations of the Battle for Sun\'s Reach quests will be shown based on the phase set in the Advanced settings. Enable this only if your server has the Sun\'s Reach worldstate event active.'); end,
+                        desc = function() return l10n('When this is enabled, the locations of the Battle for Sun\'s Reach quests will be shown on the map/minimap. Enable this only if your server has the Sun\'s Reach worldstate event active.'); end,
                         width = 1.595,
                         disabled = function() return (not Questie.db.profile.enabled); end,
                         get = function(info) return Questie.db.profile.showSunsReachQuests end,
@@ -377,15 +385,52 @@ function QuestieOptions.tabs.icons:Initialize()
                             _RunFastAvailableRefresh(true)
                         end,
                     },
+                    isleOfQuelDanasPhase = {
+                        type = "select",
+                        order = 2.13,
+                        width = 1.5,
+                        values = IsleOfQuelDanas.localizedPhaseNames,
+                        style = 'dropdown',
+                        hidden = function() return not Questie.db.profile.showSunsReachQuests end,
+                        name = function() return l10n("Isle of Quel'Danas Phase") end,
+                        desc = function() return l10n("Select the phase fitting your realm progress on the Isle of Quel'Danas"); end,
+                        disabled = function() return (not Questie.db.profile.enabled) end,
+                        get = function() return Questie.db.profile.isleOfQuelDanasPhase; end,
+                        set = function(_, key)
+                            Questie.db.profile.isleOfQuelDanasPhase = key
+                            QuestieQuest:SmoothReset()
+                        end,
+                    },
+                    quelDanasPhaseSpacerH = {
+                        type = "description",
+                        order = 2.14,
+                        name = "",
+                        hidden = function() return not Questie.db.profile.showSunsReachQuests end,
+                        imageWidth = 0.2,
+                        width = 0.2,
+                    },
+                    isleOfQuelDanasPhaseReminder = {
+                        type = "toggle",
+                        order = 2.15,
+                        hidden = function() return not Questie.db.profile.showSunsReachQuests end,
+                        name = function() return l10n('Disable Phase reminder'); end,
+                        desc = function() return l10n("Enable or disable the reminder on login to set the Isle of Quel'Danas phase"); end,
+                        disabled = function() return (not Questie.db.profile.enabled) end,
+                        width = 1,
+                        get = function() return Questie.db.profile.isIsleOfQuelDanasPhaseReminderDisabled; end,
+                        set = function(_, value)
+                            Questie.db.profile.isIsleOfQuelDanasPhaseReminderDisabled = value
+                        end,
+                    },
                     townsfolk_options = {
                         type = "header",
-                        order = 2.10,
+                        order = 2.20,
                         width = "normal",
                         name = function() return l10n('Other Icons'); end,
                     },
                     townsfolkSpacer1 = {
                         type = "description",
-                        order = 2.11,
+                        order = 2.21,
                         name = "",
                         desc = "",
                         image = "",
@@ -395,7 +440,7 @@ function QuestieOptions.tabs.icons:Initialize()
                     },
                     townsfolkOptions = {
                         type = "execute",
-                        order = 2.12,
+                        order = 2.22,
                         name = function() return l10n('Townsfolk'); end,
                         desc = function() return l10n('Allows to select which tracking icons (like Mailbox, Repair-NPCs) to show on the map and minimap.'); end,
                         width = 0.8,
@@ -406,7 +451,7 @@ function QuestieOptions.tabs.icons:Initialize()
                     },
                     professionOptions = {
                         type = "execute",
-                        order = 2.13,
+                        order = 2.23,
                         name = function() return l10n('Profession Trainers'); end,
                         desc = function() return l10n('Allows to select which profession trainers to show on the map and minimap.'); end,
                         width = 0.95,
@@ -417,7 +462,7 @@ function QuestieOptions.tabs.icons:Initialize()
                     },
                     vendorOptions = {
                         type = "execute",
-                        order = 2.14,
+                        order = 2.24,
                         name = function() return l10n('Vendors'); end,
                         desc = function() return l10n('Allows to select which vendors to show on the map and minimap.'); end,
                         width = 0.8,

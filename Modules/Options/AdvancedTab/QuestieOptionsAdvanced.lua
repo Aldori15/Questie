@@ -11,8 +11,6 @@ local QuestieOptionsDefaults = QuestieLoader:ImportModule("QuestieOptionsDefault
 local QuestieOptionsUtils = QuestieLoader:ImportModule("QuestieOptionsUtils");
 ---@type QuestieTracker
 local QuestieTracker = QuestieLoader:ImportModule("QuestieTracker");
----@type IsleOfQuelDanas
-local IsleOfQuelDanas = QuestieLoader:ImportModule("IsleOfQuelDanas");
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
 
@@ -144,54 +142,6 @@ function QuestieOptions.tabs.advanced:Initialize()
                     QuestieOptionsUtils:Delay(0.5, QuestieQuest.SmoothReset, l10n("Setting icon limit value to %s : Redrawing!", value))
                 end,
             },
-            quelDanasSpacer1 = QuestieOptionsUtils:Spacer(1.45, (not Questie.IsTBC)),
-            npcrules_group = {
-                type = "group",
-                order = 1.5,
-                inline = true,
-                width = 0.5,
-                name = function() return l10n("Quel'Danas Settings"); end,
-                args = {
-                    isleOfQuelDanasPhase = {
-                        type = "select",
-                        order = 1.3,
-                        width = 1.5,
-                        values = IsleOfQuelDanas.localizedPhaseNames,
-                        style = 'dropdown',
-                        name = function() return l10n("Isle of Quel'Danas Phase") end,
-                        desc = function() return l10n("Select the phase fitting your realm progress on the Isle of Quel'Danas"); end,
-                        disabled = function() return (not Questie.db.profile.enabled) end,
-                        get = function() return Questie.db.profile.isleOfQuelDanasPhase; end,
-                        set = function(_, key)
-                            Questie.db.profile.isleOfQuelDanasPhase = key
-                            QuestieQuest:SmoothReset()
-                        end,
-                    },
-                    quelDanasSpacer2 = {
-                        type = "description",
-                        order = 1.4,
-                        name = "",
-                        desc = "",
-                        image = "",
-                        imageWidth = 0.2,
-                        width = 0.2,
-                        func = function() end,
-                    },
-                    isleOfQuelDanasPhaseReminder = {
-                        type = "toggle",
-                        order = 1.5,
-                        name = function() return l10n('Disable Phase reminder'); end,
-                        desc = function() return l10n("Enable or disable the reminder on login to set the Isle of Quel'Danas phase"); end,
-                        disabled = function() return (not Questie.db.profile.enabled) end,
-                        width = 1,
-                        get = function() return Questie.db.profile.isIsleOfQuelDanasPhaseReminderDisabled; end,
-                        set = function(_, value)
-                            Questie.db.profile.isIsleOfQuelDanasPhaseReminderDisabled = value
-                        end,
-                    },
-                },
-            },
-
             Spacer_A = QuestieOptionsUtils:Spacer(2.9),
             locale_header = {
                 type = "header",
