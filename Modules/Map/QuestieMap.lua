@@ -183,7 +183,6 @@ function QuestieMap:UnloadQuestFrames(questId, iconType, noteType)
                     and ((not noteType) or frame.data.Type == noteType) then
                     frame:Unload();
                     QuestieMap.questIdFrames[questId][name] = nil
-                    _G[name] = nil
                 end
             end
         end
