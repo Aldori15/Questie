@@ -348,8 +348,7 @@ function QuestieOptions.tabs.icons:Initialize()
                         get = function(info) return Questie.db.profile.showAQWarEffortQuests end,
                         set = function(info, value)
                             Questie.db.profile.showAQWarEffortQuests = value
-                            QuestieQuest:ToggleNotes(value)
-                            QuestieQuest:SmoothReset()
+                            _RunFastAvailableRefresh(true)
                         end,
                     },
                     showScourgeInvasionQuests = {
