@@ -43,6 +43,7 @@ FIELD_ORDER = [
     "nextQuestInChain",
     "breadcrumbForQuestId",
     "breadcrumbs",
+    "requiredSpell",
     "requiredMaxLevel",
     "questFlags",
     "specialFlags",
@@ -66,10 +67,28 @@ FIELD_KIND = {
     "nextQuestInChain": "int",
     "breadcrumbForQuestId": "int",
     "breadcrumbs": "list",
+    "requiredSpell": "int",
     "requiredMaxLevel": "int",
     "questFlags": "int",
     "specialFlags": "int",
 }
+
+CONDITION_SOURCE_TYPE_QUEST_AVAILABLE = 19
+CONDITION_QUESTREWARDED = 8
+CONDITION_SPELL = 25
+
+CONDITION_KEY_COLUMNS = (
+    "SourceTypeOrReferenceId",
+    "SourceGroup",
+    "SourceEntry",
+    "SourceId",
+    "ElseGroup",
+    "ConditionTypeOrReference",
+    "ConditionTarget",
+    "ConditionValue1",
+    "ConditionValue2",
+    "ConditionValue3",
+)
 
 EMPTY_OBJECTIVES = ((), (), ())
 
@@ -1405,6 +1424,228 @@ def apply_sql_delete(statement, table_name, rows, key_column="ID"):
         rows.pop(quest_id, None)
 
 
+def condition_row_key(row):
+    return tuple(int(row.get(column) or 0) for column in CONDITION_KEY_COLUMNS)
+
+
+def split_sql_and_clauses(where_clause):
+    clauses = []
+    current = []
+    index = 0
+    in_string = False
+    quote = ""
+    escaped = False
+    depth = 0
+
+    while index < len(where_clause):
+        char = where_clause[index]
+
+        if in_string:
+            current.append(char)
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == quote:
+                in_string = False
+            index += 1
+            continue
+
+        if char in ("'", '"'):
+            in_string = True
+            quote = char
+            current.append(char)
+            index += 1
+            continue
+
+        if char == "(":
+            depth += 1
+            current.append(char)
+            index += 1
+            continue
+
+        if char == ")":
+            depth = max(0, depth - 1)
+            current.append(char)
+            index += 1
+            continue
+
+        if (
+            depth == 0
+            and where_clause[index : index + 3].upper() == "AND"
+            and (index == 0 or not where_clause[index - 1].isalnum())
+            and (index + 3 == len(where_clause) or not where_clause[index + 3].isalnum())
+        ):
+            clauses.append("".join(current).strip())
+            current = []
+            index += 3
+            continue
+
+        current.append(char)
+        index += 1
+
+    if current:
+        clauses.append("".join(current).strip())
+
+    return clauses
+
+
+def parse_simple_where_conditions(where_clause):
+    conditions = []
+    for clause in split_sql_and_clauses(where_clause.strip().rstrip(";")):
+        clause = clause.strip()
+        while clause.startswith("(") and clause.endswith(")"):
+            clause = clause[1:-1].strip()
+
+        in_match = re.match(r"`?([A-Za-z0-9_]+)`?\s+IN\s*\((?P<values>[^)]+)\)$", clause, re.IGNORECASE | re.DOTALL)
+        if in_match:
+            try:
+                values = {
+                    parse_sql_value(value)
+                    for value in split_sql_values(in_match.group("values"))
+                }
+            except Exception:
+                return None
+            conditions.append((in_match.group(1), values))
+            continue
+
+        equal_match = re.match(r"`?([A-Za-z0-9_]+)`?\s*=\s*(?P<value>.+)$", clause, re.IGNORECASE | re.DOTALL)
+        if equal_match:
+            try:
+                value = parse_sql_value(equal_match.group("value"))
+            except Exception:
+                return None
+            conditions.append((equal_match.group(1), {value}))
+            continue
+
+        return None
+
+    return conditions
+
+
+def condition_row_matches(row, conditions):
+    for column, values in conditions:
+        if row.get(column) not in values:
+            return False
+    return True
+
+
+def apply_condition_insert(statement, columns, rows):
+    insert_match = re.search(
+        r"(?:INSERT INTO|REPLACE INTO)\s+`?conditions`?(?:\s*\((?P<columns>.*?)\))?\s*VALUES\s*(?P<values>.*)$",
+        statement,
+        re.IGNORECASE | re.DOTALL,
+    )
+    if not insert_match:
+        return
+
+    statement_columns = columns
+    if insert_match.group("columns"):
+        statement_columns = [
+            column_match.group(1)
+            for column_match in re.finditer(r"`([^`]+)`", insert_match.group("columns"))
+        ]
+
+    for row_text in split_sql_rows(insert_match.group("values")):
+        row_values = split_sql_values(row_text)
+        if len(row_values) != len(statement_columns):
+            continue
+
+        row = {}
+        try:
+            for column_name, raw_value in zip(statement_columns, row_values):
+                row[column_name] = parse_sql_value(raw_value)
+        except Exception:
+            continue
+
+        rows[condition_row_key(row)] = row
+
+
+def apply_condition_update(statement, rows):
+    update_match = re.search(
+        r"UPDATE\s+`?conditions`?\s+SET\s+(?P<set>.*?)\s+WHERE\s+(?P<where>.*)$",
+        statement,
+        re.IGNORECASE | re.DOTALL,
+    )
+    if not update_match:
+        return
+
+    where_conditions = parse_simple_where_conditions(update_match.group("where"))
+    if where_conditions is None:
+        return
+
+    assignments = split_sql_values(update_match.group("set"))
+    for key, row in list(rows.items()):
+        if not condition_row_matches(row, where_conditions):
+            continue
+
+        updated_row = dict(row)
+        context = {
+            column: value
+            for column, value in updated_row.items()
+            if not isinstance(value, (list, tuple, dict))
+        }
+        for assignment in assignments:
+            assign_match = re.match(r"`?([A-Za-z0-9_]+)`?\s*=\s*(.+)$", assignment.strip(), re.DOTALL)
+            if not assign_match:
+                continue
+
+            column = assign_match.group(1)
+            expr = assign_match.group(2).strip()
+            try:
+                updated_row[column] = parse_sql_value(expr, context)
+                context[column] = updated_row[column] if updated_row[column] is not None else 0
+            except Exception:
+                continue
+
+        rows.pop(key, None)
+        rows[condition_row_key(updated_row)] = updated_row
+
+
+def apply_condition_delete(statement, rows):
+    delete_match = re.search(
+        r"DELETE FROM\s+`?conditions`?\s+WHERE\s+(?P<where>.*)$",
+        statement,
+        re.IGNORECASE | re.DOTALL,
+    )
+    if not delete_match:
+        return
+
+    where_conditions = parse_simple_where_conditions(delete_match.group("where"))
+    if where_conditions is None:
+        return
+
+    for key, row in list(rows.items()):
+        if condition_row_matches(row, where_conditions):
+            rows.pop(key, None)
+
+
+def load_acore_conditions(source_root):
+    base_file = source_root / "data" / "sql" / "base" / "db_world" / "conditions.sql"
+    updates_dir = source_root / "data" / "sql" / "updates" / "db_world"
+    columns = extract_sql_columns(base_file, "conditions")
+    rows = {}
+
+    def apply_file(path):
+        text = strip_sql_comments(path.read_text(encoding="utf-8"))
+        for statement in split_sql_statements(text):
+            if not re.search(r"\bconditions\b", statement, re.IGNORECASE):
+                continue
+            if statement.upper().startswith(("INSERT INTO", "REPLACE INTO")):
+                apply_condition_insert(statement, columns, rows)
+            elif statement.upper().startswith("UPDATE"):
+                apply_condition_update(statement, rows)
+            elif statement.upper().startswith("DELETE FROM"):
+                apply_condition_delete(statement, rows)
+
+    apply_file(base_file)
+    if updates_dir.exists():
+        for update_file in sorted(updates_dir.glob("*.sql")):
+            apply_file(update_file)
+
+    return list(rows.values())
+
+
 def extract_statement_key_ids(statement, table_name, columns, key_column="ID"):
     insert_match = re.search(
         rf"(?:INSERT INTO|REPLACE INTO)\s+`?{re.escape(table_name)}`?(?:\s*\((?P<columns>.*?)\))?\s*VALUES\s*(?P<values>.*)$",
@@ -1602,6 +1843,36 @@ def load_module_created_quest_ids(source_root):
     return module_quest_ids - core_quest_ids
 
 
+def derive_quest_availability_conditions(source_root):
+    condition_prereqs = defaultdict(set)
+    spell_conditions = defaultdict(list)
+
+    for row in load_acore_conditions(source_root):
+        if int(row.get("SourceTypeOrReferenceId") or 0) != CONDITION_SOURCE_TYPE_QUEST_AVAILABLE:
+            continue
+
+        quest_id = int(row.get("SourceEntry") or 0)
+        if not quest_id:
+            continue
+
+        condition_type = int(row.get("ConditionTypeOrReference") or 0)
+        condition_value = int(row.get("ConditionValue1") or 0)
+        is_negative = int(row.get("NegativeCondition") or 0) != 0
+
+        if condition_type == CONDITION_QUESTREWARDED and condition_value > 0 and not is_negative:
+            condition_prereqs[quest_id].add(condition_value)
+        elif condition_type == CONDITION_SPELL and condition_value > 0:
+            spell_conditions[quest_id].append(-condition_value if is_negative else condition_value)
+
+    required_spells = {}
+    for quest_id, spells in spell_conditions.items():
+        unique_spells = sorted(set(spells), key=lambda spell_id: (abs(spell_id), spell_id))
+        if len(unique_spells) == 1:
+            required_spells[quest_id] = unique_spells[0]
+
+    return condition_prereqs, required_spells
+
+
 def derive_acore_metadata(source_root, quest_template_sql=None, quest_template_addon_sql=None):
     source_quest_rows = load_acore_sql_table(source_root, "quest_template")
     source_addon_rows = load_acore_sql_table(source_root, "quest_template_addon")
@@ -1621,6 +1892,7 @@ def derive_acore_metadata(source_root, quest_template_sql=None, quest_template_a
     parent_quests = defaultdict(set)
     exclusive_groups = defaultdict(set)
     breadcrumbs_for = defaultdict(set)
+    condition_prereqs, required_spells = derive_quest_availability_conditions(source_root)
 
     for quest_id in quest_ids:
         base_row = quest_rows.get(quest_id, {})
@@ -1634,6 +1906,8 @@ def derive_acore_metadata(source_root, quest_template_sql=None, quest_template_a
             prereq_sets[quest_id].add(prev_quest)
         elif prev_quest < 0:
             parent_quests[quest_id].add(abs(prev_quest))
+
+        prereq_sets[quest_id].update(condition_prereqs.get(quest_id, set()))
 
         next_quest = int(row.get("NextQuestID") or row.get("NextQuestId") or 0)
         if next_quest > 0:
@@ -1695,6 +1969,7 @@ def derive_acore_metadata(source_root, quest_template_sql=None, quest_template_a
         metadata["nextQuestInChain"] = normalize_int(row.get("RewardNextQuest"))
         metadata["breadcrumbForQuestId"] = normalize_int(row.get("BreadcrumbForQuestId"))
         metadata["breadcrumbs"] = normalize_list(breadcrumbs_for.get(quest_id, set()))
+        metadata["requiredSpell"] = normalize_int(required_spells.get(quest_id, 0))
         metadata["requiredMaxLevel"] = normalize_int(row.get("MaxLevel"))
         metadata["questFlags"] = normalize_int(row.get("Flags"))
         metadata["specialFlags"] = normalize_int(row.get("SpecialFlags"))
@@ -1708,6 +1983,7 @@ def compare_metadata(acore_metadata, questie_metadata, creature_kill_credits, sp
     mismatches = []
     preserved_objective_expansions = []
     preserved_display_objectives = []
+    preserved_empty_prequest_clears = []
     all_quest_ids = sorted(set(acore_metadata) | set(questie_metadata))
     summary = Counter()
 
@@ -1718,6 +1994,15 @@ def compare_metadata(acore_metadata, questie_metadata, creature_kill_credits, sp
         questie = questie_metadata.get(quest_id, empty_entry)
 
         for field in FIELD_ORDER:
+            if field == "preQuestSingle" and not acore[field] and questie[field]:
+                preserved_empty_prequest_clears.append(
+                    {
+                        "questId": quest_id,
+                        "questie": questie[field],
+                    }
+                )
+                continue
+
             if field == "objectives":
                 has_display_replacement = objective_values_have_spawned_display_replacement(
                     acore[field],
@@ -1779,7 +2064,13 @@ def compare_metadata(acore_metadata, questie_metadata, creature_kill_credits, sp
                 )
                 summary[field] += 1
 
-    return mismatches, summary, preserved_objective_expansions, preserved_display_objectives
+    return (
+        mismatches,
+        summary,
+        preserved_objective_expansions,
+        preserved_display_objectives,
+        preserved_empty_prequest_clears,
+    )
 
 
 def format_named_bitmask(value, constants, prefix, exact_names=()):
@@ -1887,7 +2178,6 @@ def build_lua_suggestions(mismatches, acore_metadata, constants):
             )
 
     lines = [
-        "-- REVIEW BEFORE APPLYING.",
         "-- Generated from AzerothCore quest_template and quest_template_addon metadata.",
         "-- This fragment should be wrapped by the metadata generator into a QuestieCompat.RegisterCorrection module.",
         "",
@@ -1959,6 +2249,7 @@ def main():
         field_counts,
         preserved_objective_expansions,
         preserved_display_objectives,
+        preserved_empty_prequest_clears,
     ) = compare_metadata(
         acore_metadata,
         questie_metadata,
@@ -1981,6 +2272,7 @@ def main():
         print(f"  {field}: {summary[field]}")
     print(f"  preservedObjectiveExpansions: {len(preserved_objective_expansions)}")
     print(f"  preservedDisplayObjectives: {len(preserved_display_objectives)}")
+    print(f"  preservedEmptyPreQuestClears: {len(preserved_empty_prequest_clears)}")
     print(f"  objectiveDisplayRisks: {len(objective_display_risks)}")
 
     if mismatches:
@@ -1999,6 +2291,7 @@ def main():
                     "fieldCounts": dict(field_counts),
                     "preservedObjectiveExpansions": preserved_objective_expansions,
                     "preservedDisplayObjectives": preserved_display_objectives,
+                    "preservedEmptyPreQuestClears": preserved_empty_prequest_clears,
                     "objectiveDisplayRisks": objective_display_risks,
                     "mismatches": mismatches,
                 },

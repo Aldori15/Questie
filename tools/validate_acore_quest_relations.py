@@ -593,7 +593,6 @@ def build_lua_suggestions(mismatches, acore_relations):
         )[mismatch["relationType"]]
 
     lines = [
-        "-- REVIEW BEFORE APPLYING.",
         "-- Generated from AzerothCore static quest relation tables and item_template.startquest.",
         "-- Scripted starts, events, phasing, and intentional Questie divergences still need manual review.",
         "",
