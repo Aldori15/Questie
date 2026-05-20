@@ -97,7 +97,6 @@ function QuestieItemBlacklist:Load()
         [17012] = true, -- Core Leather
         [19767] = true, -- Primal Bat Leather
         [19768] = true, -- Primal Tiger Leather
-
         [20452] = true, -- Smoked Desert Dumplings
 
         -- stranglethorn pages
