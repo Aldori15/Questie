@@ -1183,6 +1183,34 @@ function QuestieTracker:Update()
                                 end
                             end
 
+                            -- For quests with no trackable objectives (e.g. scripted event quests like 12032),
+                            -- show the first extraObjectives description as a hint so the player knows what to do.
+                            if #quest.Objectives == 0 and next(quest.SpecialObjectives) then
+                                for _, specialObj in pairs(quest.SpecialObjectives) do
+                                    if specialObj.Description then
+                                        line = TrackerLinePool.GetNextLine()
+                                        if not line then break end
+                                        line:SetMode("objective")
+                                        line:SetOnClick("quest")
+                                        line:SetQuest(quest)
+                                        line:SetObjective(nil)
+                                        line.expandZone:Hide()
+                                        line.expandQuest:Hide()
+                                        line.criteriaMark:Hide()
+                                        line.playButton:Hide()
+                                        line.questHasSecondaryQIB = secondaryButton
+                                        line.label:ClearAllPoints()
+                                        line.label:SetPoint("TOPLEFT", line, "TOPLEFT", lineWidthQBC, 0)
+                                        line.label:SetText("|cFFFFD100" .. specialObj.Description)
+                                        _UpdateLineWidth(line, objectiveMarginLeft)
+                                        line:SetHeight(line.label:GetHeight() + 1)
+                                        line:Show()
+                                        line.label:Show()
+                                        break -- show only the first description
+                                    end
+                                end
+                            end
+
                             -- Add complete/failed Quest Objectives and tag them as either complete or failed so as to always have at least one objective.
                             -- Some quests have "Blizzard Completion Text" that is displayed to show where to go next or where to turn in the quest.
                         elseif complete == 1 or complete == -1 or quest.isComplete == true then
