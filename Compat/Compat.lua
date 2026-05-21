@@ -3899,8 +3899,6 @@ function QuestieCompat:ADDON_LOADED(event, addon)
         }
     })
 
-    QuestieCompat.LoadUiMapData(Questie.db.profile.useWotlkMapData and QuestieCompat.WOW_PROJECT_WRATH_CLASSIC)
-
     for uiMapId, data in pairs(QuestieCompat.UiMapData) do
         mapIdToUiMapId[data.mapID] = uiMapId
         mapIdToUiMapId[NormalizeMapKey(data.mapID, 0)] = uiMapId
