@@ -2513,7 +2513,7 @@ function QuestieCompat.GetQuestLogTitle(questLogIndex)
     if (isComplete == nil) then
         local numObjectives = GetNumQuestLeaderBoards(questLogIndex);
         local requiredMoney = GetQuestLogRequiredMoney(questLogIndex);
-        isComplete = (numObjectives == 0 and GetMoney() >= requiredMoney) and 1 or nil
+        isComplete = (numObjectives == 0 and requiredMoney > 0 and GetMoney() >= requiredMoney) and 1 or nil
     end
     return questTitle, level, questTag, isHeader, isCollapsed, isComplete, isDaily and 2 or 1, questID
 end

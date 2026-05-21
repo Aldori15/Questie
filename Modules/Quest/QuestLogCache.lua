@@ -158,7 +158,10 @@ local function GetNewObjectives(questId, oldObjectives, questLogIndex, isComplet
     if (not isCompleteAccordingToBlizzard) then
         -- Blizzard can return bogus empty objectives and leave the quest flagged incomplete.
         -- If every real objective is finished, treat the quest as complete.
-        isComplete = allObjectivesFinished and 1 or 0
+        -- Only infer completion if there are actual trackable objectives. Scripted event
+        -- quests have zero client-tracked objectives; the server sets isComplete = 1
+        -- when the event fires.
+        isComplete = (#newObjectives > 0 and allObjectivesFinished) and 1 or 0
     end
 
     return newObjectives, changedObjIds, isComplete
@@ -194,7 +197,8 @@ function QuestLogCache.CheckForChanges(questIdsToCheck)
 
                 if newObjectives then
                     if (not cachedQuest) or (#cachedObjectives == #newObjectives and #cachedObjectives > 0 and
-                        (cachedQuest.title ~= title or cachedQuest.questTag ~= questTag or cachedQuest.isComplete ~= isComplete)) then
+                        (cachedQuest.title ~= title or cachedQuest.questTag ~= questTag or cachedQuest.isComplete ~= isComplete)) or
+                       (cachedQuest and #cachedObjectives == 0 and cachedQuest.isComplete ~= isComplete) then
                         -- Mark all objectives changed to force update those too.
 
                         -- changedObjIds is nil from GetObjectives() for quests not having objectives. This is easiest place to change it to {}.
