@@ -3779,26 +3779,12 @@ function QuestieCompat.QuestieOptions_Initialize()
         end,
     }
 
-    optionsTable.args.advanced_tab.args.useWotlkMapData = {
-        type = "toggle",
-        order = 6.2,
-        name = "Use WotLK map data",
-        desc = "Use WotLK map data",
-        width = 1.65,
-        disabled = function() return QuestieCompat.WOW_PROJECT_ID == QuestieCompat.WOW_PROJECT_WRATH_CLASSIC end,
-        get = function (info) return QuestieOptions:GetProfileValue(info); end,
-        set = function (info, value)
-            QuestieOptions:SetProfileValue(info, value)
-            StaticPopup_Show("QUESTIE_RELOAD")
-        end,
-    }
-	
-	optionsTable.args.advanced_tab.args.useQuestieLinks = {
+    optionsTable.args.advanced_tab.args.useQuestieLinks = {
         type = "toggle",
         order = 6.3,
         name = "Use Questie Links",
         desc = "Use Questie Links",
-        width = 1.65,
+        width = "full",
         get = function (info) return QuestieOptions:GetProfileValue(info); end,
         set = function (info, value)
             QuestieOptions:SetProfileValue(info, value)
@@ -3888,7 +3874,6 @@ function QuestieCompat:ADDON_LOADED(event, addon)
         profile = {
 			isInitialLogin = true,
             initDelay = 0.01,
-            useWotlkMapData = false,
             resetDailyQuests = true,
             weeklyResetDay = 4,
 			useQuestieLinks = false,
