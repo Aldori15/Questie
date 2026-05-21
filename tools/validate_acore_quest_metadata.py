@@ -950,6 +950,12 @@ def merge_objectives_with_questie_creature_display(acore_objectives, questie_raw
     return merged
 
 
+def raw_objectives_have_display_helpers(raw_objectives):
+    if not isinstance(raw_objectives, (list, tuple)) or len(raw_objectives) <= 3:
+        return False
+    return any(bool(category) for category in raw_objectives[3:])
+
+
 def objective_record_is_supported_kill_credit_expansion(acore_record, questie_record, kill_credit_map):
     if len(acore_record) != 1 or len(questie_record) <= 1:
         return False
@@ -2004,6 +2010,34 @@ def compare_metadata(acore_metadata, questie_metadata, creature_kill_credits, sp
                 continue
 
             if field == "objectives":
+                if (
+                    acore[field] == EMPTY_OBJECTIVES
+                    and questie[field] != EMPTY_OBJECTIVES
+                ):
+                    preserved_display_objectives.append(
+                        {
+                            "questId": quest_id,
+                            "acore": acore[field],
+                            "questie": questie[field],
+                            "reason": "emptyAcoreObjectives",
+                        }
+                    )
+                    continue
+
+                if (
+                    acore[field] != questie[field]
+                    and raw_objectives_have_display_helpers(questie.get("_rawObjectives", ()))
+                ):
+                    preserved_display_objectives.append(
+                        {
+                            "questId": quest_id,
+                            "acore": acore[field],
+                            "questie": questie[field],
+                            "reason": "questieDisplayHelpers",
+                        }
+                    )
+                    continue
+
                 has_display_replacement = objective_values_have_spawned_display_replacement(
                     acore[field],
                     questie[field],

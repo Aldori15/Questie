@@ -89,11 +89,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
             [objectKeys.spawns] = {[zoneIDs.WESTFALL] = {{57.02,54.45},{57.45,24.79}}},
         },
 
-        [167] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
-        },
-
         [254] = {
             [objectKeys.factionID] = 84,
         },
@@ -470,11 +465,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
             [objectKeys.zoneID] = 0,
         },
 
-        [2333] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
-        },
-
         [2551] = {
             [objectKeys.spawns] = {[zoneIDs.STRANGLETHORN_VALE] = {{32.22,27.6}}, [zoneIDs.HELLFIRE_PENINSULA] = {{61.19,80.62}}},
         },
@@ -499,16 +489,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
 
         [2560] = {
             [objectKeys.spawns] = {[zoneIDs.STRANGLETHORN_VALE] = {{33.79,77.68},{33.95,76.78},{34.29,73.78},{36.11,80.47},{36.26,70.56},{36.56,77.09},{37.41,64.5},{37.79,76.89},{38.12,63.51},{38.8,60.32},{39.73,77.42},{40.18,60.2}}},
-        },
-
-        [2562] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
-        },
-
-        [2563] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
         },
 
         [2652] = {
@@ -599,8 +579,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
         },
 
         [2846] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
             [objectKeys.factionID] = 101,
         },
 
@@ -651,11 +629,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
         [2870] = {
             [objectKeys.spawns] = {[zoneIDs.EVERSONG_WOODS] = {{35.14,28.89}}},
             [objectKeys.zoneID] = zoneIDs.EVERSONG_WOODS,
-        },
-
-        [2872] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
         },
 
         [2875] = {
@@ -783,8 +756,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
         },
 
         [3230] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
             [objectKeys.factionID] = 83,
         },
 
@@ -908,8 +879,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
         },
 
         [3702] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
             [objectKeys.factionID] = 94,
         },
 
@@ -976,11 +945,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
             [objectKeys.factionID] = 35,
         },
 
-        [3743] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
-        },
-
         [3763] = {
             [objectKeys.spawns] = {[zoneIDs.THE_BARRENS] = {{39.84,19.44},{40.03,14.46},{40.34,45.51},{40.52,46},{40.88,45.6},{40.9,44.55},{41.11,13.96},{41.21,78.94},{41.84,81.38},{41.88,81.98},{41.89,78.65},{41.95,13.54},{41.98,78.22},{42.14,18.88},{42.72,82.78},{42.77,54.98},{43.11,54.47},{43.13,52},{44.28,82.43},{44.39,50.86},{44.48,82.95},{44.87,23.09},{45.08,22.46},{45.18,51.17},{46.17,38.96},{46.73,39.7},{50.89,57.72},{51.07,57.04},{51.54,58.03},{52.39,52.85},{52.73,51.61},{52.74,52.27},{53.52,54.66},{53.53,53.04},{53.69,53.38},{53.77,54.3},{54.37,25.36},{55.31,27.26},{55.48,42.41},{55.77,43.07},{55.83,25.96},{56.69,25.71},{57.4,25.6},{58.12,26.79},{58.88,27.74},{58.92,27.17},{59.25,24.84}}},
         },
@@ -1028,22 +992,7 @@ QuestieCompat.RegisterCorrection("objectData", function()
             [objectKeys.zoneID] = 0,
         },
 
-        [3835] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
-        },
-
-        [3836] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
-        },
-
         [3837] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
-        },
-
-        [3838] = {
             [objectKeys.spawns] = {},
             [objectKeys.zoneID] = 0,
         },
@@ -1088,8 +1037,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
         },
 
         [10076] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
             [objectKeys.factionID] = 4,
         },
 
@@ -1266,11 +1213,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
             [objectKeys.factionID] = 83,
         },
 
-        [18603] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
-        },
-
         [18973] = {
             [objectKeys.factionID] = 14,
         },
@@ -1425,11 +1367,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
             [objectKeys.factionID] = 14,
         },
 
-        [19592] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
-        },
-
         [19595] = {
             [objectKeys.factionID] = 83,
         },
@@ -1473,11 +1410,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
 
         [19861] = {
             [objectKeys.factionID] = 55,
-        },
-
-        [19862] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
         },
 
         [19868] = {
@@ -1596,14 +1528,10 @@ QuestieCompat.RegisterCorrection("objectData", function()
         },
 
         [21015] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
             [objectKeys.factionID] = 35,
         },
 
         [21016] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
             [objectKeys.factionID] = 35,
         },
 
@@ -1616,26 +1544,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
         },
 
         [21128] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
-        },
-
-        [21145] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
-        },
-
-        [21146] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
-        },
-
-        [21147] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
-        },
-
-        [21148] = {
             [objectKeys.spawns] = {},
             [objectKeys.zoneID] = 0,
         },
@@ -1821,11 +1729,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
             [objectKeys.spawns] = {[zoneIDs.SWAMP_OF_SORROWS] = {{82.35,92.29},{83.51,13.78},{83.69,89.05},{84.56,83.83},{84.81,87.72},{86.15,84.97},{86.35,81.45},{87.47,78.11},{89.8,74.08},{90.68,72.38},{91.88,68.64},{93.25,36.51},{93.44,66.26},{93.78,64.08},{93.96,57.09},{94.45,41.5},{94.62,41.29},{94.65,49.99},{94.8,44.68},{94.9,59.79},{94.93,52.08}}},
         },
 
-        [25342] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
-        },
-
         [25348] = {
             [objectKeys.spawns] = {[zoneIDs.STORMWIND_CITY] = {{44.87,74.95},{46.2,73.83},{56.01,77.51}}},
         },
@@ -1838,11 +1741,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
             [objectKeys.spawns] = {[zoneIDs.STORMWIND_CITY] = {{46.2,73.84}}},
         },
 
-        [25352] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
-        },
-
         [25353] = {
             [objectKeys.spawns] = {[zoneIDs.STORMWIND_CITY] = {{45.31,70.48}}},
         },
@@ -1852,11 +1750,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
         },
 
         [25355] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
-        },
-
-        [25356] = {
             [objectKeys.spawns] = {},
             [objectKeys.zoneID] = 0,
         },
@@ -1885,16 +1778,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
 
         [28044] = {
             [objectKeys.spawns] = {[zoneIDs.STORMWIND_CITY] = {{59.12,39.99},{60.08,41.8},{70.62,46.12}}},
-        },
-
-        [28045] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
-        },
-
-        [28046] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
         },
 
         [28604] = {
@@ -2307,11 +2190,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
             [objectKeys.zoneID] = 0,
         },
 
-        [92388] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
-        },
-
         [92423] = {
             [objectKeys.factionID] = 35,
         },
@@ -2461,11 +2339,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
 
         [111148] = {
             [objectKeys.factionID] = 4,
-        },
-
-        [112877] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
         },
 
         [113531] = {
@@ -2724,11 +2597,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
             [objectKeys.factionID] = 94,
         },
 
-        [142194] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
-        },
-
         [142345] = {
             [objectKeys.spawns] = {[zoneIDs.DUN_MOROGH] = {{21.65,32.54},{21.92,30.96},{21.99,32.58},{22.12,30.99}}},
             [objectKeys.zoneID] = zoneIDs.DUN_MOROGH,
@@ -2939,8 +2807,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
         },
 
         [148838] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
             [objectKeys.factionID] = 35,
         },
 
@@ -2980,11 +2846,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
             [objectKeys.spawns] = {},
             [objectKeys.zoneID] = 0,
             [objectKeys.factionID] = 14,
-        },
-
-        [149047] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
         },
 
         [149410] = {
@@ -3047,11 +2908,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
 
         [152095] = {
             [objectKeys.factionID] = 210,
-        },
-
-        [152097] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
         },
 
         [152583] = {
@@ -3449,11 +3305,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
             [objectKeys.zoneID] = 0,
         },
 
-        [174597] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
-        },
-
         [174609] = {
             [objectKeys.spawns] = {},
             [objectKeys.zoneID] = 0,
@@ -3598,11 +3449,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
             [objectKeys.factionID] = 80,
         },
 
-        [175321] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
-        },
-
         [175322] = {
             [objectKeys.spawns] = {},
             [objectKeys.zoneID] = 0,
@@ -3635,11 +3481,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
             [objectKeys.spawns] = {},
             [objectKeys.zoneID] = 0,
             [objectKeys.factionID] = 14,
-        },
-
-        [175584] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
         },
 
         [175587] = {
@@ -3687,11 +3528,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
 
         [175657] = {
             [objectKeys.spawns] = {[zoneIDs.EASTERN_PLAGUELANDS] = {{26.85,9.56}}, [zoneIDs.NAXXRAMAS] = {{50.23,17.69}}},
-        },
-
-        [175704] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
         },
 
         [175784] = {
@@ -4088,8 +3924,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
         },
 
         [177491] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
             [objectKeys.factionID] = 35,
         },
 
@@ -4537,8 +4371,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
         },
 
         [179438] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
             [objectKeys.factionID] = 83,
         },
 
@@ -5258,11 +5090,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
             [objectKeys.factionID] = 35,
         },
 
-        [180449] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
-        },
-
         [180452] = {
             [objectKeys.factionID] = 35,
         },
@@ -5498,8 +5325,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
         [180717] = {
             [objectKeys.questStarts] = {},
             [objectKeys.questEnds] = {},
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
         },
 
         [180719] = {
@@ -6022,8 +5847,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
         [181073] = {
             [objectKeys.questStarts] = {},
             [objectKeys.questEnds] = {},
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
         },
 
         [181074] = {
@@ -6270,26 +6093,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
         [181337] = {
             [objectKeys.spawns] = {[zoneIDs.THUNDER_BLUFF] = {{21.46,26.95}}},
             [objectKeys.factionID] = 1732,
-        },
-
-        [181346] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
-        },
-
-        [181347] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
-        },
-
-        [181348] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
-        },
-
-        [181349] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
         },
 
         [181354] = {
@@ -8239,8 +8042,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
 
         [185001] = {
             [objectKeys.name] = "Shadow Council Tent 1",
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
         },
 
         [185004] = {
@@ -9810,11 +9611,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
             [objectKeys.factionID] = 35,
         },
 
-        [186565] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
-        },
-
         [186585] = {
             [objectKeys.spawns] = {[zoneIDs.HOWLING_FJORD] = {{75.92,19.72}}},
         },
@@ -9983,11 +9779,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
             [objectKeys.spawns] = {[zoneIDs.HOWLING_FJORD] = {{41.45,37.69}}},
         },
 
-        [186881] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
-        },
-
         [186885] = {
             [objectKeys.spawns] = {[zoneIDs.HOWLING_FJORD] = {{37.13,85.62}}},
         },
@@ -10008,11 +9799,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
             [objectKeys.spawns] = {[zoneIDs.ICECROWN] = {{73.61,21.8},{74.82,21.8}}},
             [objectKeys.zoneID] = zoneIDs.ICECROWN,
             [objectKeys.factionID] = 114,
-        },
-
-        [186944] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
         },
 
         [186949] = {
@@ -10498,8 +10284,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
 
         [187892] = {
             [objectKeys.questStarts] = {},
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
         },
 
         [187894] = {
@@ -11435,16 +11219,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
             [objectKeys.spawns] = {[zoneIDs.GRIZZLY_HILLS] = {{50.35,33.89},{51.21,35.03},{51.44,33.59},{52.07,32.59},{52.96,30.74},{53.19,32.12},{53.43,33.36},{53.54,31.07},{54.02,32.26},{54.05,35.23},{54.13,31.08},{54.82,28.32},{55.13,29.47},{55.21,36.37},{55.42,32},{55.49,27.2},{55.91,31.73},{56.13,28.97},{56.45,36.22},{56.5,33.32},{57.12,27.96},{57.21,32.5},{57.57,29.02},{57.78,31.47},{58.31,31.6},{58.99,30.21},{59.64,32.91},{59.67,29.47},{59.74,31.24},{60.53,33.14},{60.59,28.8},{60.78,30.06},{61.12,30.77},{61.36,29.65},{61.6,32.92},{61.74,34.35},{61.79,30.25},{62.27,31.47},{62.49,33.57},{62.66,30.95},{62.83,32.25}}},
         },
 
-        [189989] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
-        },
-
-        [189990] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
-        },
-
         [189992] = {
             [objectKeys.spawns] = {[zoneIDs.DRAGONBLIGHT] = {{45.13,47.66},{45.85,52.76},{46.19,48.88},{46.42,49.97},{46.71,46.26},{46.79,48.67},{46.92,47.44},{47.13,47.52},{47.3,45.02},{47.35,48.34},{47.62,48.23},{47.67,45.76},{47.69,50.43},{47.77,47.55},{48.05,48.23},{48.49,48.83},{48.49,49.79},{48.64,49.23},{48.68,45.11},{49.24,46.18}}},
         },
@@ -11853,11 +11627,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
             [objectKeys.zoneID] = 0,
         },
 
-        [190512] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
-        },
-
         [190523] = {
             [objectKeys.spawns] = {},
             [objectKeys.zoneID] = 0,
@@ -11895,20 +11664,10 @@ QuestieCompat.RegisterCorrection("objectData", function()
             [objectKeys.spawns] = {[zoneIDs.SHOLAZAR_BASIN] = {{46.47,63.44}}},
         },
 
-        [190550] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
-        },
-
         [190551] = {
             [objectKeys.spawns] = {},
             [objectKeys.zoneID] = 0,
             [objectKeys.factionID] = 114,
-        },
-
-        [190555] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
         },
 
         [190557] = {
@@ -12092,11 +11851,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
 
         [190766] = {
             [objectKeys.spawns] = {[zoneIDs.SHOLAZAR_BASIN] = {{55.92,70.41}}},
-        },
-
-        [190777] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
         },
 
         [190778] = {
@@ -12426,11 +12180,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
         },
 
         [191311] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
-        },
-
-        [191330] = {
             [objectKeys.spawns] = {},
             [objectKeys.zoneID] = 0,
         },
@@ -17243,11 +16992,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
             [objectKeys.zoneID] = 0,
         },
 
-        [193980] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
-        },
-
         [193981] = {
             [objectKeys.spawns] = {[zoneIDs.HOWLING_FJORD] = {{58.25,62.39},{79.4,29.21}}, [zoneIDs.UNDERCITY] = {{61.12,57.48}}, [zoneIDs.STORMWIND_CITY] = {{50.01,74.54}}, [zoneIDs.IRONFORGE] = {{61.01,44.79}}, [zoneIDs.ORGRIMMAR] = {{55.74,46.18}}, [zoneIDs.THUNDER_BLUFF] = {{29.43,21.01}}, [zoneIDs.DARNASSUS] = {{59.14,14.34}}, [zoneIDs.SILVERMOON_CITY] = {{70.13,24.46}}, [zoneIDs.BOREAN_TUNDRA] = {{41.33,54.01},{57.56,71.62}}, [zoneIDs.THE_EXODAR] = {{40.86,39.55}}, [zoneIDs.SHATTRATH_CITY] = {{36.68,43.8}}, [zoneIDs.DALARAN] = {{41.39,37.81}}},
             [objectKeys.zoneID] = zoneIDs.HOWLING_FJORD,
@@ -17289,16 +17033,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
 
         [193997] = {
             [objectKeys.spawns] = {[zoneIDs.STORM_PEAKS] = {{52.46,68.14},{52.97,64.67},{53.22,67.62},{53.71,65.34},{54.51,67.56},{55.36,64.17},{55.37,68},{55.94,67.52},{55.98,62.84},{56.26,63.5},{56.43,66.35},{56.63,63.61},{56.78,66.07},{56.8,59.59},{57,60.47},{58.24,67.83},{58.25,64.74},{58.56,61.24},{58.57,60.3},{58.6,56.92},{58.79,57.69},{58.81,65.52},{59.27,62.98},{59.92,63.94},{59.95,57.87},{60.49,56.32},{60.62,65.6},{60.73,57.48},{61.08,53.98},{61.81,58.63},{63.25,63.46},{63.56,57.8},{64.5,61.09},{65.42,62.84},{65.43,60.89},{66.46,58.15},{67.12,62.06},{67.18,57.43},{68,62.5},{68.27,64.56},{68.64,63.87},{69.07,63.7},{69.7,63.13},{70.05,54.37},{70.25,52.8},{70.25,55.84},{70.29,55.98},{71.45,60.62},{71.93,59.64},{72.09,55.67},{72.12,55.89},{72.46,55.66},{72.54,57.66},{74.09,57.75}}},
-        },
-
-        [194023] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
-        },
-
-        [194024] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
         },
 
         [194032] = {
@@ -17558,11 +17292,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
             [objectKeys.factionID] = 114,
         },
 
-        [194123] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
-        },
-
         [194126] = {
             [objectKeys.spawns] = {[zoneIDs.ZUL_DRAK] = {{71.91,25.67},{72.04,19.87},{72.15,20.5},{72.36,29.79},{72.54,31.5},{72.56,19.22},{72.65,30.5},{72.79,28.69},{73.17,18.49},{73.36,17.73},{73.39,29.5},{73.4,36.84},{73.5,21.13},{73.71,35.27},{73.73,20.35},{73.86,36.05},{74.02,21.7},{74.12,33.64},{74.17,34.24},{74.5,33.9},{74.71,39.21},{74.73,17.85},{75.5,40.96},{76.99,17.87},{78.77,41.99},{79.35,34.09},{79.78,34.74},{80.01,31.21},{80.05,33.73},{80.07,33.18},{80.26,31.56},{80.35,31.1},{80.52,34.36},{81.71,35.8},{81.72,32.98},{81.86,31.84},{82.16,32.33},{82.69,31.98},{82.79,31.36},{82.94,28.06},{83.27,29.45},{83.44,27.97},{83.59,28.99},{84.07,29.03},{84.13,25.67},{85.7,30.47},{85.9,29.33}}},
         },
@@ -17680,11 +17409,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
         },
 
         [194463] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
-        },
-
-        [194481] = {
             [objectKeys.spawns] = {},
             [objectKeys.zoneID] = 0,
         },
@@ -18068,11 +17792,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
         [195307] = {
             [objectKeys.spawns] = {[zoneIDs.DUN_MOROGH] = {{54.25,39.06},{54.25,39.1}}, [zoneIDs.ELWYNN_FOREST] = {{39.13,60.98},{39.28,60}}, [zoneIDs.DUROTAR] = {{47.28,18.05},{47.32,17.9}}, [zoneIDs.UNDERCITY] = {{62.97,15.22},{65.82,13.35}}, [zoneIDs.THUNDER_BLUFF] = {{56.34,18.68},{56.77,19.33}}, [zoneIDs.DARNASSUS] = {{76.2,26.03},{76.44,24.87},{76.47,26.09},{76.59,26.15},{77.98,26.73}}, [zoneIDs.EVERSONG_WOODS] = {{47.92,49.49},{47.99,49.43}}, [zoneIDs.TEROKKAR_FOREST] = {{39.95,21.79},{40.01,21.93},{40.05,23.07}}, [zoneIDs.AZUREMYST_ISLE] = {{47.63,56.31},{47.66,56.4},{47.71,56.19},{47.78,55.87},{47.89,56.41},{47.97,56.23},{48.03,56.21}}, [zoneIDs.DALARAN] = {{34.25,38.65},{34.34,39.31}}},
             [objectKeys.zoneID] = zoneIDs.AZUREMYST_ISLE,
-        },
-
-        [195309] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
         },
 
         [195318] = {
@@ -18526,11 +18245,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
             [objectKeys.zoneID] = zoneIDs.WETLANDS,
         },
 
-        [202168] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
-        },
-
         [202177] = {
             [objectKeys.factionID] = 94,
         },
@@ -18643,11 +18357,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
             [objectKeys.spawns] = {[zoneIDs.NAXXRAMAS] = {{53.5,50.27}}},
             [objectKeys.zoneID] = zoneIDs.NAXXRAMAS,
             [objectKeys.factionID] = 35,
-        },
-
-        [202357] = {
-            [objectKeys.spawns] = {},
-            [objectKeys.zoneID] = 0,
         },
 
         [202436] = {
