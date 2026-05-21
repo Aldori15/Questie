@@ -9387,6 +9387,10 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectives] = {nil,nil,{{13250}}},
         },
 
+        [5282] = {
+            [questKeys.objectives] = {{{10384}}},
+        },
+
         [5303] = {
             [questKeys.questLevel] = 58,
             [questKeys.requiredLevel] = 55,
@@ -10438,6 +10442,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [6124] = {
             [questKeys.objectivesText] = {"Use the Curative Animal Salve on 10 Sickly Deer that are located throughout Darkshore; doing so should cure them.  Sickly Deer have been reported starting south of the Cliffspring River to the north of Auberdine and extending all the way into southern Darkshore where the edge of Ashenvale begins."},
+            [questKeys.objectives] = {{{12296}}},
             [questKeys.specialFlags] = specialFlags.SPELL_CAST,
         },
 
@@ -10729,7 +10734,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [6661] = {
-            [questKeys.objectives] = {{{13017}},nil,{{17117}}},
+            [questKeys.objectives] = {{{13016}},nil,{{17117}}},
             [questKeys.nextQuestInChain] = 0,
             [questKeys.specialFlags] = specialFlags.SPELL_CAST,
         },
@@ -15069,7 +15074,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9303] = {
-            [questKeys.objectives] = {{{16518,nil,17}},nil,{{22962}}},
+            [questKeys.objectives] = {{{16518}},nil,{{22962}}},
             [questKeys.nextQuestInChain] = 0,
             [questKeys.breadcrumbs] = {},
             [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
@@ -16078,7 +16083,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [9629] = {
             [questKeys.objectivesText] = {"Morae at Blood Watch wants you to 'mark' 6 Blacksilt Scouts using the Murloc Tagger. "},
-            [questKeys.objectives] = {{{17326,nil,17}},nil,{{23995}}},
+            [questKeys.objectives] = {{{17326}},nil,{{23995}}},
             [questKeys.specialFlags] = specialFlags.SPELL_CAST,
         },
 
@@ -16527,7 +16532,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9849] = {
-            [questKeys.objectives] = {{{18181}},nil,{{24501}}},
+            [questKeys.objectives] = {{{17157}},nil,{{24501}}},
         },
 
         [9851] = {
@@ -17377,7 +17382,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [10255] = {
-            [questKeys.objectives] = {{{16880,nil,17}},nil,{{23337}}},
+            [questKeys.objectives] = {{{16880}},nil,{{23337}}},
         },
 
         [10258] = {
@@ -17778,7 +17783,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [10426] = {
-            [questKeys.objectives] = {{{20774,nil,17}},nil,{{29818}}},
+            [questKeys.objectives] = {{{20774}},nil,{{29818}}},
             [questKeys.specialFlags] = specialFlags.SPELL_CAST,
         },
 
@@ -18076,7 +18081,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [10584] = {
-            [questKeys.objectives] = {{{21731}},nil,{{30656}}},
+            [questKeys.objectives] = {{{21729}},nil,{{30656}}},
             [questKeys.preQuestSingle] = {10581},
         },
 
@@ -18191,7 +18196,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [10637] = {
-            [questKeys.objectives] = {{{21892}}},
             [questKeys.specialFlags] = specialFlags.SPELL_CAST,
         },
 
@@ -18272,6 +18276,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [10688] = {
+            [questKeys.objectives] = {{{21506}}},
             [questKeys.specialFlags] = specialFlags.SPELL_CAST,
         },
 
@@ -18643,7 +18648,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [10854] = {
-            [questKeys.objectives] = {{{21722,nil,17}},nil,{{31652}}},
+            [questKeys.objectives] = {{{21722}},nil,{{31652}}},
         },
 
         [10855] = {
@@ -18811,7 +18816,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [10935] = {
             [questKeys.objectivesText] = {"Speak with Anchorite Barada.  Use the prayer beads to help with the ritual, and then speak with Colonel Jules when he is saved.  Finally, return to Assistant Klatu."},
-            [questKeys.objectives] = {{{22432}},nil,{{31828}}},
+            [questKeys.objectives] = {{{22431}},nil,{{31828}}},
             [questKeys.specialFlags] = specialFlags.SPELL_CAST,
         },
 
@@ -19216,12 +19221,12 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11065] = {
-            [questKeys.objectives] = {{{22181,nil,3}},nil,{{32698}}},
+            [questKeys.objectives] = {{{22181}},nil,{{32698}}},
             [questKeys.preQuestSingle] = {11025},
         },
 
         [11066] = {
-            [questKeys.objectives] = {{{22181,nil,3}},nil,{{32698}}},
+            [questKeys.objectives] = {{{22181}},nil,{{32698}}},
         },
 
         [11072] = {
@@ -19816,7 +19821,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11314] = {
-            [questKeys.objectives] = {{{24117}}},
             [questKeys.requiredSourceItems] = {33606},
         },
 
@@ -19825,7 +19829,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11319] = {
-            [questKeys.objectives] = {{{24235}}},
             [questKeys.requiredSourceItems] = {33607},
         },
 
@@ -19920,6 +19923,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11355] = {
+            [questKeys.objectives] = {{{24329}}},
             [questKeys.requiredSourceItems] = {33806},
         },
 
@@ -19944,6 +19948,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11365] = {
+            [questKeys.objectives] = {{{24329}}},
             [questKeys.requiredSourceItems] = {33806},
         },
 
@@ -20047,6 +20052,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11418] = {
+            [questKeys.objectives] = {{{24514}}},
             [questKeys.requiredSourceItems] = {34026},
         },
 
@@ -20294,11 +20300,11 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11524] = {
-            [questKeys.objectives] = {{{24991}},nil,{{34368}}},
+            [questKeys.objectives] = {{{24972}},nil,{{34368}}},
         },
 
         [11525] = {
-            [questKeys.objectives] = {{{24991}},nil,{{34368}}},
+            [questKeys.objectives] = {{{24972}},nil,{{34368}}},
         },
 
         [11526] = {
@@ -20815,7 +20821,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11919] = {
-            [questKeys.objectives] = {{{26175}}},
             [questKeys.requiredSourceItems] = {35506},
         },
 
@@ -20859,7 +20864,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11940] = {
-            [questKeys.objectives] = {{{26175}}},
             [questKeys.requiredSourceItems] = {35506},
         },
 
@@ -20965,6 +20969,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11984] = {
+            [questKeys.objectives] = {{{26425}}},
             [questKeys.requiredSourceItems] = {35736},
             [questKeys.preQuestSingle] = {12208,12210},
             [questKeys.nextQuestInChain] = 11989,
@@ -21532,7 +21537,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [12236] = {
             [questKeys.objectivesText] = {"Windseer Grayhorn in Conquest Hold wants you to find Tur Ragepaw near Ursoc's Den and defeat Ursoc with his help.  Use the Purified Ashes of Vordrassil on Ursoc's Corpse when you've accomplished this."},
-            [questKeys.objectives] = {{{27372}}},
             [questKeys.requiredSourceItems] = {37307},
             [questKeys.preQuestSingle] = {12241,12242},
         },
@@ -21585,7 +21589,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [12249] = {
             [questKeys.objectivesText] = {"Hierophant Thayreen at Amberpine Lodge wants you to find Tur Ragepaw near Ursoc's Den and defeat Ursoc with his help.  Use the Purified Ashes of Vordrassil on Ursoc's Corpse when you've accomplished this."},
-            [questKeys.objectives] = {{{27372}}},
             [questKeys.requiredSourceItems] = {37307},
             [questKeys.preQuestSingle] = {12248,12250},
         },
@@ -22088,7 +22091,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12414] = {
-            [questKeys.objectives] = {{{26212}}},
             [questKeys.requiredSourceItems] = {37707,37708},
         },
 
@@ -22308,6 +22310,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12530] = {
+            [questKeys.objectives] = {{{28127}}},
             [questKeys.requiredSourceItems] = {38467},
         },
 
@@ -22656,7 +22659,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12673] = {
-            [questKeys.objectives] = {{{28740}},nil,{{39157}}},
+            [questKeys.objectives] = {{{28750}},nil,{{39157}}},
         },
 
         [12674] = {
@@ -22687,7 +22690,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12686] = {
-            [questKeys.objectives] = {{{28793}},nil,{{39206}}},
+            [questKeys.objectives] = {{{28802}},nil,{{39206}}},
         },
 
         [12690] = {
@@ -22740,6 +22743,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12707] = {
+            [questKeys.objectives] = {{{28851}}},
             [questKeys.requiredSourceItems] = {39268},
         },
 
@@ -23093,7 +23097,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [12886] = {
             [questKeys.objectivesText] = {"Use the Hyldnir Harpoon to defeat 10 Hyldsmeet Drakeriders at the Temple of Storms.  Use the Hyldnir Harpoon on a Column Ornament to exit the Drakkensryd and speak to Thorim when you've succeeded."},
-            [questKeys.objectives] = {{{29800}}},
+            [questKeys.objectives] = {{{29625}}},
             [questKeys.requiredSourceItems] = {41058},
         },
 
@@ -23353,6 +23357,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [13011] = {
             [questKeys.objectivesText] = {"King Jokkum in Dun Niffelem wants you to slay Jormuttar in Hibernal Cavern."},
+            [questKeys.objectives] = {{{30292}}},
             [questKeys.requiredSourceItems] = {42732},
         },
 
@@ -23523,7 +23528,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13133] = {
-            [questKeys.objectives] = {{{30880}}},
+            [questKeys.objectives] = {{{30884}}},
             [questKeys.requiredSourceItems] = {43166},
         },
 
@@ -23549,7 +23554,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13143] = {
-            [questKeys.objectives] = {{{31049}}},
             [questKeys.requiredSourceItems] = {43315},
         },
 

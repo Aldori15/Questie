@@ -74,8 +74,11 @@ FIELD_KIND = {
 }
 
 CONDITION_SOURCE_TYPE_QUEST_AVAILABLE = 19
+CONDITION_SOURCE_TYPE_SPELL = 17
 CONDITION_QUESTREWARDED = 8
 CONDITION_SPELL = 25
+CONDITION_OBJECT_ENTRY_GUID = 31
+CONDITION_OBJECT_TYPE_UNIT = 3
 
 CONDITION_KEY_COLUMNS = (
     "SourceTypeOrReferenceId",
@@ -742,7 +745,7 @@ def extract_kill_credit_objectives(value):
     return tuple(records)
 
 
-def build_acore_objectives(row):
+def build_acore_objectives(row, item_spell_target_creatures=None):
     creature_objectives = []
     object_objectives = []
     item_objectives = []
@@ -759,7 +762,67 @@ def build_acore_objectives(row):
         if entry > 0:
             item_objectives.append((entry,))
 
+    if item_spell_target_creatures and len(creature_objectives) == 1:
+        creature_objectives = [tuple(sorted(item_spell_target_creatures))]
+
     return normalize_objectives([creature_objectives, object_objectives, item_objectives])
+
+
+def build_item_use_spell_map(item_template_rows):
+    item_use_spells = defaultdict(set)
+
+    for item_id, row in item_template_rows.items():
+        for index in range(1, 6):
+            spell_id = normalize_int(row.get(f"spellid_{index}"))
+            spell_trigger = normalize_int(row.get(f"spelltrigger_{index}"))
+            if spell_id > 0 and spell_trigger == 0:
+                item_use_spells[item_id].add(spell_id)
+
+    return item_use_spells
+
+
+def build_spell_target_creature_map(condition_rows):
+    spell_target_creatures = defaultdict(set)
+
+    for row in condition_rows:
+        if normalize_int(row.get("SourceTypeOrReferenceId")) != CONDITION_SOURCE_TYPE_SPELL:
+            continue
+        if normalize_int(row.get("ConditionTypeOrReference")) != CONDITION_OBJECT_ENTRY_GUID:
+            continue
+        if normalize_int(row.get("ConditionValue1")) != CONDITION_OBJECT_TYPE_UNIT:
+            continue
+        if normalize_int(row.get("NegativeCondition")):
+            continue
+
+        spell_id = normalize_int(row.get("SourceEntry"))
+        creature_id = normalize_int(row.get("ConditionValue2"))
+        if spell_id > 0 and creature_id > 0:
+            spell_target_creatures[spell_id].add(creature_id)
+
+    return spell_target_creatures
+
+
+def get_quest_source_item_ids(row):
+    item_ids = normalize_list(
+        [
+            row.get("StartItem"),
+            row.get("ItemDrop1"),
+            row.get("ItemDrop2"),
+            row.get("ItemDrop3"),
+            row.get("ItemDrop4"),
+        ]
+    )
+    return item_ids
+
+
+def get_item_spell_target_creatures(row, item_use_spells, spell_target_creatures):
+    target_creatures = set()
+
+    for item_id in get_quest_source_item_ids(row):
+        for spell_id in item_use_spells.get(item_id, set()):
+            target_creatures.update(spell_target_creatures.get(spell_id, set()))
+
+    return target_creatures
 
 
 def build_creature_kill_credit_map(creature_template_rows):
@@ -1849,11 +1912,14 @@ def load_module_created_quest_ids(source_root):
     return module_quest_ids - core_quest_ids
 
 
-def derive_quest_availability_conditions(source_root):
+def derive_quest_availability_conditions(source_root, condition_rows=None):
     condition_prereqs = defaultdict(set)
     spell_conditions = defaultdict(list)
 
-    for row in load_acore_conditions(source_root):
+    if condition_rows is None:
+        condition_rows = load_acore_conditions(source_root)
+
+    for row in condition_rows:
         if int(row.get("SourceTypeOrReferenceId") or 0) != CONDITION_SOURCE_TYPE_QUEST_AVAILABLE:
             continue
 
@@ -1898,7 +1964,10 @@ def derive_acore_metadata(source_root, quest_template_sql=None, quest_template_a
     parent_quests = defaultdict(set)
     exclusive_groups = defaultdict(set)
     breadcrumbs_for = defaultdict(set)
-    condition_prereqs, required_spells = derive_quest_availability_conditions(source_root)
+    condition_rows = load_acore_conditions(source_root)
+    condition_prereqs, required_spells = derive_quest_availability_conditions(source_root, condition_rows)
+    item_use_spells = build_item_use_spell_map(load_acore_sql_table(source_root, "item_template", key_column="entry"))
+    spell_target_creatures = build_spell_target_creature_map(condition_rows)
 
     for quest_id in quest_ids:
         base_row = quest_rows.get(quest_id, {})
@@ -1939,7 +2008,10 @@ def derive_acore_metadata(source_root, quest_template_sql=None, quest_template_a
         metadata["requiredRaces"] = normalize_int(row.get("AllowableRaces"))
         metadata["requiredClasses"] = normalize_int(row.get("AllowableClasses"))
         metadata["objectivesText"] = normalize_text_list(row.get("LogDescription"))
-        metadata["objectives"] = build_acore_objectives(row)
+        metadata["objectives"] = build_acore_objectives(
+            row,
+            get_item_spell_target_creatures(row, item_use_spells, spell_target_creatures),
+        )
         metadata["sourceItemId"] = normalize_int(row.get("StartItem"))
         metadata["requiredSourceItems"] = normalize_list(
             [
