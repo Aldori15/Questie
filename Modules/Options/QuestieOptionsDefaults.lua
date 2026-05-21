@@ -8,7 +8,7 @@ function QuestieOptionsDefaults:Load()
             spawnFilterDistance = 28,
             availableIconLimit = 30,
             enableIconLimit = false,
-            iconLimit = 200,
+            iconLimit = 1500,
             availableScale = 1.2,
             eventScale = 1.35,
             lootScale = 1,

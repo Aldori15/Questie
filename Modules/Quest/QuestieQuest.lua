@@ -1183,11 +1183,7 @@ function QuestieQuest:PopulateObjective(quest, objectiveIndex, objective, blockI
     end
 
     if objective.spawnList and next(objective.spawnList) then
-        local maxPerType = 300
-
-        if Questie.db.profile.enableIconLimit and Questie.db.profile.iconLimit < maxPerType then
-            maxPerType = Questie.db.profile.iconLimit
-        end
+        local maxPerType = Questie.db.profile.enableIconLimit and Questie.db.profile.iconLimit or 1500
 
         local closestStarter = QuestieMap:FindClosestStarter()
         local objectiveCenter = closestStarter[quest.Id]
