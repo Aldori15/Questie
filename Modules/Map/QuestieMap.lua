@@ -1073,46 +1073,51 @@ function QuestieMap:GetNearestSpawn(objective)
 end
 
 ---@param quest Quest
+local function _GetNearestQuestFinisherSpawn(quest)
+    local finisherSpawns
+    local finisherName
+    if quest.Finisher ~= nil then
+        if quest.Finisher.Type == "monster" then
+            --finisher = QuestieDB:GetNPC(quest.Finisher.Id)
+            finisherSpawns, finisherName = QuestieDB.QueryNPCSingle(quest.Finisher.Id, "spawns"), QuestieDB.QueryNPCSingle(quest.Finisher.Id, "name")
+        elseif quest.Finisher.Type == "object" then
+            --finisher = QuestieDB:GetObject(quest.Finisher.Id)
+            finisherSpawns, finisherName = QuestieDB.QueryObjectSingle(quest.Finisher.Id, "spawns"), QuestieDB.QueryObjectSingle(quest.Finisher.Id, "name")
+        end
+    end
+    if finisherSpawns then
+        local bestDistance = 999999999
+        local playerX, playerY, playerI = HBD:GetPlayerWorldPosition()
+        if (not playerX) or (not playerY) then
+            playerX, playerY = 0, 0
+        end
+        local bestSpawn, bestSpawnZone, bestSpawnType, bestSpawnName
+        for zone, spawns in pairs(finisherSpawns) do
+            for _, spawn in pairs(spawns) do
+                if _IsSpawnVisible(spawn) then
+                    local dist, resolvedSpawn, resolvedZone = _GetDistanceToNearestResolvedSpawn(zone, spawn, playerX, playerY, playerI)
+                    if dist and dist < bestDistance then
+                        bestDistance = dist
+                        bestSpawn = resolvedSpawn
+                        bestSpawnZone = resolvedZone
+                        bestSpawnType = quest.Finisher.Type
+                        bestSpawnName = finisherName
+                    end
+                end
+            end
+        end
+        return bestSpawn, bestSpawnZone, bestSpawnName, bestSpawnType, bestDistance
+    end
+    return nil
+end
+
+---@param quest Quest
 function QuestieMap:GetNearestQuestSpawn(quest)
     if not quest then
         return nil
     end
     if quest:IsComplete() == 1 then
-        local finisherSpawns
-        local finisherName
-        if quest.Finisher ~= nil then
-            if quest.Finisher.Type == "monster" then
-                --finisher = QuestieDB:GetNPC(quest.Finisher.Id)
-                finisherSpawns, finisherName = QuestieDB.QueryNPCSingle(quest.Finisher.Id, "spawns"), QuestieDB.QueryNPCSingle(quest.Finisher.Id, "name")
-            elseif quest.Finisher.Type == "object" then
-                --finisher = QuestieDB:GetObject(quest.Finisher.Id)
-                finisherSpawns, finisherName = QuestieDB.QueryObjectSingle(quest.Finisher.Id, "spawns"), QuestieDB.QueryObjectSingle(quest.Finisher.Id, "name")
-            end
-        end
-        if finisherSpawns then -- redundant code
-            local bestDistance = 999999999
-            local playerX, playerY, playerI = HBD:GetPlayerWorldPosition()
-            if (not playerX) or (not playerY) then
-                playerX, playerY = 0, 0
-            end
-            local bestSpawn, bestSpawnZone, bestSpawnType, bestSpawnName
-            for zone, spawns in pairs(finisherSpawns) do
-                for _, spawn in pairs(spawns) do
-                    if _IsSpawnVisible(spawn) then
-                        local dist, resolvedSpawn, resolvedZone = _GetDistanceToNearestResolvedSpawn(zone, spawn, playerX, playerY, playerI)
-                        if dist and dist < bestDistance then
-                            bestDistance = dist
-                            bestSpawn = resolvedSpawn
-                            bestSpawnZone = resolvedZone
-                            bestSpawnType = quest.Finisher.Type
-                            bestSpawnName = finisherName
-                        end
-                    end
-                end
-            end
-            return bestSpawn, bestSpawnZone, bestSpawnName, bestSpawnType, bestDistance
-        end
-        return nil
+        return _GetNearestQuestFinisherSpawn(quest)
     end
 
     local bestDistance = 999999999
@@ -1140,6 +1145,9 @@ function QuestieMap:GetNearestQuestSpawn(quest)
             bestSpawnType = Type
             bestSpawnName = Name
         end
+    end
+    if (not bestSpawn) and (not next(quest.Objectives)) and (not next(quest.SpecialObjectives)) then
+        return _GetNearestQuestFinisherSpawn(quest)
     end
     return bestSpawn, bestSpawnZone, bestSpawnName, bestSpawnId, bestSpawnType, bestDistance
 end
