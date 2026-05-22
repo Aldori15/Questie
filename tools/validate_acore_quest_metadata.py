@@ -2072,15 +2072,6 @@ def compare_metadata(acore_metadata, questie_metadata, creature_kill_credits, sp
         questie = questie_metadata.get(quest_id, empty_entry)
 
         for field in FIELD_ORDER:
-            if field == "preQuestSingle" and not acore[field] and questie[field]:
-                preserved_empty_prequest_clears.append(
-                    {
-                        "questId": quest_id,
-                        "questie": questie[field],
-                    }
-                )
-                continue
-
             if field == "objectives":
                 if (
                     acore[field] == EMPTY_OBJECTIVES
