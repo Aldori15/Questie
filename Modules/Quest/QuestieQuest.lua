@@ -1310,38 +1310,49 @@ _DetermineIconsToDraw = function(quest, objective, objectiveIndex, objectiveCent
 
             for zone, spawns in pairs(spawnData.Spawns) do
                 local uiMapId = ZoneDB:GetUiMapIdByAreaId(zone)
-                for _, spawn in pairs(spawns) do
-                    if spawn[1] and spawn[2] and Phasing.IsSpawnVisible(spawn[3]) then
-                        local drawIcon = {
-                            AlreadySpawnedId = id,
-                            data = data,
-                            zone = zone,
-                            AreaID = zone,
-                            UiMapID = uiMapId,
-                            x = spawn[1],
-                            y = spawn[2],
-                            worldX = 0,
-                            worldY = 0,
-                            distance = 0,
-                            touched = nil, -- TODO change. This is meant to let lua reserve memory for all keys needed for sure.
-                        }
-                        local x, y, _ = HBD:GetWorldCoordinatesFromZone(drawIcon.x / 100, drawIcon.y / 100, uiMapId)
-                        x = x or 0
-                        y = y or 0
-                        -- Cache world coordinates for clustering calculations
-                        drawIcon.worldX = x
-                        drawIcon.worldY = y
-                        -- There are instances when X and Y are not in the same map such as in dungeons etc, we default to 0 if it is not set
-                        -- This will create a distance of 0 but it doesn't matter.
-                        local distance = QuestieLib:Euclid(objectiveCenter.x or 0, objectiveCenter.y or 0, x, y);
-                        drawIcon.distance = distance or 0 -- cache for clustering
-                        -- there can be multiple icons at same distance at different directions
-                        --local distance = floor(distance)
-                        local iconList = iconsToDraw[distance]
-                        if iconList then
-                            iconList[#iconList + 1] = drawIcon
-                        else
-                            iconsToDraw[distance] = {drawIcon}
+                if (not uiMapId) then
+                    local dungeonLocation = ZoneDB:GetDungeonLocation(zone)
+                    local fallbackZone = dungeonLocation and dungeonLocation[1] and dungeonLocation[1][1]
+                    if fallbackZone then
+                        uiMapId = ZoneDB:GetUiMapIdByAreaId(fallbackZone)
+                    end
+                end
+                if (not uiMapId) then
+                    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest] Skipping objective icon with missing UiMapID:", quest.Id, objectiveIndex, id, zone)
+                else
+                    for _, spawn in pairs(spawns) do
+                        if spawn[1] and spawn[2] and Phasing.IsSpawnVisible(spawn[3]) then
+                            local drawIcon = {
+                                AlreadySpawnedId = id,
+                                data = data,
+                                zone = zone,
+                                AreaID = zone,
+                                UiMapID = uiMapId,
+                                x = spawn[1],
+                                y = spawn[2],
+                                worldX = 0,
+                                worldY = 0,
+                                distance = 0,
+                                touched = nil, -- TODO change. This is meant to let lua reserve memory for all keys needed for sure.
+                            }
+                            local x, y, _ = HBD:GetWorldCoordinatesFromZone(drawIcon.x / 100, drawIcon.y / 100, uiMapId)
+                            x = x or 0
+                            y = y or 0
+                            -- Cache world coordinates for clustering calculations
+                            drawIcon.worldX = x
+                            drawIcon.worldY = y
+                            -- There are instances when X and Y are not in the same map such as in dungeons etc, we default to 0 if it is not set
+                            -- This will create a distance of 0 but it doesn't matter.
+                            local distance = QuestieLib:Euclid(objectiveCenter.x or 0, objectiveCenter.y or 0, x, y);
+                            drawIcon.distance = distance or 0 -- cache for clustering
+                            -- there can be multiple icons at same distance at different directions
+                            --local distance = floor(distance)
+                            local iconList = iconsToDraw[distance]
+                            if iconList then
+                                iconList[#iconList + 1] = drawIcon
+                            else
+                                iconsToDraw[distance] = {drawIcon}
+                            end
                         end
                     end
                 end
@@ -1399,55 +1410,64 @@ _DrawObjectiveIcons = function(questId, iconsToDraw, objective, maxPerType)
         end
 
         local zoneKey = icon.UiMapID
-        if (not alreadyPlacedByZone[zoneKey]) then
-            alreadyPlacedByZone[zoneKey] = {}
-        end
+        if (not zoneKey) then
+            Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest] Skipping malformed objective icon with missing UiMapID:", questId, icon.AlreadySpawnedId, icon.zone)
+        else
+            if (not alreadyPlacedByZone[zoneKey]) then
+                alreadyPlacedByZone[zoneKey] = {}
+            end
 
-        local coords = {icon.x, icon.y}
-        if _HasProperDistanceToAlreadyPlacedObjectives(coords, alreadyPlacedByZone[zoneKey]) then
-            local spawnsMapRefs = objective.AlreadySpawned[icon.AlreadySpawnedId].mapRefs
-            local spawnsMinimapRefs = objective.AlreadySpawned[icon.AlreadySpawnedId].minimapRefs
+            local coords = {icon.x, icon.y}
+            if _HasProperDistanceToAlreadyPlacedObjectives(coords, alreadyPlacedByZone[zoneKey]) then
+                local spawnedObjective = objective.AlreadySpawned[icon.AlreadySpawnedId]
+                if (not spawnedObjective) then
+                    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest] Skipping malformed objective icon with missing spawn cache:", questId, icon.AlreadySpawnedId, icon.zone)
+                else
+                    local spawnsMapRefs = spawnedObjective.mapRefs
+                    local spawnsMinimapRefs = spawnedObjective.minimapRefs
 
-            local x, y = icon.x, icon.y
-            local dungeonLocation = ZoneDB:GetDungeonLocation(icon.zone)
+                    local x, y = icon.x, icon.y
+                    local dungeonLocation = ZoneDB:GetDungeonLocation(icon.zone)
 
-            if dungeonLocation and x == -1 and y == -1 then
-                if dungeonLocation[2] then -- We have more than 1 instance entrance (e.g. Blackrock dungeons)
-                    local secondDungeonLocation = dungeonLocation[2]
-                    icon.zone = secondDungeonLocation[1]
-                    icon.UiMapID = ZoneDB:GetUiMapIdByAreaId(icon.zone)
-                    zoneKey = icon.UiMapID
-                    local dX, dY = secondDungeonLocation[2], secondDungeonLocation[3]
+                    if dungeonLocation and x == -1 and y == -1 then
+                        if dungeonLocation[2] then -- We have more than 1 instance entrance (e.g. Blackrock dungeons)
+                            local secondDungeonLocation = dungeonLocation[2]
+                            icon.zone = secondDungeonLocation[1]
+                            icon.UiMapID = ZoneDB:GetUiMapIdByAreaId(icon.zone)
+                            zoneKey = icon.UiMapID
+                            local dX, dY = secondDungeonLocation[2], secondDungeonLocation[3]
 
-                    local iconMap, iconMini = QuestieMap:DrawWorldIcon(icon.data, icon.zone, dX, dY)
+                            local iconMap, iconMini = QuestieMap:DrawWorldIcon(icon.data, icon.zone, dX, dY)
+                            if iconMap and iconMini then
+                                iconPerZone[icon.zone] = {iconMap, dX, dY}
+                                spawnsMapRefs[#spawnsMapRefs + 1] = iconMap
+                                spawnsMinimapRefs[#spawnsMinimapRefs + 1] = iconMini
+                            end
+
+                            _MarkCoordsAsAlready(zoneKey, {dX, dY})
+                            spawnedIconCount = spawnedIconCount + 1
+                        end
+
+                        local firstDungeonLocation = dungeonLocation[1]
+                        icon.zone = firstDungeonLocation[1]
+                        icon.UiMapID = ZoneDB:GetUiMapIdByAreaId(icon.zone)
+                        zoneKey = icon.UiMapID
+                        x = firstDungeonLocation[2]
+                        y = firstDungeonLocation[3]
+                        coords = {x, y}
+                    end
+
+                    local iconMap, iconMini = QuestieMap:DrawWorldIcon(icon.data, icon.zone, x, y)
                     if iconMap and iconMini then
-                        iconPerZone[icon.zone] = {iconMap, dX, dY}
+                        iconPerZone[icon.zone] = {iconMap, x, y}
                         spawnsMapRefs[#spawnsMapRefs + 1] = iconMap
                         spawnsMinimapRefs[#spawnsMinimapRefs + 1] = iconMini
                     end
 
-                    _MarkCoordsAsAlready(zoneKey, {dX, dY})
+                    _MarkCoordsAsAlready(zoneKey, coords)
                     spawnedIconCount = spawnedIconCount + 1
                 end
-
-                local firstDungeonLocation = dungeonLocation[1]
-                icon.zone = firstDungeonLocation[1]
-                icon.UiMapID = ZoneDB:GetUiMapIdByAreaId(icon.zone)
-                zoneKey = icon.UiMapID
-                x = firstDungeonLocation[2]
-                y = firstDungeonLocation[3]
-                coords = {x, y}
             end
-
-            local iconMap, iconMini = QuestieMap:DrawWorldIcon(icon.data, icon.zone, x, y)
-            if iconMap and iconMini then
-                iconPerZone[icon.zone] = {iconMap, x, y}
-                spawnsMapRefs[#spawnsMapRefs + 1] = iconMap
-                spawnsMinimapRefs[#spawnsMinimapRefs + 1] = iconMini
-            end
-
-            _MarkCoordsAsAlready(zoneKey, coords)
-            spawnedIconCount = spawnedIconCount + 1
         end
     end
 
