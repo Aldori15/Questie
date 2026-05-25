@@ -41,6 +41,8 @@ local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 local QuestLogCache = QuestieLoader:ImportModule("QuestLogCache")
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
+---@type QuestiePersistentDebug
+local QuestiePersistentDebug = QuestieLoader:ImportModule("QuestiePersistentDebug")
 
 --- COMPATIBILITY ---
 local C_Timer = QuestieCompat.C_Timer
@@ -593,6 +595,10 @@ function QuestieTracker:Update()
     -- Prevents calling the tracker too often, especially when the QuestieCombatQueue empties after combat ends
     local now = GetTime()
     if (not QuestieTracker.started) or InCombatLockdown() or (now - lastTrackerUpdate) < 0.1 then
+        if QuestiePersistentDebug and QuestiePersistentDebug.Add then
+            local reason = (not QuestieTracker.started) and "not_started" or (InCombatLockdown() and "in_combat" or "throttled")
+            QuestiePersistentDebug.Add("QuestieTracker.Update", "skipped", reason, "now", now, "lastTrackerUpdate", lastTrackerUpdate)
+        end
         return
     end
 
@@ -1717,6 +1723,9 @@ end
 
 function QuestieTracker:UpdateFormatting()
     if not allowFormattingUpdate then
+        if QuestiePersistentDebug and QuestiePersistentDebug.Add then
+            QuestiePersistentDebug.Add("QuestieTracker.UpdateFormatting", "skipped", "allowFormattingUpdate=false")
+        end
         return
     end
 
@@ -1850,10 +1859,22 @@ function QuestieTracker:UpdateHeight()
 
         if TrackerLinePool.GetCurrentLine().mode == "zone" then
             -- If a single zone is the only line in the tracker then don't add pixel padding
-            trackerQuestFrame.ScrollChildFrame:SetHeight((TrackerLinePool.GetFirstLine():GetTop() - TrackerLinePool.GetCurrentLine():GetBottom()))
+            local firstLine = TrackerLinePool.GetFirstLine()
+            local curLine = TrackerLinePool.GetCurrentLine()
+            local height = (firstLine and curLine) and (firstLine:GetTop() - curLine:GetBottom()) or 0
+            trackerQuestFrame.ScrollChildFrame:SetHeight(height)
         else
             -- Add 3 pixels to bottom of tracker to account for text that traverses beyond the GetStringHeight() function such as lower case "g".
-            trackerQuestFrame.ScrollChildFrame:SetHeight((TrackerLinePool.GetFirstLine():GetTop() - TrackerLinePool.GetCurrentLine():GetBottom() + 3))
+            local firstLine = TrackerLinePool.GetFirstLine()
+            local curLine = TrackerLinePool.GetCurrentLine()
+            local height = (firstLine and curLine) and (firstLine:GetTop() - curLine:GetBottom() + 3) or 0
+            trackerQuestFrame.ScrollChildFrame:SetHeight(height)
+        end
+
+        if QuestiePersistentDebug and QuestiePersistentDebug.Add then
+            local childHeight = trackerQuestFrame.ScrollChildFrame and trackerQuestFrame.ScrollChildFrame:GetHeight() or 0
+            local scrollRange = trackerQuestFrame.ScrollFrame and trackerQuestFrame.ScrollFrame.GetVerticalScrollRange and trackerQuestFrame.ScrollFrame:GetVerticalScrollRange() or 0
+            QuestiePersistentDebug.Add("QuestieTracker.UpdateHeight", "ScrollChildHeightSet", "childHeight", childHeight, "scrollRange", scrollRange, "lineIndex", TrackerLinePool.GetHighestIndex())
         end
 
         -- Set the baseFrame to full height so we can measure it
@@ -1893,6 +1914,12 @@ function QuestieTracker:UpdateHeight()
         trackerBaseFrame:SetHeight(trackerHeaderFrameHeight - 20)
         trackerQuestFrame:SetHeight(trackerHeaderFrameHeight - 20)
         trackerQuestFrame.ScrollChildFrame:SetHeight(trackerHeaderFrameHeight - 20)
+
+        if QuestiePersistentDebug and QuestiePersistentDebug.Add then
+            local childHeight = trackerQuestFrame.ScrollChildFrame and trackerQuestFrame.ScrollChildFrame:GetHeight() or 0
+            local scrollRange = trackerQuestFrame.ScrollFrame and trackerQuestFrame.ScrollFrame.GetVerticalScrollRange and trackerQuestFrame.ScrollFrame:GetVerticalScrollRange() or 0
+            QuestiePersistentDebug.Add("QuestieTracker.UpdateHeight", "HeaderlessHeightSet", "childHeight", childHeight, "scrollRange", scrollRange)
+        end
     end
 end
 

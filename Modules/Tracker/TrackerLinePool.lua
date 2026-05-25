@@ -30,6 +30,8 @@ local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 local QuestieLib = QuestieLoader:ImportModule("QuestieLib");
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
+---@type QuestiePersistentDebug
+local QuestiePersistentDebug = QuestieLoader:ImportModule("QuestiePersistentDebug")
 
 --- COMPATIBILITY ---
 local C_Timer = QuestieCompat.C_Timer
@@ -762,6 +764,10 @@ function TrackerLinePool.ResetLinesForChange()
         Questie:Debug(Questie.DEBUG_INFO, "[TrackerLinePool:ResetLinesForChange]")
     end
 
+    if QuestiePersistentDebug and QuestiePersistentDebug.Add then
+        QuestiePersistentDebug.Add("TrackerLinePool.ResetLinesForChange", "lineIndex", lineIndex, "inCombat", InCombatLockdown())
+    end
+
     if InCombatLockdown() or not Questie.db.profile.trackerEnabled then
         return
     end
@@ -862,6 +868,9 @@ end
 function TrackerLinePool.GetNextLine()
     lineIndex = lineIndex + 1
     if not linePool[lineIndex] then
+        if QuestiePersistentDebug and QuestiePersistentDebug.Add then
+            QuestiePersistentDebug.Add("TrackerLinePool.GetNextLine", "exhausted", "lineIndex", lineIndex)
+        end
         return nil -- past the line limit
     end
 
@@ -909,6 +918,9 @@ function TrackerLinePool.HideUnusedLines()
         Questie:Debug(Questie.DEBUG_SPAM, "[TrackerLinePool:HideUnusedLines]")
     else
         Questie:Debug(Questie.DEBUG_INFO, "[TrackerLinePool:HideUnusedLines]")
+    end
+    if QuestiePersistentDebug and QuestiePersistentDebug.Add then
+        QuestiePersistentDebug.Add("TrackerLinePool.HideUnusedLines", "lineIndex", lineIndex)
     end
     local startUnusedLines = 0
 

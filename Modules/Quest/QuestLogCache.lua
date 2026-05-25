@@ -7,6 +7,8 @@ local QuestLogCache = QuestieLoader:CreateModule("QuestLogCache")
 local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
 ---@type Sounds
 local Sounds = QuestieLoader:ImportModule("Sounds")
+---@type QuestiePersistentDebug
+local QuestiePersistentDebug = QuestieLoader:ImportModule("QuestiePersistentDebug")
 
 --- COMPATIBILITY ---
 local GetQuestLogTitle = QuestieCompat.GetQuestLogTitle
@@ -280,6 +282,18 @@ function QuestLogCache.CheckForChanges(questIdsToCheck)
     print("questIdsToCheck=", ids)
     QuestLogCache.DebugPrintCacheChanges(cacheMiss, changes)
 ]]--
+
+    if QuestiePersistentDebug and QuestiePersistentDebug.Add then
+        local changedCount = 0
+        local changedIds = {}
+        for questId in pairs(changes) do
+            changedCount = changedCount + 1
+            if #changedIds < 12 then
+                changedIds[#changedIds+1] = tostring(questId)
+            end
+        end
+        QuestiePersistentDebug.Add("QuestLogCache.CheckForChanges", "cacheMiss", cacheMiss, "changedCount", changedCount, "changedIds", table.concat(changedIds, ","))
+    end
 
     return cacheMiss, changes
 end
