@@ -76,6 +76,11 @@ function TrackerUtils:ShowQuestLog(quest)
     local questFrame = QuestLogExFrame or ClassicQuestLog or QuestLogFrame
     --HideUIPanel(questFrame) -- don't use as I don't see why to use and protected function taints in combat
     local questLogIndex = GetQuestLogIndexByID(quest.Id)
+    if (not questLogIndex) then
+        Questie:Debug(Questie.DEBUG_DEVELOP, "[TrackerUtils:ShowQuestLog] Missing quest log index for tracked quest:", quest.Id)
+        QuestieTracker:UntrackQuestId(quest.Id)
+        return
+    end
     SelectQuestLogEntry(questLogIndex)
 
     -- Scroll to the quest in the quest log
@@ -393,7 +398,9 @@ function TrackerUtils:GetCompletionText(quest)
     local completionText
     if GetQuestLogCompletionText then
         local questIndex = GetQuestLogIndexByID(quest.Id)
-        completionText = GetQuestLogCompletionText(questIndex)
+        if questIndex then
+            completionText = GetQuestLogCompletionText(questIndex)
+        end
     end
 
     if completionText then

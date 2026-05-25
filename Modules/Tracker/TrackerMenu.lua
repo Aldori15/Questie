@@ -232,7 +232,13 @@ TrackerMenu.addAbandonedQuest = function(menu, quest)
         func = function()
             LibDropDown:CloseDropDownMenus()
             local lastQuest = GetQuestLogSelection()
-            SelectQuestLogEntry(GetQuestLogIndexByID(quest.Id))
+            local questLogIndex = GetQuestLogIndexByID(quest.Id)
+            if (not questLogIndex) then
+                Questie:Debug(Questie.DEBUG_DEVELOP, "[TrackerMenu:addAbandonedQuest] Missing quest log index for tracked quest:", quest.Id)
+                QuestieTracker:UntrackQuestId(quest.Id)
+                return
+            end
+            SelectQuestLogEntry(questLogIndex)
             SetAbandonQuest()
 
             local items = GetAbandonQuestItems()
