@@ -1894,6 +1894,29 @@ function QuestieTracker:UpdateHeight()
         trackerQuestFrame:SetHeight(trackerHeaderFrameHeight - 20)
         trackerQuestFrame.ScrollChildFrame:SetHeight(trackerHeaderFrameHeight - 20)
     end
+
+    -- Clamp scroll offset and scrollbar range to valid values to avoid stuck scrolling.
+    if trackerQuestFrame.ScrollFrame and trackerQuestFrame.ScrollChildFrame then
+        local scrollFrame = trackerQuestFrame.ScrollFrame
+        local contentHeight = trackerQuestFrame.ScrollChildFrame:GetHeight()
+        local viewHeight = trackerQuestFrame:GetHeight()
+        local maxScroll = math.max(0, contentHeight - viewHeight)
+        if scrollFrame.GetVerticalScroll and scrollFrame.SetVerticalScroll then
+            local currentScroll = scrollFrame:GetVerticalScroll()
+            if currentScroll > maxScroll then
+                scrollFrame:SetVerticalScroll(maxScroll)
+            end
+        end
+        if trackerQuestFrame.ScrollBar and trackerQuestFrame.ScrollBar.SetMinMaxValues then
+            trackerQuestFrame.ScrollBar:SetMinMaxValues(0, maxScroll)
+            if trackerQuestFrame.ScrollBar.GetValue and trackerQuestFrame.ScrollBar.SetValue then
+                local currentValue = trackerQuestFrame.ScrollBar:GetValue()
+                if currentValue > maxScroll then
+                    trackerQuestFrame.ScrollBar:SetValue(maxScroll)
+                end
+            end
+        end
+    end
 end
 
 function QuestieTracker:Unhook()
