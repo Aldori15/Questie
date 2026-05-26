@@ -261,13 +261,17 @@ local function createButton(name, object, db)
 	button:SetScript("OnMouseUp", onMouseUp)
 
 	button.fadeOut = button:CreateAnimationGroup()
-	local animOut = button.fadeOut:CreateAnimation("Alpha")
-	animOut:SetOrder(1)
-	animOut:SetDuration(0.2)
-	animOut:SetFromAlpha(1)
-	animOut:SetToAlpha(0)
-	animOut:SetStartDelay(1)
-	button.fadeOut:SetToFinalAlpha(true)
+	if button.fadeOut and button.fadeOut.CreateAnimation then
+		local animOut = button.fadeOut:CreateAnimation("Alpha")
+		if animOut then
+			if animOut.SetOrder then animOut:SetOrder(1) end
+			if animOut.SetDuration then animOut:SetDuration(0.2) end
+			if animOut.SetFromAlpha then animOut:SetFromAlpha(1) end
+			if animOut.SetToAlpha then animOut:SetToAlpha(0) end
+			if animOut.SetStartDelay then animOut:SetStartDelay(1) end
+		end
+		if button.fadeOut.SetToFinalAlpha then button.fadeOut:SetToFinalAlpha(true) end
+	end
 
 	lib.objects[name] = button
 
@@ -464,13 +468,17 @@ for name, button in next, lib.objects do
 
 	if not button.fadeOut then -- Upgrade to 39
 		button.fadeOut = button:CreateAnimationGroup()
-		local animOut = button.fadeOut:CreateAnimation("Alpha")
-		animOut:SetOrder(1)
-		animOut:SetDuration(0.2)
-		animOut:SetFromAlpha(1)
-		animOut:SetToAlpha(0)
-		animOut:SetStartDelay(1)
-		button.fadeOut:SetToFinalAlpha(true)
+		if button.fadeOut and button.fadeOut.CreateAnimation then
+			local animOut = button.fadeOut:CreateAnimation("Alpha")
+			if animOut then
+				if animOut.SetOrder then animOut:SetOrder(1) end
+				if animOut.SetDuration then animOut:SetDuration(0.2) end
+				if animOut.SetFromAlpha then animOut:SetFromAlpha(1) end
+				if animOut.SetToAlpha then animOut:SetToAlpha(0) end
+				if animOut.SetStartDelay then animOut:SetStartDelay(1) end
+			end
+			if button.fadeOut.SetToFinalAlpha then button.fadeOut:SetToFinalAlpha(true) end
+		end
 	end
 end
 lib:SetButtonRadius(lib.radius) -- Upgrade to 40
