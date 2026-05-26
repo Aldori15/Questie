@@ -9,7 +9,7 @@
 ## Version: 9.6.0-335
 ## RequiredDeps:
 ## OptionalDeps: Ace3, CallbackHandler-1.0, HereBeDragons, LibDataBroker-1.1, LibDBIcon-1.0, LibSharedMedia-3.0, LibStub, LibUIDropDownMenu
-## SavedVariables: QuestieConfig QuestieDebugLogs
+## SavedVariables: QuestieConfig
 ## SavedVariablesPerCharacter: QuestieConfigCharacter
 ## X-Curse-Project-ID: 334372
 ## X-Wago-ID: qv634BKb
@@ -17,7 +17,6 @@
 
 # Loader module
 Modules\Libs\QuestieLoader.lua
-Modules\Debug\QuestiePersistentDebug.lua
 
 # COMPATIBILITY
 Modules\QuestieCompat.lua
