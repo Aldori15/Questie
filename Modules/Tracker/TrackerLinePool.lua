@@ -486,6 +486,21 @@ function TrackerLinePool.Initialize(questFrame)
 
         expandQuest:Hide()
 
+        -- create a small status icon to the left of the expand/minimize button
+        local statusIcon = CreateFrame("Button", "linePool.statusIcon" .. i, line)
+        statusIcon.texture = statusIcon:CreateTexture(nil, "OVERLAY", nil, 0)
+        statusIcon.texture:SetWidth(trackerFontSizeQuest)
+        statusIcon.texture:SetHeight(trackerFontSizeQuest)
+        statusIcon.texture:SetAllPoints(statusIcon)
+        statusIcon:SetWidth(trackerFontSizeQuest + 3)
+        statusIcon:SetHeight(trackerFontSizeQuest + 3)
+        statusIcon:SetPoint("RIGHT", expandQuest, "LEFT", -2, 0)
+        statusIcon:SetFrameLevel(100)
+        statusIcon:EnableMouse(false)
+        statusIcon:Hide()
+
+        line.statusIcon = statusIcon
+
         line.expandQuest = expandQuest
 
         linePool[i] = line
@@ -920,6 +935,9 @@ function TrackerLinePool.HideUnusedLines()
         local line = linePool[i]
         if line then -- Safe Guard to really concurrent triggers
             line:Hide()
+            if line.statusIcon then
+                line.statusIcon:Hide()
+            end
             line.mode = nil
             line.ZoneId = nil
             line.Quest = nil
@@ -1051,6 +1069,27 @@ function TrackerLinePool.SetAllItemButtonAlpha(alpha)
     --]]
 end
 
+---@param alpha number
+function TrackerLinePool.SetAllStatusIconAlpha(alpha)
+    local highestIndex = TrackerLinePool.GetHighestIndex()
+    for i = 1, highestIndex do
+        local line = linePool[i]
+        if line and line.statusIcon then
+            line.statusIcon:SetAlpha(alpha)
+        end
+    end
+end
+
+function TrackerLinePool.HideAllStatusIcons()
+    local highestIndex = TrackerLinePool.GetHighestIndex()
+    for i = 1, highestIndex do
+        local line = linePool[i]
+        if line and line.statusIcon then
+            line.statusIcon:Hide()
+        end
+    end
+end
+
 ---@param button string
 TrackerLinePool.OnClickQuest = function(self, button)
     Questie:Debug(Questie.DEBUG_DEVELOP, "[TrackerLinePool:_OnClickQuest]")
@@ -1168,15 +1207,38 @@ TrackerLinePool.SetMode = function(self, mode)
             local trackerFontSizeZone = Questie.db.profile.trackerFontSizeZone
             self.label:SetFont(LSM30:Fetch("font", Questie.db.profile.trackerFontZone), trackerFontSizeZone, Questie.db.profile.trackerFontOutline)
             self.label:SetHeight(trackerFontSizeZone)
+            if self.statusIcon then
+                self.statusIcon:Hide()
+            end
         elseif mode == "quest" or mode == "achieve" then
             local trackerFontSizeQuest = Questie.db.profile.trackerFontSizeQuest
             self.label:SetFont(LSM30:Fetch("font", Questie.db.profile.trackerFontQuest), trackerFontSizeQuest, Questie.db.profile.trackerFontOutline)
             self.label:SetHeight(trackerFontSizeQuest)
             self.button = nil
+            if self.statusIcon then
+                if mode == "quest" then
+                    self.statusIcon.texture:SetWidth(trackerFontSizeQuest)
+                    self.statusIcon.texture:SetHeight(trackerFontSizeQuest)
+                    self.statusIcon:SetWidth(trackerFontSizeQuest)
+                    self.statusIcon:SetHeight(trackerFontSizeQuest)
+                    self.statusIcon:ClearAllPoints()
+                    if self.expandQuest then
+                        self.statusIcon:SetPoint("RIGHT", self.expandQuest, "LEFT", -2, 0)
+                    else
+                        self.statusIcon:SetPoint("TOPLEFT", self, "TOPLEFT", 0, 0)
+                    end
+                    self.statusIcon:Show()
+                else
+                    self.statusIcon:Hide()
+                end
+            end
         elseif mode == "objective" then
             local trackerFontSizeObjective = Questie.db.profile.trackerFontSizeObjective
             self.label:SetFont(LSM30:Fetch("font", Questie.db.profile.trackerFontObjective), trackerFontSizeObjective, Questie.db.profile.trackerFontOutline)
             self.label:SetHeight(trackerFontSizeObjective)
+            if self.statusIcon then
+                self.statusIcon:Hide()
+            end
         end
     end
 end

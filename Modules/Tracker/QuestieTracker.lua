@@ -627,6 +627,7 @@ function QuestieTracker:Update()
     TrackerBaseFrame:Update()
     TrackerLinePool.ResetLinesForChange()
     TrackerLinePool.ResetButtonsForChange()
+    TrackerLinePool.HideAllStatusIcons()
 
     -- This is needed so the Tracker can also decrease its width
     trackerLineWidth = 0
@@ -843,6 +844,18 @@ function QuestieTracker:Update()
                         line.label:SetText(coloredQuestName .. " " .. pctColor .. "(" .. tostring(pct) .. "%)|r")
                     else
                         line.label:SetText(coloredQuestName)
+                    end
+
+                    -- Set status icon (yellow question mark for 100%, gray for incomplete)
+                    if line.statusIcon and line.statusIcon.texture then
+                        local completeIcon = Questie.usedIcons[Questie.ICON_TYPE_COMPLETE] or Questie.icons["complete"]
+                        local incompleteIcon = Questie.usedIcons[Questie.ICON_TYPE_INCOMPLETE] or Questie.icons["incomplete"]
+                        local pct = questDetails[quest.Id] and questDetails[quest.Id].questCompletePercent
+                        if type(pct) == "number" and pct >= 1 then
+                            line.statusIcon.texture:SetTexture(completeIcon)
+                        else
+                            line.statusIcon.texture:SetTexture(incompleteIcon)
+                        end
                     end
 
                     -- Check and measure Quest Label text width and update tracker width
@@ -1312,6 +1325,25 @@ function QuestieTracker:Update()
 
                     -- Adds 2 pixels and "Padding Between Quests" setting in Tracker Options
                     line:SetHeight(line.label:GetHeight() + (Questie.db.profile.trackerQuestPadding + 2))
+
+                    if line.statusIcon then
+                        local itemVisible = (line.button and line.button:IsShown()) or (line.altButton and line.altButton:IsShown())
+                        if (line.expandQuest and line.expandQuest:IsShown()) and not itemVisible then
+                            line.statusIcon:SetParent(line)
+                            line.statusIcon:ClearAllPoints()
+                            if line.expandQuest then
+                                line.statusIcon:SetPoint("RIGHT", line.expandQuest, "LEFT", -2, 0)
+                                local fl = line.expandQuest:GetFrameLevel() or 100
+                                line.statusIcon:SetFrameLevel(fl + 1)
+                            else
+                                line.statusIcon:SetPoint("TOPLEFT", line, "TOPLEFT", 0, 0)
+                                line.statusIcon:SetFrameLevel(100)
+                            end
+                            line.statusIcon:Show()
+                        else
+                            line.statusIcon:Hide()
+                        end
+                    end
                 end
 
                 primaryButton = false
