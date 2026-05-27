@@ -300,7 +300,7 @@ local advancedOptionsLocales = {
         ["zhCN"] = "打开 Questie 分析器, 这对于追踪延迟/帧数峰值的来源很有用",
         ["zhTW"] = "打開任務位置提示插件的效能分析，對於追蹤延遲/掉幀的原因很有幫助。",
         ["esES"] = "Abre el perfilador de Questie, esto es útil para rastrear la fuente de picos de latencia.",
-        ["frFR"] = "Ouvrez le profileur Questie, cela est utile pour rechercher la source des pics de latence/image.",
+        ["frFR"] = "Ouvre le profileur Questie, cela est utile pour rechercher la source des pics de latence/image.",
     },
     ["Localization Settings"] = {
         ["ptBR"] = "Configurações de localização",
