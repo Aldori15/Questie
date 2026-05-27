@@ -1,5 +1,7 @@
 # Questie-335
-This is the actively maintained successor to the [widxwer/Questie:335](https://github.com/widxwer/Questie/tree/335) fork, tracking true 3.3.5a (AzerothCore/cMaNGOS) compatibility. All 16 open issues from the archived widxwer repo have been resolved, and this fork remains ahead with ongoing backports from the upstream Questie master branch, along with additional features, fixes and refactors.
+This is the actively maintained successor to the [widxwer/Questie:335](https://github.com/widxwer/Questie/tree/335) fork, tracking true 3.3.5a (AzerothCore) compatibility.  This means that Questie's data should be a 1:1 match of what is seen on AzerothCore.  If you play on a server that has custom quest data or a server that is not Acore-driven, you may see anomalies and I cannot guarantee data to be a perfect match there.  Since I play using a local Acore server, my fork is driven by that.
+
+All 16 open issues from the archived widxwer repo have been resolved, and this fork remains ahead with ongoing backports from the upstream Questie master branch, along with additional features, fixes and refactors.
 
 A fork of the WoW Classic Questie addon aiming to provide compatibility with Wrath of the Lich King client version 3.3.5a (12340).
 # Installation
