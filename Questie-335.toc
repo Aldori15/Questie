@@ -197,6 +197,10 @@ Modules\Journey\QuestieSearchResults.lua
 
 # Tracker
 Modules\Tracker\QuestieTracker.lua
+Modules\Tracker\Sorter\Sorter.lua
+Modules\Tracker\Sorter\byComplete.lua
+Modules\Tracker\Sorter\byLevel.lua
+Modules\Tracker\Sorter\byZone.lua
 Modules\Tracker\TrackerUtils.lua
 Modules\Tracker\TrackerMenu.lua
 Modules\Tracker\TrackerFadeTicker.lua
