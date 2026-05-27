@@ -13,6 +13,8 @@ local QuestieOptionsUtils = QuestieLoader:ImportModule("QuestieOptionsUtils");
 local QuestieTracker = QuestieLoader:ImportModule("QuestieTracker");
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
+---@type QuestieJourney
+local QuestieJourney = QuestieLoader:ImportModule("QuestieJourney")
 
 QuestieOptions.tabs.advanced = {...}
 local optionsDefaults = QuestieOptionsDefaults:Load()
@@ -214,6 +216,14 @@ function QuestieOptions.tabs.advanced:Initialize()
                 func = function(_,_)
                     StaticPopup_Show("QUESTIE_JOURNEY_RESET_CONFIRM")
                 end,
+            },
+            Spacer_Browse = QuestieOptionsUtils:Spacer(4.4),
+            journeyBrowseCharacters = {
+                type = "execute",
+                order = 4.46,
+                name = function() return l10n("Import Journey data") end,
+                desc = function() return l10n("Browse other characters on this account and import their journey data.") end,
+                func = function() QuestieJourney:ShowCharacterBrowserFrame() end,
             },
             Spacer_E = QuestieOptionsUtils:Spacer(4.5),
             recompileDatabase = {
