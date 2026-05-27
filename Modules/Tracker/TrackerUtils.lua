@@ -24,6 +24,8 @@ local QuestieMap = QuestieLoader:ImportModule("QuestieMap")
 local QuestieCoords = QuestieLoader:ImportModule("QuestieCoords")
 ---@type ZoneDB
 local ZoneDB = QuestieLoader:ImportModule("ZoneDB")
+---@type QuestieLib
+local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
 
@@ -738,7 +740,16 @@ function TrackerUtils:GetSortedQuestIds()
             if vA == vB then
                 local qA = questDetails[a].quest
                 local qB = questDetails[b].quest
-                return qA and qB and qA.level < qB.level
+
+                if qA.level == qB.level then
+                    local suffixPrioA = QuestieLib.GetQuestTypeSuffixPriority(qA.Id)
+                    local suffixPrioB = QuestieLib.GetQuestTypeSuffixPriority(qB.Id)
+                    if suffixPrioA == suffixPrioB then
+                        return qA.Id < qB.Id
+                    end
+                    return suffixPrioA < suffixPrioB
+                end
+                return qA.level < qB.level
             end
 
             if sortObj == "byComplete" then
@@ -751,10 +762,20 @@ function TrackerUtils:GetSortedQuestIds()
         table.sort(sortedQuestIds, function(a, b)
             local qA = questDetails[a].quest
             local qB = questDetails[b].quest
+
+            if qA.level == qB.level then
+                local suffixPrioA = QuestieLib.GetQuestTypeSuffixPriority(qA.Id)
+                local suffixPrioB = QuestieLib.GetQuestTypeSuffixPriority(qB.Id)
+                if suffixPrioA == suffixPrioB then
+                    return qA.Id < qB.Id
+                end
+                return suffixPrioA < suffixPrioB
+            end
+
             if sortObj == "byLevel" then
-                return qA and qB and qA.level < qB.level
+                return qA.level < qB.level
             else
-                return qA and qB and qA.level > qB.level
+                return qA.level > qB.level
             end
         end)
     elseif sortObj == "byZone" then
@@ -766,6 +787,14 @@ function TrackerUtils:GetSortedQuestIds()
 
             -- Sort by Zone then by Level to mimic QuestLog sorting
             if qAZone == qBZone then
+                if qA.level == qB.level then
+                    local suffixPrioA = QuestieLib.GetQuestTypeSuffixPriority(qA.Id)
+                    local suffixPrioB = QuestieLib.GetQuestTypeSuffixPriority(qB.Id)
+                    if suffixPrioA == suffixPrioB then
+                        return qA.Id < qB.Id
+                    end
+                    return suffixPrioA < suffixPrioB
+                end
                 return qA.level < qB.level
             else
                 if qAZone ~= nil and qBZone ~= nil then

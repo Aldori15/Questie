@@ -313,6 +313,26 @@ function QuestieLib:GetQuestTypeSuffix(questId, blizzLike)
     end
 end
 
+local suffixPriority = {
+    [""] = 1, -- No suffix (normal quests) - should come first
+    ["+"] = 2, -- Elite
+    ["S"] = 3, -- Scenario
+    ["D"] = 4, -- Dungeon
+    ["H"] = 5, -- Heroic
+    ["R"] = 6, -- Raid
+    ["++"] = 7, -- Legendary
+    ["A"] = 8, -- Account
+    ["C"] = 9, -- Celestial
+    ["W"] = 10, -- World Event
+}
+
+---@param questId QuestId
+---@return number priority @The priority of the quest type suffix, lower means higher priority
+function QuestieLib.GetQuestTypeSuffixPriority(questId)
+    local suffix = QuestieLib:GetQuestTypeSuffix(questId)
+    return suffixPriority[suffix] or 999
+end
+
 ---@param questId QuestId
 ---@param levelOrNameOrIgnored Level|string|nil @Compatibility: older callers pass an ignored 2nd arg before level
 ---@param levelOrBlizzLike Level|boolean|nil @Either the quest level or the optional blizzLike flag
@@ -513,19 +533,6 @@ function QuestieLib:SanitizePattern(pattern)
 
     return sanitize_cache[pattern]
 end
-
-local suffixPriority = {
-    [""] = 1, -- No suffix (normal quests) - should come first
-    ["+"] = 2, -- Elite
-    ["S"] = 3, -- Scenario
-    ["D"] = 4, -- Dungeon
-    ["H"] = 5, -- Heroic
-    ["R"] = 6, -- Raid
-    ["++"] = 7, -- Legendary
-    ["A"] = 8, -- Account
-    ["C"] = 9, -- Celestial
-    ["W"] = 10, -- World Event
-}
 
 local function compareQuestsByLevelAndType(a, b)
     if a[1] ~= b[1] then
