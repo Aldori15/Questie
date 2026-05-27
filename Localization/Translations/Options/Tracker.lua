@@ -616,6 +616,32 @@ local trackerOptionsLocales = {
         ["frFR"] = "Afficher d'abord la progression des objectifs",
 	},
 
+    ["Show Quest Percentage"] = {
+        ["ptBR"] = "Mostrar porcentagem da missão",
+        ["ruRU"] = "Показывать процент выполнения задания",
+        ["deDE"] = "Quest-Prozent anzeigen",
+        ["koKR"] = "퀘스트 진행률(%) 표시",
+        ["esMX"] = "Mostrar porcentaje de la misión",
+        ["enUS"] = true,
+        ["zhCN"] = "显示任务完成百分比",
+        ["zhTW"] = "顯示任務完成百分比",
+        ["esES"] = "Mostrar porcentaje de la misión",
+        ["frFR"] = "Afficher le pourcentage de la quête",
+    },
+
+    ["When checked, a percentage based on quest completion will be displayed next to the quest name and colored by completion."] = {
+        ["ptBR"] = "Quando marcada, uma porcentagem baseada na conclusão da missão será exibida ao lado do nome da missão e colorida conforme a conclusão.",
+        ["ruRU"] = "Если отмечено, рядом с названием задания будет отображаться процент, основанный на прогрессе выполнения, и окрашен в зависимости от степени выполнения.",
+        ["deDE"] = "Wenn aktiviert, wird neben dem Questnamen ein Prozentsatz basierend auf dem Fortschritt angezeigt und farblich nach dem Abschlussgrad markiert.",
+        ["koKR"] = "체크하면 퀘스트 이름 옆에 퀘스트 완료도를 기반으로 한 백분율이 표시되고 완료도에 따라 색상이 적용됩니다.",
+        ["esMX"] = "Cuando está marcado, se mostrará un porcentaje junto al nombre de la misión basado en su progreso y coloreado según el grado de completitud.",
+        ["enUS"] = true,
+        ["zhCN"] = "选中时，将在任务名称旁显示基于任务完成度的百分比，并根据完成度着色。",
+        ["zhTW"] = "選中時，會在任務名稱旁顯示基於任務完成度的百分比，並依完成度著色。",
+        ["esES"] = "Cuando está marcado, se mostrará un porcentaje junto al nombre de la misión basado en su progreso y coloreado según el grado de completitud.",
+        ["frFR"] = "Si activé, un pourcentage basé sur l'avancement de la quête sera affiché à côté du nom de la quête et coloré en fonction de l'avancement.",
+    },
+
     ["When checked, objective progress will be displayed at the beginning of each objective line."] = {
         ["ptBR"] = "Quando marcado, o progresso do objetivo será exibido no início de cada linha de objetivo.",
         ["ruRU"] = "Если включено, прогресс цели задания будет отображаться в начале каждой строки цели.",

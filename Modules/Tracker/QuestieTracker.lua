@@ -639,6 +639,24 @@ function QuestieTracker:Update()
     local questItemButtonSize = 12 + trackerFontSizeQuest
     local objectiveColor = Questie.db.profile.trackerColorObjectives
 
+    local function FloatRGBToHex(r, g, b)
+        if r > 255 then r = 255 end
+        if g > 255 then g = 255 end
+        if b > 255 then b = 255 end
+        return string.format("|cFF%02x%02x%02x", math.floor(r * 254), math.floor(g * 254), math.floor(b * 254))
+    end
+
+    local function GetPercentColorHex(float)
+        if type(float) ~= "number" then
+            return FloatRGBToHex(0.937, 0.937, 0.937)
+        end
+        if float <= .50 then
+            return FloatRGBToHex(1, 0 + float * 2, 0)
+        else
+            return FloatRGBToHex(1.843 - float / 0.593, 1, (float * 2 - 1) * 0.157)
+        end
+    end
+
     local line
 
     local sortedQuestIds, questDetails = TrackerUtils:GetSortedQuestIds()
@@ -819,7 +837,13 @@ function QuestieTracker:Update()
                         coloredQuestName = QuestieLib:GetColoredQuestName(quest.Id, Questie.db.profile.trackerShowQuestLevel, (Questie.db.profile.collapseCompletedQuests and isMinimizable), false)
                     end
 
-                    line.label:SetText(coloredQuestName)
+                    if Questie.db.profile.showQuestPercent and questDetails[quest.Id] and type(questDetails[quest.Id].questCompletePercent) == "number" then
+                        local pct = math.floor(questDetails[quest.Id].questCompletePercent * 100)
+                        local pctColor = GetPercentColorHex(questDetails[quest.Id].questCompletePercent)
+                        line.label:SetText(coloredQuestName .. " " .. pctColor .. "(" .. tostring(pct) .. "%)|r")
+                    else
+                        line.label:SetText(coloredQuestName)
+                    end
 
                     -- Check and measure Quest Label text width and update tracker width
                     QuestieTracker:UpdateWidth(line.label:GetUnboundedStringWidth() + questMarginLeft + trackerMarginRight)
@@ -1151,10 +1175,22 @@ function QuestieTracker:Update()
                                         questProgress = tostring(objective.Collected) .. "/" .. tostring(objective.Needed)
 
                                         -- Set Objective text
-                                        if (Questie.db.profile.showQuestProgressFirst) then
-                                            line.label:SetText(QuestieLib:GetRGBForObjective(objective) .. questProgress .. " " .. objDesc)
-										else
-								            line.label:SetText(QuestieLib:GetRGBForObjective(objective) .. objDesc .. ": " .. questProgress)
+                                        local prefix = "- "
+                                        if Questie.db.profile.showQuestPercent and type(objective.Collected) == "number" and type(objective.Needed) == "number" and objective.Needed > 0 then
+                                            local progressColor = GetPercentColorHex(objective.Collected / objective.Needed)
+                                            local white = FloatRGBToHex(0.937, 0.937, 0.937)
+                                            if (Questie.db.profile.showQuestProgressFirst) then
+                                                line.label:SetText(white .. prefix .. "|r" .. progressColor .. questProgress .. "|r " .. white .. objDesc .. "|r")
+                                            else
+                                                line.label:SetText(white .. prefix .. objDesc .. ": " .. "|r" .. progressColor .. questProgress .. "|r")
+                                            end
+                                        else
+                                            local objColor = QuestieLib:GetRGBForObjective(objective)
+                                            if (Questie.db.profile.showQuestProgressFirst) then
+                                                line.label:SetText(objColor .. prefix .. questProgress .. " " .. objDesc .. "|r")
+                                            else
+                                                line.label:SetText(objColor .. prefix .. objDesc .. ": " .. questProgress .. "|r")
+                                            end
                                         end
                                         _UpdateLineWidth(line, objectiveMarginLeft)
 
@@ -1473,7 +1509,13 @@ function QuestieTracker:Update()
 
                                 -- Set Objective text
                                 local objDesc = achieve.Description:gsub("%.", "")
-                                line.label:SetText(QuestieLib:GetRGBForObjective({ Collected = 0, Needed = 1 }) .. objDesc)
+                                local prefix = "- "
+                                if Questie.db.profile.showQuestPercent then
+                                    local white = FloatRGBToHex(0.937, 0.937, 0.937)
+                                    line.label:SetText(white .. prefix .. objDesc .. "|r")
+                                else
+                                    line.label:SetText(QuestieLib:GetRGBForObjective({ Collected = 0, Needed = 1 }) .. prefix .. objDesc)
+                                end
                                 _UpdateLineWidth(line, objectiveMarginLeft)
 
                                 -- Set Objective state
@@ -1533,7 +1575,13 @@ function QuestieTracker:Update()
                                         local lineEnding = tostring(quantityString)
 
                                         -- Set Objective text
-                                        line.label:SetText(QuestieLib:GetRGBForObjective({ Collected = quantityProgress, Needed = quantityNeeded }) .. objDesc .. ": " .. lineEnding)
+                                        local prefix = "- "
+                                        if Questie.db.profile.showQuestPercent then
+                                            local white = FloatRGBToHex(0.937, 0.937, 0.937)
+                                            line.label:SetText(white .. prefix .. objDesc .. ": " .. "|r" .. GetPercentColorHex(quantityProgress / (quantityNeeded > 0 and quantityNeeded or 1)) .. lineEnding .. "|r")
+                                        else
+                                            line.label:SetText(QuestieLib:GetRGBForObjective({ Collected = quantityProgress, Needed = quantityNeeded }) .. prefix .. objDesc .. ": " .. lineEnding)
+                                        end
 
                                         -- Check and measure Objective text width and update tracker width
                                         QuestieTracker:UpdateWidth(line.label:GetUnboundedStringWidth() + objectiveMarginLeft + trackerMarginRight)
@@ -1544,7 +1592,13 @@ function QuestieTracker:Update()
                                         -- Split Objective description and Progress/Needed into seperate lines
                                         if (trackerLineWidth < line.label:GetUnboundedStringWidth() + objectiveMarginLeft) and (line.label:GetWidth() < line.label:GetUnboundedStringWidth() + 5) then
                                             -- Set Objective text
-                                            line.label:SetText(QuestieLib:GetRGBForObjective({ Collected = quantityProgress, Needed = quantityNeeded }) .. objDesc .. ": ")
+                                            local prefix = "- "
+                                            if Questie.db.profile.showQuestPercent then
+                                                local white = FloatRGBToHex(0.937, 0.937, 0.937)
+                                                line.label:SetText(white .. prefix .. objDesc .. ": " .. "|r")
+                                            else
+                                                line.label:SetText(QuestieLib:GetRGBForObjective({ Collected = quantityProgress, Needed = quantityNeeded }) .. prefix .. objDesc .. ": ")
+                                            end
 
                                             -- Check and measure Objective text width and update tracker width
                                             QuestieTracker:UpdateWidth(line.label:GetUnboundedStringWidth() + objectiveMarginLeft + trackerMarginRight)
@@ -1584,7 +1638,12 @@ function QuestieTracker:Update()
                                             line.label:SetPoint("TOPLEFT", line, "TOPLEFT", objectiveMarginLeft, 0)
 
                                             -- Set Objective text
-                                            line.label:SetText(QuestieLib:GetRGBForObjective({ Collected = quantityProgress, Needed = quantityNeeded }) .. "    > " .. lineEnding)
+                                            if Questie.db.profile.showQuestPercent then
+                                                local white = FloatRGBToHex(0.937, 0.937, 0.937)
+                                                line.label:SetText(white .. "    > " .. "|r" .. GetPercentColorHex(quantityProgress / (quantityNeeded > 0 and quantityNeeded or 1)) .. lineEnding .. "|r")
+                                            else
+                                                line.label:SetText(QuestieLib:GetRGBForObjective({ Collected = quantityProgress, Needed = quantityNeeded }) .. "    > " .. lineEnding)
+                                            end
 
                                             -- Check and measure Objective text width and update tracker width
                                             QuestieTracker:UpdateWidth(line.label:GetUnboundedStringWidth() + objectiveMarginLeft + trackerMarginRight)
@@ -1604,9 +1663,21 @@ function QuestieTracker:Update()
                                     else
                                         -- Set Objective text
                                         if completed then
-                                            line.label:SetText(QuestieLib:GetRGBForObjective({ Collected = 1, Needed = 1 }) .. objDesc)
+                                            local prefix = "- "
+                                            if Questie.db.profile.showQuestPercent then
+                                                local white = FloatRGBToHex(0.937, 0.937, 0.937)
+                                                line.label:SetText(white .. prefix .. objDesc .. "|r")
+                                            else
+                                                line.label:SetText(QuestieLib:GetRGBForObjective({ Collected = 1, Needed = 1 }) .. prefix .. objDesc)
+                                            end
                                         else
-                                            line.label:SetText(QuestieLib:GetRGBForObjective({ Collected = 0, Needed = 1 }) .. objDesc)
+                                            local prefix = "- "
+                                            if Questie.db.profile.showQuestPercent then
+                                                local white = FloatRGBToHex(0.937, 0.937, 0.937)
+                                                line.label:SetText(white .. prefix .. objDesc .. "|r")
+                                            else
+                                                line.label:SetText(QuestieLib:GetRGBForObjective({ Collected = 0, Needed = 1 }) .. prefix .. objDesc)
+                                            end
                                         end
 
                                         -- Set Objective criteria mark

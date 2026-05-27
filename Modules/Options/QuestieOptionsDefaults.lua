@@ -100,6 +100,7 @@ function QuestieOptionsDefaults:Load()
             stickyVoiceOverFrame = false,
             alwaysShowTracker = false,
             showQuestProgressFirst = false,
+            showQuestPercent = false,
             trackerColorObjectives = 'minimal',
             trackerSortObjectives = 'byZone',
             trackerbindSetTomTom = 'ctrlleft',
