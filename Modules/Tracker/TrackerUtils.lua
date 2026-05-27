@@ -904,7 +904,7 @@ function TrackerUtils:GetSortedQuestIds()
             local playerPosition
             questZoneProximityTimer = C_Timer.NewTicker(5.0, function()
                 if IsInInstance() and questZoneProximityTimer then
-                    Questie:Debug(Questie.DEBUG_DEVELOP, "[TrackerUtils:GetSortedQuestIds] - Zone Proximity Timer Stoped!")
+                    Questie:Debug(Questie.DEBUG_DEVELOP, "[TrackerUtils:GetSortedQuestIds] - Zone Proximity Timer Stopped!")
                     questZoneProximityTimer:Cancel()
                     questZoneProximityTimer = nil
                 else
@@ -1009,7 +1009,7 @@ function TrackerUtils:GetSortedQuestIds()
             local playerPosition
             questProximityTimer = C_Timer.NewTicker(5.0, function()
                 if IsInInstance() and questProximityTimer then
-                    Questie:Debug(Questie.DEBUG_DEVELOP, "[TrackerUtils:GetSortedQuestIds] - Proximity Timer Stoped!")
+                    Questie:Debug(Questie.DEBUG_DEVELOP, "[TrackerUtils:GetSortedQuestIds] - Proximity Timer Stopped!")
                     questProximityTimer:Cancel()
                     questProximityTimer = nil
                 else
@@ -1046,14 +1046,14 @@ function TrackerUtils:GetSortedQuestIds()
 
 
     if (sortObj ~= strmatch(sortObj, "byProximity.*")) and questProximityTimer and questProximityTimer ~= nil then
-        Questie:Debug(Questie.DEBUG_DEVELOP, "[TrackerUtils:GetSortedQuestIds] - Proximity Timer Stoped!")
+        Questie:Debug(Questie.DEBUG_DEVELOP, "[TrackerUtils:GetSortedQuestIds] - Proximity Timer Stopped!")
         questProximityTimer:Cancel()
         TrackerUtils.FilterProximityTimer = nil
         questProximityTimer = nil
     end
 
     if (sortObj ~= strmatch(sortObj, "byZonePlayerProximity.*")) and questZoneProximityTimer and questZoneProximityTimer ~= nil then
-        Questie:Debug(Questie.DEBUG_DEVELOP, "[TrackerUtils:GetSortedQuestIds] - Zone Proximity Timer Stoped!")
+        Questie:Debug(Questie.DEBUG_DEVELOP, "[TrackerUtils:GetSortedQuestIds] - Zone Proximity Timer Stopped!")
         questZoneProximityTimer:Cancel()
         TrackerUtils.FilterProximityTimer = nil
         questZoneProximityTimer = nil
