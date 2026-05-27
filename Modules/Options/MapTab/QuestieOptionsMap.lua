@@ -81,6 +81,17 @@ function QuestieOptions.tabs.map:Initialize()
                     end
                 end,
             },
+            showManualTooltipCoordinates = {
+                type = "toggle",
+                order = 6,
+                name = function() return l10n('Show Tooltip Coordinates'); end,
+                desc = function() return l10n('When enabled, map notes will include coordinates in their tooltip.'); end,
+                width = 1.55,
+                get = function(info) return QuestieOptions:GetProfileValue(info); end,
+                set = function(info, value)
+                    QuestieOptions:SetProfileValue(info, value)
+                end,
+            },
             mapCoordinatePrecision = {
                 type = "range",
                 order = 6,

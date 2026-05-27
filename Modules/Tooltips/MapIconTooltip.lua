@@ -514,7 +514,11 @@ function MapIconTooltip:Show()
                     if dataType == "string" then
                         self:AddLine(stringOrTable)
                     elseif dataType == "table" then
-                        self:AddDoubleLine(stringOrTable[1], '|cFFffffff' .. stringOrTable[2] .. '|r') --normal, white
+                        if stringOrTable[1] == "Coordinates:" and not Questie.db.profile.showManualTooltipCoordinates then
+                            -- skip coordinates when disabled
+                        else
+                            self:AddDoubleLine(stringOrTable[1], '|cFFffffff' .. stringOrTable[2] .. '|r') --normal, white
+                        end
                     end
                 end
             end

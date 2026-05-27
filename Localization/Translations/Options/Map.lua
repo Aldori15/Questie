@@ -386,6 +386,30 @@ local mapOptionsLocales = {
         ["esES"] = "Cuántos decimales de precisión tienen que tener las coordenadas en el mapa para el jugador y el ratón.\n(Por defecto: %s)",
         ["frFR"] = "Définis combien de décimales sont à inclure dans les coordonnées du joueur et du curseur.\n(Par défaut : %s)",
     },
+    ["Show Tooltip Coordinates"] = {
+        ["enUS"] = true,
+        ["deDE"] = "Koordinaten im Tooltip anzeigen",
+        ["frFR"] = "Afficher les coordonnées dans l'infobulle",
+        ["esES"] = "Mostrar coordenadas en la descripción emergente",
+        ["esMX"] = "Mostrar coordenadas en la descripción emergente",
+        ["ptBR"] = "Mostrar coordenadas na dica de ferramenta",
+        ["ruRU"] = "Показать координаты в подсказке",
+        ["zhCN"] = "显示提示框坐标",
+        ["zhTW"] = "顯示提示框座標",
+        ["koKR"] = "툴팁 좌표 표시",
+    },
+    ["When enabled, map notes will include coordinates in their tooltip."] = {
+        ["enUS"] = true,
+        ["deDE"] = "Wenn aktiviert, enthalten Kartennotizen Koordinaten im Tooltip.",
+        ["frFR"] = "Si activé, les notes de carte afficheront les coordonnées dans leur infobulle.",
+        ["esES"] = "Si está activado, las notas del mapa incluirán coordenadas en su descripción emergente.",
+        ["esMX"] = "Si está activado, las notas del mapa incluirán coordenadas en su descripción emergente.",
+        ["ptBR"] = "Quando ativado, as anotações do mapa incluirão coordenadas na dica de ferramenta.",
+        ["ruRU"] = "Если включено, заметки на карте будут отображать координаты в подсказке.",
+        ["zhCN"] = "启用后，地图标记的提示框中将显示坐标。",
+        ["zhTW"] = "啟用後，地圖標記的提示框中將顯示座標。",
+        ["koKR"] = "활성화하면 지도 메모의 툴팁에 좌표가 표시됩니다.",
+    },
 }
 
 for k, v in pairs(mapOptionsLocales) do

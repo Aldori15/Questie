@@ -92,7 +92,10 @@ local function _CopyManualTooltipDataWithCoordinates(data, x, y)
     for _, line in ipairs(tooltipData.Body or {}) do
         tinsert(copy.Body, line)
     end
-    tinsert(copy.Body, { "Coordinates:", string.format("%.2f, %.2f", x, y) })
+
+    if Questie.db.profile.showManualTooltipCoordinates then
+        tinsert(copy.Body, { "Coordinates:", string.format("%.2f, %.2f", x, y) })
+    end
 
     return copy
 end

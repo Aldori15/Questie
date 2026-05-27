@@ -32,6 +32,7 @@ function QuestieOptionsDefaults:Load()
             nameplateEnabled = true,
             minimapCoordinatesEnabled = false,
             mapCoordinatesEnabled = true,
+            showManualTooltipCoordinates = true,
             mapCoordinatePrecision = 1,
             dbmHUDEnable = false,
             dbmHUDShowAlert = true,
