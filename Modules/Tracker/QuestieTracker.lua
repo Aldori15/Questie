@@ -1168,7 +1168,9 @@ function QuestieTracker:Update()
                                     -- Set Objective based on states
                                     local objDesc = QuestieLib:GetObjectiveDescription(objective)
 
-                                    if (objective.Completed ~= true or (objective.Completed == true and #quest.Objectives > 1)) then
+                                    -- Sometimes the API returns messy objective data (finished=false, but numRequired==numFulfilled)
+                                    local questIsIncompleteButObjectiveIsComplete = ((not quest.isComplete) and objective.Completed == true and #quest.Objectives == 1)
+                                    if (objective.Completed ~= true or (objective.Completed == true and #quest.Objectives > 1) or questIsIncompleteButObjectiveIsComplete) then
                                         -- Quest objective objects can lag one update behind in 3.3.5 manual loot flow.
                                         -- Prefer latest values from QuestLogCache when available.
                                         if cachedObjectives and objective.Index and cachedObjectives[objective.Index] then
