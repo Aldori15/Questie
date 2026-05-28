@@ -3041,7 +3041,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
         },
 
         [2842] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {2199,2948,2950},
         },
 
@@ -3511,7 +3510,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
         },
 
         [3080] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {410},
         },
 
@@ -4359,7 +4357,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
         },
 
         [3577] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {4083,4781},
         },
 
@@ -6054,7 +6051,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
 
         [4363] = {
             [itemKeys.npcDrops] = {458,589,590,622,641,2044,3283,3286,3374,3375,3376,3377,3378,3392,3471,3947,3992,3993,4070,4073,4074,4416,4417,4418,5836,6206,6207,6211,6215,6222,6225,6226,6227,6230,6231,6232,6233,6234,6250,6329,7603,7849,9336,9676,11684},
-            [itemKeys.objectDrops] = {},
             [itemKeys.vendors] = {1448,1694,2682,2683,2684,2685,2687,2688,3133,3413,3495,4453,4587,5175,5519,6730,6777,8678,8679,9544,9676,11185,14637,16657,16782,17222,17421,18278,18484,18752,18775,19383,20890,26600,26898,27711,28722,28797,29688,29907,30345,30434,30825,31776,31781,33594,33634,33669,33677,37935},
             [itemKeys.relatedQuests] = {7894},
         },
@@ -6070,7 +6066,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
 
         [4371] = {
             [itemKeys.npcDrops] = {3374,3375,3377,3993,4073,4074,6206,6207,6222,6225,6226,6227,6230,6231,6232,6233,6234,6329,7603,9676,11684},
-            [itemKeys.objectDrops] = {},
             [itemKeys.vendors] = {1448,1694,2682,2683,2684,2685,2687,2688,3133,3413,3495,4453,4587,5175,5519,6730,6777,8678,8679,9544,9676,11185,14637,16657,16782,17222,17421,18278,18484,18752,18775,19383,20890,26600,26898,27711,28722,28797,29688,29907,30345,30434,30825,31776,31781,33594,33634,33669,33677,37935},
         },
 
@@ -7020,7 +7015,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
         },
 
         [4703] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {746,14436},
         },
 
@@ -7476,7 +7470,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
         },
 
         [4986] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {},
         },
 
@@ -7863,10 +7856,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
 
         [5180] = {
             [itemKeys.npcDrops] = {},
-        },
-
-        [5184] = {
-            [itemKeys.objectDrops] = {},
         },
 
         [5189] = {
@@ -8457,16 +8446,7 @@ QuestieCompat.RegisterCorrection("itemData", function()
             [itemKeys.relatedQuests] = {1086},
         },
 
-        [5639] = {
-            [itemKeys.objectDrops] = {},
-        },
-
-        [5645] = {
-            [itemKeys.objectDrops] = {},
-        },
-
         [5646] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {934,4441},
         },
 
@@ -8864,7 +8844,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
         },
 
         [5868] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {1195,1196,1197},
         },
 
@@ -10785,7 +10764,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
         },
 
         [7206] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {1861},
         },
 
@@ -10833,10 +10811,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
 
         [7267] = {
             [itemKeys.relatedQuests] = {1940},
-        },
-
-        [7268] = {
-            [itemKeys.objectDrops] = {},
         },
 
         [7270] = {
@@ -11987,18 +11961,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
 
         [7768] = {
             [itemKeys.relatedQuests] = {1536},
-        },
-
-        [7769] = {
-            [itemKeys.objectDrops] = {},
-        },
-
-        [7770] = {
-            [itemKeys.objectDrops] = {},
-        },
-
-        [7771] = {
-            [itemKeys.objectDrops] = {},
         },
 
         [7787] = {
@@ -13264,10 +13226,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
             [itemKeys.relatedQuests] = {2741,8893},
         },
 
-        [8585] = {
-            [itemKeys.objectDrops] = {},
-        },
-
         [8586] = {
             [itemKeys.relatedQuests] = {7665},
         },
@@ -13740,10 +13698,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
             [itemKeys.relatedQuests] = {2841},
         },
 
-        [9306] = {
-            [itemKeys.objectDrops] = {},
-        },
-
         [9307] = {
             [itemKeys.relatedQuests] = {2942},
         },
@@ -13775,7 +13729,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
         },
 
         [9316] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {2930},
         },
 
@@ -17363,22 +17316,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
             [itemKeys.relatedQuests] = {3523},
         },
 
-        [10691] = {
-            [itemKeys.objectDrops] = {},
-        },
-
-        [10692] = {
-            [itemKeys.objectDrops] = {},
-        },
-
-        [10693] = {
-            [itemKeys.objectDrops] = {},
-        },
-
-        [10694] = {
-            [itemKeys.objectDrops] = {},
-        },
-
         [10695] = {
             [itemKeys.relatedQuests] = {3568},
         },
@@ -17771,10 +17708,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
             [itemKeys.relatedQuests] = {3911,7201},
         },
 
-        [11131] = {
-            [itemKeys.objectDrops] = {},
-        },
-
         [11132] = {
             [itemKeys.relatedQuests] = {3883},
         },
@@ -18055,10 +17988,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
             [itemKeys.relatedQuests] = {7900,12001},
         },
 
-        [11413] = {
-            [itemKeys.objectDrops] = {},
-        },
-
         [11444] = {
             [itemKeys.foodType] = 1,
         },
@@ -18096,10 +18025,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
         [11468] = {
             [itemKeys.npcDrops] = {8891,8892,8893,8894,8895,8896,8897,8898,8899,8900,8902,8903,8904,8929,8983,9019,9033,9056,9437,9438,9439,9441,9442,9443,9445,9476,9537,9541,9545,9547,9554,9680,10043},
             [itemKeys.relatedQuests] = {4286},
-        },
-
-        [11470] = {
-            [itemKeys.objectDrops] = {},
         },
 
         [11471] = {
@@ -19197,16 +19122,8 @@ QuestieCompat.RegisterCorrection("itemData", function()
             [itemKeys.relatedQuests] = {4293,4661},
         },
 
-        [12234] = {
-            [itemKeys.objectDrops] = {},
-        },
-
         [12235] = {
             [itemKeys.relatedQuests] = {4294,4561},
-        },
-
-        [12236] = {
-            [itemKeys.objectDrops] = {},
         },
 
         [12237] = {
@@ -19335,14 +19252,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
 
         [12346] = {
             [itemKeys.relatedQuests] = {4763},
-        },
-
-        [12347] = {
-            [itemKeys.objectDrops] = {},
-        },
-
-        [12349] = {
-            [itemKeys.objectDrops] = {},
         },
 
         [12351] = {
@@ -19585,10 +19494,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
 
         [12566] = {
             [itemKeys.relatedQuests] = {4505},
-        },
-
-        [12567] = {
-            [itemKeys.objectDrops] = {},
         },
 
         [12582] = {
@@ -20094,7 +19999,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
         },
 
         [12907] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {5157,5158},
         },
 
@@ -22030,10 +21934,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
             [itemKeys.relatedQuests] = {8419,8420},
         },
 
-        [14339] = {
-            [itemKeys.objectDrops] = {},
-        },
-
         [14341] = {
             [itemKeys.vendors] = {989,1148,1286,1347,1454,1474,1672,2225,2394,2668,2669,2670,2672,2697,2698,2699,2810,2816,2819,2821,2846,3005,3091,3096,3364,3366,3367,3485,3779,3954,3955,3958,4168,4189,4225,4229,4561,4577,4589,4775,4897,5128,5135,5154,5163,5565,5783,5817,5944,6301,6567,6568,6574,6576,6731,7852,7854,7940,7947,8145,8160,8363,8681,8934,11189,11557,11874,12022,12028,12245,12941,12942,12943,12956,12957,12958,15165,15179,16366,16602,16613,16638,16689,16748,16767,16768,16826,17486,18009,18015,18277,18749,18754,18771,18772,18907,18960,19015,19017,19042,19194,19196,19197,19213,19244,19345,19372,19450,19497,19521,19532,19533,19562,19573,19722,20081,20092,20194,20250,20891,21083,21085,21113,22099,22271,23802,24054,24147,24188,24341,24356,24843,24935,24995,25010,25019,25034,25051,25082,26374,26474,26720,26939,26941,27012,27021,27026,27043,27057,27063,27070,27132,27146,27184,27195,27938,28692,28718,28726,28794,28798,28806,28810,28831,28872,29208,29270,29277,29288,30311,30345,30438,30825,31115,32477,32639,32641,33596,33601,33635,33636,33669,33681,33684,37904,37935},
             [itemKeys.relatedQuests] = {5518,5519},
@@ -22498,10 +22398,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
 
         [14644] = {
             [itemKeys.relatedQuests] = {5801,5802},
-        },
-
-        [14645] = {
-            [itemKeys.objectDrops] = {},
         },
 
         [14646] = {
@@ -23849,16 +23745,8 @@ QuestieCompat.RegisterCorrection("itemData", function()
             [itemKeys.relatedQuests] = {6127},
         },
 
-        [15843] = {
-            [itemKeys.objectDrops] = {},
-        },
-
         [15844] = {
             [itemKeys.relatedQuests] = {6122},
-        },
-
-        [15845] = {
-            [itemKeys.objectDrops] = {},
         },
 
         [15847] = {
@@ -23935,7 +23823,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
         },
 
         [15885] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {30,31,272,5061},
         },
 
@@ -25084,32 +24971,12 @@ QuestieCompat.RegisterCorrection("itemData", function()
             [itemKeys.relatedQuests] = {6601},
         },
 
-        [16967] = {
-            [itemKeys.objectDrops] = {},
-        },
-
-        [16968] = {
-            [itemKeys.objectDrops] = {},
-        },
-
-        [16969] = {
-            [itemKeys.objectDrops] = {},
-        },
-
-        [16970] = {
-            [itemKeys.objectDrops] = {},
-        },
-
         [16971] = {
             [itemKeys.foodType] = 2,
         },
 
         [16972] = {
             [itemKeys.relatedQuests] = {6621},
-        },
-
-        [16973] = {
-            [itemKeys.objectDrops] = {},
         },
 
         [16976] = {
@@ -25467,10 +25334,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
             [itemKeys.relatedQuests] = {7029,7041},
         },
 
-        [17696] = {
-            [itemKeys.objectDrops] = {},
-        },
-
         [17702] = {
             [itemKeys.npcDrops] = {13282},
             [itemKeys.relatedQuests] = {7044},
@@ -25813,10 +25676,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
 
         [18148] = {
             [itemKeys.relatedQuests] = {7381,7382},
-        },
-
-        [18151] = {
-            [itemKeys.objectDrops] = {},
         },
 
         [18204] = {
@@ -26265,7 +26124,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
 
         [18401] = {
             [itemKeys.name] = "Foror's Compendium of Dragon Slaying",
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {7507},
         },
 
@@ -28355,18 +28213,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
             [itemKeys.relatedQuests] = {8309},
         },
 
-        [20454] = {
-            [itemKeys.objectDrops] = {},
-        },
-
-        [20455] = {
-            [itemKeys.objectDrops] = {},
-        },
-
-        [20456] = {
-            [itemKeys.objectDrops] = {},
-        },
-
         [20457] = {
             [itemKeys.relatedQuests] = {8310},
         },
@@ -28846,37 +28692,30 @@ QuestieCompat.RegisterCorrection("itemData", function()
         },
 
         [20867] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {8557,8701,8710},
         },
 
         [20868] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {8556,8696,8705},
         },
 
         [20869] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {8694,8704,8706,8711},
         },
 
         [20870] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {8689,8702,8708},
         },
 
         [20871] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {8690,8695,8697,8707},
         },
 
         [20872] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {8692,8698,8703,8709},
         },
 
         [20873] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {8558,8691,8700},
         },
 
@@ -31840,32 +31679,26 @@ QuestieCompat.RegisterCorrection("itemData", function()
         },
 
         [23179] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {9324},
         },
 
         [23180] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {9325},
         },
 
         [23181] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {9326},
         },
 
         [23182] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {9330},
         },
 
         [23183] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {9331},
         },
 
         [23184] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {9332},
         },
 
@@ -32105,7 +31938,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
         },
 
         [23552] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {9403},
         },
 
@@ -32253,7 +32085,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
         },
 
         [23670] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {9433},
         },
 
@@ -32410,7 +32241,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
         },
 
         [23750] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {9504},
         },
 
@@ -32624,17 +32454,14 @@ QuestieCompat.RegisterCorrection("itemData", function()
         },
 
         [23878] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {9581},
         },
 
         [23879] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {9584},
         },
 
         [23880] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {9585},
         },
 
@@ -33089,7 +32916,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
         },
 
         [24317] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {9748},
         },
 
@@ -38447,7 +38273,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
         },
 
         [30430] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {10538},
         },
 
@@ -39625,7 +39450,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
         },
 
         [31530] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {10831},
         },
 
@@ -40536,7 +40360,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
         },
 
         [32364] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {10994},
         },
 
@@ -40715,12 +40538,10 @@ QuestieCompat.RegisterCorrection("itemData", function()
         },
 
         [32598] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {11030},
         },
 
         [32601] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {11061},
         },
 
@@ -41057,7 +40878,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
         },
 
         [33041] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {11140},
         },
 
@@ -42446,7 +42266,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
         },
 
         [34123] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {11470},
         },
 
@@ -43783,7 +43602,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
         },
 
         [35289] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {11894},
         },
 
@@ -43890,13 +43708,11 @@ QuestieCompat.RegisterCorrection("itemData", function()
         },
 
         [35568] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.requiredLevel] = 0,
             [itemKeys.relatedQuests] = {11935},
         },
 
         [35569] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.requiredLevel] = 0,
             [itemKeys.relatedQuests] = {11933},
         },
@@ -44472,7 +44288,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
         },
 
         [35806] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {12007},
         },
 
@@ -45525,7 +45340,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
         },
 
         [36733] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {12050},
         },
 
@@ -45633,7 +45447,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
         },
 
         [36772] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {12078},
         },
 
@@ -46765,7 +46578,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
         },
 
         [37250] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {12227},
         },
 
@@ -46875,7 +46687,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
         },
 
         [37303] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {12241,12248},
         },
 
@@ -47099,7 +46910,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
         },
 
         [37501] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {12279},
         },
 
@@ -48320,7 +48130,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
         },
 
         [38631] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {12619},
         },
 
@@ -52939,7 +52748,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
         },
 
         [43288] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {13138},
         },
 
@@ -54433,7 +54241,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
         },
 
         [45278] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {13681},
         },
 
@@ -56726,7 +56533,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
         },
 
         [49739] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {24461,24559},
         },
 
