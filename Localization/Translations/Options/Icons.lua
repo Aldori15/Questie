@@ -2,6 +2,18 @@
 local l10n = QuestieLoader:ImportModule("l10n")
 
 local iconOptionsLocales = {
+    ["World Map"] = {
+        ["ptBR"] = true,
+        ["ruRU"] = true,
+        ["deDE"] = true,
+        ["koKR"] = true,
+        ["esMX"] = true,
+        ["enUS"] = true,
+        ["zhCN"] = true,
+        ["zhTW"] = true,
+        ["esES"] = true,
+        ["frFR"] = true,
+    },
     ["Enable Icons"] = {
         ["ptBR"] = "Ativar os ícones",
         ["ruRU"] = "Значки Questie",

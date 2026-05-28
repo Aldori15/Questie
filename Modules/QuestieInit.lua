@@ -43,6 +43,8 @@ local QuestieQuest = QuestieLoader:ImportModule("QuestieQuest")
 local IsleOfQuelDanas = QuestieLoader:ImportModule("IsleOfQuelDanas")
 ---@type DailyQuests
 local DailyQuests = QuestieLoader:ImportModule("DailyQuests")
+---@type QuestieIconVisibility
+local QuestieIconVisibility = QuestieLoader:ImportModule("QuestieIconVisibility")
 ---@type QuestieEventHandler
 local QuestieEventHandler = QuestieLoader:ImportModule("QuestieEventHandler")
 ---@type QuestieEvent
@@ -370,7 +372,7 @@ QuestieInit.Stages[3] = function() -- run as a coroutine
 
     Questie.started = true
 
-    if Questie.db.profile.showEventQuests then
+    if QuestieIconVisibility:IsEnabledAnywhere("event") then
         QuestieEvent.Initialize()
     end
 

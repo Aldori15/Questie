@@ -12,6 +12,8 @@ local DailyQuests = QuestieLoader:ImportModule("DailyQuests")
 local QuestieLink = QuestieLoader:ImportModule("QuestieLink")
 ---@type QuestieQuest
 local QuestieQuest = QuestieLoader:ImportModule("QuestieQuest")
+---@type QuestieIconVisibility
+local QuestieIconVisibility = QuestieLoader:ImportModule("QuestieIconVisibility")
 
 --- COMPATIBILITY ---
 local C_Map = QuestieCompat.C_Map
@@ -447,7 +449,11 @@ function _Qframe:FakeHide()
         self:Hide();
         if self.data.lineFrames then
             for _, line in pairs(self.data.lineFrames) do
-                line:Hide()
+                if line.FakeHide then
+                    line:FakeHide()
+                else
+                    line:Hide()
+                end
             end
         end
         self._hide = self.Hide;
@@ -470,7 +476,11 @@ function _Qframe:FakeShow()
             self:Show();
             if self.data.lineFrames then
                 for _, line in pairs(self.data.lineFrames) do
-                    line:Show()
+                    if line.FakeShow then
+                        line:FakeShow()
+                    else
+                        line:Show()
+                    end
                 end
             end
         end
@@ -484,6 +494,7 @@ function _Qframe:ShouldBeHidden()
     local data = self.data
     local iconType = data.Type -- v6.5.1 values: available, complete, manual, monster, object, item, event. This function is not called with manual.
     local questId = data.Id
+    local isMinimap = self.miniMapIcon
 
     --investigate quest and cache results to minimize DB lookups
     local repeatable = QuestieDB.IsRepeatable(questId)
@@ -492,26 +503,33 @@ function _Qframe:ShouldBeHidden()
     local raid = QuestieDB.IsRaidQuest(questId)
     local pvp = QuestieDB.IsPvPQuest(questId)
     local normal = not (repeatable or event or dungeon or raid or pvp)
+    local trivialRepeatable = false
+    if repeatable then
+        local questLevel = QuestieDB.QueryQuestSingle(questId, "questLevel")
+        trivialRepeatable = questLevel and QuestieDB.IsTrivial(questLevel)
+    end
 
     if (not profile.enabled) -- all quest icons disabled
-        or ((not profile.enableMapIcons) and (not self.miniMapIcon))
-        or ((not profile.enableMiniMapIcons) and (self.miniMapIcon))
-        or ((not profile.enableTurnins) and iconType == "complete")
-        or ((not profile.enableObjectives) and (iconType == "monster" or iconType == "object" or iconType == "event" or iconType == "item"))
+        or ((not profile.enableMapIcons) and (not isMinimap))
+        or ((not profile.enableMiniMapIcons) and isMinimap)
+        or ((not QuestieIconVisibility:IsEnabled("turnin", isMinimap)) and iconType == "complete")
+        or ((not QuestieIconVisibility:IsEnabled("objective", isMinimap)) and (iconType == "monster" or iconType == "object" or iconType == "event" or iconType == "item"))
         or (profile.hideUnexploredMapIcons and not QuestieMap.utils:IsExplored(self.UiMapID, self.x, self.y)) -- Hides unexplored map icons
         or (profile.hideUntrackedQuestsMapIcons and not QuestieQuest:ShouldShowQuestNotes(questId))           -- Hides untracked map icons
         or (data.ObjectiveData and data.ObjectiveData.HideIcons)
         or (data.QuestData and data.QuestData.HideIcons and iconType ~= "complete")
+        or (data.IsItemStartQuestSource and (not QuestieIconVisibility:IsEnabled("itemStart", isMinimap)))
         -- Hide only available quest icons of following quests. I.e. show objectives and complete icons always (when they are in questlog).
         -- i.e. (iconType == "available")  ==  (iconType ~= "monster" and iconType ~= "object" and iconType ~= "event" and iconType ~= "item" and iconType ~= "complete"):
         or (iconType == "available"
             and (
-                   ((not profile.enableAvailable) and normal)
-                or ((not profile.showRepeatableQuests) and repeatable)
-                or ((not profile.showEventQuests) and event)
-                or ((not profile.showDungeonQuests) and dungeon)
-                or ((not profile.showRaidQuests) and raid)
-                or ((not profile.showPvPQuests) and pvp)
+                   ((not QuestieIconVisibility:IsEnabled("available", isMinimap)) and normal)
+                or ((not QuestieIconVisibility:IsEnabled("repeatable", isMinimap)) and repeatable)
+                or ((not QuestieIconVisibility:IsEnabled("trivialRepeatable", isMinimap)) and trivialRepeatable)
+                or ((not QuestieIconVisibility:IsEnabled("event", isMinimap)) and event)
+                or ((not QuestieIconVisibility:IsEnabled("dungeon", isMinimap)) and dungeon)
+                or ((not QuestieIconVisibility:IsEnabled("raid", isMinimap)) and raid)
+                or ((not QuestieIconVisibility:IsEnabled("pvp", isMinimap)) and pvp)
             -- this quest group isn't loaded at all while disabled:
             -- or ((not questieCharDB.showAQWarEffortQuests) and QuestieQuestBlacklist.AQWarEffortQuests[questId])
             )

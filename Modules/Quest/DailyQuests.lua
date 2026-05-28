@@ -14,6 +14,8 @@ local QuestieQuest = QuestieLoader:ImportModule("QuestieQuest");
 local AvailableQuests = QuestieLoader:ImportModule("AvailableQuests");
 ---@type QuestiePlayer
 local QuestiePlayer = QuestieLoader:ImportModule("QuestiePlayer");
+---@type QuestieIconVisibility
+local QuestieIconVisibility = QuestieLoader:ImportModule("QuestieIconVisibility");
 
 local nhcDailyIds, hcDailyIds, cookingDailyIds, fishingDailyIds, pvpDailyIds
 
@@ -23,7 +25,7 @@ local strfind = string.find
 ---@param message string
 ---@return nil
 function DailyQuests:FilterDailies(message, _, _)
-    if message and Questie.db.profile.showRepeatableQuests and QuestiePlayer.GetPlayerLevel() == 70 then
+    if message and QuestieIconVisibility:IsEnabledAnywhere("repeatable") and QuestiePlayer.GetPlayerLevel() == 70 then
         -- If the REPUTABLE message is empty, i.e contains "::::::::::" we don't count it as a check.
         if (not lastCheck) and not strfind(message, "::::::::::") then
             lastCheck = GetTime();

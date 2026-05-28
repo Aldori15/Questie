@@ -25,6 +25,8 @@ local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
 local Comms = QuestieLoader:ImportModule("Comms")
 ---@type Phasing
 local Phasing = QuestieLoader:ImportModule("Phasing")
+---@type QuestieIconVisibility
+local QuestieIconVisibility = QuestieLoader:ImportModule("QuestieIconVisibility")
 
 local GetQuestGreenRange = GetQuestGreenRange
 local GetQuestID = QuestieCompat.GetQuestID
@@ -513,7 +515,7 @@ function AvailableQuests.PruneByCurrentLevelFilter()
     local playerLevel = QuestiePlayer.GetPlayerLevel()
     local minLevel = playerLevel - GetQuestGreenRange("player")
     local maxLevel = playerLevel
-    local showTrivialRepeatableQuests = Questie.db.profile.showTrivialRepeatableQuests ~= false
+    local showTrivialRepeatableQuests = QuestieIconVisibility:IsEnabledAnywhere("trivialRepeatable")
 
     if Questie.db.profile.lowLevelStyle == Questie.LOWLEVEL_RANGE then
         minLevel = Questie.db.profile.minLevelFilter
@@ -558,7 +560,7 @@ function AvailableQuests.DrawAvailableQuest(quest) -- prevent recursion
         end
     end
 
-    if Questie.db.profile.showItemStartQuests and quest.Starts["Item"] then
+    if QuestieIconVisibility:IsEnabledAnywhere("itemStart") and quest.Starts["Item"] then
         local items = quest.Starts["Item"]
         for i = 1, #items do
             local item = QuestieDB:GetItem(items[i])
@@ -946,11 +948,11 @@ _CalculateAvailableQuests = function()
     end
 
     local completedQuests = Questie.db.char.complete
-    local showRepeatableQuests = Questie.db.profile.showRepeatableQuests
-    local showTrivialRepeatableQuests = Questie.db.profile.showTrivialRepeatableQuests ~= false
-    local showDungeonQuests = Questie.db.profile.showDungeonQuests
-    local showRaidQuests = Questie.db.profile.showRaidQuests
-    local showPvPQuests = Questie.db.profile.showPvPQuests
+    local showRepeatableQuests = QuestieIconVisibility:IsEnabledAnywhere("repeatable")
+    local showTrivialRepeatableQuests = QuestieIconVisibility:IsEnabledAnywhere("trivialRepeatable")
+    local showDungeonQuests = QuestieIconVisibility:IsEnabledAnywhere("dungeon")
+    local showRaidQuests = QuestieIconVisibility:IsEnabledAnywhere("raid")
+    local showPvPQuests = QuestieIconVisibility:IsEnabledAnywhere("pvp")
     local showAQWarEffortQuests = Questie.db.profile.showAQWarEffortQuests
     local showScourgeInvasionQuests = Questie.db.profile.showScourgeInvasionQuests
     local showSunsReachQuests = Questie.db.profile.showSunsReachQuests
@@ -1093,7 +1095,7 @@ _RegisterQuestStartTooltips = function(quest)
         return
     end
 
-    local items = Questie.db.profile.showItemStartQuests and quest.Starts["Item"]
+    local items = QuestieIconVisibility:IsEnabledAnywhere("itemStart") and quest.Starts["Item"]
     if items then
         for i = 1, #items do
             local item = QuestieDB:GetItem(items[i])
@@ -1313,6 +1315,7 @@ _AddStarter = function(starter, quest, tooltipKey, limit)
                         QuestData = quest,
                         Name = starter.name,
                         IsObjectiveNote = false,
+                        IsItemStartQuestSource = starterType == "itemFromMonster" or starterType == "itemFromObject",
                     }
 
                     if (coords[1] == -1 or coords[2] == -1) then
@@ -1360,6 +1363,7 @@ _AddStarter = function(starter, quest, tooltipKey, limit)
                             QuestData = quest,
                             Name = starter.name,
                             IsObjectiveNote = false,
+                            IsItemStartQuestSource = starterType == "itemFromMonster" or starterType == "itemFromObject",
                         }
                         starterIcons[zone] = QuestieMap:DrawWorldIcon(data, zone, waypoints[1][1][1], waypoints[1][1][2])
                         if starterIcons[zone] then

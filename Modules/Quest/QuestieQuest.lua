@@ -35,6 +35,8 @@ local QuestieCombatQueue = QuestieLoader:ImportModule("QuestieCombatQueue")
 local QuestieAnnounce = QuestieLoader:ImportModule("QuestieAnnounce")
 ---@type QuestieMenu
 local QuestieMenu = QuestieLoader:ImportModule("QuestieMenu")
+---@type QuestieIconVisibility
+local QuestieIconVisibility = QuestieLoader:ImportModule("QuestieIconVisibility")
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
 ---@type QuestLogCache
@@ -1287,7 +1289,7 @@ _DetermineIconsToDraw = function(quest, objective, objectiveIndex, objectiveCent
             objective.Icon = spawnData.Icon
         end
 
-        if (not objective.AlreadySpawned[id]) and (not objective.Completed) and Questie.db.profile.enableObjectives then
+        if (not objective.AlreadySpawned[id]) and (not objective.Completed) and QuestieIconVisibility:IsEnabledAnywhere("objective") then
             local data = {
                 Id = quest.Id,
                 ObjectiveIndex = objectiveIndex,

@@ -22,6 +22,10 @@ local QuestieMenu = QuestieLoader:ImportModule("QuestieMenu");
 local AvailableQuests = QuestieLoader:ImportModule("AvailableQuests");
 ---@type IsleOfQuelDanas
 local IsleOfQuelDanas = QuestieLoader:ImportModule("IsleOfQuelDanas");
+---@type QuestieEvent
+local QuestieEvent = QuestieLoader:ImportModule("QuestieEvent");
+---@type QuestieIconVisibility
+local QuestieIconVisibility = QuestieLoader:ImportModule("QuestieIconVisibility");
 
 --- COMPATIBILITY ---
 local C_Timer = QuestieCompat.C_Timer
@@ -81,6 +85,313 @@ local function _RunFastAvailableRefresh(rebuildAll)
             _availableRefreshTicker = nil
         end
     end, true)
+end
+
+local QUEST_ICON_SURFACE_ROWS = {
+    {
+        key = "showNormalQuests",
+        category = "available",
+        name = "Available Normal Quests",
+        desc = "When this is enabled, the locations of available quests will be shown on the map/minimap.",
+        refresh = "availableRebuild",
+    },
+    {
+        key = "showEventQuests",
+        category = "event",
+        name = "Available Event Quests",
+        desc = "When this is enabled, the locations of active event quests will be shown on the map/minimap.",
+        refresh = "visibility",
+    },
+    {
+        key = "showRepeatableQuests",
+        category = "repeatable",
+        name = "Available Repeatable Quests",
+        desc = "When this is enabled, the locations of repeatable quests will be shown on the map/minimap.",
+        refresh = "available",
+    },
+    {
+        key = "showTrivialRepeatableQuests",
+        category = "trivialRepeatable",
+        name = "Trivial Repeatable Quests",
+        desc = "When this is enabled, trivial repeatable quests will be shown on the map/minimap.",
+        refresh = "available",
+        disabled = function(isMinimap)
+            return (not Questie.db.profile.enabled) or (not QuestieIconVisibility:IsEnabled("repeatable", isMinimap))
+        end,
+    },
+    {
+        key = "showPvPQuests",
+        category = "pvp",
+        name = "Available PvP Quests",
+        desc = "When this is enabled, the locations of PvP quests will be shown on the map/minimap.",
+        refresh = "available",
+    },
+    {
+        key = "showDungeonQuests",
+        category = "dungeon",
+        name = "Available Dungeon Quests",
+        desc = "When this is enabled, the locations of dungeon quests will be shown on the map/minimap.",
+        refresh = "available",
+    },
+    {
+        key = "showRaidQuests",
+        category = "raid",
+        name = "Available Raid Quests",
+        desc = "When this is enabled, the locations of raid quests will be shown on the map/minimap.",
+        refresh = "available",
+    },
+    {
+        key = "showCompleteQuests",
+        category = "turnin",
+        name = "Completed Quests",
+        desc = "When this is enabled, the quest turn-in locations will be shown on the map/minimap.",
+        refresh = "visibility",
+    },
+    {
+        key = "showObjectivesToggle",
+        category = "objective",
+        name = "Objectives",
+        desc = "When this is enabled, quest objective icons will be shown on the map/minimap.",
+        refresh = "objectives",
+    },
+    {
+        key = "showItemStartQuests",
+        category = "itemStart",
+        name = "Item-Start Quest Sources",
+        desc = "When this is enabled, available quest icons will also be shown for mobs and objects that can drop quest-start items.",
+        refresh = "availableRebuild",
+    },
+}
+
+local function _SetQuestIconSurfaceEnabled(row, isMinimap, value)
+    local wasEnabledAnywhere = QuestieIconVisibility:IsEnabledAnywhere(row.category)
+    QuestieIconVisibility:SetEnabled(row.category, isMinimap, value)
+
+    if row.refresh == "objectives" then
+        if value and not wasEnabledAnywhere then
+            QuestieQuest:GetAllQuestIds()
+        end
+        _RefreshQuestIconsOnly()
+        QuestieOptionsUtils.DetermineTheme()
+    elseif row.refresh == "availableRebuild" then
+        _RefreshQuestIconsOnly()
+        _RunFastAvailableRefresh(true)
+    elseif row.refresh == "available" then
+        _RefreshQuestIconsOnly()
+        _RunFastAvailableRefresh()
+    else
+        if row.category == "event" and value and not wasEnabledAnywhere then
+            QuestieEvent.Initialize()
+        end
+        _RefreshQuestIconsOnly()
+    end
+end
+
+local function _BuildQuestIconSurfaceOptions()
+    local args = {
+        quest_options = {
+            type = "header",
+            order = 2,
+            width = "normal",
+            name = function() return l10n('Quests'); end,
+        },
+        iconNameHeader = {
+            type = "description",
+            order = 2.001,
+            width = 1.55,
+            name = " ",
+        },
+        mapHeader = {
+            type = "description",
+            order = 2.002,
+            width = 0.45,
+            fontSize = "medium",
+            name = function() return l10n('World Map'); end,
+        },
+        minimapHeader = {
+            type = "description",
+            order = 2.003,
+            width = 0.45,
+            fontSize = "medium",
+            name = function() return l10n('Minimap'); end,
+        },
+    }
+
+    for rowIndex, row in ipairs(QUEST_ICON_SURFACE_ROWS) do
+        local order = 2.01 + (rowIndex * 0.01)
+        args[row.key .. "Label"] = {
+            type = "description",
+            order = order,
+            width = 1.6,
+            fontSize = "medium",
+            name = function() return l10n(row.name); end,
+        }
+        args[row.key .. "Map"] = {
+            type = "toggle",
+            order = order + 0.001,
+            name = "",
+            desc = function() return l10n(row.desc); end,
+            width = 0.45,
+            disabled = function()
+                if row.disabled then
+                    return row.disabled(false)
+                end
+                return (not Questie.db.profile.enabled)
+            end,
+            get = function() return QuestieIconVisibility:IsEnabled(row.category, false); end,
+            set = function(_, value) _SetQuestIconSurfaceEnabled(row, false, value); end,
+        }
+        args[row.key .. "Minimap"] = {
+            type = "toggle",
+            order = order + 0.002,
+            name = "",
+            desc = function() return l10n(row.desc); end,
+            width = 0.45,
+            disabled = function()
+                if row.disabled then
+                    return row.disabled(true)
+                end
+                return (not Questie.db.profile.enabled)
+            end,
+            get = function() return QuestieIconVisibility:IsEnabled(row.category, true); end,
+            set = function(_, value) _SetQuestIconSurfaceEnabled(row, true, value); end,
+        }
+    end
+
+    args.showAQWarEffortQuests = {
+        type = "toggle",
+        order = 2.20,
+        hidden = (not Questie.IsClassic),
+        name = function() return l10n('Available AQ War Effort Quests'); end,
+        desc = function() return l10n('When this is enabled, the locations of the AQ War Effort quests will be shown on the map/minimap.'); end,
+        width = 1.595,
+        disabled = function() return (not Questie.db.profile.enabled); end,
+        get = function() return Questie.db.profile.showAQWarEffortQuests end,
+        set = function(_, value)
+            Questie.db.profile.showAQWarEffortQuests = value
+            _RunFastAvailableRefresh(true)
+        end,
+    }
+    args.worldstate_options = {
+        type = "header",
+        order = 2.21,
+        width = "normal",
+        name = function() return l10n('Server Worldstate Events'); end,
+    }
+    args.showScourgeInvasionQuests = {
+        type = "toggle",
+        order = 2.22,
+        name = function() return l10n('Available Scourge Invasion Quests'); end,
+        desc = function() return l10n('When this is enabled, the locations of the Scourge Invasion quests will be shown on the map/minimap. Enable this only if your server has the Scourge Invasion worldstate event active.'); end,
+        width = 1.595,
+        disabled = function() return (not Questie.db.profile.enabled); end,
+        get = function() return Questie.db.profile.showScourgeInvasionQuests end,
+        set = function(_, value)
+            Questie.db.profile.showScourgeInvasionQuests = value
+            _RunFastAvailableRefresh(true)
+        end,
+    }
+    args.showSunsReachQuests = {
+        type = "toggle",
+        order = 2.23,
+        name = function() return l10n('Available Sun\'s Reach Quests'); end,
+        desc = function() return l10n('When this is enabled, the locations of the Battle for Sun\'s Reach quests will be shown on the map/minimap. Enable this only if your server has the Sun\'s Reach worldstate event active.'); end,
+        width = 1.595,
+        disabled = function() return (not Questie.db.profile.enabled); end,
+        get = function() return Questie.db.profile.showSunsReachQuests end,
+        set = function(_, value)
+            Questie.db.profile.showSunsReachQuests = value
+            _RunFastAvailableRefresh(true)
+        end,
+    }
+    args.isleOfQuelDanasPhase = {
+        type = "select",
+        order = 2.24,
+        width = 1.5,
+        values = IsleOfQuelDanas.localizedPhaseNames,
+        style = 'dropdown',
+        hidden = function() return not Questie.db.profile.showSunsReachQuests end,
+        name = function() return l10n("Isle of Quel'Danas Phase") end,
+        desc = function() return l10n("Select the phase fitting your realm progress on the Isle of Quel'Danas"); end,
+        disabled = function() return (not Questie.db.profile.enabled) end,
+        get = function() return Questie.db.profile.isleOfQuelDanasPhase; end,
+        set = function(_, key)
+            Questie.db.profile.isleOfQuelDanasPhase = key
+            QuestieQuest:SmoothReset()
+        end,
+    }
+    args.quelDanasPhaseSpacerH = {
+        type = "description",
+        order = 2.25,
+        name = "",
+        hidden = function() return not Questie.db.profile.showSunsReachQuests end,
+        imageWidth = 0.2,
+        width = 0.2,
+    }
+    args.isleOfQuelDanasPhaseReminder = {
+        type = "toggle",
+        order = 2.26,
+        hidden = function() return not Questie.db.profile.showSunsReachQuests end,
+        name = function() return l10n('Disable Phase reminder'); end,
+        desc = function() return l10n("Enable or disable the reminder on login to set the Isle of Quel'Danas phase"); end,
+        disabled = function() return (not Questie.db.profile.enabled) end,
+        width = 1,
+        get = function() return Questie.db.profile.isIsleOfQuelDanasPhaseReminderDisabled; end,
+        set = function(_, value)
+            Questie.db.profile.isIsleOfQuelDanasPhaseReminderDisabled = value
+        end,
+    }
+    args.townsfolk_options = {
+        type = "header",
+        order = 2.30,
+        width = "normal",
+        name = function() return l10n('Other Icons'); end,
+    }
+    args.townsfolkSpacer1 = {
+        type = "description",
+        order = 2.31,
+        name = "",
+        desc = "",
+        image = "",
+        imageWidth = 0.32,
+        width = 0.32,
+        func = function() end,
+    }
+    args.townsfolkOptions = {
+        type = "execute",
+        order = 2.32,
+        name = function() return l10n('Townsfolk'); end,
+        desc = function() return l10n('Allows to select which tracking icons (like Mailbox, Repair-NPCs) to show on the map and minimap.'); end,
+        width = 0.8,
+        disabled = false,
+        func = function()
+            QuestieMenu:ShowTownsfolk(1)
+        end
+    }
+    args.professionOptions = {
+        type = "execute",
+        order = 2.33,
+        name = function() return l10n('Profession Trainers'); end,
+        desc = function() return l10n('Allows to select which profession trainers to show on the map and minimap.'); end,
+        width = 0.95,
+        disabled = false,
+        func = function()
+            QuestieMenu:ShowProfessions(1)
+        end
+    }
+    args.vendorOptions = {
+        type = "execute",
+        order = 2.34,
+        name = function() return l10n('Vendors'); end,
+        desc = function() return l10n('Allows to select which vendors to show on the map and minimap.'); end,
+        width = 0.8,
+        disabled = false,
+        func = function()
+            QuestieMenu:ShowVendors(1)
+        end
+    }
+
+    return args
 end
 
 function QuestieOptions.tabs.icons:Initialize()
@@ -190,11 +501,21 @@ function QuestieOptions.tabs.icons:Initialize()
                     end
                 end,
             },
+            quest_icon_toggles_group = {
+                type = "group",
+                order = 2,
+                inline = true,
+                width = 0.5,
+                name = function() return l10n('Show icons for...'); end,
+                disabled = function() return not Questie.db.profile.enabled end,
+                args = _BuildQuestIconSurfaceOptions(),
+            },
             icon_toggles_group = {
                 type = "group",
                 order = 2,
                 inline = true,
                 width = 0.5,
+                hidden = true,
                 name = function() return l10n('Show icons for...'); end,
                 disabled = function() return not Questie.db.profile.enabled end,
                 args = {
@@ -1448,10 +1769,10 @@ _GetIconThemesSort = function()
 end
 
 function QuestieOptionsUtils.DetermineTheme()
-    if (GetCVar("questPOI") == "1" and Questie.db.profile.enableObjectives == false) then
+    if (GetCVar("questPOI") == "1" and QuestieIconVisibility:IsEnabledAnywhere("objective") == false) then
         Questie.db.profile.iconTheme = 'blizzard'
     else
-        if (Questie.db.profile.enableObjectives == true and
+        if (QuestieIconVisibility:IsEnabledAnywhere("objective") == true and
             Questie.db.profile.ICON_SLAY == Questie.icons["node"] and
             Questie.db.profile.ICON_LOOT == Questie.icons["node"] and
             Questie.db.profile.ICON_EVENT == Questie.icons["node"] and
@@ -1465,7 +1786,7 @@ function QuestieOptionsUtils.DetermineTheme()
             Questie.db.profile.objectiveFilterDistance == 0)
             then
             Questie.db.profile.iconTheme = 'pfquest'
-        elseif (Questie.db.profile.enableObjectives == true and
+        elseif (QuestieIconVisibility:IsEnabledAnywhere("objective") == true and
             Questie.db.profile.ICON_SLAY == Questie.icons["slay"] and
             Questie.db.profile.ICON_LOOT == Questie.icons["loot"] and
             Questie.db.profile.ICON_EVENT == Questie.icons["event"] and
@@ -1494,7 +1815,7 @@ function QuestieOptionsUtils.ExecuteTheme(info, value)
         if WorldMapQuestShowObjectives then -- if wotlk blizzard objectives button exists
             WorldMapQuestShowObjectives:SetChecked(false) -- uncheck it
         end
-        Questie.db.profile.enableObjectives = true
+        QuestieIconVisibility:SetBoth("objective", true)
         Questie.db.profile.ICON_SLAY = Questie.icons["slay"]
         Questie.db.profile.ICON_LOOT = Questie.icons["loot"]
         Questie.db.profile.ICON_EVENT = Questie.icons["event"]
@@ -1513,7 +1834,7 @@ function QuestieOptionsUtils.ExecuteTheme(info, value)
         if WorldMapQuestShowObjectives then -- if wotlk blizzard objectives button exists
             WorldMapQuestShowObjectives:SetChecked(false) -- uncheck it
         end
-        Questie.db.profile.enableObjectives = true
+        QuestieIconVisibility:SetBoth("objective", true)
         Questie.db.profile.ICON_SLAY = Questie.icons["node"]
         Questie.db.profile.ICON_LOOT = Questie.icons["node"]
         Questie.db.profile.ICON_EVENT = Questie.icons["node"]
@@ -1532,7 +1853,7 @@ function QuestieOptionsUtils.ExecuteTheme(info, value)
         if WorldMapQuestShowObjectives then -- if wotlk blizzard objectives button exists
             WorldMapQuestShowObjectives:SetChecked(false) -- check it
         end
-        Questie.db.profile.enableObjectives = false
+        QuestieIconVisibility:SetBoth("objective", false)
         Questie.db.profile.ICON_SLAY = Questie.icons["slay"]
         Questie.db.profile.ICON_LOOT = Questie.icons["loot"]
         Questie.db.profile.ICON_EVENT = Questie.icons["event"]

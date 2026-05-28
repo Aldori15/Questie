@@ -2,6 +2,8 @@
 local Migration = QuestieLoader:CreateModule("Migration")
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
+---@type QuestieIconVisibility
+local QuestieIconVisibility = QuestieLoader:ImportModule("QuestieIconVisibility")
 
 -- add functions to this table to migrate users who have not yet run said function.
 -- make sure to always add to the end of the table as it runs first to last
@@ -135,6 +137,9 @@ local migrationFunctions = {
     end,
     [22] = function()
         Questie.db.profile.trimObjectiveText = true
+    end,
+    [23] = function()
+        QuestieIconVisibility:MigrateProfile(Questie.db.profile)
     end,
 }
 
