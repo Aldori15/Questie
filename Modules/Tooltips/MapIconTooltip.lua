@@ -167,7 +167,7 @@ function MapIconTooltip:Show()
                         local add = true;
                         for _, data in pairs(questOrder[key]) do
                             for text, _ in pairs(data) do
-                                if (text == iconData.ObjectiveData.Description) then
+                                if (text == QuestieLib:GetObjectiveDescription(iconData.ObjectiveData)) then
                                     add = false;
                                     break;
                                 end
@@ -622,10 +622,11 @@ function _MapIconTooltip:GetAvailableOrCompleteTooltip(icon)
 end
 
 function _MapIconTooltip:GetEventObjectiveTooltip(iconData)
+    local desc = QuestieLib:GetObjectiveDescription(iconData.ObjectiveData)
     if iconData.Name then
         return {
             [iconData.ObjectiveData.Index] = {
-                [iconData.ObjectiveData.Description] = {
+                [desc] = {
                     [iconData.Name] = true
                 }
             }
@@ -633,7 +634,7 @@ function _MapIconTooltip:GetEventObjectiveTooltip(iconData)
     else
         return {
             [iconData.ObjectiveData.Index] = {
-                [iconData.ObjectiveData.Description] = true
+                [desc] = true
             }
         }
     end
@@ -642,7 +643,7 @@ end
 function _MapIconTooltip:GetObjectiveTooltip(icon)
     local tooltips = {}
     local iconData = icon.data
-    local text = iconData.ObjectiveData.Description
+    local text = QuestieLib:GetObjectiveDescription(iconData.ObjectiveData)
     local color = QuestieLib:GetRGBForObjective(iconData.ObjectiveData)
     if iconData.ObjectiveData.Needed then
         if iconData.ObjectiveData.Type == "spell" and iconData.ObjectiveData.spawnList[iconData.ObjectiveTargetId].ItemId then
@@ -676,7 +677,7 @@ function _MapIconTooltip:GetObjectiveTooltip(icon)
                     end
                     local remoteColor = QuestieLib:GetRGBForObjective(objectiveEntry)
                     local colorizedPlayerName = " (" .. playerColor .. playerName .. "|r" .. remoteColor .. ")|r" .. playerType
-                    local remoteText = iconData.ObjectiveData.Description
+                    local remoteText = QuestieLib:GetObjectiveDescription(iconData.ObjectiveData)
 
                     if objectiveEntry and objectiveEntry.fulfilled and objectiveEntry.required then
                         local fulfilled = objectiveEntry.fulfilled;

@@ -133,6 +133,9 @@ local migrationFunctions = {
             Questie.db.profile.trackerFontOutline = ""
         end
     end,
+    [22] = function()
+        Questie.db.profile.trimObjectiveText = true
+    end,
 }
 
 function Migration:Migrate()

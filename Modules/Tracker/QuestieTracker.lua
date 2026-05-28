@@ -1166,7 +1166,7 @@ function QuestieTracker:Update()
                                     line.label:SetPoint("TOPLEFT", line, "TOPLEFT", lineWidthQBC, 0)
 
                                     -- Set Objective based on states
-                                    local objDesc = objective.Description:gsub("%.", "")
+                                    local objDesc = QuestieLib:GetObjectiveDescription(objective)
 
                                     if (objective.Completed ~= true or (objective.Completed == true and #quest.Objectives > 1)) then
                                         -- Quest objective objects can lag one update behind in 3.3.5 manual loot flow.

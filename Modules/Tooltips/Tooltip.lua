@@ -521,13 +521,13 @@ function QuestieTooltips:GetTooltip(key)
                         if objective.Needed and ((not finishedAndUnacceptedQuests[questId]) or objective.Collected ~= objective.Needed) then
                             local questProgress = tostring(objective.Collected) .. "/" .. tostring(objective.Needed)
                             if Questie.db.profile.showQuestProgressFirst then
-                                text = "   " .. color .. questProgress .. " " .. tostring(objective.Description) .. dropRateText;
+                                text = "   " .. color .. questProgress .. " " .. QuestieLib:GetObjectiveDescription(objective) .. dropRateText;
                             else
-                                text = "   " .. color .. tostring(objective.Description) .. ": " .. questProgress .. dropRateText;
+                                text = "   " .. color .. QuestieLib:GetObjectiveDescription(objective) .. ": " .. questProgress .. dropRateText;
                             end
                             tooltipData[questId].objectivesText[objectiveIndex][playerName] = { ["color"] = color, ["text"] = text };
                         else
-                            text = "   " .. color .. tostring(objective.Description) .. dropRateText;
+                            text = "   " .. color .. QuestieLib:GetObjectiveDescription(objective) .. dropRateText;
                             tooltipData[questId].objectivesText[objectiveIndex][playerName] = { ["color"] = color, ["text"] = text };
                         end
                     end
