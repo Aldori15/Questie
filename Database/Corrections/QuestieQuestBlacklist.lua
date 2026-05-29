@@ -1640,6 +1640,9 @@ function QuestieQuestBlacklist.LoadAutoBlacklistWotlk()
         [7507] = true, --* Nostro's Compendium (https://www.wowhead.com/wotlk/quest=7507)
         [7508] = true, --* The Forging of Quel'Serrar (https://www.wowhead.com/wotlk/quest=7508)
 
+        --! 2.3.0
+        [1135] = true, --* Highperch Venom (https://www.wowhead.com/wotlk/quest=1135)
+
         --! 2.4.2
         -- Uncategorized ->  (-2 -> 0)
         [12600] = true, --* Upper Deck Promo - Bear Mount (https://www.wowhead.com/wotlk/quest=12600) (Retail Data)
