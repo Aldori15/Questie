@@ -94,7 +94,8 @@ function QuestieIconVisibility:IsEnabled(category, isMinimap)
     end
 
     local profile = Questie.db.profile
-    return _GetProfileValue(profile, self:GetKey(category, isMinimap), config.legacy, config.default)
+    local key = isMinimap and config.minimap or config.map
+    return _GetProfileValue(profile, key, config.legacy, config.default)
 end
 
 function QuestieIconVisibility:IsEnabledAnywhere(category)
