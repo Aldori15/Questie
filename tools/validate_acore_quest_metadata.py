@@ -2121,6 +2121,34 @@ def compare_metadata(acore_metadata, questie_metadata, creature_kill_credits, sp
                     )
                     continue
 
+                # AC uses unspawned credit marker creatures as server-side
+                # kill credit targets, but Questie already supplies item or
+                # gameobject objectives that resolve to spawned world objects.
+                acore_creature_ids = flatten_objective_records(acore[field][0] if acore[field] else ())
+                questie_creature_ids = flatten_objective_records(questie[field][0] if questie[field] else ())
+                questie_object_ids = flatten_objective_records(
+                    questie[field][1] if len(questie[field]) > 1 else ()
+                )
+                questie_item_ids = flatten_objective_records(
+                    questie[field][2] if len(questie[field]) > 2 else ()
+                )
+                if (
+                    acore[field] != questie[field]
+                    and acore_creature_ids
+                    and not questie_creature_ids
+                    and (questie_object_ids or questie_item_ids)
+                    and not any(cid in spawned_creature_ids for cid in acore_creature_ids)
+                ):
+                    preserved_display_objectives.append(
+                        {
+                            "questId": quest_id,
+                            "acore": acore[field],
+                            "questie": questie[field],
+                            "reason": "acoreUnspawnedCreaturesQuestieHasNonCreatureObjectives",
+                        }
+                    )
+                    continue
+
                 equivalent, expansions = objective_values_are_equivalent(
                     acore[field],
                     questie[field],

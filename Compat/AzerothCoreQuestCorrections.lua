@@ -13881,7 +13881,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8867] = {
-            [questKeys.objectives] = {{{15893},{15894}}},
             [questKeys.requiredSourceItems] = {},
             [questKeys.breadcrumbs] = {},
         },
@@ -17677,10 +17676,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectives] = {nil,nil,{{29106}}},
         },
 
-        [10283] = {
-            [questKeys.objectives] = {{{20155}}},
-        },
-
         [10288] = {
             [questKeys.objectives] = {nil,nil,{{28105}}},
             [questKeys.preQuestSingle] = {10119},
@@ -17707,7 +17702,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [10299] = {
             [questKeys.objectivesText] = {"Return to Manaforge B'naar and obtain the B'naar Access Crystal from Overseer Theredis.  Use it at the Manaforge B'naar console to shut it down and report back to Anchorite Karja.","","Performing quests for the Aldor will cause your Scryers reputation level to decrease."},
-            [questKeys.objectives] = {{{20209}},nil,{{29366}}},
             [questKeys.specialFlags] = specialFlags.EXPLORATION_OR_EVENT,
         },
 
@@ -17769,19 +17763,16 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [10321] = {
             [questKeys.objectivesText] = {"Travel to Manaforge Coruu, east of Area 52, and obtain the Coruu Access Crystal from Overseer Seylanna.  Use it at the Manaforge Coruu Console to shut it down and return to Anchorite Karja.","","Performing quests for the Aldor will cause your Scryers reputation level to decrease."},
-            [questKeys.objectives] = {{{20417}},nil,{{29396}}},
             [questKeys.specialFlags] = specialFlags.EXPLORATION_OR_EVENT,
         },
 
         [10322] = {
             [questKeys.objectivesText] = {"Anchorite Karja wants you to go Manaforge Duro and obtain the Duro Access Crystal from Overseer Athanel.  Use it at the Manaforge Duro Console to shut it down.","","Performing quests for the Aldor will cause your Scryers reputation level to decrease."},
-            [questKeys.objectives] = {{{20418}},nil,{{29397}}},
             [questKeys.specialFlags] = specialFlags.EXPLORATION_OR_EVENT,
         },
 
         [10323] = {
             [questKeys.objectivesText] = {"Travel to Manaforge Ara and obtain the Ara Access Crystal from Overseer Azarad.  Use it at the Manaforge Ara console to shut it down.","","Performing quests for the Aldor will cause your Scryers reputation level to decrease."},
-            [questKeys.objectives] = {{{20440}},nil,{{29411}}},
             [questKeys.specialFlags] = specialFlags.EXPLORATION_OR_EVENT,
         },
 
@@ -17804,13 +17795,11 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [10329] = {
             [questKeys.objectivesText] = {"Return to Manaforge B'naar and obtain the B'naar Access Crystal from Overseer Theredis.  Use it at the B'naar Control Console to shut it down, then report back to Spymaster Thalodien.","","Performing quests for the Scryers will cause your Aldor reputation level to decrease."},
-            [questKeys.objectives] = {{{20209}},nil,{{29366}}},
             [questKeys.specialFlags] = specialFlags.EXPLORATION_OR_EVENT,
         },
 
         [10330] = {
             [questKeys.objectivesText] = {"Obtain the Coruu Access Crystal from Overseer Seylanna.  Use it at the Coruu Control Console to shut down the manaforge and return to Caledis Brightdawn.","","Performing quests for the Scryers will cause your Aldor reputation level to decrease."},
-            [questKeys.objectives] = {{{20417}},nil,{{29396}}},
             [questKeys.specialFlags] = specialFlags.EXPLORATION_OR_EVENT,
         },
 
@@ -17829,7 +17818,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [10338] = {
             [questKeys.objectivesText] = {"Return to Manaforge Duro and obtain the Duro Access Crystal from Overseer Athanel.  Use it at the Duro Control Console to shut it down and report back to Spymaster Thalodien.","","Performing quests for the Scryers will cause your Aldor reputation level to decrease."},
-            [questKeys.objectives] = {{{20418}},nil,{{29397}}},
             [questKeys.specialFlags] = specialFlags.EXPLORATION_OR_EVENT,
         },
 
@@ -17920,7 +17908,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [10365] = {
             [questKeys.objectivesText] = {"Travel to Manaforge Ara and obtain the Ara Access Crystal from Overseer Azarad.  Use it at the Manaforge Ara console to shut it down.","","Performing quests for the Scryers will cause your Aldor reputation level to decrease."},
-            [questKeys.objectives] = {{{20440}},nil,{{29411}}},
             [questKeys.specialFlags] = specialFlags.EXPLORATION_OR_EVENT,
         },
 
@@ -18403,14 +18390,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         [10611] = {
             [questKeys.objectives] = {nil,nil,{{30713}}},
             [questKeys.requiredSourceItems] = {30712},
-        },
-
-        [10612] = {
-            [questKeys.objectives] = {{{21959}}},
-        },
-
-        [10613] = {
-            [questKeys.objectives] = {{{21959}}},
         },
 
         [10616] = {
@@ -19744,7 +19723,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [11152] = {
             [questKeys.objectivesText] = {"Captain Garran Vimes at Foothold Citadel wants you to lay the Wreath at the Hyal Family Monument. "},
-            [questKeys.objectives] = {{{23768}}},
             [questKeys.requiredSourceItems] = {33082},
         },
 
@@ -20542,10 +20520,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [11487] = {
             [questKeys.objectives] = {nil,nil,{{34141}}},
-        },
-
-        [11490] = {
-            [questKeys.objectives] = {{{25042}}},
         },
 
         [11493] = {
@@ -22611,7 +22585,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12478] = {
-            [questKeys.objectives] = {{{27879}}},
             [questKeys.requiredSourceItems] = {37933},
         },
 
@@ -22757,7 +22730,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [12541] = {
             [questKeys.objectivesText] = {"Alchemist Finklestein at Heb'Valok wants you to assist him in the creation of a truth serum.$b$bWhen you are ready to begin, you are to speak to him and follow his instructions."},
-            [questKeys.objectives] = {{{28248}}},
             [questKeys.preQuestSingle] = {12596},
             [questKeys.parentQuest] = 0,
         },
@@ -22789,10 +22761,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [12555] = {
             [questKeys.requiredSourceItems] = {38515},
-        },
-
-        [12557] = {
-            [questKeys.objectives] = {{{28293},{28294},{28295},{28296}}},
         },
 
         [12561] = {
@@ -22923,12 +22891,10 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [12601] = {
             [questKeys.objectivesText] = {"Alchemist Finklestein at Heb'valok wants you to assist him in the creation of a truth serum.$b$bWhen you are ready to begin, you are to speak to him and follow his instructions."},
-            [questKeys.objectives] = {{{28248}}},
         },
 
         [12602] = {
             [questKeys.objectivesText] = {"Alchemist Finklestein at Heb'valok wants you to assist him in the creation of a truth serum.$b$bWhen you are ready to begin, you are to speak to him and follow his instructions."},
-            [questKeys.objectives] = {{{28248}}},
         },
 
         [12603] = {
@@ -23244,7 +23210,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12737] = {
-            [questKeys.objectives] = {{{29055}}},
             [questKeys.requiredSourceItems] = {39599},
             [questKeys.requiredMinRep] = false,
         },
@@ -23380,10 +23345,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [12798] = {
             [questKeys.objectives] = {nil,nil,{{42922}}},
-        },
-
-        [12801] = {
-            [questKeys.objectives] = {{{29245}}},
         },
 
         [12802] = {
@@ -23800,10 +23761,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredSourceItems] = {42499},
         },
 
-        [12998] = {
-            [questKeys.objectives] = {{{30299}}},
-        },
-
         [13000] = {
             [questKeys.requiredSourceItems] = {44576},
         },
@@ -23987,10 +23944,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         [13120] = {
             [questKeys.requiredSourceItems] = {43229},
             [questKeys.preQuestSingle] = {13104,13105,13117},
-        },
-
-        [13121] = {
-            [questKeys.objectives] = {{{30750}}},
         },
 
         [13122] = {
