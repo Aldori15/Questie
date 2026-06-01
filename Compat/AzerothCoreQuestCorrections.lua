@@ -23365,10 +23365,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredSourceItems] = {40397},
         },
 
-        [12806] = {
-            [questKeys.preQuestSingle] = {},
-        },
-
         [12807] = {
             [questKeys.preQuestSingle] = {12806},
         },
@@ -23739,10 +23735,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredSourceItems] = {42441},
         },
 
-        [12992] = {
-            [questKeys.preQuestSingle] = {},
-        },
-
         [12994] = {
             [questKeys.objectivesText] = {"You must defeat 3 Stormforged Spies in the Valley of Ancient Winters.$b$bUsing the Ethereal Worg's Fang at the Corpse of the Fallen Worg will summon an Ethereal Frostworg, which will expose hidden enemies. You are to return to the Frostworg Denmother in Dun Niffelem when the valley has been cleansed of spies."},
             [questKeys.requiredSourceItems] = {42479},
@@ -23856,10 +23848,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.preQuestSingle] = {13139},
         },
 
-        [13069] = {
-            [questKeys.preQuestSingle] = {},
-        },
-
         [13075] = {
             [questKeys.objectives] = {nil,nil,{{44790}}},
             [questKeys.questFlags] = 128,
@@ -23872,10 +23860,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [13083] = {
             [questKeys.objectives] = {nil,nil,{{44789}}},
-        },
-
-        [13084] = {
-            [questKeys.preQuestSingle] = {},
         },
 
         [13085] = {
@@ -23919,7 +23903,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13106] = {
-            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
@@ -24041,18 +24024,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [13164] = {
             [questKeys.preQuestSingle] = {13161,13162,13163},
-        },
-
-        [13169] = {
-            [questKeys.preQuestSingle] = {},
-        },
-
-        [13170] = {
-            [questKeys.preQuestSingle] = {},
-        },
-
-        [13171] = {
-            [questKeys.preQuestSingle] = {},
         },
 
         [13172] = {

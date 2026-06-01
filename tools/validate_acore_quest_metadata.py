@@ -95,6 +95,20 @@ CONDITION_KEY_COLUMNS = (
 
 EMPTY_OBJECTIVES = ((), (), ())
 
+# Quests where AC omits PrevQuestID even though a real prerequisite chain
+# exists (the gate is enforced by server-side C++ scripts, not SQL).
+_PRE_QUEST_SINGLE_CHAIN_PRESERVE = {
+    # Shadow Vault questline (Icecrown) — hub quests are gated by NPC scripts
+    12806,  # prereq 12982
+    12992,  # prereq 12951
+    13069,  # prereq 12982
+    13084,  # prereq 12951
+    13106,  # prereq 12896/12897
+    13169,  # prereq 13168
+    13170,  # prereq 13168
+    13171,  # prereq 13168
+}
+
 QUEST_KEY_RE = re.compile(r"\['([^']+)'\]\s*=\s*(\d+)")
 TABLE_ENTRY_RE = re.compile(r"^([A-Za-z0-9_]+)\s*=\s*(.+)$", re.DOTALL)
 QUEST_ROW_RE = re.compile(r"^\[(\d+)\]\s*=\s*(\{.*\}),?$", re.DOTALL)
@@ -2164,6 +2178,22 @@ def compare_metadata(acore_metadata, questie_metadata, creature_kill_credits, sp
                             }
                         )
                     continue
+
+            if (
+                field == "preQuestSingle"
+                and acore[field] == ()
+                and questie[field]
+                and quest_id in _PRE_QUEST_SINGLE_CHAIN_PRESERVE
+            ):
+                preserved_empty_prequest_clears.append(
+                    {
+                        "questId": quest_id,
+                        "acore": acore[field],
+                        "questie": questie[field],
+                    }
+                )
+                continue
+
             if acore[field] != questie[field]:
                 mismatch = {
                     "questId": quest_id,
