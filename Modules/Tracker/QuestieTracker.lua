@@ -1951,18 +1951,27 @@ function QuestieTracker:UpdateHeight()
 
     if Questie.db.char.isTrackerExpanded then
         -- Removes any padding from the last line in the tracker
-        TrackerLinePool.GetCurrentLine():SetHeight(TrackerLinePool.GetCurrentLine().label:GetStringHeight())
+        local currentLine = TrackerLinePool.GetCurrentLine()
+        local currentLineHeight = math_max(currentLine.label:GetHeight() or 0, currentLine.label:GetStringHeight() or 0)
+        currentLine:SetHeight(currentLineHeight)
 
-        if TrackerLinePool.GetCurrentLine().mode == "zone" then
-            -- If a single zone is the only line in the tracker then don't add pixel padding
-            trackerQuestFrame.ScrollChildFrame:SetHeight((TrackerLinePool.GetFirstLine():GetTop() - TrackerLinePool.GetCurrentLine():GetBottom()))
-        else
-            -- Add 3 pixels to bottom of tracker to account for text that traverses beyond the GetStringHeight() function such as lower case "g".
-            trackerQuestFrame.ScrollChildFrame:SetHeight((TrackerLinePool.GetFirstLine():GetTop() - TrackerLinePool.GetCurrentLine():GetBottom() + 3))
+        local contentHeight = 0
+        for i = 1, TrackerLinePool.GetHighestIndex() do
+            local trackerLine = TrackerLinePool.GetLine(i)
+            if trackerLine and trackerLine:IsShown() then
+                contentHeight = contentHeight + trackerLine:GetHeight()
+            end
         end
 
+        local bottomScrollPadding = 0
+        if currentLine.mode ~= "zone" then
+            -- Leave enough extra scroll range for a final objective that sits flush against the bottom edge.
+            bottomScrollPadding = math_max(3, Questie.db.profile.trackerFontSizeObjective + 4)
+        end
+        trackerQuestFrame.ScrollChildFrame:SetHeight(contentHeight + bottomScrollPadding)
+
         -- Set the baseFrame to full height so we can measure it
-        trackerQuestFrame:SetHeight(trackerQuestFrame.ScrollChildFrame:GetHeight())
+        trackerQuestFrame:SetHeight(contentHeight)
 
         if Questie.db.profile.trackerHeaderEnabled or (Questie.db.profile.alwaysShowTracker and not QuestieTracker:HasQuest()) then
             trackerBaseFrame:SetHeight(trackerQuestFrame:GetHeight() + trackerHeaderFrame:GetHeight() + 20)

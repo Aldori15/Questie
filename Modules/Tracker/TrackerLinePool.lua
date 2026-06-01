@@ -7,6 +7,8 @@ local TrackerLinePool = QuestieLoader:CreateModule("TrackerLinePool")
 local QuestieTracker = QuestieLoader:ImportModule("QuestieTracker")
 ---@type TrackerBaseFrame
 local TrackerBaseFrame = QuestieLoader:ImportModule("TrackerBaseFrame")
+---@type TrackerQuestFrame
+local TrackerQuestFrame = QuestieLoader:ImportModule("TrackerQuestFrame")
 ---@type TrackerUtils
 local TrackerUtils = QuestieLoader:ImportModule("TrackerUtils")
 ---@type TrackerQuestTimers
@@ -172,8 +174,10 @@ function TrackerLinePool.Initialize(questFrame)
         end
 
         line:EnableMouse(true)
+        line:EnableMouseWheel(true)
         line:RegisterForDrag("LeftButton")
         line:RegisterForClicks("RightButtonUp", "LeftButtonUp")
+        line:SetScript("OnMouseWheel", TrackerQuestFrame.OnMouseWheel)
 
         function line:SetOnClick(onClickmode)
             if onClickmode == "quest" then

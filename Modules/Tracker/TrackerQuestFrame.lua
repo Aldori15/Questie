@@ -14,6 +14,30 @@ local QuestieTracker = QuestieLoader:ImportModule("QuestieTracker")
 
 local questFrame, trackerBaseFrame, trackerHeaderFrame
 
+local function _OnMouseWheel(self, delta)
+    local scrollFrame = questFrame.ScrollFrame
+    local child = questFrame.ScrollChildFrame
+    if not scrollFrame or not child then
+        return
+    end
+
+    local maxScroll = math.max(0, child:GetHeight() - scrollFrame:GetHeight())
+    if maxScroll == 0 then
+        return
+    end
+
+    local scrollAmount = questFrame.ScrollBar and questFrame.ScrollBar.scrollStep or 25
+    local newScroll = scrollFrame:GetVerticalScroll() - (delta * scrollAmount)
+    newScroll = math.min(maxScroll, math.max(0, newScroll))
+
+    scrollFrame:SetVerticalScroll(newScroll)
+    if questFrame.ScrollBar then
+        questFrame.ScrollBar:SetValue(newScroll)
+    end
+end
+
+TrackerQuestFrame.OnMouseWheel = _OnMouseWheel
+
 function TrackerQuestFrame.Initialize(baseFrame, headerFrame)
     trackerBaseFrame = baseFrame
     trackerHeaderFrame = headerFrame
@@ -26,11 +50,13 @@ function TrackerQuestFrame.Initialize(baseFrame, headerFrame)
     TrackerQuestFrame.PositionTrackedQuestsFrame()
 
     questFrame:EnableMouse(true)
+    questFrame:EnableMouseWheel(true)
     questFrame:SetMovable(true)
     questFrame:SetResizable(true)
     questFrame:RegisterForDrag("LeftButton")
     questFrame:SetScript("OnDragStart", TrackerBaseFrame.OnDragStart)
     questFrame:SetScript("OnDragStop", TrackerBaseFrame.OnDragStop)
+    questFrame:SetScript("OnMouseWheel", _OnMouseWheel)
     questFrame:SetScript("OnEnter", TrackerFadeTicker.Unfade)
     questFrame:SetScript("OnLeave", TrackerFadeTicker.Fade)
 
@@ -83,6 +109,12 @@ function TrackerQuestFrame.Initialize(baseFrame, headerFrame)
     questFrame.ScrollChildFrame:SetSize(questFrame.ScrollFrame:GetWidth(), (questFrame.ScrollFrame:GetHeight()))
 
     questFrame.ScrollFrame:SetScrollChild(questFrame.ScrollChildFrame)
+    questFrame.ScrollFrame:EnableMouse(true)
+    questFrame.ScrollFrame:EnableMouseWheel(true)
+    questFrame.ScrollFrame:SetScript("OnMouseWheel", _OnMouseWheel)
+    questFrame.ScrollChildFrame:EnableMouse(true)
+    questFrame.ScrollChildFrame:EnableMouseWheel(true)
+    questFrame.ScrollChildFrame:SetScript("OnMouseWheel", _OnMouseWheel)
 
     questFrame:Hide()
 
