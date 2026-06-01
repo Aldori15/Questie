@@ -221,10 +221,12 @@ local function _BuildQuestIconSurfaceOptions()
         local order = 2.01 + (rowIndex * 0.01)
         args[row.key .. "Label"] = {
             type = "description",
+            dialogControl = "InteractiveLabel",
             order = order,
             width = 1.6,
             fontSize = "medium",
             name = function() return l10n(row.name); end,
+            desc = function() return l10n(row.desc); end,
         }
         args[row.key .. "Map"] = {
             type = "toggle",
