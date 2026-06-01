@@ -55,6 +55,8 @@ local _QuestieEvent = QuestieEvent.private
 QuestieEvent.activeQuests = {}
 _QuestieEvent.eventNamesForQuests = {}
 _QuestieEvent.announcedEvents = {}
+_QuestieEvent.announcedUpcomingEvents = {}
+_QuestieEvent.timedEventStartTimers = {}
 _QuestieEvent.initializeTimer = nil
 _QuestieEvent.initializeAttempts = 0
 
@@ -80,8 +82,10 @@ local strfind = string.find
 local _WithinDates, _LoadDarkmoonFaire, _GetDarkmoonFaireLocation,
     _GetDarkmoonFaireLocationForDate, _GetDarkmoonFaireEventName,
     _IsEventQuestVisible, _GetCalendarEventName, _GetActiveCalendarEvents,
-    _IsCalendarEventMonthPlausible, _IsCalendarEventActiveNow, _PrimeCalendar,
-    _RefreshAvailableQuests, _CancelInitializeTimer
+    _IsCalendarEventMonthPlausible, _IsCalendarEventActiveNow, _IsCalendarEventLiveNow,
+    _GetTimedEventStartDelay, _AnnounceActiveEvent, _AnnounceUpcomingTimedEvent,
+    _ScheduleTimedEventActiveAnnouncement, _PrimeCalendar, _RefreshAvailableQuests,
+    _CancelInitializeTimer
 
 local EVENT_INIT_INITIAL_DELAY = 1
 local EVENT_INIT_RETRY_INTERVAL = 1
@@ -148,9 +152,9 @@ local CALENDAR_EVENT_PLAUSIBLE_MONTHS = {
 }
 
 local CALENDAR_EVENT_TIME_WINDOWS = {
-    -- QuestieEvent initializes once, so timed fishing events need to activate before the actual contest starts.
-    ["Kalu'ak Fishing Derby"] = {startHour = 2, endHour = 15},
-    ["Stranglethorn Fishing Extravaganza"] = {startHour = 2, endHour = 17},
+    -- QuestieEvent initializes once, so timed fishing events preload before the actual contest starts.
+    ["Kalu'ak Fishing Derby"] = {startHour = 2, liveStartHour = 14, endHour = 15},
+    ["Stranglethorn Fishing Extravaganza"] = {startHour = 2, liveStartHour = 14, endHour = 17},
 }
 
 local DMF_LOCATIONS = {
@@ -234,6 +238,86 @@ _IsCalendarEventActiveNow = function(eventName, currentDate)
     end
 
     return currentDate.hour >= timeWindow.startHour and currentDate.hour < timeWindow.endHour
+end
+
+_IsCalendarEventLiveNow = function(eventName, currentDate)
+    local timeWindow = CALENDAR_EVENT_TIME_WINDOWS[eventName]
+    if not timeWindow then
+        return true
+    end
+
+    if not currentDate or not currentDate.hour then
+        return true
+    end
+
+    local liveStartHour = timeWindow.liveStartHour or timeWindow.startHour
+    return currentDate.hour >= liveStartHour and currentDate.hour < timeWindow.endHour
+end
+
+_GetTimedEventStartDelay = function(eventName, currentDate)
+    local timeWindow = CALENDAR_EVENT_TIME_WINDOWS[eventName]
+    if (not timeWindow) or (not timeWindow.liveStartHour) or (not currentDate) or (not currentDate.hour) then
+        return nil
+    end
+
+    local minutesUntilStart = ((timeWindow.liveStartHour - currentDate.hour) * 60) - (currentDate.minute or 0)
+    if minutesUntilStart <= 0 then
+        return nil
+    end
+
+    return minutesUntilStart * 60
+end
+
+_AnnounceActiveEvent = function(eventName)
+    if eventName == "Darkmoon Faire" and (Questie.IsClassic or Questie.IsWotlk) then
+        return
+    end
+
+    if _QuestieEvent.announcedEvents[eventName] then
+        return
+    end
+
+    _QuestieEvent.announcedEvents[eventName] = true
+    print(Questie:Colorize("[Questie]", "yellow"), "|cFF6ce314" .. l10n("The '%s' world event is active!", l10n(eventName)))
+end
+
+_ScheduleTimedEventActiveAnnouncement = function(eventName, currentDate)
+    if _QuestieEvent.timedEventStartTimers[eventName] then
+        return
+    end
+
+    local delay = _GetTimedEventStartDelay(eventName, currentDate)
+    if not delay then
+        return
+    end
+
+    _QuestieEvent.timedEventStartTimers[eventName] = C_Timer.After(delay, function()
+        _QuestieEvent.timedEventStartTimers[eventName] = nil
+        _AnnounceActiveEvent(eventName)
+        _RefreshAvailableQuests()
+    end)
+end
+
+_AnnounceUpcomingTimedEvent = function(eventName, currentDate)
+    if _QuestieEvent.announcedUpcomingEvents[eventName] then
+        return
+    end
+
+    local delay = _GetTimedEventStartDelay(eventName, currentDate)
+    if not delay then
+        return
+    end
+
+    _QuestieEvent.announcedUpcomingEvents[eventName] = true
+
+    local hoursUntilStart = math.ceil(delay / 3600)
+    if hoursUntilStart > 1 then
+        print(Questie:Colorize("[Questie]", "yellow"), "|cFF6ce314" .. l10n("The '%s' world event starts in about %d hours.", l10n(eventName), hoursUntilStart))
+    else
+        print(Questie:Colorize("[Questie]", "yellow"), "|cFF6ce314" .. l10n("The '%s' world event starts in less than an hour.", l10n(eventName)))
+    end
+
+    _ScheduleTimedEventActiveAnnouncement(eventName, currentDate)
 end
 
 _GetActiveCalendarEvents = function()
@@ -385,11 +469,13 @@ function QuestieEvent:Load(isFinalPass)
         end
     end
 
+    local currentDate = C_DateAndTime.GetCurrentCalendarTime()
     for eventName, isActive in pairs(activeEvents) do
         if isActive and not _QuestieEvent.announcedEvents[eventName] then
-            if eventName ~= "Darkmoon Faire" or not (Questie.IsClassic or Questie.IsWotlk) then
-                _QuestieEvent.announcedEvents[eventName] = true
-                print(Questie:Colorize("[Questie]", "yellow"), "|cFF6ce314" .. l10n("The '%s' world event is active!", l10n(eventName)))
+            if CALENDAR_EVENT_TIME_WINDOWS[eventName] and not _IsCalendarEventLiveNow(eventName, currentDate) then
+                _AnnounceUpcomingTimedEvent(eventName, currentDate)
+            else
+                _AnnounceActiveEvent(eventName)
             end
         end
     end
