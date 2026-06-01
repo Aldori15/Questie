@@ -575,15 +575,15 @@ local function _UpdateLineWidth(line, objectiveMarginLeft)
     line.label:SetWidth(trackerBaseFrame:GetWidth() - margin)
     line:SetWidth(line.label:GetWidth() + objectiveMarginLeft)
 
-    -- If the line width is less than the minimum Tracker width then don't wrap text
-    if unboundedWidth + objectiveMarginLeft < contentMaxWidth then
+    local labelWidth = line.label:GetWidth()
+    if unboundedWidth <= labelWidth + 1 then
         trackerLineWidth = math_max(trackerLineWidth, unboundedWidth + objectiveMarginLeft)
     else
-         -- We use the fontSize as reliable way to determine the line height. GetStringHeight can be inconsistent
+        -- We use the fontSize as reliable way to determine the line height. GetStringHeight can be inconsistent
         local _, fontSize = line.label:GetFont()
         local lineHeight = (fontSize * line.label:GetNumLines()) + 1 -- add an extra pixel to make sure it really wraps
         line.label:SetHeight(lineHeight)
-        line:SetHeight(line.label:GetHeight() + (Questie.db.profile.trackerQuestPadding + 2))
+        line:SetHeight(line.label:GetHeight() + 1)
 
         trackerLineWidth = math_max(trackerLineWidth, line.label:GetWrappedWidth() + objectiveMarginLeft)
     end
@@ -1966,7 +1966,7 @@ function QuestieTracker:UpdateHeight()
         local bottomScrollPadding = 0
         if currentLine.mode ~= "zone" then
             -- Leave enough extra scroll range for a final objective that sits flush against the bottom edge.
-            bottomScrollPadding = math_max(3, Questie.db.profile.trackerFontSizeObjective + 4)
+            bottomScrollPadding = math_max(3, Questie.db.profile.trackerFontSizeObjective + 3)
         end
         trackerQuestFrame.ScrollChildFrame:SetHeight(contentHeight + bottomScrollPadding)
 

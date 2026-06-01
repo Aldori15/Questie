@@ -858,7 +858,7 @@ function TrackerLinePool.UpdateWrappedLineWidths(trackerLineWidth)
     for _, line in pairs(linePool) do
         if Questie.db.profile.TrackerWidth == 0 then
             if line.mode == "objective" then
-                if line.label:GetNumLines() > 1 and line:GetHeight() > Questie.db.profile.trackerFontSizeObjective then
+                if line.label:GetUnboundedStringWidth() > line.label:GetWidth() + 1 and line:GetHeight() > Questie.db.profile.trackerFontSizeObjective then
                     line.label:SetText(line.label:GetText())
 
                     if line.altButton then
@@ -869,8 +869,10 @@ function TrackerLinePool.UpdateWrappedLineWidths(trackerLineWidth)
                         line:SetWidth(trackerLineWidth)
                     end
 
-                    line:SetHeight(line.label:GetStringHeight() + 2 + Questie.db.profile.trackerQuestPadding)
-                    line.label:SetHeight(line:GetHeight() - 2 - Questie.db.profile.trackerQuestPadding)
+                    local _, fontSize = line.label:GetFont()
+                    local lineHeight = (fontSize * line.label:GetNumLines()) + 1
+                    line.label:SetHeight(lineHeight)
+                    line:SetHeight(lineHeight + 1)
                 end
             end
         end
