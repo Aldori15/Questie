@@ -880,7 +880,7 @@ function QuestieLib.UpdateLastKnownDailyReset()
 
     local realmName = GetRealmName()
 
-    Questie.db.global.lastKnownDailyReset[realmName] = getCurrentTimestamp() + GetQuestResetTime()
+    Questie.db.global.lastKnownDailyReset[realmName] = getCurrentTimestamp() + QuestieCompat.GetQuestResetTime()
 end
 
 return QuestieLib

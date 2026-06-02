@@ -2594,16 +2594,67 @@ function QuestieCompat.GetQuestLogRewardMoney(questID)
     return rewardMoney
 end
 
+local MAX_DAILY_RESET_SECONDS = 48 * 60 * 60
+local FALLBACK_DAILY_RESET_HOUR = 6
+local warnedInvalidQuestResetTime = false
+
+local function _CalculateFallbackQuestResetTime(currentTime, currentDate)
+    local resetHour = Questie.db.profile.weeklyResetHour
+    if type(resetHour) ~= "number" then
+        resetHour = FALLBACK_DAILY_RESET_HOUR
+    end
+
+    local nextResetTime = time({
+        year = currentDate.year,
+        month = currentDate.month,
+        day = currentDate.day,
+        hour = resetHour,
+        min = 0,
+        sec = 0,
+    })
+
+    if (not nextResetTime) or nextResetTime <= currentTime then
+        nextResetTime = time({
+            year = currentDate.year,
+            month = currentDate.month,
+            day = currentDate.day + 1,
+            hour = resetHour,
+            min = 0,
+            sec = 0,
+        })
+    end
+
+    return (nextResetTime or currentTime) - currentTime
+end
+
+function QuestieCompat.GetQuestResetTime()
+    local timeUntilReset = tonumber(GetQuestResetTime())
+    local currentTime, currentDate = QuestieCompat.GetServerTime()
+
+    if timeUntilReset and timeUntilReset >= -10 and timeUntilReset <= MAX_DAILY_RESET_SECONDS then
+        return math.max(0, timeUntilReset)
+    end
+
+    -- Some private servers return an invalid value close to -GetServerTime(), which means their reset timestamp is zero.
+    if (not warnedInvalidQuestResetTime) then
+        warnedInvalidQuestResetTime = true
+        Questie:Debug(Questie.DEBUG_DEVELOP, "[GetQuestResetTime] Invalid native value, using fallback: ", timeUntilReset)
+    end
+
+    local storedResetTime = Questie.db.profile.dailyResetTime
+    if type(storedResetTime) == "number" and storedResetTime > currentTime then
+        return storedResetTime - currentTime
+    end
+
+    return _CalculateFallbackQuestResetTime(currentTime, currentDate)
+end
+
 function QuestieCompat.CalculateNextResetTime()
     local currentTime, currentDate = QuestieCompat.GetServerTime()
-    local timeUntilReset = GetQuestResetTime()
+    local timeUntilReset = QuestieCompat.GetQuestResetTime()
 
     Questie:Debug(Questie.DEBUG_DEVELOP, "[CalculateNextResetTime] GetQuestResetTime: ", timeUntilReset)
-    -- -10 because reset isn't instant, avoids error unless genuine
-    if timeUntilReset <= -10 then
-        Questie:Error("GetQuestResetTime() returns an invalid value: "..timeUntilReset..". Please report on Github!")
-        return
-    end
+
     Questie.db.profile.dailyResetTime = Questie.db.profile.dailyResetTime or (currentTime + timeUntilReset)
     Questie:Debug(Questie.DEBUG_DEVELOP, "[CalculateNextResetTime] Next daily rest time: ", date("%m/%d/%y %H:%M:%S", Questie.db.profile.dailyResetTime))
 

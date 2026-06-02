@@ -147,7 +147,7 @@ end
 
 local function _CalculateNextDailyResetTimestamp()
     local currentTimestamp = _GetCurrentServerTimestamp()
-    local timeUntilReset = tonumber(GetQuestResetTime()) or 0
+    local timeUntilReset = tonumber(QuestieCompat.GetQuestResetTime()) or 0
     if timeUntilReset < 0 then
         timeUntilReset = 0
     end
