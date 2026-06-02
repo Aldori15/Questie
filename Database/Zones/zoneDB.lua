@@ -228,14 +228,17 @@ do
                     and QuestiePlayer.HasRequiredClass(QuestieDB.QueryQuestSingle(questId, "requiredClasses")) then
 
                     local zoneOrSort, requiredSkill = QuestieDB.QueryQuestSingle(questId, "zoneOrSort"), QuestieDB.QueryQuestSingle(questId, "requiredSkill")
-                    if requiredSkill and requiredSkill[1] ~= QuestieProfessions.professionKeys.RIDING then
-                        zoneOrSort = QuestieProfessions:GetSortIdByProfessionId(requiredSkill[1])
+                    local requiredSkillId = requiredSkill and requiredSkill[1]
+                    local professionZoneId = requiredSkillId
+                        and requiredSkillId ~= QuestieProfessions.professionKeys.RIDING
+                        and QuestieProfessions:GetSortIdByProfessionId(requiredSkillId)
 
-                        if (not zoneMap[zoneOrSort]) then
-                            zoneMap[zoneOrSort] = {}
+                    if professionZoneId then
+                        if (not zoneMap[professionZoneId]) then
+                            zoneMap[professionZoneId] = {}
                         end
-                        zoneMap[zoneOrSort][questId] = true
-                    elseif zoneOrSort > 0 then
+                        zoneMap[professionZoneId][questId] = true
+                    elseif zoneOrSort and zoneOrSort > 0 then
                         local parentZoneId = ZoneDB:GetParentZoneId(zoneOrSort)
 
                         if parentZoneId then
@@ -350,7 +353,7 @@ end
 ---@return table
 function _ZoneDB:SplitSeasonalQuests()
     local sortKeys = QuestieDB.sortKeys
-    
+
     if (not zoneMap[sortKeys.SPECIAL]) or (not zoneMap[sortKeys.SEASONAL]) then
         return zoneMap
     end
