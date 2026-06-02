@@ -786,6 +786,20 @@ function QuestieQuest:GetAllQuestIds()
 end
 
 -- This checks and manually adds quest item tooltips for sourceItems
+local function _IsItemInQuestLogObjectives(quest, itemId)
+    local questObjectives = QuestieQuest:GetAllLeaderBoardDetails(quest.Id) or {}
+
+    for objectiveIndex, objective in pairs(questObjectives) do
+        local objectiveData = quest.ObjectiveData and quest.ObjectiveData[objectiveIndex]
+
+        if objectiveData and objectiveData.Type == "item" and objectiveData.Id == itemId and objective.type == "item" then
+            return true
+        end
+    end
+
+    return false
+end
+
 local function _AddSourceItemObjective(quest)
     if quest.sourceItemId then
         -- Save the itemObjective table from the quests objectives table
@@ -795,7 +809,7 @@ local function _AddSourceItemObjective(quest)
         if objectives then
             for _, itemObjectiveIndex in pairs(objectives) do
                 for _, itemObjectiveId in pairs(itemObjectiveIndex) do
-                    if itemObjectiveId == quest.sourceItemId then
+                    if itemObjectiveId == quest.sourceItemId and _IsItemInQuestLogObjectives(quest, quest.sourceItemId) then
                         Questie:Debug(Questie.DEBUG_INFO, "[QuestieQuest:_AddSourceItemObjective] This item is already part of a quest objective.")
                         return
                     end
