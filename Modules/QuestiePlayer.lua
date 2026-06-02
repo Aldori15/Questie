@@ -47,6 +47,8 @@ function QuestiePlayer:Initialize()
     local classId = select(3, UnitClass("player"))
     playerClassFlag = 2 ^ (classId - 1)
     playerClassFlagX2 = 2 * playerClassFlag
+
+    QuestiePlayer.faction = UnitFactionGroup("player")
 end
 
 -- Cache player level from events (or fallback UnitLevel when event value is unavailable).
