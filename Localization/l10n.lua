@@ -67,6 +67,14 @@ local function GetLookupEntries(lookup)
     return lookup or {}
 end
 
+local function ReleaseUnusedLookupLocales(lookup)
+    for lookupLocale in pairs(lookup) do
+        if lookupLocale ~= locale then
+            lookup[lookupLocale] = nil
+        end
+    end
+end
+
 function l10n:Initialize()
     local itemLookup = GetLookupEntries(l10n.itemLookup[locale])
     local questLookup = GetLookupEntries(l10n.questLookup[locale])
@@ -137,6 +145,11 @@ function l10n:Initialize()
             QuestieDB.objectData[id][QuestieDB.objectKeys.name] = name
         end
     end
+
+    ReleaseUnusedLookupLocales(l10n.itemLookup)
+    ReleaseUnusedLookupLocales(l10n.questLookup)
+    ReleaseUnusedLookupLocales(l10n.npcNameLookup)
+    ReleaseUnusedLookupLocales(l10n.objectLookup)
 end
 
 function l10n:BuildObjectNameCache()
