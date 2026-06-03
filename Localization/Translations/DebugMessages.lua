@@ -267,10 +267,10 @@ local debugMessagesLocales = {
         ["frFR"] = "Initialisation de la langue",
     },
     ["Initializing townfolks"] = {
-        ["ptBR"] = "Inicializando cidadãos",
+        ["ptBR"] = "Inicializando serviços",
         ["ruRU"] = "Инициализация полезных объектов и NPC (ремонт, почтовый ящик и т.п.)",
         ["deDE"] = "Initialisiere Stadtbewohner",
-        ["koKR"] = "도시 NPC 초기화 중",
+        ["koKR"] = "도시 마을 주민 초기화 중",
         ["esMX"] = "Inicializando ciudadanos",
         ["enUS"] = true,
         ["zhCN"] = "初始化镇民",

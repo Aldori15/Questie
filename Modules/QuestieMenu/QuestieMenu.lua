@@ -58,7 +58,7 @@ local _townsfolk_texturemap = {
     ["Spirit Healer"] = "Interface\\raidframe\\raid-icon-rez",
     ["Weapon Master"] = QuestieLib.AddonPath.."Icons\\slay.blp",
     ["Moonwell"] = "Interface\\Icons\\inv_fabric_moonrag_01.blp",
-    ["Profession Trainer"] = "Interface\\Minimap\\tracking\\profession",
+    ["Profession Trainers"] = "Interface\\Minimap\\tracking\\profession",
     ["Ammo"] = 132382,--select(10, GetItemInfo(2515)) -- sharp arrow
     ["Bags"] = 133634,--select(10, GetItemInfo(4496)) -- small brown pouch
     ["Potions"] = 134831,--select(10, GetItemInfo(929)) -- Healing Potion
@@ -490,7 +490,7 @@ function QuestieMenu:Show(hideDelay)
         end
         QuestieQuest:RefreshQuestIconVisibility()
     end, icon=QuestieLib.AddonPath.."Icons\\event.blp", notCheckable=false, checked=QuestieIconVisibility:IsEnabledAnywhere("objective"), isNotRadio=true, keepShownOnClick=true})
-    tinsert(menuTable, {text= l10n("Profession Trainer"), func = function() end, keepShownOnClick=true, hasArrow=true, menuList=QuestieMenu.buildProfessionMenu(), notCheckable=true})
+    tinsert(menuTable, {text= l10n("Profession Trainers"), func = function() end, keepShownOnClick=true, hasArrow=true, menuList=QuestieMenu.buildProfessionMenu(), notCheckable=true})
     tinsert(menuTable, {text= l10n("Vendor"), func = function() end, keepShownOnClick=true, hasArrow=true, menuList=QuestieMenu.buildVendorMenu(), notCheckable=true})
     tinsert(menuTable, {text = l10n("Instances"), func = function() end, keepShownOnClick = true, hasArrow = true, menuList = QuestieMenu.buildInstancesMenu(), notCheckable = true})
 

@@ -227,7 +227,7 @@ local advancedOptionsLocales = {
         ["koKR"] = "Questie 여정 초기화",
         ["ptBR"] = "Redefinir jornada",
         ["ruRU"] = "Сброс Путешествия",
-        ["zhCN"] = "重置Questie任务历程",
+        ["zhCN"] = "重置Questie旅程",
         ["zhTW"] = "重置Questie冒險日記",
     },
     ["Clear the Journey of the current character"] = {
@@ -239,7 +239,7 @@ local advancedOptionsLocales = {
         ["koKR"] = "현재 캐릭터의 여정을 초기화합니다.",
         ["ptBR"] = "Redefine a jornada do personagem atual.",
         ["ruRU"] = "Сбросить данные раздела 'Путешествие' для текущего персонажа",
-        ["zhCN"] = "清除当前角色的任务历程",
+        ["zhCN"] = "清除当前角色的旅程",
         ["zhTW"] = "清空當前角色的冒險日記",
     },
     ["Are you sure you want to reset the Questie Journey for this character?"] = {
@@ -251,7 +251,7 @@ local advancedOptionsLocales = {
         ["koKR"] = "이 캐릭터의 Questie 여정을 초기화하시겠습니까?",
         ["ptBR"] = "Tem certeza de que deseja redefinir a jornada para este personagem?",
         ["ruRU"] = "Вы уверены, что хотите сбросить Путешествие для этого персонажа?",
-        ["zhCN"] = "确定要重置此角色的Questie任务历程吗？",
+        ["zhCN"] = "确定要重置此角色的Questie旅程吗？",
         ["zhTW"] = "確定要重置此角色的Questie冒險日記嗎？",
     },
     ["Recompile Database"] = {
