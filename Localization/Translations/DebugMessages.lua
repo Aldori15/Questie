@@ -266,7 +266,7 @@ local debugMessagesLocales = {
         ["esES"] = "Inicializando idioma",
         ["frFR"] = "Initialisation de la langue",
     },
-    ["Initializing townfolks"] = {
+    ["Initializing townsfolk"] = {
         ["ptBR"] = "Inicializando serviços",
         ["ruRU"] = "Инициализация полезных объектов и NPC (ремонт, почтовый ящик и т.п.)",
         ["deDE"] = "Initialisiere Stadtbewohner",
