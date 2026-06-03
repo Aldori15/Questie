@@ -157,12 +157,17 @@ local pins = {
     Minimap = Minimap,
     updateFrame = CreateFrame("Frame"),
     activeMinimapPins = activeMinimapPins,
+    minimapPinRevision = 0,
     worldmapPins = worldmapPins,
     worldmapProvider = {
         GetMap = function(self) return QuestieCompat.WorldMapFrame end,
     },
 }
 QuestieCompat.HBDPins = pins
+
+local function MarkMinimapPinsChanged()
+    pins.minimapPinRevision = pins.minimapPinRevision + 1
+end
 
 local minimap_size = {
     indoor = {
@@ -230,6 +235,7 @@ local minimapPinCount, queueFullUpdate = 0, false
 ---@type unknown, MinimapShapes?
 local minimapScale, minimapShape, mapRadius, minimapWidth, minimapHeight, mapSin, mapCos
 local lastZoom, lastFacing, lastXY, lastYY
+local OnUpdateHandler
 local worldMapLayoutDirty = true
 local worldMapRefreshPending = false
 local minimapRefreshPending = false
@@ -250,13 +256,27 @@ local function _ShouldProcessQuestieMinimapPins()
     return profile.enabled and profile.enableMiniMapIcons
 end
 
+local function _StartMinimapOnUpdate()
+    if OnUpdateHandler then
+        pins.updateFrame:SetScript("OnUpdate", OnUpdateHandler)
+    end
+end
+
+local function _StopMinimapOnUpdate()
+    pins.updateFrame:SetScript("OnUpdate", nil)
+end
+
 local function _ClearActiveMinimapPins()
+    local hadActivePins = next(activeMinimapPins) ~= nil
     minimapPinCount = 0
     lastXY, lastYY = nil, nil
 
     for pin in pairs(activeMinimapPins) do
         pin:Hide()
         activeMinimapPins[pin] = nil
+    end
+    if hadActivePins then
+        MarkMinimapPinsChanged()
     end
 end
 
@@ -542,11 +562,15 @@ local function UpdateMinimapPins(force)
             mapCos = cos(facing)
         end
 
+        local activeChanged = false
         for pin, data in pairs(minimapPins) do
             if (not pin.hidden)
                 and instanceID == data.instanceID
                 and math_abs(x-data.x) + math_abs(y-data.y) < 500 -- questie specific fix
                 and ShouldShowMinimapPinForUiMap(data, currentUiMapID) then
+                if not activeMinimapPins[pin] then
+                    activeChanged = true
+                end
                 activeMinimapPins[pin] = data
                 data.keep = true
                 -- draw the pin (this may reset data.keep if outside of the map)
@@ -559,10 +583,14 @@ local function UpdateMinimapPins(force)
             if not data.keep then
                 pin:Hide()
                 activeMinimapPins[pin] = nil
+                activeChanged = true
             else
                 minimapPinCount = minimapPinCount + 1
                 data.keep = nil
             end
+        end
+        if activeChanged then
+            MarkMinimapPinsChanged()
         end
     end
 end
@@ -780,6 +808,7 @@ end
 
 local function QueueMinimapRefresh()
     queueFullUpdate = true
+    _StartMinimapOnUpdate()
     if minimapRefreshPending then
         return
     end
@@ -907,18 +936,20 @@ end
 
 local lastFullUpdate = 0
 local lastIconUpdate = 0
-local function OnUpdateHandler(frame, elapsed)
+OnUpdateHandler = function(frame, elapsed)
     if not _ShouldProcessQuestieMinimapPins() then
         _ClearActiveMinimapPins()
         lastFullUpdate = 0
         lastIconUpdate = 0
         queueFullUpdate = false
+        _StopMinimapOnUpdate()
         return
     end
 
     if not queueFullUpdate and not _HasTrackedMinimapPins() then
         lastFullUpdate = 0
         lastIconUpdate = 0
+        _StopMinimapOnUpdate()
         return
     end
 
@@ -935,7 +966,6 @@ local function OnUpdateHandler(frame, elapsed)
         lastIconUpdate = 0
     end
 end
-pins.updateFrame:SetScript("OnUpdate", OnUpdateHandler)
 
 local function OnEventHandler(frame, event, ...)
     if QuestieCompat.ClearCachedPlayerPositions then
@@ -1017,6 +1047,7 @@ function pins:AddMinimapIconWorld(ref, icon, instanceID, x, y, floatOnEdge)
     t.showInParentZone = nil
 
     minimapPins[icon] = t
+    MarkMinimapPinsChanged()
     QueueMinimapRefresh()
 
     icon:SetParent(pins.MinimapGroup or pins.Minimap)
@@ -1074,8 +1105,12 @@ function pins:RemoveMinimapIcon(ref, icon)
     if minimapPins[icon] then
         recycle(minimapPins[icon])
         minimapPins[icon] = nil
+        MarkMinimapPinsChanged()
     end
-    activeMinimapPins[icon] = nil
+    if activeMinimapPins[icon] then
+        activeMinimapPins[icon] = nil
+        MarkMinimapPinsChanged()
+    end
     icon:Hide()
     QueueMinimapRefresh()
 end
@@ -1084,15 +1119,23 @@ end
 -- @param ref Reference to your addon to track the icon under (ie. your "self" or string identifier)
 function pins:RemoveAllMinimapIcons(ref)
     if not ref or not minimapPinRegistry[ref] then return end
+    local removedPins = false
     for icon in pairs(minimapPinRegistry[ref]) do
         if minimapPins[icon] then
             recycle(minimapPins[icon])
             minimapPins[icon] = nil
+            removedPins = true
         end
-        activeMinimapPins[icon] = nil
+        if activeMinimapPins[icon] then
+            activeMinimapPins[icon] = nil
+            removedPins = true
+        end
         icon:Hide()
     end
     wipe(minimapPinRegistry[ref])
+    if removedPins then
+        MarkMinimapPinsChanged()
+    end
     QueueMinimapRefresh()
 end
 
