@@ -252,6 +252,7 @@ function QuestieOptionsDefaults:Load()
             lastDailyRequestDate = "",
             questieLocale = 'enUS',
             questieLocaleDiff = false,
+            journeyKeybindDefaultApplied = false,
         }
     }
 end
