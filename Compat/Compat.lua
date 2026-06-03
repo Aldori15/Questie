@@ -3385,12 +3385,13 @@ function QuestieCompat.NameplateCreated(frame)
     local name = npFrames[frame]:GetText()
     local key = npActiveQuestNPCs[name]
     if key then
-        local icon = _QuestieNameplate.GetValidIcon(QuestieTooltips.lookupByKey[key])
+        local objectiveInfo = _QuestieNameplate.GetValidObjectiveInfo(QuestieTooltips.lookupByKey[key])
 
-        if icon then
+        if objectiveInfo then
             local f = _QuestieNameplate.GetFrame(frame)
-            f.Icon:SetTexture(icon)
-            f.lastIcon = icon -- this is used to prevent updating the texture when it's already what it needs to be
+            f.Icon:SetTexture(objectiveInfo.icon)
+            f.lastIcon = objectiveInfo.icon -- this is used to prevent updating the texture when it's already what it needs to be
+            _QuestieNameplate.SetObjectiveText(f, objectiveInfo.text)
             f:Show()
         end
     end
@@ -3401,14 +3402,18 @@ function QuestieCompat.UpdateNameplate()
         local name = npFrames[frame]:GetText()
         local key = npActiveQuestNPCs[name]
 
-        local icon = _QuestieNameplate.GetValidIcon(QuestieTooltips.lookupByKey[key])
+        local objectiveInfo = _QuestieNameplate.GetValidObjectiveInfo(QuestieTooltips.lookupByKey[key])
 
-        if icon then
+        if objectiveInfo then
             local f = _QuestieNameplate.GetFrame(frame)
             -- check if the texture needs to be changed
-            if f.lastIcon ~= icon then
-                f.lastIcon = icon
-                f.Icon:SetTexture(icon)
+            if f.lastIcon ~= objectiveInfo.icon then
+                f.lastIcon = objectiveInfo.icon
+                f.Icon:SetTexture(objectiveInfo.icon)
+            end
+
+            if f.lastText ~= objectiveInfo.text then
+                _QuestieNameplate.SetObjectiveText(f, objectiveInfo.text)
             end
         else
             -- tooltip removed but we still have the frame active, remove it
