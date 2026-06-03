@@ -239,7 +239,7 @@ local worldMapInteractionSuppressUntil = 0
 local playerPositionCache = {}
 local stablePlayerWorldPositionCache = {}
 local minimapPlayerWorldPositionCache = {}
-local PLAYER_POSITION_CACHE_TTL = 0.01
+local PLAYER_POSITION_CACHE_TTL = 0.075
 local MIN_ZONE_COORD = -0.25
 local MAX_ZONE_COORD = 1.25
 
@@ -312,14 +312,12 @@ local function GetPlayerPositionCacheContextKey()
         displayedMapName = GetDisplayedWorldMapName() or ""
     end
 
-    return table.concat({
-        worldMapVisible and "1" or "0",
-        tostring(rawMapID or 0),
-        tostring(rawMapLevel or 0),
-        tostring(zoneText or ""),
-        tostring(subZoneText or ""),
-        tostring(displayedMapName or ""),
-    }, "|")
+    return (worldMapVisible and "1" or "0")
+        .. "|" .. tostring(rawMapID or 0)
+        .. "|" .. tostring(rawMapLevel or 0)
+        .. "|" .. zoneText
+        .. "|" .. subZoneText
+        .. "|" .. displayedMapName
 end
 
 local function TryGetCachedPlayerPosition(cache, maxAge, contextKey)
