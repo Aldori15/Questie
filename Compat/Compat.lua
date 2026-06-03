@@ -3402,8 +3402,8 @@ local function getNameplateFrameGUID(frame)
     return unit and UnitGUID(unit) or nil
 end
 
-local function isTargetNameplateFrame(frame)
-    if not Questie.db.profile.nameplateObjectiveTextTargetOnly then
+local function isTargetNameplateFrame(frame, forceCheck)
+    if (not forceCheck) and (not Questie.db.profile.nameplateObjectiveTextTargetOnly) then
         return true
     end
 
@@ -3447,7 +3447,8 @@ function QuestieCompat.NameplateCreated(frame)
             local f = _QuestieNameplate.GetFrame(frame)
             f.Icon:SetTexture(objectiveInfo.icon)
             f.lastIcon = objectiveInfo.icon -- this is used to prevent updating the texture when it's already what it needs to be
-            if not isTargetNameplateFrame(frame) then
+            _QuestieNameplate.SetTargetNameplateState(f, isTargetNameplateFrame(frame, true))
+            if Questie.db.profile.nameplateObjectiveTextTargetOnly and not f.isTargetNameplate then
                 objectiveInfo.text = nil
             end
             _QuestieNameplate.SetObjectiveText(f, objectiveInfo.text)
@@ -3465,18 +3466,21 @@ function QuestieCompat.UpdateNameplate()
 
         if objectiveInfo then
             local f = _QuestieNameplate.GetFrame(frame)
+            _QuestieNameplate.SetTargetNameplateState(f, isTargetNameplateFrame(frame, true))
             -- check if the texture needs to be changed
             if f.lastIcon ~= objectiveInfo.icon then
                 f.lastIcon = objectiveInfo.icon
                 f.Icon:SetTexture(objectiveInfo.icon)
             end
 
-            if not isTargetNameplateFrame(frame) then
+            if Questie.db.profile.nameplateObjectiveTextTargetOnly and not f.isTargetNameplate then
                 objectiveInfo.text = nil
             end
 
             if f.lastText ~= objectiveInfo.text then
                 _QuestieNameplate.SetObjectiveText(f, objectiveInfo.text)
+            else
+                _QuestieNameplate.ApplyFrameLayout(f)
             end
         else
             -- tooltip removed but we still have the frame active, remove it

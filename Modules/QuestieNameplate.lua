@@ -10,6 +10,7 @@ local QuestieTooltips = QuestieLoader:ImportModule("QuestieTooltips")
 local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
 
 --- COMPATIBILITY ---
+local C_Timer = QuestieCompat.C_Timer
 local UnitGUID = QuestieCompat.UnitGUID
 
 local activeGUIDs = {}
@@ -39,6 +40,63 @@ local function getNameplateLayoutAnchor(frame)
     end
 
     return parent
+end
+
+local function getNameplateLayoutXOffset(frame, layoutAnchor)
+    local parent = frame and frame:GetParent()
+    if (not parent) or (not layoutAnchor) or parent == layoutAnchor then
+        return 0
+    end
+
+    local parentLeft = parent:GetLeft()
+    local anchorLeft = layoutAnchor:GetLeft()
+    if parentLeft and anchorLeft then
+        local parentScale = parent.GetEffectiveScale and parent:GetEffectiveScale() or 1
+        local anchorScale = layoutAnchor.GetEffectiveScale and layoutAnchor:GetEffectiveScale() or parentScale
+        return ((anchorLeft * anchorScale) - (parentLeft * parentScale)) / parentScale
+    end
+
+    return 0
+end
+
+local function getNameplateLayoutYOffset(frame, layoutAnchor)
+    local parent = frame and frame:GetParent()
+    if (not parent) or (not layoutAnchor) or parent == layoutAnchor then
+        return 0
+    end
+
+    local _, parentY = parent:GetCenter()
+    local _, anchorY = layoutAnchor:GetCenter()
+    if parentY and anchorY then
+        local parentScale = parent.GetEffectiveScale and parent:GetEffectiveScale() or 1
+        local anchorScale = layoutAnchor.GetEffectiveScale and layoutAnchor:GetEffectiveScale() or parentScale
+        return ((parentY * parentScale) - (anchorY * anchorScale)) / parentScale
+    end
+
+    return 0
+end
+
+local function getNameplateTextYOffset(frame, layoutAnchor, yOffset)
+    if Questie.db.profile.nameplateObjectiveTextTargetOnly then
+        return yOffset
+    end
+
+    return yOffset + getNameplateLayoutYOffset(frame, layoutAnchor)
+end
+
+local function setTargetNameplateState(frame, isTargetNameplate)
+    frame.isTargetNameplate = isTargetNameplate
+    if isTargetNameplate then
+        frame.useHealthbarAnchor = true
+    end
+end
+
+local function scheduleNameplateLayoutRefresh(frame)
+    C_Timer.After(0.1, function()
+        if frame and frame:GetParent() then
+            _QuestieNameplate.ApplyFrameLayout(frame)
+        end
+    end)
 end
 
 -- Not used
@@ -80,6 +138,7 @@ function QuestieNameplate:NameplateCreated(token)
         local f = _QuestieNameplate.GetFrame(unitGUID)
         f.Icon:SetTexture(objectiveInfo.icon)
         f.lastIcon = objectiveInfo.icon -- this is used to prevent updating the texture when it's already what it needs to be
+        _QuestieNameplate.SetTargetNameplateState(f, unitGUID == UnitGUID("target"))
         if Questie.db.profile.nameplateObjectiveTextTargetOnly and unitGUID ~= UnitGUID("target") then
             objectiveInfo.text = nil
         end
@@ -120,6 +179,7 @@ function QuestieNameplate:UpdateNameplate()
 
         if objectiveInfo then
             local frame = _QuestieNameplate.GetFrame(guid)
+            _QuestieNameplate.SetTargetNameplateState(frame, guid == UnitGUID("target"))
             -- check if the texture needs to be changed
             if frame.lastIcon ~= objectiveInfo.icon then
                 frame.lastIcon = objectiveInfo.icon
@@ -132,6 +192,8 @@ function QuestieNameplate:UpdateNameplate()
 
             if frame.lastText ~= objectiveInfo.text then
                 _QuestieNameplate.SetObjectiveText(frame, objectiveInfo.text)
+            else
+                _QuestieNameplate.ApplyFrameLayout(frame)
             end
         else
             -- tooltip removed but we still have the frame active, remove it
@@ -235,6 +297,8 @@ function _QuestieNameplate.GetFrame(guid)
     frame:SetFrameLevel(10)
     frame:EnableMouse(false)
     frame:SetParent(parent)
+    frame.isTargetNameplate = false
+    frame.useHealthbarAnchor = false
 
     frame.Icon = frame.Icon or frame:CreateTexture(nil, "ARTWORK")
     frame.TextFrame = frame.TextFrame or CreateFrame("Frame", nil, frame)
@@ -246,6 +310,7 @@ function _QuestieNameplate.GetFrame(guid)
     frame.Text:SetShadowOffset(1, -1)
 
     _QuestieNameplate.ApplyFrameLayout(frame)
+    scheduleNameplateLayoutRefresh(frame)
 
     npFrames[guid] = frame
 
@@ -404,6 +469,10 @@ function _QuestieNameplate.SetObjectiveText(frame, text)
     end
 end
 
+function _QuestieNameplate.SetTargetNameplateState(frame, isTargetNameplate)
+    setTargetNameplateState(frame, isTargetNameplate)
+end
+
 function _QuestieNameplate.ApplyFrameLayout(frame)
     local iconScale = Questie.db.profile.nameplateScale
     local iconSize = 16 * iconScale
@@ -424,8 +493,11 @@ function _QuestieNameplate.ApplyFrameLayout(frame)
     frame:SetFrameLevel(showText and 20 or 10)
     frame:ClearAllPoints()
     local layoutAnchor = getNameplateLayoutAnchor(frame)
-    if layoutAnchor then
-        frame:SetPoint("LEFT", layoutAnchor, "LEFT", xOffset, yOffset)
+    local parent = frame:GetParent()
+    if showText and frame.useHealthbarAnchor and layoutAnchor and parent and layoutAnchor ~= parent then
+        frame:SetPoint("LEFT", layoutAnchor, "LEFT", xOffset, getNameplateTextYOffset(frame, layoutAnchor, yOffset))
+    elseif parent then
+        frame:SetPoint("LEFT", parent, "LEFT", xOffset + getNameplateLayoutXOffset(frame, layoutAnchor), yOffset)
     else
         frame:SetPoint("LEFT", xOffset, yOffset)
     end
