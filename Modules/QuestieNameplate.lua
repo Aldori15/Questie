@@ -6,6 +6,8 @@ local _QuestieNameplate = QuestieNameplate.private
 -------------------------
 ---@type QuestieTooltips
 local QuestieTooltips = QuestieLoader:ImportModule("QuestieTooltips")
+---@type QuestieLib
+local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
 
 --- COMPATIBILITY ---
 local UnitGUID = QuestieCompat.UnitGUID
@@ -16,6 +18,8 @@ local npUnusedFrames = {}
 local npFramesCount = 0
 
 local activeTargetFrame
+local NAMEPLATE_TEXT_WIDTH = 260
+local NAMEPLATE_TEXT_FONT_SIZE = 10
 
 
 -- Not used
@@ -49,14 +53,15 @@ function QuestieNameplate:NameplateCreated(token)
         return
     end
 
-    local icon = _QuestieNameplate.GetValidIcon(QuestieTooltips.lookupByKey["m_" .. npcId])
+    local objectiveInfo = _QuestieNameplate.GetValidObjectiveInfo(QuestieTooltips.lookupByKey["m_" .. npcId])
 
-    if icon then
+    if objectiveInfo then
         activeGUIDs[unitGUID] = token
 
         local f = _QuestieNameplate.GetFrame(unitGUID)
-        f.Icon:SetTexture(icon)
-        f.lastIcon = icon -- this is used to prevent updating the texture when it's already what it needs to be
+        f.Icon:SetTexture(objectiveInfo.icon)
+        f.lastIcon = objectiveInfo.icon -- this is used to prevent updating the texture when it's already what it needs to be
+        _QuestieNameplate.SetObjectiveText(f, objectiveInfo.text)
         f:Show()
     end
 end
@@ -89,14 +94,18 @@ function QuestieNameplate:UpdateNameplate()
             return
         end
 
-        local icon = _QuestieNameplate.GetValidIcon(QuestieTooltips.lookupByKey["m_" .. npcId])
+        local objectiveInfo = _QuestieNameplate.GetValidObjectiveInfo(QuestieTooltips.lookupByKey["m_" .. npcId])
 
-        if icon then
+        if objectiveInfo then
             local frame = _QuestieNameplate.GetFrame(guid)
             -- check if the texture needs to be changed
-            if frame.lastIcon ~= icon then
-                frame.lastIcon = icon
-                frame.Icon:SetTexture(icon)
+            if frame.lastIcon ~= objectiveInfo.icon then
+                frame.lastIcon = objectiveInfo.icon
+                frame.Icon:SetTexture(objectiveInfo.icon)
+            end
+
+            if frame.lastText ~= objectiveInfo.text then
+                _QuestieNameplate.SetObjectiveText(frame, objectiveInfo.text)
             end
         else
             -- tooltip removed but we still have the frame active, remove it
@@ -108,11 +117,7 @@ end
 
 function QuestieNameplate:RedrawIcons()
     for _, frame in pairs(npFrames) do
-        local iconScale = Questie.db.profile.nameplateScale
-
-        frame:SetPoint("LEFT", Questie.db.profile.nameplateX, Questie.db.profile.nameplateY)
-        frame:SetWidth(16 * iconScale)
-        frame:SetHeight(16 * iconScale)
+        _QuestieNameplate.ApplyFrameLayout(frame)
     end
 end
 
@@ -200,19 +205,21 @@ function _QuestieNameplate.GetFrame(guid)
         npFramesCount = npFramesCount + 1
     end
 
-    local iconScale = Questie.db.profile.nameplateScale
-
     frame:SetFrameStrata("LOW")
     frame:SetFrameLevel(10)
-    frame:SetWidth(16 * iconScale)
-    frame:SetHeight(16 * iconScale)
     frame:EnableMouse(false)
     frame:SetParent(parent)
-    frame:SetPoint("LEFT", Questie.db.profile.nameplateX, Questie.db.profile.nameplateY)
 
     frame.Icon = frame.Icon or frame:CreateTexture(nil, "ARTWORK")
-    frame.Icon:ClearAllPoints()
-    frame.Icon:SetAllPoints(frame)
+    frame.TextFrame = frame.TextFrame or CreateFrame("Frame", nil, frame)
+    frame.Text = frame.Text or frame.TextFrame:CreateFontString(nil, "OVERLAY")
+    if frame.Text.SetWordWrap then
+        frame.Text:SetWordWrap(false)
+    end
+    frame.Text:SetJustifyH("LEFT")
+    frame.Text:SetShadowOffset(1, -1)
+
+    _QuestieNameplate.ApplyFrameLayout(frame)
 
     npFrames[guid] = frame
 
@@ -266,12 +273,18 @@ function _QuestieNameplate.RemoveFrame(guid)
 
     table.insert(npUnusedFrames, npFrames[guid])
     npFrames[guid].Icon:SetTexture(nil) -- fix for overlapping icons
+    _QuestieNameplate.SetObjectiveText(npFrames[guid], nil)
     npFrames[guid]:Hide()
     npFrames[guid] = nil
 end
 
 ---@param tooltips table<string, table>
 function _QuestieNameplate.GetValidIcon(tooltips) -- helper function to get the first valid (incomplete) icon from the specified tooltip, or nil if there is none
+    local objectiveInfo = _QuestieNameplate.GetValidObjectiveInfo(tooltips)
+    return objectiveInfo and objectiveInfo.icon or nil
+end
+
+function _QuestieNameplate.GetValidObjectiveInfo(tooltips) -- helper function to get the first valid (incomplete) objective info from the specified tooltip, or nil if there is none
     if (not tooltips) then
         return
     end
@@ -283,27 +296,133 @@ function _QuestieNameplate.GetValidIcon(tooltips) -- helper function to get the 
                 -- If the tooltip icon is Questie.ICON_TYPE_OBJECT we use Questie.ICON_TYPE_LOOT because NPCs should never show
                 -- a cogwheel icon (for pfquest only).
                 local iconType = tooltip.objective.Icon
+                local icon
                 if iconType == Questie.ICON_TYPE_LOOT then
-                    return Questie.db.profile.iconTheme == 'pfquest' and Questie.icons["loot"] or Questie.db.profile.ICON_LOOT or Questie.icons["loot"]
+                    icon = Questie.db.profile.iconTheme == 'pfquest' and Questie.icons["loot"] or Questie.db.profile.ICON_LOOT or Questie.icons["loot"]
                 elseif iconType == Questie.ICON_TYPE_OBJECT then
-                    return Questie.db.profile.iconTheme == 'pfquest' and Questie.icons["loot"] or Questie.db.profile.ICON_LOOT or Questie.icons["loot"]
+                    icon = Questie.db.profile.iconTheme == 'pfquest' and Questie.icons["loot"] or Questie.db.profile.ICON_LOOT or Questie.icons["loot"]
                 elseif iconType == Questie.ICON_TYPE_SLAY then
-                    return Questie.db.profile.iconTheme == 'pfquest' and Questie.icons["slay"] or Questie.db.profile.ICON_SLAY or Questie.icons["slay"]
+                    icon = Questie.db.profile.iconTheme == 'pfquest' and Questie.icons["slay"] or Questie.db.profile.ICON_SLAY or Questie.icons["slay"]
                 elseif iconType == Questie.ICON_TYPE_EVENT then
-                    return Questie.db.profile.iconTheme == 'pfquest' and Questie.icons["event"] or Questie.db.profile.ICON_EVENT or Questie.icons["event"]
+                    icon = Questie.db.profile.iconTheme == 'pfquest' and Questie.icons["event"] or Questie.db.profile.ICON_EVENT or Questie.icons["event"]
                 elseif iconType == Questie.ICON_TYPE_TALK then
-                    return Questie.db.profile.iconTheme == 'pfquest' and Questie.icons["talk"] or Questie.db.profile.ICON_TALK or Questie.icons["talk"]
+                    icon = Questie.db.profile.iconTheme == 'pfquest' and Questie.icons["talk"] or Questie.db.profile.ICON_TALK or Questie.icons["talk"]
                 elseif iconType == Questie.ICON_TYPE_INTERACT then
-                    return Questie.db.profile.iconTheme == 'pfquest' and Questie.icons["interact"] or Questie.db.profile.ICON_INTERACT or Questie.icons["interact"]
+                    icon = Questie.db.profile.iconTheme == 'pfquest' and Questie.icons["interact"] or Questie.db.profile.ICON_INTERACT or Questie.icons["interact"]
                 --? icon types below here are never reached or just not used on nameplates ?
                 elseif iconType == Questie.ICON_TYPE_AVAILABLE or iconType == Questie.ICON_TYPE_AVAILABLE_GRAY then
-                    return Questie.icons["available"]
+                    icon = Questie.icons["available"]
                 elseif iconType == Questie.ICON_TYPE_REPEATABLE then
-                    return Questie.icons["repeatable"]
+                    icon = Questie.icons["repeatable"]
                 elseif iconType == Questie.ICON_TYPE_COMPLETE then
-                    return Questie.icons["complete"]
+                    icon = Questie.icons["complete"]
+                end
+
+                if icon then
+                    return {
+                        icon = icon,
+                        text = _QuestieNameplate.GetObjectiveText(tooltip.objective),
+                    }
                 end
             end
+        end
+    end
+end
+
+function _QuestieNameplate.GetObjectiveText(objective)
+    if not Questie.db.profile.nameplateShowObjectiveText then
+        return nil
+    end
+
+    local objectiveText = QuestieLib:GetObjectiveDescription(objective)
+    if objectiveText == "" then
+        return nil
+    end
+
+    local color = QuestieLib:GetRGBForObjective(objective)
+    local progress
+    if objective.Needed and objective.Collected then
+        progress = tostring(objective.Collected) .. "/" .. tostring(objective.Needed)
+    end
+
+    if progress then
+        if Questie.db.profile.showQuestProgressFirst then
+            return color .. "[" .. progress .. " " .. objectiveText .. "]|r"
+        else
+            return color .. "[" .. objectiveText .. ": " .. progress .. "]|r"
+        end
+    end
+
+    return color .. "[" .. objectiveText .. "]|r"
+end
+
+function _QuestieNameplate.SetObjectiveText(frame, text)
+    if not frame.Text then
+        return
+    end
+
+    frame.lastText = text
+    if text then
+        frame.Text:SetText(text)
+        frame.Text:Show()
+        if frame.TextFrame then
+            frame.TextFrame:Show()
+        end
+    else
+        frame.Text:SetText("")
+        frame.Text:Hide()
+        if frame.TextFrame then
+            frame.TextFrame:Hide()
+        end
+    end
+end
+
+function _QuestieNameplate.ApplyFrameLayout(frame)
+    local iconScale = Questie.db.profile.nameplateScale
+    local iconSize = 16 * iconScale
+    local showText = Questie.db.profile.nameplateShowObjectiveText
+    local textScale = Questie.db.profile.nameplateTextScale or 1
+    local textFontSize = NAMEPLATE_TEXT_FONT_SIZE * textScale
+    local xOffset = Questie.db.profile.nameplateX
+    local yOffset = Questie.db.profile.nameplateY
+    local frameHeight = iconSize
+
+    if showText then
+        xOffset = Questie.db.profile.nameplateTextX or Questie.db.profile.nameplateX
+        yOffset = Questie.db.profile.nameplateTextY or -25
+        frameHeight = math.max(iconSize, textFontSize + 8)
+    end
+
+    frame:SetFrameStrata("LOW")
+    frame:SetFrameLevel(showText and 20 or 10)
+    frame:ClearAllPoints()
+    frame:SetPoint("LEFT", xOffset, yOffset)
+    frame:SetWidth(showText and (iconSize + 4 + NAMEPLATE_TEXT_WIDTH) or iconSize)
+    frame:SetHeight(frameHeight)
+
+    frame.Icon:ClearAllPoints()
+    frame.Icon:SetPoint("LEFT", frame, "LEFT", 0, 0)
+    frame.Icon:SetWidth(iconSize)
+    frame.Icon:SetHeight(iconSize)
+
+    if frame.TextFrame and frame.Text then
+        frame.TextFrame:ClearAllPoints()
+        frame.TextFrame:SetPoint("LEFT", frame.Icon, "RIGHT", 4, 0)
+        frame.TextFrame:SetWidth(NAMEPLATE_TEXT_WIDTH)
+        frame.TextFrame:SetHeight(textFontSize + 8)
+
+        frame.Text:ClearAllPoints()
+        frame.Text:SetAllPoints(frame.TextFrame)
+        frame.Text:SetFont(STANDARD_TEXT_FONT or "Fonts\\FRIZQT__.TTF", textFontSize, "OUTLINE")
+        if frame.Text.SetTextHeight then
+            frame.Text:SetTextHeight(textFontSize)
+        end
+        if showText and frame.lastText then
+            frame.TextFrame:Show()
+            frame.Text:Show()
+        else
+            frame.TextFrame:Hide()
+            frame.Text:Hide()
         end
     end
 end

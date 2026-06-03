@@ -60,6 +60,31 @@ function QuestieOptions.tabs.nameplate:Initialize()
                             end
                         end,
                     },
+                    nameplateTextDescSpacer = {
+                        type = "description",
+                        order = 1.14,
+                        name = "",
+                        desc = "",
+                        image = "",
+                        imageWidth = 0.4,
+                        width = 0.4,
+                        func = function() end,
+                    },
+                    nameplateShowObjectiveText = {
+                        type = "toggle",
+                        order = 1.15,
+                        name = function() return l10n('Show Objective Text'); end,
+                        desc = function() return l10n('Show objective progress text next to quest icons on creature nameplates.'); end,
+                        descStyle = "inline",
+                        width = 2.6,
+                        disabled = function() return not Questie.db.profile.nameplateEnabled; end,
+                        get = function(info) return QuestieOptions:GetProfileValue(info); end,
+                        set = function (info, value)
+                            QuestieOptions:SetProfileValue(info, value)
+                            QuestieNameplate:RedrawIcons()
+                            QuestieNameplate:UpdateNameplate()
+                        end,
+                    },
                     Spacer_A = QuestieOptionsUtils:Spacer(1.2),
                     nameplateSpacerX = {
                         type = "description",
@@ -80,11 +105,11 @@ function QuestieOptions.tabs.nameplate:Initialize()
                         min = -200,
                         max = 200,
                         step = 1,
-                        disabled = function() return not Questie.db.profile.nameplateEnabled; end,
+                        disabled = function() return not Questie.db.profile.nameplateEnabled or Questie.db.profile.nameplateShowObjectiveText; end,
                         get = function(info) return QuestieOptions:GetProfileValue(info); end,
                         set = function (info, value)
-                            QuestieNameplate:RedrawIcons()
                             QuestieOptions:SetProfileValue(info, value)
+                            QuestieNameplate:RedrawIcons()
                         end,
                     },
                     nameplateSpacerY = {
@@ -106,11 +131,11 @@ function QuestieOptions.tabs.nameplate:Initialize()
                         min = -200,
                         max = 200,
                         step = 1,
-                        disabled = function() return not Questie.db.profile.nameplateEnabled; end,
+                        disabled = function() return not Questie.db.profile.nameplateEnabled or Questie.db.profile.nameplateShowObjectiveText; end,
                         get = function(info) return QuestieOptions:GetProfileValue(info); end,
                         set = function (info, value)
-                            QuestieNameplate:RedrawIcons()
                             QuestieOptions:SetProfileValue(info, value)
+                            QuestieNameplate:RedrawIcons()
                         end,
                     },
                     Spacer_C = QuestieOptionsUtils:Spacer(1.45),
@@ -140,6 +165,85 @@ function QuestieOptions.tabs.nameplate:Initialize()
                             QuestieNameplate:RedrawIcons()
                         end,
 
+                    },
+                    nameplateTextSpacerScale = {
+                        type = "description",
+                        order = 1.55,
+                        name = "",
+                        desc = "",
+                        image = "",
+                        imageWidth = 0.3,
+                        width = 0.3,
+                        func = function() end,
+                    },
+                    nameplateTextScale = {
+                        type = "range",
+                        order = 1.6,
+                        name = function() return l10n('Objective Text Scale'); end,
+                        desc = function() return l10n('Scale the size of objective text on creature nameplates. ( Default: %s )', optionsDefaults.profile.nameplateTextScale); end,
+                        width = 2.7,
+                        min = 0.4,
+                        max = 1.2,
+                        step = 0.05,
+                        disabled = function() return not Questie.db.profile.nameplateEnabled or not Questie.db.profile.nameplateShowObjectiveText; end,
+                        get = function(info) return QuestieOptions:GetProfileValue(info); end,
+                        set = function (info, value)
+                            QuestieOptions:SetProfileValue(info, value)
+                            QuestieNameplate:RedrawIcons()
+                        end,
+                    },
+                    Spacer_D = QuestieOptionsUtils:Spacer(1.405),
+                    nameplateTextSpacerX = {
+                        type = "description",
+                        order = 1.41,
+                        name = "",
+                        desc = "",
+                        image = "",
+                        imageWidth = 0.3,
+                        width = 0.3,
+                        func = function() end,
+                    },
+                    nameplateTextX = {
+                        type = "range",
+                        order = 1.42,
+                        name = function() return l10n('Objective Text Position X'); end,
+                        desc = function() return l10n('Where on the X axis the nameplate objective text should be. ( Default: %s )', optionsDefaults.profile.nameplateTextX); end,
+                        width = 1.2,
+                        min = -300,
+                        max = 300,
+                        step = 1,
+                        disabled = function() return not Questie.db.profile.nameplateEnabled or not Questie.db.profile.nameplateShowObjectiveText; end,
+                        get = function(info) return QuestieOptions:GetProfileValue(info); end,
+                        set = function (info, value)
+                            QuestieOptions:SetProfileValue(info, value)
+                            QuestieNameplate:RedrawIcons()
+                        end,
+                    },
+                    nameplateTextSpacerY = {
+                        type = "description",
+                        order = 1.43,
+                        name = "",
+                        desc = "",
+                        image = "",
+                        imageWidth = 0.3,
+                        width = 0.3,
+                        func = function() end,
+                    },
+                    nameplateTextY = {
+                        type = "range",
+                        order = 1.44,
+                        name = function() return l10n('Objective Text Position Y'); end,
+                        desc = function() return l10n('Where on the Y axis the nameplate objective text should be. ( Default: %s )', optionsDefaults.profile.nameplateTextY); end,
+                        width = 1.2,
+                        min = -300,
+                        max = 300,
+                        step = 1,
+                        disabled = function() return not Questie.db.profile.nameplateEnabled or not Questie.db.profile.nameplateShowObjectiveText; end,
+                        get = function(info) return QuestieOptions:GetProfileValue(info); end,
+                        set = function (info, value)
+                            QuestieOptions:SetProfileValue(info, value)
+                            QuestieNameplate:RedrawIcons()
+                        end,
                     },
                 },
             },
@@ -288,6 +392,9 @@ function QuestieOptions.tabs.nameplate:Initialize()
                     Questie.db.profile.nameplateX = optionsDefaults.profile.nameplateX;
                     Questie.db.profile.nameplateY = optionsDefaults.profile.nameplateY;
                     Questie.db.profile.nameplateScale = optionsDefaults.profile.nameplateScale;
+                    Questie.db.profile.nameplateTextX = optionsDefaults.profile.nameplateTextX;
+                    Questie.db.profile.nameplateTextY = optionsDefaults.profile.nameplateTextY;
+                    Questie.db.profile.nameplateTextScale = optionsDefaults.profile.nameplateTextScale;
                     QuestieNameplate:RedrawIcons();
                 end,
             },
