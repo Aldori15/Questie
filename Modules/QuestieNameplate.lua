@@ -92,9 +92,7 @@ end
 
 local function setTargetNameplateState(frame, isTargetNameplate)
     frame.isTargetNameplate = isTargetNameplate
-    if isTargetNameplate then
-        frame.useHealthbarAnchor = true
-    end
+    frame.useHealthbarAnchor = isTargetNameplate
 end
 
 local function scheduleNameplateLayoutRefresh(frame)
