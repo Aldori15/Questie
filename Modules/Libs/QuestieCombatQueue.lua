@@ -11,38 +11,57 @@ local tpack =  QuestieLib.tpack
 local tunpack = QuestieLib.tunpack
 
 local _Queue = {}
+local queueHead = 1
+local queueTail = 0
 local started = false
 local ticker
 
 -- This will limit the amount of updates Questie does to the UI and will reduce the chance to lag the game
 local maxUpdatesPerCircle = 5
 
+local function _QueueIsEmpty()
+    return queueHead > queueTail
+end
+
+local function _ResetQueue()
+    queueHead = 1
+    queueTail = 0
+end
+
 local function _ProcessQueue()
     if InCombatLockdown() then
         return
     end
 
-    local entry = tremove(_Queue, 1)
+    local entry = _Queue[queueHead]
     if not entry then
         if ticker then
             ticker:Cancel()
             ticker = nil
         end
+        _ResetQueue()
         return
     end
 
     local count = 0
     while entry do
+        _Queue[queueHead] = nil
+        queueHead = queueHead + 1
+
         entry.func(tunpack(entry.args))
 
         if InCombatLockdown() or count >= maxUpdatesPerCircle then
             break
         end
-        entry = tremove(_Queue, 1)
+        entry = _Queue[queueHead]
         count = count + 1
     end
 
-    if (not entry) and (not next(_Queue)) and ticker then
+    if _QueueIsEmpty() then
+        _ResetQueue()
+    end
+
+    if _QueueIsEmpty() and ticker then
         ticker:Cancel()
         ticker = nil
     end
@@ -56,14 +75,15 @@ end
 
 function QuestieCombatQueue.Initialize()
     started = true
-    if next(_Queue) then
+    if not _QueueIsEmpty() then
         _StartTicker()
     end
 end
 
 function QuestieCombatQueue:Queue(func, ...)
     if started then
-        tinsert(_Queue, {func=func, args=tpack(...)})
+        queueTail = queueTail + 1
+        _Queue[queueTail] = {func=func, args=tpack(...)}
         _StartTicker()
     end
 end
