@@ -14,6 +14,9 @@ local QuestieValidateGameCache = QuestieLoader:ImportModule("QuestieValidateGame
 ---@type QuestieLib
 local QuestieLib = QuestieLoader:ImportModule("QuestieLib");
 
+BINDING_HEADER_QUESTIE = "Questie"
+BINDING_NAME_QUESTIE_TOGGLE_JOURNEY = "Toggle My Journey"
+
 local band = bit.band
 local strlower = string.lower
 
