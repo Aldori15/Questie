@@ -21,6 +21,12 @@ local npFramesCount = 0
 local activeTargetFrame
 local NAMEPLATE_TEXT_WIDTH = 260
 local NAMEPLATE_TEXT_FONT_SIZE = 10
+local NAMEPLATE_DEFAULT_X = -17
+local NAMEPLATE_DEFAULT_Y = -7
+local NAMEPLATE_DEFAULT_SCALE = 1
+local NAMEPLATE_TEXT_DEFAULT_X = 0
+local NAMEPLATE_TEXT_DEFAULT_Y = 24
+local NAMEPLATE_TEXT_DEFAULT_SCALE = 1
 
 local function getNameplateLayoutAnchor(frame)
     local parent = frame and frame:GetParent()
@@ -474,18 +480,18 @@ function _QuestieNameplate.SetTargetNameplateState(frame, isTargetNameplate)
 end
 
 function _QuestieNameplate.ApplyFrameLayout(frame)
-    local iconScale = Questie.db.profile.nameplateScale
+    local iconScale = Questie.db.profile.nameplateScale or NAMEPLATE_DEFAULT_SCALE
     local iconSize = 16 * iconScale
     local showText = Questie.db.profile.nameplateShowObjectiveText and frame.lastText
-    local textScale = Questie.db.profile.nameplateTextScale or 1
+    local textScale = Questie.db.profile.nameplateTextScale or NAMEPLATE_TEXT_DEFAULT_SCALE
     local textFontSize = NAMEPLATE_TEXT_FONT_SIZE * textScale
-    local xOffset = Questie.db.profile.nameplateX
-    local yOffset = Questie.db.profile.nameplateY
+    local xOffset = Questie.db.profile.nameplateX or NAMEPLATE_DEFAULT_X
+    local yOffset = Questie.db.profile.nameplateY or NAMEPLATE_DEFAULT_Y
     local frameHeight = iconSize
 
     if showText then
-        xOffset = Questie.db.profile.nameplateTextX or Questie.db.profile.nameplateX
-        yOffset = Questie.db.profile.nameplateTextY or -25
+        xOffset = Questie.db.profile.nameplateTextX or NAMEPLATE_TEXT_DEFAULT_X
+        yOffset = Questie.db.profile.nameplateTextY or NAMEPLATE_TEXT_DEFAULT_Y
         frameHeight = math.max(iconSize, textFontSize + 8)
     end
 
