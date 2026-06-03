@@ -31,6 +31,7 @@ function QuestieOptionsDefaults:Load()
             nameplateScale = 1,
             nameplateEnabled = true,
             nameplateShowObjectiveText = false,
+            nameplateObjectiveTextTargetOnly = false,
             nameplateTextX = 0,
             nameplateTextY = 24,
             nameplateTextScale = 1,

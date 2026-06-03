@@ -21,6 +21,25 @@ local activeTargetFrame
 local NAMEPLATE_TEXT_WIDTH = 260
 local NAMEPLATE_TEXT_FONT_SIZE = 10
 
+local function getNameplateLayoutAnchor(frame)
+    local parent = frame and frame:GetParent()
+    if not parent then
+        return nil
+    end
+
+    local unitFrame = parent.UnitFrame or parent.unitFrame
+    local healthBar = unitFrame and (unitFrame.Health or unitFrame.HealthBar or unitFrame.health or unitFrame.healthBar)
+    if healthBar and healthBar.GetObjectType then
+        return healthBar
+    end
+
+    healthBar = parent.Health or parent.HealthBar or parent.health or parent.healthBar
+    if healthBar and healthBar.GetObjectType then
+        return healthBar
+    end
+
+    return parent
+end
 
 -- Not used
 function QuestieNameplate:Initialize()
@@ -61,6 +80,9 @@ function QuestieNameplate:NameplateCreated(token)
         local f = _QuestieNameplate.GetFrame(unitGUID)
         f.Icon:SetTexture(objectiveInfo.icon)
         f.lastIcon = objectiveInfo.icon -- this is used to prevent updating the texture when it's already what it needs to be
+        if Questie.db.profile.nameplateObjectiveTextTargetOnly and unitGUID ~= UnitGUID("target") then
+            objectiveInfo.text = nil
+        end
         _QuestieNameplate.SetObjectiveText(f, objectiveInfo.text)
         f:Show()
     end
@@ -102,6 +124,10 @@ function QuestieNameplate:UpdateNameplate()
             if frame.lastIcon ~= objectiveInfo.icon then
                 frame.lastIcon = objectiveInfo.icon
                 frame.Icon:SetTexture(objectiveInfo.icon)
+            end
+
+            if Questie.db.profile.nameplateObjectiveTextTargetOnly and guid ~= UnitGUID("target") then
+                objectiveInfo.text = nil
             end
 
             if frame.lastText ~= objectiveInfo.text then
@@ -362,6 +388,7 @@ function _QuestieNameplate.SetObjectiveText(frame, text)
     end
 
     frame.lastText = text
+    _QuestieNameplate.ApplyFrameLayout(frame)
     if text then
         frame.Text:SetText(text)
         frame.Text:Show()
@@ -380,7 +407,7 @@ end
 function _QuestieNameplate.ApplyFrameLayout(frame)
     local iconScale = Questie.db.profile.nameplateScale
     local iconSize = 16 * iconScale
-    local showText = Questie.db.profile.nameplateShowObjectiveText
+    local showText = Questie.db.profile.nameplateShowObjectiveText and frame.lastText
     local textScale = Questie.db.profile.nameplateTextScale or 1
     local textFontSize = NAMEPLATE_TEXT_FONT_SIZE * textScale
     local xOffset = Questie.db.profile.nameplateX
@@ -396,7 +423,12 @@ function _QuestieNameplate.ApplyFrameLayout(frame)
     frame:SetFrameStrata("LOW")
     frame:SetFrameLevel(showText and 20 or 10)
     frame:ClearAllPoints()
-    frame:SetPoint("LEFT", xOffset, yOffset)
+    local layoutAnchor = getNameplateLayoutAnchor(frame)
+    if layoutAnchor then
+        frame:SetPoint("LEFT", layoutAnchor, "LEFT", xOffset, yOffset)
+    else
+        frame:SetPoint("LEFT", xOffset, yOffset)
+    end
     frame:SetWidth(showText and (iconSize + 4 + NAMEPLATE_TEXT_WIDTH) or iconSize)
     frame:SetHeight(frameHeight)
 

@@ -270,7 +270,11 @@ function QuestieEventHandler:RegisterLateEvents()
     Questie:RegisterEvent("NAME_PLATE_UNIT_ADDED", QuestieNameplate.NameplateCreated)
     Questie:RegisterEvent("NAME_PLATE_UNIT_REMOVED", QuestieNameplate.NameplateDestroyed)
     Questie:RegisterEvent("PLAYER_TARGET_CHANGED", function(...)
+        QuestieNameplate:UpdateNameplate()
         QuestieNameplate:DrawTargetFrame()
+        C_Timer.After(0.05, function()
+            QuestieNameplate:UpdateNameplate()
+        end)
     end)
 
     -- quest announce

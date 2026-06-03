@@ -85,6 +85,30 @@ function QuestieOptions.tabs.nameplate:Initialize()
                             QuestieNameplate:UpdateNameplate()
                         end,
                     },
+                    nameplateObjectiveTextTargetOnlySpacer = {
+                        type = "description",
+                        order = 1.16,
+                        name = "",
+                        desc = "",
+                        image = "",
+                        imageWidth = 0.4,
+                        width = 0.4,
+                        func = function() end,
+                    },
+                    nameplateObjectiveTextTargetOnly = {
+                        type = "toggle",
+                        order = 1.17,
+                        name = function() return l10n('Only Show Objective Text On Target'); end,
+                        desc = function() return l10n('Only show objective progress text on the selected creature nameplate.'); end,
+                        descStyle = "inline",
+                        width = 2.6,
+                        disabled = function() return not Questie.db.profile.nameplateEnabled or not Questie.db.profile.nameplateShowObjectiveText; end,
+                        get = function(info) return QuestieOptions:GetProfileValue(info); end,
+                        set = function (info, value)
+                            QuestieOptions:SetProfileValue(info, value)
+                            QuestieNameplate:UpdateNameplate()
+                        end,
+                    },
                     Spacer_A = QuestieOptionsUtils:Spacer(1.2),
                     nameplateSpacerX = {
                         type = "description",

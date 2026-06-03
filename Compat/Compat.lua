@@ -3381,6 +3381,62 @@ local function scanWorldFrameChildren(frame, ...)
 	return scanWorldFrameChildren(...)
 end
 
+local function getNameplateFrameGUID(frame)
+    local unit = frame.unit or frame.unitid or frame.unitID or frame.unitToken or frame.namePlateUnitToken
+    if (not unit) and frame.UnitFrame then
+        unit = frame.UnitFrame.unit or frame.UnitFrame.unitid or frame.UnitFrame.unitID or frame.UnitFrame.unitToken
+    end
+    if (not unit) and frame.unitFrame then
+        unit = frame.unitFrame.unit or frame.unitFrame.unitid or frame.unitFrame.unitID or frame.unitFrame.unitToken
+    end
+    if (not unit) and frame.extended then
+        unit = frame.extended.unit or frame.extended.unitid or frame.extended.unitID or frame.extended.unitToken
+    end
+    if (not unit) and frame.aloftData then
+        unit = frame.aloftData.unit or frame.aloftData.unitid or frame.aloftData.unitID or frame.aloftData.unitToken
+    end
+    if (not unit) and frame.kui then
+        unit = frame.kui.unit or frame.kui.unitid or frame.kui.unitID or frame.kui.unitToken
+    end
+
+    return unit and UnitGUID(unit) or nil
+end
+
+local function isTargetNameplateFrame(frame)
+    if not Questie.db.profile.nameplateObjectiveTextTargetOnly then
+        return true
+    end
+
+    local targetGUID = UnitGUID("target")
+    local frameGUID = getNameplateFrameGUID(frame)
+    if targetGUID and frameGUID then
+        return frameGUID == targetGUID
+    end
+
+    local targetName = UnitName("target")
+    local nameRegion = npFrames[frame]
+    if (not targetName) or (not nameRegion) or nameRegion:GetText() ~= targetName then
+        return false
+    end
+
+    local visibleTargetNameplateCount = 0
+    local visibleTargetNameplate
+    for nameplateFrame, nameplateNameRegion in pairs(npFrames) do
+        if nameplateFrame:IsShown() and nameplateNameRegion:GetText() == targetName then
+            visibleTargetNameplateCount = visibleTargetNameplateCount + 1
+            visibleTargetNameplate = nameplateFrame
+        end
+    end
+
+    if visibleTargetNameplateCount == 1 then
+        return frame == visibleTargetNameplate
+    end
+
+    -- 3.3.5 exposes no reliable nameplate frame <-> GUID mapping here.
+    -- If multiple visible nameplates share the target name, avoid showing text on all of them.
+    return false
+end
+
 function QuestieCompat.NameplateCreated(frame)
     local name = npFrames[frame]:GetText()
     local key = npActiveQuestNPCs[name]
@@ -3391,6 +3447,9 @@ function QuestieCompat.NameplateCreated(frame)
             local f = _QuestieNameplate.GetFrame(frame)
             f.Icon:SetTexture(objectiveInfo.icon)
             f.lastIcon = objectiveInfo.icon -- this is used to prevent updating the texture when it's already what it needs to be
+            if not isTargetNameplateFrame(frame) then
+                objectiveInfo.text = nil
+            end
             _QuestieNameplate.SetObjectiveText(f, objectiveInfo.text)
             f:Show()
         end
@@ -3410,6 +3469,10 @@ function QuestieCompat.UpdateNameplate()
             if f.lastIcon ~= objectiveInfo.icon then
                 f.lastIcon = objectiveInfo.icon
                 f.Icon:SetTexture(objectiveInfo.icon)
+            end
+
+            if not isTargetNameplateFrame(frame) then
+                objectiveInfo.text = nil
             end
 
             if f.lastText ~= objectiveInfo.text then
