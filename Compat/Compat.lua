@@ -3961,17 +3961,6 @@ function QuestieCompat.LoadCorrections(_LoadCorrections, validationTables)
     end
 end
 
-function QuestieCompat.LoadCorrectionOverrides(addOverride)
-    for dbName in pairs(correctionsRegistry) do
-        local overrideTable = QuestieDB[dbName .. "Overrides"]
-        if overrideTable then
-            for _, corrections in ipairs(correctionsRegistry[dbName]) do
-                addOverride(overrideTable, corrections())
-            end
-        end
-    end
-end
-
 local blacklistRegistry = {}
 
 function QuestieCompat.RegisterBlacklist(blName, blacklist)
