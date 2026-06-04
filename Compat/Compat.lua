@@ -2354,6 +2354,7 @@ function QuestieCompat.GetServerTime()
 end
 
 local questObjectivesCache = {}
+local uiInfoChangedQuestIds = {}
 local QUEST_OBJECTIVE_CACHE_TTL_SECONDS = 3
 
 local function parseQuestObjective(text)
@@ -2407,7 +2408,7 @@ local function applyObjectiveProgressToQuestieCache(objectiveName, numFulfilled)
         return false
     end
 
-    local changedQuestIds = {}
+    local hasChanges = false
     for questId, questData in pairs(QuestLogCache.questLog_DO_NOT_MODIFY or {}) do
         local objectives = questData and questData.objectives
         if objectives and #objectives > 0 then
@@ -2422,18 +2423,12 @@ local function applyObjectiveProgressToQuestieCache(objectiveName, numFulfilled)
                             objective.finished = isFinished
                             objective.raw_finished = objective.raw_finished or isFinished
                         end
-                        changedQuestIds[questId] = true
+                        uiInfoChangedQuestIds[questId] = true
+                        hasChanges = true
                     end
                 end
             end
         end
-    end
-
-    local hasChanges = false
-    for questId in pairs(changedQuestIds) do
-        hasChanges = true
-        QuestieQuest:SetObjectivesDirty(questId)
-        QuestieQuest:UpdateQuest(questId)
     end
 
     return hasChanges
@@ -3518,13 +3513,25 @@ local uiInfoObjectiveProgressPending = false
 local uiInfoObjectiveSyncQueued = false
 local uiInfoObjectiveLateSyncQueued = false
 
-local function syncObjectiveProgressFromUiInfoMessage()
-    local questEventHandlerPrivate = QuestEventHandler.private
-    if questEventHandlerPrivate and questEventHandlerPrivate.UpdateAllQuests then
-        questEventHandlerPrivate:UpdateAllQuests()
+local function syncObjectiveProgressFromUiInfoMessage(allowFullFallback)
+    local hasTargetedChanges = false
+    for questId in pairs(uiInfoChangedQuestIds) do
+        uiInfoChangedQuestIds[questId] = nil
+        hasTargetedChanges = true
+        QuestieQuest:SetObjectivesDirty(questId)
+        QuestieQuest:UpdateQuest(questId)
     end
 
-    if QuestieTracker and QuestieTracker.Update then
+    local didSync = hasTargetedChanges
+    if (not hasTargetedChanges) and allowFullFallback then
+        local questEventHandlerPrivate = QuestEventHandler.private
+        if questEventHandlerPrivate and questEventHandlerPrivate.UpdateAllQuests then
+            questEventHandlerPrivate:UpdateAllQuests()
+            didSync = true
+        end
+    end
+
+    if didSync and QuestieTracker and QuestieTracker.Update then
         QuestieTracker:Update()
     end
 end
@@ -3542,7 +3549,7 @@ local function queueObjectiveProgressSync(delay)
         end
 
         uiInfoObjectiveProgressPending = false
-        syncObjectiveProgressFromUiInfoMessage()
+        syncObjectiveProgressFromUiInfoMessage(true)
     end)
 end
 
@@ -3554,7 +3561,7 @@ local function queueLateObjectiveProgressSync()
     uiInfoObjectiveLateSyncQueued = true
     QuestieCompat.C_Timer.After(0.35, function()
         uiInfoObjectiveLateSyncQueued = false
-        syncObjectiveProgressFromUiInfoMessage()
+        syncObjectiveProgressFromUiInfoMessage(false)
     end)
 end
 
