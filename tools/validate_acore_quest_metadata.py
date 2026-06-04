@@ -2071,13 +2071,15 @@ def derive_acore_metadata(source_root, quest_template_sql=None, quest_template_a
     return acore_metadata
 
 
-def compare_metadata(acore_metadata, questie_metadata, creature_kill_credits, spawned_creature_ids):
+def compare_metadata(acore_metadata, questie_metadata, creature_kill_credits, spawned_creature_ids, protected_required_race_quest_ids=None):
     mismatches = []
     preserved_objective_expansions = []
     preserved_display_objectives = []
     preserved_empty_prequest_clears = []
+    preserved_empty_required_race_clears = []
     all_quest_ids = sorted(set(acore_metadata) | set(questie_metadata))
     summary = Counter()
+    protected_required_race_quest_ids = protected_required_race_quest_ids or set()
 
     empty_entry = {field: default_field_value(field) for field in FIELD_ORDER}
 
@@ -2194,6 +2196,22 @@ def compare_metadata(acore_metadata, questie_metadata, creature_kill_credits, sp
                 )
                 continue
 
+            if (
+                field == "requiredRaces"
+                and acore[field] == 0
+                and questie[field] != 0
+                and quest_id in protected_required_race_quest_ids
+            ):
+                preserved_empty_required_race_clears.append(
+                    {
+                        "questId": quest_id,
+                        "acore": acore[field],
+                        "questie": questie[field],
+                        "reason": "explicitQuestieRequiredRacesCorrection",
+                    }
+                )
+                continue
+
             if acore[field] != questie[field]:
                 mismatch = {
                     "questId": quest_id,
@@ -2225,6 +2243,7 @@ def compare_metadata(acore_metadata, questie_metadata, creature_kill_credits, sp
         preserved_objective_expansions,
         preserved_display_objectives,
         preserved_empty_prequest_clears,
+        preserved_empty_required_race_clears,
     )
 
 
@@ -2388,8 +2407,14 @@ def main():
 
     constants = load_constants(addon_root)
     questie_metadata = load_questie_base_metadata(quest_db_path, constants["quest_keys"], constants)
+    protected_required_race_quest_ids = set()
     for fix_file in args.quest_fixes:
         overrides = load_questie_correction_file(resolve_addon_path(addon_root, fix_file), constants)
+        protected_required_race_quest_ids.update(
+            quest_id
+            for quest_id, quest_override in overrides.items()
+            if quest_override.get("requiredRaces", 0) != 0
+        )
         apply_questie_overrides(questie_metadata, overrides)
     for quest_entry in questie_metadata.values():
         for field in FIELD_ORDER:
@@ -2405,11 +2430,13 @@ def main():
         preserved_objective_expansions,
         preserved_display_objectives,
         preserved_empty_prequest_clears,
+        preserved_empty_required_race_clears,
     ) = compare_metadata(
         acore_metadata,
         questie_metadata,
         creature_kill_credits,
         spawned_creature_ids,
+        protected_required_race_quest_ids,
     )
     objective_display_risks = build_objective_display_risks(
         mismatches,
@@ -2428,6 +2455,7 @@ def main():
     print(f"  preservedObjectiveExpansions: {len(preserved_objective_expansions)}")
     print(f"  preservedDisplayObjectives: {len(preserved_display_objectives)}")
     print(f"  preservedEmptyPreQuestClears: {len(preserved_empty_prequest_clears)}")
+    print(f"  preservedEmptyRequiredRaceClears: {len(preserved_empty_required_race_clears)}")
     print(f"  objectiveDisplayRisks: {len(objective_display_risks)}")
 
     if mismatches:
@@ -2447,6 +2475,7 @@ def main():
                     "preservedObjectiveExpansions": preserved_objective_expansions,
                     "preservedDisplayObjectives": preserved_display_objectives,
                     "preservedEmptyPreQuestClears": preserved_empty_prequest_clears,
+                    "preservedEmptyRequiredRaceClears": preserved_empty_required_race_clears,
                     "objectiveDisplayRisks": objective_display_risks,
                     "mismatches": mismatches,
                 },
