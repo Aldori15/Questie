@@ -237,6 +237,7 @@ local minimapScale, minimapShape, mapRadius, minimapWidth, minimapHeight, mapSin
 local lastZoom, lastFacing, lastXY, lastYY
 local OnUpdateHandler
 local worldMapLayoutDirty = true
+local worldMapRescaleDirty = true
 local worldMapRefreshPending = false
 local minimapRefreshPending = false
 local minimapZoomProbeReady = false
@@ -853,7 +854,7 @@ local function HideWorldMapPins()
         icon:ClearAllPoints()
     end
     worldMapLayoutDirty = true
-    lastWorldMapUiMapID, lastWorldMapWidth, lastWorldMapHeight, lastWorldMapScale = nil, nil, nil, nil
+    lastWorldMapUiMapID, lastWorldMapWidth, lastWorldMapHeight = nil, nil, nil
 end
 
 local function UpdateWorldMap(force)
@@ -870,7 +871,7 @@ local function UpdateWorldMap(force)
     worldmapHeight = WorldMapButton:GetHeight()
 
     local mapScale = QuestieMap.GetScaleValue()
-    local shouldRescale = force or worldMapLayoutDirty or mapScale ~= lastWorldMapScale
+    local shouldRescale = force or worldMapRescaleDirty or mapScale ~= lastWorldMapScale
     if (not force)
         and (not worldMapLayoutDirty)
         and uiMapID == lastWorldMapUiMapID
@@ -895,6 +896,7 @@ local function UpdateWorldMap(force)
     end
 
     worldMapLayoutDirty = false
+    worldMapRescaleDirty = false
     lastWorldMapUiMapID = uiMapID
     lastWorldMapWidth = worldmapWidth
     lastWorldMapHeight = worldmapHeight
@@ -1198,6 +1200,7 @@ function pins:AddWorldMapIconWorld(ref, icon, instanceID, x, y, showFlag, frameL
 
     worldmapPins[icon] = t
     worldMapLayoutDirty = true
+    worldMapRescaleDirty = true
 
     icon.icon = icon --LOL!
     icon:SetParent(WorldMapButton)
@@ -1247,6 +1250,7 @@ function pins:AddWorldMapIconMap(ref, icon, uiMapID, x, y, showFlag, frameLevel)
 
     worldmapPins[icon] = t
     worldMapLayoutDirty = true
+    worldMapRescaleDirty = true
 
     icon.icon = icon --LOL!
     icon:SetParent(WorldMapButton)
