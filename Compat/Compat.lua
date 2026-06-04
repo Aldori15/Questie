@@ -239,7 +239,7 @@ local worldMapInteractionSuppressUntil = 0
 local playerPositionCache = {}
 local stablePlayerWorldPositionCache = {}
 local minimapPlayerWorldPositionCache = {}
-local PLAYER_POSITION_CACHE_TTL = 0.01
+local PLAYER_POSITION_CACHE_TTL = 0.075
 local MIN_ZONE_COORD = -0.25
 local MAX_ZONE_COORD = 1.25
 
@@ -312,14 +312,12 @@ local function GetPlayerPositionCacheContextKey()
         displayedMapName = GetDisplayedWorldMapName() or ""
     end
 
-    return table.concat({
-        worldMapVisible and "1" or "0",
-        tostring(rawMapID or 0),
-        tostring(rawMapLevel or 0),
-        tostring(zoneText or ""),
-        tostring(subZoneText or ""),
-        tostring(displayedMapName or ""),
-    }, "|")
+    return (worldMapVisible and "1" or "0")
+        .. "|" .. tostring(rawMapID or 0)
+        .. "|" .. tostring(rawMapLevel or 0)
+        .. "|" .. zoneText
+        .. "|" .. subZoneText
+        .. "|" .. displayedMapName
 end
 
 local function TryGetCachedPlayerPosition(cache, maxAge, contextKey)
@@ -2356,6 +2354,7 @@ function QuestieCompat.GetServerTime()
 end
 
 local questObjectivesCache = {}
+local uiInfoChangedQuestIds = {}
 local QUEST_OBJECTIVE_CACHE_TTL_SECONDS = 3
 
 local function parseQuestObjective(text)
@@ -2409,7 +2408,7 @@ local function applyObjectiveProgressToQuestieCache(objectiveName, numFulfilled)
         return false
     end
 
-    local changedQuestIds = {}
+    local hasChanges = false
     for questId, questData in pairs(QuestLogCache.questLog_DO_NOT_MODIFY or {}) do
         local objectives = questData and questData.objectives
         if objectives and #objectives > 0 then
@@ -2424,18 +2423,12 @@ local function applyObjectiveProgressToQuestieCache(objectiveName, numFulfilled)
                             objective.finished = isFinished
                             objective.raw_finished = objective.raw_finished or isFinished
                         end
-                        changedQuestIds[questId] = true
+                        uiInfoChangedQuestIds[questId] = true
+                        hasChanges = true
                     end
                 end
             end
         end
-    end
-
-    local hasChanges = false
-    for questId in pairs(changedQuestIds) do
-        hasChanges = true
-        QuestieQuest:SetObjectivesDirty(questId)
-        QuestieQuest:UpdateQuest(questId)
     end
 
     return hasChanges
@@ -3365,20 +3358,20 @@ local function isNamePlate(frame)
     return false
 end
 
-local function scanWorldFrameChildren(frame, ...)
-	if not frame then return end
+local function scanWorldFrameChildren(...)
+    for i = 1, select("#", ...) do
+        local frame = select(i, ...)
+        if frame and (not npFrames[frame]) and isNamePlate(frame) then
+            npFrames[frame] = select(7, frame:GetRegions())
 
-	if not npFrames[frame] and isNamePlate(frame) then
-        npFrames[frame] = select(7, frame:GetRegions())
+            frame:HookScript("OnShow", QuestieCompat.NameplateCreated)
+            frame:HookScript("OnHide", _QuestieNameplate.RemoveFrame)
 
-        frame:HookScript("OnShow", QuestieCompat.NameplateCreated)
-        frame:HookScript("OnHide", _QuestieNameplate.RemoveFrame)
-
-        if frame:IsShown() then
-		    QuestieCompat.NameplateCreated(frame)
+            if frame:IsShown() then
+                QuestieCompat.NameplateCreated(frame)
+            end
         end
-	end
-	return scanWorldFrameChildren(...)
+    end
 end
 
 local function getNameplateFrameGUID(frame)
@@ -3438,7 +3431,12 @@ local function isTargetNameplateFrame(frame, forceCheck)
 end
 
 function QuestieCompat.NameplateCreated(frame)
-    local name = npFrames[frame]:GetText()
+    local nameRegion = npFrames[frame]
+    local name = nameRegion and nameRegion:GetText()
+    if not name then
+        return
+    end
+
     local key = npActiveQuestNPCs[name]
     if key then
         local objectiveInfo = _QuestieNameplate.GetValidObjectiveInfo(QuestieTooltips.lookupByKey[key])
@@ -3459,7 +3457,8 @@ end
 
 function QuestieCompat.UpdateNameplate()
     for frame in pairs(npFrames) do
-        local name = npFrames[frame]:GetText()
+        local nameRegion = npFrames[frame]
+        local name = nameRegion and nameRegion:GetText()
         local key = npActiveQuestNPCs[name]
 
         local objectiveInfo = _QuestieNameplate.GetValidObjectiveInfo(QuestieTooltips.lookupByKey[key])
@@ -3520,13 +3519,25 @@ local uiInfoObjectiveProgressPending = false
 local uiInfoObjectiveSyncQueued = false
 local uiInfoObjectiveLateSyncQueued = false
 
-local function syncObjectiveProgressFromUiInfoMessage()
-    local questEventHandlerPrivate = QuestEventHandler.private
-    if questEventHandlerPrivate and questEventHandlerPrivate.UpdateAllQuests then
-        questEventHandlerPrivate:UpdateAllQuests()
+local function syncObjectiveProgressFromUiInfoMessage(allowFullFallback)
+    local hasTargetedChanges = false
+    for questId in pairs(uiInfoChangedQuestIds) do
+        uiInfoChangedQuestIds[questId] = nil
+        hasTargetedChanges = true
+        QuestieQuest:SetObjectivesDirty(questId)
+        QuestieQuest:UpdateQuest(questId)
     end
 
-    if QuestieTracker and QuestieTracker.Update then
+    local didSync = hasTargetedChanges
+    if (not hasTargetedChanges) and allowFullFallback then
+        local questEventHandlerPrivate = QuestEventHandler.private
+        if questEventHandlerPrivate and questEventHandlerPrivate.UpdateAllQuests then
+            questEventHandlerPrivate:UpdateAllQuests()
+            didSync = true
+        end
+    end
+
+    if didSync and QuestieTracker and QuestieTracker.Update then
         QuestieTracker:Update()
     end
 end
@@ -3544,7 +3555,7 @@ local function queueObjectiveProgressSync(delay)
         end
 
         uiInfoObjectiveProgressPending = false
-        syncObjectiveProgressFromUiInfoMessage()
+        syncObjectiveProgressFromUiInfoMessage(true)
     end)
 end
 
@@ -3556,7 +3567,7 @@ local function queueLateObjectiveProgressSync()
     uiInfoObjectiveLateSyncQueued = true
     QuestieCompat.C_Timer.After(0.35, function()
         uiInfoObjectiveLateSyncQueued = false
-        syncObjectiveProgressFromUiInfoMessage()
+        syncObjectiveProgressFromUiInfoMessage(false)
     end)
 end
 
@@ -3688,7 +3699,11 @@ function QuestieCompat.QuestieEventHandler_RegisterLateEvents()
         hooksecurefunc(QuestieTooltips, "RegisterObjectiveTooltip", QuestieCompat.QuestieTooltips_RegisterObjectiveTooltip)
 
         local lastNumChildren
-        QuestieCompat.C_Timer.NewTicker(0.1, function()
+        QuestieCompat.C_Timer.NewTicker(0.25, function()
+            if not next(npActiveQuestNPCs) then
+                return
+            end
+
             local numChildren = WorldFrame:GetNumChildren()
             if numChildren ~= lastNumChildren then
                 lastNumChildren = numChildren
@@ -3959,17 +3974,6 @@ function QuestieCompat.LoadCorrections(_LoadCorrections, validationTables)
         local dbKeysReversed = QuestieDB[dbName:sub(1, -5).."KeysReversed"]
         for i, corrections in ipairs(correctionsRegistry[dbName]) do
             _LoadCorrections(dbName, corrections(), dbKeysReversed, validationTables)
-        end
-    end
-end
-
-function QuestieCompat.LoadCorrectionOverrides(addOverride)
-    for dbName in pairs(correctionsRegistry) do
-        local overrideTable = QuestieDB[dbName .. "Overrides"]
-        if overrideTable then
-            for _, corrections in ipairs(correctionsRegistry[dbName]) do
-                addOverride(overrideTable, corrections())
-            end
         end
     end
 end

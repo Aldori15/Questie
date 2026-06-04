@@ -222,8 +222,6 @@ function _QuestieJourney.questsByZone:CategorizeQuests(quests)
     local breadcrumbCounter = 0
     local hiddenCounter = 0
 
-    local temp = {}
-
     local HIDE_ON_MAP = QuestieQuestBlacklist.HIDE_ON_MAP
     local hiddenQuests = QuestieCorrections.hiddenQuests
     local playerlevel = UnitLevel("player")
@@ -234,8 +232,10 @@ function _QuestieJourney.questsByZone:CategorizeQuests(quests)
         local questId = levelAndQuest[2]
         -- Only show quests which are not hidden
         if hiddenQuests and (((not hiddenQuests[questId]) or hiddenQuests[questId] == HIDE_ON_MAP) or QuestieEvent:IsEventQuest(questId)) and QuestieDB.QuestPointers[questId] then
-            temp.value = questId
-            temp.text = QuestieLib:GetColoredQuestName(questId, Questie.db.profile.enableTooltipsQuestLevel, false)
+            local temp = {
+                value = questId,
+                text = QuestieLib:GetColoredQuestName(questId, Questie.db.profile.enableTooltipsQuestLevel, false),
+            }
 
             local breadcrumbForQuestId = QuestieDB.QueryQuest(questId,{"breadcrumbForQuestId"})[1] or {}
             local eligibilityText, _, returnReason = QuestieDB.IsDoableVerbose(questId, false, true, true)
@@ -286,6 +286,7 @@ function _QuestieJourney.questsByZone:CategorizeQuests(quests)
                             if QuestiePlayer.currentQuestlog[exclusiveToQuestId] or Questie.db.char.complete[exclusiveToQuestId] then
                                 tinsert(zoneTree[4].children, temp)
                                 completedCounter = completedCounter + 1
+                                blockedByExclusiveTo = true
                             end
                         end
                         if (not blockedByExclusiveTo) then

@@ -488,24 +488,23 @@ end
 -- Recolor already drawn available-quest icons immediately on level changes
 function AvailableQuests.RefreshVisibleAvailableIcons()
     for questId in pairs(QuestieMap.questIdFrames) do
-        local questFrames = QuestieMap:GetFramesForQuest(questId)
         local oldIcon, newIcon
 
-        for _, frame in pairs(questFrames) do
+        QuestieMap:ForQuestFrames(questId, function(frame)
             if frame and frame.data and frame.data.Type == "available" and frame.data.QuestData then
                 oldIcon = frame.data.Icon
                 newIcon = _GetQuestIcon(frame.data.QuestData)
-                break
+                return true
             end
-        end
+        end)
 
         if newIcon and oldIcon and newIcon ~= oldIcon then
-            for _, frame in pairs(questFrames) do
+            QuestieMap:ForQuestFrames(questId, function(frame)
                 if frame and frame.data and frame.data.Type == "available" and frame.data.QuestData then
                     frame:UpdateTexture(Questie.usedIcons[newIcon])
                     frame.data.Icon = newIcon
                 end
-            end
+            end)
         end
     end
 end
@@ -1080,13 +1079,11 @@ end
 ---@param questId QuestId
 ---@return boolean
 _HasLiveAvailableQuestFrames = function(questId)
-    for _, frame in pairs(QuestieMap:GetFramesForQuest(questId)) do
+    return QuestieMap:ForQuestFrames(questId, function(frame)
         if frame and frame.data and frame.data.Type == "available" then
             return true
         end
-    end
-
-    return false
+    end)
 end
 
 ---@param quest Quest|nil

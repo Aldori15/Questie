@@ -69,6 +69,7 @@ local tunpack = unpack;
 
 local math_max = math.max;
 local math_min = math.min;
+local math_sqrt = math.sqrt;
 local string = string;
 
 local function _IsSpawnVisible(spawn)
@@ -172,22 +173,38 @@ function QuestieMap:GetFramesForQuest(questId)
     return frames
 end
 
+function QuestieMap:ForQuestFrames(questId, callback)
+    local frameNames = QuestieMap.questIdFrames[questId]
+    if not frameNames then
+        return false
+    end
+
+    for _, name in pairs(frameNames) do
+        local frame = _G[name]
+        if frame and callback(frame, name) then
+            return true
+        end
+    end
+
+    return false
+end
+
 function QuestieMap:UnloadQuestFrames(questId, iconType, noteType)
     if QuestieMap.questIdFrames[questId] then
         if (not iconType) and (not noteType) then
-            for _, frame in pairs(QuestieMap:GetFramesForQuest(questId)) do
+            QuestieMap:ForQuestFrames(questId, function(frame)
                 frame:Unload();
-            end
+            end)
             QuestieMap.questIdFrames[questId] = nil;
         else
-            for name, frame in pairs(QuestieMap:GetFramesForQuest(questId)) do
+            QuestieMap:ForQuestFrames(questId, function(frame, name)
                 if frame and frame.data
                     and ((not iconType) or frame.data.Icon == iconType)
                     and ((not noteType) or frame.data.Type == noteType) then
                     frame:Unload();
                     QuestieMap.questIdFrames[questId][name] = nil
                 end
-            end
+            end)
         end
         Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieMap] Unloading quest frames for questid:", questId)
     end
@@ -350,6 +367,7 @@ function QuestieMap:ProcessShownMinimapIcons()
     local playerX, playerY
     local count
     local lastUpdate = getTime()
+    local lastMinimapPinRevision = HBDPins.minimapPinRevision or 0
 
     local xd, yd
     local totalDistance = 0
@@ -366,12 +384,19 @@ function QuestieMap:ProcessShownMinimapIcons()
         xd = (playerX or 0) - (QuestieMap.playerX or 0)
         yd = (playerY or 0) - (QuestieMap.playerY or 0)
         --Instead of math.sqrt we just used the square distance for speed
-        totalDistance = totalDistance + (xd * xd + yd * yd)
+        local movedDistance = xd * xd + yd * yd
+        totalDistance = totalDistance + movedDistance
 
 
         --These variables are used inside the fadelogic
         QuestieMap.playerX = playerX
         QuestieMap.playerY = playerY
+
+        local pinRevision = HBDPins.minimapPinRevision or 0
+        local pinsChanged = pinRevision ~= lastMinimapPinRevision
+        if pinsChanged then
+            lastMinimapPinRevision = pinRevision
+        end
 
         -- Only update icons on the edge every 1 seconds
         -- totalDistance is used because sometimes we move so fast that we need to update it more often.
@@ -383,33 +408,38 @@ function QuestieMap:ProcessShownMinimapIcons()
             totalDistance = 0
         end
 
-        ---@param minimapFrame IconFrame
-        for minimapFrame, data in pairs(HBDPins.activeMinimapPins) do
-            if minimapFrame.miniMapIcon and ((data.distanceFromMinimapCenter < 1.1) or doEdgeUpdate) then
-                if minimapFrame.FadeLogic then
-                    minimapFrame:FadeLogic()
-                end
-                if minimapFrame.GlowUpdate then
-                    minimapFrame:GlowUpdate()
-                end
-            end
+        if movedDistance <= 0 and (not pinsChanged) and (not doEdgeUpdate) then
+            cYield()
+        else
 
-            --Never run more than maxCount in a single run
-            if count > maxCount then
-                cYield()
-                if (not HBDPins.activeMinimapPins[minimapFrame]) then
-                    -- table has been edited during traversal at critical key. we can't continue iterating over it. stop iteration and start again.
-                    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieMap:ProcessShownMinimapIcons] FadeLogic loop coroutine: HBDPins.activeMinimapPins doesn't have the key anymore.")
-                    -- force reupdate imeadiately
-                    totalDistance = 9000
-                    break
+            ---@param minimapFrame IconFrame
+            for minimapFrame, data in pairs(HBDPins.activeMinimapPins) do
+                if minimapFrame.miniMapIcon and ((data.distanceFromMinimapCenter < 1.1) or pinsChanged or (doEdgeUpdate and data.onEdge)) then
+                    if minimapFrame.FadeLogic then
+                        minimapFrame:FadeLogic()
+                    end
+                    if minimapFrame.GlowUpdate then
+                        minimapFrame:GlowUpdate()
+                    end
                 end
-                count = 0
-            else
-                count = count + 1
+
+                --Never run more than maxCount in a single run
+                if count > maxCount then
+                    cYield()
+                    if (not HBDPins.activeMinimapPins[minimapFrame]) then
+                        -- table has been edited during traversal at critical key. we can't continue iterating over it. stop iteration and start again.
+                        Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieMap:ProcessShownMinimapIcons] FadeLogic loop coroutine: HBDPins.activeMinimapPins doesn't have the key anymore.")
+                        -- force reupdate imeadiately
+                        totalDistance = 9000
+                        break
+                    end
+                    count = 0
+                else
+                    count = count + 1
+                end
             end
+            cYield()
         end
-        cYield()
         doEdgeUpdate = false
     end
 end
@@ -772,7 +802,7 @@ end
 
 _MinimapIconFadeLogic = function(self)
     local profile = Questie.db.profile
-    if self.miniMapIcon and self.x and self.y and self.texture and self.UiMapID and self.texture.SetVertexColor and HBD and HBD.GetPlayerZonePosition and QuestieLib and QuestieLib.Euclid then
+    if self.miniMapIcon and self.x and self.y and self.texture and self.UiMapID and self.texture.SetVertexColor and HBD then
         if (QuestieMap.playerX and QuestieMap.playerY) then
             local x, y
             if self.worldX == nil then
@@ -786,14 +816,19 @@ _MinimapIconFadeLogic = function(self)
                 y = self.worldY
             end
             if (x and y) then
-                --Very small value before, hard to work with.
-                local distance = QuestieLib:Euclid(QuestieMap.playerX, QuestieMap.playerY, x, y) / 10;
+                local xd = QuestieMap.playerX - x
+                local yd = QuestieMap.playerY - y
+                local distanceSquared = (xd * xd + yd * yd) / 100
+                local fadeLevel = profile.fadeLevel or 0
+                local fadeOverPlayerDistance = profile.fadeOverPlayerDistance or 0
 
-                if (distance > profile.fadeLevel) then
-                    local fade = 1 - (math_min(10, (distance - profile.fadeLevel)) * normalizedValue);
+                if (distanceSquared > fadeLevel * fadeLevel) then
+                    local distance = math_sqrt(distanceSquared)
+                    local fade = 1 - (math_min(10, (distance - fadeLevel)) * normalizedValue);
                     self:SetFade(fade)
-                elseif (distance < profile.fadeOverPlayerDistance) and profile.fadeOverPlayer then
-                    local fadeAmount = profile.fadeOverPlayerLevel + distance * (1 - profile.fadeOverPlayerLevel) / profile.fadeOverPlayerDistance
+                elseif profile.fadeOverPlayer and (distanceSquared < fadeOverPlayerDistance * fadeOverPlayerDistance) then
+                    local distance = math_sqrt(distanceSquared)
+                    local fadeAmount = profile.fadeOverPlayerLevel + distance * (1 - profile.fadeOverPlayerLevel) / fadeOverPlayerDistance
                     -- local fadeAmount = math.max(fadeAmount, 0.5);
                     if self.faded and fadeAmount > profile.iconFadeLevel then
                         fadeAmount = profile.iconFadeLevel

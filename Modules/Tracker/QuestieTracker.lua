@@ -265,7 +265,6 @@ function QuestieTracker.Initialize()
 
             if QuestLogFrame:IsShown() then QuestLog_Update() end
             QuestieTracker:Update()
-            trackerBaseFrame:Hide()
         end)
     end)
 end
@@ -589,10 +588,10 @@ local function _UpdateLineWidth(line, objectiveMarginLeft)
     end
 end
 
-function QuestieTracker:Update()
+function QuestieTracker:Update(force)
     -- Prevents calling the tracker too often, especially when the QuestieCombatQueue empties after combat ends
     local now = GetTime()
-    if (not QuestieTracker.started) or InCombatLockdown() or (now - lastTrackerUpdate) < 0.1 then
+    if (not QuestieTracker.started) or InCombatLockdown() or ((not force) and (now - lastTrackerUpdate) < 0.1) then
         return
     end
 
@@ -1814,7 +1813,7 @@ function QuestieTracker:Update()
         C_Timer.After(0.3, function()
             QuestieCombatQueue:Queue(function()
                 allowFormattingUpdate = true
-                QuestieTracker:Update()
+                QuestieTracker:Update(true)
             end)
         end)
     end

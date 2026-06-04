@@ -166,12 +166,18 @@ function QuestieJourney:SetupKeybinding()
     if Questie.db.global.journeyKeybindDefaultApplied then
         return
     end
-    Questie.db.global.journeyKeybindDefaultApplied = true
 
     local currentBinding = GetBindingKey("QUESTIE_TOGGLE_JOURNEY")
     local semicolonBinding = GetBindingAction("SEMICOLON")
-    if not currentBinding and (not semicolonBinding or semicolonBinding == "") then
-        SetBinding("SEMICOLON", "QUESTIE_TOGGLE_JOURNEY")
+    if currentBinding or (semicolonBinding and semicolonBinding ~= "") then
+        Questie.db.global.journeyKeybindDefaultApplied = true
+        return
+    end
+
+    local bindingSet = GetCurrentBindingSet()
+    if SetBinding("SEMICOLON", "QUESTIE_TOGGLE_JOURNEY") then
+        SaveBindings(bindingSet)
+        Questie.db.global.journeyKeybindDefaultApplied = true
         Questie:Debug(Questie.DEBUG_INFO, "Set default keybind ';' for Questie Journey")
     end
 end

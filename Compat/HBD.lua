@@ -146,6 +146,7 @@ local GetPlayerFacing = GetPlayerFacing
 
 -- storage for minimap pins
 local minimapPins = {}
+local minimapPinsByInstance = {}
 local activeMinimapPins = {}
 local minimapPinRegistry = {}
 
@@ -157,12 +158,45 @@ local pins = {
     Minimap = Minimap,
     updateFrame = CreateFrame("Frame"),
     activeMinimapPins = activeMinimapPins,
+    minimapPinRevision = 0,
     worldmapPins = worldmapPins,
     worldmapProvider = {
         GetMap = function(self) return QuestieCompat.WorldMapFrame end,
     },
 }
 QuestieCompat.HBDPins = pins
+
+local function MarkMinimapPinsChanged()
+    pins.minimapPinRevision = pins.minimapPinRevision + 1
+end
+
+local function RemoveMinimapPinFromInstance(icon, data)
+    local instanceID = data and data.instanceID
+    local bucket = instanceID and minimapPinsByInstance[instanceID]
+    if not bucket then
+        return
+    end
+
+    bucket[icon] = nil
+    if not next(bucket) then
+        minimapPinsByInstance[instanceID] = nil
+    end
+end
+
+local function AddMinimapPinToInstance(icon, data)
+    local instanceID = data and data.instanceID
+    if not instanceID then
+        return
+    end
+
+    local bucket = minimapPinsByInstance[instanceID]
+    if not bucket then
+        bucket = {}
+        minimapPinsByInstance[instanceID] = bucket
+    end
+
+    bucket[icon] = data
+end
 
 local minimap_size = {
     indoor = {
@@ -230,7 +264,9 @@ local minimapPinCount, queueFullUpdate = 0, false
 ---@type unknown, MinimapShapes?
 local minimapScale, minimapShape, mapRadius, minimapWidth, minimapHeight, mapSin, mapCos
 local lastZoom, lastFacing, lastXY, lastYY
+local OnUpdateHandler
 local worldMapLayoutDirty = true
+local worldMapRescaleDirty = true
 local worldMapRefreshPending = false
 local minimapRefreshPending = false
 local minimapZoomProbeReady = false
@@ -250,13 +286,27 @@ local function _ShouldProcessQuestieMinimapPins()
     return profile.enabled and profile.enableMiniMapIcons
 end
 
+local function _StartMinimapOnUpdate()
+    if OnUpdateHandler then
+        pins.updateFrame:SetScript("OnUpdate", OnUpdateHandler)
+    end
+end
+
+local function _StopMinimapOnUpdate()
+    pins.updateFrame:SetScript("OnUpdate", nil)
+end
+
 local function _ClearActiveMinimapPins()
+    local hadActivePins = next(activeMinimapPins) ~= nil
     minimapPinCount = 0
     lastXY, lastYY = nil, nil
 
     for pin in pairs(activeMinimapPins) do
         pin:Hide()
         activeMinimapPins[pin] = nil
+    end
+    if hadActivePins then
+        MarkMinimapPinsChanged()
     end
 end
 
@@ -542,15 +592,21 @@ local function UpdateMinimapPins(force)
             mapCos = cos(facing)
         end
 
-        for pin, data in pairs(minimapPins) do
-            if (not pin.hidden)
-                and instanceID == data.instanceID
-                and math_abs(x-data.x) + math_abs(y-data.y) < 500 -- questie specific fix
-                and ShouldShowMinimapPinForUiMap(data, currentUiMapID) then
-                activeMinimapPins[pin] = data
-                data.keep = true
-                -- draw the pin (this may reset data.keep if outside of the map)
-                drawMinimapPin(pin, data)
+        local activeChanged = false
+        local instancePins = minimapPinsByInstance[instanceID]
+        if instancePins then
+            for pin, data in pairs(instancePins) do
+                if (not pin.hidden)
+                    and math_abs(x-data.x) + math_abs(y-data.y) < 500 -- questie specific fix
+                    and ShouldShowMinimapPinForUiMap(data, currentUiMapID) then
+                    if not activeMinimapPins[pin] then
+                        activeChanged = true
+                    end
+                    activeMinimapPins[pin] = data
+                    data.keep = true
+                    -- draw the pin (this may reset data.keep if outside of the map)
+                    drawMinimapPin(pin, data)
+                end
             end
         end
 
@@ -559,10 +615,14 @@ local function UpdateMinimapPins(force)
             if not data.keep then
                 pin:Hide()
                 activeMinimapPins[pin] = nil
+                activeChanged = true
             else
                 minimapPinCount = minimapPinCount + 1
                 data.keep = nil
             end
+        end
+        if activeChanged then
+            MarkMinimapPinsChanged()
         end
     end
 end
@@ -780,6 +840,7 @@ end
 
 local function QueueMinimapRefresh()
     queueFullUpdate = true
+    _StartMinimapOnUpdate()
     if minimapRefreshPending then
         return
     end
@@ -824,7 +885,7 @@ local function HideWorldMapPins()
         icon:ClearAllPoints()
     end
     worldMapLayoutDirty = true
-    lastWorldMapUiMapID, lastWorldMapWidth, lastWorldMapHeight, lastWorldMapScale = nil, nil, nil, nil
+    lastWorldMapUiMapID, lastWorldMapWidth, lastWorldMapHeight = nil, nil, nil
 end
 
 local function UpdateWorldMap(force)
@@ -841,7 +902,7 @@ local function UpdateWorldMap(force)
     worldmapHeight = WorldMapButton:GetHeight()
 
     local mapScale = QuestieMap.GetScaleValue()
-    local shouldRescale = force or worldMapLayoutDirty or mapScale ~= lastWorldMapScale
+    local shouldRescale = force or worldMapRescaleDirty or mapScale ~= lastWorldMapScale
     if (not force)
         and (not worldMapLayoutDirty)
         and uiMapID == lastWorldMapUiMapID
@@ -866,6 +927,7 @@ local function UpdateWorldMap(force)
     end
 
     worldMapLayoutDirty = false
+    worldMapRescaleDirty = false
     lastWorldMapUiMapID = uiMapID
     lastWorldMapWidth = worldmapWidth
     lastWorldMapHeight = worldmapHeight
@@ -907,18 +969,20 @@ end
 
 local lastFullUpdate = 0
 local lastIconUpdate = 0
-local function OnUpdateHandler(frame, elapsed)
+OnUpdateHandler = function(frame, elapsed)
     if not _ShouldProcessQuestieMinimapPins() then
         _ClearActiveMinimapPins()
         lastFullUpdate = 0
         lastIconUpdate = 0
         queueFullUpdate = false
+        _StopMinimapOnUpdate()
         return
     end
 
     if not queueFullUpdate and not _HasTrackedMinimapPins() then
         lastFullUpdate = 0
         lastIconUpdate = 0
+        _StopMinimapOnUpdate()
         return
     end
 
@@ -935,7 +999,6 @@ local function OnUpdateHandler(frame, elapsed)
         lastIconUpdate = 0
     end
 end
-pins.updateFrame:SetScript("OnUpdate", OnUpdateHandler)
 
 local function OnEventHandler(frame, event, ...)
     if QuestieCompat.ClearCachedPlayerPositions then
@@ -1009,6 +1072,7 @@ function pins:AddMinimapIconWorld(ref, icon, instanceID, x, y, floatOnEdge)
     minimapPinRegistry[ref][icon] = true
 
     local t = minimapPins[icon] or newCachedTable()
+    RemoveMinimapPinFromInstance(icon, t)
     t.instanceID = instanceID
     t.x = x
     t.y = y
@@ -1017,6 +1081,8 @@ function pins:AddMinimapIconWorld(ref, icon, instanceID, x, y, floatOnEdge)
     t.showInParentZone = nil
 
     minimapPins[icon] = t
+    AddMinimapPinToInstance(icon, t)
+    MarkMinimapPinsChanged()
     QueueMinimapRefresh()
 
     icon:SetParent(pins.MinimapGroup or pins.Minimap)
@@ -1072,10 +1138,15 @@ function pins:RemoveMinimapIcon(ref, icon)
         minimapPinRegistry[ref][icon] = nil
     end
     if minimapPins[icon] then
+        RemoveMinimapPinFromInstance(icon, minimapPins[icon])
         recycle(minimapPins[icon])
         minimapPins[icon] = nil
+        MarkMinimapPinsChanged()
     end
-    activeMinimapPins[icon] = nil
+    if activeMinimapPins[icon] then
+        activeMinimapPins[icon] = nil
+        MarkMinimapPinsChanged()
+    end
     icon:Hide()
     QueueMinimapRefresh()
 end
@@ -1084,15 +1155,24 @@ end
 -- @param ref Reference to your addon to track the icon under (ie. your "self" or string identifier)
 function pins:RemoveAllMinimapIcons(ref)
     if not ref or not minimapPinRegistry[ref] then return end
+    local removedPins = false
     for icon in pairs(minimapPinRegistry[ref]) do
         if minimapPins[icon] then
+            RemoveMinimapPinFromInstance(icon, minimapPins[icon])
             recycle(minimapPins[icon])
             minimapPins[icon] = nil
+            removedPins = true
         end
-        activeMinimapPins[icon] = nil
+        if activeMinimapPins[icon] then
+            activeMinimapPins[icon] = nil
+            removedPins = true
+        end
         icon:Hide()
     end
     wipe(minimapPinRegistry[ref])
+    if removedPins then
+        MarkMinimapPinsChanged()
+    end
     QueueMinimapRefresh()
 end
 
@@ -1155,6 +1235,7 @@ function pins:AddWorldMapIconWorld(ref, icon, instanceID, x, y, showFlag, frameL
 
     worldmapPins[icon] = t
     worldMapLayoutDirty = true
+    worldMapRescaleDirty = true
 
     icon.icon = icon --LOL!
     icon:SetParent(WorldMapButton)
@@ -1204,6 +1285,7 @@ function pins:AddWorldMapIconMap(ref, icon, uiMapID, x, y, showFlag, frameLevel)
 
     worldmapPins[icon] = t
     worldMapLayoutDirty = true
+    worldMapRescaleDirty = true
 
     icon.icon = icon --LOL!
     icon:SetParent(WorldMapButton)

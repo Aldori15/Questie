@@ -230,7 +230,7 @@ function QuestieCoords:Initialize()
 end
 
 function QuestieCoords:Update()
-    if (Questie.db.profile.minimapCoordinatesEnabled) or (Questie.db.profile.mapCoordinatesEnabled) then
+    if (Questie.db.profile.minimapCoordinatesEnabled and Minimap:IsVisible()) or (Questie.db.profile.mapCoordinatesEnabled and WorldMapFrame:IsVisible()) then
         QuestieCoords:WriteCoords();
     end
 end

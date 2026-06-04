@@ -433,8 +433,6 @@ function _QuestieJourney.questsByFaction:CollectFactionQuests(factionId)
     local breadcrumbCounter = 0
     local hiddenCounter = 0
 
-    local temp = {}
-
     local playerlevel = UnitLevel("player")
     local HIDE_ON_MAP = QuestieQuestBlacklist.HIDE_ON_MAP
     local hiddenQuests = QuestieCorrections.hiddenQuests
@@ -443,7 +441,6 @@ function _QuestieJourney.questsByFaction:CollectFactionQuests(factionId)
     for _, levelAndQuest in pairs(sortedQuestByLevel) do
         local questId = levelAndQuest[2]
         if QuestieDB.QuestPointers[questId] then
-            temp.value = questId
             local queryResult = QuestieDB.QueryQuest(
                 questId,
                 {
@@ -473,7 +470,10 @@ function _QuestieJourney.questsByFaction:CollectFactionQuests(factionId)
                 end
             end
 
-            temp.text = questName
+            local temp = {
+                value = questId,
+                text = questName,
+            }
 
             local breadcrumbForQuestId = QuestieDB.QueryQuest(questId,{"breadcrumbForQuestId"})[1] or {}
             local eligibilityText, _, returnReason = QuestieDB.IsDoableVerbose(questId, false, true, true)
@@ -524,6 +524,7 @@ function _QuestieJourney.questsByFaction:CollectFactionQuests(factionId)
                             if QuestiePlayer.currentQuestlog[exclusiveToQuestId] or Questie.db.char.complete[exclusiveToQuestId] then
                                 tinsert(factionTree[4].children, temp)
                                 completedCounter = completedCounter + 1
+                                blockedByExclusiveTo = true
                             end
                         end
                         if (not blockedByExclusiveTo) then
