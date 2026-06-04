@@ -146,6 +146,7 @@ local GetPlayerFacing = GetPlayerFacing
 
 -- storage for minimap pins
 local minimapPins = {}
+local minimapPinsByInstance = {}
 local activeMinimapPins = {}
 local minimapPinRegistry = {}
 
@@ -167,6 +168,34 @@ QuestieCompat.HBDPins = pins
 
 local function MarkMinimapPinsChanged()
     pins.minimapPinRevision = pins.minimapPinRevision + 1
+end
+
+local function RemoveMinimapPinFromInstance(icon, data)
+    local instanceID = data and data.instanceID
+    local bucket = instanceID and minimapPinsByInstance[instanceID]
+    if not bucket then
+        return
+    end
+
+    bucket[icon] = nil
+    if not next(bucket) then
+        minimapPinsByInstance[instanceID] = nil
+    end
+end
+
+local function AddMinimapPinToInstance(icon, data)
+    local instanceID = data and data.instanceID
+    if not instanceID then
+        return
+    end
+
+    local bucket = minimapPinsByInstance[instanceID]
+    if not bucket then
+        bucket = {}
+        minimapPinsByInstance[instanceID] = bucket
+    end
+
+    bucket[icon] = data
 end
 
 local minimap_size = {
@@ -564,18 +593,20 @@ local function UpdateMinimapPins(force)
         end
 
         local activeChanged = false
-        for pin, data in pairs(minimapPins) do
-            if (not pin.hidden)
-                and instanceID == data.instanceID
-                and math_abs(x-data.x) + math_abs(y-data.y) < 500 -- questie specific fix
-                and ShouldShowMinimapPinForUiMap(data, currentUiMapID) then
-                if not activeMinimapPins[pin] then
-                    activeChanged = true
+        local instancePins = minimapPinsByInstance[instanceID]
+        if instancePins then
+            for pin, data in pairs(instancePins) do
+                if (not pin.hidden)
+                    and math_abs(x-data.x) + math_abs(y-data.y) < 500 -- questie specific fix
+                    and ShouldShowMinimapPinForUiMap(data, currentUiMapID) then
+                    if not activeMinimapPins[pin] then
+                        activeChanged = true
+                    end
+                    activeMinimapPins[pin] = data
+                    data.keep = true
+                    -- draw the pin (this may reset data.keep if outside of the map)
+                    drawMinimapPin(pin, data)
                 end
-                activeMinimapPins[pin] = data
-                data.keep = true
-                -- draw the pin (this may reset data.keep if outside of the map)
-                drawMinimapPin(pin, data)
             end
         end
 
@@ -1041,6 +1072,7 @@ function pins:AddMinimapIconWorld(ref, icon, instanceID, x, y, floatOnEdge)
     minimapPinRegistry[ref][icon] = true
 
     local t = minimapPins[icon] or newCachedTable()
+    RemoveMinimapPinFromInstance(icon, t)
     t.instanceID = instanceID
     t.x = x
     t.y = y
@@ -1049,6 +1081,7 @@ function pins:AddMinimapIconWorld(ref, icon, instanceID, x, y, floatOnEdge)
     t.showInParentZone = nil
 
     minimapPins[icon] = t
+    AddMinimapPinToInstance(icon, t)
     MarkMinimapPinsChanged()
     QueueMinimapRefresh()
 
@@ -1105,6 +1138,7 @@ function pins:RemoveMinimapIcon(ref, icon)
         minimapPinRegistry[ref][icon] = nil
     end
     if minimapPins[icon] then
+        RemoveMinimapPinFromInstance(icon, minimapPins[icon])
         recycle(minimapPins[icon])
         minimapPins[icon] = nil
         MarkMinimapPinsChanged()
@@ -1124,6 +1158,7 @@ function pins:RemoveAllMinimapIcons(ref)
     local removedPins = false
     for icon in pairs(minimapPinRegistry[ref]) do
         if minimapPins[icon] then
+            RemoveMinimapPinFromInstance(icon, minimapPins[icon])
             recycle(minimapPins[icon])
             minimapPins[icon] = nil
             removedPins = true
