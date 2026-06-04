@@ -11,6 +11,7 @@ local tpack =  QuestieLib.tpack
 local tunpack = QuestieLib.tunpack
 
 local _Queue = {}
+local _EntryPool = {}
 local queueHead = 1
 local queueTail = 0
 local started = false
@@ -26,6 +27,30 @@ end
 local function _ResetQueue()
     queueHead = 1
     queueTail = 0
+end
+
+local function _AcquireEntry(func, ...)
+    local entry = next(_EntryPool)
+    if entry then
+        _EntryPool[entry] = nil
+    else
+        entry = {}
+    end
+
+    entry.func = func
+    if select("#", ...) > 0 then
+        entry.args = tpack(...)
+    else
+        entry.args = nil
+    end
+
+    return entry
+end
+
+local function _ReleaseEntry(entry)
+    entry.func = nil
+    entry.args = nil
+    _EntryPool[entry] = true
 end
 
 local function _ProcessQueue()
@@ -48,13 +73,19 @@ local function _ProcessQueue()
         _Queue[queueHead] = nil
         queueHead = queueHead + 1
 
-        entry.func(tunpack(entry.args))
+        if entry.args then
+            entry.func(tunpack(entry.args))
+        else
+            entry.func()
+        end
+
+        _ReleaseEntry(entry)
+        count = count + 1
 
         if InCombatLockdown() or count >= maxUpdatesPerCircle then
             break
         end
         entry = _Queue[queueHead]
-        count = count + 1
     end
 
     if _QueueIsEmpty() then
@@ -83,7 +114,7 @@ end
 function QuestieCombatQueue:Queue(func, ...)
     if started then
         queueTail = queueTail + 1
-        _Queue[queueTail] = {func=func, args=tpack(...)}
+        _Queue[queueTail] = _AcquireEntry(func, ...)
         _StartTicker()
     end
 end
