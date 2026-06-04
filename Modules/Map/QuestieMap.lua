@@ -173,22 +173,38 @@ function QuestieMap:GetFramesForQuest(questId)
     return frames
 end
 
+function QuestieMap:ForQuestFrames(questId, callback)
+    local frameNames = QuestieMap.questIdFrames[questId]
+    if not frameNames then
+        return false
+    end
+
+    for _, name in pairs(frameNames) do
+        local frame = _G[name]
+        if frame and callback(frame, name) then
+            return true
+        end
+    end
+
+    return false
+end
+
 function QuestieMap:UnloadQuestFrames(questId, iconType, noteType)
     if QuestieMap.questIdFrames[questId] then
         if (not iconType) and (not noteType) then
-            for _, frame in pairs(QuestieMap:GetFramesForQuest(questId)) do
+            QuestieMap:ForQuestFrames(questId, function(frame)
                 frame:Unload();
-            end
+            end)
             QuestieMap.questIdFrames[questId] = nil;
         else
-            for name, frame in pairs(QuestieMap:GetFramesForQuest(questId)) do
+            QuestieMap:ForQuestFrames(questId, function(frame, name)
                 if frame and frame.data
                     and ((not iconType) or frame.data.Icon == iconType)
                     and ((not noteType) or frame.data.Type == noteType) then
                     frame:Unload();
                     QuestieMap.questIdFrames[questId][name] = nil
                 end
-            end
+            end)
         end
         Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieMap] Unloading quest frames for questid:", questId)
     end
