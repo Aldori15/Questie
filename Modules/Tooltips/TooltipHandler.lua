@@ -48,6 +48,7 @@ function _QuestieTooltips:AddUnitDataToTooltip()
             for _, v in pairs (tooltipData) do
                 GameTooltip:AddLine(v)
             end
+            self:Show()
         end
         QuestieTooltips.lastGametooltipCount = _QuestieTooltips:CountTooltip()
     end
