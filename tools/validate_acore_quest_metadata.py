@@ -37,6 +37,7 @@ FIELD_ORDER = [
     "requiredSkill",
     "requiredMinRep",
     "requiredMaxRep",
+    "preQuestGroup",
     "preQuestSingle",
     "parentQuest",
     "exclusiveTo",
@@ -61,6 +62,7 @@ FIELD_KIND = {
     "requiredSkill": "pair",
     "requiredMinRep": "rep",
     "requiredMaxRep": "rep",
+    "preQuestGroup": "list",
     "preQuestSingle": "list",
     "parentQuest": "int",
     "exclusiveTo": "list",
@@ -1306,6 +1308,32 @@ def load_questie_base_metadata(quest_db_path, quest_keys, constants):
     return data
 
 
+def load_questie_base_list_field(quest_db_path, quest_keys, constants, field_name):
+    data = {}
+    field_index = quest_keys.get(field_name)
+    if field_index is None:
+        return data
+
+    text = quest_db_path.read_text(encoding="utf-8")
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        match = QUEST_ROW_RE.match(line)
+        if not match:
+            continue
+
+        row_values = split_top_level_lua_table(match.group(2))
+        row_index = field_index - 1
+        if row_index >= len(row_values):
+            continue
+
+        value = parse_lua_value(row_values[row_index], constants)
+        normalized = normalize_list(value)
+        if normalized:
+            data[int(match.group(1))] = normalized
+
+    return data
+
+
 def load_questie_correction_file(path, constants):
     text = strip_lua_comments(path.read_text(encoding="utf-8"))
     return_table = extract_return_table(text)
@@ -1337,6 +1365,33 @@ def load_questie_correction_file(path, constants):
                 quest_override["_killCreditObjectives"] = extract_kill_credit_objectives(value)
                 quest_override["_rawObjectives"] = value
             quest_override[field_name] = normalize_field(field_name, value)
+
+    return overrides
+
+
+def load_questie_correction_list_field(path, constants, field_name):
+    text = strip_lua_comments(path.read_text(encoding="utf-8"))
+    return_table = extract_return_table(text)
+    overrides = {}
+
+    for entry in split_top_level_lua_table(return_table):
+        match = QUEST_ROW_RE.match(entry.strip())
+        if not match:
+            continue
+
+        quest_id = int(match.group(1))
+        body = match.group(2)
+
+        for field_entry in split_top_level_lua_table(body):
+            field_match = QUEST_FIELD_RE.match(field_entry.strip())
+            if not field_match or field_match.group(1) != field_name:
+                continue
+
+            value = parse_lua_value(field_match.group(2), constants)
+            if value is None:
+                continue
+
+            overrides[quest_id] = normalize_list(value)
 
     return overrides
 
@@ -1975,6 +2030,9 @@ def derive_acore_metadata(source_root, quest_template_sql=None, quest_template_a
     quest_ids = set(quest_rows) | set(addon_rows)
     combined_rows = {}
     prereq_sets = defaultdict(set)
+    prequest_groups = defaultdict(set)
+    negative_exclusive_groups = defaultdict(set)
+    negative_exclusive_next_quests = defaultdict(lambda: defaultdict(set))
     parent_quests = defaultdict(set)
     exclusive_groups = defaultdict(set)
     breadcrumbs_for = defaultdict(set)
@@ -1999,16 +2057,42 @@ def derive_acore_metadata(source_root, quest_template_sql=None, quest_template_a
         prereq_sets[quest_id].update(condition_prereqs.get(quest_id, set()))
 
         next_quest = int(row.get("NextQuestID") or row.get("NextQuestId") or 0)
-        if next_quest > 0:
-            prereq_sets[next_quest].add(quest_id)
-
         exclusive_group = int(row.get("ExclusiveGroup") or 0)
+        if next_quest > 0:
+            if exclusive_group < 0:
+                negative_exclusive_next_quests[next_quest][exclusive_group].add(quest_id)
+            else:
+                prereq_sets[next_quest].add(quest_id)
+
         if exclusive_group > 0:
             exclusive_groups[exclusive_group].add(quest_id)
+        elif exclusive_group < 0:
+            negative_exclusive_groups[exclusive_group].add(quest_id)
 
         breadcrumb_for = int(row.get("BreadcrumbForQuestId") or 0)
         if breadcrumb_for > 0:
             breadcrumbs_for[breadcrumb_for].add(quest_id)
+
+    for next_quest, groups in negative_exclusive_next_quests.items():
+        for exclusive_group, grouped_prereqs in groups.items():
+            full_group = negative_exclusive_groups.get(exclusive_group, set())
+            if len(full_group) > 1:
+                prequest_groups[next_quest].update(full_group)
+            elif len(grouped_prereqs) > 1:
+                prequest_groups[next_quest].update(grouped_prereqs)
+            else:
+                prereq_sets[next_quest].update(grouped_prereqs)
+
+    for quest_id, prereqs in list(prereq_sets.items()):
+        expanded_groups = set()
+        for prereq in prereqs:
+            prereq_group = int(combined_rows.get(prereq, {}).get("ExclusiveGroup") or 0)
+            if prereq_group < 0 and len(negative_exclusive_groups.get(prereq_group, set())) > 1:
+                expanded_groups.update(negative_exclusive_groups[prereq_group])
+
+        if expanded_groups:
+            prequest_groups[quest_id].update(expanded_groups)
+            prereqs.difference_update(expanded_groups)
 
     acore_metadata = {}
     for quest_id, row in combined_rows.items():
@@ -2053,7 +2137,8 @@ def derive_acore_metadata(source_root, quest_template_sql=None, quest_template_a
                 row.get("RequiredMaxRepValue"),
             ]
         )
-        metadata["preQuestSingle"] = normalize_list(prereq_sets.get(quest_id, set()))
+        metadata["preQuestGroup"] = normalize_list(prequest_groups.get(quest_id, set()))
+        metadata["preQuestSingle"] = normalize_list(() if metadata["preQuestGroup"] else prereq_sets.get(quest_id, set()))
         metadata["parentQuest"] = normalize_int(next(iter(parent_quests.get(quest_id, set())), 0))
         exclusive_group = int(row.get("ExclusiveGroup") or 0)
         if exclusive_group > 0:
@@ -2071,15 +2156,18 @@ def derive_acore_metadata(source_root, quest_template_sql=None, quest_template_a
     return acore_metadata
 
 
-def compare_metadata(acore_metadata, questie_metadata, creature_kill_credits, spawned_creature_ids, protected_required_race_quest_ids=None):
+def compare_metadata(acore_metadata, questie_metadata, creature_kill_credits, spawned_creature_ids, protected_required_race_quest_ids=None, questie_prequest_groups=None):
     mismatches = []
     preserved_objective_expansions = []
     preserved_display_objectives = []
     preserved_empty_prequest_clears = []
+    preserved_empty_prequest_group_clears = []
     preserved_empty_required_race_clears = []
+    preserved_group_as_single_prequest = []
     all_quest_ids = sorted(set(acore_metadata) | set(questie_metadata))
     summary = Counter()
     protected_required_race_quest_ids = protected_required_race_quest_ids or set()
+    questie_prequest_groups = questie_prequest_groups or {}
 
     empty_entry = {field: default_field_value(field) for field in FIELD_ORDER}
 
@@ -2196,6 +2284,17 @@ def compare_metadata(acore_metadata, questie_metadata, creature_kill_credits, sp
                 )
                 continue
 
+            if field == "preQuestGroup" and acore[field] == () and questie[field]:
+                preserved_empty_prequest_group_clears.append(
+                    {
+                        "questId": quest_id,
+                        "acore": acore[field],
+                        "questie": questie[field],
+                        "reason": "preserveQuestiePreQuestGroupWhenAcoreHasNoGroup",
+                    }
+                )
+                continue
+
             if (
                 field == "requiredRaces"
                 and acore[field] == 0
@@ -2208,6 +2307,22 @@ def compare_metadata(acore_metadata, questie_metadata, creature_kill_credits, sp
                         "acore": acore[field],
                         "questie": questie[field],
                         "reason": "explicitQuestieRequiredRacesCorrection",
+                    }
+                )
+                continue
+
+            if (
+                field == "preQuestSingle"
+                and acore[field]
+                and not questie[field]
+                and acore[field] == questie_prequest_groups.get(quest_id)
+            ):
+                preserved_group_as_single_prequest.append(
+                    {
+                        "questId": quest_id,
+                        "acore": acore[field],
+                        "questiePreQuestGroup": questie_prequest_groups[quest_id],
+                        "reason": "matchesQuestiePreQuestGroup",
                     }
                 )
                 continue
@@ -2243,7 +2358,9 @@ def compare_metadata(acore_metadata, questie_metadata, creature_kill_credits, sp
         preserved_objective_expansions,
         preserved_display_objectives,
         preserved_empty_prequest_clears,
+        preserved_empty_prequest_group_clears,
         preserved_empty_required_race_clears,
+        preserved_group_as_single_prequest,
     )
 
 
@@ -2407,13 +2524,23 @@ def main():
 
     constants = load_constants(addon_root)
     questie_metadata = load_questie_base_metadata(quest_db_path, constants["quest_keys"], constants)
+    questie_prequest_groups = load_questie_base_list_field(
+        quest_db_path,
+        constants["quest_keys"],
+        constants,
+        "preQuestGroup",
+    )
     protected_required_race_quest_ids = set()
     for fix_file in args.quest_fixes:
-        overrides = load_questie_correction_file(resolve_addon_path(addon_root, fix_file), constants)
+        fix_path = resolve_addon_path(addon_root, fix_file)
+        overrides = load_questie_correction_file(fix_path, constants)
         protected_required_race_quest_ids.update(
             quest_id
             for quest_id, quest_override in overrides.items()
             if quest_override.get("requiredRaces", 0) != 0
+        )
+        questie_prequest_groups.update(
+            load_questie_correction_list_field(fix_path, constants, "preQuestGroup")
         )
         apply_questie_overrides(questie_metadata, overrides)
     for quest_entry in questie_metadata.values():
@@ -2430,13 +2557,16 @@ def main():
         preserved_objective_expansions,
         preserved_display_objectives,
         preserved_empty_prequest_clears,
+        preserved_empty_prequest_group_clears,
         preserved_empty_required_race_clears,
+        preserved_group_as_single_prequest,
     ) = compare_metadata(
         acore_metadata,
         questie_metadata,
         creature_kill_credits,
         spawned_creature_ids,
         protected_required_race_quest_ids,
+        questie_prequest_groups,
     )
     objective_display_risks = build_objective_display_risks(
         mismatches,
@@ -2455,7 +2585,9 @@ def main():
     print(f"  preservedObjectiveExpansions: {len(preserved_objective_expansions)}")
     print(f"  preservedDisplayObjectives: {len(preserved_display_objectives)}")
     print(f"  preservedEmptyPreQuestClears: {len(preserved_empty_prequest_clears)}")
+    print(f"  preservedEmptyPreQuestGroupClears: {len(preserved_empty_prequest_group_clears)}")
     print(f"  preservedEmptyRequiredRaceClears: {len(preserved_empty_required_race_clears)}")
+    print(f"  preservedGroupAsSinglePreQuests: {len(preserved_group_as_single_prequest)}")
     print(f"  objectiveDisplayRisks: {len(objective_display_risks)}")
 
     if mismatches:
@@ -2475,7 +2607,9 @@ def main():
                     "preservedObjectiveExpansions": preserved_objective_expansions,
                     "preservedDisplayObjectives": preserved_display_objectives,
                     "preservedEmptyPreQuestClears": preserved_empty_prequest_clears,
+                    "preservedEmptyPreQuestGroupClears": preserved_empty_prequest_group_clears,
                     "preservedEmptyRequiredRaceClears": preserved_empty_required_race_clears,
+                    "preservedGroupAsSinglePreQuests": preserved_group_as_single_prequest,
                     "objectiveDisplayRisks": objective_display_risks,
                     "mismatches": mismatches,
                 },

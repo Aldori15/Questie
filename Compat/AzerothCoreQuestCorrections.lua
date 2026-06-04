@@ -3325,7 +3325,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [1] = {
             [questKeys.objectives] = {{{20000}}},
-            [questKeys.preQuestSingle] = {13929,13933,13950},
+            [questKeys.preQuestGroup] = {13929,13933,13950},
         },
 
         [2] = {
@@ -3660,10 +3660,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
-        [171] = {
-            [questKeys.preQuestSingle] = {558},
-        },
-
         [178] = {
             [questKeys.objectivesText] = {"Bring the Faded Shadowhide Pendant to Theocritus the Mage at the Tower of Azora in Elwynn Forest."},
             [questKeys.objectives] = {nil,nil,{{1956}}},
@@ -3698,14 +3694,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [206] = {
             [questKeys.preQuestSingle] = {205},
-        },
-
-        [207] = {
-            [questKeys.preQuestSingle] = {204},
-        },
-
-        [208] = {
-            [questKeys.preQuestSingle] = {188,193,197},
         },
 
         [210] = {
@@ -3794,10 +3782,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectivesText] = {"Kill 8 Dragonmaw Raiders,3 Dragonmaw Bonewarders,and a Dragonmaw Battlemaster."},
             [questKeys.objectives] = {{{1034},{1057},{1037}}},
             [questKeys.questFlags] = 8,
-        },
-
-        [247] = {
-            [questKeys.preQuestSingle] = {2,23,24},
         },
 
         [248] = {
@@ -4454,10 +4438,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectives] = {nil,nil,{{3706}}},
         },
 
-        [558] = {
-            [questKeys.preQuestSingle] = {1479},
-        },
-
         [560] = {
             [questKeys.objectives] = {nil,nil,{{3717}}},
         },
@@ -4474,10 +4454,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectivesText] = {"Far Seer Mok'thardin of Grom'gol needs Holy Spring Water.  He also wants you to kill 10 Naga Explorers."},
         },
 
-        [574] = {
-            [questKeys.preQuestSingle] = {203,204},
-        },
-
         [575] = {
             [questKeys.nextQuestInChain] = 0,
         },
@@ -4488,10 +4464,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [587] = {
             [questKeys.preQuestSingle] = {595},
-        },
-
-        [588] = {
-            [questKeys.preQuestSingle] = {585,586},
         },
 
         [598] = {
@@ -4648,6 +4620,13 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [715] = {
             [questKeys.requiredSkill] = {profKeys.ALCHEMY,0},
+            [questKeys.preQuestGroup] = {712,714},
+            [questKeys.preQuestSingle] = {},
+        },
+
+        [716] = {
+            [questKeys.preQuestGroup] = {712,714},
+            [questKeys.preQuestSingle] = {},
         },
 
         [717] = {
@@ -4678,10 +4657,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [729] = {
             [questKeys.nextQuestInChain] = 0,
-        },
-
-        [734] = {
-            [questKeys.preQuestSingle] = {712,714},
         },
 
         [735] = {
@@ -5125,7 +5100,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [915] = {
             [questKeys.objectivesText] = {"Get some Strawberry Ice Cream for your ward.  The lad seems to prefer Tigule and Foror's brand ice cream."},
-            [questKeys.preQuestSingle] = {910},
         },
 
         [916] = {
@@ -5163,10 +5137,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         [924] = {
             [questKeys.objectivesText] = {"Grab a Flawed Power Stone.  Bring it to the Altar of Fire before the stone expires, then return to Ak'Zeloth."},
             [questKeys.requiredSourceItems] = {},
-        },
-
-        [925] = {
-            [questKeys.preQuestSingle] = {910},
         },
 
         [927] = {
@@ -5450,18 +5420,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectives] = {nil,nil,{{5731}}},
         },
 
-        [1079] = {
-            [questKeys.preQuestSingle] = {1074,1077},
-        },
-
-        [1080] = {
-            [questKeys.preQuestSingle] = {1074,1077},
-        },
-
-        [1082] = {
-            [questKeys.preQuestSingle] = {1083,1084},
-        },
-
         [1089] = {
             [questKeys.objectivesText] = {"Travel to the Den on Stonetalon Peak. Using the Gatekeeper's Key, obtain the druids' hidden items. Use these items to open the Talon Den Hoard. "},
         },
@@ -5472,7 +5430,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [1091] = {
             [questKeys.objectives] = {nil,nil,{{5717}}},
-            [questKeys.preQuestSingle] = {1079,1080},
         },
 
         [1092] = {
@@ -5507,11 +5464,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [1106] = {
             [questKeys.objectives] = {nil,nil,{{5827}}},
-            [questKeys.preQuestSingle] = {1104,1105},
-        },
-
-        [1107] = {
-            [questKeys.preQuestSingle] = {1105},
         },
 
         [1111] = {
@@ -5540,7 +5492,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [1119] = {
             [questKeys.objectives] = {nil,nil,{{5806}}},
-            [questKeys.preQuestSingle] = {621,1118},
         },
 
         [1120] = {
@@ -5792,7 +5743,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [1271] = {
-            [questKeys.preQuestSingle] = {1222,1258},
+            [questKeys.preQuestGroup] = {1222,1258},
         },
 
         [1275] = {
@@ -7100,8 +7051,9 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectives] = {nil,nil,{{8686}}},
         },
 
-        [2765] = {
-            [questKeys.preQuestSingle] = {2761,2762,2763},
+        [2764] = {
+            [questKeys.preQuestGroup] = {2761,2762,2763},
+            [questKeys.preQuestSingle] = {},
         },
 
         [2766] = {
@@ -7144,17 +7096,8 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredSkill] = {profKeys.LEATHERWORKING,225},
         },
 
-        [2851] = {
-            [questKeys.preQuestSingle] = {2847,2848,2849},
-        },
-
-        [2852] = {
-            [questKeys.preQuestSingle] = {2847,2850},
-        },
-
         [2853] = {
             [questKeys.objectives] = {nil,nil,{{9235}}},
-            [questKeys.preQuestSingle] = {2851,2852},
         },
 
         [2854] = {
@@ -7171,7 +7114,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [2860] = {
             [questKeys.objectives] = {nil,nil,{{9236}}},
-            [questKeys.preQuestSingle] = {2855,2856,2857,2858,2859},
+            [questKeys.preQuestGroup] = {2855,2856,2857,2858,2859},
         },
 
         [2864] = {
@@ -7739,10 +7682,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.preQuestSingle] = {},
         },
 
-        [3129] = {
-            [questKeys.preQuestSingle] = {3127,3128},
-        },
-
         [3161] = {
             [questKeys.requiredSourceItems] = {9978},
         },
@@ -7769,10 +7708,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [3301] = {
             [questKeys.objectives] = {nil,nil,{{10414}}},
-        },
-
-        [3321] = {
-            [questKeys.preQuestSingle] = {2771,2772,2773},
         },
 
         [3361] = {
@@ -8214,10 +8149,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.questFlags] = 10,
         },
 
-        [3721] = {
-            [questKeys.preQuestSingle] = {648,836,2767},
-        },
-
         [3761] = {
             [questKeys.preQuestSingle] = {936},
             [questKeys.nextQuestInChain] = 0,
@@ -8391,10 +8322,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [4023] = {
             [questKeys.exclusiveTo] = {4022},
-        },
-
-        [4024] = {
-            [questKeys.preQuestSingle] = {4022,4023},
         },
 
         [4062] = {
@@ -8603,10 +8530,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.sourceItemId] = 11473,
             [questKeys.questFlags] = 2,
             [questKeys.specialFlags] = specialFlags.EXPLORATION_OR_EVENT,
-        },
-
-        [4321] = {
-            [questKeys.preQuestSingle] = {4285,4287,4288},
         },
 
         [4323] = {
@@ -8818,10 +8741,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
-        [4642] = {
-            [questKeys.preQuestSingle] = {4293,4294},
-        },
-
         [4661] = {
             [questKeys.parentQuest] = 0,
         },
@@ -8942,7 +8861,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [4822] = {
             [questKeys.objectivesText] = {"Get some Strawberry Ice Cream for your ward.  The lad seems to prefer Tigule and Foror's brand ice cream."},
-            [questKeys.preQuestSingle] = {1479},
         },
 
         [4841] = {
@@ -9264,7 +9182,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [5206] = {
             [questKeys.objectives] = {nil,nil,{{13155},{13156}}},
-            [questKeys.preQuestSingle] = {5168,5181},
         },
 
         [5207] = {
@@ -9514,10 +9431,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [5465] = {
             [questKeys.objectives] = {nil,nil,{{13624}}},
-        },
-
-        [5502] = {
-            [questKeys.preQuestSingle] = {915},
         },
 
         [5503] = {
@@ -10140,10 +10053,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
         },
 
-        [5742] = {
-            [questKeys.preQuestSingle] = {5542,5543,5544},
-        },
-
         [5761] = {
             [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
         },
@@ -10732,10 +10641,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectives] = {nil,nil,{{16785}}},
         },
 
-        [6585] = {
-            [questKeys.preQuestSingle] = {6582,6583,6584},
-        },
-
         [6601] = {
             [questKeys.objectives] = {nil,nil,{{16888}}},
         },
@@ -11222,11 +11127,8 @@ QuestieCompat.RegisterCorrection("questData", function()
         [7629] = {
             [questKeys.objectivesText] = {"Bring the Imp in a Jar to the alchemy lab in the Scholomance.  After the parchment is created, return the jar to Gorzeeki Wildeyes."},
             [questKeys.objectives] = {{{14500}},nil,{{18688}}},
-            [questKeys.preQuestSingle] = {7625,7630},
-        },
-
-        [7630] = {
-            [questKeys.preQuestSingle] = {7626,7627,7628},
+            [questKeys.preQuestGroup] = {7625,7630},
+            [questKeys.preQuestSingle] = {},
         },
 
         [7631] = {
@@ -11264,7 +11166,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         [7643] = {
             [questKeys.objectivesText] = {"Acquire special horse feed used for feeding a spirit horse.  Merideth Carlson in Southshore apparently is the source for such food.","","Travel to the Dire Maul dungeon in Feralas and slay Tendris Warpwood.  Doing so will free the Ancient Equine Spirit.  Feed it the special horse feed, thereby soothing the spirit.  Finally, give it the Arcanite Barding so it may bless it."},
             [questKeys.objectives] = {nil,nil,{{18753},{18775}}},
-            [questKeys.preQuestSingle] = {7642,7648},
         },
 
         [7644] = {
@@ -11333,7 +11234,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         [7732] = {
             [questKeys.objectivesText] = {"Deliver the Camp Mojache Zukk'ash Report to Zilzibin Drumlore.  He resides in the Drag of Orgrimmar."},
             [questKeys.objectives] = {nil,nil,{{19020}}},
-            [questKeys.preQuestSingle] = {7730,7731},
         },
 
         [7735] = {
@@ -12129,7 +12029,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [8314] = {
             [questKeys.objectives] = {nil,nil,{{20463}}},
-            [questKeys.preQuestSingle] = {8309,8310},
         },
 
         [8315] = {
@@ -13254,10 +13153,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectivesText] = {"Bring 1 Qiraji Spiked Hilt, 2 Azure Idols, 5 Silver Scarabs and 5 Bone Scarabs to Warden Haro in Silithus.  You must also attain Exalted reputation with Cenarion Circle to complete this quest."},
         },
 
-        [8728] = {
-            [questKeys.preQuestSingle] = {8578,8587,8620},
-        },
-
         [8731] = {
             [questKeys.objectivesText] = {"Report to Krug Skullsplit at the Orgrimmar Legion post in front of Hive'Regal.  Prepare your Unsigned Field Duty Papers, obtain Signed Field Duty Papers and bring them to Windcaller Kaldon in Cenarion Hold.","","Note: Healing or casting beneficial spells on a member of the Orgrimmar Legion will flag you for PvP."},
         },
@@ -13288,10 +13183,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [8741] = {
             [questKeys.objectives] = {nil,nil,{{21139}}},
-        },
-
-        [8742] = {
-            [questKeys.preQuestSingle] = {8729,8730,8741},
         },
 
         [8746] = {
@@ -15083,7 +14974,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [9339] = {
             [questKeys.objectivesText] = {"Return the Flame of Stormwind to (NAME)."},
-            [questKeys.preQuestSingle] = {9330,9331,9332,11933},
         },
 
         [9341] = {
@@ -15180,7 +15070,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [9365] = {
             [questKeys.objectivesText] = {"Return the Flame of Stormwind to (NAME)."},
-            [questKeys.preQuestSingle] = {9324,9325,9326,11935},
         },
 
         [9369] = {
@@ -16365,7 +16254,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [9826] = {
             [questKeys.objectives] = {nil,nil,{{24482}}},
-            [questKeys.preQuestSingle] = {9824,9825},
         },
 
         [9827] = {
@@ -16414,10 +16302,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [9851] = {
             [questKeys.nextQuestInChain] = 0,
-        },
-
-        [9852] = {
-            [questKeys.preQuestSingle] = {9851},
         },
 
         [9856] = {
@@ -16572,23 +16456,16 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.specialFlags] = specialFlags.EXPLORATION_OR_EVENT,
         },
 
-        [9931] = {
-            [questKeys.preQuestSingle] = {9927},
-        },
-
         [9932] = {
             [questKeys.objectives] = {{{18395}},nil,{{25658}}},
-            [questKeys.preQuestSingle] = {9927},
         },
 
         [9933] = {
             [questKeys.objectives] = {nil,nil,{{25586}}},
-            [questKeys.preQuestSingle] = {9931},
         },
 
         [9934] = {
             [questKeys.objectives] = {nil,nil,{{25586}}},
-            [questKeys.preQuestSingle] = {9931},
         },
 
         [9935] = {
@@ -16597,14 +16474,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [9936] = {
             [questKeys.requiredMinRep] = false,
-        },
-
-        [9937] = {
-            [questKeys.preQuestSingle] = {9935,9939},
-        },
-
-        [9938] = {
-            [questKeys.preQuestSingle] = {9936,9940},
         },
 
         [9939] = {
@@ -16721,7 +16590,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9978] = {
-            [questKeys.preQuestSingle] = {9968},
             [questKeys.nextQuestInChain] = 9979,
             [questKeys.specialFlags] = specialFlags.EXPLORATION_OR_EVENT,
         },
@@ -16845,10 +16713,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [10041] = {
             [questKeys.objectivesText] = {"While in disguise, speak with the Shadowy Initiate, the Shadowy Laborer and the Shadowy Advisor.  Then return to Scout Neftis at Grangol'var Village in Terokkar Forest."},
-        },
-
-        [10044] = {
-            [questKeys.preQuestSingle] = {9868,9934,10011},
         },
 
         [10047] = {
@@ -17262,6 +17126,8 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [10246] = {
             [questKeys.objectivesText] = {"Travel to Manaforge Coruu and slay 8 Sunfury Arcanists and 5 Sunfury Researchers.  Return to Exarch Orelis when you've completed this task.","","Performing quests for the Aldor will cause your Scryers reputation level to decrease."},
+            [questKeys.preQuestGroup] = {10313,10321},
+            [questKeys.preQuestSingle] = {},
         },
 
         [10248] = {
@@ -17417,6 +17283,8 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [10322] = {
             [questKeys.objectivesText] = {"Anchorite Karja wants you to go Manaforge Duro and obtain the Duro Access Crystal from Overseer Athanel.  Use it at the Manaforge Duro Console to shut it down.","","Performing quests for the Aldor will cause your Scryers reputation level to decrease."},
+            [questKeys.preQuestGroup] = {10313,10321},
+            [questKeys.preQuestSingle] = {},
             [questKeys.specialFlags] = specialFlags.EXPLORATION_OR_EVENT,
         },
 
@@ -17439,7 +17307,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [10328] = {
             [questKeys.objectivesText] = {"Go to Manaforge Duro and retrieve the Sunfury Military Briefing and the Sunfury Arcane Briefing from the Sunfury units stationed there.  Return to Exarch Orellis when you've completed this task.","","Completing quests for the Aldor will cause your Scryers reputation level to decrease."},
-            [questKeys.preQuestSingle] = {10313,10321},
         },
 
         [10329] = {
@@ -17978,13 +17845,8 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.sourceItemId] = 0,
         },
 
-        [10586] = {
-            [questKeys.preQuestSingle] = {10583,10585},
-        },
-
         [10588] = {
             [questKeys.objectives] = {{{21181}},nil,{{30657}}},
-            [questKeys.preQuestSingle] = {10523,10541,10579},
         },
 
         [10591] = {
@@ -18011,10 +17873,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         [10598] = {
             [questKeys.objectives] = {{{21512}},nil,{{30614}}},
             [questKeys.specialFlags] = specialFlags.SPELL_CAST,
-        },
-
-        [10603] = {
-            [questKeys.preQuestSingle] = {10601,10602},
         },
 
         [10605] = {
@@ -18079,10 +17937,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.specialFlags] = specialFlags.SPELL_CAST,
         },
 
-        [10639] = {
-            [questKeys.preQuestSingle] = {10634,10635,10636},
-        },
-
         [10641] = {
             [questKeys.objectivesText] = {"Altruis the Sufferer wants you to obtain Freshly Drawn Blood from a Wrath Priestess at Forge Base: Gehenna in Netherstorm.  Spill it on the ground and slay the Avatar of Sathal.  Return to Altruis when you've completed this task."},
             [questKeys.preQuestSingle] = {},
@@ -18092,12 +17946,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectives] = {{{21795}},nil,{{30719}}},
         },
 
-        [10645] = {
-            [questKeys.preQuestSingle] = {10634,10635,10636},
-        },
-
         [10646] = {
-            [questKeys.preQuestSingle] = {10641,10668,10669},
             [questKeys.questFlags] = 138,
         },
 
@@ -18139,10 +17988,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectives] = {nil,nil,{{30822}}},
         },
 
-        [10667] = {
-            [questKeys.preQuestSingle] = {10665,10666},
-        },
-
         [10668] = {
             [questKeys.preQuestSingle] = {},
         },
@@ -18153,16 +17998,8 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.preQuestSingle] = {},
         },
 
-        [10670] = {
-            [questKeys.preQuestSingle] = {10665,10666},
-        },
-
         [10674] = {
             [questKeys.objectives] = {{{20635,nil,3}},nil,{{30852}}},
-        },
-
-        [10676] = {
-            [questKeys.preQuestSingle] = {10667,10670},
         },
 
         [10683] = {
@@ -18791,7 +18628,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [10956] = {
             [questKeys.objectivesText] = {"Take your orphan, Dornaa, to stand before O'ros at the bottom of the Seat of the Naaru inside of the Exodar, which is on Azuremyst Isle.  Make sure to call for her if she is not present when you arrive.","","Remember that you can use your map inside the city."},
-            [questKeys.preQuestSingle] = {10950},
         },
 
         [10957] = {
@@ -18804,7 +18640,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [10960] = {
             [questKeys.objectivesText] = {"Take your orphan, Salandria, to the paladin trainers in Silvermoon City's Farstriders' Square.  Make sure to call for her if she is not present when you arrive.  Then, speak with Lady Liadrin, the Blood Knight Matriarch.","","Remember that you can use your map inside the city, and speak to the guards to find the paladin trainers."},
-            [questKeys.preQuestSingle] = {10945},
+            [questKeys.preQuestGroup] = {10945,10951,10953},
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
@@ -18814,25 +18650,15 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [10962] = {
             [questKeys.objectivesText] = {"Take your orphan, Dornaa, to stand before Zaladormu, the dragon on the dais in the middle of the Caverns of Time.  Make sure to call for her if she is not present when you arrive.","","Then, purchase a Toy Dragon for her from the Keepers of Time Quartermaster, Alurmi, near the bottom of the entrance tunnel."},
-            [questKeys.preQuestSingle] = {10950},
         },
 
         [10963] = {
             [questKeys.objectivesText] = {"Take your orphan, Salandria, to stand before Zaladormu, the dragon on the dais in the middle of the Caverns of Time.  Make sure to call for her if she is not present when you arrive.","","Then, purchase a Toy Dragon for her from the Keepers of Time Quartermaster, Alurmi, near the bottom of the entrance tunnel."},
-            [questKeys.preQuestSingle] = {10945},
         },
 
         [10964] = {
             [questKeys.objectives] = {nil,nil,{{31953}}},
             [questKeys.nextQuestInChain] = 0,
-        },
-
-        [10966] = {
-            [questKeys.preQuestSingle] = {10968},
-        },
-
-        [10967] = {
-            [questKeys.preQuestSingle] = {11975},
         },
 
         [10968] = {
@@ -18927,10 +18753,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.preQuestSingle] = {10983,10989},
         },
 
-        [10998] = {
-            [questKeys.preQuestSingle] = {10995,10996,10997},
-        },
-
         [10999] = {
             [questKeys.questLevel] = 1,
             [questKeys.requiredLevel] = 1,
@@ -18971,7 +18793,8 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [11010] = {
             [questKeys.objectives] = {{{23118}},nil,{{32456}}},
-            [questKeys.preQuestSingle] = {11030,11058},
+            [questKeys.preQuestGroup] = {11030,11058},
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {11102},
         },
 
@@ -19133,6 +18956,16 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
+        [11061] = {
+            [questKeys.preQuestGroup] = {11030,11058},
+            [questKeys.preQuestSingle] = {},
+        },
+
+        [11062] = {
+            [questKeys.preQuestGroup] = {11030,11058},
+            [questKeys.preQuestSingle] = {},
+        },
+
         [11065] = {
             [questKeys.objectives] = {{{22181}},nil,{{32698}}},
             [questKeys.preQuestSingle] = {11025},
@@ -19165,6 +18998,11 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [11078] = {
             [questKeys.preQuestSingle] = {11010,11065},
+        },
+
+        [11080] = {
+            [questKeys.preQuestGroup] = {11030,11058},
+            [questKeys.preQuestSingle] = {},
         },
 
         [11081] = {
@@ -19380,7 +19218,8 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [11159] = {
             [questKeys.objectives] = {{{23786}},nil,{{33091}}},
-            [questKeys.preQuestSingle] = {11160,11161},
+            [questKeys.preQuestGroup] = {11160,11161},
+            [questKeys.preQuestSingle] = {},
         },
 
         [11161] = {
@@ -19589,10 +19428,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectives] = {{{23671}},nil,{{33339}}},
         },
 
-        [11250] = {
-            [questKeys.preQuestSingle] = {11245,11246,11247},
-        },
-
         [11251] = {
             [questKeys.preQuestSingle] = {11244},
         },
@@ -19629,10 +19464,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [11260] = {
             [questKeys.objectives] = {{{23671}},nil,{{33346}}},
-        },
-
-        [11261] = {
-            [questKeys.preQuestSingle] = {11257,11258,11259},
         },
 
         [11265] = {
@@ -19713,10 +19544,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [11302] = {
             [questKeys.exclusiveTo] = {11312},
-        },
-
-        [11303] = {
-            [questKeys.preQuestSingle] = {11283,11285},
         },
 
         [11304] = {
@@ -20147,10 +19974,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.exclusiveTo] = {},
         },
 
-        [11485] = {
-            [questKeys.preQuestSingle] = {11483,11484},
-        },
-
         [11486] = {
             [questKeys.objectives] = {nil,nil,{{34141}}},
         },
@@ -20165,10 +19988,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [11496] = {
             [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.EXPLORATION_OR_EVENT + specialFlags.SPELL_CAST,
-        },
-
-        [11501] = {
-            [questKeys.preQuestSingle] = {11494,11495},
         },
 
         [11502] = {
@@ -20324,7 +20143,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [11568] = {
             [questKeys.requiredSourceItems] = {34624},
-            [questKeys.preQuestSingle] = {11511,11512,11530,11567},
             [questKeys.specialFlags] = specialFlags.SPELL_CAST,
         },
 
@@ -20500,10 +20318,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredSourceItems] = {34801},
         },
 
-        [11651] = {
-            [questKeys.preQuestSingle] = {11643,11644},
-        },
-
         [11653] = {
             [questKeys.requiredSourceItems] = {34812},
         },
@@ -20673,6 +20487,11 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredSourceItems] = {35127},
         },
 
+        [11867] = {
+            [questKeys.preQuestGroup] = {11866,11868,11872,11879,11884},
+            [questKeys.preQuestSingle] = {},
+        },
+
         [11875] = {
             [questKeys.preQuestSingle] = {11550},
         },
@@ -20714,7 +20533,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [11892] = {
             [questKeys.requiredSourceItems] = {35293},
-            [questKeys.preQuestSingle] = {11866,11868,11872,11879,11884},
         },
 
         [11893] = {
@@ -20753,10 +20571,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         [11913] = {
             [questKeys.objectives] = {{{26161}}},
             [questKeys.requiredSourceItems] = {35491},
-        },
-
-        [11916] = {
-            [questKeys.preQuestSingle] = {11652,11705,11722},
         },
 
         [11917] = {
@@ -20892,7 +20706,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [11975] = {
             [questKeys.objectivesText] = {"Take your orphan, Salandria, to see the Elite Tauren Chieftain in Silvermoon City's Walk of Elders.  Make sure to call for her if she is not present when you arrive. "},
-            [questKeys.preQuestSingle] = {10945},
         },
 
         [11976] = {
@@ -21273,10 +21086,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectives] = {nil,nil,{{36846}}},
         },
 
-        [12132] = {
-            [questKeys.preQuestSingle] = {12125,12126,12127},
-        },
-
         [12133] = {
             [questKeys.objectives] = {nil,nil,{{36876}}},
             [questKeys.questFlags] = 4608,
@@ -21464,11 +21273,17 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12204] = {
-            [questKeys.preQuestSingle] = {12058,12073},
+            [questKeys.preQuestGroup] = {12058,12073},
+            [questKeys.preQuestSingle] = {},
         },
 
         [12206] = {
             [questKeys.nextQuestInChain] = 12211,
+        },
+
+        [12207] = {
+            [questKeys.preQuestGroup] = {12178,12413,12422},
+            [questKeys.preQuestSingle] = {},
         },
 
         [12208] = {
@@ -21485,6 +21300,8 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [12213] = {
             [questKeys.requiredSourceItems] = {37173},
+            [questKeys.preQuestGroup] = {12178,12413,12422},
+            [questKeys.preQuestSingle] = {},
             [questKeys.specialFlags] = specialFlags.SPELL_CAST,
         },
 
@@ -21509,7 +21326,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12225] = {
-            [questKeys.preQuestSingle] = {12222,12223},
+            [questKeys.preQuestGroup] = {12222,12223},
         },
 
         [12231] = {
@@ -21525,7 +21342,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         [12236] = {
             [questKeys.objectivesText] = {"Windseer Grayhorn in Conquest Hold wants you to find Tur Ragepaw near Ursoc's Den and defeat Ursoc with his help.  Use the Purified Ashes of Vordrassil on Ursoc's Corpse when you've accomplished this."},
             [questKeys.requiredSourceItems] = {37307},
-            [questKeys.preQuestSingle] = {12241,12242},
         },
 
         [12237] = {
@@ -21562,40 +21378,28 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.preQuestSingle] = {},
         },
 
-        [12246] = {
-            [questKeys.preQuestSingle] = {12220},
-        },
-
         [12247] = {
             [questKeys.objectives] = {{{27322},{27321}}},
-            [questKeys.preQuestSingle] = {12219},
         },
 
         [12248] = {
             [questKeys.objectivesText] = {"Hierophant Thayreen in Amberpine Lodge wants you to take the Verdant Torch and use it to burn Vordrassil's Sapling.  Bring Vordrassil's Ashes back to Hierophant Thayreen."},
             [questKeys.requiredSourceItems] = {37306},
-            [questKeys.preQuestSingle] = {12246},
             [questKeys.nextQuestInChain] = 12249,
         },
 
         [12249] = {
             [questKeys.objectivesText] = {"Hierophant Thayreen at Amberpine Lodge wants you to find Tur Ragepaw near Ursoc's Den and defeat Ursoc with his help.  Use the Purified Ashes of Vordrassil on Ursoc's Corpse when you've accomplished this."},
             [questKeys.requiredSourceItems] = {37307},
-            [questKeys.preQuestSingle] = {12248,12250},
         },
 
         [12250] = {
-            [questKeys.preQuestSingle] = {12247},
             [questKeys.nextQuestInChain] = 12249,
         },
 
         [12252] = {
             [questKeys.objectives] = {{{27394},{27209}}},
             [questKeys.requiredSourceItems] = {37314},
-        },
-
-        [12255] = {
-            [questKeys.preQuestSingle] = {12222},
         },
 
         [12256] = {
@@ -21612,7 +21416,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12259] = {
-            [questKeys.preQuestSingle] = {12256,12257},
             [questKeys.nextQuestInChain] = 12412,
         },
 
@@ -21662,7 +21465,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [12281] = {
             [questKeys.objectives] = {nil,nil,{{37502}}},
-            [questKeys.preQuestSingle] = {12272,12277},
         },
 
         [12286] = {
@@ -21701,7 +21503,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [12300] = {
             [questKeys.requiredSourceItems] = {37581},
-            [questKeys.preQuestSingle] = {12299,12307},
         },
 
         [12301] = {
@@ -21750,10 +21551,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [12324] = {
             [questKeys.requiredSourceItems] = {37621},
-        },
-
-        [12325] = {
-            [questKeys.preQuestSingle] = {12281,12321},
         },
 
         [12327] = {
@@ -22134,7 +21931,8 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12427] = {
-            [questKeys.preQuestSingle] = {12178,12413,12422},
+            [questKeys.preQuestGroup] = {12178,12413,12422},
+            [questKeys.preQuestSingle] = {},
             [questKeys.nextQuestInChain] = 12428,
         },
 
@@ -22267,7 +22065,14 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [12505] = {
             [questKeys.objectives] = {nil,nil,{{38319}}},
+            [questKeys.preQuestGroup] = {12503,12740},
+            [questKeys.preQuestSingle] = {},
             [questKeys.questFlags] = 128,
+        },
+
+        [12506] = {
+            [questKeys.preQuestGroup] = {12503,12740},
+            [questKeys.preQuestSingle] = {},
         },
 
         [12507] = {
@@ -22331,22 +22136,20 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [12532] = {
             [questKeys.requiredSourceItems] = {38689},
-            [questKeys.preQuestSingle] = {12533,12534},
         },
 
         [12533] = {
             [questKeys.requiredSourceItems] = {},
-            [questKeys.preQuestSingle] = {12529,12530},
         },
 
         [12534] = {
             [questKeys.requiredSourceItems] = {},
-            [questKeys.preQuestSingle] = {12529,12530},
         },
 
         [12536] = {
             [questKeys.requiredSourceItems] = {},
-            [questKeys.preQuestSingle] = {12531,12535},
+            [questKeys.preQuestGroup] = {12531,12535},
+            [questKeys.preQuestSingle] = {},
         },
 
         [12537] = {
@@ -22359,7 +22162,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [12539] = {
             [questKeys.requiredSourceItems] = {},
-            [questKeys.preQuestSingle] = {12537,12538},
         },
 
         [12541] = {
@@ -22383,10 +22185,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [12549] = {
             [questKeys.preQuestSingle] = {12525},
-        },
-
-        [12551] = {
-            [questKeys.preQuestSingle] = {12520,12549},
         },
 
         [12553] = {
@@ -22435,7 +22233,8 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [12573] = {
             [questKeys.requiredSourceItems] = {40364},
-            [questKeys.preQuestSingle] = {12571,12572},
+            [questKeys.preQuestGroup] = {12571,12572},
+            [questKeys.preQuestSingle] = {},
         },
 
         [12574] = {
@@ -22452,10 +22251,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredSourceItems] = {},
         },
 
-        [12577] = {
-            [questKeys.preQuestSingle] = {12575,12576},
-        },
-
         [12578] = {
             [questKeys.requiredSourceItems] = {},
         },
@@ -22469,7 +22264,8 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12581] = {
-            [questKeys.preQuestSingle] = {12580},
+            [questKeys.preQuestGroup] = {12579,12580},
+            [questKeys.preQuestSingle] = {},
         },
 
         [12583] = {
@@ -22508,13 +22304,10 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.exclusiveTo] = {},
         },
 
-        [12595] = {
-            [questKeys.preQuestSingle] = {12556},
-        },
-
         [12596] = {
             [questKeys.objectivesText] = {"Commander Kunz at The Argent Stand wants you to visit the four Argent Crusade posts, follow their leaders' orders, and then return and report to him.$b$bCaptain Brandon and Captain Rupert are posted at Drak'Sotra, Southeast of here.$b$bCaptain Grondel is posted in Drak'Agal, due east.$b$bAlchemist Finklestein is posted in Heb'Valok, to the north."},
-            [questKeys.preQuestSingle] = {12503,12740},
+            [questKeys.preQuestGroup] = {12503,12740},
+            [questKeys.preQuestSingle] = {},
         },
 
         [12598] = {
@@ -22545,6 +22338,8 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [12607] = {
             [questKeys.requiredSourceItems] = {38627},
+            [questKeys.preQuestGroup] = {12603,12605},
+            [questKeys.preQuestSingle] = {},
         },
 
         [12611] = {
@@ -22557,7 +22352,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [12620] = {
             [questKeys.requiredSourceItems] = {38684},
-            [questKeys.preQuestSingle] = {12617},
         },
 
         [12626] = {
@@ -22644,6 +22438,11 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.exclusiveTo] = {},
         },
 
+        [12658] = {
+            [questKeys.preQuestGroup] = {12603,12605},
+            [questKeys.preQuestSingle] = {},
+        },
+
         [12659] = {
             [questKeys.requiredSourceItems] = {38731},
         },
@@ -22698,6 +22497,11 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredSourceItems] = {},
         },
 
+        [12681] = {
+            [questKeys.preQuestGroup] = {12603,12605},
+            [questKeys.preQuestSingle] = {},
+        },
+
         [12683] = {
             [questKeys.objectives] = {{{28771},{28003}},nil,{{39164}}},
         },
@@ -22728,7 +22532,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12697] = {
-            [questKeys.preQuestSingle] = {12679,12687,12733},
+            [questKeys.preQuestGroup] = {12679,12687,12733},
         },
 
         [12698] = {
@@ -23035,7 +22839,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [12821] = {
             [questKeys.sourceItemId] = 0,
-            [questKeys.preQuestSingle] = {12820,12828,12832},
             [questKeys.questFlags] = 138,
         },
 
@@ -23300,6 +23103,18 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [12957] = {
             [questKeys.objectives] = {{{29962},{29369}}},
+            [questKeys.preQuestGroup] = {12931,12937},
+            [questKeys.preQuestSingle] = {},
+        },
+
+        [12964] = {
+            [questKeys.preQuestGroup] = {12931,12937},
+            [questKeys.preQuestSingle] = {},
+        },
+
+        [12965] = {
+            [questKeys.preQuestGroup] = {12957,12964},
+            [questKeys.preQuestSingle] = {},
         },
 
         [12966] = {
@@ -23331,6 +23146,11 @@ QuestieCompat.RegisterCorrection("questData", function()
         [12977] = {
             [questKeys.requiredSourceItems] = {42164},
             [questKeys.requiredMinRep] = {1119,0},
+        },
+
+        [12978] = {
+            [questKeys.preQuestGroup] = {12957,12964},
+            [questKeys.preQuestSingle] = {},
         },
 
         [12980] = {
@@ -23365,6 +23185,11 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredSourceItems] = {42441},
         },
 
+        [12993] = {
+            [questKeys.preQuestGroup] = {12988,12991},
+            [questKeys.preQuestSingle] = {},
+        },
+
         [12994] = {
             [questKeys.objectivesText] = {"You must defeat 3 Stormforged Spies in the Valley of Ancient Winters.$b$bUsing the Ethereal Worg's Fang at the Corpse of the Fallen Worg will summon an Ethereal Frostworg, which will expose hidden enemies. You are to return to the Frostworg Denmother in Dun Niffelem when the valley has been cleansed of spies."},
             [questKeys.requiredSourceItems] = {42479},
@@ -23372,7 +23197,8 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [12995] = {
             [questKeys.requiredSourceItems] = {42480},
-            [questKeys.preQuestSingle] = {13084},
+            [questKeys.preQuestGroup] = {12992,13084},
+            [questKeys.preQuestSingle] = {},
         },
 
         [12996] = {
@@ -23438,10 +23264,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.preQuestSingle] = {},
         },
 
-        [13044] = {
-            [questKeys.preQuestSingle] = {13008,13039,13040},
-        },
-
         [13046] = {
             [questKeys.objectivesText] = {"You are to feed Arngrim 5 Disembodied Jormungar, then return to Arngrim's frozen image in Dun Niffelem.$b$bYou must go to the Valley of Ancient Winters and use Arngrim's Tooth on the Roaming Jormungar there. Once they have become disembodied, you must fight them until they are weakened."},
             [questKeys.requiredSourceItems] = {42774},
@@ -23449,7 +23271,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [13047] = {
             [questKeys.objectivesText] = {"Meet Thorim near the Temple of Wisdom.  Report the outcome of the fight to King Jokkum in Dun Niffelem."},
-            [questKeys.preQuestSingle] = {13005,13035},
         },
 
         [13048] = {
@@ -23478,6 +23299,11 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.preQuestSingle] = {13139},
         },
 
+        [13071] = {
+            [questKeys.preQuestGroup] = {12992,13084},
+            [questKeys.preQuestSingle] = {},
+        },
+
         [13075] = {
             [questKeys.objectives] = {nil,nil,{{44790}}},
             [questKeys.questFlags] = 128,
@@ -23493,7 +23319,8 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13085] = {
-            [questKeys.preQuestSingle] = {12992,13084},
+            [questKeys.preQuestGroup] = {12992,13084},
+            [questKeys.preQuestSingle] = {},
         },
 
         [13087] = {
@@ -23569,7 +23396,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [13125] = {
             [questKeys.requiredSourceItems] = {43206},
-            [questKeys.preQuestSingle] = {13104,13105,13118,13122},
         },
 
         [13130] = {
@@ -23579,10 +23405,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         [13133] = {
             [questKeys.objectives] = {{{30884}}},
             [questKeys.requiredSourceItems] = {43166},
-        },
-
-        [13134] = {
-            [questKeys.preQuestSingle] = {13119,13120},
         },
 
         [13135] = {
@@ -23595,7 +23417,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [13139] = {
             [questKeys.objectives] = {nil,nil,{{43290}}},
-            [questKeys.preQuestSingle] = {13110,13125,13130,13135},
+            [questKeys.preQuestGroup] = {13110,13125,13130,13135},
         },
 
         [13141] = {
@@ -23604,10 +23426,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [13143] = {
             [questKeys.requiredSourceItems] = {43315},
-        },
-
-        [13144] = {
-            [questKeys.preQuestSingle] = {13152,13211},
         },
 
         [13149] = {
@@ -23632,10 +23450,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.exclusiveTo] = {13196},
         },
 
-        [13155] = {
-            [questKeys.preQuestSingle] = {13172,13174},
-        },
-
         [13156] = {
             [questKeys.exclusiveTo] = {13195},
         },
@@ -23650,18 +23464,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [13163] = {
             [questKeys.preQuestSingle] = {13146,13147,13160},
-        },
-
-        [13164] = {
-            [questKeys.preQuestSingle] = {13161,13162,13163},
-        },
-
-        [13172] = {
-            [questKeys.preQuestSingle] = {13169,13170,13171},
-        },
-
-        [13174] = {
-            [questKeys.preQuestSingle] = {13169,13170,13171},
         },
 
         [13183] = {
@@ -23947,6 +23749,11 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredSourceItems] = {44127},
         },
 
+        [13307] = {
+            [questKeys.preQuestGroup] = {13306,13367},
+            [questKeys.preQuestSingle] = {},
+        },
+
         [13309] = {
             [questKeys.objectives] = {{{32224}}},
         },
@@ -23961,11 +23768,12 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [13312] = {
             [questKeys.requiredSourceItems] = {44186},
-            [questKeys.preQuestSingle] = {13306,13367},
         },
 
         [13313] = {
             [questKeys.requiredSourceItems] = {44212},
+            [questKeys.preQuestGroup] = {13306,13367},
+            [questKeys.preQuestSingle] = {},
         },
 
         [13314] = {
@@ -24006,7 +23814,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [13329] = {
             [questKeys.requiredSourceItems] = {44653},
-            [questKeys.preQuestSingle] = {13307,13312},
         },
 
         [13331] = {
@@ -24023,12 +23830,10 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [13335] = {
             [questKeys.requiredSourceItems] = {44653},
-            [questKeys.preQuestSingle] = {13334,13337},
         },
 
         [13337] = {
             [questKeys.requiredSourceItems] = {44186},
-            [questKeys.preQuestSingle] = {13332,13346},
         },
 
         [13342] = {
@@ -24093,6 +23898,8 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [13368] = {
             [questKeys.requiredSourceItems] = {44476,44477,44478,44479},
+            [questKeys.preQuestGroup] = {13306,13367},
+            [questKeys.preQuestSingle] = {},
         },
 
         [13372] = {
@@ -24101,10 +23908,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [13375] = {
             [questKeys.objectives] = {nil,nil,{{44577}}},
-        },
-
-        [13386] = {
-            [questKeys.preQuestSingle] = {12898,13225},
         },
 
         [13394] = {
@@ -24194,10 +23997,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [13429] = {
             [questKeys.exclusiveTo] = {},
-        },
-
-        [13430] = {
-            [questKeys.preQuestSingle] = {10884,10885,10886},
         },
 
         [13431] = {
@@ -24416,7 +24215,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [13614] = {
             [questKeys.objectives] = {nil,nil,{{45791}}},
-            [questKeys.preQuestSingle] = {13606,13609,13610,13611},
         },
 
         [13616] = {
@@ -24428,7 +24226,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13625] = {
-            [questKeys.preQuestSingle] = {13828,13835,13837},
             [questKeys.exclusiveTo] = {},
         },
 
@@ -24474,57 +24271,40 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [13666] = {
             [questKeys.requiredSourceItems] = {44986},
-            [questKeys.preQuestSingle] = {13828,13835,13837},
             [questKeys.exclusiveTo] = {},
         },
 
         [13669] = {
-            [questKeys.preQuestSingle] = {13828,13835,13837},
             [questKeys.exclusiveTo] = {},
         },
 
         [13670] = {
-            [questKeys.preQuestSingle] = {13828,13835,13837},
             [questKeys.exclusiveTo] = {},
         },
 
         [13671] = {
-            [questKeys.preQuestSingle] = {13828,13835,13837},
             [questKeys.exclusiveTo] = {},
-        },
-
-        [13672] = {
-            [questKeys.preQuestSingle] = {13828,13835,13837},
         },
 
         [13673] = {
             [questKeys.requiredSourceItems] = {44986},
-            [questKeys.preQuestSingle] = {13829,13838,13839},
             [questKeys.exclusiveTo] = {},
         },
 
         [13674] = {
-            [questKeys.preQuestSingle] = {13829,13838,13839},
             [questKeys.exclusiveTo] = {},
         },
 
         [13675] = {
-            [questKeys.preQuestSingle] = {13829,13838,13839},
             [questKeys.exclusiveTo] = {},
         },
 
         [13676] = {
-            [questKeys.preQuestSingle] = {13829,13838,13839},
             [questKeys.exclusiveTo] = {},
         },
 
         [13677] = {
-            [questKeys.preQuestSingle] = {13829,13838,13839},
             [questKeys.exclusiveTo] = {},
-        },
-
-        [13678] = {
-            [questKeys.preQuestSingle] = {13829,13838,13839},
         },
 
         [13679] = {
@@ -24911,7 +24691,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [13818] = {
             [questKeys.objectives] = {nil,nil,{{45855}}},
-            [questKeys.preQuestSingle] = {13821,13822,13823,13824},
         },
 
         [13819] = {
@@ -25106,7 +24885,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectives] = {{{36209}}},
             [questKeys.sourceItemId] = 0,
             [questKeys.requiredSourceItems] = {},
-            [questKeys.preQuestSingle] = {13954},
             [questKeys.exclusiveTo] = {},
             [questKeys.nextQuestInChain] = 0,
         },
@@ -25115,7 +24893,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectives] = {{{36209}}},
             [questKeys.sourceItemId] = 0,
             [questKeys.requiredSourceItems] = {},
-            [questKeys.preQuestSingle] = {13955},
             [questKeys.exclusiveTo] = {},
             [questKeys.nextQuestInChain] = 0,
         },
@@ -25134,22 +24911,18 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13954] = {
-            [questKeys.preQuestSingle] = {13929},
             [questKeys.exclusiveTo] = {},
         },
 
         [13955] = {
-            [questKeys.preQuestSingle] = {13930},
             [questKeys.exclusiveTo] = {},
         },
 
         [13956] = {
-            [questKeys.preQuestSingle] = {13929},
             [questKeys.exclusiveTo] = {},
         },
 
         [13957] = {
-            [questKeys.preQuestSingle] = {13930},
             [questKeys.exclusiveTo] = {},
         },
 
