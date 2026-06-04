@@ -176,33 +176,34 @@ function QuestieNameplate:UpdateNameplate()
         local _, _, _, _, _, npcId, _ = strsplit("-", guid)
 
         if (not unitName) or (not npcId) then
-            return
-        end
-
-        local objectiveInfo = _QuestieNameplate.GetValidObjectiveInfo(QuestieTooltips.lookupByKey["m_" .. npcId])
-
-        if objectiveInfo then
-            local frame = _QuestieNameplate.GetFrame(guid)
-            _QuestieNameplate.SetTargetNameplateState(frame, guid == UnitGUID("target"))
-            -- check if the texture needs to be changed
-            if frame.lastIcon ~= objectiveInfo.icon then
-                frame.lastIcon = objectiveInfo.icon
-                frame.Icon:SetTexture(objectiveInfo.icon)
-            end
-
-            if Questie.db.profile.nameplateObjectiveTextTargetOnly and guid ~= UnitGUID("target") then
-                objectiveInfo.text = nil
-            end
-
-            if frame.lastText ~= objectiveInfo.text then
-                _QuestieNameplate.SetObjectiveText(frame, objectiveInfo.text)
-            else
-                _QuestieNameplate.ApplyFrameLayout(frame)
-            end
-        else
-            -- tooltip removed but we still have the frame active, remove it
             activeGUIDs[guid] = nil
             _QuestieNameplate.RemoveFrame(guid)
+        else
+            local objectiveInfo = _QuestieNameplate.GetValidObjectiveInfo(QuestieTooltips.lookupByKey["m_" .. npcId])
+
+            if objectiveInfo then
+                local frame = _QuestieNameplate.GetFrame(guid)
+                _QuestieNameplate.SetTargetNameplateState(frame, guid == UnitGUID("target"))
+                -- check if the texture needs to be changed
+                if frame.lastIcon ~= objectiveInfo.icon then
+                    frame.lastIcon = objectiveInfo.icon
+                    frame.Icon:SetTexture(objectiveInfo.icon)
+                end
+
+                if Questie.db.profile.nameplateObjectiveTextTargetOnly and guid ~= UnitGUID("target") then
+                    objectiveInfo.text = nil
+                end
+
+                if frame.lastText ~= objectiveInfo.text then
+                    _QuestieNameplate.SetObjectiveText(frame, objectiveInfo.text)
+                else
+                    _QuestieNameplate.ApplyFrameLayout(frame)
+                end
+            else
+                -- tooltip removed but we still have the frame active, remove it
+                activeGUIDs[guid] = nil
+                _QuestieNameplate.RemoveFrame(guid)
+            end
         end
     end
 end
