@@ -31,6 +31,7 @@ local GetItemInfo = GetItemInfo
 local GetItemIcon = GetItemIcon
 local stringrep = string.rep
 local stringsub = string.sub
+local C_Timer = QuestieCompat.C_Timer
 
 local AceGUI = LibStub("AceGUI-3.0");
 
@@ -924,7 +925,6 @@ function QuestieSearchResults:DrawSearchTab(container)
     searchButton:SetCallback("OnClick", _GetSearchFunction(searchBox, searchGroup));
     container:AddChild(searchButton);
 
-    searchBox:SetFocus();
     searchBox:SetRelativeWidth(0.6);
     searchBox:SetLabel(l10n("Advanced Search") .. " (".. l10n("Quests") .. ", ".. l10n("NPCs") .. ", ".. l10n("Objects") .. ", ".. l10n("Items") .. ")");
     searchBox:DisableButton(true);
@@ -941,6 +941,12 @@ function QuestieSearchResults:DrawSearchTab(container)
         searchBox:SetText(QuestieSearch.LastResult.query)
     end
     container:AddChild(searchBox);
+    C_Timer.After(0, function()
+        if searchBox and searchBox.frame:IsShown() and searchBox.editbox then
+            searchBox:SetFocus()
+            searchBox.editbox:SetCursorPosition(searchBox.editbox:GetNumLetters())
+        end
+    end)
 
     searchGroup:SetFullHeight(true);
     searchGroup:SetFullWidth(true);
