@@ -156,21 +156,23 @@ function _Qframe:OnLeave()
         GameTooltip._Rebuild = nil
     end
 
-    --Reset highlighting if it exists.
-    if self.data.lineFrames then
-        for _, lineFrame in pairs(self.data.lineFrames) do
-            local line = lineFrame.line
-            line:SetColorTexture(line.dR, line.dG, line.dB, line.dA)
+    if self.data then
+        --Reset highlighting if it exists.
+        if self.data.lineFrames then
+            for _, lineFrame in pairs(self.data.lineFrames) do
+                local line = lineFrame.line
+                line:SetColorTexture(line.dR, line.dG, line.dB, line.dA)
+            end
         end
-    end
 
-    if self.data.touchedPins then
-        for i = #self.data.touchedPins, 1, -1 do
-            local entry = self.data.touchedPins[i]
-            local icon = entry.icon;
-            icon.texture:SetVertexColor(unpack(entry.color));
+        if self.data.touchedPins then
+            for i = #self.data.touchedPins, 1, -1 do
+                local entry = self.data.touchedPins[i]
+                local icon = entry.icon;
+                icon.texture:SetVertexColor(unpack(entry.color));
+            end
+            self.data.touchedPins = nil;
         end
-        self.data.touchedPins = nil;
     end
     GameTooltip.ShownAsMapIcon = false
 
@@ -405,7 +407,7 @@ function _Qframe:FadeOut()
             local r, g, b = self.glowTexture:GetVertexColor()
             self.glowTexture:SetVertexColor(r, g, b, GetObjectiveGlowAlpha(self, Questie.db.profile.iconFadeLevel))
         end
-        if self.data.lineFrames then
+        if self.data and self.data.lineFrames then
             for _, lineFrame in pairs(self.data.lineFrames) do
                 local line = lineFrame.line
                 if line then
@@ -427,7 +429,7 @@ function _Qframe:FadeIn()
             local r, g, b = self.glowTexture:GetVertexColor()
             self.glowTexture:SetVertexColor(r, g, b, GetObjectiveGlowAlpha(self, 1))
         end
-        if self.data.lineFrames then
+        if self.data and self.data.lineFrames then
             for _, lineFrame in pairs(self.data.lineFrames) do
                 local line = lineFrame.line
                 if line then
@@ -447,7 +449,7 @@ function _Qframe:FakeHide()
             self.shouldBeShowing = true;
         end
         self:Hide();
-        if self.data.lineFrames then
+        if self.data and self.data.lineFrames then
             for _, line in pairs(self.data.lineFrames) do
                 if line.FakeHide then
                     line:FakeHide()
@@ -474,7 +476,7 @@ function _Qframe:FakeShow()
         self._hide = nil
         if self.shouldBeShowing then
             self:Show();
-            if self.data.lineFrames then
+            if self.data and self.data.lineFrames then
                 for _, line in pairs(self.data.lineFrames) do
                     if line.FakeShow then
                         line:FakeShow()

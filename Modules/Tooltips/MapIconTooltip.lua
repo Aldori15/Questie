@@ -69,6 +69,11 @@ function MapIconTooltip:Show()
     end
     lastTooltipShowTimestamp = GetTime()
 
+    if not self.data then
+        Questie:Debug(Questie.DEBUG_DEVELOP, "[MapIconTooltip:Show] Icon data is nil, nothing to show")
+        return
+    end
+
     local Tooltip = QuestieCompat.Is335 and QuestieCompat.SetupTooltip(self) or GameTooltip;
     Tooltip._owner = self;
     Tooltip:SetOwner(self, "ANCHOR_CURSOR"); --"ANCHOR_CURSOR" or (self, self)
