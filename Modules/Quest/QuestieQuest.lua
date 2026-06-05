@@ -772,8 +772,6 @@ function QuestieQuest:GetAllQuestIds()
                         QuestieTooltips:RemoveQuest(questId)
                     end
                 end
-            else
-                QuestiePlayer.currentQuestlog[questId] = questId -- TODO FIX LATER. codebase is expecting this to be "quest" not "questId"
             end
 
             Questie:Debug(Questie.DEBUG_INFO, "[QuestieQuest] Adding the quest", questId, QuestiePlayer.currentQuestlog[questId])
@@ -925,8 +923,6 @@ function QuestieQuest:GetAllQuestIdsNoObjectives()
                 quest.LocalizedName = data.title
                 _AddSourceItemObjective(quest)
                 _AddRequiredSourceItemObjective(quest)
-            else
-                QuestiePlayer.currentQuestlog[questId] = questId
             end
 
             Questie:Debug(Questie.DEBUG_INFO, "[QuestieQuest] Adding the quest", questId, QuestiePlayer.currentQuestlog[questId])

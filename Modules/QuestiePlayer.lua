@@ -24,7 +24,7 @@ local UI_MAP_TYPE_COSMIC = 0
 local UI_MAP_TYPE_WORLD = 1
 local UI_MAP_TYPE_CONTINENT = 2
 
-QuestiePlayer.currentQuestlog = {} --Gets populated by QuestieQuest:GetAllQuestIds(), this is either an object to the quest in question, or the ID if the object doesn't exist.
+QuestiePlayer.currentQuestlog = {} -- Gets populated by QuestieQuest:GetAllQuestIds() with quest objects.
 _QuestiePlayer.playerLevel = -1
 _QuestiePlayer.playerLevelSetAt = 0
 local playerRaceId = -1
