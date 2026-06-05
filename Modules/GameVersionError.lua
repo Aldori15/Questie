@@ -5,14 +5,14 @@ local l10n = QuestieLoader:ImportModule("l10n")
 
 -- StaticPopup has very limited width, so text is split to many lines.
 local msg = {
-    l10n("You're trying to use Questie addon"),
-    l10n("on an unsupported WoW game client!"),
+    l10n("Questie-335 did not load correctly."),
+    l10n("The AddOns folder name is likely wrong."),
 
-    l10n("WoW \"retail\" and private servers"),
-    l10n("are not supported."),
+    l10n("Rename the folder to Questie-335"),
+    l10n("so WoW loads Questie-335.toc."),
 
-    l10n("Questie only supports"),
-    l10n("WoW Classic (Era/Wrath)!"),
+    l10n("Do not rename Questie-335.toc"),
+    l10n("to Questie.toc."),
 }
 
 StaticPopupDialogs["QUESTIE_VERSION_ERROR"] = {

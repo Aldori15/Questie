@@ -1,8 +1,7 @@
-# This file is used to show unsupported game client message.
-# Supported client flavors load their own TOC file and unsupported ones fall back to this one.
-# Check expansion specific TOC files for the correct data.
+# This fallback TOC is shown when WoW does not load Questie-335.toc.
+# For this fork, the addon folder must be named Questie-335.
 ## Interface: 00000
-## Title: Questie|cFFFF0000 game client not supported|r
-## Notes: Questie only supports Classic TBC and Classic Era.
+## Title: Questie|cFFFF0000 install folder problem|r
+## Notes: Questie-335 did not load. Rename the Addons folder to Questie-335 so WoW can load Questie-335.toc. Do not rename TOC files.
 
 Modules\GameVersionError.lua
