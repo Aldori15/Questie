@@ -1035,7 +1035,7 @@ function _QuestieComms.OnCommReceived_unsafe(prefix, message, distribution, send
         end
 
         --Check if the message version is the same base value
-        if distribution == "YELL" and decompressedData.msgId and _QuestieComms.packets[decompressedData.msgId] then
+        if distribution == "YELL" and decompressedData and decompressedData.msgId and _QuestieComms.packets[decompressedData.msgId] then
             decompressedData.playerName = sender;
             Questie:Debug(Questie.DEBUG_DEVELOP, "Executing message ID: ", decompressedData.msgId, "From: ", sender)
             _QuestieComms.packets[decompressedData.msgId].read(decompressedData)
