@@ -3374,25 +3374,64 @@ local function scanWorldFrameChildren(...)
     end
 end
 
+local function getGUID(unit)
+    if type(unit) == "string" then
+        return UnitGUID(unit)
+    elseif type(unit) == "table" then
+        if unit.guid then
+            return unit.guid
+        elseif type(unit.unit) == "string" then
+            return UnitGUID(unit.unit)
+        elseif type(unit.unitid) == "string" then
+            return UnitGUID(unit.unitid)
+        elseif type(unit.unitID) == "string" then
+            return UnitGUID(unit.unitID)
+        elseif type(unit.unitToken) == "string" then
+            return UnitGUID(unit.unitToken)
+        elseif unit.isTarget then
+            return UnitGUID("target")
+        elseif unit.isMouseover then
+            return UnitGUID("mouseover")
+        elseif type(unit.partyID) == "string" then
+            return UnitGUID(unit.partyID)
+        end
+    end
+end
+
+local function getGUIDFromCandidates(...)
+    for i = 1, select("#", ...) do
+        local guid = getGUID(select(i, ...))
+        if guid then return guid end
+    end
+end
+
 local function getNameplateFrameGUID(frame)
-    local unit = frame.unit or frame.unitid or frame.unitID or frame.unitToken or frame.namePlateUnitToken
-    if (not unit) and frame.UnitFrame then
-        unit = frame.UnitFrame.unit or frame.UnitFrame.unitid or frame.UnitFrame.unitID or frame.UnitFrame.unitToken
-    end
-    if (not unit) and frame.unitFrame then
-        unit = frame.unitFrame.unit or frame.unitFrame.unitid or frame.unitFrame.unitID or frame.unitFrame.unitToken
-    end
-    if (not unit) and frame.extended then
-        unit = frame.extended.unit or frame.extended.unitid or frame.extended.unitID or frame.extended.unitToken
-    end
-    if (not unit) and frame.aloftData then
-        unit = frame.aloftData.unit or frame.aloftData.unitid or frame.aloftData.unitID or frame.aloftData.unitToken
-    end
-    if (not unit) and frame.kui then
-        unit = frame.kui.unit or frame.kui.unitid or frame.kui.unitID or frame.kui.unitToken
+    local guid = getGUIDFromCandidates(frame.unit, frame.unitid, frame.unitID, frame.unitToken, frame.namePlateUnitToken)
+    if guid then return guid end
+
+    if frame.UnitFrame then
+        guid = getGUIDFromCandidates(frame.UnitFrame.unit, frame.UnitFrame.unitid, frame.UnitFrame.unitID, frame.UnitFrame.unitToken)
+        if guid then return guid end
     end
 
-    return unit and UnitGUID(unit) or nil
+    if frame.unitFrame then
+        guid = getGUIDFromCandidates(frame.unitFrame.unit, frame.unitFrame.unitid, frame.unitFrame.unitID, frame.unitFrame.unitToken)
+        if guid then return guid end
+    end
+
+    if frame.extended then
+        guid = getGUIDFromCandidates(frame.extended.unit, frame.extended.unitid, frame.extended.unitID, frame.extended.unitToken)
+        if guid then return guid end
+    end
+
+    if frame.aloftData then
+        guid = getGUIDFromCandidates(frame.aloftData.unit, frame.aloftData.unitid, frame.aloftData.unitID, frame.aloftData.unitToken)
+        if guid then return guid end
+    end
+
+    if frame.kui then
+        return getGUIDFromCandidates(frame.kui.unit, frame.kui.unitid, frame.kui.unitID, frame.kui.unitToken)
+    end
 end
 
 local function isTargetNameplateFrame(frame, forceCheck)
