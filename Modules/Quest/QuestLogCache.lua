@@ -175,7 +175,7 @@ QuestLogCache._GetNewObjectives = GetNewObjectives
 --- Remember to handle returned changes table even when cacheMiss == true. Returned changes are still valid. There may just be more changes that we couldn't get yet.
 --- Called only from QuestEventHandler.
 ---@param questIdsToCheck table? @keys are the questIds
----@return boolean cacheMiss, table changes @cacheMiss = couldn't get all required data  ; changes[questId] = list of changed objectiveIndexes (may be an empty list if quest has no objectives)
+---@return boolean cacheMiss, table changes, table questIdsChecked @cacheMiss = couldn't get all required data  ; changes[questId] = list of changed objectiveIndexes (may be an empty list if quest has no objectives)
 function QuestLogCache.CheckForChanges(questIdsToCheck)
     local cacheMiss = false
     local changes = {} -- table key = questid of the changed quest, table value = list of changed objective ids
@@ -269,20 +269,7 @@ function QuestLogCache.CheckForChanges(questIdsToCheck)
         end
     end
 
-    -- DEBUG prints:
---[[
-    local ids = "ALL"
-    if questIdsToCheck then
-        ids = ""
-        for questId in pairs(questIdsToCheck) do
-            ids = ids..tostring(questId).."," --yes, ugly extra comma at end. CBA
-        end
-    end
-    print("questIdsToCheck=", ids)
-    QuestLogCache.DebugPrintCacheChanges(cacheMiss, changes)
-]]--
-
-    return cacheMiss, changes
+    return cacheMiss, changes, questIdsChecked
 end
 
 

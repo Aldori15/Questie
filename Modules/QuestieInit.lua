@@ -313,12 +313,12 @@ QuestieInit.Stages[3] = function() -- run as a coroutine
     InstanceLocations.Initialize()
     coYield()
     -- Seed the quest log baseline before live quest events are registered.
-    local cacheMiss, changes = QuestLogCache.CheckForChanges(nil)
+    local cacheMiss, _, questIdsChecked = QuestLogCache.CheckForChanges(nil)
     if cacheMiss then
         Questie:Debug(Questie.DEBUG_CRITICAL, "QuestieInit: Game Cache did not fill in time, waiting for valid cache.")
-        changes = QuestieInit.WaitForValidGameCache()
+        questIdsChecked = QuestieInit.WaitForValidGameCache()
     end
-    QuestEventHandler.InitQuestLogStates(changes)
+    QuestEventHandler.InitQuestLogStates(questIdsChecked)
     coYield()
     QuestEventHandler:RegisterEvents()
     ChatFilter:RegisterEvents()
@@ -433,11 +433,11 @@ end
 function QuestieInit.WaitForValidGameCache()
     local doWait = true
     local retries = 0
-    local changes
+    local questIdsChecked
 
     local timer
     timer = C_Timer.NewTicker(1, function()
-        local cacheMiss, newChanges = QuestLogCache.CheckForChanges(nil)
+        local cacheMiss, _, newQuestIdsChecked = QuestLogCache.CheckForChanges(nil)
         if (not cacheMiss) or retries >= 3 then
             if retries == 3 then
                 Questie:Debug(Questie.DEBUG_CRITICAL, "QuestieInit: Game Cache did not become valid in 3 seconds, continuing with initialization.")
@@ -445,7 +445,7 @@ function QuestieInit.WaitForValidGameCache()
             doWait = false
             timer:Cancel()
         end
-        changes = newChanges
+        questIdsChecked = newQuestIdsChecked
         retries = retries + 1
     end)
 
@@ -453,7 +453,7 @@ function QuestieInit.WaitForValidGameCache()
         coYield()
     end
 
-    return changes
+    return questIdsChecked
 end
 
 function QuestieInit:LoadDatabase(key)
