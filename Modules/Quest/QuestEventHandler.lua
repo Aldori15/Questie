@@ -416,6 +416,18 @@ function _QuestEventHandler:UpdateAllQuests()
 
     if next(changes) then
         for questId, objIds in pairs(changes) do
+            if (not QuestiePlayer.currentQuestlog[questId]) then
+                -- If quests are not in the cache right after login (e.g. the API is slow), they are not added to the player's quest log.
+                -- Add them to Questie's quest log state so they can be updated.
+                local quest = QuestieDB.GetQuest(questId)
+                if quest then
+                    Questie:Debug(Questie.DEBUG_INFO, "Quest:", questId, "is not in the player's quest log, but is in the QuestEventHandler quest log")
+                    QuestiePlayer.currentQuestlog[questId] = quest
+                else
+                    Questie:Error("Quest:", questId, "is not in the player's quest log and not in the QuestDB. Please report this on Github or Discord!")
+                end
+            end
+
             --Questie:Debug(Questie.DEBUG_INFO, "Quest:", questId, "objectives:", table.concat(objIds, ","), "will be updated")
             Questie:Debug(Questie.DEBUG_INFO, "Quest:", questId, "will be updated")
             QuestieQuest:SetObjectivesDirty(questId)
