@@ -11,6 +11,10 @@ local QuestieJourney = QuestieLoader:ImportModule("QuestieJourney")
 local QuestieMap = QuestieLoader:ImportModule("QuestieMap")
 ---@type QuestieDB
 local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
+---@type TrackerUtils
+local TrackerUtils = QuestieLoader:ImportModule("TrackerUtils")
+---@type ZoneDB
+local ZoneDB = QuestieLoader:ImportModule("ZoneDB")
 ---@type MeetingStones
 local MeetingStones = QuestieLoader:ImportModule("MeetingStones")
 ---@type QuestieProfessions
@@ -33,15 +37,19 @@ local Townsfolk = QuestieLoader:ImportModule("Townsfolk")
 local Moonwell = QuestieLoader:ImportModule("Moonwell")
 ---@type QuestieIconVisibility
 local QuestieIconVisibility = QuestieLoader:ImportModule("QuestieIconVisibility")
+---@type Phasing
+local Phasing = QuestieLoader:ImportModule("Phasing")
 
 --- COMPATIBILITY ---
 local C_Timer = QuestieCompat.C_Timer
 
 local LibDropDown = QuestieCompat.LibUIDropDownMenu or LibStub:GetLibrary("LibUIDropDownMenuQuestie-4.0")
+local HBD = QuestieCompat.HBD or LibStub("HereBeDragonsQuestie-2.0")
 
 local tinsert = tinsert
 local strlower = string.lower
 local math_max = math.max
+local math_huge = math.huge
 
 local professionKeys = QuestieProfessions.professionKeys
 local _instanceIconAtlas = QuestieLib.AddonPath .. "Icons\\instance_icons.blp"
@@ -254,6 +262,177 @@ local function buildLocalized(key, localizedText)
     }
 end
 
+local function _GetFindNearestIds(key)
+    local globalTownsfolk = Questie.db.global.townsfolk or {}
+    local charTownsfolk = Questie.db.char.townsfolk or {}
+    local professionTrainers = Questie.db.global.professionTrainers or {}
+    local vendorList = Questie.db.char.vendorList or {}
+
+    if Townsfolk:IsVendorCategory(key) or professionTrainers[key] then
+        Townsfolk:EnsureVendorDataInitialized()
+        vendorList = Questie.db.char.vendorList or vendorList
+    end
+
+    return globalTownsfolk[key] or charTownsfolk[key] or professionTrainers[key] or vendorList[key]
+end
+
+local function _IsFindNearestObjectCategory(key)
+    return key == "Mailbox" or key == "Meeting Stones"
+end
+
+local function _IsFindNearestNPCAllowed(npcId)
+    local friendly = QuestieDB.QueryNPCSingle(npcId, "friendlyToFaction")
+    local faction = UnitFactionGroup("Player")
+
+    return ((not friendly) or friendly == "AH" or (faction == "Alliance" and friendly == "A") or (faction == "Horde" and friendly == "H"))
+            and (not QuestieCorrections.questNPCBlacklist[npcId])
+end
+
+local function _IsFindNearestSpawnVisible(spawn)
+    return Phasing.IsSpawnVisible(spawn and spawn[3])
+end
+
+local function _GetFindNearestPlayerWorldPosition()
+    if QuestieCompat.GetCurrentPlayerMinimapWorldPosition then
+        local playerX, playerY, playerInstance = QuestieCompat.GetCurrentPlayerMinimapWorldPosition()
+        if playerX and playerY then
+            return playerX, playerY, playerInstance
+        end
+    end
+
+    if HBD and HBD.GetPlayerWorldPosition then
+        return HBD:GetPlayerWorldPosition()
+    end
+end
+
+local function _GetResolvedFindNearestSpawns(zone, spawn)
+    if spawn[1] ~= -1 and spawn[2] ~= -1 then
+        return {{ zone = zone, x = spawn[1], y = spawn[2] }}
+    end
+
+    local dungeonLocation = ZoneDB:GetDungeonLocation(zone)
+    if not dungeonLocation then
+        local parentZoneId = ZoneDB:GetParentZoneId(zone)
+        if parentZoneId then
+            dungeonLocation = ZoneDB:GetDungeonLocation(parentZoneId)
+        end
+    end
+
+    local resolvedSpawns = {}
+    for _, location in pairs(dungeonLocation or {}) do
+        tinsert(resolvedSpawns, { zone = location[1], x = location[2], y = location[3] })
+    end
+
+    return resolvedSpawns
+end
+
+local function _CheckFindNearestSpawn(best, id, name, zone, spawn, playerX, playerY, playerInstance)
+    if not (HBD and HBD.GetWorldCoordinatesFromZone and HBD.GetWorldDistance) then
+        return best
+    end
+
+    if not _IsFindNearestSpawnVisible(spawn) then
+        return best
+    end
+
+    for _, resolvedSpawn in pairs(_GetResolvedFindNearestSpawns(zone, spawn)) do
+        local uiMapId = ZoneDB:GetUiMapIdByAreaId(resolvedSpawn.zone)
+        if uiMapId then
+            local worldX, worldY, spawnInstance = HBD:GetWorldCoordinatesFromZone(resolvedSpawn.x / 100, resolvedSpawn.y / 100, uiMapId)
+            if worldX and worldY and spawnInstance then
+                local distance = HBD:GetWorldDistance(spawnInstance, playerX, playerY, worldX, worldY)
+                if distance then
+                    if playerInstance and spawnInstance ~= playerInstance then
+                        distance = 500000 + distance * 100
+                    end
+
+                    if distance < best.distance then
+                        best.distance = distance
+                        best.id = id
+                        best.name = name
+                        best.zone = resolvedSpawn.zone
+                        best.x = resolvedSpawn.x
+                        best.y = resolvedSpawn.y
+                    end
+                end
+            end
+        end
+    end
+
+    return best
+end
+
+local function _FindNearestTownsfolkSpawn(key, ids, isObjectCategory)
+    local playerX, playerY, playerInstance = _GetFindNearestPlayerWorldPosition()
+    if not playerX or not playerY then
+        Questie:Print(l10n("Unable to determine player position."))
+        return nil
+    end
+
+    local best = { distance = math_huge }
+    for _, id in pairs(ids) do
+        local spawns, name
+        if isObjectCategory then
+            spawns = QuestieDB.QueryObjectSingle(id, "spawns")
+            name = QuestieDB.QueryObjectSingle(id, "name") or l10n(tostring(key))
+        elseif _IsFindNearestNPCAllowed(id) then
+            spawns = QuestieDB.QueryNPCSingle(id, "spawns")
+            name = QuestieDB.QueryNPCSingle(id, "name") or l10n(tostring(key))
+        end
+
+        if spawns then
+            for zone, zoneSpawns in pairs(spawns) do
+                for _, spawn in pairs(zoneSpawns) do
+                    best = _CheckFindNearestSpawn(best, id, name, zone, spawn, playerX, playerY, playerInstance)
+                end
+            end
+        end
+    end
+
+    if best.zone then
+        return best
+    end
+end
+
+function QuestieMenu.FindNearest(key, localizedText)
+    if not (TomTom and TomTom.AddWaypoint) then
+        Questie:Print(l10n("TomTom is not installed."))
+        return
+    end
+
+    local ids = _GetFindNearestIds(key)
+    if not ids then
+        Questie:Print(l10n("No locations found for %s.", localizedText))
+        return
+    end
+
+    local nearest = _FindNearestTownsfolkSpawn(key, ids, _IsFindNearestObjectCategory(key))
+    if not nearest then
+        Questie:Print(l10n("No nearby location found for %s.", localizedText))
+        return
+    end
+
+    local title = l10n("Find Nearest") .. ": " .. localizedText
+    if nearest.name then
+        title = title .. " - " .. nearest.name
+    end
+
+    TrackerUtils:SetTomTomTarget(title, nearest.zone, nearest.x, nearest.y)
+    Questie:Print(l10n("TomTom waypoint set: %s.", title))
+end
+
+local function buildFindNearest(key, localizedText)
+    local icon = _townsfolk_texturemap[key] or ("Interface\\Minimap\\tracking\\" .. strlower(key))
+    localizedText = localizedText or l10n(tostring(key))
+
+    return {
+        text = localizedText,
+        func = function() QuestieMenu.FindNearest(key, localizedText) end,
+        icon = icon,
+        notCheckable = true
+    }
+end
+
 function QuestieMenu.buildInstancesMenu()
     return {
         build("Meeting Stones"),
@@ -437,6 +616,93 @@ function QuestieMenu.buildVendorMenu()
     return vendorMenu
 end
 
+local function _BuildSortedFindNearestMenu(entries, useSecondarySections)
+    local menu, primary, secondary, data = {}, {}, {}, {}
+
+    for _, entry in pairs(entries) do
+        local key, localizedKey = entry[1], entry[2]
+        data[localizedKey] = buildFindNearest(key, localizedKey)
+        tinsert((useSecondarySections and secondaryProfessions[key]) and secondary or primary, localizedKey)
+    end
+
+    table.sort(primary)
+    table.sort(secondary)
+    for _, key in pairs(primary) do
+        tinsert(menu, data[key])
+    end
+
+    if useSecondarySections and #secondary > 0 then
+        tinsert(menu, div)
+        for _, key in pairs(secondary) do
+            tinsert(menu, data[key])
+        end
+    end
+
+    return menu
+end
+
+local function _GetFindNearestTownsfolkEntries()
+    local entries, seen = {}, {}
+    for _, source in pairs({Questie.db.global.townsfolk or {}, Questie.db.char.townsfolk or {}}) do
+        for key in pairs(source) do
+            if key ~= "Meeting Stones" and not seen[key] then
+                seen[key] = true
+                tinsert(entries, {key, l10n(tostring(key))})
+            end
+        end
+    end
+    return entries
+end
+
+local function _GetFindNearestProfessionEntries()
+    Townsfolk:EnsureVendorDataInitialized()
+
+    local entries = {}
+    for key in pairs(Questie.db.global.professionTrainers or {}) do
+        tinsert(entries, {key, l10n(QuestieProfessions:GetProfessionName(key))})
+    end
+    return entries
+end
+
+local function _GetFindNearestVendorEntries()
+    Townsfolk:EnsureVendorDataInitialized()
+
+    local entries = {}
+    for key in pairs(Questie.db.char.vendorList or {}) do
+        tinsert(entries, {key, l10n(tostring(key))})
+    end
+    return entries
+end
+
+function QuestieMenu.buildFindNearestMenu()
+    return {
+        {
+            text = l10n("Townsfolk"),
+            func = function() end,
+            keepShownOnClick = true,
+            hasArrow = true,
+            menuList = _BuildSortedFindNearestMenu(_GetFindNearestTownsfolkEntries()),
+            notCheckable = true
+        },
+        {
+            text = l10n("Profession Trainers"),
+            func = function() end,
+            keepShownOnClick = true,
+            hasArrow = true,
+            menuList = _BuildSortedFindNearestMenu(_GetFindNearestProfessionEntries(), true),
+            notCheckable = true
+        },
+        {
+            text = l10n("Vendor"),
+            func = function() end,
+            keepShownOnClick = true,
+            hasArrow = true,
+            menuList = _BuildSortedFindNearestMenu(_GetFindNearestVendorEntries()),
+            notCheckable = true
+        }
+    }
+end
+
 function QuestieMenu.buildTownsfolkMenu()
     local townsfolkMenu = {}
     for key in pairs(Questie.db.global.townsfolk) do
@@ -493,6 +759,8 @@ function QuestieMenu:Show(hideDelay)
     tinsert(menuTable, {text= l10n("Profession Trainers"), func = function() end, keepShownOnClick=true, hasArrow=true, menuList=QuestieMenu.buildProfessionMenu(), notCheckable=true})
     tinsert(menuTable, {text= l10n("Vendor"), func = function() end, keepShownOnClick=true, hasArrow=true, menuList=QuestieMenu.buildVendorMenu(), notCheckable=true})
     tinsert(menuTable, {text = l10n("Instances"), func = function() end, keepShownOnClick = true, hasArrow = true, menuList = QuestieMenu.buildInstancesMenu(), notCheckable = true})
+    tinsert(menuTable, div)
+    tinsert(menuTable, {text = Questie:Colorize(l10n("Find Nearest"), "lightBlue"), func = function() end, keepShownOnClick = true, hasArrow = true, menuList = QuestieMenu.buildFindNearestMenu(), notCheckable = true})
 
     tinsert(menuTable, div)
 
