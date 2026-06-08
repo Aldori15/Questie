@@ -704,18 +704,90 @@ function QuestieMenu.buildFindNearestMenu()
 end
 
 function QuestieMenu.buildTownsfolkMenu()
-    local townsfolkMenu = {}
-    for key in pairs(Questie.db.global.townsfolk) do
-        if key ~= "Meeting Stones" then
-            tinsert(townsfolkMenu, build(key))
+    local townsfolkMenu, townsfolkSorted, townsfolkData, seen = {}, {}, {}, {}
+    for _, source in pairs({Questie.db.global.townsfolk or {}, Questie.db.char.townsfolk or {}}) do
+        for key in pairs(source) do
+            if key ~= "Meeting Stones" and not seen[key] then
+                local localizedKey = l10n(tostring(key))
+                seen[key] = true
+                townsfolkData[localizedKey] = build(key)
+                tinsert(townsfolkSorted, localizedKey)
+            end
         end
     end
-    for key in pairs(Questie.db.char.townsfolk) do
-        if key ~= "Meeting Stones" then
-            tinsert(townsfolkMenu, build(key))
-        end
+
+    table.sort(townsfolkSorted)
+    for _, key in pairs(townsfolkSorted) do
+        tinsert(townsfolkMenu, townsfolkData[key])
     end
     return townsfolkMenu
+end
+
+function QuestieMenu.buildQuestMenu()
+    return {
+        {
+            text = l10n("Available Quest"),
+            func = function()
+                local value = not QuestieIconVisibility:IsEnabledAnywhere("available")
+                QuestieIconVisibility:SetBoth("available", value)
+                _RunFastAvailableRefresh(true)
+            end,
+            icon = QuestieLib.AddonPath.."Icons\\available.blp",
+            notCheckable = false,
+            checked = QuestieIconVisibility:IsEnabledAnywhere("available"),
+            isNotRadio = true,
+            keepShownOnClick = true
+        },
+        {
+            text = l10n("Objective"),
+            func = function()
+                local value = not QuestieIconVisibility:IsEnabledAnywhere("objective")
+                QuestieIconVisibility:SetBoth("objective", value)
+                if value then
+                    -- Rebuild objective notes that were not created while objectives were disabled.
+                    QuestieQuest:GetAllQuestIds()
+                end
+                QuestieQuest:RefreshQuestIconVisibility()
+            end,
+            icon = QuestieLib.AddonPath.."Icons\\event.blp",
+            notCheckable = false,
+            checked = QuestieIconVisibility:IsEnabledAnywhere("objective"),
+            isNotRadio = true,
+            keepShownOnClick = true
+        },
+        {
+            text = l10n("Repeatable Quests"),
+            func = function()
+                local value = not QuestieIconVisibility:IsEnabledAnywhere("repeatable")
+                QuestieIconVisibility:SetBoth("repeatable", value)
+                _RunFastAvailableRefresh()
+            end,
+            icon = QuestieLib.AddonPath.."Icons\\repeatable.blp",
+            notCheckable = false,
+            checked = QuestieIconVisibility:IsEnabledAnywhere("repeatable"),
+            isNotRadio = true,
+            keepShownOnClick = true
+        },
+        {
+            text = l10n("Trivial Quest"),
+            func = function()
+                local value = Questie.db.profile.lowLevelStyle == Questie.LOWLEVEL_ALL
+                if value then
+                    Questie.db.profile.lowLevelStyle = Questie.LOWLEVEL_NONE
+                else
+                    Questie.db.profile.lowLevelStyle = Questie.LOWLEVEL_ALL
+                end
+                AvailableQuests.ResetLevelRequirementCache()
+                AvailableQuests.PruneByCurrentLevelFilter()
+                _RunFastAvailableRefresh()
+            end,
+            icon = QuestieLib.AddonPath.."Icons\\available_gray.blp",
+            notCheckable = false,
+            checked = Questie.db.profile.lowLevelStyle==Questie.LOWLEVEL_ALL,
+            isNotRadio = true,
+            keepShownOnClick = true
+        }
+    }
 end
 
 function QuestieMenu:Show(hideDelay)
@@ -725,40 +797,12 @@ function QuestieMenu:Show(hideDelay)
     if not QuestieMenu.menu then
         QuestieMenu.menu = LibDropDown:Create_UIDropDownMenu("QuestieTownsfolkMenuFrame", UIParent)
     end
-    local menuTable = QuestieMenu.buildTownsfolkMenu()
-    tinsert(menuTable, { text= l10n("Available Quest"), func = function()
-        local value = not QuestieIconVisibility:IsEnabledAnywhere("available")
-        QuestieIconVisibility:SetBoth("available", value)
-        _RunFastAvailableRefresh(true)
-    end, icon=QuestieLib.AddonPath.."Icons\\available.blp", notCheckable=false, checked=QuestieIconVisibility:IsEnabledAnywhere("available"), isNotRadio=true, keepShownOnClick=true})
-    tinsert(menuTable, { text= l10n("Repeatable Quests"), func = function()
-        local value = not QuestieIconVisibility:IsEnabledAnywhere("repeatable")
-        QuestieIconVisibility:SetBoth("repeatable", value)
-        _RunFastAvailableRefresh()
-    end, icon=QuestieLib.AddonPath.."Icons\\repeatable.blp", notCheckable=false, checked=QuestieIconVisibility:IsEnabledAnywhere("repeatable"), isNotRadio=true, keepShownOnClick=true})
-    tinsert(menuTable, { text= l10n("Trivial Quest"), func = function()
-        local value = Questie.db.profile.lowLevelStyle == Questie.LOWLEVEL_ALL
-        if value then
-            Questie.db.profile.lowLevelStyle = Questie.LOWLEVEL_NONE
-        else
-            Questie.db.profile.lowLevelStyle = Questie.LOWLEVEL_ALL
-        end
-        AvailableQuests.ResetLevelRequirementCache()
-        AvailableQuests.PruneByCurrentLevelFilter()
-        _RunFastAvailableRefresh()
-    end, icon=QuestieLib.AddonPath.."Icons\\available_gray.blp", notCheckable=false, checked=Questie.db.profile.lowLevelStyle==Questie.LOWLEVEL_ALL, isNotRadio=true, keepShownOnClick=true})
-    tinsert(menuTable, { text= l10n("Objective"), func = function()
-        local value = not QuestieIconVisibility:IsEnabledAnywhere("objective")
-        QuestieIconVisibility:SetBoth("objective", value)
-        if value then
-            -- Rebuild objective notes that were not created while objectives were disabled.
-            QuestieQuest:GetAllQuestIds()
-        end
-        QuestieQuest:RefreshQuestIconVisibility()
-    end, icon=QuestieLib.AddonPath.."Icons\\event.blp", notCheckable=false, checked=QuestieIconVisibility:IsEnabledAnywhere("objective"), isNotRadio=true, keepShownOnClick=true})
-    tinsert(menuTable, {text= l10n("Profession Trainers"), func = function() end, keepShownOnClick=true, hasArrow=true, menuList=QuestieMenu.buildProfessionMenu(), notCheckable=true})
-    tinsert(menuTable, {text= l10n("Vendor"), func = function() end, keepShownOnClick=true, hasArrow=true, menuList=QuestieMenu.buildVendorMenu(), notCheckable=true})
+    local menuTable = {}
     tinsert(menuTable, {text = l10n("Instances"), func = function() end, keepShownOnClick = true, hasArrow = true, menuList = QuestieMenu.buildInstancesMenu(), notCheckable = true})
+    tinsert(menuTable, {text= l10n("Profession Trainers"), func = function() end, keepShownOnClick=true, hasArrow=true, menuList=QuestieMenu.buildProfessionMenu(), notCheckable=true})
+    tinsert(menuTable, {text = l10n("Quests"), func = function() end, keepShownOnClick = true, hasArrow = true, menuList = QuestieMenu.buildQuestMenu(), notCheckable = true})
+    tinsert(menuTable, {text = l10n("Townsfolk"), func = function() end, keepShownOnClick = true, hasArrow = true, menuList = QuestieMenu.buildTownsfolkMenu(), notCheckable = true})
+    tinsert(menuTable, {text= l10n("Vendor"), func = function() end, keepShownOnClick=true, hasArrow=true, menuList=QuestieMenu.buildVendorMenu(), notCheckable=true})
     tinsert(menuTable, div)
     tinsert(menuTable, {text = Questie:Colorize(l10n("Find Nearest"), "lightBlue"), func = function() end, keepShownOnClick = true, hasArrow = true, menuList = QuestieMenu.buildFindNearestMenu(), notCheckable = true})
 
