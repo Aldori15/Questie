@@ -50439,6 +50439,30 @@ QuestieCompat.RegisterCorrection("itemData", function()
             [itemKeys.relatedQuests] = {12823},
         },
 
+        [41450] = {
+            [itemKeys.itemDrops] = {},
+        },
+
+        [41452] = {
+            [itemKeys.itemDrops] = {},
+        },
+
+        [41466] = {
+            [itemKeys.itemDrops] = {},
+        },
+
+        [41468] = {
+            [itemKeys.itemDrops] = {},
+        },
+
+        [41492] = {
+            [itemKeys.itemDrops] = {},
+        },
+
+        [41497] = {
+            [itemKeys.itemDrops] = {},
+        },
+
         [41503] = {
             [itemKeys.relatedQuests] = {12914},
         },
