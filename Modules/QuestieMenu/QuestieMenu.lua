@@ -273,10 +273,7 @@ local function _GetFindNearestIds(key)
         vendorList = Questie.db.char.vendorList or vendorList
     end
 
-    return globalTownsfolk[key] or
-            charTownsfolk[key] or
-            professionTrainers[key] or
-            vendorList[key]
+    return globalTownsfolk[key] or charTownsfolk[key] or professionTrainers[key] or vendorList[key]
 end
 
 local function _IsFindNearestObjectCategory(key)
