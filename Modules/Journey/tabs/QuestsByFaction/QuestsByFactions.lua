@@ -697,6 +697,11 @@ function _QuestieJourney.questsByFaction:CollectFactionQuests(factionId)
                     if not QuestieDB.IsRepeatable(questId) then
                         prequestMissingCounter = prequestMissingCounter + 1
                     end
+                elseif returnReason == DoableStates.MISSING_START_ITEM then -- item-start quest without the start item
+                    tinsert(factionTree[5].children, temp)
+                    if not QuestieDB.IsRepeatable(questId) then
+                        prequestMissingCounter = prequestMissingCounter + 1
+                    end
                 elseif returnReason == DoableStates.PROFESSION_MISSING then -- profession missing completely
                     tinsert(factionTree[6].children, temp)
                     unobtainableCounter = unobtainableCounter + 1

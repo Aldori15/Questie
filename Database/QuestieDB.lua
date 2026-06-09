@@ -110,6 +110,7 @@ QuestieDB.DoableStates = {
     PROFESSION_MISSING = 29,
     PROFESSION_RANK = 30,
     DISABLED_BY = 31,
+    MISSING_START_ITEM = 32,
 }
 --- COMPATIBILITY ---
 local WOW_PROJECT_ID = QuestieCompat.WOW_PROJECT_ID
@@ -2684,6 +2685,24 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
     local DoableStates = QuestieDB.DoableStates
     local HIDE_ON_MAP = QuestieQuestBlacklist.HIDE_ON_MAP
 
+    local function _HasItemInBags(itemId)
+        return GetItemCount(itemId) > 0
+    end
+
+    local function _HasKnownItemStartSource(itemId)
+        local npcDrops = QuestieDB.QueryItemSingle(itemId, "npcDrops")
+        if npcDrops and next(npcDrops) then
+            return true
+        end
+
+        local objectDrops = QuestieDB.QueryItemSingle(itemId, "objectDrops")
+        if objectDrops and next(objectDrops) then
+            return true
+        end
+
+        return false
+    end
+
     -- Completed quests
     if completedQuests[questId] then
         if returnText and returnBrief then
@@ -3066,6 +3085,35 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
                 return l10n("Unavailable")..l10n(": ")..l10n("Enabling quest not active nor turned in"), true, DoableStates.ENABLING_QUEST_MISSING
             elseif returnText and not returnBrief then
                 return "Quest " .. questId .. " is not available because " .. availableStartingWith .. " is not active/turned in", true, DoableStates.ENABLING_QUEST_MISSING
+            end
+        end
+    end
+
+    local startedBy = QuestieDB.QueryQuestSingle(questId, "startedBy")
+    local itemStarts = startedBy and startedBy[3]
+    if itemStarts and next(itemStarts) and (not startedBy[1]) and (not startedBy[2]) then
+        local hasStartItem = false
+        local hasKnownStartSource = false
+        local missingStartItems = {}
+
+        for _, itemId in pairs(itemStarts) do
+            if _HasItemInBags(itemId) then
+                hasStartItem = true
+                break
+            end
+
+            if _HasKnownItemStartSource(itemId) then
+                hasKnownStartSource = true
+            else
+                tinsert(missingStartItems, itemId)
+            end
+        end
+
+        if (not hasStartItem) and (not hasKnownStartSource) then
+            if returnText and returnBrief then
+                return l10n("Unavailable")..l10n(": ")..l10n("Missing Requirement"), true, DoableStates.MISSING_START_ITEM
+            elseif returnText and not returnBrief then
+                return "Quest " .. questId .. " is unavailable because item start item " .. table.concat(missingStartItems, ", ") .. " is missing", true, DoableStates.MISSING_START_ITEM
             end
         end
     end
