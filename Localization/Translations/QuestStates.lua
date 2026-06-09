@@ -98,6 +98,18 @@ local questStateLocales = {
         ["zhCN"] = "精英",
         ["zhTW"] = "精英",
     },
+    ["Escort"] = {
+        ["enUS"] = true,
+        ["deDE"] = "Eskorte",
+        ["esES"] = "Escolta",
+        ["esMX"] = "Escolta",
+        ["frFR"] = "Escorte",
+        ["koKR"] = "호위",
+        ["ptBR"] = "Escolta",
+        ["ruRU"] = "Сопровождение",
+        ["zhCN"] = "护送",
+        ["zhTW"] = "護送",
+    },
     ["Daily"] = {
         ["enUS"] = true,
         ["deDE"] = "Täglich",

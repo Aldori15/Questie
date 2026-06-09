@@ -245,8 +245,8 @@ local function InitializeQuestTagInfoCorrections()
     [1199] = {81, l10n("Dungeon")}, -- Twilight Falls
     [1200] = {81, l10n("Dungeon")}, -- Blackfathom Villainy
     [1221] = {81, l10n("Dungeon")}, -- Blueleaf Tubers
-    [1222] = (Questie.IsTBC or Questie.IsWotlk or QuestieCompat.Is335) and {84, "Escort"} or nil, -- Stinky's Escape
-    [1270] = (Questie.IsTBC or Questie.IsWotlk or QuestieCompat.Is335) and {84, "Escort"} or nil, -- Stinky's Escape
+    [1222] = (Questie.IsTBC or Questie.IsWotlk or QuestieCompat.Is335) and {84, l10n("Escort")} or nil, -- Stinky's Escape
+    [1270] = (Questie.IsTBC or Questie.IsWotlk or QuestieCompat.Is335) and {84, l10n("Escort")} or nil, -- Stinky's Escape
     [1275] = {81, l10n("Dungeon")}, -- Researching the Corruption
     [1360] = Questie.IsEra and {81, l10n("Dungeon")} or nil, -- Reclaimed Treasures
     [1380] = Questie.IsEra and {1, l10n("Elite")} or nil, -- Khan Hratha
@@ -1279,7 +1279,7 @@ local function InitializeQuestTagInfoCorrections()
     [9270] = {81, l10n("Dungeon")}, -- Atiesh, Greatstaff of the Guardian
     [9271] = {81, l10n("Dungeon")}, -- Atiesh, Greatstaff of the Guardian
     [9315] = {1, l10n("Elite")}, -- Anok'suten
-    [9375] = (Questie.IsClassic or Questie.IsTBC or Questie.IsWotlk or QuestieCompat.Is335) and {l10n("Elite")} or {84, "Escort"}, -- The Road to Falcon Watch
+    [9375] = (Questie.IsClassic or Questie.IsTBC or Questie.IsWotlk or QuestieCompat.Is335) and {1, l10n("Elite")} or {84, l10n("Escort")}, -- The Road to Falcon Watch
     [9419] = {41, l10n("PvP")}, -- Scouring the Desert
     [9422] = {41, l10n("PvP")}, -- Scouring the Desert
     [9444] = {41, l10n("PvP")}, -- Defiling Uther's Tomb
