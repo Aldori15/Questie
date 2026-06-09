@@ -1068,7 +1068,7 @@ local function InitializeQuestTagInfoCorrections()
     [8738] = Questie.IsEra and {1, l10n("Elite")} or nil, -- Hive'Regal Scout Report
     [8739] = Questie.IsEra and {1, l10n("Elite")} or nil, -- Hive'Ashi Scout Report
     [8740] = Questie.IsEra and {1, l10n("Elite")} or nil, -- Twilight Marauders
-    [8743] = {82, "World Event"}, -- Bang a Gong!
+    [8743] = {82, l10n("World Event")}, -- Bang a Gong!
     [8770] = Questie.IsEra and {1, l10n("Elite")} or nil, -- Target: Hive'Ashi Defenders
     [8771] = Questie.IsEra and {1, l10n("Elite")} or nil, -- Target: Hive'Ashi Sandstalkers
     [8772] = Questie.IsEra and {1, l10n("Elite")} or nil, -- Target: Hive'Zora Waywatchers
