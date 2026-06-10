@@ -282,14 +282,10 @@ function QuestieLib:GetQuestTypeSuffix(questId, blizzLike)
     local tagClass = questTagIds.CLASS
     local tagRaid10 = questTagIds.RAID_10
     local tagRaid25 = questTagIds.RAID_25
-    local tagScenario = questTagIds.SCENARIO
-    local tagAccount = questTagIds.ACCOUNT
-    local tagCelestial = questTagIds.CELESTIAL
     local tagWorldEvent = questTagIds.WORLD_EVENT
     local isGroupContentTag = questTagId == tagRaid or questTagId == tagDungeon or questTagId == tagHeroic or
             (tagRaid10 and questTagId == tagRaid10) or (tagRaid25 and questTagId == tagRaid25) or
-            (tagScenario and questTagId == tagScenario) or (tagAccount and questTagId == tagAccount) or
-            (tagCelestial and questTagId == tagCelestial) or (tagWorldEvent and questTagId == tagWorldEvent)
+            (tagWorldEvent and questTagId == tagWorldEvent)
     local langCode = l10n:GetUILocale()
     local isMultiByteLocale = langCode == "zhCN" or langCode == "zhTW" or langCode == "koKR" or langCode == "ruRU"
 
@@ -308,12 +304,6 @@ function QuestieLib:GetQuestTypeSuffix(questId, blizzLike)
             return "D"
         elseif questTagId == tagHeroic then
             return "H"
-        elseif tagScenario and questTagId == tagScenario then
-            return "S"
-        elseif tagAccount and questTagId == tagAccount then
-            return "A"
-        elseif tagCelestial and questTagId == tagCelestial then
-            return "C"
         elseif tagWorldEvent and questTagId == tagWorldEvent then
             return "W"
         else
@@ -329,14 +319,11 @@ end
 local suffixPriority = {
     [""] = 1, -- No suffix (normal quests) - should come first
     ["+"] = 2, -- Elite
-    ["S"] = 3, -- Scenario
-    ["D"] = 4, -- Dungeon
-    ["H"] = 5, -- Heroic
-    ["R"] = 6, -- Raid
-    ["++"] = 7, -- Legendary
-    ["A"] = 8, -- Account
-    ["C"] = 9, -- Celestial
-    ["W"] = 10, -- World Event
+    ["D"] = 3, -- Dungeon
+    ["H"] = 4, -- Heroic
+    ["R"] = 5, -- Raid
+    ["++"] = 6, -- Legendary
+    ["W"] = 7, -- World Event
 }
 
 ---@param questId QuestId

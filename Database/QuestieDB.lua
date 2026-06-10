@@ -72,9 +72,6 @@ QuestieDB.questTagIds = {
     HEROIC = 85,
     RAID_10 = 88,
     RAID_25 = 89,
-    SCENARIO = 98,
-    ACCOUNT = 102,
-    CELESTIAL = 294,
 }
 ---@enum DoableStates
 QuestieDB.DoableStates = {
