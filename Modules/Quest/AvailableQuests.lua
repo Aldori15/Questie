@@ -1312,6 +1312,7 @@ _AddStarter = function(starter, quest, tooltipKey, limit)
                         QuestData = quest,
                         Name = starter.name,
                         IsObjectiveNote = false,
+                        StarterType = starterType,
                         IsItemStartQuestSource = starterType == "itemFromMonster" or starterType == "itemFromObject",
                     }
 
@@ -1360,6 +1361,7 @@ _AddStarter = function(starter, quest, tooltipKey, limit)
                             QuestData = quest,
                             Name = starter.name,
                             IsObjectiveNote = false,
+                            StarterType = starterType,
                             IsItemStartQuestSource = starterType == "itemFromMonster" or starterType == "itemFromObject",
                         }
                         starterIcons[zone] = QuestieMap:DrawWorldIcon(data, zone, waypoints[1][1][1], waypoints[1][1][2])

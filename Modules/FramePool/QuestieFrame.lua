@@ -320,8 +320,15 @@ function _Qframe:UpdateTexture(texture)
     --self.data.Icon = texture;
     local colors = { 1, 1, 1 }
 
-    if self.data.FinisherType == "Object" then
-        self.overlayTexture:SetTexture(QuestieLib.AddonPath .. "Icons\\object_overlay.blp")
+    local overlayTexture
+    if self.data.StarterType == "itemFromMonster" or self.data.StarterType == "itemFromObject" then
+        overlayTexture = "loot_overlay.blp"
+    elseif self.data.StarterType == "Object" or self.data.FinisherType == "Object" then
+        overlayTexture = "object_overlay.blp"
+    end
+
+    if overlayTexture then
+        self.overlayTexture:SetTexture(QuestieLib.AddonPath .. "Icons\\" .. overlayTexture)
     else
         self.overlayTexture:SetTexture("")
     end
