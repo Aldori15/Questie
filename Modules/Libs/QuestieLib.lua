@@ -263,6 +263,35 @@ function QuestieLib.GetTbcLevel(questId, playerLevel)
     return questLevel, requiredLevel, QuestieDB.QueryQuestSingle(questId, "requiredMaxLevel");
 end
 
+local questTagIds = QuestieDB.questTagIds
+local noQuestTypeSuffixTags = {
+    [questTagIds.PVP] = true,
+    [questTagIds.CLASS] = true,
+    [questTagIds.ESCORT] = true,
+}
+local blizzLikeGroupContentTags = {
+    [questTagIds.RAID] = true,
+    [questTagIds.RAID_10] = true,
+    [questTagIds.RAID_25] = true,
+    [questTagIds.DUNGEON] = true,
+    [questTagIds.HEROIC] = true,
+    [questTagIds.WORLD_EVENT] = true,
+}
+local multiByteLocaleQuestTypeSuffixes = {
+    [questTagIds.RAID] = "R",
+    [questTagIds.RAID_10] = "R",
+    [questTagIds.RAID_25] = "R",
+    [questTagIds.DUNGEON] = "D",
+    [questTagIds.HEROIC] = "H",
+    [questTagIds.WORLD_EVENT] = "W",
+}
+local multiByteLocales = {
+    zhCN = true,
+    zhTW = true,
+    koKR = true,
+    ruRU = true,
+}
+
 ---Returns the quest type suffix character (e.g., "+" for Elite, "D" for Dungeon)
 ---@param questId QuestId
 ---@param blizzLike boolean? @If true, use '+' for group-content tags in classic Blizzard style
@@ -274,44 +303,16 @@ function QuestieLib:GetQuestTypeSuffix(questId, blizzLike)
         return ""
     end
 
-    local questTagIds = QuestieDB.questTagIds
-    local tagElite = questTagIds.ELITE
-    local tagPvp = questTagIds.PVP
-    local tagRaid = questTagIds.RAID
-    local tagDungeon = questTagIds.DUNGEON
-    local tagLegendary = questTagIds.LEGENDARY
-    local tagEscort = questTagIds.ESCORT
-    local tagHeroic = questTagIds.HEROIC
-    local tagClass = questTagIds.CLASS
-    local tagRaid10 = questTagIds.RAID_10
-    local tagRaid25 = questTagIds.RAID_25
-    local tagWorldEvent = questTagIds.WORLD_EVENT
-    local isGroupContentTag = questTagId == tagRaid or questTagId == tagDungeon or questTagId == tagHeroic or
-            (tagRaid10 and questTagId == tagRaid10) or (tagRaid25 and questTagId == tagRaid25) or
-            (tagWorldEvent and questTagId == tagWorldEvent)
-    local langCode = l10n:GetUILocale()
-    local isMultiByteLocale = langCode == "zhCN" or langCode == "zhTW" or langCode == "koKR" or langCode == "ruRU"
-
-    if questTagId == tagElite then
+    if questTagId == questTagIds.ELITE then
         return "+"
-    elseif questTagId == tagPvp or (tagClass and questTagId == tagClass) or questTagId == tagEscort then
+    elseif noQuestTypeSuffixTags[questTagId] then
         return ""
-    elseif questTagId == tagLegendary then
+    elseif questTagId == questTagIds.LEGENDARY then
         return "++"
-    elseif blizzLike and isGroupContentTag then
+    elseif blizzLike and blizzLikeGroupContentTags[questTagId] then
         return "+"
-    elseif isMultiByteLocale then
-        if questTagId == tagRaid or (tagRaid10 and questTagId == tagRaid10) or (tagRaid25 and questTagId == tagRaid25) then
-            return "R"
-        elseif questTagId == tagDungeon then
-            return "D"
-        elseif questTagId == tagHeroic then
-            return "H"
-        elseif tagWorldEvent and questTagId == tagWorldEvent then
-            return "W"
-        else
-            return ""
-        end
+    elseif multiByteLocales[l10n:GetUILocale()] then
+        return multiByteLocaleQuestTypeSuffixes[questTagId] or ""
     else
         -- Fallback: use first character of quest tag name for unknown tags
         -- This preserves backward compatibility with existing UI/tests
