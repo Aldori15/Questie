@@ -14,6 +14,8 @@ local QuestieLink = QuestieLoader:ImportModule("QuestieLink")
 local QuestieQuest = QuestieLoader:ImportModule("QuestieQuest")
 ---@type QuestieIconVisibility
 local QuestieIconVisibility = QuestieLoader:ImportModule("QuestieIconVisibility")
+---@type QuestieLib
+local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
 
 --- COMPATIBILITY ---
 local C_Map = QuestieCompat.C_Map
@@ -98,6 +100,12 @@ function QuestieFramePool.Qframe:New(frameId, OnEnter)
 
     --We save the colors to the texture object, this way we don't need to use GetVertexColor
     newFrame.texture:SetVertexColor(1, 1, 1, 1);
+
+    local overlayTexture = newFrame:CreateTexture(nil, "OVERLAY", nil, 7)
+    overlayTexture:SetWidth(16)
+    overlayTexture:SetHeight(16)
+    overlayTexture:SetAllPoints(newFrame)
+    newFrame.overlayTexture = overlayTexture
 
     newFrame.glow = glowt
     newFrame.glowTexture = glowt
@@ -312,6 +320,12 @@ function _Qframe:UpdateTexture(texture)
     --self.data.Icon = texture;
     local colors = { 1, 1, 1 }
 
+    if self.data.FinisherType == "Object" then
+        self.overlayTexture:SetTexture(QuestieLib.AddonPath .. "Icons\\object_overlay.blp")
+    else
+        self.overlayTexture:SetTexture("")
+    end
+
     if self.data.IconColor ~= nil and objectiveColor then
         colors = self.data.IconColor
     end
@@ -365,6 +379,9 @@ function _Qframe:Unload()
     if (self.texture) then
         self.texture:SetVertexColor(1, 1, 1, 1)
         self.texture:SetTexCoord(0, 1, 0, 1)
+    end
+    if self.overlayTexture then
+        self.overlayTexture:SetTexture("")
     end
     self.miniMapIcon = nil;
     self:SetScript("OnUpdate", nil)

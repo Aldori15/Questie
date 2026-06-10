@@ -1025,6 +1025,8 @@ function QuestieQuest:AddFinisher(quest)
         end
 
         if finisher ~= nil then
+            local finisherType = quest.Finisher.Type == "object" and "Object" or nil
+
             -- Certain race conditions can occur when the NPC/Objects are both the Quest Starter and Quest Finisher
             -- which can result in duplicate Quest Title tooltips appearing. DrawAvailableQuest() would have already
             -- registered this NPC/Object so, the appropriate tooltip lines are already present. This checks and clears
@@ -1086,6 +1088,7 @@ function QuestieQuest:AddFinisher(quest)
                                 QuestData = quest,
                                 Name = finisher.name,
                                 IsObjectiveNote = false,
+                                FinisherType = finisherType,
                             }
 
                             if QuestieDB.IsActiveEventQuest(quest.Id) then
@@ -1137,6 +1140,7 @@ function QuestieQuest:AddFinisher(quest)
                                 QuestData = quest,
                                 Name = finisher.name,
                                 IsObjectiveNote = false,
+                                FinisherType = finisherType,
                             }
 
                             if QuestieDB.IsActiveEventQuest(quest.Id) then
