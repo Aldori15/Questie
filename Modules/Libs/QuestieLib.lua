@@ -41,6 +41,43 @@ local textWrapFrameObject = _G["QuestLogObjectivesText"] or _G["QuestInfoObjecti
     Green: 3 - GetQuestGreenRange() level below player (GetQuestGreenRange() changes on specific player levels)
     Gray: More than GetQuestGreenRange() below player
 --]]
+local difficultyColorCodes = {
+    red = "|cFFFF1A1A",
+    orange = "|cFFFF8040",
+    yellow = "|cFFFFFF00",
+    green = "|cFF40C040",
+    grey = "|cFFC0C0C0",
+}
+
+local difficultyColorPercents = {
+    red = {1, 0.102, 0.102},
+    orange = {1, 0.502, 0.251},
+    yellow = {1, 1, 0},
+    green = {0.251, 0.753, 0.251},
+    grey = {0.753, 0.753, 0.753},
+}
+
+local function GetDifficultyBucket(level)
+    level = tonumber(level)
+    local playerLevel = QuestiePlayer.GetPlayerLevel()
+    if not level or level == -1 then
+        level = playerLevel
+    end
+    local levelDiff = level - playerLevel
+
+    if (levelDiff >= 5) then
+        return "red"
+    elseif (levelDiff >= 3) then
+        return "orange"
+    elseif (levelDiff >= -2) then
+        return "yellow"
+    elseif (-levelDiff <= GetQuestGreenRange("player")) then
+        return "green"
+    else
+        return "grey"
+    end
+end
+
 function QuestieLib:PrintDifficultyColor(level, text, isDailyQuest, isEventQuest, isPvPQuest)
     if isEventQuest == true then
         return "|cFF6ce314" .. text .. "|r" -- Lime
@@ -52,46 +89,12 @@ function QuestieLib:PrintDifficultyColor(level, text, isDailyQuest, isEventQuest
         return "|cFF21CCE7" .. text .. "|r" -- Blue
     end
 
-    level = tonumber(level)
-    if not level or level == -1 then
-        level = QuestiePlayer.GetPlayerLevel()
-    end
-    local levelDiff = level - QuestiePlayer.GetPlayerLevel()
-
-    if (levelDiff >= 5) then
-        return "|cFFFF1A1A" .. text .. "|r" -- Red
-    elseif (levelDiff >= 3) then
-        return "|cFFFF8040" .. text .. "|r" -- Orange
-    elseif (levelDiff >= -2) then
-        return "|cFFFFFF00" .. text .. "|r" -- Yellow
-    elseif (-levelDiff <= GetQuestGreenRange("player")) then
-        return "|cFF40C040" .. text .. "|r" -- Green
-    else
-        return "|cFFC0C0C0" .. text .. "|r" -- Grey
-    end
+    return difficultyColorCodes[GetDifficultyBucket(level)] .. text .. "|r"
 end
 
 function QuestieLib:GetDifficultyColorPercent(level)
-    level = tonumber(level)
-    if not level or level == -1 then level = QuestiePlayer.GetPlayerLevel() end
-    local levelDiff = level - QuestiePlayer.GetPlayerLevel()
-
-    if (levelDiff >= 5) then
-        -- return "|cFFFF1A1A"..text.."|r"; -- Red
-        return 1, 0.102, 0.102
-    elseif (levelDiff >= 3) then
-        -- return "|cFFFF8040"..text.."|r"; -- Orange
-        return 1, 0.502, 0.251
-    elseif (levelDiff >= -2) then
-        -- return "|cFFFFFF00"..text.."|r"; -- Yellow
-        return 1, 1, 0
-    elseif (-levelDiff <= GetQuestGreenRange("player")) then
-        -- return "|cFF40C040"..text.."|r"; -- Green
-        return 0.251, 0.753, 0.251
-    else
-        -- return "|cFFC0C0C0"..text.."|r"; -- Grey
-        return 0.753, 0.753, 0.753
-    end
+    local color = difficultyColorPercents[GetDifficultyBucket(level)]
+    return color[1], color[2], color[3]
 end
 
 -- 1.12 color logic
