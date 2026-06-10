@@ -85,11 +85,15 @@ local _WithinDates, _LoadDarkmoonFaire, _GetDarkmoonFaireLocation,
     _IsCalendarEventMonthPlausible, _IsCalendarEventActiveNow, _IsCalendarEventLiveNow,
     _GetTimedEventStartDelay, _AnnounceActiveEvent, _AnnounceUpcomingTimedEvent,
     _ScheduleTimedEventActiveAnnouncement, _PrimeCalendar, _RefreshAvailableQuests,
-    _CancelInitializeTimer
+    _ShouldAnnounceWorldEvents, _CancelInitializeTimer
 
 local EVENT_INIT_INITIAL_DELAY = 1
 local EVENT_INIT_RETRY_INTERVAL = 1
 local EVENT_INIT_MAX_ATTEMPTS = 12
+
+_ShouldAnnounceWorldEvents = function()
+    return (not Questie.db) or (not Questie.db.profile) or Questie.db.profile.announceWorldEvents ~= false
+end
 
 _CancelInitializeTimer = function()
     if _QuestieEvent.initializeTimer then
@@ -278,6 +282,8 @@ _AnnounceActiveEvent = function(eventName)
     end
 
     _QuestieEvent.announcedEvents[eventName] = true
+    if not _ShouldAnnounceWorldEvents() then return end
+
     print(Questie:Colorize("[Questie]", "yellow"), "|cFF6ce314" .. l10n("The '%s' world event is active!", l10n(eventName)))
 end
 
@@ -310,11 +316,13 @@ _AnnounceUpcomingTimedEvent = function(eventName, currentDate)
 
     _QuestieEvent.announcedUpcomingEvents[eventName] = true
 
-    local hoursUntilStart = math.ceil(delay / 3600)
-    if hoursUntilStart > 1 then
-        print(Questie:Colorize("[Questie]", "yellow"), "|cFF6ce314" .. l10n("The '%s' world event starts in about %d hours.", l10n(eventName), hoursUntilStart))
-    else
-        print(Questie:Colorize("[Questie]", "yellow"), "|cFF6ce314" .. l10n("The '%s' world event starts in less than an hour.", l10n(eventName)))
+    if _ShouldAnnounceWorldEvents() then
+        local hoursUntilStart = math.ceil(delay / 3600)
+        if hoursUntilStart > 1 then
+            print(Questie:Colorize("[Questie]", "yellow"), "|cFF6ce314" .. l10n("The '%s' world event starts in about %d hours.", l10n(eventName), hoursUntilStart))
+        else
+            print(Questie:Colorize("[Questie]", "yellow"), "|cFF6ce314" .. l10n("The '%s' world event starts in less than an hour.", l10n(eventName)))
+        end
     end
 
     _ScheduleTimedEventActiveAnnouncement(eventName, currentDate)
@@ -651,6 +659,8 @@ _LoadDarkmoonFaire = function()
 
     if not _QuestieEvent.announcedEvents["Darkmoon Faire"] then
         _QuestieEvent.announcedEvents["Darkmoon Faire"] = true
+        if not _ShouldAnnounceWorldEvents() then return end
+
         print(Questie:Colorize("[Questie]", "yellow"), "|cFF6ce314" .. l10n("The '%s' world event is active!", _GetDarkmoonFaireEventName(eventLocation)))
     end
 end

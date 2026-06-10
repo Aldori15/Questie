@@ -268,7 +268,7 @@ function QuestieOptions.tabs.general:Initialize()
                     },
                     minimapCoordinatesEnabled = {
                         type = "toggle",
-                        order = 5.5,
+                        order = 5.4,
                         name = function() return l10n('Show Minimap Coordinates'); end,
                         desc = function() return l10n("Place the Player's coordinates on the Minimap title."); end,
                         width = 1.55,
@@ -279,6 +279,17 @@ function QuestieOptions.tabs.general:Initialize()
                             if not value then
                                 QuestieCoords:ResetMinimapText();
                             end
+                        end,
+                    },
+                    announceWorldEvents = {
+                        type = "toggle",
+                        order = 5.5,
+                        name = function() return l10n('Show active world event notifications'); end,
+                        desc = function() return l10n('Print a chat message when a world event is active or about to start.'); end,
+                        width = 1.55,
+                        get = function(info) return QuestieOptions:GetProfileValue(info); end,
+                        set = function(info, value)
+                            QuestieOptions:SetProfileValue(info, value)
                         end,
                     },
                 },

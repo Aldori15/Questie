@@ -79,6 +79,7 @@ function QuestieOptionsDefaults:Load()
             enableMapIcons = true,
             enableMiniMapIcons = true,
             questieShutUp = false,
+            announceWorldEvents = true,
             bugWorkarounds = true,
             hideIconsOnContinents = false,
             trimObjectiveText = true,
