@@ -3189,6 +3189,32 @@ local _GetIconScale = function()
     return Questie.db.profile.objectScale or 1
 end
 
+local function _GetObjectiveIcon(icon)
+    if icon == 0 then
+        return nil
+    end
+    return icon
+end
+
+local function _CreateObjectiveData(objectiveType, objective)
+    return {
+        Type = objectiveType,
+        Id = objective[1],
+        Text = objective[2],
+        Icon = _GetObjectiveIcon(objective[3])
+    }
+end
+
+local function _CreateKillCreditObjective(objective)
+    return {
+        Type = "killcredit",
+        IdList = objective[1],
+        RootId = objective[2],
+        Text = objective[3],
+        Icon = _GetObjectiveIcon(objective[4])
+    }
+end
+
 ---@param questId QuestId
 ---@return Quest|nil @The quest object or nil if the quest is missing
 function QuestieDB.GetQuest(questId) -- /dump QuestieDB.GetQuest(867)
@@ -3311,54 +3337,28 @@ function QuestieDB.GetQuest(questId) -- /dump QuestieDB.GetQuest(867)
         if objectives[1] then
             for _, creatureObjective in pairs(objectives[1]) do
                 if creatureObjective then
-                    local icon = creatureObjective[3]
-                    if icon == 0 then
-                        icon = nil
-                    end
                     ---@type NpcObjective
-                    QO.ObjectiveData[#QO.ObjectiveData+1] = {
-                        Type = "monster",
-                        Id = creatureObjective[1],
-                        Text = creatureObjective[2],
-                        Icon = icon
-                    }
+                    QO.ObjectiveData[#QO.ObjectiveData+1] = _CreateObjectiveData("monster", creatureObjective)
                 end
             end
         end
         if objectives[2] then
             for _, objectObjective in pairs(objectives[2]) do
                 if objectObjective then
-                    local icon = objectObjective[3]
-                    if icon == 0 then
-                        icon = nil
-                    end
                     ---@type ObjectObjective
-                    QO.ObjectiveData[#QO.ObjectiveData+1] = {
-                        Type = "object",
-                        Id = objectObjective[1],
-                        Text = objectObjective[2],
-                        Icon = icon
-                    }
+                    QO.ObjectiveData[#QO.ObjectiveData+1] = _CreateObjectiveData("object", objectObjective)
                 end
             end
         end
         if objectives[3] then
             for _, itemObjective in pairs(objectives[3]) do
                 if itemObjective then
-                    local icon = itemObjective[3]
-                    if icon == 0 then
-                        icon = nil
-                    end
                     ---@type ItemObjective
-                    QO.ObjectiveData[#QO.ObjectiveData+1] = {
-                        Type = "item",
-                        Id = itemObjective[1],
-                        Text = itemObjective[2],
-                        Icon = icon
-                    }
+                    local itemObjectiveData = _CreateObjectiveData("item", itemObjective)
                     if QuestieCorrections.itemObjectiveFirst[questId] then
-                        tinsert(QO.ObjectiveData, 1, QO.ObjectiveData[#QO.ObjectiveData])
-                        tremove(QO.ObjectiveData)
+                        tinsert(QO.ObjectiveData, 1, itemObjectiveData)
+                    else
+                        tinsert(QO.ObjectiveData, itemObjectiveData)
                     end
                 end
             end
@@ -3373,18 +3373,8 @@ function QuestieDB.GetQuest(questId) -- /dump QuestieDB.GetQuest(867)
         end
         if objectives[5] and type(objectives[5]) == "table" and #objectives[5] > 0 then
             for _, creditObjective in pairs(objectives[5]) do
-                local icon = creditObjective[4]
-                if icon == 0 then
-                    icon = nil
-                end
                 ---@type KillObjective
-                local killCreditObjective = {
-                    Type = "killcredit",
-                    IdList = creditObjective[1],
-                    RootId = creditObjective[2],
-                    Text = creditObjective[3],
-                    Icon = icon
-                }
+                local killCreditObjective = _CreateKillCreditObjective(creditObjective)
 
                 --? There are quest(s) which have the killCredit at first so we need to switch them
                 -- Place the kill credit objective first
@@ -3396,7 +3386,7 @@ function QuestieDB.GetQuest(questId) -- /dump QuestieDB.GetQuest(867)
             end
         end
         if objectives[6] then
-            for index, spellObjective in pairs(objectives[6]) do
+            for _, spellObjective in pairs(objectives[6]) do
                 if spellObjective then
                     ---@type SpellObjective
                     QO.ObjectiveData[#QO.ObjectiveData+1] = {
