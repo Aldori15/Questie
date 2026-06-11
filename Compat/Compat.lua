@@ -885,9 +885,7 @@ local function AreUiMapsRelated(leftUiMapID, rightUiMapID)
         return false
     end
 
-    return leftUiMapID == rightUiMapID
-        or IsDescendantUiMap(leftUiMapID, rightUiMapID)
-        or IsDescendantUiMap(rightUiMapID, leftUiMapID)
+    return leftUiMapID == rightUiMapID or IsDescendantUiMap(leftUiMapID, rightUiMapID) or IsDescendantUiMap(rightUiMapID, leftUiMapID)
 end
 
 local function ResolveDisplayedWorldMapUiMapID(rawMapID, mapLevel, displayedMapName)
@@ -1180,16 +1178,6 @@ local function GetPlayerWorldPositionFromActualZoneUiMap(actualUiMapID)
     return worldX, worldY, instanceID, targetUiMapID
 end
 
-local function HasDirectUiMapRelationship(displayedUiMapID, actualUiMapID)
-    if not displayedUiMapID or not actualUiMapID then
-        return false
-    end
-
-    return displayedUiMapID == actualUiMapID
-        or IsDescendantUiMap(displayedUiMapID, actualUiMapID)
-        or IsDescendantUiMap(actualUiMapID, displayedUiMapID)
-end
-
 local function ShouldCacheZoneLikeUiMap(uiMapID)
     if not uiMapID or not IsZoneLikeUiMap(uiMapID) or IsWorldMapOnlyUiMap(uiMapID) then
         return false
@@ -1204,8 +1192,7 @@ local function ShouldCacheZoneLikeUiMap(uiMapID)
         return false
     end
 
-    return HasDirectUiMapRelationship(uiMapID, actualUiMapID)
-        or HasDirectUiMapRelationship(actualUiMapID, uiMapID)
+    return AreUiMapsRelated(uiMapID, actualUiMapID)
 end
 
 local function CanUseResolvedMinimapPosition(resolvedUiMapID, x, y, actualUiMapID)
@@ -1221,8 +1208,7 @@ local function CanUseResolvedMinimapPosition(resolvedUiMapID, x, y, actualUiMapI
         return true
     end
 
-    return HasDirectUiMapRelationship(resolvedUiMapID, actualUiMapID)
-        or HasDirectUiMapRelationship(actualUiMapID, resolvedUiMapID)
+    return AreUiMapsRelated(resolvedUiMapID, actualUiMapID)
 end
 
 local function GetValidatedResolvedMinimapWorldPosition(resolvedUiMapID, x, y, actualUiMapID)
@@ -1264,7 +1250,7 @@ local function ShouldFreezeVisibleWorldMapPlayerRead(rawMapID, displayedUiMapID,
         return true
     end
 
-    return not HasDirectUiMapRelationship(displayedUiMapID, actualUiMapID)
+    return not AreUiMapsRelated(displayedUiMapID, actualUiMapID)
 end
 
 local function ShouldUseExactPlayerWorldRead(rawMapID, displayedUiMapID, actualUiMapID)
@@ -1272,7 +1258,7 @@ local function ShouldUseExactPlayerWorldRead(rawMapID, displayedUiMapID, actualU
         return false
     end
 
-    return HasDirectUiMapRelationship(displayedUiMapID, actualUiMapID)
+    return AreUiMapsRelated(displayedUiMapID, actualUiMapID)
 end
 
 -- convert current mapAreaID and mapLevel to UiMapId
@@ -1340,13 +1326,19 @@ end
 -- maps mapAreaID to Zone and Continent index
 -- https://wowpedia.fandom.com/wiki/API_GetMapContinents
 -- https://wowpedia.fandom.com/wiki/API_GetMapZones
-for C in ipairs({GetMapContinents()}) do
-    local zones = {GetMapZones(C)}
-    for Z in ipairs(zones) do
-        SetMapZoom(C, Z)
-        local mapId = GetCurrentMapAreaID()
-        mapIdToCZ[mapId] = Z + C/10
+local function BuildMapIdToCZ()
+    if next(mapIdToCZ) then return end
+
+    local savedMapSelection = CaptureLegacyMapSelection()
+    for C in ipairs({GetMapContinents()}) do
+        local zones = {GetMapZones(C)}
+        for Z in ipairs(zones) do
+            SetMapZoom(C, Z)
+            local mapId = GetCurrentMapAreaID()
+            mapIdToCZ[mapId] = Z + C / 10
+        end
     end
+    RestoreLegacyMapSelection(savedMapSelection)
 end
 
 local function GetTomTomCZForUiMapID(uiMapID)
@@ -1812,8 +1804,7 @@ function QuestieCompat.GetCurrentPlayerMinimapWorldPosition()
     local visibleMapIsUnrelated = worldMapVisible
         and displayedUiMapID
         and normalizedActualUiMapID
-        and (not HasDirectUiMapRelationship(displayedUiMapID, normalizedActualUiMapID))
-        and (not HasDirectUiMapRelationship(normalizedActualUiMapID, displayedUiMapID))
+        and (not AreUiMapsRelated(displayedUiMapID, normalizedActualUiMapID))
     local starterChildUiMapID = actualUiMapID
     if not (starterChildUiMapID and minimapChildToParentRebaseUiMapId[starterChildUiMapID]) then
         local subZoneUiMapID = ResolveUiMapIDByMapName(GetSubZoneText and GetSubZoneText() or nil)
@@ -1826,7 +1817,7 @@ function QuestieCompat.GetCurrentPlayerMinimapWorldPosition()
         and starterChildUiMapID
         and displayedUiMapID
         and (not shouldSuppressExactRead)
-        and HasDirectUiMapRelationship(displayedUiMapID, NormalizeActualZoneUiMapID(starterChildUiMapID) or starterChildUiMapID) then
+        and AreUiMapsRelated(displayedUiMapID, NormalizeActualZoneUiMapID(starterChildUiMapID) or starterChildUiMapID) then
         local exactWorldX, exactWorldY, exactInstanceID, exactUiMapID = GetPlayerWorldPositionFromActualZoneUiMap(starterChildUiMapID)
         if exactWorldX and exactWorldY then
             ResetAnchoredMinimapWorldPosition()
@@ -1970,7 +1961,7 @@ local function ResolveActualPlayerUiMapID()
 
     local subZoneUiMapID = ResolveUiMapIDByMapName(GetSubZoneText and GetSubZoneText() or nil)
     if subZoneUiMapID and IsZoneLikeUiMap(subZoneUiMapID) and IsWorldMapOnlyUiMap(subZoneUiMapID) then
-        if not actualUiMapID or HasDirectUiMapRelationship(subZoneUiMapID, actualUiMapID) then
+        if not actualUiMapID or AreUiMapsRelated(subZoneUiMapID, actualUiMapID) then
             actualUiMapID = subZoneUiMapID
         end
     end
@@ -1986,7 +1977,7 @@ local function ResolveActualPlayerUiMapID()
             if displayedUiMapID == actualUiMapID
                 or (displayedParentUiMapID and displayedParentUiMapID == actualUiMapID)
                 or (displayedParentUiMapID and displayedParentUiMapID == normalizedActualUiMapID)
-                or (actualUiMapID and HasDirectUiMapRelationship(displayedUiMapID, actualUiMapID)) then
+                or (actualUiMapID and AreUiMapsRelated(displayedUiMapID, actualUiMapID)) then
                 actualUiMapID = displayedUiMapID
             end
         end
@@ -2091,7 +2082,7 @@ local function ShouldUseCompatTomTomWorldCoords()
 
     local subZoneUiMapID = ResolveUiMapIDByMapName(GetSubZoneText and GetSubZoneText() or nil)
     if subZoneUiMapID and IsZoneLikeUiMap(subZoneUiMapID) and IsWorldMapOnlyUiMap(subZoneUiMapID) then
-        if not actualUiMapID or HasDirectUiMapRelationship(subZoneUiMapID, actualUiMapID) then
+        if not actualUiMapID or AreUiMapsRelated(subZoneUiMapID, actualUiMapID) then
             actualUiMapID = subZoneUiMapID
         end
     end
@@ -2103,7 +2094,7 @@ local function ShouldUseCompatTomTomWorldCoords()
             or displayedUiMapID == actualUiMapID
             or (displayedParentUiMapID and displayedParentUiMapID == actualUiMapID)
             or (displayedParentUiMapID and displayedParentUiMapID == normalizedActualUiMapID)
-            or (actualUiMapID and HasDirectUiMapRelationship(displayedUiMapID, actualUiMapID)) then
+            or (actualUiMapID and AreUiMapsRelated(displayedUiMapID, actualUiMapID)) then
             actualUiMapID = displayedUiMapID
         end
     end
@@ -3583,7 +3574,9 @@ end
 function QuestieCompat:QuestieTooltips_RegisterObjectiveTooltip(questId, key, objective)
     if key:find("m_") then
         local name = QuestieDB.QueryNPCSingle(tonumber(key:sub(3)), "name")
-        npActiveQuestNPCs[name] = key
+        if name then
+            npActiveQuestNPCs[name] = key
+        end
     end
 end
 
@@ -4129,6 +4122,8 @@ function QuestieCompat:ADDON_LOADED(event, addon)
     -- starter zones (894/895) vs. the HD Client patchmenu values in UiMapData (6455/6456).
     mapIdToUiMapId[894] = 467  -- Sunstrider Isle (Trimitor's WDM patch N)
     mapIdToUiMapId[895] = 468  -- Ammen Vale (Trimitor's WDM patch N)
+
+    BuildMapIdToCZ()
 
     local areaIdToUiMapId = ZoneDB.private and ZoneDB.private.areaIdToUiMapId
 
