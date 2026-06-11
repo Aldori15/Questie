@@ -18,6 +18,5 @@ function QuestieNPCBlacklist:Load()
         [15799] = QuestieCorrections.CLASSIC_ONLY, -- Colossus Researcher Eazel (AQ Opening event)
         [17544] = true, -- M'uru in Silvermoon City removed starting with SWP patch
         [21155] = true, -- Bloodelf War Effort Recruiter
-        [178420] = QuestieCorrections.WOTLK_ONLY, -- removed in WotLK
     }
 end

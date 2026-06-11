@@ -9,8 +9,6 @@ local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 -- https://github.com/Questie/Questie/wiki/Corrections
 
 function QuestieWotlkItemFixes:Load()
-    _QuestieWotlkItemFixes:InsertMissingItemIds()
-
     local itemKeys = QuestieDB.itemKeys
     local itemClasses = QuestieDB.itemClasses
 
@@ -711,64 +709,7 @@ function QuestieWotlkItemFixes:Load()
         [53510] = {
             [itemKeys.npcDrops] = {40176},
         },
-
-        -- Boost quest items
-        [199335] = {
-            [itemKeys.name] = 'Teleport Scroll: Menethil Harbor',
-            [itemKeys.relatedQuests] = {70411},
-            [itemKeys.class] = itemClasses.QUEST,
-            [itemKeys.flags] = 64,
-        },
-        [199336] = {
-            [itemKeys.name] = 'Teleport Scroll: Stormwind Harbor',
-            [itemKeys.relatedQuests] = {70411},
-            [itemKeys.class] = itemClasses.QUEST,
-            [itemKeys.flags] = 64,
-        },
-        [199777] = {
-            [itemKeys.name] = 'Teleport Scroll: Orgrimmar Zeppelin Tower',
-            [itemKeys.relatedQuests] = {70737},
-            [itemKeys.class] = itemClasses.QUEST,
-            [itemKeys.flags] = 64,
-        },
-        [199778] = {
-            [itemKeys.name] = 'Teleport Scroll: Undercity Zeppelin Tower',
-            [itemKeys.relatedQuests] = {70737},
-            [itemKeys.class] = itemClasses.QUEST,
-            [itemKeys.flags] = 64,
-        },
-        [200068] = {
-            [itemKeys.name] = 'Teleport Scroll: Shattrath City',
-            [itemKeys.relatedQuests] = {70865},
-            [itemKeys.class] = itemClasses.QUEST,
-            [itemKeys.flags] = 64,
-        },
-        [211206] = {
-            [itemKeys.name] = 'Defiler\'s Medallion',
-            [itemKeys.relatedQuests] = {78752},
-            [itemKeys.class] = itemClasses.QUEST,
-            [itemKeys.npcDrops] = {23954,26723,26861,26632,29306,27978,28923,29120,29311,31134,35451,36502,36658},
-            [itemKeys.objectDrops] = {193597,193603,202336},
-        },
-        [211207] = {
-            [itemKeys.name] = 'Mysterious Artifact',
-            [itemKeys.relatedQuests] = {78753},
-            [itemKeys.class] = itemClasses.QUEST,
-            [itemKeys.npcDrops] = {23954,26723,26861,26632,29306,27978,28923,29120,29311,31134,35451,36502,36658},
-            [itemKeys.objectDrops] = {193597,193603,202336},
-        },
     }
-end
-
-function _QuestieWotlkItemFixes:InsertMissingItemIds()
-    -- Boost quest items
-    QuestieDB.itemData[199335] = {} -- Teleport Scroll: Menethil Harbor
-    QuestieDB.itemData[199336] = {} -- Teleport Scroll: Stormwind Harbor
-    QuestieDB.itemData[199777] = {} -- Teleport Scroll: Orgrimmar Zeppelin Tower
-    QuestieDB.itemData[199778] = {} -- Teleport Scroll: Undercity Zeppelin Tower
-    QuestieDB.itemData[200068] = {} -- Teleport Scroll: Shattrath City
-    QuestieDB.itemData[211206] = {} -- Defiler's Medallion
-    QuestieDB.itemData[211207] = {} -- Mysterious Artifact
 end
 
 function QuestieWotlkItemFixes:LoadReverseStartQuestFixes()
