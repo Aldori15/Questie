@@ -3223,6 +3223,45 @@ QuestieCompat.LibUIDropDownMenu = {
     end,
 }
 
+local function RepositionQuestieDropDownSubmenu(level, _, _, _, _, _, _, button)
+    if not level or level <= 1 or not button then return end
+
+    local openMenuName = UIDROPDOWNMENU_OPEN_MENU and UIDROPDOWNMENU_OPEN_MENU.GetName and UIDROPDOWNMENU_OPEN_MENU:GetName()
+    if not openMenuName or string.sub(openMenuName, 1, 7) ~= "Questie" then return end
+
+    local listFrame = _G["DropDownList" .. level]
+    if not listFrame or not listFrame:IsShown() then return end
+
+    local point = "TOPLEFT"
+    local relativePoint = "TOPRIGHT"
+    local yOffset = 14
+    local _, y = listFrame:GetCenter()
+    if y and ((y - listFrame:GetHeight() / 2) < 0) then
+        point = "BOTTOMLEFT"
+        relativePoint = "BOTTOMRIGHT"
+        yOffset = -14
+    end
+
+    listFrame:ClearAllPoints()
+    listFrame:SetPoint(point, button, relativePoint, 0, yOffset)
+
+    if listFrame:GetRight() and (listFrame:GetRight() > GetScreenWidth()) then
+        local overflow = listFrame:GetRight() - GetScreenWidth()
+        local level1Frame = _G.DropDownList1
+        if level1Frame then
+            local p, relTo, relPoint, xOfs, yOfs = level1Frame:GetPoint(1)
+            if p then
+                level1Frame:ClearAllPoints()
+                level1Frame:SetPoint(p, relTo, relPoint, (xOfs or 0) - overflow, yOfs or 0)
+            end
+        end
+    end
+end
+
+if type(ToggleDropDownMenu) == "function" then
+    hooksecurefunc("ToggleDropDownMenu", RepositionQuestieDropDownSubmenu)
+end
+
 QuestieCompat.KButtons = {
     Add = function(self, templateName, templateType)
         local button = CreateFrame("Button", "Questie_WorldMapButton", WorldMapFrame)
