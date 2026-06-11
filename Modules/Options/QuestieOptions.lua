@@ -109,7 +109,7 @@ function QuestieOptions:OpenConfigWindow()
     if not QuestieConfigFrame:IsShown() then
         _TrySkinJourneyButton()
         PlaySound(882)
-        -- AceConfigDialog:Open("Questie", QuestieConfigFrame)
+        AceConfigDialog:Open("Questie", QuestieConfigFrame)
         QuestieConfigFrame:Show()
     else
         QuestieConfigFrame:Hide()
