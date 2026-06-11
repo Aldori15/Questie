@@ -1962,42 +1962,42 @@ function QuestieCompat.GetCurrentPlayerMinimapWorldPosition()
     return QuestieCompat.GetCurrentPlayerStableWorldPosition()
 end
 
-    local function ResolveActualPlayerUiMapID()
-        local actualUiMapID = ResolveUiMapIDByZoneTexts()
-        if actualUiMapID and not IsZoneLikeUiMap(actualUiMapID) then
-            actualUiMapID = nil
-        end
-
-        local subZoneUiMapID = ResolveUiMapIDByMapName(GetSubZoneText and GetSubZoneText() or nil)
-        if subZoneUiMapID and IsZoneLikeUiMap(subZoneUiMapID) and IsWorldMapOnlyUiMap(subZoneUiMapID) then
-            if not actualUiMapID or HasDirectUiMapRelationship(subZoneUiMapID, actualUiMapID) then
-                actualUiMapID = subZoneUiMapID
-            end
-        end
-
-        if WorldMapFrame and WorldMapFrame:IsVisible() then
-            local rawMapID, rawMapLevel = GetRawMapContext()
-            local displayedMapName = GetDisplayedWorldMapName()
-            local displayedUiMapID = ResolveDisplayedWorldMapUiMapID(rawMapID, rawMapLevel, displayedMapName)
-            local normalizedActualUiMapID = NormalizeActualZoneUiMapID(actualUiMapID)
-            local displayedParentUiMapID = displayedUiMapID and QuestieCompat.UiMapData and QuestieCompat.UiMapData[displayedUiMapID] and QuestieCompat.UiMapData[displayedUiMapID].parentMapID
-
-            if displayedUiMapID and IsWorldMapOnlyUiMap(displayedUiMapID) then
-                if displayedUiMapID == actualUiMapID
-                    or (displayedParentUiMapID and displayedParentUiMapID == actualUiMapID)
-                    or (displayedParentUiMapID and displayedParentUiMapID == normalizedActualUiMapID)
-                    or (actualUiMapID and HasDirectUiMapRelationship(displayedUiMapID, actualUiMapID)) then
-                    actualUiMapID = displayedUiMapID
-                end
-            end
-        end
-
-        if not actualUiMapID then
-            actualUiMapID = lastKnownZoneLikeUiMapID
-        end
-
-        return actualUiMapID, NormalizeActualZoneUiMapID(actualUiMapID)
+local function ResolveActualPlayerUiMapID()
+    local actualUiMapID = ResolveUiMapIDByZoneTexts()
+    if actualUiMapID and not IsZoneLikeUiMap(actualUiMapID) then
+        actualUiMapID = nil
     end
+
+    local subZoneUiMapID = ResolveUiMapIDByMapName(GetSubZoneText and GetSubZoneText() or nil)
+    if subZoneUiMapID and IsZoneLikeUiMap(subZoneUiMapID) and IsWorldMapOnlyUiMap(subZoneUiMapID) then
+        if not actualUiMapID or HasDirectUiMapRelationship(subZoneUiMapID, actualUiMapID) then
+            actualUiMapID = subZoneUiMapID
+        end
+    end
+
+    if WorldMapFrame and WorldMapFrame:IsVisible() then
+        local rawMapID, rawMapLevel = GetRawMapContext()
+        local displayedMapName = GetDisplayedWorldMapName()
+        local displayedUiMapID = ResolveDisplayedWorldMapUiMapID(rawMapID, rawMapLevel, displayedMapName)
+        local normalizedActualUiMapID = NormalizeActualZoneUiMapID(actualUiMapID)
+        local displayedParentUiMapID = displayedUiMapID and QuestieCompat.UiMapData and QuestieCompat.UiMapData[displayedUiMapID] and QuestieCompat.UiMapData[displayedUiMapID].parentMapID
+
+        if displayedUiMapID and IsWorldMapOnlyUiMap(displayedUiMapID) then
+            if displayedUiMapID == actualUiMapID
+                or (displayedParentUiMapID and displayedParentUiMapID == actualUiMapID)
+                or (displayedParentUiMapID and displayedParentUiMapID == normalizedActualUiMapID)
+                or (actualUiMapID and HasDirectUiMapRelationship(displayedUiMapID, actualUiMapID)) then
+                actualUiMapID = displayedUiMapID
+            end
+        end
+    end
+
+    if not actualUiMapID then
+        actualUiMapID = lastKnownZoneLikeUiMapID
+    end
+
+    return actualUiMapID, NormalizeActualZoneUiMapID(actualUiMapID)
+end
 
 local function GetCurrentActualPlayerZonePosition()
         local actualUiMapID, normalizedActualUiMapID = ResolveActualPlayerUiMapID()
