@@ -514,7 +514,7 @@ local function ShouldShowMinimapPinForUiMap(data, currentUiMapID)
         return true
     end
 
-    if pinUiMapID == IsCurrentWaterBoundaryForParentUiMap(currentUiMapID) then
+    if pinUiMapID == currentUiMapID and IsCurrentWaterBoundaryForParentUiMap(currentUiMapID) then
         return false
     end
 
