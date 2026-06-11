@@ -321,7 +321,11 @@ function _Qframe:UpdateTexture(texture)
     local colors = { 1, 1, 1 }
 
     local overlayTexture
-    if self.data.StarterType == "itemFromMonster" or self.data.StarterType == "itemFromObject" then
+    if self.data.isRaidQuest then
+        overlayTexture = "raid_overlay.blp"
+    elseif self.data.isDungeonQuest then
+        overlayTexture = "dungeon_overlay.blp"
+    elseif self.data.StarterType == "itemFromMonster" or self.data.StarterType == "itemFromObject" then
         overlayTexture = "loot_overlay.blp"
     elseif self.data.StarterType == "Object" or self.data.FinisherType == "Object" then
         overlayTexture = "object_overlay.blp"

@@ -1289,6 +1289,9 @@ _AddStarter = function(starter, quest, tooltipKey, limit)
         starterType = "itemFromObject"
     end
 
+    local isDungeonQuest = QuestieDB.IsDungeonQuest(quest.Id)
+    local isRaidQuest = QuestieDB.IsRaidQuest(quest.Id)
+
     QuestieTooltips:RegisterQuestStartTooltip(quest.Id, starter.name, starter.id, tooltipKey, (starterType or "NPC"))
 
     local starterIcons = {}
@@ -1313,6 +1316,8 @@ _AddStarter = function(starter, quest, tooltipKey, limit)
                         Name = starter.name,
                         IsObjectiveNote = false,
                         StarterType = starterType,
+                        isDungeonQuest = isDungeonQuest,
+                        isRaidQuest = isRaidQuest,
                         IsItemStartQuestSource = starterType == "itemFromMonster" or starterType == "itemFromObject",
                     }
 
@@ -1362,6 +1367,8 @@ _AddStarter = function(starter, quest, tooltipKey, limit)
                             Name = starter.name,
                             IsObjectiveNote = false,
                             StarterType = starterType,
+                            isDungeonQuest = isDungeonQuest,
+                            isRaidQuest = isRaidQuest,
                             IsItemStartQuestSource = starterType == "itemFromMonster" or starterType == "itemFromObject",
                         }
                         starterIcons[zone] = QuestieMap:DrawWorldIcon(data, zone, waypoints[1][1][1], waypoints[1][1][2])
