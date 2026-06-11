@@ -319,7 +319,7 @@ function QuestieObjectFixes:Load()
             [objectKeys.zoneID] = zoneIDs.KALIMDOR,
         },
         [180652] = {
-            [objectKeys.spawns] = {[zoneIDs.AZEROTH]={{29.99,89.15}}},
+            [objectKeys.spawns] = {[zoneIDs.AZEROTH]={{27.69,95.05}}},
             [objectKeys.zoneID] = zoneIDs.AZEROTH,
         },
         [180717] = {

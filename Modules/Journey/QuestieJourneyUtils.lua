@@ -81,5 +81,6 @@ function QuestieJourneyUtils:GetZoneName(id)
     local areaName = C_Map and C_Map.GetAreaInfo and C_Map.GetAreaInfo(zoneId)
     local uiMapID = ZoneDB.GetUiMapIdByAreaId and ZoneDB:GetUiMapIdByAreaId(zoneId) or zoneId
     local mapInfo = uiMapID and C_Map and C_Map.GetMapInfo and C_Map.GetMapInfo(uiMapID)
-    return areaName or (mapInfo and mapInfo.name) or l10n("Unknown Zone")
+    local compatMapInfo = uiMapID and QuestieCompat.UiMapData and QuestieCompat.UiMapData[uiMapID]
+    return areaName or (mapInfo and mapInfo.name) or (compatMapInfo and compatMapInfo.name) or l10n("Unknown Zone")
 end

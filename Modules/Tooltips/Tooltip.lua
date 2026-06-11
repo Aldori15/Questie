@@ -132,6 +132,10 @@ local function IsObjectSpawnInCurrentZone(spawns, playerZone)
 
     local relatedPlayerAreaIds = BuildRelatedPlayerAreaIds(playerZone)
     for zoneId in pairs(spawns) do
+        if ZoneDB.private.specialZoneIdToUiMapId[zoneId] == 947 then
+            return true
+        end
+
         local currentZoneId = zoneId
         while currentZoneId do
             if relatedPlayerAreaIds[currentZoneId] then

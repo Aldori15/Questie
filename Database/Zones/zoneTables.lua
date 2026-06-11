@@ -597,6 +597,7 @@ ZoneDB.private.specialZoneIdToUiMapId = {
     [10070] = 187, -- Icecrown Citadel - Rampart of Skulls
     [10071] = 188, -- Icecrown Citadel - Deathbringer's Rise
     [10072] = 192, -- Icecrown Citadel - The Frozen Throne
+    [10089] = 947, -- Azeroth world map
     [10102] = 350, -- Karazhan - Servant's Quarters
     [10103] = 351, -- Karazhan - Upper Livery Stables
     [10104] = 352, -- Karazhan - The Banquet Hall

@@ -489,11 +489,33 @@ local function IsEquivalentZoneSiblingUiMap(leftUiMapID, rightUiMapID)
         and leftMapData.instance == rightMapData.instance
 end
 
+local waterBoundarySubzonesByParentUiMapID = {
+    ["South Seas"] = {
+        [1446] = true, -- Tanaris
+        [1434] = true, -- Stranglethorn Vale
+    },
+}
+
+local function IsCurrentWaterBoundaryForParentUiMap(uiMapID)
+    if not uiMapID then return false end
+
+    local subZoneName = GetSubZoneText and GetSubZoneText() or nil
+    local minimapZoneName = GetMinimapZoneText and GetMinimapZoneText() or nil
+    local subZoneParents = subZoneName and waterBoundarySubzonesByParentUiMapID[subZoneName]
+    local minimapZoneParents = minimapZoneName and waterBoundarySubzonesByParentUiMapID[minimapZoneName]
+
+    return (subZoneParents and subZoneParents[uiMapID]) or (minimapZoneParents and minimapZoneParents[uiMapID]) or false
+end
+
 local function ShouldShowMinimapPinForUiMap(data, currentUiMapID)
     local pinUiMapID = data and data.uiMapID
     local showInParentZone = data and data.showInParentZone
     if not pinUiMapID or not currentUiMapID then
         return true
+    end
+
+    if pinUiMapID == IsCurrentWaterBoundaryForParentUiMap(currentUiMapID) then
+        return false
     end
 
     if pinUiMapID == currentUiMapID then
@@ -750,8 +772,13 @@ local function HandleWorldMapPin(icon, data, uiMapID)
         -- should this pin show on the world map?
         if uiMapID ~= data.uiMapID and data.worldMapShowFlag ~= HBD_PINS_WORLDMAP_SHOW_WORLD then return end
 
-        -- translate to the world map
-        x, y = HBD:GetAzerothWorldMapCoordinatesFromWorld(data.x, data.y, data.instanceID)
+        -- Pins already using Azeroth world-map coordinates should be drawn directly.
+        if icon.UiMapID == WORLD_MAP_ID then
+            x, y = icon.x / 100, icon.y / 100
+        else
+            -- translate to the world map
+            x, y = HBD:GetAzerothWorldMapCoordinatesFromWorld(data.x, data.y, data.instanceID)
+        end
     else
         -- check that it matches the instance
         if not HBD.mapData[uiMapID] or HBD.mapData[uiMapID].instance ~= data.instanceID then return end

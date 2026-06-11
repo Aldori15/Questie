@@ -765,6 +765,7 @@ local genericWaterSubzones = {
     ["The Forbidding Sea"] = true,
     ["The Veiled Sea"] = true,
     ["The Frozen Sea"] = true,
+    ["South Seas"] = true,
 }
 
 local function IsAzerothOutlandChooserVisible(rawMapID)
@@ -807,7 +808,7 @@ local function ResolveUiMapIDByZoneTexts()
                 local uiData = QuestieCompat.UiMapData and QuestieCompat.UiMapData[zoneUiMapID]
                 local mapType = uiData and uiData.mapType
                 local isZoneLikeMap = mapType and mapType >= 3
-                local isGenericWaterSubzone = (candidate.source == "sub") and genericWaterSubzones[zoneName]
+                local isGenericWaterSubzone = genericWaterSubzones[zoneName] and (candidate.source == "sub" or candidate.source == "minimap")
                 if isZoneLikeMap and (not isGenericWaterSubzone) then
                     return zoneUiMapID, zoneName
                 end
@@ -1352,6 +1353,16 @@ local function GetTomTomCZForUiMapID(uiMapID)
     local uiData = uiMapID and QuestieCompat.UiMapData[uiMapID]
     if not uiData then
         return nil
+    end
+
+    if uiMapID == 947 then
+        return 0
+    elseif uiMapID == 1414 then
+        return 0.1
+    elseif uiMapID == 1415 then
+        return 0.2
+    elseif uiMapID == 1945 then
+        return 0.3
     end
 
     return mapIdToCZ[uiData.mapID]
