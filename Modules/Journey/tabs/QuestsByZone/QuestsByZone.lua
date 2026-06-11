@@ -232,9 +232,10 @@ function _QuestieJourney.questsByZone:CategorizeQuests(quests)
         local questId = levelAndQuest[2]
         -- Only show quests which are not hidden
         if hiddenQuests and (((not hiddenQuests[questId]) or hiddenQuests[questId] == HIDE_ON_MAP) or QuestieEvent:IsEventQuest(questId)) and QuestieDB.QuestPointers[questId] then
+            local questLogPrefix = QuestiePlayer.currentQuestlog[questId] and "* " or ""
             local temp = {
                 value = questId,
-                text = QuestieLib:GetColoredQuestName(questId, Questie.db.profile.enableTooltipsQuestLevel, false),
+                text = questLogPrefix .. QuestieLib:GetColoredQuestName(questId, Questie.db.profile.enableTooltipsQuestLevel, false),
             }
 
             local breadcrumbForQuestId = QuestieDB.QueryQuest(questId,{"breadcrumbForQuestId"})[1] or {}
