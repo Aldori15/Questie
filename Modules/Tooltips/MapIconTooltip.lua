@@ -578,6 +578,8 @@ local function _GetQuestTag(quest)
         local questTagId, questTag = QuestieDB.GetQuestTagInfo(quest.Id)
         local questTagIds = QuestieDB.questTagIds
         local isRaidQuest = questTagId == questTagIds.RAID or questTagId == questTagIds.RAID_10 or questTagId == questTagIds.RAID_25
+        local requiredClasses = QuestieDB.QueryQuestSingle(quest.Id, "requiredClasses")
+        local isClassRestrictedQuest = requiredClasses and requiredClasses ~= QuestieDB.classKeys.NONE and requiredClasses ~= QuestieDB.classKeys.ALL_CLASSES
 
         if (QuestieEvent and QuestieEvent.activeQuests[quest.Id]) then
             return "(" .. l10n("Event") .. ")";
@@ -606,6 +608,8 @@ local function _GetQuestTag(quest)
         elseif (questTagId == questTagIds.ELITE or questTagId == questTagIds.CLASS or isRaidQuest or questTagId == questTagIds.DUNGEON or questTagId == questTagIds.WORLD_EVENT or questTagId == questTagIds.LEGENDARY or questTagId == questTagIds.ESCORT or questTagId == questTagIds.HEROIC) then
             -- Group(Elite), Class, Raid, Dungeon, World Event, Legendary, Escort, or Heroic
             return "(" .. questTag .. ")";
+        elseif isClassRestrictedQuest then
+            return "(" .. l10n("Class") .. ")";
         else
             return "(" .. l10n("Available") .. ")";
         end
