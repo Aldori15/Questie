@@ -97,6 +97,26 @@ QuestieMenu.private.townsfolk_texturemap = _townsfolk_texturemap
 local _spawned = {} -- used to check if we have already spawned an icon for this npc
 local _availableRefreshTicker
 
+---@param id NpcId
+---@param key string|number
+---@return string
+local function getNpcTitle(id, key)
+    local npcName = QuestieDB.QueryNPCSingle(id, "name") or ("Missing NPC name for " .. tostring(id))
+    local npcTitle = Questie:Colorize(npcName, "white")
+
+    local subName = QuestieDB.QueryNPCSingle(id, "subName")
+    if (not subName) then
+        local trainerName = QuestieProfessions.GetTrainerName(key)
+        if trainerName then
+            subName = l10n(trainerName)
+        else
+            subName = l10n(tostring(key))
+        end
+    end
+
+    return npcTitle .. " (" .. subName .. ")"
+end
+
 local function _FlushDrawQueue()
     -- Drain part of the queue immediately so freshly enabled townsfolk icons
     -- appear sooner instead of waiting only for the periodic queue ticker.
@@ -197,9 +217,7 @@ local function toggle(key, forceRemove) -- /run QuestieLoader:ImportModule("Ques
                     if (not _spawned[id]) then
                         local friendly = QuestieDB.QueryNPCSingle(id, "friendlyToFaction")
                         if ((not friendly) or friendly == "AH" or (faction == "Alliance" and friendly == "A") or (faction == "Horde" and friendly == "H")) and (not QuestieCorrections.questNPCBlacklist[id]) then
-                            local npcName = QuestieDB.QueryNPCSingle(id, "name") or ("Missing NPC name for " .. tostring(id))
-                            local subName = l10n(QuestieDB.QueryNPCSingle(id, "subName") or tostring(key))
-                            local npcTitle = Questie:Colorize(npcName, "white") .. " (" .. subName .. ")"
+                            local npcTitle = getNpcTitle(id, key)
                             QuestieMap:ShowNPC(id, icon, 1.2, npcTitle, {}, true, key, true)
                             _spawned[id] = true
                         end

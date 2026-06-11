@@ -324,6 +324,29 @@ function QuestieProfessions:GetProfessionName(professionKey)
     return professionNames[professionKey]
 end
 
+local trainerNames = {
+    [QuestieProfessions.professionKeys.FIRST_AID] = "First Aid Trainer",
+    [QuestieProfessions.professionKeys.BLACKSMITHING] = "Blacksmithing Trainer",
+    [QuestieProfessions.professionKeys.LEATHERWORKING] = "Leatherworking Trainer",
+    [QuestieProfessions.professionKeys.ALCHEMY] = "Alchemy Trainer",
+    [QuestieProfessions.professionKeys.HERBALISM] = "Herbalism Trainer",
+    [QuestieProfessions.professionKeys.COOKING] = "Cooking Trainer",
+    [QuestieProfessions.professionKeys.MINING] = "Mining Trainer",
+    [QuestieProfessions.professionKeys.TAILORING] = "Tailoring Trainer",
+    [QuestieProfessions.professionKeys.ENGINEERING] = "Engineering Trainer",
+    [QuestieProfessions.professionKeys.ENCHANTING] = "Enchanting Trainer",
+    [QuestieProfessions.professionKeys.FISHING] = "Fishing Trainer",
+    [QuestieProfessions.professionKeys.SKINNING] = "Skinning Trainer",
+    [QuestieProfessions.professionKeys.JEWELCRAFTING] = "Jewelcrafting Trainer",
+    [QuestieProfessions.professionKeys.INSCRIPTION] = "Inscription Trainer",
+    [QuestieProfessions.professionKeys.RIDING] = "Riding Trainer",
+}
+
+---@return string?
+function QuestieProfessions.GetTrainerName(professionKey)
+    return trainerNames[professionKey]
+end
+
 ---@return string?
 function QuestieProfessions:GetSpecializationName(specializationKey)
     return specializationNames[specializationKey]
@@ -479,13 +502,5 @@ QuestieProfessions.rankKeys = {
       [4] = 45360, -- 225-300
       [5] = 45361, -- 300-375
       [6] = 45363, -- 375-450
-    },
-    [794] = { -- Archaeology
-      [1] = 78670, -- 1-75
-      [2] = 88961, -- 75-150
-      [3] = 89718, -- 150-225
-      [4] = 89719, -- 225-300
-      [5] = 89720, -- 300-375
-      [6] = 89721, -- 375-450
     },
 }
