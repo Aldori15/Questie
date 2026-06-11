@@ -2816,6 +2816,7 @@ end
 
 local questTagToName = {
 	[1] = "Group",
+	[21] = "Class",
 	[41] = "PvP",
 	[62] = "Raid",
 	[81] = "Dungeon",
@@ -2823,6 +2824,8 @@ local questTagToName = {
 	[83] = "Legendary",
 	[84] = "Escort",
 	[85] = "Heroic",
+	[88] = "Raid (10)",
+	[89] = "Raid (25)",
 }
 
 -- Retrieves tag information about the quest.

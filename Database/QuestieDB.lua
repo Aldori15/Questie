@@ -2191,29 +2191,29 @@ end
 ---@param questId number
 ---@return boolean
 function QuestieDB.IsDungeonQuest(questId)
-    local questType, _ = QuestieDB.GetQuestTagInfo(questId)
-    return questType == 81
+    local questTagId, _ = QuestieDB.GetQuestTagInfo(questId)
+    return questTagId == QuestieDB.questTagIds.DUNGEON
 end
 
 ---@param questId number
 ---@return boolean
 function QuestieDB.IsRaidQuest(questId)
-    local questType, _ = QuestieDB.GetQuestTagInfo(questId)
-    return questType == 62
+    local questTagId, _ = QuestieDB.GetQuestTagInfo(questId)
+    return questTagId == QuestieDB.questTagIds.RAID or questTagId == QuestieDB.questTagIds.RAID_10 or questTagId == QuestieDB.questTagIds.RAID_25
 end
 
 ---@param questId number
 ---@return boolean
 function QuestieDB.IsPvPQuest(questId)
-    local questType, _ = QuestieDB.GetQuestTagInfo(questId)
-    return questType == 41
+    local questTagId, _ = QuestieDB.GetQuestTagInfo(questId)
+    return questTagId == QuestieDB.questTagIds.PVP
 end
 
 ---@param questId number
 ---@return boolean
 function QuestieDB.IsGroupQuest(questId)
-    local questType, _ = QuestieDB.GetQuestTagInfo(questId)
-    return questType == 1
+    local questTagId, _ = QuestieDB.GetQuestTagInfo(questId)
+    return questTagId == QuestieDB.questTagIds.ELITE
 end
 
 --[[ Commented out because not used anywhere
