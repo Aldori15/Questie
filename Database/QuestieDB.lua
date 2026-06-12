@@ -3432,7 +3432,7 @@ function QuestieDB.GetQuest(questId) -- /dump QuestieDB.GetQuest(867)
             if itemId then
                 -- Make sure requiredSourceItems aren't already an objective
                 local itemObjPresent = false
-                if objectives[3] then
+                if objectives and objectives[3] then
                     for _, itemObjective in pairs(objectives[3]) do
                         if itemObjective then
                             if itemId == itemObjective[1] then
