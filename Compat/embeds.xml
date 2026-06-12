@@ -38,6 +38,7 @@
     <Script file="Map.lua"/>
     <Script file="HBD.lua"/>
     <Script file="UI.lua"/>
+    <Script file="Tracker.lua"/>
     <Script file="AzerothCoreQuestCorrections.lua"/>
     <Script file="AzerothCoreItemCorrections.lua"/>
     <Script file="AzerothCoreNPCCorrections.lua"/>

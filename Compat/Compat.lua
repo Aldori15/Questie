@@ -14,8 +14,6 @@ local QuestieQuest = QuestieLoader:ImportModule("QuestieQuest")
 local QuestEventHandler = QuestieLoader:ImportModule("QuestEventHandler")
 ---@type ZoneDB
 local ZoneDB = QuestieLoader:ImportModule("ZoneDB")
----@type TrackerLinePool
-local TrackerLinePool = QuestieLoader:ImportModule("TrackerLinePool")
 ---@class QuestieCoords
 local QuestieCoords = QuestieLoader:ImportModule("QuestieCoords")
 ---@class Sounds
@@ -573,27 +571,6 @@ function QuestieCompat.QuestieEventHandler_RegisterLateEvents()
     Questie:RegisterEvent("LOOT_CLOSED", QuestieCompat.LOOT_CLOSED)
 end
 
-function QuestieCompat.QuestieTracker_Initialize(trackerQuestFrame)
-    -- TrackerHeaderFrame.Initialize
-    Questie_HeaderFrame.trackedQuests.label.GetUnboundedStringWidth = QuestieCompat.GetUnboundedStringWidth
-    -- TrackerQuestFrame.Initialize
-    trackerQuestFrame.ScrollFrame.scrollBarHideable = true
-    trackerQuestFrame.ScrollBar:ClearAllPoints()
-    trackerQuestFrame.ScrollBar:SetPoint("TOPRIGHT", trackerQuestFrame.ScrollUpButton, "BOTTOMRIGHT", -1, 4)
-    trackerQuestFrame.ScrollBar:SetPoint("BOTTOMRIGHT", trackerQuestFrame.ScrollDownButton, "TOPRIGHT", -1, -4)
-    trackerQuestFrame.ScrollDownButton:SetPoint("BOTTOMRIGHT", trackerQuestFrame.ScrollFrame, "BOTTOMRIGHT", -4, 12)
-    trackerQuestFrame.ScrollBg:SetTexture(0, 0, 0, 0.35)
-    trackerQuestFrame.ScrollBg:Show()
-    trackerQuestFrame.ScrollBar.Show = function() end
-    -- TrackerLinePool.Initialize
-    for i = 1, 250 do
-        local line = _G["linePool" .. i]
-        line.label.GetUnboundedStringWidth = QuestieCompat.GetUnboundedStringWidth
-        line.label.GetWrappedWidth = line.label.GetWidth
-        line.label.GetNumLines = QuestieCompat.GetNumLines
-    end
-end
-
 -- prevents the override of existing global variables with the same name(e.g., WorldMapButton)
 function QuestieCompat.PopulateGlobals(self)
     for name, module in pairs(QuestieLoader._modules) do
@@ -855,7 +832,7 @@ function QuestieCompat:ADDON_LOADED(event, addon)
 
     hooksecurefunc(QuestieEventHandler, "RegisterLateEvents", QuestieCompat.QuestieEventHandler_RegisterLateEvents)
     hooksecurefunc(QuestEventHandler, "RegisterEvents", QuestieCompat.QuestEventHandler_RegisterEvents)
-    hooksecurefunc(TrackerLinePool, "Initialize", QuestieCompat.QuestieTracker_Initialize)
+    QuestieCompat.RegisterTrackerCompatibilityHooks()
     hooksecurefunc(QuestieQuest, "ToggleNotes", QuestieCompat.HBDPins.UpdateWorldMap)
 	hooksecurefunc("ReloadUI", QuestieCompat.OnReloadUi)
 	hooksecurefunc("ConsoleExec", QuestieCompat.OnReloadUi)
