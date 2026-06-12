@@ -3225,15 +3225,16 @@ local function RepositionQuestieDropDownSubmenu(level, _, _, _, _, _, _, button)
     listFrame:SetPoint(point, button, relativePoint, 0, yOffset)
 
     if listFrame:GetRight() and (listFrame:GetRight() > GetScreenWidth()) then
-        local overflow = listFrame:GetRight() - GetScreenWidth()
-        local level1Frame = _G.DropDownList1
-        if level1Frame then
-            local p, relTo, relPoint, xOfs, yOfs = level1Frame:GetPoint(1)
-            if p then
-                level1Frame:ClearAllPoints()
-                level1Frame:SetPoint(p, relTo, relPoint, (xOfs or 0) - overflow, yOfs or 0)
-            end
+        if point == "TOPLEFT" then
+            point = "TOPRIGHT"
+            relativePoint = "TOPLEFT"
+        else
+            point = "BOTTOMRIGHT"
+            relativePoint = "BOTTOMLEFT"
         end
+
+        listFrame:ClearAllPoints()
+        listFrame:SetPoint(point, button, relativePoint, 0, yOffset)
     end
 end
 
