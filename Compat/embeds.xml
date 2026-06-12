@@ -33,6 +33,7 @@
     <Script file="QuestTag.lua"/>
     <Script file="QuestReward.lua"/>
     <Script file="UiMapData.lua"/>
+    <Script file="Map.lua"/>
     <Script file="HBD.lua"/>
     <Script file="AzerothCoreQuestCorrections.lua"/>
     <Script file="AzerothCoreItemCorrections.lua"/>
