@@ -440,17 +440,11 @@ function _ZoneDB:RunTests()
     -- Fetch all UiMapIds (WOTLK/TBC, ERA)
     local maps = C_Map.GetMapChildrenInfo(946, nil, true) or C_Map.GetMapChildrenInfo(947, nil, true)
     Questie:Debug(Questie.DEBUG_CRITICAL, "[" .. Questie:Colorize("ZoneDBTests", "yellow") .. "] Testing ZoneDB")
-    local buggedMaps = {
-        [306] = true, -- ScholomanceOLD
-        [307] = true, -- ScholomanceOLD
-        [308] = true, -- ScholomanceOLD
-        [309] = true, -- ScholomanceOLD
-    }
     for _, map in pairs(maps) do
         --- We don't care about World, Continent or Cosmic
         if map.mapType ~= UI_MAP_TYPE_WORLD and map.mapType ~= UI_MAP_TYPE_CONTINENT and map.mapType ~= UI_MAP_TYPE_COSMIC then
             local success, result = pcall(ZoneDB.GetAreaIdByUiMapId, ZoneDB, map.mapID)
-            if not success and not buggedMaps[map.mapID] then
+            if not success then
                 Questie:Error("[ZoneDBTests] ZoneDB.GetAreaIdByUiMapId fails for " .. map.name .. " (" .. map.mapID .. "). Result: " .. result)
             end
 
