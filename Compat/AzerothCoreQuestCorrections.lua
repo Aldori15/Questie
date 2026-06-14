@@ -3387,6 +3387,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [30] = {
             [questKeys.objectivesText] = {"Find the Half Pendant of Aquatic Agility and the Half Pendant of Aquatic Endurance.  Speak with the residents of Moonglade to learn clues as to where these items may be located.","","Form the Pendant of the Sea Lion from the two pendant halves.  You need to be in proximity of the Shrine of Remulos to do this.","","Bring the joined pendant to Dendrite Starblaze in the village of Nighthaven, Moonglade."},
+            [questKeys.requiredSourceItems] = {15882,15883,15885},
         },
 
         [31] = {
@@ -3853,6 +3854,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [272] = {
             [questKeys.objectivesText] = {"Find the Half Pendant of Aquatic Agility and the Half Pendant of Aquatic Endurance.  Speak with the residents of Moonglade to learn clues as to where these items may be located.","","Form the Pendant of the Sea Lion from the two pendant halves.  You need to be in proximity of the Shrine of Remulos to do this.","","Bring the joined pendant to Dendrite Starblaze in the village of Nighthaven, Moonglade."},
+            [questKeys.requiredSourceItems] = {15882,15883,15885},
         },
 
         [274] = {
@@ -8277,10 +8279,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectives] = {nil,nil,{{11133}}},
         },
 
-        [3909] = {
-            [questKeys.requiredSourceItems] = {11242},
-        },
-
         [3910] = {
             [questKeys.questLevel] = 55,
             [questKeys.requiredLevel] = 50,
@@ -8302,6 +8300,10 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [3923] = {
             [questKeys.objectives] = {nil,nil,{{11146}}},
+        },
+
+        [3924] = {
+            [questKeys.requiredSourceItems] = {11147,11148,11149},
         },
 
         [3961] = {
@@ -10898,10 +10900,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [7066] = {
             [questKeys.objectives] = {nil,nil,{{17760}}},
-        },
-
-        [7067] = {
-            [questKeys.requiredSourceItems] = {17757},
         },
 
         [7069] = {
@@ -16973,7 +16971,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [10173] = {
             [questKeys.objectives] = {nil,nil,{{28292},{29207}}},
-            [questKeys.requiredSourceItems] = {29205,29206},
+            [questKeys.requiredSourceItems] = {29205,29206,29207},
         },
 
         [10180] = {
@@ -17819,10 +17817,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.specialFlags] = specialFlags.SPELL_CAST,
         },
 
-        [10566] = {
-            [questKeys.requiredSourceItems] = {30655},
-        },
-
         [10579] = {
             [questKeys.objectives] = {nil,nil,{{30646}}},
         },
@@ -18249,7 +18243,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [10792] = {
-            [questKeys.requiredSourceItems] = {31347},
             [questKeys.specialFlags] = specialFlags.SPELL_CAST,
         },
 
@@ -18348,6 +18341,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [10831] = {
+            [questKeys.requiredSourceItems] = {31524,31525,31530},
             [questKeys.requiredSkill] = {profKeys.TAILORING,325},
         },
 
@@ -19193,6 +19187,10 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.nextQuestInChain] = 0,
         },
 
+        [11144] = {
+            [questKeys.requiredSourceItems] = {33050,33051},
+        },
+
         [11150] = {
             [questKeys.objectives] = {{{23751},{23752},{23753}},nil,{{33072}}},
             [questKeys.specialFlags] = specialFlags.SPELL_CAST,
@@ -19302,6 +19300,10 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [11197] = {
             [questKeys.questFlags] = 1032,
+        },
+
+        [11201] = {
+            [questKeys.requiredSourceItems] = {33050,33051},
         },
 
         [11202] = {
@@ -19648,6 +19650,10 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.specialFlags] = specialFlags.EXPLORATION_OR_EVENT,
         },
 
+        [11346] = {
+            [questKeys.requiredSourceItems] = {33778,33779,33780,33781},
+        },
+
         [11347] = {
             [questKeys.questLevel] = 70,
             [questKeys.requiredLevel] = 1,
@@ -19659,6 +19665,10 @@ QuestieCompat.RegisterCorrection("questData", function()
         [11348] = {
             [questKeys.objectives] = {{{24345},{24334}}},
             [questKeys.requiredSourceItems] = {33796},
+        },
+
+        [11350] = {
+            [questKeys.requiredSourceItems] = {33778,33779,33780,33781},
         },
 
         [11352] = {
@@ -20777,7 +20787,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [12007] = {
             [questKeys.objectivesText] = {"Drakuru wants you to bring the Eye of the Prophets to him at Drakuru's Brazier in Zeb'Halak.$b$bYou will need to collect Zim'bo's Mojo to use Drakuru's Elixir there."},
-            [questKeys.requiredSourceItems] = {35836},
         },
 
         [12008] = {
@@ -20937,10 +20946,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.questFlags] = 128,
         },
 
-        [12068] = {
-            [questKeys.requiredSourceItems] = {36758},
-        },
-
         [12069] = {
             [questKeys.requiredSourceItems] = {36760},
         },
@@ -21086,6 +21091,10 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectives] = {nil,nil,{{36846}}},
         },
 
+        [12129] = {
+            [questKeys.requiredSourceItems] = {36848,36849,36850,36851},
+        },
+
         [12133] = {
             [questKeys.objectives] = {nil,nil,{{36876}}},
             [questKeys.questFlags] = 4608,
@@ -21139,7 +21148,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12152] = {
-            [questKeys.requiredSourceItems] = {36870,36873},
+            [questKeys.requiredSourceItems] = {36870,36873,37063},
         },
 
         [12153] = {
@@ -21175,6 +21184,10 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [12164] = {
             [questKeys.objectivesText] = {"Sasha at the White Pine Trading Post wants you to go to  Bloodmoon Isle and slay Selas, Varlam, Goremaw and the Shade of Arugal."},
+        },
+
+        [12165] = {
+            [questKeys.requiredSourceItems] = {36848,36849,36850,36851},
         },
 
         [12166] = {
@@ -21346,10 +21359,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [12237] = {
             [questKeys.requiredSourceItems] = {37287},
-        },
-
-        [12238] = {
-            [questKeys.requiredSourceItems] = {35797},
         },
 
         [12239] = {
@@ -22576,10 +22585,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredSourceItems] = {},
         },
 
-        [12712] = {
-            [questKeys.requiredSourceItems] = {39313,39315,39316},
-        },
-
         [12713] = {
             [questKeys.objectivesText] = {"Stefan in Ebon Watch wants you to defeat Drakuru.$b$bIf you lose your Ensorcelled Choker, return to Stefan at Ebon Watch to get another."},
             [questKeys.requiredSourceItems] = {38699,39664,41390,43059},
@@ -22629,7 +22634,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12732] = {
-            [questKeys.requiredSourceItems] = {39573,39574,39576},
+            [questKeys.requiredSourceItems] = {39573,39574,39575,39576},
             [questKeys.requiredMinRep] = false,
         },
 
@@ -22697,7 +22702,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12762] = {
-            [questKeys.requiredSourceItems] = {39747},
+            [questKeys.requiredSourceItems] = {39747,39748},
             [questKeys.requiredMinRep] = false,
         },
 
@@ -22787,7 +22792,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [12802] = {
             [questKeys.objectivesText] = {"Drakuru wants you to bring the Heart of the Ancients to him at Drak'atal Passage.$b$bYou will need to collect 5 Desperate Mojo to use the elixir there."},
-            [questKeys.requiredSourceItems] = {36739},
             [questKeys.specialFlags] = specialFlags.EXPLORATION_OR_EVENT,
         },
 
@@ -22889,6 +22893,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [12858] = {
             [questKeys.sourceItemId] = 0,
+            [questKeys.requiredSourceItems] = {41130,41132},
         },
 
         [12859] = {
@@ -23016,6 +23021,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [12926] = {
             [questKeys.sourceItemId] = 0,
+            [questKeys.requiredSourceItems] = {41130,41132},
         },
 
         [12927] = {
@@ -23850,16 +23856,12 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredSourceItems] = {44433,44434},
         },
 
-        [13346] = {
-            [questKeys.requiredSourceItems] = {44476,44477,44478,44479},
+        [13345] = {
+            [questKeys.requiredSourceItems] = {44459,44460,44461,44462},
         },
 
         [13347] = {
             [questKeys.preQuestSingle] = {},
-        },
-
-        [13350] = {
-            [questKeys.requiredSourceItems] = {44476,44477,44478,44479},
         },
 
         [13351] = {
@@ -23892,12 +23894,11 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredSourceItems] = {44433,44434},
         },
 
-        [13367] = {
-            [questKeys.requiredSourceItems] = {44476,44477,44478,44479},
+        [13366] = {
+            [questKeys.requiredSourceItems] = {44459,44460,44461,44462},
         },
 
         [13368] = {
-            [questKeys.requiredSourceItems] = {44476,44477,44478,44479},
             [questKeys.preQuestGroup] = {13306,13367},
             [questKeys.preQuestSingle] = {},
         },
@@ -25488,7 +25489,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [24461] = {
-            [questKeys.requiredSourceItems] = {49718,49723,49740},
+            [questKeys.requiredSourceItems] = {49718,49723,49739,49740},
         },
 
         [24476] = {
@@ -25558,7 +25559,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [24559] = {
-            [questKeys.requiredSourceItems] = {49718,49723,49740},
+            [questKeys.requiredSourceItems] = {49718,49723,49739,49740},
         },
 
         [24560] = {

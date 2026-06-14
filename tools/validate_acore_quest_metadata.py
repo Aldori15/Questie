@@ -96,6 +96,8 @@ CONDITION_KEY_COLUMNS = (
 )
 
 EMPTY_OBJECTIVES = ((), (), ())
+SPELL_EFFECT_CREATE_ITEM = {24, 157}
+ITEM_CLASS_QUEST = 12
 
 # Quests where AC omits PrevQuestID even though a real prerequisite chain
 # exists (the gate is enforced by server-side C++ scripts, not SQL).
@@ -797,6 +799,58 @@ def build_item_use_spell_map(item_template_rows):
     return item_use_spells
 
 
+def get_numbered_spell_field(row, field_name, index):
+    return row.get(f"{field_name}_{index}", row.get(f"{field_name}{index}"))
+
+
+def build_spell_created_item_map(spell_rows):
+    spell_created_items = defaultdict(set)
+
+    for spell_id, row in spell_rows.items():
+        for index in range(1, 4):
+            effect = normalize_int(get_numbered_spell_field(row, "Effect", index))
+            item_id = normalize_int(get_numbered_spell_field(row, "EffectItemType", index))
+            if effect in SPELL_EFFECT_CREATE_ITEM and item_id > 0:
+                spell_created_items[spell_id].add(item_id)
+
+    return spell_created_items
+
+
+def build_spell_reagent_item_map(spell_rows):
+    spell_reagent_items = defaultdict(set)
+
+    for spell_id, row in spell_rows.items():
+        for index in range(1, 9):
+            item_id = normalize_int(get_numbered_spell_field(row, "Reagent", index))
+            item_count = normalize_int(get_numbered_spell_field(row, "ReagentCount", index))
+            if item_id > 0 and item_count > 0:
+                spell_reagent_items[spell_id].add(item_id)
+
+    return spell_reagent_items
+
+
+def is_quest_item(item_template_rows, item_id):
+    row = item_template_rows.get(item_id)
+    return row is not None and normalize_int(row.get("class")) == ITEM_CLASS_QUEST
+
+
+def infer_created_required_source_items(source_items, item_use_spells, spell_created_items, spell_reagent_items, item_template_rows):
+    source_item_set = set(source_items)
+    inferred_items = set()
+
+    for item_id in source_item_set:
+        for spell_id in item_use_spells.get(item_id, set()):
+            reagent_items = spell_reagent_items.get(spell_id, set())
+            if not reagent_items or not reagent_items.issubset(source_item_set):
+                continue
+
+            for created_item_id in spell_created_items.get(spell_id, set()):
+                if created_item_id not in source_item_set and is_quest_item(item_template_rows, created_item_id):
+                    inferred_items.add(created_item_id)
+
+    return inferred_items
+
+
 def build_spell_target_creature_map(condition_rows):
     spell_target_creatures = defaultdict(set)
 
@@ -1454,7 +1508,7 @@ def parse_sql_value(token, context=None):
     return _eval_ast(node.body)
 
 
-def apply_sql_insert(statement, table_name, columns, rows, key_column="ID"):
+def apply_sql_insert(statement, table_name, columns, rows, key_column="ID", wanted_keys=None):
     insert_match = re.search(
         rf"(?:INSERT INTO|REPLACE INTO)\s+`?{re.escape(table_name)}`?(?:\s*\((?P<columns>.*?)\))?\s*VALUES\s*(?P<values>.*)$",
         statement,
@@ -1471,7 +1525,27 @@ def apply_sql_insert(statement, table_name, columns, rows, key_column="ID"):
         ]
 
     for row_text in split_sql_rows(insert_match.group("values")):
-        row_values = split_sql_values(row_text)
+        row_values = None
+        if wanted_keys is not None and key_column in statement_columns:
+            key_index = statement_columns.index(key_column)
+            if key_index == 0:
+                key_match = re.match(r"\s*(-?\d+)\s*,", row_text)
+                if not key_match:
+                    continue
+                row_key = int(key_match.group(1))
+            else:
+                row_values = split_sql_values(row_text)
+                if len(row_values) != len(statement_columns):
+                    continue
+                try:
+                    row_key = int(parse_sql_value(row_values[key_index]))
+                except Exception:
+                    continue
+            if row_key not in wanted_keys:
+                continue
+
+        if row_values is None:
+            row_values = split_sql_values(row_text)
         if len(row_values) != len(statement_columns):
             continue
 
@@ -1845,7 +1919,7 @@ def extract_statement_key_ids(statement, table_name, columns, key_column="ID"):
     return ids
 
 
-def load_acore_sql_table(source_root, table_name, base_file_override=None, key_column="ID", include_modules=False):
+def load_acore_sql_table(source_root, table_name, base_file_override=None, key_column="ID", include_modules=False, wanted_keys=None):
     if base_file_override:
         base_file = Path(base_file_override)
         updates_dir = None
@@ -1876,7 +1950,7 @@ def load_acore_sql_table(source_root, table_name, base_file_override=None, key_c
             if not re.search(rf"\b{re.escape(table_name)}\b", statement, re.IGNORECASE):
                 continue
             if statement.upper().startswith(("INSERT INTO", "REPLACE INTO")):
-                apply_insert(statement, table_name, columns, rows, key_column)
+                apply_insert(statement, table_name, columns, rows, key_column, wanted_keys)
             elif statement.upper().startswith("UPDATE"):
                 apply_update(statement, table_name, rows, key_column)
             elif statement.upper().startswith("DELETE FROM"):
@@ -2014,7 +2088,7 @@ def derive_quest_availability_conditions(source_root, condition_rows=None):
     return condition_prereqs, required_spells
 
 
-def derive_acore_metadata(source_root, quest_template_sql=None, quest_template_addon_sql=None):
+def derive_acore_metadata(source_root, quest_template_sql=None, quest_template_addon_sql=None, spell_sql=None, spell_table="spell"):
     source_quest_rows = load_acore_sql_table(source_root, "quest_template")
     source_addon_rows = load_acore_sql_table(source_root, "quest_template_addon")
     quest_rows = load_acore_sql_table(source_root, "quest_template", quest_template_sql) if quest_template_sql else dict(source_quest_rows)
@@ -2038,7 +2112,17 @@ def derive_acore_metadata(source_root, quest_template_sql=None, quest_template_a
     breadcrumbs_for = defaultdict(set)
     condition_rows = load_acore_conditions(source_root)
     condition_prereqs, required_spells = derive_quest_availability_conditions(source_root, condition_rows)
-    item_use_spells = build_item_use_spell_map(load_acore_sql_table(source_root, "item_template", key_column="entry"))
+    item_template_rows = load_acore_sql_table(source_root, "item_template", key_column="entry")
+    item_use_spells = build_item_use_spell_map(item_template_rows)
+    spell_created_items = {}
+    spell_reagent_items = {}
+    if spell_sql:
+        wanted_spell_ids = set()
+        for spell_ids in item_use_spells.values():
+            wanted_spell_ids.update(spell_ids)
+        spell_rows = load_acore_sql_table(source_root, spell_table, spell_sql, wanted_keys=wanted_spell_ids)
+        spell_created_items = build_spell_created_item_map(spell_rows)
+        spell_reagent_items = build_spell_reagent_item_map(spell_rows)
     spell_target_creatures = build_spell_target_creature_map(condition_rows)
 
     for quest_id in quest_ids:
@@ -2111,13 +2195,25 @@ def derive_acore_metadata(source_root, quest_template_sql=None, quest_template_a
             get_item_spell_target_creatures(row, item_use_spells, spell_target_creatures),
         )
         metadata["sourceItemId"] = normalize_int(row.get("StartItem"))
-        metadata["requiredSourceItems"] = normalize_list(
+        required_source_items = normalize_list(
             [
                 row.get("ItemDrop1"),
                 row.get("ItemDrop2"),
                 row.get("ItemDrop3"),
                 row.get("ItemDrop4"),
             ]
+        )
+        metadata["requiredSourceItems"] = normalize_list(
+            (
+                required_source_items,
+                infer_created_required_source_items(
+                    required_source_items,
+                    item_use_spells,
+                    spell_created_items,
+                    spell_reagent_items,
+                    item_template_rows,
+                ),
+            )
         )
         metadata["requiredSkill"] = normalize_pair(
             [
@@ -2164,6 +2260,7 @@ def compare_metadata(acore_metadata, questie_metadata, creature_kill_credits, sp
     preserved_empty_prequest_group_clears = []
     preserved_empty_required_race_clears = []
     preserved_group_as_single_prequest = []
+    preserved_required_source_item_supersets = []
     all_quest_ids = sorted(set(acore_metadata) | set(questie_metadata))
     summary = Counter()
     protected_required_race_quest_ids = protected_required_race_quest_ids or set()
@@ -2327,6 +2424,23 @@ def compare_metadata(acore_metadata, questie_metadata, creature_kill_credits, sp
                 )
                 continue
 
+            if (
+                field == "requiredSourceItems"
+                and acore[field] != questie[field]
+                and acore[field]
+                and questie[field]
+                and set(acore[field]).issubset(set(questie[field]))
+            ):
+                preserved_required_source_item_supersets.append(
+                    {
+                        "questId": quest_id,
+                        "acore": acore[field],
+                        "questie": questie[field],
+                        "reason": "preserveQuestieRequiredSourceItemSuperset",
+                    }
+                )
+                continue
+
             if acore[field] != questie[field]:
                 mismatch = {
                     "questId": quest_id,
@@ -2361,6 +2475,7 @@ def compare_metadata(acore_metadata, questie_metadata, creature_kill_credits, sp
         preserved_empty_prequest_group_clears,
         preserved_empty_required_race_clears,
         preserved_group_as_single_prequest,
+        preserved_required_source_item_supersets,
     )
 
 
@@ -2505,6 +2620,8 @@ def main():
     parser.add_argument("--quest-db", default="Database/Wotlk/wotlkQuestDB.lua", help="Path to the Questie WotLK quest DB")
     parser.add_argument("--quest-template-sql", help="Optional HeidiSQL export for quest_template")
     parser.add_argument("--quest-template-addon-sql", help="Optional HeidiSQL export for quest_template_addon")
+    parser.add_argument("--spell-sql", help="Optional Spell.dbc SQL export used to infer crafted/created quest source items")
+    parser.add_argument("--spell-table", default="spell", help="Table name inside --spell-sql")
     parser.add_argument(
         "--quest-fixes",
         nargs="*",
@@ -2521,6 +2638,7 @@ def main():
     quest_db_path = resolve_addon_path(addon_root, args.quest_db)
     quest_template_sql = Path(args.quest_template_sql) if args.quest_template_sql else None
     quest_template_addon_sql = Path(args.quest_template_addon_sql) if args.quest_template_addon_sql else None
+    spell_sql = Path(args.spell_sql) if args.spell_sql else None
 
     constants = load_constants(addon_root)
     questie_metadata = load_questie_base_metadata(quest_db_path, constants["quest_keys"], constants)
@@ -2547,7 +2665,13 @@ def main():
         for field in FIELD_ORDER:
             quest_entry.setdefault(field, default_field_value(field))
 
-    acore_metadata = derive_acore_metadata(source_root, quest_template_sql, quest_template_addon_sql)
+    acore_metadata = derive_acore_metadata(
+        source_root,
+        quest_template_sql,
+        quest_template_addon_sql,
+        spell_sql,
+        args.spell_table,
+    )
     creature_template_rows = load_acore_sql_table(source_root, "creature_template", key_column="entry")
     creature_kill_credits = build_creature_kill_credit_map(creature_template_rows)
     spawned_creature_ids = build_acore_spawned_creature_ids(source_root)
@@ -2560,6 +2684,7 @@ def main():
         preserved_empty_prequest_group_clears,
         preserved_empty_required_race_clears,
         preserved_group_as_single_prequest,
+        preserved_required_source_item_supersets,
     ) = compare_metadata(
         acore_metadata,
         questie_metadata,
@@ -2588,6 +2713,7 @@ def main():
     print(f"  preservedEmptyPreQuestGroupClears: {len(preserved_empty_prequest_group_clears)}")
     print(f"  preservedEmptyRequiredRaceClears: {len(preserved_empty_required_race_clears)}")
     print(f"  preservedGroupAsSinglePreQuests: {len(preserved_group_as_single_prequest)}")
+    print(f"  preservedRequiredSourceItemSupersets: {len(preserved_required_source_item_supersets)}")
     print(f"  objectiveDisplayRisks: {len(objective_display_risks)}")
 
     if mismatches:
@@ -2610,6 +2736,7 @@ def main():
                     "preservedEmptyPreQuestGroupClears": preserved_empty_prequest_group_clears,
                     "preservedEmptyRequiredRaceClears": preserved_empty_required_race_clears,
                     "preservedGroupAsSinglePreQuests": preserved_group_as_single_prequest,
+                    "preservedRequiredSourceItemSupersets": preserved_required_source_item_supersets,
                     "objectiveDisplayRisks": objective_display_risks,
                     "mismatches": mismatches,
                 },
