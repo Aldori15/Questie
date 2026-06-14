@@ -93,10 +93,10 @@ function QuestieWotlkQuestFixes:Load()
             [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
         },
         [756] = {
-            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
+            [questKeys.requiredRaces] = raceIDs.TAUREN,
         },
         [759] = {
-            [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
+            [questKeys.requiredRaces] = raceIDs.TAUREN,
         },
         [768] = {
             [questKeys.requiredSkill] = {393,1},
