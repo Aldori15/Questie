@@ -775,9 +775,10 @@ def build_acore_objectives(row, item_spell_target_creatures=None):
         elif entry < 0:
             object_objectives.append((abs(entry),))
 
+    start_item = normalize_int(row.get("StartItem"))
     for index in range(1, 7):
         entry = normalize_int(row.get(f"RequiredItemId{index}"))
-        if entry > 0:
+        if entry > 0 and entry != start_item:
             item_objectives.append((entry,))
 
     if item_spell_target_creatures and len(creature_objectives) == 1:
