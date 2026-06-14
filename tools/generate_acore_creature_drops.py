@@ -26,6 +26,8 @@ from generate_acore_item_corrections import (  # noqa: E402
 
 
 ITEM_NAME_RE = re.compile(r'^\[(\d+)\]\s*=\s*\{(?:"((?:[^"\\]|\\.)*)"|\'((?:[^\'\\]|\\.)*)\')', re.DOTALL)
+OBJECT_LOOT_PRIMARY_CHANCE = 100.0
+LOW_CHANCE_CREATURE_DROP_THRESHOLD = 1.0
 
 
 def normalize_loot_rows(rows):
@@ -143,7 +145,23 @@ def resolve_reference_groups(reference_rows, reference_index, seen=None):
     return resolved
 
 
-def build_creature_drop_table(creature_rows, reference_index):
+def build_object_primary_item_ids(gameobject_rows, reference_index):
+    object_primary_items = set()
+
+    grouped = defaultdict(list)
+    for row in gameobject_rows:
+        grouped[row["entry"]].append(row)
+
+    for rows in grouped.values():
+        for item_id, chance in resolve_reference_groups(rows, reference_index).items():
+            if chance >= OBJECT_LOOT_PRIMARY_CHANCE:
+                object_primary_items.add(item_id)
+
+    return object_primary_items
+
+
+def build_creature_drop_table(creature_rows, reference_index, object_primary_items=None):
+    object_primary_items = object_primary_items or set()
     per_item = defaultdict(dict)
     grouped = defaultdict(list)
 
@@ -167,6 +185,8 @@ def build_creature_drop_table(creature_rows, reference_index):
             direct[item_id] += chance
 
         for item_id, chance in direct.items():
+            if item_id in object_primary_items and chance <= LOW_CHANCE_CREATURE_DROP_THRESHOLD:
+                continue
             if chance > 0:
                 per_item[item_id][npc_id] = round(chance, 4)
 
@@ -239,13 +259,21 @@ def main():
         args.include_modules,
     )
     reference_index = build_reference_index(reference_rows)
-    per_item = build_creature_drop_table(creature_rows, reference_index)
+    gameobject_rows, gameobject_skip_stats = load_effective_loot_rows(
+        source_root,
+        "gameobject_loot_template",
+        ("Entry", "Item"),
+        args.include_modules,
+    )
+    object_primary_items = build_object_primary_item_ids(gameobject_rows, reference_index)
+    per_item = build_creature_drop_table(creature_rows, reference_index, object_primary_items)
     item_names = load_item_names(Path(args.item_db))
     write_output(per_item, item_names, Path(args.output))
     print(f"Wrote {len(per_item)} item rows to {args.output}")
     potentially_relevant_skips = {
         "creature_loot_template": creature_skip_stats["potentially_relevant"],
         "reference_loot_template": reference_skip_stats["potentially_relevant"],
+        "gameobject_loot_template": gameobject_skip_stats["potentially_relevant"],
     }
     potentially_relevant_skips = {table: count for table, count in potentially_relevant_skips.items() if count}
     if potentially_relevant_skips:

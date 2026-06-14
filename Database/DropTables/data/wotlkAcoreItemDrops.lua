@@ -5822,7 +5822,6 @@ QuestieWotlkAcoreItemDrops.data = [[return {
         [16333] = 11.0,
     },
     [23217] = { -- Ravager Egg
-        [16932] = 1.0,
         [16933] = 20.0,
         [19189] = 4.0,
     },
@@ -6919,9 +6918,6 @@ QuestieWotlkAcoreItemDrops.data = [[return {
     [32697] = { -- Apexis Guardian's Head
         [22275] = 100.0,
     },
-    [32723] = { -- Nethermine Cargo
-        [23169] = 1.0,
-    },
     [32732] = { -- Dragon Teeth
         [23061] = 100.0,
         [23261] = 100.0,
@@ -6945,9 +6941,6 @@ QuestieWotlkAcoreItemDrops.data = [[return {
     [33037] = { -- Defias Orders
         [23679] = 100.0,
     },
-    [33039] = { -- Tool Kit
-        [23589] = 1.0,
-    },
     [33050] = { -- Grimtotem Note
         [23714] = 100.0,
     },
@@ -6955,17 +6948,6 @@ QuestieWotlkAcoreItemDrops.data = [[return {
         [23592] = 20.0,
         [23593] = 20.0,
         [23714] = 20.0,
-    },
-    [33071] = { -- Blackhoof Armaments
-        [4341] = 1.0,
-        [4382] = 1.0,
-        [23592] = 1.0,
-        [23593] = 1.0,
-        [23714] = 1.0,
-    },
-    [33084] = { -- Darkclaw Guano
-        [23958] = 1.0,
-        [23959] = 1.0,
     },
     [33085] = { -- Bloodfen Feather
         [4356] = 37.0,
@@ -6991,37 +6973,16 @@ QuestieWotlkAcoreItemDrops.data = [[return {
         [24374] = 30.0,
         [24549] = 30.0,
     },
-    [33109] = { -- Steel Gate Artifact
-        [24398] = 1.0,
-        [24400] = 1.0,
-    },
     [33110] = { -- Razorspine's Sword
         [23841] = 100.0,
-    },
-    [33112] = { -- Witchbane
-        [23554] = 1.0,
-        [23555] = 1.0,
     },
     [33120] = { -- Shoveltusk Meat
         [23690] = 33.0,
         [23691] = 33.0,
         [24791] = 33.0,
     },
-    [33123] = { -- Westguard Cannonball
-        [23750] = 1.0,
-    },
     [33126] = { -- Thresher Oil
         [4388] = 30.0,
-    },
-    [33175] = { -- Wyrmtail
-        [4324] = 1.0,
-        [4345] = 1.0,
-    },
-    [33187] = { -- Whisper Gulch Gem
-        [23967] = 1.0,
-    },
-    [33188] = { -- Whisper Gulch Ore Fragment
-        [23967] = 1.0,
     },
     [33202] = { -- Marsh Frog Leg
         [23979] = 100.0,
@@ -7057,19 +7018,11 @@ QuestieWotlkAcoreItemDrops.data = [[return {
     [33337] = { -- Giant Toxin Gland
         [23929] = 41.0,
     },
-    [33348] = { -- Spotted Hippogryph Down
-        [23874] = 1.0,
-        [23919] = 1.0,
-        [24228] = 1.0,
-    },
     [33351] = { -- Undamaged Ram Horn
         [23740] = 26.0,
     },
     [33352] = { -- Tough Ram Meat
         [23740] = 13.0,
-    },
-    [33355] = { -- Wyrmskull Tablet
-        [24250] = 1.0,
     },
     [33420] = { -- Plagued Proto-Whelp Specimen
         [24160] = 100.0,
@@ -7158,17 +7111,8 @@ QuestieWotlkAcoreItemDrops.data = [[return {
     [34035] = { -- Rotgill's Trident
         [24546] = 100.0,
     },
-    [34040] = { -- Saga of the Twins
-        [23656] = 1.0,
-    },
-    [34042] = { -- Saga of the Valkyr
-        [23656] = 1.0,
-    },
     [34043] = { -- Ancient Vrykul Bone
         [24871] = 38.0,
-    },
-    [34070] = { -- Eagle Figurine
-        [24637] = 1.0,
     },
     [34083] = { -- Awakening Rod
         [24014] = 50.0,
@@ -7190,9 +7134,6 @@ QuestieWotlkAcoreItemDrops.data = [[return {
     },
     [34128] = { -- Jonah Sterling's Spyglass
         [24547] = 100.0,
-    },
-    [34133] = { -- Large Barrel
-        [23994] = 1.0,
     },
     [34136] = { -- Pristine Shoveltusk Hide
         [23690] = 40.0,
@@ -7263,35 +7204,17 @@ QuestieWotlkAcoreItemDrops.data = [[return {
     [34688] = { -- Beryl Prison Key
         [25585] = 50.0,
     },
-    [34709] = { -- Warsong Munitions
-        [24566] = 1.0,
-        [25294] = 1.0,
-        [25445] = 1.0,
-    },
     [34711] = { -- Core of Malice
         [25355] = 100.0,
     },
     [34772] = { -- Gnomish Grenade
         [25449] = 90.0,
     },
-    [34774] = { -- Scourged Earth
-        [25700] = 1.0,
-        [25701] = 1.0,
-        [26202] = 1.0,
-    },
     [34775] = { -- Scourged Mammoth Pelt
         [25452] = 44.0,
     },
     [34781] = { -- Kaganishu's Fetish
         [25427] = 100.0,
-    },
-    [34786] = { -- Super Strong Metal Plate
-        [25496] = 1.0,
-    },
-    [34787] = { -- Crafty's Stuff
-        [25428] = 1.0,
-        [25429] = 1.0,
-        [25432] = 1.0,
     },
     [34800] = { -- Tempest Mote
         [25211] = 30.0,
@@ -7311,9 +7234,6 @@ QuestieWotlkAcoreItemDrops.data = [[return {
         [25609] = 50.0,
         [25611] = 50.0,
     },
-    [34909] = { -- Salrand's Broken Key
-        [25585] = 1.0,
-    },
     [34956] = { -- Elemental Heart
         [25715] = 40.0,
     },
@@ -7331,15 +7251,6 @@ QuestieWotlkAcoreItemDrops.data = [[return {
     },
     [34962] = { -- Gurgleboggle's Key
         [25725] = 100.0,
-    },
-    [34972] = { -- Fizzcrank Spare Parts
-        [25752] = 1.0,
-        [25753] = 1.0,
-        [25758] = 1.0,
-        [25814] = 1.0,
-    },
-    [34974] = { -- Bloodspore Carpel
-        [25468] = 1.0,
     },
     [34976] = { -- Bloodspore Moth Pollen
         [25464] = 40.0,
@@ -7365,11 +7276,7 @@ QuestieWotlkAcoreItemDrops.data = [[return {
     [35122] = { -- Cultist Communique
         [25651] = 36.0,
     },
-    [35123] = { -- Microfilm
-        [25792] = 1.0,
-    },
     [35222] = { -- Shipment of Animal Parts
-        [25839] = 1.0,
         [25843] = 46.0,
     },
     [35231] = { -- Sunfury Attack Plans
@@ -7428,12 +7335,6 @@ QuestieWotlkAcoreItemDrops.data = [[return {
         [26792] = 100.0,
         [30524] = 100.0,
     },
-    [35492] = { -- Frostberry
-        [25707] = 1.0,
-        [25717] = 1.0,
-        [25722] = 1.0,
-        [25728] = 1.0,
-    },
     [35493] = { -- Nexus Mana Essence
         [25721] = 70.0,
     },
@@ -7451,9 +7352,6 @@ QuestieWotlkAcoreItemDrops.data = [[return {
     },
     [35669] = { -- Energy Core
         [25712] = 100.0,
-    },
-    [35685] = { -- Crystallized Mana Shard
-        [25718] = 1.0,
     },
     [35686] = { -- Stolen Moa'ki Goods
         [26197] = 46.0,
@@ -7474,14 +7372,6 @@ QuestieWotlkAcoreItemDrops.data = [[return {
         [26231] = 100.0,
         [26232] = 100.0,
     },
-    [35711] = { -- Kaskala Supplies
-        [25760] = 1.0,
-    },
-    [35726] = { -- Horde Armaments
-        [26402] = 1.0,
-        [26413] = 1.0,
-        [26616] = 1.0,
-    },
     [35747] = { -- Runic Keystone Fragment
         [26268] = 17.0,
         [26270] = 12.0,
@@ -7489,12 +7379,6 @@ QuestieWotlkAcoreItemDrops.data = [[return {
     },
     [35774] = { -- Trident of Naz'jan
         [26451] = 100.0,
-    },
-    [35782] = { -- Shimmering Snowcap
-        [26446] = 1.0,
-    },
-    [35795] = { -- Waterweed Frond
-        [27617] = 1.0,
     },
     [35798] = { -- Ice Serpent Eye
         [26446] = 35.0,
@@ -7506,18 +7390,11 @@ QuestieWotlkAcoreItemDrops.data = [[return {
     [35801] = { -- The Scales of Goramosh
         [26349] = 100.0,
     },
-    [35802] = { -- Tua'kea Crab Trap
-        [26511] = 1.0,
-    },
     [35831] = { -- The Flesh of "Two Huge Pincers"
         [26521] = 100.0,
     },
     [35837] = { -- Portable Seismograph
         [26522] = 58.0,
-    },
-    [36727] = { -- Composite Ore
-        [26492] = 1.0,
-        [26493] = 1.0,
     },
     [36728] = { -- Ice Shard Cluster
         [26316] = 38.0,
@@ -7525,9 +7402,6 @@ QuestieWotlkAcoreItemDrops.data = [[return {
     [36729] = { -- Thin Animal Hide
         [26467] = 100.0,
         [26483] = 31.0,
-    },
-    [36731] = { -- Seared Jormungar Meat
-        [26293] = 1.0,
     },
     [36736] = { -- Scourge Armament
         [26319] = 10.0,
@@ -7570,15 +7444,8 @@ QuestieWotlkAcoreItemDrops.data = [[return {
         [26616] = 15.0,
         [26643] = 15.0,
     },
-    [36803] = { -- Ruby Lilac
-        [27680] = 1.0,
-    },
     [36819] = { -- Fibrous Worg Meat
         [27408] = 36.0,
-    },
-    [36825] = { -- Drakkari Canopic Jar
-        [26811] = 1.0,
-        [26812] = 1.0,
     },
     [36826] = { -- Drakil'jin Mallet
         [26919] = 100.0,
@@ -7591,11 +7458,6 @@ QuestieWotlkAcoreItemDrops.data = [[return {
     },
     [36851] = { -- Golem Blueprint Section 3
         [26408] = 75.0,
-    },
-    [36852] = { -- War Golem Part
-        [26347] = 1.0,
-        [26408] = 1.0,
-        [26409] = 1.0,
     },
     [36853] = { -- Grom'thar's Head
         [27002] = 100.0,
@@ -7643,17 +7505,6 @@ QuestieWotlkAcoreItemDrops.data = [[return {
         [27226] = 49.0,
         [27229] = 47.0,
     },
-    [37124] = { -- Emerald Dragon Tear
-        [27254] = 1.0,
-    },
-    [37136] = { -- Scarlet Onslaught Armor
-        [27203] = 1.0,
-        [27206] = 1.0,
-    },
-    [37137] = { -- Scarlet Onslaught Weapon
-        [27207] = 1.0,
-        [27234] = 1.0,
-    },
     [37143] = { -- Two of Rogues
         [28559] = 1.0,
     },
@@ -7674,7 +7525,6 @@ QuestieWotlkAcoreItemDrops.data = [[return {
         [27259] = 46.0,
     },
     [37248] = { -- Siegesmith Bomb
-        [27286] = 1.0,
         [27410] = 38.0,
     },
     [37251] = { -- Crazed Furbolg Blood
@@ -7690,9 +7540,6 @@ QuestieWotlkAcoreItemDrops.data = [[return {
     [37350] = { -- Bishop Street's Prayer Book
         [27246] = 100.0,
     },
-    [37359] = { -- Strange Ore
-        [27401] = 1.0,
-    },
     [37411] = { -- Wintergarde Miner's Card
         [27401] = 55.0,
     },
@@ -7702,19 +7549,8 @@ QuestieWotlkAcoreItemDrops.data = [[return {
     [37565] = { -- The Head of the High General
         [27210] = 100.0,
     },
-    [37569] = { -- Murkweed
-        [27342] = 1.0,
-        [27343] = 1.0,
-    },
-    [37580] = { -- Forgotten Treasure
-        [27226] = 1.0,
-    },
     [37662] = { -- Gossamer Dust
         [27421] = 43.0,
-    },
-    [37727] = { -- Ruby Acorn
-        [26926] = 1.0,
-        [27539] = 1.0,
     },
     [37879] = { -- Wintergarde Munitions
         [27283] = 2.0,
@@ -7755,9 +7591,6 @@ QuestieWotlkAcoreItemDrops.data = [[return {
     [38325] = { -- Precious Elemental Fluids
         [28118] = 100.0,
     },
-    [38326] = { -- Muddlecap Fungus
-        [28145] = 1.0,
-    },
     [38329] = { -- Don Carlos' Hat
         [28132] = 100.0,
         [28171] = 100.0,
@@ -7792,10 +7625,6 @@ QuestieWotlkAcoreItemDrops.data = [[return {
     [38620] = { -- Unblemished Bat Wing
         [28233] = 41.0,
     },
-    [38638] = { -- Treasure of Chulo the Mad
-        [28388] = 1.0,
-        [28496] = 1.0,
-    },
     [38642] = { -- Golden Engagement Ring
         [28001] = 1.0,
         [28002] = 1.0,
@@ -7829,11 +7658,6 @@ QuestieWotlkAcoreItemDrops.data = [[return {
         [29036] = 1.0,
         [29123] = 1.0,
         [29124] = 1.0,
-    },
-    [38677] = { -- Har'koan Relic
-        [28402] = 1.0,
-        [28403] = 1.0,
-        [28404] = 1.0,
     },
     [38681] = { -- Essence of the Frozen Earth
         [28411] = 39.0,
@@ -7881,9 +7705,6 @@ QuestieWotlkAcoreItemDrops.data = [[return {
     [39266] = { -- Tainted Crystal
         [28078] = 30.0,
         [28079] = 30.0,
-    },
-    [39301] = { -- Zol'Maz Stronghold Cache
-        [28882] = 1.0,
     },
     [39305] = { -- Tiki Hex Remover
         [28882] = 14.0,
@@ -7951,9 +7772,6 @@ QuestieWotlkAcoreItemDrops.data = [[return {
     [40690] = { -- Runes of the Yrkvinn
         [29518] = 100.0,
     },
-    [40731] = { -- Transporter Power Cell
-        [29407] = 1.0,
-    },
     [40744] = { -- Impure Saronite Ore
         [29413] = 100.0,
     },
@@ -7998,9 +7816,6 @@ QuestieWotlkAcoreItemDrops.data = [[return {
     },
     [41393] = { -- Frostgrip's Signet Ring
         [29862] = 100.0,
-    },
-    [41399] = { -- Scourge Scrap Metal
-        [29452] = 1.0,
     },
     [41424] = { -- Icemane Yeti Hide
         [29875] = 54.0,
@@ -8534,9 +8349,6 @@ QuestieWotlkAcoreItemDrops.data = [[return {
         [29915] = 100.0,
         [30409] = 100.0,
     },
-    [43148] = { -- Crystalsong Carrot
-        [31233] = 1.0,
-    },
     [43159] = { -- Master Summoner's Staff
         [30746] = 100.0,
     },
@@ -8654,12 +8466,6 @@ QuestieWotlkAcoreItemDrops.data = [[return {
         [32289] = 49.0,
         [32290] = 51.0,
         [32297] = 5.0,
-    },
-    [44319] = { -- Broken Shard of Horror
-        [32349] = 1.0,
-    },
-    [44320] = { -- Broken Shard of Despair
-        [32349] = 1.0,
     },
     [44459] = { -- Cult of the Damned Research - Page 1
         [32297] = 12.0,
