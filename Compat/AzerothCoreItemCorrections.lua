@@ -51893,6 +51893,10 @@ QuestieCompat.RegisterCorrection("itemData", function()
             [itemKeys.vendors] = {31863,32356,32359,32405,32407},
         },
 
+        [42356] = {
+            [itemKeys.flags] = 36864,
+        },
+
         [42362] = {
             [itemKeys.vendors] = {31863,32356,32359,32405,32407},
         },
@@ -53439,6 +53443,10 @@ QuestieCompat.RegisterCorrection("itemData", function()
 
         [44332] = {
             [itemKeys.itemDrops] = {46110},
+        },
+
+        [44415] = {
+            [itemKeys.flags] = 36864,
         },
 
         [44419] = {

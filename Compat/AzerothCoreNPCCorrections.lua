@@ -4847,14 +4847,10 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [1892] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 24,
         },
 
         [1893] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 24,
         },
 
@@ -4869,8 +4865,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [1896] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 24,
         },
 
@@ -5118,11 +5112,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.maxLevel] = 2,
             [npcKeys.factionID] = 32,
             [npcKeys.friendlyToFaction] = "",
-        },
-
-        [1981] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [1983] = {
@@ -5552,11 +5541,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
 
         [2142] = {
             [npcKeys.factionID] = 56,
-        },
-
-        [2149] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [2151] = {
@@ -6405,15 +6389,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.spawns] = {[zoneIDs.ALTERAC_MOUNTAINS] = {{63.14,43.42}}},
         },
 
-        [2433] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
-        [2434] = {
-            [npcKeys.spawns] = {},
-        },
-
         [2435] = {
             [npcKeys.minLevelHealth] = 2033,
             [npcKeys.maxLevelHealth] = 2033,
@@ -7041,11 +7016,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.friendlyToFaction] = "A",
         },
 
-        [2624] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.waypoints] = {},
-        },
-
         [2625] = {
             [npcKeys.friendlyToFaction] = "",
         },
@@ -7323,8 +7293,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [2707] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 312,
             [npcKeys.friendlyToFaction] = "",
         },
@@ -7931,8 +7899,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [2919] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 41,
         },
 
@@ -9145,8 +9111,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [3395] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 16,
         },
 
@@ -9351,8 +9315,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [3475] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 16,
         },
 
@@ -9472,8 +9434,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [3529] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 24,
         },
 
@@ -9484,8 +9444,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [3531] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 24,
         },
 
@@ -9494,7 +9452,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [3533] = {
-            [npcKeys.spawns] = {},
             [npcKeys.factionID] = 24,
         },
 
@@ -9795,8 +9752,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [3654] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 270,
         },
 
@@ -9931,11 +9886,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
 
         [3721] = {
             [npcKeys.maxLevelHealth] = 449,
-        },
-
-        [3722] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [3725] = {
@@ -10152,11 +10102,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.waypoints] = {[zoneIDs.ASHENVALE] = {{{62.24,50.84},{62.23,50.92},{62.2,50.94},{62.14,50.91},{62.15,50.81},{62.19,50.78},{62.24,50.84},{62.25,50.92},{62.23,50.94},{62.18,51.13},{62.01,51.25},{61.86,51.66},{61.99,51.32},{62.19,51.18},{62.24,50.92},{62.26,50.83},{62.21,50.77},{62.14,50.82},{62.15,50.91},{62.21,50.94},{62.26,50.9},{62.23,50.83},{62.18,50.77},{62.12,50.76},{62.17,50.78},{62.23,50.82}}}},
         },
 
-        [3799] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
         [3801] = {
             [npcKeys.minLevelHealth] = 769,
             [npcKeys.maxLevelHealth] = 769,
@@ -10369,8 +10314,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [3865] = {
             [npcKeys.minLevel] = 18,
             [npcKeys.maxLevel] = 19,
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.friendlyToFaction] = "",
         },
 
@@ -10452,8 +10395,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [3893] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 16,
             [npcKeys.friendlyToFaction] = "",
         },
@@ -10472,8 +10413,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [3899] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 16,
         },
 
@@ -10806,8 +10745,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [3998] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 26,
         },
 
@@ -11746,11 +11683,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.maxLevelHealth] = 1469,
         },
 
-        [4355] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
         [4357] = {
             [npcKeys.maxLevelHealth] = 1674,
         },
@@ -11761,11 +11693,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
 
         [4359] = {
             [npcKeys.maxLevelHealth] = 1469,
-        },
-
-        [4360] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [4361] = {
@@ -11809,11 +11736,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.maxLevelHealth] = 1469,
         },
 
-        [4377] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
         [4378] = {
             [npcKeys.maxLevel] = 37,
         },
@@ -11852,11 +11774,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.maxLevelHealth] = 1603,
         },
 
-        [4391] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
         [4393] = {
             [npcKeys.maxLevelHealth] = 1751,
         },
@@ -11873,8 +11790,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [4396] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.friendlyToFaction] = "",
         },
 
@@ -11884,20 +11799,14 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [4398] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.friendlyToFaction] = "",
         },
 
         [4399] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.friendlyToFaction] = "",
         },
 
         [4400] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.friendlyToFaction] = "",
         },
 
@@ -11913,22 +11822,12 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.maxLevelHealth] = 1211,
         },
 
-        [4405] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
         [4409] = {
             [npcKeys.factionID] = 124,
         },
 
         [4412] = {
             [npcKeys.maxLevelHealth] = 1536,
-        },
-
-        [4413] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [4414] = {
@@ -12460,11 +12359,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
 
         [4659] = {
             [npcKeys.maxLevelHealth] = 1678,
-        },
-
-        [4660] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [4661] = {
@@ -14226,11 +14120,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.spawns] = {[zoneIDs.TANARIS] = {{47.78,90.08},{47.82,88.41},{47.85,87.45},{48.22,87.84},{48.24,90.66},{48.27,89.25},{48.35,86.41},{48.67,91.82},{48.73,88.6},{48.77,87.32},{48.77,92.95},{48.79,90.08},{48.82,91.68},{49.19,88.01},{49.21,92.24},{49.22,90.51},{49.24,85.26},{49.3,86.36},{49.85,91.5},{49.85,92.85},{50,92.21},{50.14,93.49},{50.18,90.51},{50.59,90.18},{50.67,91.7},{51.06,92.95},{51.21,94.67},{51.24,92.99},{51.37,92.98},{51.54,92.25},{51.67,94.46},{52.09,95.53},{52.24,96.05},{52.28,93.25},{52.29,96.63},{52.62,92.9},{52.71,97.29},{52.78,94.33},{52.92,96.6},{52.94,95.38},{53.01,91.7},{53.13,93.73},{53.14,97.91},{53.43,94.51},{53.46,93.43},{53.53,95.89},{53.57,97.27},{54.16,93.69},{54.21,95.39},{54.22,97.75},{54.25,96.66},{54.55,97.69},{54.62,95.7},{54.66,94.27},{54.99,95.53},{55.13,96.72},{55.39,94.57},{55.63,93.66},{55.69,95.9},{56.04,93.69},{56.37,94.21},{56.74,93.37},{56.84,92.71},{57.02,92.26},{57.24,90.33},{57.7,93.1},{57.96,90.87},{58.03,92.55},{58.04,93.14},{58.26,90.13},{58.45,92.95},{58.46,91.55},{58.95,90.79},{59.18,89.47},{59.38,88.57},{59.39,87.16},{59.41,90.17},{59.86,84.63},{59.86,87.83},{59.99,89.37},{60.19,82.45},{60.23,88.83},{60.24,84.97},{60.3,86.14},{60.38,85.21},{60.58,86.7},{60.59,81.74},{60.85,81.97},{60.87,83.5},{60.89,86.47},{61.11,84.7},{61.25,81.44},{61.31,82.83},{61.36,83.96},{61.47,85.17},{64.27,61.75},{64.43,63.18},{64.49,64.72},{64.52,64.01},{64.75,65.57},{64.76,60.89},{65.06,64.67},{65.14,61.98},{65.34,60.26},{65.57,59.25},{65.61,63.05},{65.68,62.75},{65.91,60.28},{65.98,61.87},{66.26,58.91},{66.29,63.07},{66.61,61.76},{66.97,57.49},{67.06,60.36},{67.15,61.98},{67.34,58.87},{67.46,59.58},{68.16,59.11},{68.2,57.24},{68.66,58.08},{68.93,59.02},{69.17,57.14},{69.79,56.7},{69.85,55.74},{70.05,57.86},{70.66,55.06},{70.88,55.71},{71.16,57.22},{71.28,54.65},{71.39,53.59},{71.44,57.17},{71.92,56.29},{72.02,54.68},{72.47,55.48}}},
         },
 
-        [5432] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
         [5433] = {
             [npcKeys.factionID] = 7,
         },
@@ -15828,10 +15717,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.friendlyToFaction] = "",
         },
 
-        [5981] = {
-            [npcKeys.waypoints] = {},
-        },
-
         [5982] = {
             [npcKeys.maxLevelHealth] = 2488,
             [npcKeys.spawns] = {[zoneIDs.BLASTED_LANDS] = {{56,36.46},{56.72,37.49},{58.63,28.33},{62.73,26.54}}},
@@ -16334,8 +16219,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [6180] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 14,
         },
 
@@ -16470,11 +16353,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.friendlyToFaction] = "",
         },
 
-        [6215] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
         [6219] = {
             [npcKeys.maxLevelHealth] = 2250,
         },
@@ -16558,11 +16436,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
 
         [6238] = {
             [npcKeys.factionID] = 35,
-        },
-
-        [6239] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [6240] = {
@@ -16873,14 +16746,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.waypoints] = {[zoneIDs.UN_GORO_CRATER] = {{{31.15,36.41},{32.1,37.11},{33.04,37.39},{33.82,38.27},{34.68,39.46},{35.4,40.17},{36.29,41.12},{36.95,42.27},{37.61,43.3},{38.22,44.27},{38.41,45.4},{38.5,46.4},{39.18,47.26},{39.11,48.64},{39.1,49.74},{39.15,51.07},{39.27,52.34},{39.77,53.58},{39.71,54.56},{38.95,56.11},{38.94,57.2},{39.27,58.79},{39.54,60.52},{39.88,61.88},{40.79,63.18},{41.69,63.82},{40.79,63.18},{39.88,61.88},{39.54,60.52},{39.27,58.79},{38.94,57.2},{38.95,56.11},{39.71,54.56},{39.77,53.58},{39.27,52.34},{39.15,51.07},{39.1,49.74},{39.11,48.64},{39.18,47.26},{38.5,46.4},{38.41,45.4},{38.22,44.27},{37.61,43.3},{36.95,42.27},{36.29,41.12},{35.4,40.17},{34.68,39.46},{33.82,38.27},{33.04,37.39},{32.1,37.11}},{{34.66,22.17},{34.71,23.76},{34.72,25.2},{34.67,26.59},{34.63,27.69},{35.28,28.26},{35.59,29.32},{35.72,30.73},{35.82,31.99},{36.38,32.95},{36.53,34.54},{36.39,35.67},{35.7,36.91},{34.58,37.47},{33.93,38.24},{33.15,39.52},{32.93,41.09},{32.78,42.51},{32.64,43.99},{31.9,45.28},{31.06,45.36},{30.98,46.57},{30.98,47.81},{30.83,49.19},{30.77,50.16},{30.88,51.02},{30.54,51.94},{30.13,53.35},{30.54,51.94},{30.88,51.02},{30.77,50.16},{30.83,49.19},{30.98,47.81},{30.98,46.57},{31.06,45.36},{31.9,45.28},{32.64,43.99},{32.78,42.51},{32.93,41.09},{33.15,39.52},{33.93,38.24},{34.58,37.47},{35.7,36.91},{36.39,35.67},{36.53,34.54},{36.38,32.95},{35.82,31.99},{35.72,30.73},{35.59,29.32},{35.28,28.26},{34.63,27.69},{34.67,26.59},{34.72,25.2},{34.71,23.76}},{{53.54,73.54},{53.51,72.53},{52.85,71.18},{52.43,69.7},{52.55,68.23},{52.57,67.08},{52.74,65.49},{53.66,64.37},{54.38,63.03},{54.57,61.83},{54.28,60.18},{53.56,59.02},{52.78,58.93},{51.71,59.68},{50.86,60.12},{50.14,60.7},{49.04,61.86},{48.1,62.36},{47.29,62.86},{46.76,64.23},{46.07,65.81},{46.05,66.98},{46.25,68.12},{46.62,69.36},{46.43,70.71},{46.51,71.81},{46.67,73.45},{45.86,74.03},{45.28,75.27},{44.7,76.5},{44.76,77.49},{44.55,78.68},{43.82,79.81},{44.55,78.68},{44.76,77.49},{44.7,76.5},{45.28,75.27},{45.86,74.03},{46.67,73.45},{46.51,71.81},{46.43,70.71},{46.62,69.36},{46.25,68.12},{46.05,66.98},{46.07,65.81},{46.76,64.23},{47.29,62.86},{48.1,62.36},{49.04,61.86},{50.14,60.7},{50.86,60.12},{51.71,59.68},{52.78,58.93},{53.56,59.02},{54.28,60.18},{54.57,61.83},{54.38,63.03},{53.66,64.37},{52.74,65.49},{52.57,67.08},{52.55,68.23},{52.43,69.7},{52.85,71.18},{53.51,72.53}},{{58.06,75.28},{57.9,73.87},{57.51,72.55},{57.74,71.74},{58.66,71.39},{58.84,70.37},{58.66,68.95},{58.02,68.28},{57.79,66.92},{57.76,65.52},{57.76,64.37},{57.34,63.9},{57.24,62.92},{57.29,61.75},{57.8,61.08},{57.98,60.06},{57.98,58.96},{57.51,58.27},{57.32,56.86},{57.2,55.69},{56.87,54.6},{56.63,53.87},{56.7,51.9},{57.18,50.97},{57.19,50.04},{57.26,48.56},{56.96,47.38},{57.14,46.61},{57.41,45.56},{58.18,45.05},{58.31,44},{58.24,42.7},{58.23,40.99},{57.89,39.88},{57.41,39.23},{57.09,38.15},{56.95,36.91},{56.45,35.94},{56.38,34.58},{56.32,33.18},{56.38,34.58},{56.45,35.94},{56.95,36.91},{57.09,38.15},{57.41,39.23},{57.89,39.88},{58.23,40.99},{58.24,42.7},{58.31,44},{58.18,45.05},{57.41,45.56},{57.14,46.61},{56.96,47.38},{57.26,48.56},{57.19,50.04},{57.18,50.97},{56.7,51.9},{56.63,53.87},{56.87,54.6},{57.2,55.69},{57.32,56.86},{57.51,58.27},{57.97,58.96},{57.98,60.06},{57.8,61.08},{57.29,61.75},{57.24,62.92},{57.34,63.9},{57.76,64.37},{57.76,65.52},{57.79,66.92},{58.02,68.28},{58.66,68.95},{58.84,70.37},{58.66,71.39},{57.74,71.74},{57.51,72.55},{57.9,73.87}},{{65.1,35.03},{64.66,34.46},{64.54,33.17},{65.48,31.76},{66.51,31.42},{67.28,31.4},{68.15,32.14},{68.95,31.23},{69.92,30.79},{70.6,29.3},{70.64,28.06},{70.1,26.57},{69.68,25.32},{68.82,25.01},{67.97,24.93},{67.4,25.15},{66.87,26.4},{66.14,26.77},{65.38,26.44},{64.56,26.28},{63.6,26.14},{62.62,26.05},{61.74,26.83},{60.79,27.46},{59.63,27.99},{58.65,28.35},{58.06,27.42},{58.07,26.49},{57.48,24.93},{57.28,23.89},{57.48,24.93},{58.07,26.49},{58.06,27.42},{58.65,28.35},{59.63,27.99},{60.79,27.46},{61.74,26.83},{62.62,26.05},{63.6,26.14},{64.56,26.28},{65.38,26.44},{66.14,26.77},{66.87,26.4},{67.4,25.15},{67.97,24.93},{68.82,25.01},{69.68,25.32},{70.1,26.57},{70.64,28.06},{70.6,29.3},{69.92,30.79},{68.95,31.23},{68.15,32.14},{67.28,31.4},{66.51,31.42},{65.48,31.76},{64.54,33.17},{64.66,34.46}},{{74.31,33.08},{74.3,34.7},{74.42,35.69},{74.22,36.94},{73.64,38.53},{74.21,38.76},{74.46,39.95},{75.23,41.08},{75.33,42.53},{75.22,43.88},{75.35,45.19},{74.57,46.48},{74.01,47.73},{73.92,49.25},{73.22,49.62},{72.42,49.71},{71.68,50.44},{71.35,51.18},{71.04,52.08},{70.78,53.28},{70.39,54.58},{70.15,55.49},{69.82,56.45},{69.72,57.36},{69.14,57.69},{68.66,57.81},{67.98,57.95},{67.17,58.29},{66.36,58.89},{65.5,59.36},{64.82,60.4},{63.92,60.07},{63.38,59.29},{62.46,59.06},{63.38,59.29},{63.92,60.07},{64.82,60.4},{65.5,59.36},{66.36,58.89},{67.17,58.29},{67.98,57.95},{68.66,57.81},{69.14,57.69},{69.72,57.36},{69.82,56.45},{70.15,55.48},{70.39,54.58},{70.78,53.28},{71.04,52.08},{71.35,51.18},{71.68,50.44},{72.42,49.71},{73.22,49.62},{73.92,49.25},{74.01,47.73},{74.57,46.48},{75.35,45.19},{75.22,43.88},{75.33,42.53},{75.23,41.08},{74.46,39.95},{74.21,38.76},{73.64,38.53},{74.22,36.94},{74.42,35.69},{74.3,34.7}}}},
         },
 
-        [6499] = {
-            [npcKeys.waypoints] = {},
-        },
-
-        [6500] = {
-            [npcKeys.waypoints] = {},
-        },
-
         [6501] = {
             [npcKeys.maxLevelHealth] = 7113,
             [npcKeys.waypoints] = {[zoneIDs.UN_GORO_CRATER] = {{{26.68,67.14},{26.68,67.01},{26.89,66.04},{27.22,65.49},{27.61,65.25},{28.05,65.22},{28.17,65.26},{28.66,65.56},{28.78,66.19},{28.62,66.15},{28.81,66.72},{28.82,67.75},{28.62,68.38},{28.27,68.64},{28.11,69.08},{27.91,69.37},{27.85,69.37},{27.31,69.35},{27.18,69.1},{26.97,68.32},{26.65,67.3},{26.48,65.94},{26.45,64.96},{26.66,64.64},{27.21,64.81},{27.37,64.99},{27.1,66},{27.12,66.94},{26.81,67.39}}}},
@@ -17069,11 +16934,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.maxLevel] = 7,
             [npcKeys.factionID] = 7,
             [npcKeys.friendlyToFaction] = "",
-        },
-
-        [6575] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [6577] = {
@@ -17339,11 +17199,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [6909] = {
             [npcKeys.spawns] = {[zoneIDs.TELDRASSIL] = {{37.56,22.2}}},
             [npcKeys.waypoints] = {[zoneIDs.TELDRASSIL] = {{{37.18,22.95},{37.42,23.87},{37.39,23.7},{37.18,22.95},{37.56,22.2}}}},
-        },
-
-        [6911] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [6912] = {
@@ -17655,11 +17510,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.npcFlags] = 82,
         },
 
-        [7091] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
         [7092] = {
             [npcKeys.maxLevelHealth] = 2980,
         },
@@ -17842,11 +17692,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [7134] = {
             [npcKeys.factionID] = 16,
             [npcKeys.friendlyToFaction] = "",
-        },
-
-        [7135] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [7136] = {
@@ -18038,21 +17883,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.friendlyToFaction] = "",
         },
 
-        [7275] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
-        [7276] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
-        [7286] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
         [7290] = {
             [npcKeys.maxLevelHealth] = 4185,
         },
@@ -18227,13 +18057,7 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.rank] = 2,
         },
 
-        [7355] = {
-            [npcKeys.spawns] = {},
-        },
-
         [7356] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 152,
         },
 
@@ -19525,11 +19349,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.friendlyToFaction] = "",
         },
 
-        [8138] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
         [8139] = {
             [npcKeys.friendlyToFaction] = "",
         },
@@ -19764,11 +19583,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
 
         [8324] = {
             [npcKeys.minLevel] = 48,
-        },
-
-        [8337] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [8356] = {
@@ -20839,11 +20653,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.zoneID] = zoneIDs.DEEPRUN_TRAM,
         },
 
-        [9031] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
         [9033] = {
             [npcKeys.minLevelHealth] = 20912,
             [npcKeys.maxLevelHealth] = 20912,
@@ -21166,11 +20975,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.factionID] = 14,
         },
 
-        [9445] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
         [9447] = {
             [npcKeys.maxLevelHealth] = 5886,
             [npcKeys.waypoints] = {[zoneIDs.EASTERN_PLAGUELANDS] = {{{77.31,72.67},{77.34,72.34},{77.46,72.16},{77.63,72.09},{77.72,72.12},{77.83,72.21},{77.92,72.37},{77.95,72.56},{77.94,72.65},{77.9,72.84},{77.7,73.07},{77.45,72.97},{77.34,72.9},{77.28,72.67},{77.33,72.43},{77.38,72.14},{77.56,72.12},{77.62,71.85},{77.67,71.59},{77.7,71.41},{77.77,71.35},{77.9,71.42},{77.97,71.47},{77.9,71.9},{77.95,71.47},{77.9,71.42},{77.76,71.34},{77.7,71.43},{77.66,71.56},{77.63,71.75},{77.58,72.07},{77.49,72.22},{77.31,72.41},{77.27,72.68},{77.35,72.89},{77.42,73.01},{77.57,73.04},{77.74,72.96},{77.9,72.82},{78.4,73.02},{78.19,72.93},{77.92,72.83},{77.95,72.65},{77.95,72.54},{77.93,72.4},{77.9,72.3},{77.82,72.18},{77.72,72.1},{77.57,72.09},{77.37,72.29},{77.29,72.61},{77.4,72.91},{77.62,73.04},{77.81,72.95},{77.65,73.03},{77.44,72.96},{77.29,72.7}}}},
@@ -21233,8 +21037,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
 
         [9477] = {
             [npcKeys.maxLevel] = 52,
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [9496] = {
@@ -23023,7 +22825,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [10820] = {
             [npcKeys.minLevel] = 45,
             [npcKeys.maxLevel] = 45,
-            [npcKeys.waypoints] = {},
             [npcKeys.factionID] = 16,
             [npcKeys.friendlyToFaction] = "",
         },
@@ -23484,8 +23285,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [11121] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 21,
         },
 
@@ -24433,10 +24232,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
 
         [11625] = {
             [npcKeys.spawns] = {[zoneIDs.DESOLACE] = {{66.78,58.13}}},
-            [npcKeys.waypoints] = {},
-        },
-
-        [11626] = {
             [npcKeys.waypoints] = {},
         },
 
@@ -25400,10 +25195,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
 
         [12048] = {
             [npcKeys.factionID] = 1216,
-        },
-
-        [12051] = {
-            [npcKeys.waypoints] = {},
         },
 
         [12054] = {
@@ -26990,15 +26781,11 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [13526] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 1216,
             [npcKeys.friendlyToFaction] = "A",
         },
 
         [13527] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 1216,
             [npcKeys.friendlyToFaction] = "A",
         },
@@ -27030,14 +26817,10 @@ QuestieCompat.RegisterCorrection("npcData", function()
 
         [13534] = {
             [npcKeys.maxLevel] = 57,
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 1214,
         },
 
         [13535] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 1214,
         },
 
@@ -27046,8 +26829,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [13537] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 1214,
         },
 
@@ -27071,16 +26852,12 @@ QuestieCompat.RegisterCorrection("npcData", function()
 
         [13543] = {
             [npcKeys.minLevel] = 57,
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 1214,
             [npcKeys.friendlyToFaction] = "H",
         },
 
         [13544] = {
             [npcKeys.minLevel] = 59,
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 1214,
             [npcKeys.friendlyToFaction] = "H",
         },
@@ -27095,8 +26872,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
 
         [13547] = {
             [npcKeys.maxLevel] = 59,
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 1216,
             [npcKeys.friendlyToFaction] = "A",
         },
@@ -27107,8 +26882,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [13550] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 1216,
             [npcKeys.friendlyToFaction] = "A",
         },
@@ -27119,25 +26892,13 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [13552] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 1216,
             [npcKeys.friendlyToFaction] = "A",
-        },
-
-        [13553] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [13554] = {
             [npcKeys.factionID] = 1216,
             [npcKeys.friendlyToFaction] = "A",
-        },
-
-        [13555] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [13557] = {
@@ -27147,8 +26908,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
 
         [13576] = {
             [npcKeys.maxLevel] = 58,
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [13596] = {
@@ -27340,7 +27099,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
 
         [13959] = {
             [npcKeys.maxLevel] = 61,
-            [npcKeys.waypoints] = {},
         },
 
         [13976] = {
@@ -27605,11 +27363,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
 
         [14281] = {
             [npcKeys.factionID] = 87,
-        },
-
-        [14283] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [14284] = {
@@ -28262,11 +28015,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.maxLevel] = 2,
         },
 
-        [14506] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
         [14508] = {
             [npcKeys.waypoints] = {},
         },
@@ -28287,38 +28035,23 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.factionID] = 21,
         },
 
-        [14515] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
         [14516] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 21,
         },
 
         [14518] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 21,
         },
 
         [14519] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 21,
         },
 
         [14520] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 21,
         },
 
         [14521] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 21,
         },
 
@@ -28510,14 +28243,7 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.maxLevelHealth] = 42,
         },
 
-        [14603] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
         [14604] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 778,
         },
 
@@ -28584,19 +28310,10 @@ QuestieCompat.RegisterCorrection("npcData", function()
 
         [14638] = {
             [npcKeys.maxLevel] = 48,
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [14639] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 778,
-        },
-
-        [14640] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [14641] = {
@@ -28728,7 +28445,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [14693] = {
             [npcKeys.minLevel] = 34,
             [npcKeys.maxLevel] = 34,
-            [npcKeys.spawns] = {},
             [npcKeys.factionID] = 21,
             [npcKeys.friendlyToFaction] = "",
         },
@@ -28940,11 +28656,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.friendlyToFaction] = "H",
         },
 
-        [14748] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
         [14750] = {
             [npcKeys.minLevelHealth] = 5341,
             [npcKeys.minLevel] = 59,
@@ -28994,17 +28705,7 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.zoneID] = 0,
         },
 
-        [14763] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
         [14764] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
-        [14765] = {
             [npcKeys.spawns] = {},
             [npcKeys.zoneID] = 0,
         },
@@ -29012,49 +28713,32 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [14766] = {
             [npcKeys.minLevel] = 60,
             [npcKeys.maxLevel] = 60,
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [14767] = {
             [npcKeys.maxLevel] = 60,
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 1534,
             [npcKeys.friendlyToFaction] = "A",
         },
 
         [14768] = {
             [npcKeys.maxLevel] = 60,
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 1534,
         },
 
         [14769] = {
             [npcKeys.minLevel] = 60,
             [npcKeys.maxLevel] = 60,
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [14770] = {
             [npcKeys.minLevel] = 60,
             [npcKeys.maxLevel] = 60,
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [14771] = {
             [npcKeys.minLevel] = 60,
             [npcKeys.maxLevel] = 60,
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
-        [14772] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [14773] = {
@@ -29065,23 +28749,14 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [14774] = {
             [npcKeys.minLevel] = 60,
             [npcKeys.maxLevel] = 60,
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [14775] = {
             [npcKeys.minLevel] = 60,
             [npcKeys.maxLevel] = 60,
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [14776] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
-        [14777] = {
             [npcKeys.spawns] = {},
             [npcKeys.zoneID] = 0,
         },
@@ -29279,7 +28954,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [14862] = {
             [npcKeys.minLevel] = 63,
             [npcKeys.maxLevel] = 63,
-            [npcKeys.spawns] = {},
             [npcKeys.factionID] = 16,
         },
 
@@ -29886,7 +29560,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [15114] = {
-            [npcKeys.spawns] = {},
             [npcKeys.factionID] = 107,
         },
 
@@ -30248,21 +29921,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.waypoints] = {[zoneIDs.SILITHUS] = {{{69.85,14.45},{69.63,14.54},{69.47,14.68},{69.32,14.79},{69.13,14.95},{68.94,15.14},{68.85,15.21},{68.7,15.3},{68.58,15.31},{68.38,15.31},{68.22,15.31},{68.03,15.34},{67.88,15.42},{67.83,15.6},{67.8,15.79},{67.79,15.98},{67.91,16.14},{68.05,16.34},{68.25,16.64},{68.09,16.41},{67.93,16.18},{67.75,16.05},{67.78,15.81},{67.82,15.58},{67.94,15.49},{68.11,15.35},{68.27,15.34},{68.43,15.33},{68.55,15.29},{68.67,15.28},{68.84,15.21},{69.03,15.03},{69.22,14.84},{69.41,14.66},{69.61,14.48},{69.78,14.34},{69.94,14.35},{70.2,14.39},{70.02,14.35},{69.83,14.34}},{{72.69,12.67},{72.89,12.83},{73.13,13.08},{73.38,13.28},{73.61,13.27},{73.77,13.1},{73.91,12.84},{74.03,12.5},{73.91,12.75},{73.81,12.98},{73.61,13.17},{73.36,13.24},{73.16,13.15},{72.99,12.86},{72.82,12.72},{72.6,12.62},{72.46,12.52},{72.3,12.5}},{{73.05,12.47},{73.22,12.18},{73.35,11.96},{73.43,11.89},{73.59,11.85},{73.49,11.86},{73.35,11.97},{73.16,12.23},{73.03,12.56},{72.89,12.89},{72.73,13.25},{72.55,13.53},{72.32,13.78},{72.1,13.98},{71.86,14.23},{71.81,14.5},{71.89,14.65},{72.02,14.8},{71.88,14.64},{71.8,14.43},{71.84,14.19},{71.98,14.08},{72.2,13.87},{72.48,13.58},{72.64,13.34},{72.81,12.99},{73.01,12.55}}}},
         },
 
-        [15203] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
-        [15204] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
-        [15205] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
         [15210] = {
             [npcKeys.minLevel] = 62,
             [npcKeys.maxLevel] = 62,
@@ -30328,11 +29986,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [15242] = {
             [npcKeys.spawns] = {[zoneIDs.HELLFIRE_PENINSULA] = {{53.32,41.2},{55.08,35.36},{55.73,41.1},{57.79,38.46}}, [zoneIDs.NAGRAND] = {{52.41,35.9},{54.79,39.77},{55.27,34.71},{58.49,35.25}}, [zoneIDs.TEROKKAR_FOREST] = {{48.56,44.99},{49.1,47.19},{49.79,43.08},{50.18,46.3},{51.12,43.94}}, [zoneIDs.SHADOWMOON_VALLEY] = {{28.95,29.05},{29.58,31.45}}, [zoneIDs.ZANGARMARSH] = {{85.21,55.42}}},
             [npcKeys.waypoints] = {[zoneIDs.HELLFIRE_PENINSULA] = {{{53.32,41.2},{52.21,38.37},{52.17,37.7},{51.79,36.88},{51.65,36.1},{52,35.67},{52.8,35.61},{53.41,36.03},{53.55,37.34},{54.16,38.3},{54.58,39.37},{54.99,40.3},{55.34,41.32},{54.69,42.35},{53.73,42.14}},{{55.08,35.36},{53.34,37.67},{53.92,38.53},{54.2,39.32},{54.86,39.58},{55.57,39.65},{56.48,39.2},{56.78,38.52},{57.47,37.89},{57.7,36.58},{57.05,35.89},{56.57,35.72},{56.05,35.37}},{{55.73,41.1},{55.6,40.53},{55.19,39.53},{54.56,39.48},{54,38.87},{53.27,38.66},{52.46,38.86},{52.61,39.67},{53.21,41.35},{53.84,41.89},{54.7,42.44},{55.41,42.34}},{{57.79,38.46},{56.86,41.49},{56.39,41.79},{55.68,41.93},{55.21,41.19},{55.21,40.22},{55.16,39.24},{54.68,38.2},{54.11,37.21},{53.8,35.87},{53.86,34.44},{54.48,34.03},{55.32,34.19},{55.93,34.61},{56.55,35.43},{57.32,36.23},{57.96,37.22}}}},
-        },
-
-        [15246] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [15247] = {
@@ -30465,11 +30118,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [15304] = {
             [npcKeys.factionID] = 58,
             [npcKeys.friendlyToFaction] = "",
-        },
-
-        [15305] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [15306] = {
@@ -31433,11 +31081,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.npcFlags] = 2,
         },
 
-        [15517] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
         [15518] = {
             [npcKeys.factionID] = 55,
             [npcKeys.friendlyToFaction] = "A",
@@ -31957,10 +31600,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.maxLevel] = 8,
         },
 
-        [15625] = {
-            [npcKeys.spawns] = {},
-        },
-
         [15626] = {
             [npcKeys.minLevel] = 60,
             [npcKeys.maxLevel] = 60,
@@ -32156,11 +31795,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.minLevelHealth] = 131,
             [npcKeys.maxLevelHealth] = 137,
             [npcKeys.waypoints] = {[zoneIDs.EVERSONG_WOODS] = {{{24.95,67.9},{25.1,67.23},{25.01,66.49},{25.12,66.07},{25.61,65.88},{26.06,65.92},{25.61,65.88},{25.12,66.07},{25.01,66.49},{25.1,67.23},{24.95,67.9},{24.81,68.59},{24.57,69.15},{24.47,69.66},{24.74,69.99},{24.47,69.66},{24.57,69.15},{24.81,68.59}},{{25.75,68.98},{25.82,69.95},{25.52,70.6},{25.23,70.97},{25.03,71.5},{24.65,71.69},{24.09,72.29},{24.18,73.09},{24.22,73.83},{24.18,73.09},{24.09,72.29},{24.65,71.69},{25.03,71.5},{25.23,70.97},{25.52,70.6},{25.82,69.95},{25.75,68.98},{25.91,68.3}}}},
-        },
-
-        [15669] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [15670] = {
@@ -33425,11 +33059,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.friendlyToFaction] = "",
         },
 
-        [15950] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
         [15951] = {
             [npcKeys.minLevelHealth] = 322,
             [npcKeys.maxLevelHealth] = 322,
@@ -34207,14 +33836,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.waypoints] = {[zoneIDs.NAXXRAMAS] = {{{31.06,65.91},{31.74,65.92},{32.32,65.94},{31.96,67.35},{32.19,68.82},{32.72,70.34},{33.02,71.66},{33.41,73.38},{33.99,74.56},{34.51,74.98},{35.77,75.13},{36.34,75.98},{35.61,77.2},{35.05,78.13},{34.63,78.82},{34.12,78.13},{33.75,76.16},{33.54,75.31},{32.82,74.39},{31.9,73.96},{30.62,73.33},{30.21,71.98},{30.55,70.45},{31.24,68.8},{31.47,67.45}},{{31.06,65.91},{31.74,65.92},{32.32,65.94},{31.96,67.35},{32.19,68.82},{32.72,70.34},{33.02,71.66},{33.41,73.38},{33.99,74.56},{34.51,74.98},{35.77,75.13},{36.34,75.98},{35.61,77.2},{35.05,78.13},{34.63,78.82},{34.12,78.13},{33.75,76.16},{33.54,75.31},{32.82,74.39},{31.9,73.96},{30.62,73.33},{30.21,71.98},{30.55,70.45},{31.24,68.8},{31.47,67.45}},{{31.67,59.42},{31.67,60.8},{31.67,61.79},{31.68,64.05},{31.69,65.7},{31.69,67.42},{31.69,69.23},{31.69,70.63},{31.69,71.8},{31.69,70.63},{31.69,69.23},{31.69,67.43},{31.69,65.7},{31.68,64.05},{31.67,61.79},{31.67,60.8},{31.67,59.42},{31.65,57.82},{31.64,56.73},{31.65,57.82}},{{31.67,59.42},{31.67,60.8},{31.67,61.79},{31.68,64.05},{31.69,65.7},{31.69,67.42},{31.69,69.23},{31.69,70.63},{31.69,71.8},{31.69,70.63},{31.69,69.23},{31.69,67.43},{31.69,65.7},{31.68,64.05},{31.67,61.79},{31.67,60.8},{31.67,59.42},{31.65,57.82},{31.64,56.73},{31.65,57.82}},{{37.22,80.2},{36.39,78.97},{35.03,76.97},{34.03,75.44},{33.18,74.16},{32.57,73.22},{31.72,71.88},{32.57,73.22},{33.18,74.16},{34.03,75.44},{35.03,76.97},{36.39,78.97},{37.22,80.2},{37.9,81.24},{38.56,82.22},{37.9,81.24}},{{37.22,80.2},{36.39,78.97},{35.03,76.97},{34.03,75.44},{33.18,74.16},{32.57,73.22},{31.72,71.88},{32.57,73.22},{33.18,74.16},{34.03,75.44},{35.03,76.97},{36.39,78.97},{37.22,80.2},{37.9,81.24},{38.56,82.22},{37.9,81.24}},{{40.87,62.53},{41.32,61.73},{41.8,61.09},{42.4,60.21},{42.84,59.4},{42.9,58.33},{42.84,59.4},{42.4,60.21},{41.8,61.09},{41.32,61.73},{40.87,62.53},{40.85,63.62},{41.03,65.25},{40.85,63.62}},{{40.87,62.53},{41.32,61.73},{41.8,61.09},{42.4,60.21},{42.84,59.4},{42.9,58.33},{42.84,59.4},{42.4,60.21},{41.8,61.09},{41.32,61.73},{40.87,62.53},{40.85,63.62},{41.03,65.25},{40.85,63.62}},{{42.49,83.39},{41.79,82.69},{40.97,82.7},{40.15,83.23},{39.4,84.03},{38.37,84.39},{37.56,83.79},{37.14,82.48},{37.13,81.36},{36.76,80.06},{36.05,79.1},{35.04,79.13},{34.09,77.74},{34.9,76.56},{35.7,75.36},{36.55,77.03},{36.48,78.45},{37.11,79.44},{37.99,79.98},{38.73,80.07},{39.62,80.68},{40.26,81.62},{40.94,82},{41.78,82.02},{42.51,81.22},{42.51,82.27}},{{42.49,83.39},{41.79,82.69},{40.97,82.7},{40.15,83.23},{39.4,84.03},{38.37,84.39},{37.56,83.79},{37.14,82.48},{37.13,81.36},{36.76,80.06},{36.05,79.1},{35.04,79.13},{34.09,77.74},{34.9,76.56},{35.7,75.36},{36.55,77.03},{36.48,78.45},{37.11,79.44},{37.99,79.98},{38.73,80.07},{39.62,80.68},{40.26,81.62},{40.94,82},{41.78,82.02},{42.51,81.22},{42.51,82.27}},{{46.6,82.2},{45.58,82.22},{44.84,82.23},{43.46,82.25},{42.3,82.27},{41.23,82.28},{40.3,82.27},{39.21,82.26},{40.3,82.27},{41.23,82.28},{42.3,82.27},{43.46,82.25},{44.84,82.23},{45.58,82.22},{46.6,82.2},{47.73,82.22},{48.56,82.21},{47.73,82.22}},{{46.6,82.2},{45.58,82.22},{44.84,82.23},{43.46,82.25},{42.3,82.27},{41.23,82.28},{40.3,82.27},{39.21,82.26},{40.3,82.27},{41.23,82.28},{42.3,82.27},{43.46,82.25},{44.84,82.23},{45.58,82.22},{46.6,82.2},{47.73,82.22},{48.56,82.21},{47.73,82.22}}}},
         },
 
-        [16157] = {
-            [npcKeys.spawns] = {},
-        },
-
-        [16158] = {
-            [npcKeys.spawns] = {},
-        },
-
         [16162] = {
             [npcKeys.minLevelHealth] = 1,
             [npcKeys.maxLevelHealth] = 115,
@@ -34987,7 +34608,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [16368] = {
             [npcKeys.minLevel] = 82,
             [npcKeys.maxLevel] = 82,
-            [npcKeys.spawns] = {},
             [npcKeys.factionID] = 233,
         },
 
@@ -35287,7 +34907,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [16446] = {
             [npcKeys.minLevel] = 70,
             [npcKeys.maxLevel] = 70,
-            [npcKeys.spawns] = {},
             [npcKeys.factionID] = 233,
         },
 
@@ -35299,10 +34918,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
 
         [16448] = {
             [npcKeys.factionID] = 16,
-        },
-
-        [16449] = {
-            [npcKeys.spawns] = {},
         },
 
         [16450] = {
@@ -35319,12 +34934,7 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.factionID] = 21,
         },
 
-        [16452] = {
-            [npcKeys.spawns] = {},
-        },
-
         [16453] = {
-            [npcKeys.spawns] = {},
             [npcKeys.factionID] = 312,
         },
 
@@ -35496,16 +35106,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [16504] = {
             [npcKeys.minLevelHealth] = 24394,
             [npcKeys.maxLevelHealth] = 24394,
-        },
-
-        [16505] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
-        [16506] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [16507] = {
@@ -36452,11 +36052,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.maxLevelHealth] = 1,
         },
 
-        [16803] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
         [16804] = {
             [npcKeys.minLevelHealth] = 247,
             [npcKeys.maxLevelHealth] = 247,
@@ -36983,8 +36578,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [16939] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 954,
         },
 
@@ -37447,11 +37040,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.maxLevel] = 35,
             [npcKeys.factionID] = 29,
             [npcKeys.friendlyToFaction] = "H",
-        },
-
-        [17034] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [17035] = {
@@ -38087,11 +37675,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.spawns] = {[zoneIDs.AZUREMYST_ISLE] = {{59.55,18.12}}},
         },
 
-        [17206] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
         [17207] = {
             [npcKeys.factionID] = 91,
             [npcKeys.friendlyToFaction] = "",
@@ -38701,11 +38284,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.spawns] = {[zoneIDs.BLOODMYST_ISLE] = {{26.84,34.66},{27.54,36.86},{27.98,39.29},{28.01,38.1},{28.21,34.59},{28.42,33.24},{28.47,35.03},{28.68,40.28},{28.9,37.62},{28.93,36.77},{29.79,40.95},{29.81,35.06},{29.82,39.46},{29.88,37.34},{30.02,36.55},{30.74,37.94},{30.91,39.63},{30.99,36.44},{31.03,34.6},{31.1,40.51},{31.79,36.97},{31.84,34.96},{32.02,39.21},{32.7,35.26},{32.79,39.22},{32.85,36.84},{32.89,38.21},{33.55,36.07}}},
         },
 
-        [17359] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
         [17361] = {
             [npcKeys.spawns] = {[zoneIDs.AZUREMYST_ISLE] = {{55.23,41.65}}},
         },
@@ -38960,8 +38538,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [17429] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 14,
         },
 
@@ -39263,11 +38839,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.friendlyToFaction] = "",
         },
 
-        [17517] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
         [17518] = {
             [npcKeys.friendlyToFaction] = "",
         },
@@ -39323,16 +38894,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.minLevelHealth] = 1,
             [npcKeys.spawns] = {[zoneIDs.BLOODMYST_ISLE] = {{62.77,88.91},{62.8,89.51},{63.17,89.44},{63.22,89.01}}, [zoneIDs.THE_EXODAR] = {{80.91,46.15},{81.01,45.15},{81.05,51.85},{81.55,45.76}}},
             [npcKeys.zoneID] = zoneIDs.BLOODMYST_ISLE,
-        },
-
-        [17536] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
-        [17537] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [17538] = {
@@ -40238,11 +39799,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.maxLevelHealth] = 39832,
         },
 
-        [17767] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
         [17771] = {
             [npcKeys.minLevelHealth] = 13259,
         },
@@ -40475,8 +40031,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [17830] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 954,
         },
 
@@ -40624,11 +40178,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [17880] = {
             [npcKeys.minLevel] = 72,
             [npcKeys.maxLevel] = 72,
-        },
-
-        [17881] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [17884] = {
@@ -41295,11 +40844,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
 
         [18091] = {
             [npcKeys.minLevel] = 62,
-        },
-
-        [18096] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [18097] = {
@@ -42959,7 +42503,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [18628] = {
-            [npcKeys.waypoints] = {},
             [npcKeys.factionID] = 1604,
         },
 
@@ -44196,8 +43739,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [18963] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.friendlyToFaction] = "",
         },
 
@@ -44331,8 +43872,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [18996] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.friendlyToFaction] = "",
         },
 
@@ -44912,8 +44451,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [19183] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.friendlyToFaction] = "",
         },
 
@@ -45094,7 +44631,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [19228] = {
-            [npcKeys.waypoints] = {},
             [npcKeys.friendlyToFaction] = "",
         },
 
@@ -46087,7 +45623,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [19493] = {
-            [npcKeys.spawns] = {},
             [npcKeys.factionID] = 90,
         },
 
@@ -48644,10 +48179,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.friendlyToFaction] = "",
         },
 
-        [20145] = {
-            [npcKeys.spawns] = {},
-        },
-
         [20146] = {
             [npcKeys.minLevel] = 60,
             [npcKeys.maxLevel] = 60,
@@ -50122,10 +49653,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.maxLevelHealth] = 5556,
         },
 
-        [20680] = {
-            [npcKeys.waypoints] = {},
-        },
-
         [20681] = {
             [npcKeys.factionID] = 14,
             [npcKeys.friendlyToFaction] = "",
@@ -50171,11 +49698,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
 
         [20705] = {
             [npcKeys.factionID] = 91,
-        },
-
-        [20706] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [20709] = {
@@ -54117,8 +53639,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [21767] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 35,
             [npcKeys.friendlyToFaction] = "AH",
         },
@@ -55985,10 +55505,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.friendlyToFaction] = "",
         },
 
-        [22258] = {
-            [npcKeys.spawns] = {},
-        },
-
         [22261] = {
             [npcKeys.factionID] = 1780,
         },
@@ -56056,10 +55572,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.waypoints] = {[zoneIDs.SHADOWMOON_VALLEY] = {{{63.52,80.5},{64.09,80.44},{64.41,80.73},{64.5,81.29},{64.47,82.08},{64.2,82.67},{64.17,83.27},{64.46,84.49},{64.56,85.48},{64.3,86.11},{63.93,86.63},{63.3,86.83},{62.95,86.59},{62.7,86.24},{62.5,85.49},{62.5,84.57},{62.37,84.04},{62.49,83.37},{62.71,82.54},{62.9,81.72},{62.91,81.04}},{{67.09,82.61},{66.91,81.76},{66.98,80.96},{67.11,80.37},{67.4,79.93},{68.23,79.63},{68.8,79.58},{69.35,80.08},{69.74,80.77},{69.8,81.75},{69.37,82.36},{68.75,82.88},{68.33,83.18},{67.58,83.27}},{{67.18,84.19},{66.83,84.84},{66.17,85.36},{65.6,85.58},{65.18,85.24},{64.88,84.51},{64.78,83.7},{65.14,82.97},{66,82.28},{66.61,82.44},{66.91,82.91},{67.18,83.6}},{{67.87,85.88},{67.35,85.46},{66.62,85.5},{66.14,85.47},{65.65,85.88},{65.43,86.56},{65.61,87.14},{65.9,87.68},{66.17,88.04},{66.76,88.46},{67.43,88.23},{67.81,87.86},{68,86.75}},{{71.95,90.21},{71.31,90.9},{70.96,90.95},{70.37,90.6},{70.09,89.9},{69.96,88.74},{70.23,88.32},{70.74,88.12},{71.26,88.11},{71.69,88.43},{71.96,88.92},{72.04,89.62}},{{72.24,82.74},{72.55,82.19},{72.41,81.14},{72.14,80.53},{71.73,79.95},{71.18,79.56},{70.72,79.41},{70.25,79.52},{70.01,80.45},{70.22,81.48},{70.64,82.06},{71.21,82.49},{71.78,82.95}},{{72.96,81.25},{72.64,81.85},{72.71,82.58},{73.2,83},{74.03,83.39},{74.35,83.21},{74.72,82.45},{74.02,81.08},{73.5,80.9}},{{73.29,88.72},{73.87,88.96},{74.51,89.34},{74.85,90.19},{74.65,90.67},{74.01,91.25},{73.69,91.39},{73.04,91.43},{72.24,90.98},{72.04,89.81},{72.63,88.78}},{{76.76,85.45},{77.36,84.72},{77.79,84.46},{78.41,84.98},{78.66,85.99},{78.52,87.05},{78.14,87.54},{77.74,87.34},{77.04,87.46},{76.66,87.05},{76.54,86.39}},{{77.81,82.69},{77.13,82.51},{76.74,80.81},{77.24,79.78},{78.02,79.7},{78.62,80.11},{78.79,81.01},{78.38,82.09}}}},
         },
 
-        [22275] = {
-            [npcKeys.spawns] = {},
-        },
-
         [22276] = {
             [npcKeys.minLevel] = 71,
             [npcKeys.maxLevel] = 71,
@@ -56086,11 +55598,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
 
         [22280] = {
             [npcKeys.waypoints] = {[zoneIDs.NETHERSTORM] = {{{32.55,63.48},{32.45,63.25},{32.3,63.45},{32.62,63.47},{32.75,63.83},{32.69,64.17},{32.43,63.93},{32.45,63.38}}}},
-        },
-
-        [22281] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [22282] = {
@@ -56565,7 +56072,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [22408] = {
-            [npcKeys.spawns] = {},
             [npcKeys.factionID] = 14,
         },
 
@@ -56814,11 +56320,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.spawns] = {[zoneIDs.BLADES_EDGE_MOUNTAINS] = {{62.28,40}}},
         },
 
-        [22466] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
         [22468] = {
             [npcKeys.minLevelHealth] = 6224,
             [npcKeys.maxLevelHealth] = 6224,
@@ -56861,11 +56362,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [22481] = {
             [npcKeys.minLevelHealth] = 5914,
             [npcKeys.maxLevelHealth] = 5914,
-        },
-
-        [22482] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [22484] = {
@@ -57869,11 +57365,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.friendlyToFaction] = "",
         },
 
-        [22821] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
         [22822] = {
             [npcKeys.maxLevelHealth] = 6761,
             [npcKeys.spawns] = {[zoneIDs.NETHERSTORM] = {{55.79,48.41},{56.27,48.85},{56.74,49.88},{57.09,50.37},{57.51,47.92},{57.67,46.76},{58.3,45.72},{58.32,50.9},{58.33,46.43},{58.45,49.3},{59.14,50.81},{59.22,50.27},{59.52,48.97},{61.01,30.98},{61.64,49.72},{61.69,49.92},{61.8,29.47},{62.31,31.35},{62.59,50.57},{62.86,49.82},{64.23,47.88},{64.63,30.94},{65.14,49.61},{65.59,50.64},{65.63,34.64},{65.87,50.18},{65.97,42.79},{66.13,33.08},{66.29,48.24},{66.88,31.14},{67.35,45.78},{67.42,46.21},{67.48,30.99},{67.76,31.46},{68.14,46.15},{68.68,44.61}}},
@@ -57889,32 +57380,24 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [22825] = {
             [npcKeys.minLevel] = 72,
             [npcKeys.maxLevel] = 72,
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 14,
         },
 
         [22826] = {
             [npcKeys.minLevel] = 72,
             [npcKeys.maxLevel] = 72,
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 14,
         },
 
         [22827] = {
             [npcKeys.minLevel] = 72,
             [npcKeys.maxLevel] = 72,
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 14,
         },
 
         [22828] = {
             [npcKeys.minLevel] = 72,
             [npcKeys.maxLevel] = 72,
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 14,
         },
 
@@ -58226,16 +57709,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.maxLevelHealth] = 1,
         },
 
-        [22890] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
-        [22891] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
         [22895] = {
             [npcKeys.minLevel] = 10,
             [npcKeys.maxLevel] = 10,
@@ -58320,10 +57793,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
 
         [22919] = {
             [npcKeys.spawns] = {[zoneIDs.BLADES_EDGE_MOUNTAINS] = {{52.85,14.98}}},
-        },
-
-        [22920] = {
-            [npcKeys.spawns] = {},
         },
 
         [22921] = {
@@ -59012,11 +58481,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.friendlyToFaction] = "",
         },
 
-        [23061] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
         [23062] = {
             [npcKeys.minLevel] = 70,
             [npcKeys.maxLevel] = 70,
@@ -59133,7 +58597,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [23100] = {
-            [npcKeys.spawns] = {},
             [npcKeys.factionID] = 14,
         },
 
@@ -59372,15 +58835,11 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [23153] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 16,
             [npcKeys.friendlyToFaction] = "",
         },
 
         [23154] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 16,
             [npcKeys.friendlyToFaction] = "",
         },
@@ -59777,11 +59236,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.maxLevel] = 60,
         },
 
-        [23261] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
         [23263] = {
             [npcKeys.friendlyToFaction] = "",
         },
@@ -59859,15 +59313,8 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.factionID] = 1735,
         },
 
-        [23281] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
         [23282] = {
             [npcKeys.minLevel] = 71,
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [23283] = {
@@ -60197,22 +59644,16 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [23353] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 90,
             [npcKeys.friendlyToFaction] = "",
         },
 
         [23354] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 90,
             [npcKeys.friendlyToFaction] = "",
         },
 
         [23355] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 90,
             [npcKeys.friendlyToFaction] = "",
         },
@@ -60773,11 +60214,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [23500] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
-        [23501] = {
             [npcKeys.spawns] = {},
             [npcKeys.zoneID] = 0,
         },
@@ -62344,10 +61780,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.spawns] = {[zoneIDs.HOWLING_FJORD] = {{52,18.3},{52.19,15.31},{52.25,17.23},{52.44,19.59},{52.48,17.37},{52.53,16.78},{52.57,18.8},{52.59,15.73},{52.63,17.96},{53.24,16.65},{53.26,19.76},{53.28,18.98},{53.47,17.56},{53.86,17.59},{53.97,18.88},{53.98,20.18},{54.02,18.93}}},
         },
 
-        [23875] = {
-            [npcKeys.waypoints] = {},
-        },
-
         [23876] = {
             [npcKeys.spawns] = {[zoneIDs.HOWLING_FJORD] = {{52.29,18.59},{52.47,17.04},{52.48,17.68},{52.69,16.2},{52.78,18.55},{52.92,17.78},{52.93,16.73},{53.1,19.27},{53.37,16.72},{53.39,17.9},{53.44,18.69},{53.83,18.62},{53.83,19.3},{53.84,17.87},{54.24,19.18}}},
         },
@@ -63252,8 +62684,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [24160] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.friendlyToFaction] = "",
         },
 
@@ -63399,10 +62829,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [24205] = {
             [npcKeys.spawns] = {[zoneIDs.IRONFORGE] = {{31.65,17.83}}, [zoneIDs.ORGRIMMAR] = {{36.8,74.53}}},
             [npcKeys.zoneID] = zoneIDs.IRONFORGE,
-        },
-
-        [24206] = {
-            [npcKeys.spawns] = {},
         },
 
         [24207] = {
@@ -64537,7 +63963,7 @@ QuestieCompat.RegisterCorrection("npcData", function()
 
         [24566] = {
             [npcKeys.maxLevelHealth] = 6986,
-            [npcKeys.spawns] = {[zoneIDs.BOREAN_TUNDRA] = {{39.47,54.06},{39.48,56.42},{39.59,55.34},{39.74,52.95},{39.83,54.81},{39.85,51.84},{40.11,57.33},{40.16,51.18},{40.26,54.18},{40.27,58.26},{40.39,52.83},{40.42,56.01},{40.66,50.83},{40.71,57.66},{40.91,52.09},{41.39,50.82},{41.56,50.06},{41.57,59.11},{41.67,59.7},{41.67,60.62},{41.78,52.04},{41.85,58.36},{41.86,50.7},{41.99,50.3},{42.14,58.9},{42.14,60.36},{42.15,57.78},{42.17,61.58},{42.32,49.7},{42.53,58.41},{42.58,57.64},{42.73,51.24},{43.36,59.49}}, [zoneIDs.THE_FROZEN_SEA] = {{17.26,37.88}}},
+            [npcKeys.spawns] = {[zoneIDs.BOREAN_TUNDRA] = {{39.47,54.06},{39.48,56.42},{39.59,55.34},{39.74,52.95},{39.83,54.81},{39.85,51.84},{40.11,57.33},{40.16,51.18},{40.26,54.18},{40.27,58.26},{40.39,52.83},{40.42,56.01},{40.66,50.83},{40.71,57.66},{40.91,52.09},{41.39,50.82},{41.56,50.06},{41.57,59.11},{41.67,59.7},{41.67,60.62},{41.78,52.04},{41.85,58.36},{41.86,50.7},{41.99,50.3},{42.14,58.9},{42.14,60.36},{42.15,57.78},{42.17,61.58},{42.32,49.7},{42.53,58.41},{42.58,57.64},{42.73,51.24},{43.36,59.49}}, [zoneIDs.AZEROTH] = {{15.54,40}}},
         },
 
         [24567] = {
@@ -65371,11 +64797,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.friendlyToFaction] = "",
         },
 
-        [24762] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
         [24763] = {
             [npcKeys.friendlyToFaction] = "",
         },
@@ -65967,7 +65388,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [24910] = {
             [npcKeys.minLevelHealth] = 1,
             [npcKeys.maxLevelHealth] = 1,
-            [npcKeys.waypoints] = {},
         },
 
         [24911] = {
@@ -66204,7 +65624,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [24954] = {
-            [npcKeys.waypoints] = {},
             [npcKeys.factionID] = 1953,
         },
 
@@ -66481,10 +65900,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.spawns] = {[zoneIDs.ISLE_OF_QUEL_DANAS] = {{46.31,45.56},{46.75,41.68},{47.4,40.38},{47.7,43.58},{48.34,44.17},{48.49,44.91},{48.72,44.18},{49.32,39.32},{49.34,40.37},{49.49,44.56},{49.56,39.06},{49.57,43.26},{49.77,39.91},{50.2,38.97},{50.53,39.1},{50.54,39.61},{51.16,43.02},{51.63,41.06},{51.71,43.08},{53.27,41.3},{53.88,40.62}}},
         },
 
-        [25003] = {
-            [npcKeys.waypoints] = {},
-        },
-
         [25004] = {
             [npcKeys.minLevel] = 70,
             [npcKeys.maxLevel] = 70,
@@ -66605,7 +66020,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [25026] = {
             [npcKeys.minLevelHealth] = 1,
             [npcKeys.maxLevelHealth] = 1,
-            [npcKeys.waypoints] = {},
         },
 
         [25027] = {
@@ -69206,11 +68620,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.maxLevelHealth] = 42,
         },
 
-        [25655] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
         [25656] = {
             [npcKeys.minLevel] = 70,
             [npcKeys.maxLevel] = 70,
@@ -69751,11 +69160,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.waypoints] = {},
         },
 
-        [25790] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
         [25791] = {
             [npcKeys.maxLevelHealth] = 8982,
             [npcKeys.spawns] = {[zoneIDs.BOREAN_TUNDRA] = {{57.2,26.9},{59.03,39.42},{59.25,40.35},{59.36,40.29},{59.53,38.78},{59.78,39.61},{59.84,37.61},{59.87,23.97},{59.92,23.92},{59.92,28.31},{60.07,25.64},{60.41,34.93},{60.46,27.08},{60.49,40.25},{60.57,29.82},{60.63,29.75},{60.64,33.67},{60.91,33.12},{60.94,34.22},{61.07,29.32},{61.08,28.28},{61.1,34.37},{61.13,37.99},{61.13,41.04},{61.17,30.69},{61.19,35.93},{61.21,39.43},{61.44,40.16},{61.57,29.67},{61.7,35.23},{61.72,36.84},{62.18,27.35},{62.3,28.49},{62.45,35.46},{62.97,36.9},{63.34,36.14},{63.4,37.6},{63.49,34.65},{63.94,36.74}}},
@@ -69901,11 +69305,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.maxLevelHealth] = 6116,
             [npcKeys.spawns] = {[zoneIDs.BOREAN_TUNDRA] = {{54.76,54.17},{54.79,54.25},{55.22,55.14},{55.41,48.91},{55.47,48.85},{55.74,49.77},{55.89,48.29},{55.91,46.4},{55.96,46.76},{56.1,45.64},{56.11,45.78},{56.37,47.52},{56.53,51.72},{56.59,50.15},{56.64,50.14},{56.66,52.42},{56.93,47.81},{56.94,47.7},{57.01,50.87},{57.04,47.3},{57.17,50.99},{57.19,46.98},{57.61,48.19},{57.62,47.99},{57.62,50.85},{57.65,48.09},{57.69,50.91},{57.7,50.77},{57.74,48.01},{57.77,45.81},{57.77,50.86},{57.83,45.75},{58.33,49.01},{58.4,49.01},{58.68,47.67},{58.75,47.73},{59,47.03}}},
             [npcKeys.friendlyToFaction] = "",
-        },
-
-        [25834] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [25835] = {
@@ -71291,10 +70690,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.zoneID] = 0,
         },
 
-        [26225] = {
-            [npcKeys.spawns] = {},
-        },
-
         [26226] = {
             [npcKeys.minLevelHealth] = 9940,
             [npcKeys.maxLevelHealth] = 9940,
@@ -71310,10 +70705,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.spawns] = {[zoneIDs.BOREAN_TUNDRA] = {{24.68,23.85}}},
             [npcKeys.waypoints] = {[zoneIDs.BOREAN_TUNDRA] = {{{24.84,24.07},{24.82,24.06},{24.66,23.84},{24.26,23.64},{23.79,23.39},{23.04,23.04},{22.45,22.82},{22.1,22.67}}}},
             [npcKeys.zoneID] = zoneIDs.BOREAN_TUNDRA,
-        },
-
-        [26232] = {
-            [npcKeys.spawns] = {},
         },
 
         [26236] = {
@@ -72134,11 +71525,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.maxLevel] = 71,
             [npcKeys.factionID] = 1922,
             [npcKeys.friendlyToFaction] = "H",
-        },
-
-        [26434] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [26436] = {
@@ -73132,7 +72518,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
 
         [26691] = {
             [npcKeys.maxLevel] = 79,
-            [npcKeys.spawns] = {},
         },
 
         [26692] = {
@@ -74178,10 +73563,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [26996] = {
             [npcKeys.spawns] = {[zoneIDs.BOREAN_TUNDRA] = {{76.21,36.94}}},
             [npcKeys.factionID] = 1922,
-        },
-
-        [27002] = {
-            [npcKeys.spawns] = {},
         },
 
         [27003] = {
@@ -76371,7 +75752,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
 
         [27642] = {
             [npcKeys.maxLevel] = 79,
-            [npcKeys.spawns] = {},
         },
 
         [27643] = {
@@ -78120,10 +77500,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.friendlyToFaction] = "",
         },
 
-        [28118] = {
-            [npcKeys.spawns] = {},
-        },
-
         [28119] = {
             [npcKeys.maxLevel] = 2,
         },
@@ -78448,8 +77824,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [28203] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.friendlyToFaction] = "",
             [npcKeys.npcFlags] = 16777216,
         },
@@ -78861,10 +78235,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.maxLevel] = 60,
         },
 
-        [28317] = {
-            [npcKeys.spawns] = {},
-        },
-
         [28318] = {
             [npcKeys.minLevel] = 80,
             [npcKeys.maxLevel] = 80,
@@ -79237,11 +78607,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [28413] = {
             [npcKeys.minLevelHealth] = 1064,
             [npcKeys.maxLevelHealth] = 1064,
-        },
-
-        [28414] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [28415] = {
@@ -80930,10 +80295,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.factionID] = 2084,
         },
 
-        [28846] = {
-            [npcKeys.spawns] = {},
-        },
-
         [28848] = {
             [npcKeys.minLevelHealth] = 1,
             [npcKeys.maxLevelHealth] = 1,
@@ -80985,13 +80346,13 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [28859] = {
-            [npcKeys.spawns] = {[4500] = {{17.06,52.4}}},
+            [npcKeys.spawns] = {[zoneIDs.THE_EYE_OF_ETERNITY] = {{17.06,52.4}}},
             [npcKeys.waypoints] = {},
             [npcKeys.factionID] = 14,
         },
 
         [28860] = {
-            [npcKeys.spawns] = {[4493] = {{50.07,47.75}}},
+            [npcKeys.spawns] = {[zoneIDs.THE_OBSIDIAN_SANCTUM] = {{50.07,47.75}}},
         },
 
         [28861] = {
@@ -81783,8 +81144,8 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.friendlyToFaction] = "",
         },
 
-        [29076] = {
-            [npcKeys.spawns] = {},
+        [29080] = {
+            [npcKeys.waypoints] = {[zoneIDs.PLAGUELANDS_THE_SCARLET_ENCLAVE] = {{{64.47,85.25},{63.9,85.53},{63.52,85.42},{62.69,84.88},{62.12,84.27},{61.93,83.68},{61.71,82.89},{61.57,82.46},{61.28,81.93},{60.79,81.26},{60.55,80.76},{60.54,80.32},{60.56,80.77},{60.81,81.37},{61.28,81.99},{61.55,82.41},{61.76,83.04},{61.92,83.73},{62.19,84.44},{62.89,85.02},{63.56,85.47},{63.96,85.51},{64.43,85.31},{64.95,84.72},{65.54,84.73},{64.96,84.72}}}},
         },
 
         [29083] = {
@@ -81868,16 +81229,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [29115] = {
             [npcKeys.spawns] = {[zoneIDs.PLAGUELANDS_THE_SCARLET_ENCLAVE] = {{53.33,44.66},{53.83,42.17},{56.67,43.17},{57.29,44.25},{57.56,39.75}}},
             [npcKeys.waypoints] = {[zoneIDs.PLAGUELANDS_THE_SCARLET_ENCLAVE] = {{{52.88,45.34},{52.93,46.35},{53.44,46.54},{53.81,46.12},{54.2,45.67},{54.15,44.97},{53.33,44.66}},{{54.13,41.36},{54.72,40.86},{54.81,41.1},{54.3,42.3},{54.18,43.36},{54.28,44.28},{53.89,44.33},{53.74,43.36},{53.83,42.17}},{{56.91,42.43},{56.69,40.4},{56.2,39.13},{55.59,39.78},{55.04,41.13},{55.03,42.53},{55.68,42.63},{56.1,43.06},{56.67,43.17}},{{57.12,45.31},{55.82,45.4},{55.55,44.66},{55.9,44.16},{56.77,43.99},{57.29,44.25}},{{58.27,39.43},{58.7,40.17},{58.67,41.1},{58.74,42.47},{57.81,43.21},{57.64,43.07},{57.51,42.97},{57.48,42.87},{57.35,42.38},{57.25,40.99},{57.15,40.19},{57.18,40.1},{57.24,40.02},{57.37,39.92},{57.56,39.75}}}},
-        },
-
-        [29117] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
-        [29118] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [29120] = {
@@ -83595,10 +82946,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.friendlyToFaction] = "",
         },
 
-        [29573] = {
-            [npcKeys.spawns] = {},
-        },
-
         [29578] = {
             [npcKeys.minLevel] = 70,
             [npcKeys.maxLevel] = 70,
@@ -84164,8 +83511,12 @@ QuestieCompat.RegisterCorrection("npcData", function()
 
         [29753] = {
             [npcKeys.minLevelHealth] = 1,
-            [npcKeys.spawns] = {[zoneIDs.STORM_PEAKS] = {{42.18,59.83},{42.99,58.68},{43.55,64.39},{43.79,57.92},{43.94,64.59},{44.53,64.57},{44.54,63.24},{44.64,60.57},{44.94,57.9},{45.49,61.84},{45.81,62.45},{45.89,53},{45.89,57.55},{45.89,61.39},{46,64.36},{46.21,67.47},{46.27,56.87},{46.29,60.6},{46.41,63.17},{46.56,61.98},{46.89,52.8},{47.07,54.86},{47.46,57.38},{47.72,62.53},{48.22,60.53},{48.87,55.11},{49.01,59.98},{49.23,62.21}}},
-            [npcKeys.waypoints] = {[zoneIDs.STORM_PEAKS] = {{{42.18,59.83},{42.99,56.79},{46.11,57.77},{50.15,56.3},{47.97,58.54},{45.75,60.46},{43.94,61.03}},{{42.99,58.68},{42.98,58.7},{44.41,64.63}},{{43.79,57.92},{45.41,58.19},{45.5,60.28},{44.33,61.59},{43.02,59.22}},{{44.53,64.57},{44.53,64.59},{43.07,60.84},{43.73,61.49},{44.61,60.92},{44.8,59.68},{44.36,58.56},{43.62,57.89},{42.83,58.42},{42.66,59.29},{42.81,60.29},{43.07,60.84},{43.73,61.49}},{{44.54,63.24},{46.24,63.85},{48.13,62.19},{46.78,58.73},{44.18,59.01},{43.75,61.31}},{{44.64,60.57},{44.06,61.27},{44.12,62.34},{44.31,62.78},{45.05,63.55},{45.9,61.99},{45.46,60.64}},{{45.49,61.84},{44.51,61.41},{45.09,59.05},{46.7,58.76},{46.87,61.26}},{{45.89,57.55},{44.86,56.9},{43.9,58.24},{43.91,59.09},{44.66,61.15},{45.71,60.97},{46.37,58.93}},{{45.89,61.39},{46.02,64.45},{47.79,64.45},{47.46,59.19},{44.9,52.44},{44.77,54.43},{45.26,58.13}},{{46,64.36},{44.35,61.6},{43.44,60.05},{41.99,57.7},{42.66,56.17},{44.13,57.07},{45.41,58.25},{46.51,59.55},{47.17,61.74},{47.58,63.51}},{{46.27,56.87},{44.22,59.5},{42.01,60.58},{41.86,58.54},{43.29,56.51}},{{46.29,60.6},{46.3,60.58},{43.16,59.3}},{{46.41,63.17},{45.12,62.15},{45.69,60.43},{46.88,59.98},{47.7,60.96},{47.41,62.11}},{{46.56,61.98},{45.8,61.08},{44.82,61.7},{44.92,63.02},{45.37,64.01},{46.22,63.92},{46.67,63.34}},{{47.72,62.53},{46.28,60.95},{44.58,60.45},{42.77,59.88},{42.62,57.6},{44.26,55.8},{45.99,57.98},{46.43,61.85},{46.46,65.49},{48.77,67.52},{50.63,66.37},{48.72,63.82}},{{48.22,60.53},{48.13,61.35},{47.51,62.42},{46.78,62.04},{46.44,60.5},{46.95,59.58},{47.6,59.5},{47.95,59.81}}}},
+            [npcKeys.spawns] = {[zoneIDs.STORM_PEAKS] = {{42.18,59.83},{42.99,58.68},{43.55,64.39},{43.79,57.92},{43.94,64.59},{44.53,64.57},{44.54,63.24},{44.64,60.57},{44.94,57.9},{45.49,61.84},{45.81,62.45},{45.89,53},{45.89,57.55},{45.89,61.39},{46,64.36},{46.21,67.47},{46.27,56.87},{46.29,60.6},{46.41,63.17},{46.56,61.98},{46.89,52.8},{47.07,54.86},{47.46,57.38},{47.72,62.53},{48.22,60.53},{48.87,55.11},{49.01,59.98},{49.23,62.21},{49.49,67.45},{49.96,72.5},{50.82,74.54},{51.07,74.22},{51.12,71.78},{51.9,74.54},{52.11,76.21},{52.47,72.14},{52.68,72.12},{53.09,75.78},{53.17,73.46},{53.92,76.88}}},
+            [npcKeys.waypoints] = {[zoneIDs.STORM_PEAKS] = {{{42.18,59.83},{42.99,56.79},{46.11,57.77},{50.15,56.3},{47.97,58.54},{45.75,60.46},{43.94,61.03}},{{42.99,58.68},{42.98,58.7},{44.41,64.63}},{{43.79,57.92},{45.41,58.19},{45.5,60.28},{44.33,61.59},{43.02,59.22}},{{44.53,64.57},{44.53,64.59},{43.07,60.84},{43.73,61.49},{44.61,60.92},{44.8,59.68},{44.36,58.56},{43.62,57.89},{42.83,58.42},{42.66,59.29},{42.81,60.29},{43.07,60.84},{43.73,61.49}},{{44.54,63.24},{46.24,63.85},{48.13,62.19},{46.78,58.73},{44.18,59.01},{43.75,61.31}},{{44.64,60.57},{44.06,61.27},{44.12,62.34},{44.31,62.78},{45.05,63.55},{45.9,61.99},{45.46,60.64}},{{45.49,61.84},{44.51,61.41},{45.09,59.05},{46.7,58.76},{46.87,61.26}},{{45.89,57.55},{44.86,56.9},{43.9,58.24},{43.91,59.09},{44.66,61.15},{45.71,60.97},{46.37,58.93}},{{45.89,61.39},{46.02,64.45},{47.79,64.45},{47.46,59.19},{44.9,52.44},{44.77,54.43},{45.26,58.13}},{{46,64.36},{44.35,61.6},{43.44,60.05},{41.99,57.7},{42.66,56.17},{44.13,57.07},{45.41,58.25},{46.51,59.55},{47.17,61.74},{47.58,63.51}},{{46.27,56.87},{44.22,59.5},{42.01,60.58},{41.86,58.54},{43.29,56.51}},{{46.29,60.6},{46.3,60.58},{43.16,59.3}},{{46.41,63.17},{45.12,62.15},{45.69,60.43},{46.88,59.98},{47.7,60.96},{47.41,62.11}},{{46.56,61.98},{45.8,61.08},{44.82,61.7},{44.92,63.02},{45.37,64.01},{46.22,63.92},{46.67,63.34}},{{47.72,62.53},{46.28,60.95},{44.58,60.45},{42.77,59.88},{42.62,57.6},{44.26,55.8},{45.99,57.98},{46.43,61.85},{46.46,65.49},{48.77,67.52},{50.63,66.37},{48.72,63.82}},{{48.22,60.53},{48.13,61.35},{47.51,62.42},{46.78,62.04},{46.44,60.5},{46.95,59.58},{47.6,59.5},{47.95,59.81}},{{50.01,73.56},{52.1,77.71},{53.87,76.38},{54.26,71.26},{52.52,69.85},{51.1,71.3}},{{50.63,66.37},{48.72,63.82},{47.72,62.53},{46.28,60.95},{44.58,60.45},{42.77,59.88},{42.62,57.6},{44.26,55.8},{45.99,57.98},{46.43,61.85},{46.46,65.49},{48.77,67.52}},{{50.98,74.13},{51.03,72.88},{51.23,72.18},{51.97,70.36},{53.02,69.16},{53.88,71.61},{54.35,73.97},{54.28,74.97},{53.85,76.08},{52.43,77.07},{51.1,75.73}},{{51.09,70.55},{51.89,69.86},{53.28,69.82},{54.09,71.58},{54.34,72.55},{54.43,75.58},{52.23,77.34},{50.9,76.24},{49.99,74.91},{49.84,72.84}},{{51.27,75.91},{52.71,76.77},{53.55,76.91},{54.26,76.14},{54.07,72.41},{53.1,69.43},{52.11,69.95},{50.88,71.9},{50.85,74.42}},{{51.66,77.34},{50.66,76.56},{49.58,75.33},{50.52,72.01},{50.89,71.27},{51.95,70.04},{52.6,69.76},{53.25,70.28},{53.53,70.76},{53.8,71.8},{54.14,72.77},{54.21,76.55}},{{52.08,76.19},{51.45,75.28},{51.14,74.22},{51.45,72.4},{52.31,70.36},{52.75,70.42},{52.99,70.99},{53.32,71.8},{53.99,73.31},{54.25,74.61},{54.02,75.94},{52.96,76.57}},{{52.25,70.91},{51.52,71.75},{50.97,72.82},{51.22,74.56},{51.91,76.21},{53.35,76.44},{54.1,75.23},{54.09,72.84},{53.55,71.48},{52.58,70.8}},{{52.62,71.66},{52.98,71.93},{53.32,73.1},{53.27,74.27},{52.46,74.66},{51.86,74.21},{51.53,72.78},{52.15,71.75}},{{53.66,75.05},{54.18,73.78},{53.66,71.14},{52.53,70.61},{51.99,71.34},{51.5,72.01},{51.04,73.8},{52.01,75.56},{52.96,76.16}}}},
+        },
+
+        [29755] = {
+            [npcKeys.spawns] = {[zoneIDs.STORM_PEAKS] = {{45.23,66.72},{45.26,67.22},{45.45,66.9},{45.67,67.4},{45.77,66.86},{52.03,73.65},{52.15,74.89},{52.21,72.58},{52.24,73.46},{52.33,74.73},{52.37,73.66},{52.39,75.42},{52.47,75.73},{52.49,72.85},{52.5,73.19},{52.63,74.99},{52.65,75.31},{52.68,73.56},{52.83,73.24},{53.03,75.32},{53.27,75.67},{53.28,74.78},{53.39,75.13},{53.54,74.66}}},
         },
 
         [29756] = {
@@ -84251,8 +83602,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [29775] = {
             [npcKeys.minLevel] = 80,
             [npcKeys.maxLevel] = 80,
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 35,
             [npcKeys.friendlyToFaction] = "AH",
         },
@@ -84560,7 +83909,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [29861] = {
             [npcKeys.minLevel] = 79,
             [npcKeys.maxLevel] = 79,
-            [npcKeys.spawns] = {},
             [npcKeys.factionID] = 1954,
             [npcKeys.friendlyToFaction] = "",
         },
@@ -85241,8 +84589,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [30053] = {
             [npcKeys.minLevel] = 78,
             [npcKeys.maxLevel] = 80,
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
             [npcKeys.factionID] = 16,
             [npcKeys.friendlyToFaction] = "",
         },
@@ -85448,7 +84794,7 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [30090] = {
-            [npcKeys.spawns] = {[4500] = {{38.36,49.93},{38.43,49.91},{38.44,50.04},{38.49,49.99},{38.51,50.1}}},
+            [npcKeys.spawns] = {[zoneIDs.THE_EYE_OF_ETERNITY] = {{38.36,49.93},{38.43,49.91},{38.44,50.04},{38.49,49.99},{38.51,50.1}}},
             [npcKeys.factionID] = 35,
             [npcKeys.friendlyToFaction] = "AH",
         },
@@ -87040,8 +86386,8 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [30453] = {
-            [npcKeys.spawns] = {[4493] = {{44.5,56.63},{45.47,56.14},{48.08,63.31},{48.69,28.82},{49.02,63.58},{49.79,29.05}}},
-            [npcKeys.waypoints] = {[4493] = {{{41.54,57.75},{39.7,57.05},{38.19,54.78},{37.01,51.46},{37.22,45.49},{37.97,42.33},{40.11,41.27},{41.89,41.59},{43.18,40.87},{45.14,41.82},{43.18,40.87},{41.89,41.59},{40.11,41.27},{37.97,42.33},{37.22,45.49},{37.01,51.46},{38.19,54.78},{39.7,57.05},{41.54,57.75},{43.48,58.08},{45.04,56.77},{43.48,58.08}},{{51.67,63.81},{53.77,63.32},{56.48,60.68},{57.39,56.76},{58.39,55.5},{58.59,53.27},{58.39,55.5},{57.39,56.76},{56.48,60.68},{53.77,63.32},{54.02,63.07},{49.82,63.91},{51.67,63.81},{49.82,63.91}},{{54.26,29.64},{56.48,31.12},{57.42,33.25},{58.95,35.79},{60.85,37.15},{61.92,38.43},{60.04,40.93},{58.63,42.19},{58.06,43.88},{57.61,45.83},{58.06,43.88},{58.63,42.19},{60.04,40.93},{61.92,38.43},{60.85,37.15},{58.95,35.79},{57.42,33.25},{56.48,31.12},{54.26,29.64},{51.88,29.42},{50.14,29.2},{51.88,29.42}}}},
+            [npcKeys.spawns] = {[zoneIDs.THE_OBSIDIAN_SANCTUM] = {{44.5,56.63},{45.47,56.14},{48.08,63.31},{48.69,28.82},{49.02,63.58},{49.79,29.05}}},
+            [npcKeys.waypoints] = {[zoneIDs.THE_OBSIDIAN_SANCTUM] = {{{41.54,57.75},{39.7,57.05},{38.19,54.78},{37.01,51.46},{37.22,45.49},{37.97,42.33},{40.11,41.27},{41.89,41.59},{43.18,40.87},{45.14,41.82},{43.18,40.87},{41.89,41.59},{40.11,41.27},{37.97,42.33},{37.22,45.49},{37.01,51.46},{38.19,54.78},{39.7,57.05},{41.54,57.75},{43.48,58.08},{45.04,56.77},{43.48,58.08}},{{51.67,63.81},{53.77,63.32},{56.48,60.68},{57.39,56.76},{58.39,55.5},{58.59,53.27},{58.39,55.5},{57.39,56.76},{56.48,60.68},{53.77,63.32},{54.02,63.07},{49.82,63.91},{51.67,63.81},{49.82,63.91}},{{54.26,29.64},{56.48,31.12},{57.42,33.25},{58.95,35.79},{60.85,37.15},{61.92,38.43},{60.04,40.93},{58.63,42.19},{58.06,43.88},{57.61,45.83},{58.06,43.88},{58.63,42.19},{60.04,40.93},{61.92,38.43},{60.85,37.15},{58.95,35.79},{57.42,33.25},{56.48,31.12},{54.26,29.64},{51.88,29.42},{50.14,29.2},{51.88,29.42}}}},
         },
 
         [30454] = {
@@ -87866,16 +87212,16 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [30680] = {
-            [npcKeys.spawns] = {[4493] = {{40,60.34},{42.73,34.28},{60.13,56.62},{61.45,43.92}}},
-            [npcKeys.waypoints] = {[4493] = {{{40.36,38.95},{41.66,39.77},{43.66,38.93},{44.35,36.35},{44.48,33.73},{44.44,34.55},{42.72,34.76},{41.04,36.75}},{{41.33,65.01},{43.61,65.78},{44.94,67.6},{46.4,66.63},{46.65,64.18},{46.35,61.22},{44.39,60.01},{41.82,60.25},{40.15,59.59},{40.06,61.1},{40.49,62.7}}}},
+            [npcKeys.spawns] = {[zoneIDs.THE_OBSIDIAN_SANCTUM] = {{40,60.34},{42.73,34.28},{60.13,56.62},{61.45,43.92}}},
+            [npcKeys.waypoints] = {[zoneIDs.THE_OBSIDIAN_SANCTUM] = {{{40.36,38.95},{41.66,39.77},{43.66,38.93},{44.35,36.35},{44.48,33.73},{44.44,34.55},{42.72,34.76},{41.04,36.75}},{{41.33,65.01},{43.61,65.78},{44.94,67.6},{46.4,66.63},{46.65,64.18},{46.35,61.22},{44.39,60.01},{41.82,60.25},{40.15,59.59},{40.06,61.1},{40.49,62.7}}}},
         },
 
         [30681] = {
-            [npcKeys.spawns] = {[4493] = {{39.28,58.89},{42.79,32.9},{43.52,34.22},{60.42,58.31},{61.3,56.79},{62.51,42.78}}},
+            [npcKeys.spawns] = {[zoneIDs.THE_OBSIDIAN_SANCTUM] = {{39.28,58.89},{42.79,32.9},{43.52,34.22},{60.42,58.31},{61.3,56.79},{62.51,42.78}}},
         },
 
         [30682] = {
-            [npcKeys.spawns] = {[4493] = {{39.24,60.33},{40.2,59.2},{43.65,32.94},{61.26,57.97},{61.72,42.2},{62.6,44.09}}},
+            [npcKeys.spawns] = {[zoneIDs.THE_OBSIDIAN_SANCTUM] = {{39.24,60.33},{40.2,59.2},{43.65,32.94},{61.26,57.97},{61.72,42.2},{62.6,44.09}}},
         },
 
         [30683] = {
@@ -89606,7 +88952,7 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [31253] = {
-            [npcKeys.spawns] = {[4500] = {{38.41,50.04}}},
+            [npcKeys.spawns] = {[zoneIDs.THE_EYE_OF_ETERNITY] = {{38.41,50.04}}},
         },
 
         [31254] = {
@@ -93286,11 +92632,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.waypoints] = {[zoneIDs.ICECROWN] = {{{53.8,31.6},{53.7,31.54},{53.8,31.6},{53.92,31.63},{54.03,31.63},{54.16,31.61},{54.26,31.57},{54.34,31.51},{54.26,31.57},{54.16,31.61},{54.03,31.63},{53.92,31.63}},{{54.58,31.12},{54.62,31.02},{54.67,30.89},{54.69,30.76},{54.69,30.61},{54.69,30.46},{54.65,30.25},{54.69,30.46},{54.69,30.61},{54.69,30.76},{54.67,30.89},{54.62,31.02},{54.58,31.12},{54.54,31.22},{54.49,31.34},{54.54,31.22}},{{54.85,29.11},{55.26,29.12},{55.77,29.15},{55.91,29.22},{55.77,29.15},{55.26,29.12}},{{56.5,28.94},{56.24,29.28},{55.96,29.79},{55.69,30.55},{55.96,29.79},{56.24,29.28}}}},
         },
 
-        [32260] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
         [32261] = {
             [npcKeys.minLevel] = 71,
             [npcKeys.maxLevel] = 71,
@@ -96433,11 +95774,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.maxLevelHealth] = 1,
         },
 
-        [33288] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
-        },
-
         [33289] = {
             [npcKeys.spawns] = {[zoneIDs.CRYSTALSONG_FOREST] = {{55.82,74.87}}},
             [npcKeys.waypoints] = {[zoneIDs.CRYSTALSONG_FOREST] = {{{56.32,74.99},{55.64,75.03},{55.29,75.01},{54.79,75.02},{54.39,74.98},{54.22,75.39},{54.23,75.87},{54.22,75.39},{54.39,74.98},{54.79,75.02},{55.29,75.01},{55.64,75.03}}}},
@@ -97899,10 +97235,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [33691] = {
             [npcKeys.minLevel] = 80,
             [npcKeys.maxLevel] = 80,
-        },
-
-        [33695] = {
-            [npcKeys.waypoints] = {},
         },
 
         [33696] = {
@@ -101416,14 +100748,10 @@ QuestieCompat.RegisterCorrection("npcData", function()
 
         [35060] = {
             [npcKeys.minLevel] = 79,
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [35061] = {
             [npcKeys.minLevel] = 79,
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [35062] = {
@@ -101455,8 +100783,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
 
         [35071] = {
             [npcKeys.minLevel] = 79,
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [35072] = {
@@ -102268,11 +101594,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [35445] = {
             [npcKeys.minLevel] = 80,
             [npcKeys.maxLevel] = 80,
-        },
-
-        [35451] = {
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [35458] = {
@@ -104639,7 +103960,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [36955] = {
-            [npcKeys.waypoints] = {},
             [npcKeys.npcFlags] = 3,
         },
 
@@ -104932,8 +104252,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [37094] = {
             [npcKeys.minLevel] = 80,
             [npcKeys.maxLevel] = 80,
-            [npcKeys.spawns] = {},
-            [npcKeys.zoneID] = 0,
         },
 
         [37098] = {
