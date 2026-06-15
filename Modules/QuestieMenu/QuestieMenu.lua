@@ -65,6 +65,7 @@ local _townsfolk_texturemap = {
     ["Stable Master"] = "Interface\\Minimap\\tracking\\stablemaster",
     ["Spirit Healer"] = "Interface\\raidframe\\raid-icon-rez",
     ["Weapon Master"] = QuestieLib.AddonPath.."Icons\\slay.blp",
+    ["Barber"] = QuestieLib.AddonPath.."Icons\\barber.blp",
     ["Riding Trainer"] = "Interface\\Icons\\ability_mount_ridinghorse",
     ["Moonwell"] = "Interface\\Icons\\inv_fabric_moonrag_01.blp",
     ["Profession Trainers"] = "Interface\\Minimap\\tracking\\profession",

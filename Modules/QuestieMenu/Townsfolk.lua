@@ -114,6 +114,7 @@ function Townsfolk.Initialize()
         ["Auctioneer"] = townsfolkData["Auctioneer"].data,
         ["Banker"] = townsfolkData["Banker"].data,
         ["Battlemaster"] = townsfolkData["Battlemaster"].data,
+        ["Barber"] = {},
         ["Flight Master"] = townsfolkData["Flight Master"].data,
         ["Innkeeper"] = townsfolkData["Innkeeper"].data,
         ["Riding Trainer"] = {},
@@ -172,17 +173,26 @@ function Townsfolk.Initialize()
         count = count + 1
     end
 
-    local ridingTrainers = {}
-    for _, id in pairs(townfolk["Riding Trainer"]) do
-        ridingTrainers[id] = true
+    local subNameTownsfolk = {
+        ["Barber"] = "Barber",
+        ["Riding Trainer"] = "Riding Trainer",
+        ["Cold Weather Flying Trainer"] = "Riding Trainer",
+    }
+    local subNameTownsfolkIds = {}
+    for _, key in pairs(subNameTownsfolk) do
+        subNameTownsfolkIds[key] = {}
+        for _, id in pairs(townfolk[key]) do
+            subNameTownsfolkIds[key][id] = true
+        end
     end
 
     count = 0
     for id, npcData in pairs(QuestieDB.npcData) do
         local subName = npcData[QuestieDB.npcKeys.subName]
-        if (subName == "Riding Trainer" or subName == "Cold Weather Flying Trainer") and npcData[QuestieDB.npcKeys.spawns] and not ridingTrainers[id] then
-            ridingTrainers[id] = true
-            tinsert(townfolk["Riding Trainer"], id)
+        local key = subNameTownsfolk[subName]
+        if key and npcData[QuestieDB.npcKeys.spawns] and not subNameTownsfolkIds[key][id] then
+            subNameTownsfolkIds[key][id] = true
+            tinsert(townfolk[key], id)
         end
 
         if count > 700 then
