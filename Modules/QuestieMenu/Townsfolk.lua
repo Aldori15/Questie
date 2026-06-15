@@ -116,6 +116,7 @@ function Townsfolk.Initialize()
         ["Battlemaster"] = townsfolkData["Battlemaster"].data,
         ["Flight Master"] = townsfolkData["Flight Master"].data,
         ["Innkeeper"] = townsfolkData["Innkeeper"].data,
+        ["Riding Trainer"] = {},
         ["Weapon Master"] = {}, -- populated below
     }
 
@@ -165,6 +166,26 @@ function Townsfolk.Initialize()
         end
 
         if count > 10 then -- Yield every 10 iterations, 10 is just a madeup number, is pretty fast.
+            count = 0
+            coroutine.yield()
+        end
+        count = count + 1
+    end
+
+    local ridingTrainers = {}
+    for _, id in pairs(townfolk["Riding Trainer"]) do
+        ridingTrainers[id] = true
+    end
+
+    count = 0
+    for id, npcData in pairs(QuestieDB.npcData) do
+        local subName = npcData[QuestieDB.npcKeys.subName]
+        if (subName == "Riding Trainer" or subName == "Cold Weather Flying Trainer") and npcData[QuestieDB.npcKeys.spawns] and not ridingTrainers[id] then
+            ridingTrainers[id] = true
+            tinsert(townfolk["Riding Trainer"], id)
+        end
+
+        if count > 700 then
             count = 0
             coroutine.yield()
         end
