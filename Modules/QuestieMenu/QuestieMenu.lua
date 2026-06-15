@@ -876,7 +876,7 @@ function QuestieMenu:Show(hideDelay)
         tinsert(menuTable, { text= l10n('Reload UI'), func=function() ReloadUI() end})
     end
 
-    tinsert(menuTable, {text= l10n('Cancel'), func=function() end})
+    tinsert(menuTable, {text= Questie:Colorize(l10n("Cancel"), "pvpRed"), func=function() end})
     LibDropDown:EasyMenu(menuTable, QuestieMenu.menu, "cursor", -80, -15, "MENU", hideDelay or 2)
 end
 
