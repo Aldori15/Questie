@@ -41,8 +41,8 @@ local function _GetDefaultExpansion()
 end
 
 function _QuestieJourney.questsByFaction:DrawTab(container)
-    _QuestieJourney.questsByFaction:InitializeFactionData()
     _QuestieJourney.questsByFaction:InitializeFactionQuestData()
+    _QuestieJourney.questsByFaction:InitializeFactionData()
 
     ---@class AceSimpleGroup
     treegroup = AceGUI:Create("SimpleGroup")

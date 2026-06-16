@@ -68,6 +68,12 @@ local referencedFactionFields = {
 local referencedFactionIds
 local factionDataInitialized = false
 
+local function _AddReferencedFactionId(refs, factionId)
+    if factionId then
+        refs[factionId] = true
+    end
+end
+
 local function _RegisterFactionForExpansion(factionId, introOrder)
     local factionName = QuestieReputation.GetFactionName(factionId)
     if not factionName or factionName == "" then
@@ -128,25 +134,16 @@ local function _CollectReferencedFactionIds()
 
             if _IsQuestAvailableToPlayer(requiredRaces, requiredClasses) then
                 if requiredMinRep then
-                    local factionId = requiredMinRep[1]
-                    if factionId then
-                        refs[factionId] = true
-                    end
+                    _AddReferencedFactionId(refs, requiredMinRep[1])
                 end
 
                 if requiredMaxRep then
-                    local factionId = requiredMaxRep[1]
-                    if factionId then
-                        refs[factionId] = true
-                    end
+                    _AddReferencedFactionId(refs, requiredMaxRep[1])
                 end
 
                 if reputationReward then
                     for _, reward in pairs(reputationReward) do
-                        local factionId = reward[1]
-                        if factionId then
-                            refs[factionId] = true
-                        end
+                        _AddReferencedFactionId(refs, reward[1])
                     end
                 end
 
@@ -203,6 +200,23 @@ local function _PopulateFactionsByExpansion()
     end
 end
 
+local function _PruneFactionsWithoutQuests()
+    if not QuestieJourney.factionsByExpansion or not factionQuestMap then
+        return
+    end
+
+    for _, bucket in pairs(QuestieJourney.factionsByExpansion) do
+        if bucket then
+            for factionId in pairs(bucket) do
+                local questsForFaction = factionQuestMap[factionId]
+                if (not questsForFaction) or (not next(questsForFaction)) then
+                    bucket[factionId] = nil
+                end
+            end
+        end
+    end
+end
+
 local function _EnsureFactionDataInitialized()
     if factionDataInitialized then
         return
@@ -210,6 +224,7 @@ local function _EnsureFactionDataInitialized()
 
     _BuildExpansionDropdownData()
     _PopulateFactionsByExpansion()
+    _PruneFactionsWithoutQuests()
 
     factionDataInitialized = true
 end
@@ -258,6 +273,8 @@ function _EnsureFactionQuestData()
     end
 
     factionQuestMap = {}
+    local refs = referencedFactionIds or {}
+    local shouldCollectReferences = not referencedFactionIds
 
     local HIDE_ON_MAP = QuestieQuestBlacklist.HIDE_ON_MAP
     local hiddenQuests = QuestieCorrections.hiddenQuests
@@ -279,6 +296,30 @@ function _EnsureFactionQuestData()
         local requiredClasses = queryResult[5]
 
         if _IsQuestAvailableToPlayer(requiredRaces, requiredClasses) then
+            if shouldCollectReferences then
+                if requiredMinRep then
+                    _AddReferencedFactionId(refs, requiredMinRep[1])
+                end
+
+                if requiredMaxRep then
+                    _AddReferencedFactionId(refs, requiredMaxRep[1])
+                end
+
+                if reputationReward then
+                    for _, reward in pairs(reputationReward) do
+                        _AddReferencedFactionId(refs, reward[1])
+                    end
+                end
+
+                if requiredRaces and requiredRaces ~= QuestieDB.raceKeys.NONE then
+                    if bit.band(requiredRaces, QuestieDB.raceKeys.ALL_ALLIANCE) == requiredRaces then
+                        refs[factionIDs.ALLIANCE] = true
+                    elseif bit.band(requiredRaces, QuestieDB.raceKeys.ALL_HORDE) == requiredRaces then
+                        refs[factionIDs.HORDE] = true
+                    end
+                end
+            end
+
             -- Filter out hidden quests
             if hiddenQuests and (((not hiddenQuests[questId]) or hiddenQuests[questId] == HIDE_ON_MAP) or QuestieEvent:IsEventQuest(questId)) then
                 if requiredMinRep then
@@ -309,19 +350,11 @@ function _EnsureFactionQuestData()
     end
 
     QuestieJourney.factionMap = factionQuestMap
-
-    if QuestieJourney.factionsByExpansion then
-        for expansionKey, bucket in pairs(QuestieJourney.factionsByExpansion) do
-            if bucket then
-                for factionId in pairs(bucket) do
-                    local questsForFaction = factionQuestMap[factionId]
-                    if (not questsForFaction) or (not next(questsForFaction)) then
-                        bucket[factionId] = nil
-                    end
-                end
-            end
-        end
+    if shouldCollectReferences then
+        referencedFactionIds = refs
     end
+
+    _PruneFactionsWithoutQuests()
 end
 
 ---Manage the faction tree itself and the contents of the per-quest window
