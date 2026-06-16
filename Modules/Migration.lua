@@ -141,6 +141,9 @@ local migrationFunctions = {
     [23] = function()
         QuestieIconVisibility:MigrateProfile(Questie.db.profile)
     end,
+    [24] = function()
+        Questie.db.profile.showQuestXpAtMaxLevel = false
+    end,
 }
 
 function Migration:Migrate()

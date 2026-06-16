@@ -371,9 +371,10 @@ function MapIconTooltip:Show()
             local xpReward = QuestXP:GetQuestLogRewardXP(questId, Questie.db.profile.showQuestXpAtMaxLevel);
             r, g, b = QuestieLib:GetDifficultyColorPercent(quest.level);
             if haveGiver then
-                if shift and xpReward then
+                if shift and xpReward > 0 then
+                    local rewardString = QuestieLib:PrintDifficultyColor(quest.level, "(" .. FormatLargeNumber(xpReward) .. xpString .. ")" .. " ", QuestieDB.IsRepeatable(questId), QuestieEvent:IsEventQuest(questId), QuestieDB.IsPvPQuest(questId))
                     self:AddLine(" ");
-                    self:AddDoubleLine(questTitle, "(" .. FormatLargeNumber(xpReward) .. xpString .. ") (" .. l10n("Active") .. ")", 0.2, 1, 0.2, 1, 1, 0);
+                    self:AddDoubleLine(questTitle, rewardString .. "(" .. l10n("Active") .. ")", 0.2, 1, 0.2, 1, 1, 0);
                     haveGiver = false -- looks better when only the first one shows (active)
                 else
                     self:AddLine(" ");
