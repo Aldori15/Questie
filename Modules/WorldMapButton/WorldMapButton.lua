@@ -8,11 +8,14 @@ local l10n = QuestieLoader:ImportModule("l10n")
 local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
 ---@type QuestieQuest
 local QuestieQuest = QuestieLoader:ImportModule("QuestieQuest")
+---@type QuestieOptions
+local QuestieOptions = QuestieLoader:ImportModule("QuestieOptions")
+---@type QuestieJourney
+local QuestieJourney = QuestieLoader:ImportModule("QuestieJourney")
 ---@type QuestieMenu
 local QuestieMenu = QuestieLoader:ImportModule("QuestieMenu")
-
----@type AceConfigDialog-3.0
-local AceConfigDialog = LibStub("AceConfigDialog-3.0")
+---@type QuestieCombatQueue
+local QuestieCombatQueue = QuestieLoader:ImportModule("QuestieCombatQueue")
 
 local KButtons = QuestieCompat.KButtons or LibStub("Krowi_WorldMapButtons-1.4")
 
@@ -204,9 +207,11 @@ local function UpdateTooltip(self)
     tooltip:SetPoint("TOPRIGHT", self, "BOTTOMRIGHT", 0, 0);
     tooltip:AddDoubleLine(Questie:Colorize("Questie", 'gold'), Questie:Colorize(QuestieLib:GetAddonVersionString(), 'gray'))
     tooltip:AddLine(" ")
-    local toggleLabel = Questie.db.profile.enabled and l10n('Hide Questie') or l10n('Show Questie')
-    tooltip:AddDoubleLine(Questie:Colorize(l10n('Left Click'), 'lightBlue'), Questie:Colorize(toggleLabel, 'white'))
+    tooltip:AddDoubleLine(Questie:Colorize(l10n('Left Click'), 'lightBlue'), Questie:Colorize(l10n('Toggle My Journey'), 'white'))
     tooltip:AddDoubleLine(Questie:Colorize(l10n('Right Click'), 'lightBlue'), Questie:Colorize(l10n('Toggle Menu'), 'white'))
+    tooltip:AddDoubleLine(Questie:Colorize(l10n('Shift') .. ' + ' .. l10n('Left Click'), 'lightBlue'), Questie:Colorize(l10n('Questie Options'), 'white'))
+    local toggleLabel = Questie.db.profile.enabled and l10n('Hide Questie') or l10n('Show Questie')
+    tooltip:AddDoubleLine(Questie:Colorize(l10n('Ctrl + Shift + Left Click'), 'lightBlue'), Questie:Colorize(toggleLabel, 'white'))
     tooltip:Show()
 end
 
@@ -215,17 +220,39 @@ QuestieWorldMapButtonMixin = {
     OnHide = function() end,
     OnMouseDown = function(_, button)
         if button == "LeftButton" then
-            Questie.db.profile.enabled = (not Questie.db.profile.enabled)
-            QuestieQuest:ToggleNotes(Questie.db.profile.enabled)
-            if GameTooltip:IsShown() and GameTooltip:GetOwner() == mapButton then
-                UpdateTooltip(mapButton)
+            if IsControlKeyDown() and IsShiftKeyDown() then
+                Questie.db.profile.enabled = (not Questie.db.profile.enabled)
+                QuestieQuest:ToggleNotes(Questie.db.profile.enabled)
+                if GameTooltip:IsShown() and GameTooltip:GetOwner() == mapButton then
+                    UpdateTooltip(mapButton)
+                end
+
+                QuestieOptions:HideFrame()
+                return
+            elseif IsShiftKeyDown() then
+                QuestieOptions:HideFrame()
+                if InCombatLockdown() then
+                    Questie:Print(l10n("Questie will open after combat ends."))
+                end
+                QuestieCombatQueue:Queue(function()
+                    QuestieOptions:OpenConfigWindow()
+                end)
+                return
+            elseif IsModifierKeyDown() then
+                return
             end
-            -- Refresh options UI if open to reflect new state
-            if _G.QuestieConfigFrame and _G.QuestieConfigFrame:IsShown() then
-                AceConfigDialog:Open("Questie", _G.QuestieConfigFrame)
-            end
+
+            QuestieOptions:HideFrame()
+            QuestieJourney:ToggleJourneyWindow()
         elseif button == "RightButton" then
+            if IsModifierKeyDown() then
+                return
+            end
+
             QuestieMenu:Show()
+            if QuestieJourney:IsShown() then
+                QuestieJourney:ToggleJourneyWindow()
+            end
         end
     end,
     OnMouseUp = function() end,
