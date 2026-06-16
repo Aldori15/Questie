@@ -54,7 +54,7 @@ QuestieDB.npcCompilerOrder = { -- order easily skipable data first for efficienc
 }
 
 ---@enum NpcFlags
-QuestieDB.npcFlags = (Questie.IsTBC or Questie.IsWotlk) and {
+QuestieDB.npcFlags = {
     NONE = 0,
     GOSSIP = 1,
     QUEST_GIVER = 2,
@@ -71,23 +71,6 @@ QuestieDB.npcFlags = (Questie.IsTBC or Questie.IsWotlk) and {
     BATTLEMASTER = 1048576,
     AUCTIONEER = 2097152,
     STABLEMASTER = 4194304,
-} or {
-    NONE = 0,
-    GOSSIP = 1,
-    QUEST_GIVER = 2,
-    VENDOR = 4,
-    FLIGHT_MASTER = 8,
-    TRAINER = 16,
-    SPIRIT_HEALER = 32,
-    SPIRIT_GUIDE = 64,
-    INNKEEPER = 128,
-    BANKER = 256,
-    PETITIONER = 512,
-    TABARD_DESIGNER = 1024,
-    BATTLEMASTER = 2048,
-    AUCTIONEER = 4096,
-    STABLEMASTER = 8192,
-    REPAIR = 16384
 }
 
 -- temporary, until we remove the old db funcitons
