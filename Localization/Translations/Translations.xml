@@ -12,7 +12,6 @@
     <Script file="MinimapIcon\Townsfolk.lua"/>
 
     <Script file="Options\Advanced.lua"/>
-    <Script file="Options\DBMHud.lua"/>
     <Script file="Options\General.lua"/>
     <Script file="Options\Map.lua"/>
     <Script file="Options\Minimap.lua"/>
