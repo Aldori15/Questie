@@ -16,6 +16,7 @@ QuestieOptions.tabs = { ... }
 QuestieConfigFrame = nil
 
 local AceGUI = LibStub("AceGUI-3.0")
+---@type AceConfigDialog-3.0
 local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 
 -- Forward declaration
@@ -110,7 +111,6 @@ function QuestieOptions:OpenConfigWindow()
         _TrySkinJourneyButton()
         PlaySound(882)
         AceConfigDialog:Open("Questie", QuestieConfigFrame)
-        QuestieConfigFrame:Show()
     else
         QuestieConfigFrame:Hide()
     end

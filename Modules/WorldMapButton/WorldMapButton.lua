@@ -11,7 +11,7 @@ local QuestieQuest = QuestieLoader:ImportModule("QuestieQuest")
 ---@type QuestieMenu
 local QuestieMenu = QuestieLoader:ImportModule("QuestieMenu")
 
----@type AceConfigDialog
+---@type AceConfigDialog-3.0
 local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 
 local KButtons = QuestieCompat.KButtons or LibStub("Krowi_WorldMapButtons-1.4")
