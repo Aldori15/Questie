@@ -45,6 +45,7 @@ _GetAutoAcceptSettings = function()
             repeatable = true,
             pvp = true,
             rejectSharedInBattleground = Questie.db.profile.autoreject_battleground or false,
+            abandonBreadcrumbFollowup = false,
         }
         Questie.db.profile.autoAccept = autoAccept
     end
@@ -63,6 +64,9 @@ _GetAutoAcceptSettings = function()
     end
     if autoAccept.rejectSharedInBattleground == nil then
         autoAccept.rejectSharedInBattleground = Questie.db.profile.autoreject_battleground or false
+    end
+    if autoAccept.abandonBreadcrumbFollowup == nil then
+        autoAccept.abandonBreadcrumbFollowup = false
     end
 
     return autoAccept

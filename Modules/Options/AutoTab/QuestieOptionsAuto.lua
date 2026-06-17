@@ -21,6 +21,7 @@ _GetAutoAcceptSettings = function()
             repeatable = true,
             pvp = true,
             rejectSharedInBattleground = Questie.db.profile.autoreject_battleground or false,
+            abandonBreadcrumbFollowup = false,
         }
         Questie.db.profile.autoAccept = autoAccept
     end
@@ -39,6 +40,9 @@ _GetAutoAcceptSettings = function()
     end
     if autoAccept.rejectSharedInBattleground == nil then
         autoAccept.rejectSharedInBattleground = Questie.db.profile.autoreject_battleground or false
+    end
+    if autoAccept.abandonBreadcrumbFollowup == nil then
+        autoAccept.abandonBreadcrumbFollowup = false
     end
 
     return autoAccept
@@ -350,6 +354,18 @@ function QuestieOptions.tabs.auto:Initialize()
                 set = function (info, value)
                     Questie.db.profile.autoreject_nonfriend = value
                     Questie:Debug(Questie.DEBUG_DEVELOP, "Auto Reject Nonfriend toggled to:", value)
+                end,
+            },
+            autoreject_breadcrumb = {
+                type = "toggle",
+                order = 3.3,
+                name = function() return l10n('Abandon quest if breadcrumb is not completed'); end,
+                desc = function() return l10n('Automatically abandon a quest if you accept it before completing its breadcrumb quest.'); end,
+                width = 2.0,
+                get = function () return _GetAutoAcceptSettings().abandonBreadcrumbFollowup; end,
+                set = function (_, value)
+                    _GetAutoAcceptSettings().abandonBreadcrumbFollowup = value
+                    Questie:Debug(Questie.DEBUG_DEVELOP, "Auto Reject Breadcrumb toggled to:", value)
                 end,
             },
             wip_spacer = QuestieOptionsUtils:Spacer(4),

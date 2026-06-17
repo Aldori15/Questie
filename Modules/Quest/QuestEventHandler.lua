@@ -24,8 +24,12 @@ local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 local QuestieAnnounce = QuestieLoader:ImportModule("QuestieAnnounce")
 ---@type QuestiePlayer
 local QuestiePlayer = QuestieLoader:ImportModule("QuestiePlayer")
+---@type QuestieLink
+local QuestieLink = QuestieLoader:ImportModule("QuestieLink")
 ---@type IsleOfQuelDanas
 local IsleOfQuelDanas = QuestieLoader:ImportModule("IsleOfQuelDanas")
+---@type AvailableQuests
+local AvailableQuests = QuestieLoader:ImportModule("AvailableQuests")
 ---@type QuestieCombatQueue
 local QuestieCombatQueue = QuestieLoader:ImportModule("QuestieCombatQueue")
 ---@type QuestieTracker
@@ -38,6 +42,7 @@ local l10n = QuestieLoader:ImportModule("l10n")
 --- COMPATIBILITY ---
 local C_Timer = QuestieCompat.C_Timer
 local GetQuestLogTitle = QuestieCompat.GetQuestLogTitle
+local GetQuestLogIndexByID = QuestieCompat.GetQuestLogIndexByID
 local GetItemInfo = QuestieCompat.GetItemInfo
 
 local tableRemove = table.remove
@@ -193,6 +198,22 @@ function QuestEventHandler.InitQuestLogStates(changes)
     end
 end
 
+local _AbandonQuest = function(questId, breadcrumbQuestId)
+    local questLogIndex = GetQuestLogIndexByID(questId)
+    if not questLogIndex then
+        return false
+    end
+
+    SelectQuestLogEntry(questLogIndex)
+    SetAbandonQuest()
+    AbandonQuest()
+
+    local questLink = QuestieLink:GetQuestHyperLink(questId)
+    local breadcrumbLink = QuestieLink:GetQuestHyperLink(breadcrumbQuestId)
+    Questie:Print(l10n("Automatically abandoned quest %s because breadcrumb quest %s is not completed.", questLink, breadcrumbLink))
+    return true
+end
+
 --- Fires when a quest is accepted in anyway.
 ---@param questLogIndex number
 ---@param questId number
@@ -217,7 +238,7 @@ function _QuestEventHandler:QuestAccepted(questLogIndex, questId)
         _QuestEventHandler:HandleQuestAccepted(questId)
     end)
 
-    if Questie.db.profile.questAnnounceIncompleteBreadcrumb then
+    if Questie.db.profile.questAnnounceIncompleteBreadcrumb or Questie.db.profile.autoAccept.abandonBreadcrumbFollowup then
         local breadcrumbs = QuestieDB.QueryQuestSingle(questId, "breadcrumbs")
         if breadcrumbs then
             for _, breadcrumbQuestId in pairs(breadcrumbs) do
@@ -239,7 +260,14 @@ function _QuestEventHandler:QuestAccepted(questLogIndex, questId)
                     end
 
                     if QuestiePlayer.HasRequiredRace(requiredRaces) and QuestiePlayer.HasRequiredClass(requiredClasses) and (not exclusiveQuestCompleted) and (not Questie.db.char.complete[availableUntilCompleted]) then
-                        QuestieAnnounce.IncompleteBreadcrumbQuest(questId, breadcrumbQuestId)
+                        if Questie.db.profile.questAnnounceIncompleteBreadcrumb then
+                            QuestieAnnounce.IncompleteBreadcrumbQuest(questId, breadcrumbQuestId)
+                        end
+                        if Questie.db.profile.autoAccept.abandonBreadcrumbFollowup then
+                            if _AbandonQuest(questId, breadcrumbQuestId) then
+                                return
+                            end
+                        end
                     end
                 end
             end
@@ -251,6 +279,11 @@ end
 ---@param questId number
 ---@return boolean true @if the function was successful, false otherwise
 function _QuestEventHandler:HandleQuestAccepted(questId)
+    if (not questLog[questId]) or (not GetQuestLogIndexByID(questId)) then
+        Questie:Debug(Questie.DEBUG_INFO, "Quest was removed before accept handling completed. Skipping accept logic. quest:", questId)
+        return true
+    end
+
     -- We first check the quest objectives and retry in the next QLU event if they are not correct yet
     local cacheMiss, _ = QuestLogCache.CheckForChanges({[questId] = true})
     if cacheMiss then
