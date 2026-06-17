@@ -1054,6 +1054,25 @@ def objective_values_have_spawned_display_replacement(
     return not acore_has_spawned_target and questie_has_spawned_target
 
 
+def objective_values_have_questie_object_superset(acore_objectives, questie_objectives):
+    if acore_objectives == questie_objectives:
+        return False
+
+    acore_creatures, acore_objects, acore_items = acore_objectives
+    questie_creatures, questie_objects, questie_items = questie_objectives
+
+    if acore_creatures != questie_creatures:
+        return False
+
+    if not set(acore_objects).issubset(set(questie_objects)):
+        return False
+
+    if not set(acore_items).issubset(set(questie_items)):
+        return False
+
+    return len(questie_objects) > len(acore_objects)
+
+
 def raw_objectives_from_normalized(objectives):
     raw_categories = []
     for category in objectives[:3]:
@@ -2285,6 +2304,20 @@ def compare_metadata(acore_metadata, questie_metadata, creature_kill_credits, sp
                             "acore": acore[field],
                             "questie": questie[field],
                             "reason": "emptyAcoreObjectives",
+                        }
+                    )
+                    continue
+
+                if (
+                    acore[field] != questie[field]
+                    and objective_values_have_questie_object_superset(acore[field], questie[field])
+                ):
+                    preserved_display_objectives.append(
+                        {
+                            "questId": quest_id,
+                            "acore": acore[field],
+                            "questie": questie[field],
+                            "reason": "questieObjectObjectiveSuperset",
                         }
                     )
                     continue

@@ -7402,10 +7402,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
-        [5088] = {
-            [questKeys.objectives] = {nil,nil,{{12925}}},
-        },
-
         [5090] = {
             [questKeys.objectivesText] = {"Seek out Commander Ashlam Valorfist.  His base camp is located at Chillwind Camp, north of the Alterac Mountains."},
             [questKeys.exclusiveTo] = {},
