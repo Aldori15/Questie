@@ -310,6 +310,18 @@ local function _ClearActiveMinimapPins()
     end
 end
 
+local outdoorWorldInstanceIDs = {
+    [0] = true,   -- Eastern Kingdoms
+    [1] = true,   -- Kalimdor
+    [530] = true, -- Outland
+    [571] = true, -- Northrend
+}
+
+local function IsOutdoorPositionWhileInInstance(instanceID)
+    local isInInstance = IsInInstance()
+    return isInInstance and (not instanceID or outdoorWorldInstanceIDs[instanceID])
+end
+
 local function drawMinimapPin(pin, data)
     local xDist, yDist = lastXY - data.x, lastYY - data.y
 
@@ -563,6 +575,10 @@ local function UpdateMinimapPins(force)
 
     -- get the current player position
     local x, y, instanceID, currentUiMapID = QuestieCompat.GetCurrentPlayerMinimapWorldPosition()
+    if IsOutdoorPositionWhileInInstance(instanceID) then
+        _ClearActiveMinimapPins()
+        return
+    end
 
     -- get data from the API for calculations
     local zoom = pins.Minimap:GetZoom()
@@ -672,7 +688,11 @@ local function UpdateMinimapIconPosition()
     -- we have no active minimap pins, just return early
     if minimapPinCount == 0 then return end
 
-    local x, y = QuestieCompat.GetCurrentPlayerMinimapWorldPosition()
+    local x, y, instanceID = QuestieCompat.GetCurrentPlayerMinimapWorldPosition()
+    if IsOutdoorPositionWhileInInstance(instanceID) then
+        _ClearActiveMinimapPins()
+        return
+    end
 
     -- for rotating minimap support
     local facing
@@ -1048,7 +1068,8 @@ local function OnEventHandler(frame, event, ...)
         EnsureWorldMapLifecycleHooks()
     elseif event == "PLAYER_ENTERING_WORLD" then
         EnsureWorldMapLifecycleHooks()
-        UpdateMinimapPins()
+        _ClearActiveMinimapPins()
+        QueueMinimapRefresh()
         ScheduleInitialMinimapZoomProbe()
         UpdateWorldMap()
     elseif event == "WORLD_MAP_UPDATE" then
