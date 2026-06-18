@@ -315,8 +315,8 @@ function QuestieObjectFixes:Load()
             [objectKeys.zoneID] = zoneIDs.HILLSBRAD_FOOTHILLS,
         },
         [180453] = {
-            [objectKeys.spawns] = {[zoneIDs.KALIMDOR] = {{44.404,86.1}}},
-            [objectKeys.zoneID] = zoneIDs.KALIMDOR,
+            [objectKeys.spawns] = {[zoneIDs.SILITHUS] = {{51,99}}},
+            [objectKeys.zoneID] = zoneIDs.SILITHUS,
         },
         [180652] = {
             [objectKeys.spawns] = {[zoneIDs.AZEROTH] = {{27.69,95.05}}},
