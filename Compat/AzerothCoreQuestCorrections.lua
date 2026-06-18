@@ -9846,10 +9846,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.nextQuestInChain] = 0,
         },
 
-        [8304] = {
-            [questKeys.objectives] = {{{15221},{15222}}},
-        },
-
         [8306] = {
             [questKeys.objectivesText] = {"Commander Mar'alith at Cenarion Hold in Silithus wants you to find his beloved Natalia. The information that you gathered points to Hive'Regal in the south as being the area in which you may find Mistress Natalia Mar'alith.","","Do not forget to visit the dwarves at Bronzebeard's camp before venturing into the hive. They might have some additional work and advice for you.","","And $N, remember the Commander's words: \"Do what you must...\""},
         },
@@ -13331,10 +13327,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.questFlags] = 136,
         },
 
-        [9756] = {
-            [questKeys.objectives] = {{{17974}}},
-        },
-
         [9757] = {
             [questKeys.breadcrumbForQuestId] = 0,
         },
@@ -13552,10 +13544,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [9913] = {
             [questKeys.exclusiveTo] = {},
-        },
-
-        [9918] = {
-            [questKeys.objectives] = {{{18354}}},
         },
 
         [9923] = {
@@ -17544,10 +17532,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.preQuestGroup] = {12222,12223},
         },
 
-        [12231] = {
-            [questKeys.objectives] = {{{27322},{27321}}},
-        },
-
         [12232] = {
             [questKeys.objectives] = {{{27331}}},
             [questKeys.requiredSourceItems] = {37259},
@@ -17583,10 +17567,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [12245] = {
             [questKeys.preQuestSingle] = {},
-        },
-
-        [12247] = {
-            [questKeys.objectives] = {{{27322},{27321}}},
         },
 
         [12248] = {

@@ -81,6 +81,10 @@ CONDITION_QUESTREWARDED = 8
 CONDITION_SPELL = 25
 CONDITION_OBJECT_ENTRY_GUID = 31
 CONDITION_OBJECT_TYPE_UNIT = 3
+SMART_SOURCE_TYPE_CREATURE = 0
+SMART_EVENT_GOSSIP_SELECT = 62
+SMART_ACTION_KILL_UNIT = 33
+SMART_SCRIPT_KEY_COLUMNS = ("entryorguid", "source_type", "id", "link")
 
 CONDITION_KEY_COLUMNS = (
     "SourceTypeOrReferenceId",
@@ -963,6 +967,153 @@ def build_acore_spawned_creature_ids(source_root):
     return spawned_creature_ids
 
 
+def load_acore_sql_rows(source_root, table_name, key_columns):
+    base_file = source_root / "data" / "sql" / "base" / "db_world" / f"{table_name}.sql"
+    updates_dir = source_root / "data" / "sql" / "updates" / "db_world"
+    columns = extract_sql_columns(base_file, table_name)
+    rows = {}
+
+    def row_key(row):
+        try:
+            return tuple(int(row.get(column) or 0) for column in key_columns)
+        except Exception:
+            return None
+
+    def apply_insert(statement):
+        insert_match = re.search(
+            rf"(?:INSERT(?:\s+IGNORE)?\s+INTO|REPLACE\s+INTO)\s+`?{re.escape(table_name)}`?(?:\s*\((?P<columns>.*?)\))?\s*VALUES\s*(?P<values>.*)$",
+            statement,
+            re.IGNORECASE | re.DOTALL,
+        )
+        if not insert_match:
+            return
+
+        statement_columns = columns
+        if insert_match.group("columns"):
+            statement_columns = [
+                column_match.group(1)
+                for column_match in re.finditer(r"`([^`]+)`", insert_match.group("columns"))
+            ]
+
+        for row_text in split_sql_rows(insert_match.group("values")):
+            row_values = split_sql_values(row_text)
+            if len(row_values) != len(statement_columns):
+                continue
+
+            row = {}
+            try:
+                for column_name, raw_value in zip(statement_columns, row_values):
+                    row[column_name] = parse_sql_value(raw_value)
+            except Exception:
+                continue
+
+            key = row_key(row)
+            if key is not None:
+                rows[key] = row
+
+    def apply_update(statement):
+        update_match = re.search(
+            rf"UPDATE\s+`?{re.escape(table_name)}`?\s+SET\s+(?P<set>.*?)\s+WHERE\s+(?P<where>.*)$",
+            statement,
+            re.IGNORECASE | re.DOTALL,
+        )
+        if not update_match:
+            return
+
+        where_conditions = parse_simple_where_conditions(update_match.group("where"))
+        if where_conditions is None:
+            return
+
+        assignments = split_sql_values(update_match.group("set"))
+
+        for key, row in list(rows.items()):
+            if not condition_row_matches(row, where_conditions):
+                continue
+
+            context = {
+                name: value
+                for name, value in row.items()
+                if not isinstance(value, (list, tuple, dict))
+            }
+            for assignment in assignments:
+                assign_match = re.match(r"`?([A-Za-z0-9_]+)`?\s*=\s*(.+)$", assignment.strip(), re.DOTALL)
+                if not assign_match:
+                    continue
+
+                column = assign_match.group(1)
+                expr = assign_match.group(2).strip()
+                if column in context:
+                    context[column] = row.get(column) or 0
+
+                try:
+                    row[column] = parse_sql_value(expr, context)
+                except Exception:
+                    continue
+
+            new_key = row_key(row)
+            if new_key != key:
+                rows.pop(key, None)
+                if new_key is not None:
+                    rows[new_key] = row
+
+    def apply_delete(statement):
+        delete_match = re.search(
+            rf"DELETE FROM\s+`?{re.escape(table_name)}`?\s+WHERE\s+(?P<where>.*)$",
+            statement,
+            re.IGNORECASE | re.DOTALL,
+        )
+        if not delete_match:
+            return
+
+        where_conditions = parse_simple_where_conditions(delete_match.group("where"))
+        if where_conditions is None:
+            return
+
+        for key, row in list(rows.items()):
+            if condition_row_matches(row, where_conditions):
+                rows.pop(key, None)
+
+    def apply_file(path):
+        text = strip_sql_comments(path.read_text(encoding="utf-8"))
+        for statement in split_sql_statements(text):
+            if not re.search(rf"\b{re.escape(table_name)}\b", statement, re.IGNORECASE):
+                continue
+            if statement.upper().startswith(("INSERT INTO", "INSERT IGNORE INTO", "REPLACE INTO")):
+                apply_insert(statement)
+            elif statement.upper().startswith("UPDATE"):
+                apply_update(statement)
+            elif statement.upper().startswith("DELETE FROM"):
+                apply_delete(statement)
+
+    apply_file(base_file)
+    if updates_dir.exists():
+        for update_file in sorted(updates_dir.glob("*.sql")):
+            apply_file(update_file)
+
+    return list(rows.values())
+
+
+def build_smartai_gossip_kill_credit_source_map(source_root):
+    credit_sources = defaultdict(set)
+
+    for row in load_acore_sql_rows(source_root, "smart_scripts", SMART_SCRIPT_KEY_COLUMNS):
+        source_entry = normalize_int(row.get("entryorguid"))
+        if source_entry <= 0:
+            continue
+        if normalize_int(row.get("source_type")) != SMART_SOURCE_TYPE_CREATURE:
+            continue
+        if normalize_int(row.get("event_type")) != SMART_EVENT_GOSSIP_SELECT:
+            continue
+        if normalize_int(row.get("action_type")) != SMART_ACTION_KILL_UNIT:
+            continue
+
+        credit_id = normalize_int(row.get("action_param1"))
+        if credit_id > 0:
+            credit_sources[credit_id].add(source_entry)
+
+    return credit_sources
+
+
 def flatten_objective_records(records):
     return tuple(
         int(entry)
@@ -1071,6 +1222,36 @@ def objective_values_have_questie_object_superset(acore_objectives, questie_obje
         return False
 
     return len(questie_objects) > len(acore_objects)
+
+
+def objective_values_have_smartai_gossip_display_replacement(
+    acore_objectives,
+    questie_objectives,
+    smartai_gossip_kill_credit_sources,
+):
+    if acore_objectives == questie_objectives:
+        return False
+
+    if acore_objectives[1:] != questie_objectives[1:]:
+        return False
+
+    acore_creatures = acore_objectives[0]
+    questie_creatures = questie_objectives[0]
+    if not acore_creatures or len(acore_creatures) != len(questie_creatures):
+        return False
+
+    for acore_record, questie_record in zip(acore_creatures, questie_creatures):
+        if not acore_record or not questie_record:
+            return False
+
+        source_creatures = set()
+        for credit_id in acore_record:
+            source_creatures.update(smartai_gossip_kill_credit_sources.get(credit_id, set()))
+
+        if not source_creatures or not set(questie_record).issubset(source_creatures):
+            return False
+
+    return True
 
 
 def raw_objectives_from_normalized(objectives):
@@ -2272,7 +2453,15 @@ def derive_acore_metadata(source_root, quest_template_sql=None, quest_template_a
     return acore_metadata
 
 
-def compare_metadata(acore_metadata, questie_metadata, creature_kill_credits, spawned_creature_ids, protected_required_race_quest_ids=None, questie_prequest_groups=None):
+def compare_metadata(
+    acore_metadata,
+    questie_metadata,
+    creature_kill_credits,
+    spawned_creature_ids,
+    protected_required_race_quest_ids=None,
+    questie_prequest_groups=None,
+    smartai_gossip_kill_credit_sources=None,
+):
     mismatches = []
     preserved_objective_expansions = []
     preserved_display_objectives = []
@@ -2285,6 +2474,7 @@ def compare_metadata(acore_metadata, questie_metadata, creature_kill_credits, sp
     summary = Counter()
     protected_required_race_quest_ids = protected_required_race_quest_ids or set()
     questie_prequest_groups = questie_prequest_groups or {}
+    smartai_gossip_kill_credit_sources = smartai_gossip_kill_credit_sources or {}
 
     empty_entry = {field: default_field_value(field) for field in FIELD_ORDER}
 
@@ -2332,6 +2522,24 @@ def compare_metadata(acore_metadata, questie_metadata, creature_kill_credits, sp
                             "acore": acore[field],
                             "questie": questie[field],
                             "reason": "questieDisplayHelpers",
+                        }
+                    )
+                    continue
+
+                if (
+                    acore[field] != questie[field]
+                    and objective_values_have_smartai_gossip_display_replacement(
+                        acore[field],
+                        questie[field],
+                        smartai_gossip_kill_credit_sources,
+                    )
+                ):
+                    preserved_display_objectives.append(
+                        {
+                            "questId": quest_id,
+                            "acore": acore[field],
+                            "questie": questie[field],
+                            "reason": "smartAiGossipKillCreditDisplay",
                         }
                     )
                     continue
@@ -2709,6 +2917,7 @@ def main():
     creature_template_rows = load_acore_sql_table(source_root, "creature_template", key_column="entry")
     creature_kill_credits = build_creature_kill_credit_map(creature_template_rows)
     spawned_creature_ids = build_acore_spawned_creature_ids(source_root)
+    smartai_gossip_kill_credit_sources = build_smartai_gossip_kill_credit_source_map(source_root)
     (
         mismatches,
         field_counts,
@@ -2726,6 +2935,7 @@ def main():
         spawned_creature_ids,
         protected_required_race_quest_ids,
         questie_prequest_groups,
+        smartai_gossip_kill_credit_sources,
     )
     objective_display_risks = build_objective_display_risks(
         mismatches,
