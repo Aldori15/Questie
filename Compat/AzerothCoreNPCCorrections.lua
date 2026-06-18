@@ -29939,6 +29939,8 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [15215] = {
             [npcKeys.minLevelHealth] = 5180,
             [npcKeys.maxLevelHealth] = 5180,
+            [npcKeys.spawns] = {[zoneIDs.SILITHUS] = {{51.96,99.0}}},
+            [npcKeys.zoneID] = zoneIDs.SILITHUS,
         },
 
         [15216] = {
