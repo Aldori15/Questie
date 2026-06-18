@@ -304,6 +304,15 @@ function QuestieWotlkNpcFixes:Load()
         [15564] = {
             [npcKeys.spawns] = {[zoneIDs.UNDERCITY] = {{66.66,38.19}}},
         },
+        [15609] = {
+            [npcKeys.spawns] = {[zoneIDs.SILITHUS] = {{54.96, 87.98}}},
+        },
+        [15610] = {
+            [npcKeys.spawns] = {[zoneIDs.SILITHUS] = {{25.29, 55.30}}},
+        },
+        [15611] = {
+            [npcKeys.spawns] = {[zoneIDs.SILITHUS] = {{43.97, 16.11}}},
+        },
         [15732] = {
             [npcKeys.spawns] = {
                 [zoneIDs.THE_EXODAR] = {{79.28,55.14}},
