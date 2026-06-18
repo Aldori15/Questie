@@ -77,6 +77,7 @@ QuestieCorrections.CLASSIC_AND_TBC = 7 -- Hide in both Classic and TBC
 QuestieCorrections.killCreditObjectiveFirst = {} -- Only used for TBC quests
 QuestieCorrections.itemObjectiveFirst = {}
 QuestieCorrections.questTooltipHints = {}
+QuestieCorrections.objectiveTooltipHints = {}
 
 -- this function filters a table of values, if the value is TBC_ONLY or CLASSIC_ONLY, set it to true or nil if that case is met
 ---@generic T

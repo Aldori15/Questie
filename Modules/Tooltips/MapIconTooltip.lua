@@ -166,10 +166,10 @@ function MapIconTooltip:Show()
                     local orderedTooltips = {}
                     iconData.ObjectiveData:Update()
                     local tooltips = _MapIconTooltip:GetObjectiveTooltip(icon)
-                    for _, tip in pairs(tooltips) do
+                    for _, tip in ipairs(tooltips) do
                         tinsert(orderedTooltips, 1, tip);
                     end
-                    for _, tip in pairs(orderedTooltips) do
+                    for _, tip in ipairs(orderedTooltips) do
                         local quest = questOrder[key]
                         _MapIconTooltip:AddTooltipsForQuest(icon, tip, quest, usedText)
                     end
@@ -431,7 +431,7 @@ function MapIconTooltip:Show()
             if shift then
                 local creatureLevels = QuestieDB:GetCreatureLevels(quest) -- Data for min and max level
                 local addedCreatureNames = {}
-                for _, textData in pairs(textList) do
+                for _, textData in ipairs(textList) do
                     for textLine, nameData in pairs(textData) do
                         local dataType = type(nameData)
                         if dataType == "table" then
@@ -451,7 +451,7 @@ function MapIconTooltip:Show()
                     end
                 end
             else
-                for _, textData in pairs(textList) do
+                for _, textData in ipairs(textList) do
                     for textLine, _ in pairs(textData) do
                         self:AddLine("   " .. defaultQuestColor .. textLine);
                     end
@@ -688,6 +688,19 @@ function _MapIconTooltip:GetObjectiveTooltip(icon)
         t[text][iconData.Name] = true;
     end
     tinsert(tooltips, 1, t);
+
+    local objectiveTooltipHintData = QuestieCorrections.objectiveTooltipHints[iconData.Id]
+    local objectiveTooltipHint
+    if type(objectiveTooltipHintData) == "table" then
+        objectiveTooltipHint = objectiveTooltipHintData[iconData.ObjectiveTargetId] or objectiveTooltipHintData[iconData.ObjectiveIndex]
+    elseif type(objectiveTooltipHintData) == "string" then
+        objectiveTooltipHint = objectiveTooltipHintData
+    end
+
+    if objectiveTooltipHint then
+        tinsert(tooltips, 1, {["|cff99c7ff" .. objectiveTooltipHint .. "|r"] = {},})
+    end
+
     return tooltips
 end
 

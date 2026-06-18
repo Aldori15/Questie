@@ -34,6 +34,15 @@ QuestieCorrections.killCreditObjectiveFirst[24507] = true
 QuestieCorrections.questTooltipHints[6681] = "Speak to the npc and select \"<Take the letter>\", then read the letter to start the quest."
 QuestieCorrections.questTooltipHints[9212] = "Inside the Amani Catacombs.  Entrances to the NW and NE."
 
+QuestieCorrections.objectiveTooltipHints[8306] = {
+    [15215] = "Inside Hive'Regal. Enter the hive cave to the NE to reach Mistress Natalia.",
+}
+QuestieCorrections.objectiveTooltipHints[8309] = {
+    [180454] = "Inside Hive'Ashi. Enter the hive cave to the west to reach the crystal.",
+    [180455] = "Inside Hive'Zora. Enter the hive cave to the west to reach the crystal.",
+    [180453] = "Inside Hive'Regal. Enter the hive cave to the NE to reach the crystal.",
+}
+
 function QuestieWotlkQuestFixes:Load()
     local questKeys = QuestieDB.questKeys
     local raceIDs = QuestieDB.raceKeys
