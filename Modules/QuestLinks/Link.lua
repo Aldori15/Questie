@@ -296,7 +296,7 @@ _AddQuestStatus = function(quest)
         _AddColoredTooltipLine(l10n("You have completed this quest"), "green")
     elseif returnReason ~= DoableStates.AVAILABLE then
         _AddColoredTooltipLine(eligibilityText, "red")
-    elseif quest.specialFlags == 1 then
+    elseif QuestieDB.IsRepeatable(quest.Id) then
         _AddColoredTooltipLine(l10n("This quest is repeatable"), "yellow")
     else
         _AddColoredTooltipLine(l10n("You have not done this quest"), "yellow")
