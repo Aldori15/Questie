@@ -1111,6 +1111,8 @@ TrackerLinePool.OnClickQuest = function(self, button)
         local spawn, zone, name = QuestieMap:GetNearestQuestSpawn(self.Quest)
         if spawn then
             TrackerUtils:SetTomTomTarget(name, zone, spawn[1], spawn[2])
+        else
+            TrackerUtils:SetTomTomTargetToDungeonEntrance(self.Quest)
         end
     elseif TrackerUtils:IsBindTrue(Questie.db.profile.trackerbindUntrack, button) then
         if (IsModifiedClick("CHATLINK") and ChatEdit_GetActiveWindow()) then

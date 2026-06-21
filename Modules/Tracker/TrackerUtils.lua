@@ -127,6 +127,20 @@ function TrackerUtils:SetTomTomTarget(title, zone, x, y)
     end
 end
 
+---@param quest Quest
+---@return boolean
+function TrackerUtils:SetTomTomTargetToDungeonEntrance(quest)
+    local dungeonLocation = quest and quest.zoneOrSort and ZoneDB:GetDungeonLocation(quest.zoneOrSort)
+    local entrance = dungeonLocation and dungeonLocation[1]
+    if not entrance then
+        return false
+    end
+
+    local title = ZoneDB:GetLocalizedDungeonName(quest.zoneOrSort) or quest.name
+    TrackerUtils:SetTomTomTarget(title, entrance[1], entrance[2], entrance[3])
+    return true
+end
+
 ---@param objective table The table provided by QuestieDB.GetQuest(questId).Objectives[objective]
 function TrackerUtils:ShowObjectiveOnMap(objective)
     local spawn, zone = QuestieMap:GetNearestSpawn(objective)
