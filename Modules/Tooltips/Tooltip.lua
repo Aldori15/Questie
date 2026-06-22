@@ -468,9 +468,9 @@ function QuestieTooltips:GetTooltip(key)
                             questString = "|T" .. QuestieLib.AddonPath .. "Icons\\" .. availableIcon .. ".blp:" .. iconSize .. "|t" .. questString
                         elseif tooltip.type == "Finisher" then
                             questString = "|T" .. QuestieLib.AddonPath .. "Icons\\" .. completeIcon .. ".blp:" .. iconSize .. "|t" .. questString
-                        elseif tooltip.type == "itemFromMonster" then
+                        elseif tooltip.type == "itemFromMonster" or tooltip.type == "itemFromObject" then
                             questString = "|T" .. QuestieLib.AddonPath .. "Icons\\available_mobdrop.blp:" .. iconSize .. "|t" .. questString
-                        elseif tooltip.type == "itemFromObject" or tooltip.type == "Object" then
+                        elseif tooltip.type == "Object" then
                             questString = "|T" .. QuestieLib.AddonPath .. "Icons\\available_object.blp:" .. iconSize .. "|t" .. questString
                         end
                     end
