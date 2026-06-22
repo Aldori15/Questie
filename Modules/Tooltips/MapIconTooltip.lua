@@ -2,7 +2,6 @@
 local MapIconTooltip = QuestieLoader:CreateModule("MapIconTooltip");
 local _MapIconTooltip = {}
 local tinsert = table.insert;
-local math_max = math.max
 
 ---@type QuestieMap
 local QuestieMap = QuestieLoader:ImportModule("QuestieMap")
@@ -18,6 +17,8 @@ local QuestieEvent = QuestieLoader:ImportModule("QuestieEvent")
 local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 ---@type QuestieLib
 local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
+---@type TooltipLayout
+local TooltipLayout = QuestieLoader:ImportModule("TooltipLayout")
 ---@type QuestieComms
 local QuestieComms = QuestieLoader:ImportModule("QuestieComms")
 ---@type l10n
@@ -217,22 +218,23 @@ function MapIconTooltip:Show()
         local shift = IsShiftKeyDown()
         local haveGiver = false -- hack
         local firstLine = true;
+        local tooltipRows = TooltipLayout:CreateRows()
 
         -- tooltips for quest icons on the map
         for npcOrObjectName, quests in pairs(self.npcAndObjectOrder) do -- this logic really needs to be improved
             haveGiver = true
             if shift and (not firstLine) then
                 -- Spacer between NPCs
-                self:AddLine("             ")
+                tooltipRows:AddLine("             ")
             end
             if (firstLine and not shift) then
-                self:AddDoubleLine(npcOrObjectName, "(" .. l10n('Hold Shift') .. ")", 0.2, 1, 0.2, 0.43, 0.43, 0.43);
+                tooltipRows:AddDoubleLine(npcOrObjectName, "(" .. l10n('Hold Shift') .. ")", 0.2, 1, 0.2, 0.43, 0.43, 0.43);
                 firstLine = false;
             elseif (firstLine and shift) then
-                self:AddLine(npcOrObjectName, 0.2, 1, 0.2);
+                tooltipRows:AddLine(npcOrObjectName, 0.2, 1, 0.2);
                 firstLine = false;
             else
-                self:AddLine(npcOrObjectName, 0.2, 1, 0.2);
+                tooltipRows:AddLine(npcOrObjectName, 0.2, 1, 0.2);
             end
 
             for _, questData in pairs(quests) do
@@ -255,13 +257,13 @@ function MapIconTooltip:Show()
                     rewardString = rewardString .. questData.type
 
                     if (not shift) and reputationReward and next(reputationReward) then
-                        self:AddDoubleLine(REPUTATION_ICON_TEXTURE .. " " .. questData.title, rewardString, 1, 1, 1, 1, 1, 0);
+                        tooltipRows:AddDoubleLine(REPUTATION_ICON_TEXTURE .. " " .. questData.title, rewardString, 1, 1, 1, 1, 1, 0);
                     else
                         if shift then
-                            self:AddDoubleLine(questData.title, rewardString, 1, 1, 1, 1, 1, 0);
+                            tooltipRows:AddDoubleLine(questData.title, rewardString, 1, 1, 1, 1, 1, 0);
                         else
                             -- We use a transparent icon because this eases setting the correct margin
-                            self:AddDoubleLine(TRANSPARENT_ICON_TEXTURE .. " " .. questData.title, rewardString, 1, 1, 1, 1, 1, 0);
+                            tooltipRows:AddDoubleLine(TRANSPARENT_ICON_TEXTURE .. " " .. questData.title, rewardString, 1, 1, 1, 1, 1, 0);
                         end
                     end
                     -- Add dungeon information if this is a dungeon quest
@@ -270,7 +272,7 @@ function MapIconTooltip:Show()
                         if zoneOrSort and zoneOrSort > 0 then
                             local localizedDungeonName = ZoneDB:GetLocalizedDungeonName(zoneOrSort)
                             if localizedDungeonName then
-                                self:AddLine("  " .. FormatLabelWithColon(l10n("Instance")) .. " " .. localizedDungeonName, 0.7, 0.7, 0.7)
+                                tooltipRows:AddLine("  " .. FormatLabelWithColon(l10n("Instance")) .. " " .. localizedDungeonName, 0.7, 0.7, 0.7)
                             end
                         end
                     end
@@ -279,22 +281,16 @@ function MapIconTooltip:Show()
                     local dataType = type(questData.subData)
                     if dataType == "table" then
                         for _, rawLine in pairs(questData.subData) do
-                            local lines = QuestieLib:TextWrap(rawLine, "  ", false, math_max(375, Tooltip:GetWidth()), questData.questId) --275 is the default questlog width
-                            for _, line in pairs(lines) do
-                                self:AddLine(line, 0.86, 0.86, 0.86);
-                            end
+                            tooltipRows:AddDescription(rawLine, "  ", 0.86, 0.86, 0.86);
                         end
                     elseif dataType == "string" then
-                        local lines = QuestieLib:TextWrap(questData.subData, "  ", false, math_max(375, Tooltip:GetWidth())) --275 is the default questlog width
-                        for _, line in pairs(lines) do
-                            self:AddLine(line, 0.86, 0.86, 0.86);
-                        end
+                        tooltipRows:AddDescription(questData.subData, "  ", 0.86, 0.86, 0.86);
                     end
                 end
 
                 local questTooltipHint = QuestieCorrections.questTooltipHints[questData.questId]
                 if questTooltipHint then
-                    self:AddLine("  " .. questTooltipHint, 0.60, 0.78, 1.00)
+                    tooltipRows:AddLine("  " .. questTooltipHint, 0.60, 0.78, 1.00)
                 end
 
                 if Questie.db.profile.enableTooltipsNextInChain then
@@ -313,7 +309,7 @@ function MapIconTooltip:Show()
                             local nextQuestIdString = "";
                             local nextQuestTagString = "";
                             if firstInChain then
-                                self:AddLine("  |T" .. QuestieLib.AddonPath .. "Icons\\nextquest.blp:16|t " .. l10n("Next in chain:"), 0.86, 0.86, 0.86)
+                                tooltipRows:AddLine("  |T" .. QuestieLib.AddonPath .. "Icons\\nextquest.blp:16|t " .. l10n("Next in chain:"), 0.86, 0.86, 0.86)
                                 firstInChain = false;
                             end
 
@@ -343,7 +339,7 @@ function MapIconTooltip:Show()
                             end
 
                             local nextQuestString = string.format("      %s%s%s%s%s", nextQuestTitleString, nextQuestIdString, nextQuestXpRewardString, nextQuestMoneyRewardString, nextQuestTagString); -- we need an offset to align with description
-                            self:AddLine(QuestieLib:PrintDifficultyColor(nextQuest.level, nextQuestString, QuestieDB.IsRepeatable(nextQuest.Id), QuestieDB.IsActiveEventQuest(nextQuest.Id), QuestieDB.IsPvPQuest(nextQuest.Id)), 1, 1, 1);
+                            tooltipRows:AddLine(QuestieLib:PrintDifficultyColor(nextQuest.level, nextQuestString, QuestieDB.IsRepeatable(nextQuest.Id), QuestieDB.IsActiveEventQuest(nextQuest.Id), QuestieDB.IsPvPQuest(nextQuest.Id)), 1, 1, 1);
                             local upcomingQuestId = nextQuest.nextQuestInChain
                             if (not upcomingQuestId) or upcomingQuestId <= 0 then
                                 break
@@ -356,7 +352,7 @@ function MapIconTooltip:Show()
                 if shift and reputationReward and next(reputationReward) then
                     local rewardString = QuestieReputation.GetReputationRewardString(reputationReward)
                     if rewardString and rewardString ~= "" then
-                        self:AddLine(REPUTATION_ICON_TEXTURE .. " " .. Questie:Colorize(rewardString, "reputationBlue"), 1, 1, 1, 1, 1, 0)
+                        tooltipRows:AddDescription(REPUTATION_ICON_TEXTURE .. " " .. rewardString, "  ", Questie:ColorizeRGB("reputationBlue"))
                     end
                 end
             end
@@ -373,23 +369,23 @@ function MapIconTooltip:Show()
             if haveGiver then
                 if shift and xpReward > 0 then
                     local rewardString = QuestieLib:PrintDifficultyColor(quest.level, "(" .. FormatLargeNumber(xpReward) .. xpString .. ")" .. " ", QuestieDB.IsRepeatable(questId), QuestieEvent:IsEventQuest(questId), QuestieDB.IsPvPQuest(questId))
-                    self:AddLine(" ");
-                    self:AddDoubleLine(questTitle, rewardString .. "(" .. l10n("Active") .. ")", 0.2, 1, 0.2, 1, 1, 0);
+                    tooltipRows:AddLine(" ");
+                    tooltipRows:AddDoubleLine(questTitle, rewardString .. "(" .. l10n("Active") .. ")", 0.2, 1, 0.2, 1, 1, 0);
                     haveGiver = false -- looks better when only the first one shows (active)
                 else
-                    self:AddLine(" ");
-                    self:AddDoubleLine(questTitle, "(" .. l10n("Active") .. ")", 1, 1, 1, 1, 1, 0);
+                    tooltipRows:AddLine(" ");
+                    tooltipRows:AddDoubleLine(questTitle, "(" .. l10n("Active") .. ")", 1, 1, 1, 1, 1, 0);
                     haveGiver = false -- looks better when only the first one shows (active)
                 end
             else
                 if (quest and shift and xpReward > 0) then
-                    self:AddDoubleLine(questTitle, "(" .. FormatLargeNumber(xpReward) .. xpString .. ")", 0.2, 1, 0.2, r, g, b);
+                    tooltipRows:AddDoubleLine(questTitle, "(" .. FormatLargeNumber(xpReward) .. xpString .. ")", 0.2, 1, 0.2, r, g, b);
                     firstLine = false;
                 elseif (firstLine and not shift) then
-                    self:AddDoubleLine(questTitle, "(" .. l10n('Hold Shift') .. ")", 0.2, 1, 0.2, 0.43, 0.43, 0.43); --"(Shift+click)"
+                    tooltipRows:AddDoubleLine(questTitle, "(" .. l10n('Hold Shift') .. ")", 0.2, 1, 0.2, 0.43, 0.43, 0.43); --"(Shift+click)"
                     firstLine = false;
                 else
-                    self:AddLine(questTitle);
+                    tooltipRows:AddLine(questTitle);
                 end
             end
 
@@ -423,7 +419,7 @@ function MapIconTooltip:Show()
                 if zoneOrSort and zoneOrSort > 0 then
                     local localizedDungeonName = ZoneDB:GetLocalizedDungeonName(zoneOrSort)
                     if localizedDungeonName then
-                        self:AddLine("  " .. FormatLabelWithColon(l10n("Instance")) .. " " .. localizedDungeonName, 0.7, 0.7, 0.7)
+                        tooltipRows:AddLine("  " .. FormatLabelWithColon(l10n("Instance")) .. " " .. localizedDungeonName, 0.7, 0.7, 0.7)
                     end
                 end
             end
@@ -439,21 +435,21 @@ function MapIconTooltip:Show()
                                 if (not addedCreatureNames[name]) then
                                     addedCreatureNames[name] = true
                                     name = _GetLevelString(creatureLevels, name)
-                                    self:AddLine("   |cFFDDDDDD" .. name);
+                                    tooltipRows:AddLine("   |cFFDDDDDD" .. name);
                                 end
                             end
                         elseif dataType == "string" and (not addedCreatureNames[nameData]) then
                             addedCreatureNames[nameData] = true
                             nameData = _GetLevelString(creatureLevels, nameData)
-                            self:AddLine("   |cFFDDDDDD" .. nameData);
+                            tooltipRows:AddLine("   |cFFDDDDDD" .. nameData);
                         end
-                        self:AddLine("      " .. defaultQuestColor .. textLine);
+                        tooltipRows:AddLine("      " .. defaultQuestColor .. textLine);
                     end
                 end
             else
                 for _, textData in ipairs(textList) do
                     for textLine, _ in pairs(textData) do
-                        self:AddLine("   " .. defaultQuestColor .. textLine);
+                        tooltipRows:AddLine("   " .. defaultQuestColor .. textLine);
                     end
                 end
             end
@@ -461,7 +457,7 @@ function MapIconTooltip:Show()
 
         if next(self.npcAndObjectOrder) and next(self.manualOrder) then
             -- Spacer before townsfolk
-            self:AddLine("             ")
+            tooltipRows:AddLine("             ")
         end
 
         table.sort(self.manualOrder, function(left, right)
@@ -483,37 +479,39 @@ function MapIconTooltip:Show()
             local showBodyOnShift = data.showBodyOnShift
 
             if shift and not isFirstManualEntry then
-                self:AddLine(" ")
+                tooltipRows:AddLine(" ")
             end
             isFirstManualEntry = false
 
             local body = data.Body
             if showBodyOnShift and (not shift) then
                 if not hasShownManualShiftHint then
-                    self:AddDoubleLine(title, "(" .. l10n('Hold Shift') .. ")", 1, 1, 1, 0.43, 0.43, 0.43)
+                    tooltipRows:AddDoubleLine(title, "(" .. l10n('Hold Shift') .. ")", 1, 1, 1, 0.43, 0.43, 0.43)
                     hasShownManualShiftHint = true
                 else
-                    self:AddLine(title)
+                    tooltipRows:AddLine(title)
                 end
             else
-                self:AddLine(title)
+                tooltipRows:AddLine(title)
                 for _, stringOrTable in ipairs(body) do
                     local dataType = type(stringOrTable)
                     if dataType == "string" then
-                        self:AddLine(stringOrTable)
+                        tooltipRows:AddLine(stringOrTable)
                     elseif dataType == "table" then
                         if stringOrTable[1] == "Coordinates:" and not Questie.db.profile.showManualTooltipCoordinates then
                             -- skip coordinates when disabled
                         else
-                            self:AddDoubleLine(stringOrTable[1], '|cFFffffff' .. stringOrTable[2] .. '|r') --normal, white
+                            tooltipRows:AddDoubleLine(stringOrTable[1], '|cFFffffff' .. stringOrTable[2] .. '|r') --normal, white
                         end
                     end
                 end
             end
             if self.miniMapIcon == false and not data.disableShiftToRemove then
-                self:AddLine('|cFFa6a6a6Shift-click to hide|r') -- grey
+                tooltipRows:AddLine(Questie:Colorize(l10n("Shift-click to hide"), "gray")) -- grey
             end
         end
+
+        TooltipLayout:Render(self, tooltipRows)
     end
     Tooltip:_Rebuild() -- we separate this so things like MODIFIER_STATE_CHANGED can redraw the tooltip
     Tooltip:SetFrameStrata("TOOLTIP");
