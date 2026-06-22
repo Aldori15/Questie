@@ -33,8 +33,6 @@ local IsPlayerSpell = QuestieCompat.IsPlayerSpell
 local factionTreeFrame
 local factionQuestMap
 
-local factionIDs = QuestieDB.factionIDs
-
 local expansionDefinitions = {
     { key = "classic", label = EXPANSION_NAME0, order = QuestieCompat.WOW_PROJECT_CLASSIC },
     { key = "tbc", label = EXPANSION_NAME1, order = QuestieCompat.WOW_PROJECT_BURNING_CRUSADE_CLASSIC },
@@ -146,14 +144,6 @@ local function _CollectReferencedFactionIds()
                         _AddReferencedFactionId(refs, reward[1])
                     end
                 end
-
-                if requiredRaces and requiredRaces ~= QuestieDB.raceKeys.NONE then
-                    if bit.band(requiredRaces, QuestieDB.raceKeys.ALL_ALLIANCE) == requiredRaces then
-                        refs[factionIDs.ALLIANCE] = true
-                    elseif bit.band(requiredRaces, QuestieDB.raceKeys.ALL_HORDE) == requiredRaces then
-                        refs[factionIDs.HORDE] = true
-                    end
-                end
             end
         end
     end
@@ -251,22 +241,6 @@ local function _AddQuestToFaction(factionId, questId)
     factionQuestMap[factionId][questId] = true
 end
 
-local function _IsAllianceRaceMask(raceMask)
-    if not raceMask or raceMask == QuestieDB.raceKeys.NONE then
-        return false
-    end
-
-    return bit.band(raceMask, QuestieDB.raceKeys.ALL_ALLIANCE) == raceMask
-end
-
-local function _IsHordeRaceMask(raceMask)
-    if not raceMask or raceMask == QuestieDB.raceKeys.NONE then
-        return false
-    end
-
-    return bit.band(raceMask, QuestieDB.raceKeys.ALL_HORDE) == raceMask
-end
-
 function _EnsureFactionQuestData()
     if factionQuestMap then
         return
@@ -310,14 +284,6 @@ function _EnsureFactionQuestData()
                         _AddReferencedFactionId(refs, reward[1])
                     end
                 end
-
-                if requiredRaces and requiredRaces ~= QuestieDB.raceKeys.NONE then
-                    if bit.band(requiredRaces, QuestieDB.raceKeys.ALL_ALLIANCE) == requiredRaces then
-                        refs[factionIDs.ALLIANCE] = true
-                    elseif bit.band(requiredRaces, QuestieDB.raceKeys.ALL_HORDE) == requiredRaces then
-                        refs[factionIDs.HORDE] = true
-                    end
-                end
             end
 
             -- Filter out hidden quests
@@ -333,16 +299,6 @@ function _EnsureFactionQuestData()
                 if reputationReward then
                     for _, factionPair in pairs(reputationReward) do
                         _AddQuestToFaction(factionPair[1], questId)
-                    end
-                end
-
-                -- Only add to ALLIANCE/HORDE factions if the quest provides reputation
-                -- Do we even want this? You can select each faction individually in the dropdown.
-                if reputationReward and next(reputationReward) then
-                    if _IsAllianceRaceMask(requiredRaces) then
-                        _AddQuestToFaction(factionIDs.ALLIANCE, questId)
-                    elseif _IsHordeRaceMask(requiredRaces) then
-                        _AddQuestToFaction(factionIDs.HORDE, questId)
                     end
                 end
             end
