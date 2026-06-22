@@ -27,6 +27,8 @@ local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
 local QuestiePlayer = QuestieLoader:ImportModule("QuestiePlayer")
 ---@type QuestieDB
 local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
+---@type QuestieEvent
+local QuestieEvent = QuestieLoader:ImportModule("QuestieEvent")
 ---@type ZoneDB
 local ZoneDB = QuestieLoader:ImportModule("ZoneDB")
 ---@type QuestieCombatQueue
@@ -1091,7 +1093,7 @@ function QuestieQuest:AddFinisher(quest)
                                 FinisherType = finisherType,
                             }
 
-                            if QuestieDB.IsActiveEventQuest(quest.Id) then
+                            if QuestieEvent:IsEventQuest(quest.Id) then
                                 data.Icon = Questie.ICON_TYPE_EVENTQUEST_COMPLETE
                             elseif QuestieDB.IsPvPQuest(quest.Id) then
                                 data.Icon = Questie.ICON_TYPE_PVPQUEST_COMPLETE
@@ -1143,7 +1145,7 @@ function QuestieQuest:AddFinisher(quest)
                                 FinisherType = finisherType,
                             }
 
-                            if QuestieDB.IsActiveEventQuest(quest.Id) then
+                            if QuestieEvent:IsEventQuest(quest.Id) then
                                 data.Icon = Questie.ICON_TYPE_EVENTQUEST_COMPLETE
                             elseif QuestieDB.IsPvPQuest(quest.Id) then
                                 data.Icon = Questie.ICON_TYPE_PVPQUEST_COMPLETE
