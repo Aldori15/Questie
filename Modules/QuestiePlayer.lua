@@ -18,6 +18,7 @@ local UnitInParty = QuestieCompat.UnitInParty
 local IsInGroup = QuestieCompat.IsInGroup
 local GetHomePartyInfo = QuestieCompat.GetHomePartyInfo
 local GetClassColor = QuestieCompat.GetClassColor
+local GetGroupUnitByName = QuestieCompat.GetGroupUnitByName
 local LE_PARTY_CATEGORY_INSTANCE = QuestieCompat.LE_PARTY_CATEGORY_INSTANCE
 local GetTime = GetTime
 local UI_MAP_TYPE_COSMIC = 0
@@ -179,24 +180,19 @@ function QuestiePlayer:GetPartyMembers()
 end
 
 function QuestiePlayer:GetPartyMemberByName(playerName)
-    if(UnitInParty("player") or UnitInRaid("player")) then
-        local player = {}
-        for index=1, 40 do
-            local name = UnitName("party"..index);
-            local _, classFilename = UnitClass("party"..index);
-            if name == playerName then
-                player.name = playerName;
-                player.class = classFilename;
-                local rPerc, gPerc, bPerc, argbHex = GetClassColor(classFilename)
-                player.r = rPerc;
-                player.g = gPerc;
-                player.b = bPerc;
-                player.colorHex = argbHex;
-                return player;
-            end
-            if(index > 6 and not UnitInRaid("player")) then
-                break;
-            end
+    local unit = GetGroupUnitByName(playerName)
+    if unit then
+        local _, classFilename = UnitClass(unit);
+        if classFilename then
+            local rPerc, gPerc, bPerc, argbHex = GetClassColor(classFilename)
+            return {
+                name = playerName,
+                class = classFilename,
+                r = rPerc,
+                g = gPerc,
+                b = bPerc,
+                colorHex = argbHex,
+            };
         end
     end
     return nil;

@@ -427,16 +427,22 @@ function QuestieQuest:SmoothReset()
 end
 
 ---@param questId number
+---@return boolean @true if the local player is tracking this quest (independent of any option)
+function QuestieQuest:IsQuestTracked(questId)
+    local autoWatch = Questie.db.profile.autoTrackQuests
+    local trackedAuto = autoWatch and (not Questie.db.char.AutoUntrackedQuests or not Questie.db.char.AutoUntrackedQuests[questId])
+    local trackedManual = not autoWatch and (Questie.db.char.TrackedQuests and Questie.db.char.TrackedQuests[questId])
+    return (trackedAuto or trackedManual) and true or false
+end
+
+---@param questId number
 ---@return boolean
 function QuestieQuest:ShouldShowQuestNotes(questId)
     if not Questie.db.profile.hideUntrackedQuestsMapIcons then
         return true
     end
 
-    local autoWatch = Questie.db.profile.autoTrackQuests
-    local trackedAuto = autoWatch and (not Questie.db.char.AutoUntrackedQuests or not Questie.db.char.AutoUntrackedQuests[questId])
-    local trackedManual = not autoWatch and (Questie.db.char.TrackedQuests and Questie.db.char.TrackedQuests[questId])
-    return trackedAuto or trackedManual
+    return QuestieQuest:IsQuestTracked(questId)
 end
 
 function QuestieQuest:HideQuest(id)
@@ -1607,19 +1613,13 @@ function QuestieQuest:PopulateQuestLogInfo(quest)
                 Questie:Error(l10n("Missing objective data for quest "), quest.Id, " - ", objective.text)
             else
                 if not quest.Objectives[objectiveIndex] then
-                    local fullDesc
-                    if (not Questie.db.profile.trimObjectiveText) then
-                        -- Grab the entire objective text including "slain". First regex is for non-Chinese clients, second is for Chinese clients where the colon is a different character
-                        fullDesc = string.match(objective.raw_text, "^(.*):%s*%d+/%d+$") or string.match(objective.raw_text, "^(.*)：%s*%d+/%d+$")
-                    end
-
                     quest.Objectives[objectiveIndex] = {
                         Id = quest.ObjectiveData[objectiveIndex].Id,
                         Index = objectiveIndex,
                         questId = quest.Id,
                         _lastUpdate = 0,
                         Description = objective.text,
-                        FullDescription = fullDesc,
+                        FullDescription = QuestieLib.GetFullObjectiveText(objective.raw_text),
                         spawnList = {},
                         AlreadySpawned = {},
                         Update = _QuestieQuest.ObjectiveUpdate,
@@ -1690,15 +1690,9 @@ function _QuestieQuest.ObjectiveUpdate(self)
             local numRequired = obj.numRequired or 0
             local finished = obj.finished or false -- ensure its boolean false and not nil (hack)
 
-            local fullDesc
-            if (not Questie.db.profile.trimObjectiveText) then
-                -- Grab the entire objective text including "slain". First regex is for non-Chinese clients, second is for Chinese clients where the colon is a different character
-                fullDesc = string.match(obj.raw_text, "^(.*):%s*%d+/%d+$") or string.match(obj.raw_text, "^(.*)：%s*%d+/%d+$")
-            end
-
             self.Type = obj.type;
             self.Description = obj.text
-            self.FullDescription = fullDesc
+            self.FullDescription = QuestieLib.GetFullObjectiveText(obj.raw_text)
             self.Collected = tonumber(numFulfilled);
             self.Needed = tonumber(numRequired);
             self.Completed = (self.Needed == self.Collected and self.Needed > 0) or (finished and (self.Needed == 0 or (not self.Needed))) -- some objectives get removed on PLAYER_LOGIN because isComplete is set to true at random????

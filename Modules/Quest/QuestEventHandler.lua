@@ -38,6 +38,8 @@ local QuestieTracker = QuestieLoader:ImportModule("QuestieTracker")
 local QuestgiverFrame = QuestieLoader:ImportModule("QuestgiverFrame")
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
+---@type QuestiePartyObjectives
+local QuestiePartyObjectives = QuestieLoader:ImportModule("QuestiePartyObjectives")
 
 --- COMPATIBILITY ---
 local C_Timer = QuestieCompat.C_Timer
@@ -310,6 +312,9 @@ function _QuestEventHandler:HandleQuestAccepted(questId)
         QuestieQuest:AcceptQuest(questId)
     end
 
+    -- The local player now has this quest, so stop drawing it as a party member's objective.
+    QuestiePartyObjectives:ScheduleUpdate(questId)
+
     return true
 end
 
@@ -342,6 +347,9 @@ function _QuestEventHandler:QuestTurnedIn(questId, xpReward, moneyReward)
     QuestieQuest:CompleteQuest(questId)
     QuestieJourney:CompleteQuest(questId)
     QuestieAnnounce:CompletedQuest(questId)
+
+    -- The local player no longer has this quest; a party member helping out may still need it.
+    QuestiePartyObjectives:ScheduleUpdate(questId)
 end
 
 --- Fires when a quest is removed from the quest log. This includes turning it in and abandoning it.
@@ -396,6 +404,8 @@ function _QuestEventHandler:MarkQuestAsAbandoned(questId)
         QuestieQuest:AbandonedQuest(questId)
         QuestieJourney:AbandonQuest(questId)
         QuestieAnnounce:AbandonedQuest(questId)
+        -- The local player no longer has this quest; a party member may still need it.
+        QuestiePartyObjectives:ScheduleUpdate(questId)
         questLog[questId] = nil
     end
 end

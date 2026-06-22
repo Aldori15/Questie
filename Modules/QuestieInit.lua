@@ -384,12 +384,7 @@ QuestieInit.Stages[3] = function() -- run as a coroutine
         syncTicker = C_Timer.NewTicker(0.5, function()
             attempts = attempts + 1
 
-            local currentMembers = 0
-            if QuestieCompat.IsInRaid() then
-                currentMembers = GetNumRaidMembers()
-            elseif QuestieCompat.IsInGroup() then
-                currentMembers = GetNumPartyMembers()
-            end
+            local currentMembers = QuestieCompat.GetNumGroupMembers()
 
             if currentMembers > 0 then
                 QuestiePlayer.numberOfGroupMembers = currentMembers

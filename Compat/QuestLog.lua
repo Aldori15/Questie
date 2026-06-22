@@ -665,21 +665,26 @@ end
 
 -- handle remote questlog of the party/raid
 function QuestieCompat.GroupRosterUpdate(event)
-    local currentMembers = QuestieCompat.IsInRaid() and GetNumRaidMembers() or GetNumPartyMembers()
+    local currentMembers = QuestieCompat.GetNumGroupMembers()
+    local previousMembers = QuestiePlayer.numberOfGroupMembers
+
+    if _EventHandler.GroupRosterUpdate then
+        _EventHandler.GroupRosterUpdate()
+    else
+        QuestiePlayer.numberOfGroupMembers = currentMembers
+    end
+
     -- Only want to do logic when number increases, not decreases.
-    if QuestiePlayer.numberOfGroupMembers < currentMembers then
-        if QuestiePlayer.numberOfGroupMembers == 0 then
+    if previousMembers < currentMembers then
+        if previousMembers == 0 then
             _EventHandler:GroupJoined()
         end
         -- Tell comms to send information to members.
         --Questie:SendMessage("QC_ID_BROADCAST_FULL_QUESTLIST")
-        QuestiePlayer.numberOfGroupMembers = currentMembers
     else
         if currentMembers == 0 then
             _EventHandler:GroupLeft()
         end
-        -- We do however always want the local to be the current number to allow up and down.
-        QuestiePlayer.numberOfGroupMembers = currentMembers
     end
 end
 

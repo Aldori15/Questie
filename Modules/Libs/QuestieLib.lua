@@ -785,4 +785,18 @@ function QuestieLib.UpdateLastKnownDailyReset()
     Questie.db.global.lastKnownDailyReset[realmName] = getCurrentTimestamp() + QuestieCompat.GetQuestResetTime()
 end
 
+--- Returns the full objective text without progress numbers if trimObjectiveText is disabled, otherwise returns nil
+--- (e.g. "Kill Hogger: 0/1" -> "Kill Hogger")
+---@param rawObjectiveText string
+---@return string|nil
+function QuestieLib.GetFullObjectiveText(rawObjectiveText)
+    if Questie.db.profile.trimObjectiveText then
+        return nil
+    end
+
+    -- Grab the entire objective text including "slain".
+    -- First pattern is for non-Chinese clients, second is for Chinese clients where the colon is different.
+    return smatch(rawObjectiveText, "^(.*):%s*%d+/%d+$") or smatch(rawObjectiveText, "^(.*)：%s*%d+/%d+$")
+end
+
 return QuestieLib

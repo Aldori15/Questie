@@ -352,6 +352,57 @@ function QuestieCompat.IsInRaid(groupType)
     return UnitInRaid("player") and GetNumRaidMembers() > 0
 end
 
+-- Returns the total number of group members, including the player.
+-- https://wowpedia.fandom.com/wiki/API_GetNumGroupMembers
+function QuestieCompat.GetNumGroupMembers()
+    if QuestieCompat.IsInRaid() then
+        return GetNumRaidMembers()
+    elseif QuestieCompat.IsInGroup() then
+        return GetNumPartyMembers() + 1
+    end
+
+    return 0
+end
+
+-- Resolves a group member name to a 3.3.5 unit token.
+function QuestieCompat.GetGroupUnitByName(playerName)
+    if not playerName then
+        return nil
+    end
+
+    local function matchesUnit(unit)
+        local name, realm = UnitName(unit)
+        if not name then
+            return false
+        end
+
+        local fullName = (realm and realm ~= "") and (name .. "-" .. realm) or name
+        return playerName == fullName or playerName == name
+    end
+
+    if matchesUnit("player") then
+        return "player"
+    end
+
+    if QuestieCompat.IsInRaid() then
+        for index = 1, GetNumRaidMembers() do
+            local unit = "raid" .. index
+            if matchesUnit(unit) then
+                return unit
+            end
+        end
+    elseif QuestieCompat.IsInGroup() then
+        for index = 1, GetNumPartyMembers() do
+            local unit = "party" .. index
+            if matchesUnit(unit) then
+                return unit
+            end
+        end
+    end
+
+    return nil
+end
+
 -- Returns names of characters in your home (non-instance) party.
 -- https://wowpedia.fandom.com/wiki/API_GetHomePartyInfo
 function QuestieCompat.GetHomePartyInfo(homePlayers)

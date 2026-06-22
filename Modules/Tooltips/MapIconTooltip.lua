@@ -642,6 +642,9 @@ function _MapIconTooltip:GetObjectiveTooltip(icon)
                         playerType = " (" .. l10n("Nearby") .. ")"
                     end
                 end
+                if not playerColor then
+                    playerColor = "|cFFCCCCCC"
+                end
                 if playerColor then
                     local objectiveEntry = objectiveData[iconData.ObjectiveIndex]
                     if not objectiveEntry then
@@ -669,7 +672,9 @@ function _MapIconTooltip:GetObjectiveTooltip(icon)
                     anotherPlayer = true;
                 end
             end
-            if anotherPlayer then
+            -- Don't label the objective with the local player's name when it belongs to a
+            -- party member and the local player doesn't have the quest themselves.
+            if anotherPlayer and (not iconData.ObjectiveData.IsPartyObjective) then
                 local name = UnitName("player");
                 local _, playerClass = UnitClassBase("player")
                 local _, _, _, argbHex = GetClassColor(playerClass)
@@ -679,13 +684,18 @@ function _MapIconTooltip:GetObjectiveTooltip(icon)
         end
     end
 
-    local t = {
-        [text] = {},
-    }
-    if iconData.Name then
-        t[text][iconData.Name] = true;
+    -- For a party member's objective the local player doesn't have, skip the unattributed
+    -- objective line; the per-player lines above already cover it. Keep it as a fallback if
+    -- no party lines were added, so the tooltip is never empty.
+    if (not iconData.ObjectiveData.IsPartyObjective) or (#tooltips == 0) then
+        local t = {
+            [text] = {},
+        }
+        if iconData.Name then
+            t[text][iconData.Name] = true;
+        end
+        tinsert(tooltips, 1, t);
     end
-    tinsert(tooltips, 1, t);
 
     local objectiveTooltipHintData = QuestieCorrections.objectiveTooltipHints[iconData.Id]
     local objectiveTooltipHint

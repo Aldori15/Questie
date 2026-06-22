@@ -160,6 +160,7 @@ function QuestieOptionsDefaults:Load()
             questAnnounceCompleted = false,
             questAnnounceIncompleteBreadcrumb = true,
             questAnnounceLocally = false,
+            showPartyQuestObjectives = true,
             hideUnexploredMapIcons = false,
             hideUntrackedQuestsMapIcons = false,
             showRepeatableQuests = true,

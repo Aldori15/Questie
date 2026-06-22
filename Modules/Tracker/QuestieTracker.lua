@@ -2238,6 +2238,9 @@ function QuestieTracker:UntrackQuestId(questId)
         QuestieTooltips:RemoveQuest(questId)
     end
 
+    -- Untracked quests are no longer communicated to party members; tell peers to drop it.
+    Questie:SendMessage("QC_ID_BROADCAST_QUEST_UPDATE", questId)
+
     QuestieCombatQueue:Queue(function()
         QuestieTracker:Update()
     end)
@@ -2293,6 +2296,8 @@ function QuestieTracker:AQW_Insert(index, expire)
                 Questie.db.char.AutoUntrackedQuests[questId] = true
             end
         end
+
+        Questie:SendMessage("QC_ID_BROADCAST_QUEST_UPDATE", questId)
 
         local quest = QuestieDB.GetQuest(questId)
 

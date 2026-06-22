@@ -147,6 +147,9 @@ local migrationFunctions = {
     [25] = function()
         Questie.db.profile.autoAccept.abandonBreadcrumbFollowup = false
     end,
+    [26] = function()
+        Questie.db.profile.showPartyQuestObjectives = true
+    end,
 }
 
 function Migration:Migrate()
