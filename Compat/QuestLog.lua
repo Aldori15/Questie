@@ -28,6 +28,12 @@ local questObjectivesCache = {}
 local uiInfoChangedQuestIds = {}
 local QUEST_OBJECTIVE_CACHE_TTL_SECONDS = 3
 
+-- Forward declarations for the 3.3.5 reward-completion fallback near the end
+-- of this file. The raw cache is kept before repeatable quests are filtered
+-- from Questie.db.char.complete.
+local ProcessPendingRewardCompletions
+local serverCompletedQuests = {}
+
 local function parseQuestObjective(text)
     return string.match(string.gsub(text, "\239\188\154", ":"), "(.*):%s*([%d]+)%s*/%s*([%d]+)")
 end
@@ -411,6 +417,17 @@ end
 function QuestieCompat:QUEST_QUERY_COMPLETE(event)
     GetQuestsCompleted(Questie.db.char.complete)
 
+    serverCompletedQuests = {}
+    for questId in pairs(Questie.db.char.complete) do
+        serverCompletedQuests[questId] = true
+    end
+
+    -- Process reward turn-ins before repeatable quests are filtered from the
+    -- raw server completion table.
+    if ProcessPendingRewardCompletions then
+        ProcessPendingRewardCompletions()
+    end
+
     for questId in pairs(Questie.db.char.complete) do
         if QuestieDB.IsRepeatable(questId) then
             Questie.db.char.complete[questId] = nil
@@ -690,17 +707,208 @@ end
 
 local _QuestEventHandler = QuestEventHandler.private
 local QUEST_COMPLETE_MSG = string.gsub(ERR_QUEST_COMPLETE_S, "(%%s)", "(.+)")
-local completeQuestCache = {}
+
+-- QUEST_TURNED_IN is unavailable on the 3.3.5 client. Most quests are
+-- reconstructed from ERR_QUEST_COMPLETE_S, but some immediate-turn-in quests
+-- do not produce a usable message. Keep reward claims until the server confirms
+-- the exact quest ID obtained from the current quest ender.
+local pendingRewardCompletions = {}
+local rewardCompletionQueryScheduled = false
+local rewardCompletionQueryInFlight = false
+local rewardCompletionQuerySerial = 0
+local REWARD_COMPLETION_QUERY_DELAY = 0.5
+local REWARD_COMPLETION_QUERY_TIMEOUT = 5
+
+local function ResolveQuestEnderQuestId(questTitle)
+    local guid = QuestieCompat.UnitGUID("npc")
+    if not guid then
+        return nil
+    end
+
+    local questgiverId = tonumber(guid:match("-(%d+)-%x+$"), 10)
+    local unitType = strsplit("-", guid)
+    local questsEnded
+
+    if unitType == "Creature" then
+        questsEnded = QuestieDB.QueryNPCSingle(questgiverId, "questEnds")
+    elseif unitType == "GameObject" then
+        questsEnded = QuestieDB.QueryObjectSingle(questgiverId, "questEnds")
+    else
+        return nil
+    end
+
+    if not questsEnded then
+        return nil
+    end
+
+    local uniqueMatch
+    local uniqueDoableMatch
+    local multipleMatches = false
+    local multipleDoableMatches = false
+
+    for _, questId in pairs(questsEnded) do
+        if QuestieDB.QueryQuestSingle(questId, "name") == questTitle then
+            if uniqueMatch and uniqueMatch ~= questId then
+                multipleMatches = true
+            else
+                uniqueMatch = questId
+            end
+
+            if QuestieDB.IsDoable(questId) then
+                if uniqueDoableMatch and uniqueDoableMatch ~= questId then
+                    multipleDoableMatches = true
+                else
+                    uniqueDoableMatch = questId
+                end
+            end
+        end
+    end
+
+    if uniqueDoableMatch and not multipleDoableMatches then
+        return uniqueDoableMatch
+    end
+    if uniqueMatch and not multipleMatches then
+        return uniqueMatch
+    end
+end
+
+local function ResolveRewardQuestId(questTitle)
+    -- Immediate-turn-in quests can disappear from (or never enter) the quest
+    -- log, so resolve against the current quest ender first.
+    local questId = ResolveQuestEnderQuestId(questTitle)
+    if questId then
+        return questId
+    end
+
+    -- Database mismatches can prevent quest-ender resolution. Fall back to the
+    -- quest log only when the title identifies one unique quest ID.
+    local uniqueQuestId
+    for questLogIndex = 1, MAX_QUEST_LOG_INDEX do
+        local title, _, _, _, isHeader, _, _, _, id = GetQuestLogTitle(questLogIndex)
+        if not title then
+            break
+        end
+
+        if (not isHeader) and title == questTitle then
+            if uniqueQuestId and uniqueQuestId ~= id then
+                return nil
+            end
+            uniqueQuestId = id
+        end
+    end
+
+    return uniqueQuestId
+end
+
+local function CompleteRewardQuest(questId)
+    -- Keep the raw cache in sync even when the normal chat path handled the
+    -- turn-in before another completed-quest query was needed.
+    serverCompletedQuests[questId] = true
+    _QuestEventHandler:QuestTurnedIn(questId)
+    _QuestEventHandler:QuestRemoved(questId)
+end
+
+local ScheduleRewardCompletionQuery
+
+local function ExpireRewardCompletionQuery(querySerial)
+    if (not rewardCompletionQueryInFlight) or rewardCompletionQuerySerial ~= querySerial then
+        return
+    end
+
+    rewardCompletionQueryInFlight = false
+
+    -- Only discard entries which were included in the timed-out request.
+    -- Entries queued while it was in flight still need their own query.
+    for index = #pendingRewardCompletions, 1, -1 do
+        if pendingRewardCompletions[index].minimumQuerySerial <= querySerial then
+            table.remove(pendingRewardCompletions, index)
+        end
+    end
+
+    ScheduleRewardCompletionQuery()
+end
+
+ScheduleRewardCompletionQuery = function()
+    if rewardCompletionQueryScheduled or rewardCompletionQueryInFlight or #pendingRewardCompletions == 0 then
+        return
+    end
+
+    rewardCompletionQueryScheduled = true
+    QuestieCompat.C_Timer.After(REWARD_COMPLETION_QUERY_DELAY, function()
+        rewardCompletionQueryScheduled = false
+        if rewardCompletionQueryInFlight or #pendingRewardCompletions == 0 then
+            return
+        end
+
+        rewardCompletionQuerySerial = rewardCompletionQuerySerial + 1
+        local querySerial = rewardCompletionQuerySerial
+        rewardCompletionQueryInFlight = true
+
+        QueryQuestsCompleted()
+        QuestieCompat.C_Timer.After(REWARD_COMPLETION_QUERY_TIMEOUT, function()
+            ExpireRewardCompletionQuery(querySerial)
+        end)
+    end)
+end
+
+ProcessPendingRewardCompletions = function()
+    if not rewardCompletionQueryInFlight then
+        -- An unrelated completion query may finish between GetQuestReward and
+        -- our delayed request. Fold its result into each pending baseline so it
+        -- cannot be mistaken for the reward we are about to verify.
+        for _, pending in ipairs(pendingRewardCompletions) do
+            if pending.questId and serverCompletedQuests[pending.questId] then
+                pending.completedBefore = true
+            end
+        end
+        return
+    end
+
+    local completedQuerySerial = rewardCompletionQuerySerial
+    rewardCompletionQueryInFlight = false
+
+    for index = #pendingRewardCompletions, 1, -1 do
+        local pending = pendingRewardCompletions[index]
+        if pending.minimumQuerySerial <= completedQuerySerial then
+            table.remove(pendingRewardCompletions, index)
+
+            -- Require a false -> true transition for this exact quest ID. This
+            -- prevents failed reward attempts and previously completed
+            -- repeatable quests from being marked complete locally.
+            if pending.questId and (not pending.completedBefore)
+                and serverCompletedQuests[pending.questId] then
+                CompleteRewardQuest(pending.questId)
+            end
+        end
+    end
+
+    -- A reward can be claimed while another completion query is in flight.
+    -- Those newer entries require one additional batched query.
+    ScheduleRewardCompletionQuery()
+end
 
 local DAILY_QUESTS_MSG = DAILY_QUESTS_REMAINING:gsub("%%d", "(%%d+)"):gsub("|4(.-)$", "")
 
 function QuestieCompat:CHAT_MSG_SYSTEM(event, message)
     local questName = message:match(QUEST_COMPLETE_MSG)
-    local questId = completeQuestCache[questName]
-    if questId then
-        _QuestEventHandler:QuestTurnedIn(questId)
-        _QuestEventHandler:QuestRemoved(questId)
-        completeQuestCache[questName] = nil
+    if questName then
+        -- Preserve the existing fast path for ordinary quests. Only consume a
+        -- title when it identifies one pending reward; same-title batches are
+        -- left to exact-ID server confirmation instead of relying on order.
+        local matchingIndex
+        local matchingCount = 0
+        for index, pending in ipairs(pendingRewardCompletions) do
+            if pending.title == questName and pending.questId then
+                matchingIndex = index
+                matchingCount = matchingCount + 1
+            end
+        end
+
+        if matchingCount == 1 then
+            local questId = pendingRewardCompletions[matchingIndex].questId
+            table.remove(pendingRewardCompletions, matchingIndex)
+            CompleteRewardQuest(questId)
+        end
     end
 
     if Questie.db.profile.resetDailyQuests then
@@ -736,10 +944,21 @@ function QuestieCompat.QuestEventHandler_RegisterEvents()
     QuestieQuestEventFrame:UnregisterEvent("QUEST_TURNED_IN")
     hooksecurefunc("GetQuestReward", function(itemChoice)
         local questTitle = GetTitleText()
-        local questId = QuestieCompat.GetQuestIDFromName(questTitle)
-        if questId and questId > 0 then
-            completeQuestCache[questTitle] = questId
+        if not questTitle or questTitle == "" then
+            return
         end
+
+        local questId = ResolveRewardQuestId(questTitle)
+        pendingRewardCompletions[#pendingRewardCompletions + 1] = {
+            title = questTitle,
+            questId = questId,
+            completedBefore = questId and (serverCompletedQuests[questId] or false) or false,
+            -- The next query issued after this hook is the first one which can
+            -- legitimately contain this completion.
+            minimumQuerySerial = rewardCompletionQuerySerial + 1,
+        }
+
+        ScheduleRewardCompletionQuery()
     end)
 
     hooksecurefunc("SetAbandonQuest", function()
