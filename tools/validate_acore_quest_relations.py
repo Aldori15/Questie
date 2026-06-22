@@ -23,6 +23,13 @@ TARGET_TABLES = {
     "creature_questender": ("end", "creature"),
     "gameobject_queststarter": ("start", "object"),
     "gameobject_questender": ("end", "object"),
+    "game_event_creature_quest": ("start", "creature"),
+    "game_event_gameobject_quest": ("start", "object"),
+}
+
+EVENT_RELATION_TABLES = {
+    "game_event_creature_quest",
+    "game_event_gameobject_quest",
 }
 
 RELATION_SOURCE_ID_ALIASES = {
@@ -31,7 +38,7 @@ RELATION_SOURCE_ID_ALIASES = {
     },
 }
 
-RELATION_EXPORT_FILES = tuple(TARGET_TABLES)
+RELATION_EXPORT_FILES = tuple(table for table in TARGET_TABLES if table not in EVENT_RELATION_TABLES)
 
 MANUAL_ACORE_RELATION_OVERRIDES = {
     13966: {
@@ -92,15 +99,17 @@ def validate_lua_fragment(fragment: str, label: str):
     if balance != 0:
         raise ValueError(f"{label} has unbalanced braces ({balance:+d}).")
 
+RELATION_TABLE_PATTERN = "|".join(re.escape(table) for table in TARGET_TABLES)
 INSERT_RE = re.compile(
-    r"(?P<kind>INSERT INTO|REPLACE INTO)\s+`(?P<table>creature_queststarter|creature_questender|gameobject_queststarter|gameobject_questender)`.*?VALUES\s*(?P<values>.*?);",
+    rf"(?P<kind>INSERT INTO|REPLACE INTO)\s+`(?P<table>{RELATION_TABLE_PATTERN})`.*?VALUES\s*(?P<values>.*?);",
     re.IGNORECASE | re.DOTALL,
 )
 DELETE_RE = re.compile(
-    r"DELETE FROM\s+`(?P<table>creature_queststarter|creature_questender|gameobject_queststarter|gameobject_questender)`\s+WHERE\s*(?P<where>.*?);",
+    rf"DELETE FROM\s+`(?P<table>{RELATION_TABLE_PATTERN})`\s+WHERE\s*(?P<where>.*?);",
     re.IGNORECASE | re.DOTALL,
 )
 PAIR_RE = re.compile(r"\(\s*(\d+)\s*,\s*(\d+)\s*\)")
+EVENT_PAIR_RE = re.compile(r"\(\s*\d+\s*,\s*(\d+)\s*,\s*(\d+)\s*\)")
 QUEST_ENTRY_RE = re.compile(r"^\[(\d+)\]\s*=\s*(\{.*\})$", re.DOTALL)
 QUEST_FIELD_RE = re.compile(r"^\[(questKeys\.(?:startedBy|finishedBy))\]\s*=\s*(.+)$", re.DOTALL)
 
@@ -343,35 +352,48 @@ def parse_delete_pairs(where_clause: str, source_type: Optional[str] = None):
     return pairs
 
 
+def parse_insert_pairs(table: str, values: str, source_type: str):
+    row_pairs = EVENT_PAIR_RE.findall(values) if table in EVENT_RELATION_TABLES else PAIR_RE.findall(values)
+    return {
+        (
+            normalize_relation_source_id(source_type, int(source_id)),
+            int(quest_id),
+        )
+        for source_id, quest_id in row_pairs
+    }
+
+
 def apply_sql_file(path: Path, state):
+    if not path.exists():
+        return
+
     text = path.read_text(encoding="utf-8")
     lowered = text.lower()
-    if not any(table in lowered for table in TARGET_TABLES):
+    if not any(table in lowered for table in state):
         return
 
     for match in DELETE_RE.finditer(text):
         table = match.group("table").lower()
+        if table not in state:
+            continue
         relation_type, source_type = TARGET_TABLES[table]
         state[table].difference_update(parse_delete_pairs(match.group("where"), source_type))
 
     for match in INSERT_RE.finditer(text):
         table = match.group("table").lower()
+        if table not in state:
+            continue
         relation_type, source_type = TARGET_TABLES[table]
-        state[table].update(
-            (
-                normalize_relation_source_id(source_type, int(left)),
-                int(right),
-            )
-            for left, right in PAIR_RE.findall(match.group("values"))
-        )
+        state[table].update(parse_insert_pairs(table, match.group("values"), source_type))
 
 
-def load_core_relation_state(acore_source: Path):
-    state = {table: set() for table in TARGET_TABLES}
+def load_core_relation_state(acore_source: Path, tables=None):
+    tables = tuple(tables or TARGET_TABLES)
+    state = {table: set() for table in tables}
     base_dir = acore_source / "data" / "sql" / "base" / "db_world"
     updates_dir = acore_source / "data" / "sql" / "updates" / "db_world"
 
-    for table in TARGET_TABLES:
+    for table in tables:
         apply_sql_file(base_dir / f"{table}.sql", state)
 
     for update_file in sorted(updates_dir.glob("*.sql")):

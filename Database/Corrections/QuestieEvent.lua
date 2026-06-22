@@ -1183,14 +1183,14 @@ tinsert(QuestieEvent.eventQuests, {"Midsummer", 9339}) -- A Thief's Reward
 tinsert(QuestieEvent.eventQuests, {"Midsummer", 9365}) -- A Thief's Reward
 
 -- Removed in TBC
-tinsert(QuestieEvent.eventQuests, {"Midsummer", 9388}) -- Flickering Flames in Kalimdor
-tinsert(QuestieEvent.eventQuests, {"Midsummer", 9389}) -- Flickering Flames in the Eastern Kingdoms
-tinsert(QuestieEvent.eventQuests, {"Midsummer", 9319}) -- A Light in Dark Places
-tinsert(QuestieEvent.eventQuests, {"Midsummer", 9386}) -- A Light in Dark Places
-tinsert(QuestieEvent.eventQuests, {"Midsummer", 9367}) -- The Festival of Fire
-tinsert(QuestieEvent.eventQuests, {"Midsummer", 9368}) -- The Festival of Fire
-tinsert(QuestieEvent.eventQuests, {"Midsummer", 9322}) -- Wild Fires in Kalimdor
-tinsert(QuestieEvent.eventQuests, {"Midsummer", 9323}) -- Wild Fires in the Eastern Kingdoms
+tinsert(QuestieEvent.eventQuests, {"Midsummer", 9388, nil, nil, QuestieCorrections.TBC_AND_WOTLK}) -- Flickering Flames in Kalimdor
+tinsert(QuestieEvent.eventQuests, {"Midsummer", 9389, nil, nil, QuestieCorrections.TBC_AND_WOTLK}) -- Flickering Flames in the Eastern Kingdoms
+tinsert(QuestieEvent.eventQuests, {"Midsummer", 9319, nil, nil, QuestieCorrections.TBC_AND_WOTLK}) -- A Light in Dark Places
+tinsert(QuestieEvent.eventQuests, {"Midsummer", 9386, nil, nil, QuestieCorrections.TBC_AND_WOTLK}) -- A Light in Dark Places
+tinsert(QuestieEvent.eventQuests, {"Midsummer", 9367, nil, nil, QuestieCorrections.TBC_AND_WOTLK}) -- The Festival of Fire
+tinsert(QuestieEvent.eventQuests, {"Midsummer", 9368, nil, nil, QuestieCorrections.TBC_AND_WOTLK}) -- The Festival of Fire
+tinsert(QuestieEvent.eventQuests, {"Midsummer", 9322, nil, nil, QuestieCorrections.TBC_AND_WOTLK}) -- Wild Fires in Kalimdor
+tinsert(QuestieEvent.eventQuests, {"Midsummer", 9323, nil, nil, QuestieCorrections.TBC_AND_WOTLK}) -- Wild Fires in the Eastern Kingdoms
 
 tinsert(QuestieEvent.eventQuests, {"Midsummer", 11580}) -- Desecrate this Fire!
 tinsert(QuestieEvent.eventQuests, {"Midsummer", 11581}) -- Desecrate this Fire!

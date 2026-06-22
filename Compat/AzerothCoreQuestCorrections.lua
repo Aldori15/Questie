@@ -20,14 +20,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         -- Generated from AzerothCore static quest relation tables and item_template.startquest.
         -- Scripted starts, events, phasing, and intentional Questie divergences still need manual review.
 
-        [171] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [172] = {
-            [questKeys.startedBy] = {},
-        },
-
         [176] = {
             [questKeys.startedBy] = {nil,{68}},
         },
@@ -44,31 +36,11 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.finishedBy] = {},
         },
 
-        [558] = {
-            [questKeys.startedBy] = {},
-        },
-
         [615] = {
             [questKeys.startedBy] = {},
         },
 
         [781] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [910] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [911] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [915] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [925] = {
             [questKeys.startedBy] = {},
         },
 
@@ -96,17 +68,9 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.startedBy] = {nil,nil,{17409}},
         },
 
-        [1468] = {
-            [questKeys.startedBy] = {},
-        },
-
         [1470] = {
             [questKeys.startedBy] = {},
             [questKeys.finishedBy] = {},
-        },
-
-        [1479] = {
-            [questKeys.startedBy] = {},
         },
 
         [1480] = {
@@ -126,10 +90,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.startedBy] = {{3032}},
         },
 
-        [1558] = {
-            [questKeys.startedBy] = {},
-        },
-
         [1598] = {
             [questKeys.startedBy] = {},
             [questKeys.finishedBy] = {},
@@ -144,20 +104,12 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.startedBy] = {{2151,3598}},
         },
 
-        [1687] = {
-            [questKeys.startedBy] = {},
-        },
-
         [1698] = {
             [questKeys.startedBy] = {{5479}},
         },
 
         [1794] = {
             [questKeys.startedBy] = {{5149}},
-        },
-
-        [1800] = {
-            [questKeys.startedBy] = {},
         },
 
         [1883] = {
@@ -340,10 +292,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.finishedBy] = {{10296}},
         },
 
-        [4822] = {
-            [questKeys.startedBy] = {},
-        },
-
         [5402] = {
             [questKeys.startedBy] = {{10839}},
             [questKeys.finishedBy] = {{10839}},
@@ -362,10 +310,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         [5408] = {
             [questKeys.startedBy] = {{10840}},
             [questKeys.finishedBy] = {{10840}},
-        },
-
-        [5502] = {
-            [questKeys.startedBy] = {},
         },
 
         [5511] = {
@@ -795,10 +739,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.finishedBy] = {},
         },
 
-        [8356] = {
-            [questKeys.startedBy] = {},
-        },
-
         [8367] = {
             [questKeys.startedBy] = {},
             [questKeys.finishedBy] = {},
@@ -841,28 +781,12 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.finishedBy] = {},
         },
 
-        [8746] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [8762] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [8763] = {
-            [questKeys.startedBy] = {},
-        },
-
         [8767] = {
             [questKeys.startedBy] = {},
             [questKeys.finishedBy] = {},
         },
 
         [8796] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [8799] = {
             [questKeys.startedBy] = {},
         },
 
@@ -888,14 +812,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         [8831] = {
             [questKeys.startedBy] = {},
             [questKeys.finishedBy] = {},
-        },
-
-        [8860] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [8861] = {
-            [questKeys.startedBy] = {},
         },
 
         [8862] = {
@@ -972,17 +888,9 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.finishedBy] = {},
         },
 
-        [8980] = {
-            [questKeys.startedBy] = {},
-        },
-
         [8981] = {
             [questKeys.startedBy] = {},
             [questKeys.finishedBy] = {},
-        },
-
-        [8983] = {
-            [questKeys.startedBy] = {},
         },
 
         [8993] = {
@@ -996,12 +904,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9025] = {
-            [questKeys.startedBy] = {},
             [questKeys.finishedBy] = {},
-        },
-
-        [9027] = {
-            [questKeys.startedBy] = {},
         },
 
         [9029] = {
@@ -1457,10 +1360,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.finishedBy] = {},
         },
 
-        [9339] = {
-            [questKeys.startedBy] = {},
-        },
-
         [9341] = {
             [questKeys.startedBy] = {},
             [questKeys.finishedBy] = {},
@@ -1469,10 +1368,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         [9343] = {
             [questKeys.startedBy] = {},
             [questKeys.finishedBy] = {},
-        },
-
-        [9365] = {
-            [questKeys.startedBy] = {},
         },
 
         [9386] = {
@@ -1597,63 +1492,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.finishedBy] = {},
         },
 
-        [10942] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [10943] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [10945] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [10950] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [10951] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [10952] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [10953] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [10954] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [10956] = {
-            [questKeys.startedBy] = {},
-        },
-
         [10960] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [10962] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [10963] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [10966] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [10967] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [10968] = {
             [questKeys.startedBy] = {},
         },
 
@@ -1734,14 +1573,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.finishedBy] = {},
         },
 
-        [11356] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11357] = {
-            [questKeys.startedBy] = {},
-        },
-
         [11392] = {
             [questKeys.startedBy] = {},
             [questKeys.finishedBy] = {},
@@ -1757,124 +1588,16 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11441] = {
-            [questKeys.startedBy] = {},
+            [questKeys.startedBy] = {{18927,19148,19171,19172,19173}},
         },
 
         [11446] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11496] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11513] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11514] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11517] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11520] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11521] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11523] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11524] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11525] = {
-            [questKeys.startedBy] = {},
+            [questKeys.startedBy] = {{19169,19175,19176,19177,19178}},
         },
 
         [11528] = {
             [questKeys.startedBy] = {},
             [questKeys.finishedBy] = {},
-        },
-
-        [11532] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11533] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11534] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11535] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11536] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11537] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11538] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11539] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11540] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11541] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11542] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11543] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11544] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11545] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11546] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11547] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11548] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11549] = {
-            [questKeys.startedBy] = {},
         },
 
         [11551] = {
@@ -1892,590 +1615,60 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.finishedBy] = {},
         },
 
-        [11580] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11581] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11583] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11584] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11657] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11691] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11696] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11731] = {
-            [questKeys.startedBy] = {},
-        },
-
         [11732] = {
-            [questKeys.startedBy] = {},
             [questKeys.finishedBy] = {nil,{187914}},
         },
 
-        [11734] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11735] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11736] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11737] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11738] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11739] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11740] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11741] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11742] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11743] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11744] = {
-            [questKeys.startedBy] = {},
-        },
-
         [11745] = {
-            [questKeys.startedBy] = {},
             [questKeys.finishedBy] = {nil,{187928}},
         },
 
-        [11746] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11747] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11748] = {
-            [questKeys.startedBy] = {},
-        },
-
         [11749] = {
-            [questKeys.startedBy] = {},
             [questKeys.finishedBy] = {nil,{187932}},
         },
 
-        [11750] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11751] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11752] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11753] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11754] = {
-            [questKeys.startedBy] = {},
-        },
-
         [11755] = {
-            [questKeys.startedBy] = {},
             [questKeys.finishedBy] = {nil,{187938}},
         },
 
-        [11756] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11757] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11758] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11759] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11760] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11761] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11762] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11763] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11764] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11765] = {
-            [questKeys.startedBy] = {},
-        },
-
         [11766] = {
-            [questKeys.startedBy] = {},
             [questKeys.finishedBy] = {nil,{187954}},
         },
 
-        [11767] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11768] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11769] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11770] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11771] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11772] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11773] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11774] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11775] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11776] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11777] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11778] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11779] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11780] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11781] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11782] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11783] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11784] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11785] = {
-            [questKeys.startedBy] = {},
-        },
-
         [11786] = {
-            [questKeys.startedBy] = {},
             [questKeys.finishedBy] = {nil,{187974}},
         },
 
-        [11787] = {
-            [questKeys.startedBy] = {},
+        [11917] = {
+            [questKeys.startedBy] = {{26221}},
         },
 
-        [11799] = {
-            [questKeys.startedBy] = {},
+        [11947] = {
+            [questKeys.startedBy] = {{26221}},
         },
 
-        [11800] = {
-            [questKeys.startedBy] = {},
+        [11948] = {
+            [questKeys.startedBy] = {{26221}},
         },
 
-        [11801] = {
-            [questKeys.startedBy] = {},
+        [11952] = {
+            [questKeys.startedBy] = {{26221}},
         },
 
-        [11802] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11803] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11804] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11805] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11806] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11807] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11808] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11809] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11810] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11811] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11812] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11813] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11814] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11815] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11816] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11817] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11818] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11819] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11820] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11821] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11822] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11823] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11824] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11825] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11826] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11827] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11828] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11829] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11830] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11831] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11832] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11833] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11834] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11835] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11836] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11837] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11838] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11839] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11840] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11841] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11842] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11843] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11844] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11845] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11846] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11847] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11848] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11849] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11850] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11851] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11852] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11853] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11854] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11855] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11856] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11857] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11858] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11859] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11860] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11861] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11862] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11863] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11886] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11891] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11921] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11922] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11923] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11924] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11925] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11926] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11954] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11955] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11964] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [11966] = {
-            [questKeys.startedBy] = {},
+        [11953] = {
+            [questKeys.startedBy] = {{26221}},
         },
 
         [11970] = {
-            [questKeys.startedBy] = {},
+            [questKeys.startedBy] = {{18927,19148,19171,19172,19173}},
         },
 
         [11971] = {
-            [questKeys.startedBy] = {},
+            [questKeys.startedBy] = {{19169,19175,19176,19177,19178}},
         },
 
         [11972] = {
             [questKeys.startedBy] = {nil,nil,{35723}},
-        },
-
-        [11975] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [12012] = {
-            [questKeys.startedBy] = {},
         },
 
         [12019] = {
@@ -2723,78 +1916,14 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.finishedBy] = {},
         },
 
-        [13440] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [13441] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [13442] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [13443] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [13444] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [13445] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [13446] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [13447] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [13449] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [13450] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [13451] = {
-            [questKeys.startedBy] = {},
-        },
-
         [13452] = {
             [questKeys.startedBy] = {nil,{194064}},
             [questKeys.finishedBy] = {nil,{194064}},
         },
 
-        [13453] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [13454] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [13455] = {
-            [questKeys.startedBy] = {},
-        },
-
         [13456] = {
             [questKeys.startedBy] = {nil,{194065}},
             [questKeys.finishedBy] = {nil,{194065}},
-        },
-
-        [13457] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [13458] = {
-            [questKeys.startedBy] = {},
         },
 
         [13459] = {
@@ -2883,75 +2012,11 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13483] = {
-            [questKeys.startedBy] = {},
+            [questKeys.startedBy] = {{19169,19175,19176,19177,19178}},
         },
 
         [13484] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [13485] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [13486] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [13487] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [13488] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [13489] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [13490] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [13491] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [13492] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [13493] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [13494] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [13495] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [13496] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [13497] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [13498] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [13499] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [13500] = {
-            [questKeys.startedBy] = {},
+            [questKeys.startedBy] = {{18927,19148,19171,19172,19173}},
         },
 
         [13820] = {
@@ -2974,64 +2039,8 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.finishedBy] = {},
         },
 
-        [13926] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [13927] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [13929] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [13930] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [13933] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [13934] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [13937] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [13950] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [13951] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [13954] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [13955] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [13956] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [13957] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [13959] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [13960] = {
-            [questKeys.startedBy] = {},
+        [13938] = {
+            [questKeys.startedBy] = {{24468,33532}},
         },
 
         [13966] = {
@@ -3039,11 +2048,11 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [14022] = {
-            [questKeys.startedBy] = {},
+            [questKeys.startedBy] = {{18927,19148,19171,19172,19173}},
         },
 
         [14036] = {
-            [questKeys.startedBy] = {},
+            [questKeys.startedBy] = {{19169,19175,19176,19177,19178}},
         },
 
         [14037] = {
@@ -3287,34 +2296,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         [25393] = {
             [questKeys.startedBy] = {},
             [questKeys.finishedBy] = {},
-        },
-
-        [25444] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [25445] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [25446] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [25461] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [25470] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [25480] = {
-            [questKeys.startedBy] = {},
-        },
-
-        [25495] = {
-            [questKeys.startedBy] = {},
         },
     }
 

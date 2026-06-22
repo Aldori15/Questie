@@ -36083,7 +36083,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.minLevelHealth] = 1,
             [npcKeys.maxLevelHealth] = 1,
             [npcKeys.spawns] = {[zoneIDs.TELDRASSIL] = {{56.52,92.34}}, [zoneIDs.STORMWIND_CITY] = {{49.53,72.27}}, [zoneIDs.IRONFORGE] = {{63.81,25.31}}, [zoneIDs.THE_EXODAR] = {{41.61,25.29}}, [zoneIDs.SHATTRATH_CITY] = {{61.39,31.91}}},
-            [npcKeys.questStarts] = {},
         },
 
         [16818] = {
@@ -36091,7 +36090,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.maxLevelHealth] = 1,
             [npcKeys.spawns] = {[zoneIDs.UNDERCITY] = {{67.62,8.28}}, [zoneIDs.ORGRIMMAR] = {{46.75,38.03}}, [zoneIDs.THUNDER_BLUFF] = {{21.62,27.73}}, [zoneIDs.SILVERMOON_CITY] = {{69.84,42.98}}, [zoneIDs.SHATTRATH_CITY] = {{62.16,32.04}}},
             [npcKeys.zoneID] = zoneIDs.UNDERCITY,
-            [npcKeys.questStarts] = {},
         },
 
         [16821] = {
@@ -69811,15 +69809,10 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.questStarts] = {},
         },
 
-        [25928] = {
-            [npcKeys.questStarts] = {},
-        },
-
         [25929] = {
             [npcKeys.minLevel] = 30,
             [npcKeys.maxLevel] = 30,
             [npcKeys.spawns] = {[zoneIDs.DUROTAR] = {{52.18,47.32}}},
-            [npcKeys.questStarts] = {},
             [npcKeys.factionID] = 83,
             [npcKeys.friendlyToFaction] = "H",
         },
@@ -70353,7 +70346,6 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [26113] = {
             [npcKeys.spawns] = {[zoneIDs.UNDERCITY] = {{68.87,8.47}}, [zoneIDs.ORGRIMMAR] = {{47.14,38.15}}, [zoneIDs.THUNDER_BLUFF] = {{21,26.44}}, [zoneIDs.SILVERMOON_CITY] = {{69.48,42.44}}},
             [npcKeys.zoneID] = zoneIDs.UNDERCITY,
-            [npcKeys.questStarts] = {},
         },
 
         [26114] = {
@@ -70675,7 +70667,7 @@ QuestieCompat.RegisterCorrection("npcData", function()
             [npcKeys.minLevelHealth] = 1,
             [npcKeys.maxLevelHealth] = 1,
             [npcKeys.spawns] = {[zoneIDs.TELDRASSIL] = {{56.1,92.16}}, [zoneIDs.UNDERCITY] = {{66.9,13.53}}, [zoneIDs.STORMWIND_CITY] = {{49.31,72.29}}, [zoneIDs.IRONFORGE] = {{65.14,27.71}}, [zoneIDs.ORGRIMMAR] = {{46.44,38.69}}, [zoneIDs.THUNDER_BLUFF] = {{21.21,24.05}}, [zoneIDs.SILVERMOON_CITY] = {{68.67,42.94}}, [zoneIDs.THE_EXODAR] = {{43.28,26.28}}, [zoneIDs.SHATTRATH_CITY] = {{60.68,30.62}}},
-            [npcKeys.questStarts] = {},
+            [npcKeys.questStarts] = {11886,11917,11947,11948,11952,11953,11954,11955},
             [npcKeys.factionID] = 35,
         },
 
