@@ -439,9 +439,10 @@ function QuestieTooltips:GetTooltip(key)
     }]]
     --
     local tooltipData = {}
-    local tooltipLines = {}
+    local tooltipLines
 
     if QuestieTooltips.lookupByKey[key] then
+        tooltipLines = {}
         local playerName = UnitName("player")
 
         local finishedAndUnacceptedQuests = {}
@@ -588,6 +589,11 @@ function QuestieTooltips:GetTooltip(key)
             end
         end
         if hasObjective then
+            if (not tooltipLines) then
+                -- We only have tooltips from other players
+                tooltipLines = {}
+            end
+
             tinsert(tooltipLines, questData.title);
             for _, text in pairs(tempObjectives) do
                 tinsert(tooltipLines, text);
