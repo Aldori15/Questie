@@ -122,8 +122,13 @@ function _QuestieJourney:DrawQuestDetailsFrame(container, quest)
     local breadcrumbForQuestId = QuestieDB.QueryQuestSingle(quest.Id, "breadcrumbForQuestId")
     if breadcrumbForQuestId and breadcrumbForQuestId ~= 0 then
         local completedStatus = Questie.db.char.complete[quest.Id] and Questie:Colorize(YES, 'green') or Questie:Colorize(NO, 'red')
-        local completedLabel = _QuestieJourney:CreateLabel(Questie:Colorize(l10n('Completed') .. l10n(": "), 'yellow') .. completedStatus, true)
+        local completedLabel = _QuestieJourney:CreateLabel(Questie:Colorize(l10n("Completed") .. l10n(": "), 'yellow') .. completedStatus, true)
         container:AddChild(completedLabel)
+    end
+
+    if QuestieDB.IsRepeatable(quest.Id) then
+        local repeatableLabel = _QuestieJourney:CreateLabel(Questie:Colorize(l10n("Repeatable"), 'yellow'), true)
+        container:AddChild(repeatableLabel)
     end
 
     local eligibilityText, shouldShowDoableLabel = QuestieDB.IsDoableVerbose(quest.Id, false, true, true)
@@ -144,7 +149,7 @@ function _QuestieJourney:DrawQuestDetailsFrame(container, quest)
     if quest.Starts and quest.Starts.NPC then
         local startNPCGroup = AceGUI:Create("InlineGroup")
         startNPCGroup:SetLayout("List")
-        startNPCGroup:SetTitle(l10n('Quest Start NPC Information'))
+        startNPCGroup:SetTitle(l10n("Quest Start NPC Information"))
         startNPCGroup:SetFullWidth(true)
         container:AddChild(startNPCGroup)
 
