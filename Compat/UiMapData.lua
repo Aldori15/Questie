@@ -1747,8 +1747,8 @@ local wdmWorldMapData = {
     [462] = { 1766.667969, 1177.082031, 233.333984, -2577.083984, mapType = 3, parentMapID = 1414, mapID = 891, instance = 1, name = "Camp Narache" },
     [465] = { 1089.583984, 727.083008, 2147.916992, 2270.833008, mapType = 3, parentMapID = 1415, mapID = 893, instance = 0, name = "Deathknell" },
     [466] = { 220.0, 146.666748, 2020.0, 2123.333496, mapType = 3, parentMapID = 1415, mapID = 1013, instance = 0, name = "Night Web's Hollow" },
-    [467] = { 1600.0, 1066.6670000000013, -2720.516, 8433.34, mapType = 3, parentMapID = 1941, mapID = 894, instance = 0, name = "Sunstrider Isle", worldMapOnly = true },
-    [468] = { 1818.75, 1212.5, 4785.504, 6735.485, mapType = 3, parentMapID = 1943, mapID = 895, instance = 1, name = "Ammen Vale", worldMapOnly = true },
+    [467] = { 1600.0, 1066.6670000000013, -2720.516, 8433.34, mapType = 3, parentMapID = 1941, mapID = 894, instance = 0, name = "Sunstrider Isle" },
+    [468] = { 1818.75, 1212.5, 4785.504, 6735.485, mapType = 3, parentMapID = 1943, mapID = 895, instance = 1, name = "Ammen Vale" },
     [470] = { 341.883179, 234.391113, 848.060364, -5484.786133, mapType = 3, parentMapID = 1415, mapID = 1009, instance = 0, name = "Frostmane Hold" },
     [824] = { 828.0, 541.0, 16748.0, 16525.0, mapType = 3, parentMapID = 1414, mapID = 608, instance = 1, name = "GM Island" },
 }

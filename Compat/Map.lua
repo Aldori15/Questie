@@ -186,10 +186,6 @@ local function BuildUiMapInfo(uiMapID)
     if uiMapData.instance ~= nil then
         mapInfo.instance = uiMapData.instance
     end
-    if uiMapData.worldMapOnly ~= nil then
-        mapInfo.worldMapOnly = uiMapData.worldMapOnly
-    end
-
     uiMapInfoCache[uiMapID] = mapInfo
     return mapInfo
 end
@@ -236,11 +232,6 @@ end
 local function IsZoneLikeUiMap(uiMapID)
     local uiData = uiMapID and QuestieCompat.UiMapData and QuestieCompat.UiMapData[uiMapID]
     return uiData and uiData.mapType and uiData.mapType >= 3
-end
-
-local function IsWorldMapOnlyUiMap(uiMapID)
-    local uiData = uiMapID and QuestieCompat.UiMapData and QuestieCompat.UiMapData[uiMapID]
-    return uiData and uiData.worldMapOnly
 end
 
 local function IsDescendantUiMap(childUiMapID, ancestorUiMapID)
@@ -300,13 +291,6 @@ local function CacheMinimapPlayerWorldPosition(worldX, worldY, instanceID, uiMap
     lastMinimapPlayerUiMapID = uiMapID
 end
 
-local function NormalizeActualZoneUiMapID(uiMapID)
-    if uiMapID and IsWorldMapOnlyUiMap(uiMapID) and QuestieCompat.UiMapData and QuestieCompat.UiMapData[uiMapID] then
-        return QuestieCompat.UiMapData[uiMapID].parentMapID or uiMapID
-    end
-    return uiMapID
-end
-
 local function GetPlayerWorldPositionFromUnitPosition(actualUiMapID)
     if type(UnitPosition) ~= "function" then
         return nil, nil, nil, nil
@@ -318,7 +302,7 @@ local function GetPlayerWorldPositionFromUnitPosition(actualUiMapID)
         return nil, nil, rawInstanceID, nil
     end
 
-    local validationUiMapID = NormalizeActualZoneUiMapID(actualUiMapID) or NormalizeActualZoneUiMapID(lastKnownZoneLikeUiMapID)
+    local validationUiMapID = actualUiMapID or lastKnownZoneLikeUiMapID
 
     if validationUiMapID and QuestieCompat.HBD and QuestieCompat.HBD.GetZoneCoordinatesFromWorld then
         local zoneX, zoneY = QuestieCompat.HBD:GetZoneCoordinatesFromWorld(rawX, rawY, validationUiMapID, true)
@@ -711,12 +695,11 @@ local function AreUiMapsRelated(leftUiMapID, rightUiMapID)
 end
 
 local function IsCachedWorldPositionUsableForUiMap(cachedUiMapID, actualUiMapID)
-    local normalizedActualUiMapID = NormalizeActualZoneUiMapID(actualUiMapID)
-    if not normalizedActualUiMapID or not cachedUiMapID then
+    if not actualUiMapID or not cachedUiMapID then
         return true
     end
 
-    return AreUiMapsRelated(cachedUiMapID, normalizedActualUiMapID)
+    return AreUiMapsRelated(cachedUiMapID, actualUiMapID)
 end
 
 local function ResolveDisplayedWorldMapUiMapID(rawMapID, mapLevel, displayedMapName)
@@ -747,23 +730,6 @@ local function ResolveDisplayedWorldMapUiMapID(rawMapID, mapLevel, displayedMapN
         end
     end
 
-    local zoneDropdownParentUiMapID = displayedUiMapID or displayedNameUiMapID
-    if zoneDropdownUiMapID and zoneDropdownParentUiMapID
-        and IsZoneLikeUiMap(zoneDropdownParentUiMapID)
-        and IsWorldMapOnlyUiMap(zoneDropdownUiMapID)
-        and IsDescendantUiMap(zoneDropdownUiMapID, zoneDropdownParentUiMapID) then
-        return zoneDropdownUiMapID
-    end
-
-    if displayedNameUiMapID and displayedUiMapID and displayedNameUiMapID ~= displayedUiMapID then
-        local displayedNameIsRelated = displayedNameUiMapID == displayedUiMapID
-            or IsDescendantUiMap(displayedNameUiMapID, displayedUiMapID)
-            or IsDescendantUiMap(displayedUiMapID, displayedNameUiMapID)
-        if displayedNameIsRelated and IsWorldMapOnlyUiMap(displayedNameUiMapID) and IsZoneLikeUiMap(displayedUiMapID) then
-            return displayedNameUiMapID
-        end
-    end
-
     if displayedUiMapID then
         return displayedUiMapID
     end
@@ -781,8 +747,7 @@ local function ResolveDisplayedWorldMapUiMapID(rawMapID, mapLevel, displayedMapN
 end
 
 local function ResolveChooserPlayerUiMapID(actualUiMapID)
-    local normalizedUiMapID = NormalizeActualZoneUiMapID(actualUiMapID)
-    local currentUiMapID = normalizedUiMapID
+    local currentUiMapID = actualUiMapID
     local resolvedWorldUiMapID = nil
 
     while currentUiMapID and QuestieCompat.UiMapData and QuestieCompat.UiMapData[currentUiMapID] do
@@ -941,13 +906,6 @@ local function GetPlayerWorldPositionFromActualZoneUiMap(actualUiMapID)
     end
 
     local targetUiMapID = actualUiMapID
-    if IsWorldMapOnlyUiMap(targetUiMapID) and QuestieCompat.UiMapData[targetUiMapID] and QuestieCompat.UiMapData[targetUiMapID].parentMapID then
-        targetUiMapID = QuestieCompat.UiMapData[targetUiMapID].parentMapID
-    end
-
-    if not targetUiMapID then
-        return nil, nil, nil, nil
-    end
 
     local shouldSuppressVisibleMapSelection = WorldMapFrame and WorldMapFrame:IsVisible()
     if shouldSuppressVisibleMapSelection then
@@ -1010,7 +968,7 @@ local function GetPlayerWorldPositionFromActualZoneUiMap(actualUiMapID)
 end
 
 local function ShouldCacheZoneLikeUiMap(uiMapID)
-    if not uiMapID or not IsZoneLikeUiMap(uiMapID) or IsWorldMapOnlyUiMap(uiMapID) then
+    if not uiMapID or not IsZoneLikeUiMap(uiMapID) then
         return false
     end
 
@@ -1018,8 +976,8 @@ local function ShouldCacheZoneLikeUiMap(uiMapID)
         return true
     end
 
-    local actualUiMapID = NormalizeActualZoneUiMapID(ResolveUiMapIDByZoneTexts())
-    if not actualUiMapID or not IsZoneLikeUiMap(actualUiMapID) or IsWorldMapOnlyUiMap(actualUiMapID) then
+    local actualUiMapID = ResolveUiMapIDByZoneTexts()
+    if not actualUiMapID or not IsZoneLikeUiMap(actualUiMapID) then
         return false
     end
 
@@ -1031,7 +989,7 @@ local function CanUseResolvedMinimapPosition(resolvedUiMapID, x, y, actualUiMapI
         return false
     end
 
-    if not IsZoneLikeUiMap(resolvedUiMapID) or IsWorldMapOnlyUiMap(resolvedUiMapID) then
+    if not IsZoneLikeUiMap(resolvedUiMapID) then
         return false
     end
 
@@ -1106,13 +1064,10 @@ function QuestieCompat.GetCurrentUiMapID()
     else
         uiMapID = ResolveDirectUiMapID(mapID, mapLevel)
     end
-    if uiMapID and IsWorldMapOnlyUiMap(uiMapID) and not worldMapVisible then
-        uiMapID = nil
-    end
     if uiMapID then
         if (not worldMapVisible) and IsContinentalOrCosmicUiMap(uiMapID) then
             local zoneUiMapID = ResolveUiMapIDByZoneTexts()
-            if zoneUiMapID and IsZoneLikeUiMap(zoneUiMapID) and not IsWorldMapOnlyUiMap(zoneUiMapID) then
+            if zoneUiMapID and IsZoneLikeUiMap(zoneUiMapID) then
                 uiMapID = zoneUiMapID
             elseif lastKnownZoneLikeUiMapID then
                 uiMapID = lastKnownZoneLikeUiMapID
@@ -1121,14 +1076,14 @@ function QuestieCompat.GetCurrentUiMapID()
         if ShouldCacheZoneLikeUiMap(uiMapID) then
             lastKnownZoneLikeUiMapID = uiMapID
         end
-        if (not worldMapVisible) and (not IsWorldMapOnlyUiMap(uiMapID)) then
+        if not worldMapVisible then
             lastKnownUiMapID = uiMapID
         end
         return uiMapID
     end
     local zoneUiMapID = ResolveUiMapIDByZoneTexts()
     if (not WorldMapFrame) or (not WorldMapFrame:IsVisible()) then
-        if zoneUiMapID and not IsWorldMapOnlyUiMap(zoneUiMapID) then
+        if zoneUiMapID then
             if IsContinentalOrCosmicUiMap(zoneUiMapID) and lastKnownZoneLikeUiMapID then
                 zoneUiMapID = lastKnownZoneLikeUiMapID
             end
@@ -1138,8 +1093,6 @@ function QuestieCompat.GetCurrentUiMapID()
             lastKnownUiMapID = zoneUiMapID
             return zoneUiMapID
         end
-    elseif zoneUiMapID and IsWorldMapOnlyUiMap(zoneUiMapID) then
-        return zoneUiMapID
     end
     if WorldMapFrame and WorldMapFrame:IsVisible() then
         -- Avoid drawing parent/continent pins on unresolved subzone maps.
@@ -1261,12 +1214,6 @@ function QuestieCompat.GetCurrentPlayerPosition()
     end
 
     local x, y = GetPlayerMapPosition("player");
-    local function NormalizeResolvedPlayerUiMapID(resolvedUiMapID)
-        if resolvedUiMapID and IsWorldMapOnlyUiMap(resolvedUiMapID) and not WorldMapFrame:IsVisible() then
-            return nil
-        end
-        return resolvedUiMapID
-    end
 	if ( x <= 0 and y <= 0 ) then
 		if ( WorldMapFrame:IsVisible() ) then
 			-- we know there is a visible world map, so don't cause
@@ -1353,7 +1300,7 @@ function QuestieCompat.GetCurrentPlayerPosition()
             end
         end
     end
-	local uiMapID = NormalizeResolvedPlayerUiMapID(rawUiMapID);
+	local uiMapID = rawUiMapID;
     if uiMapID and (not WorldMapFrame:IsVisible()) and IsContinentalOrCosmicUiMap(uiMapID) then
         -- Continental/cosmic map contexts can produce distorted local coordinates for minimap math.
         -- Re-anchor to the player's actual zone map first.
@@ -1363,7 +1310,7 @@ function QuestieCompat.GetCurrentPlayerPosition()
             x, y = zx, zy
         end
         mapID, mapLevel = GetRawMapContext()
-        uiMapID = NormalizeResolvedPlayerUiMapID(ResolveDirectUiMapID(mapID, mapLevel)) or uiMapID
+        uiMapID = ResolveDirectUiMapID(mapID, mapLevel) or uiMapID
     end
 	if not uiMapID and not WorldMapFrame:IsVisible() then
 		-- Some starter subzones expose a mapAreaID that does not exist in UiMapData.
@@ -1382,7 +1329,7 @@ function QuestieCompat.GetCurrentPlayerPosition()
 		end
 
 		mapID, mapLevel = GetRawMapContext();
-		uiMapID = NormalizeResolvedPlayerUiMapID(ResolveDirectUiMapID(mapID, mapLevel));
+		uiMapID = ResolveDirectUiMapID(mapID, mapLevel);
 
 		if not uiMapID then
 			if ( ZoomOut() ) then
@@ -1399,7 +1346,7 @@ function QuestieCompat.GetCurrentPlayerPosition()
 			end
 
 			mapID, mapLevel = GetRawMapContext();
-			uiMapID = NormalizeResolvedPlayerUiMapID(ResolveDirectUiMapID(mapID, mapLevel));
+			uiMapID = ResolveDirectUiMapID(mapID, mapLevel);
 		end
 	end
 
@@ -1408,7 +1355,7 @@ function QuestieCompat.GetCurrentPlayerPosition()
 	end
 
     local worldMapVisible = WorldMapFrame and WorldMapFrame:IsVisible()
-    if zoneUiMapID and IsZoneLikeUiMap(zoneUiMapID) and not IsWorldMapOnlyUiMap(zoneUiMapID) then
+    if zoneUiMapID and IsZoneLikeUiMap(zoneUiMapID) then
         if worldMapVisible then
             if not uiMapID then
                 uiMapID = zoneUiMapID
@@ -1613,7 +1560,7 @@ function QuestieCompat.GetCurrentPlayerMinimapWorldPosition()
         actualUiMapID = lastKnownZoneLikeUiMapID
     end
 
-    local normalizedActualUiMapID = NormalizeActualZoneUiMapID(actualUiMapID)
+    local normalizedActualUiMapID = actualUiMapID
     local displayedUiMapID = nil
     local isAzerothOutlandChooser = false
     local chooserPlayerUiMapID = nil
@@ -1648,7 +1595,7 @@ function QuestieCompat.GetCurrentPlayerMinimapWorldPosition()
         and starterChildUiMapID
         and displayedUiMapID
         and (not shouldSuppressExactRead)
-        and AreUiMapsRelated(displayedUiMapID, NormalizeActualZoneUiMapID(starterChildUiMapID) or starterChildUiMapID) then
+        and AreUiMapsRelated(displayedUiMapID, starterChildUiMapID) then
         local exactWorldX, exactWorldY, exactInstanceID, exactUiMapID = GetPlayerWorldPositionFromActualZoneUiMap(starterChildUiMapID)
         if exactWorldX and exactWorldY then
             ResetAnchoredMinimapWorldPosition()
@@ -1661,7 +1608,7 @@ function QuestieCompat.GetCurrentPlayerMinimapWorldPosition()
     local unitWorldX, unitWorldY, unitInstanceID, unitUiMapID = GetPlayerWorldPositionFromUnitPosition(actualUiMapID)
     if unitWorldX and unitWorldY then
         ResetAnchoredMinimapWorldPosition()
-        unitUiMapID = unitUiMapID or NormalizeActualZoneUiMapID(actualUiMapID)
+        unitUiMapID = unitUiMapID or actualUiMapID
         CacheMinimapPlayerWorldPosition(unitWorldX, unitWorldY, unitInstanceID, unitUiMapID)
         StoreCachedPlayerPosition(minimapPlayerWorldPositionCache, contextKey, unitWorldX, unitWorldY, unitInstanceID, unitUiMapID)
         return unitWorldX, unitWorldY, unitInstanceID, unitUiMapID
@@ -1697,11 +1644,11 @@ function QuestieCompat.GetCurrentPlayerMinimapWorldPosition()
     local uiMapID, x, y = nil, nil, nil
     if (not visibleMapIsUnrelated) or shouldSuppressExactRead or (not worldMapVisible) then
         uiMapID, x, y = QuestieCompat.GetCurrentPlayerPosition()
-        if (not worldMapVisible) and uiMapID and IsZoneLikeUiMap(uiMapID) and (not IsWorldMapOnlyUiMap(uiMapID)) then
+        if (not worldMapVisible) and uiMapID and IsZoneLikeUiMap(uiMapID) then
             -- Hidden map reads are more reliable for dedicated underground/sub-zone maps
             -- than the legacy zone text APIs, which can stay on the parent surface zone.
             actualUiMapID = uiMapID
-            normalizedActualUiMapID = NormalizeActualZoneUiMapID(uiMapID)
+            normalizedActualUiMapID = uiMapID
         end
         do
             local worldX, worldY, instanceID = GetValidatedResolvedMinimapWorldPosition(uiMapID, x, y, actualUiMapID)
@@ -1789,46 +1736,19 @@ function QuestieCompat.GetCurrentPlayerMinimapWorldPosition()
     return nil, nil, nil, nil
 end
 
-local function ResolveActualUiMapIDForMapContext(actualUiMapID, displayedUiMapID, allowDisplayedUiMapWithoutActual)
+local function ResolveActualUiMapIDForMapContext(actualUiMapID)
     if actualUiMapID and not IsZoneLikeUiMap(actualUiMapID) then
         actualUiMapID = nil
     end
 
-    local subZoneUiMapID = ResolveUiMapIDByMapName(GetSubZoneText and GetSubZoneText() or nil)
-    if subZoneUiMapID and IsZoneLikeUiMap(subZoneUiMapID) and IsWorldMapOnlyUiMap(subZoneUiMapID) then
-        if not actualUiMapID or AreUiMapsRelated(subZoneUiMapID, actualUiMapID) then
-            actualUiMapID = subZoneUiMapID
-        end
-    end
-
-    if displayedUiMapID and IsWorldMapOnlyUiMap(displayedUiMapID) then
-        local normalizedActualUiMapID = NormalizeActualZoneUiMapID(actualUiMapID)
-        local displayedParentUiMapID = displayedUiMapID and QuestieCompat.UiMapData and QuestieCompat.UiMapData[displayedUiMapID] and QuestieCompat.UiMapData[displayedUiMapID].parentMapID
-
-        if (allowDisplayedUiMapWithoutActual and not actualUiMapID)
-            or displayedUiMapID == actualUiMapID
-            or (displayedParentUiMapID and displayedParentUiMapID == actualUiMapID)
-            or (displayedParentUiMapID and displayedParentUiMapID == normalizedActualUiMapID)
-            or (actualUiMapID and AreUiMapsRelated(displayedUiMapID, actualUiMapID)) then
-            actualUiMapID = displayedUiMapID
-        end
-    end
-
-    return actualUiMapID, NormalizeActualZoneUiMapID(actualUiMapID)
+    return actualUiMapID, actualUiMapID
 end
 
 local function ResolveActualPlayerUiMapID()
-    local displayedUiMapID = nil
-    if WorldMapFrame and WorldMapFrame:IsVisible() then
-        local rawMapID, rawMapLevel = GetRawMapContext()
-        local displayedMapName = GetDisplayedWorldMapName()
-        displayedUiMapID = ResolveDisplayedWorldMapUiMapID(rawMapID, rawMapLevel, displayedMapName)
-    end
-
-    local actualUiMapID, normalizedActualUiMapID = ResolveActualUiMapIDForMapContext(ResolveUiMapIDByZoneTexts(), displayedUiMapID, false)
+    local actualUiMapID, normalizedActualUiMapID = ResolveActualUiMapIDForMapContext(ResolveUiMapIDByZoneTexts())
     if not actualUiMapID then
         actualUiMapID = lastKnownZoneLikeUiMapID
-        normalizedActualUiMapID = NormalizeActualZoneUiMapID(actualUiMapID)
+        normalizedActualUiMapID = actualUiMapID
     end
 
     return actualUiMapID, normalizedActualUiMapID
@@ -1919,8 +1839,8 @@ local function ShouldUseCompatTomTomWorldCoords()
     local rawMapID, rawMapLevel = GetRawMapContext()
     local displayedMapName = GetDisplayedWorldMapName()
     local displayedUiMapID = ResolveDisplayedWorldMapUiMapID(rawMapID, rawMapLevel, displayedMapName)
-    local _, normalizedActualUiMapID = ResolveActualUiMapIDForMapContext(ResolveUiMapIDByZoneTexts(), displayedUiMapID, true)
-    normalizedActualUiMapID = normalizedActualUiMapID or NormalizeActualZoneUiMapID(lastKnownZoneLikeUiMapID)
+    local _, normalizedActualUiMapID = ResolveActualUiMapIDForMapContext(ResolveUiMapIDByZoneTexts())
+    normalizedActualUiMapID = normalizedActualUiMapID or lastKnownZoneLikeUiMapID
 
     if not displayedUiMapID or not normalizedActualUiMapID then
         return false
@@ -2070,9 +1990,6 @@ QuestieCompat.WorldMapFrame = {
         end
 
         local mapID = uiData.mapID
-        if uiData.worldMapOnly and uiData.parentMapID and QuestieCompat.UiMapData[uiData.parentMapID] then
-            mapID = QuestieCompat.UiMapData[uiData.parentMapID].mapID
-        end
         if not mapID then
             return
         end
