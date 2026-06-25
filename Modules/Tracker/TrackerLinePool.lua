@@ -52,6 +52,61 @@ local ITEM_BUTTON_UPDATE_INTERVAL = 0.1
 local ITEM_BUTTON_CHARGE_UPDATE_INTERVAL = 0.2
 local ITEM_BUTTON_RANGE_UPDATE_INTERVAL = 0.3
 
+local function ToggleAllQuestsInZone(expandZone)
+    local zoneId = expandZone and expandZone.zoneId
+    if not zoneId or Questie.db.char.collapsedZones[zoneId] then
+        return
+    end
+
+    local zoneLineIndex
+    for i = 1, lineIndex do
+        if linePool[i].expandZone == expandZone then
+            zoneLineIndex = i
+            break
+        end
+    end
+
+    if not zoneLineIndex then
+        return
+    end
+
+    local questIds = {}
+    for i = zoneLineIndex + 1, lineIndex do
+        local line = linePool[i]
+        if line.expandZone and line.expandZone:IsShown() then
+            break
+        end
+
+        local expandQuest = line.expandQuest
+        if expandQuest and expandQuest.zoneId == zoneId and expandQuest.questId then
+            questIds[expandQuest.questId] = true
+        end
+    end
+
+    if not next(questIds) then
+        return
+    end
+
+    if Questie.db.char.minAllQuestsInZone[zoneId] and not Questie.db.char.minAllQuestsInZone[zoneId].isTrue then
+        Questie:Debug(Questie.DEBUG_DEVELOP, "[TrackerLinePool:minAllQuestsInZone] - Maximize")
+        for questId, _ in pairs(questIds) do
+            Questie.db.char.collapsedQuests[questId] = nil
+        end
+
+        Questie.db.char.minAllQuestsInZone[zoneId] = nil
+    else
+        Questie:Debug(Questie.DEBUG_DEVELOP, "[TrackerLinePool:minAllQuestsInZone] - Minimize")
+        Questie.db.char.minAllQuestsInZone[zoneId] = questIds
+        for questId, _ in pairs(questIds) do
+            Questie.db.char.collapsedQuests[questId] = true
+        end
+    end
+
+    QuestieCombatQueue:Queue(function()
+        QuestieTracker:Update()
+    end)
+end
+
 ---@param questFrame Frame
 function TrackerLinePool.Initialize(questFrame)
     local trackerQuestFrame = questFrame
@@ -255,57 +310,10 @@ function TrackerLinePool.Initialize(questFrame)
         expandZone:RegisterForDrag("LeftButton")
         expandZone:RegisterForClicks("LeftButtonUp", "LeftButtonDown", "RightButtonUp", "RightButtonDown")
 
-        expandZone:SetScript("OnMouseDown", function(self, button)
-            if button == "LeftButton" then
-                if IsShiftKeyDown() then
-                    -- This sets up the minAllQuestsInZone table upon first click
-                    if not Questie.db.char.collapsedZones[self.zoneId] then
-                        if not Questie.db.char.minAllQuestsInZone[self.zoneId] then
-                            Questie.db.char.minAllQuestsInZone[self.zoneId] = {}
-                            -- This flag prevents repopulating QuestID's where we don't want them.
-                            Questie.db.char.minAllQuestsInZone[self.zoneId].isTrue = true
-
-                            QuestieCombatQueue:Queue(function()
-                                QuestieTracker:Update()
-                            end)
-                        end
-                    end
-                end
-            end
-        end)
-
         expandZone:SetScript("OnMouseUp", function(self, button)
             if button == "LeftButton" then
                 if IsShiftKeyDown() then
-                    if not Questie.db.char.collapsedZones[self.zoneId] then
-                        C_Timer.After(0.1, function()
-                            if Questie.db.char.minAllQuestsInZone[self.zoneId].isTrue then
-                                -- Places all QuestID's into the collapsedQuests table and keeps the Min/Max buttons in sync.
-                                Questie:Debug(Questie.DEBUG_DEVELOP, "[TrackerLinePool:minAllQuestsInZone] - Minimize")
-                                for questId, _ in pairs(Questie.db.char.minAllQuestsInZone[self.zoneId]) do
-                                    if type(questId) == "number" then
-                                        Questie.db.char.collapsedQuests[questId] = true
-                                    end
-                                end
-
-                                Questie.db.char.minAllQuestsInZone[self.zoneId].isTrue = nil
-                            else
-                                -- Removes all QuestID's from the collapsedQuests table.
-                                Questie:Debug(Questie.DEBUG_DEVELOP, "[TrackerLinePool:minAllQuestsInZone] - Maximize")
-                                for questId, _ in pairs(Questie.db.char.minAllQuestsInZone[self.zoneId]) do
-                                    if type(questId) == "number" then
-                                        Questie.db.char.collapsedQuests[questId] = nil
-                                    end
-                                end
-
-                                Questie.db.char.minAllQuestsInZone[self.zoneId] = nil
-                            end
-
-                            QuestieCombatQueue:Queue(function()
-                                QuestieTracker:Update()
-                            end)
-                        end)
-                    end
+                    ToggleAllQuestsInZone(self)
                 else
                     if self.mode == 1 then
                         self:SetMode(0)
@@ -794,6 +802,7 @@ function TrackerLinePool.ResetLinesForChange()
         if line.expandQuest then
             line.expandQuest.mode = nil
             line.expandQuest.questId = nil
+            line.expandQuest.zoneId = nil
         end
         if line.expandZone then
             line.expandZone.mode = nil
@@ -957,6 +966,7 @@ function TrackerLinePool.HideUnusedLines()
             line:RefreshTimedQuestUpdater()
             line.expandQuest.mode = nil
             line.expandQuest.questId = nil
+            line.expandQuest.zoneId = nil
             line.expandZone.mode = nil
             line.expandZone.zoneId = nil
             line.criteriaMark.mode = nil
