@@ -137,7 +137,7 @@ function QuestiePlayer:GetCurrentZoneId()
 
     local instanceId = select(8, GetInstanceInfo())
     if instanceId then
-        return ZoneDB.instanceIdToUiMapId[instanceId]
+        return ZoneDB.instanceIdToAreaId[instanceId]
     end
 
     return nil

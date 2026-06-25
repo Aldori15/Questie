@@ -3262,7 +3262,7 @@ ZoneDB.private.zoneIDs = {
 }
 
 -- https://wowpedia.fandom.com/wiki/InstanceID --> Classic
-ZoneDB.instanceIdToUiMapId = {
+ZoneDB.instanceIdToAreaId = {
     [33] = ZoneDB.private.zoneIDs.SHADOWFANG_KEEP,
     [34] = ZoneDB.private.zoneIDs.THE_STOCKADE,
     [36] = ZoneDB.private.zoneIDs.THE_DEADMINES,
