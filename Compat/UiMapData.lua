@@ -2282,6 +2282,137 @@ QuestieCompat.UiMapData =
 	-- end support for WDM maps
 }
 
+-- Generated from Trimitor WDM patch exports:
+-- patch-enUS-N DBFilesClient/WorldMapArea.dbc and
+-- patch-enUS-M DBFilesClient/DungeonMap.dbc.
+local wdmInstanceMapData = {
+    [213] = { 738.864, 492.5762, 452.871, 39.6232, mapType = 4, parentMapID = 1454, mapID = 681.1, instance = 389, name = "Ragefire", wdmInstanceMap = true }, -- area 2437, floor 1
+    [219] = { 1383.3333, 922.916, 1625, 2052.083, mapType = 4, parentMapID = 1446, mapID = 687, instance = 209, name = "ZulFarrak", wdmInstanceMap = true }, -- area 1176
+    [220] = { 695.029, 463.353, 442.758, -255.166, mapType = 4, parentMapID = 1435, mapID = 688.1, instance = 109, name = "TheTempleOfAtalHakkar", wdmInstanceMap = true }, -- area 1477, floor 1
+    [221] = { 884.22, 589.48, 502.924, -87.667, mapType = 4, parentMapID = 1440, mapID = 689.1, instance = 48, name = "BlackfathomDeeps", wdmInstanceMap = true }, -- area 719, floor 1
+    [222] = { 884.22, 589.48, 302.924, -337.667, mapType = 4, parentMapID = 1440, mapID = 689.2, instance = 48, name = "BlackfathomDeeps", wdmInstanceMap = true }, -- area 719, floor 2
+    [223] = { 284.224, 189.4827, 2.926, -687.6656, mapType = 4, parentMapID = 1440, mapID = 689.3, instance = 48, name = "BlackfathomDeeps", wdmInstanceMap = true }, -- area 719, floor 3
+    [225] = { 378.153, 252.1025, 189.822, 220.633, mapType = 4, parentMapID = 1453, mapID = 691.1, instance = 34, name = "TheStockade", wdmInstanceMap = true }, -- area 717, floor 1
+    [226] = { 769.668, 513.112, 491.896, -180.888, mapType = 4, parentMapID = 1426, mapID = 692.1, instance = 90, name = "Gnomeregan", wdmInstanceMap = true }, -- area 721, floor 1
+    [227] = { 769.668, 513.112, 691.896, -200.888, mapType = 4, parentMapID = 1426, mapID = 692.2, instance = 90, name = "Gnomeregan", wdmInstanceMap = true }, -- area 721, floor 2
+    [228] = { 869.668, 579.778, 741.896, -387.555, mapType = 4, parentMapID = 1426, mapID = 692.3, instance = 90, name = "Gnomeregan", wdmInstanceMap = true }, -- area 721, floor 3
+    [229] = { 869.6697, 579.78, 942.669, -357.554, mapType = 4, parentMapID = 1426, mapID = 692.4, instance = 90, name = "Gnomeregan", wdmInstanceMap = true }, -- area 721, floor 4
+    [230] = { 893.668, 595.779, 645.119, 204.306, mapType = 4, parentMapID = 1418, mapID = 693.1, instance = 70, name = "Uldaman", wdmInstanceMap = true }, -- area 1337, floor 1
+    [231] = { 492.5704, 328.3805, 545.119, 270.607, mapType = 4, parentMapID = 1418, mapID = 693.2, instance = 70, name = "Uldaman", wdmInstanceMap = true }, -- area 1337, floor 2
+    [232] = { 1264.8, 843.199, -130.76, 1303.06, mapType = 6, parentMapID = 1428, mapID = 697.1, instance = 409, name = "MoltenCore", wdmInstanceMap = true }, -- area 2717, floor 1
+    [233] = { 2120.833, 1414.58, -612.5, -11225, mapType = 6, parentMapID = 1434, mapID = 698, instance = 309, name = "ZulGurub", wdmInstanceMap = true }, -- area 1977
+    [234] = { 1275, 850, 887.5, 1050, mapType = 4, parentMapID = 1444, mapID = 700.1, instance = 429, name = "DireMaul", wdmInstanceMap = true }, -- area 2557, floor 1
+    [235] = { 525, 350, 650, 200, mapType = 4, parentMapID = 1444, mapID = 700.2, instance = 429, name = "DireMaul", wdmInstanceMap = true }, -- area 2557, floor 2
+    [236] = { 487.5, 325, 718.75, 175, mapType = 4, parentMapID = 1444, mapID = 700.3, instance = 429, name = "DireMaul", wdmInstanceMap = true }, -- area 2557, floor 3
+    [237] = { 750, 500, 1075, 250, mapType = 4, parentMapID = 1444, mapID = 700.4, instance = 429, name = "DireMaul", wdmInstanceMap = true }, -- area 2557, floor 4
+    [238] = { 800.0008, 533.334, -99.9992, 251.667, mapType = 4, parentMapID = 1444, mapID = 700.5, instance = 429, name = "DireMaul", wdmInstanceMap = true }, -- area 2557, floor 5
+    [239] = { 975, 650, 112.5, 450, mapType = 4, parentMapID = 1444, mapID = 700.6, instance = 429, name = "DireMaul", wdmInstanceMap = true }, -- area 2557, floor 6
+    [242] = { 1407.061, 938.0403, 522.337, 1186.68, mapType = 4, parentMapID = 1427, mapID = 705.1, instance = 230, name = "BlackrockDepths", wdmInstanceMap = true }, -- area 1584, floor 1
+    [243] = { 1507.061, 1004.7072, 572.337, 1500.01, mapType = 4, parentMapID = 1427, mapID = 705.2, instance = 230, name = "BlackrockDepths", wdmInstanceMap = true }, -- area 1584, floor 2
+    [246] = { 1063.7475, 709.165, 631.1082, 617.417, mapType = 4, parentMapID = 1944, mapID = 711.1, instance = 540, name = "TheShatteredHalls", wdmInstanceMap = true }, -- area 3714, floor 1
+    [247] = { 2512.5004, 1675, 3035.417, -8233.333, mapType = 6, parentMapID = 1451, mapID = 718, instance = 509, name = "RuinsofAhnQiraj", wdmInstanceMap = true }, -- area 3429
+    [248] = { 483.118, 322.0788, 111.383, 98.2458, mapType = 6, parentMapID = 1445, mapID = 719.1, instance = 249, name = "OnyxiasLair", wdmInstanceMap = true }, -- area 2159, floor 1
+    [250] = { 886.839, 591.226, 10.587, 304.398, mapType = 4, parentMapID = 1428, mapID = 722.1, instance = 229, name = "BlackrockSpire", wdmInstanceMap = true }, -- area 1583, floor 1
+    [251] = { 886.839, 591.226, 10.587, 304.398, mapType = 4, parentMapID = 1428, mapID = 722.2, instance = 229, name = "BlackrockSpire", wdmInstanceMap = true }, -- area 1583, floor 2
+    [252] = { 886.839, 591.226, 10.587, 304.398, mapType = 4, parentMapID = 1428, mapID = 722.3, instance = 229, name = "BlackrockSpire", wdmInstanceMap = true }, -- area 1583, floor 3
+    [253] = { 886.839, 591.226, 10.587, 304.398, mapType = 4, parentMapID = 1428, mapID = 722.4, instance = 229, name = "BlackrockSpire", wdmInstanceMap = true }, -- area 1583, floor 4
+    [254] = { 886.839, 591.226, 10.587, 304.398, mapType = 4, parentMapID = 1428, mapID = 722.5, instance = 229, name = "BlackrockSpire", wdmInstanceMap = true }, -- area 1583, floor 5
+    [255] = { 886.839, 591.226, 10.587, 304.398, mapType = 4, parentMapID = 1428, mapID = 722.6, instance = 229, name = "BlackrockSpire", wdmInstanceMap = true }, -- area 1583, floor 6
+    [256] = { 742.5404, 495.027, 327.5572, 354.951, mapType = 4, parentMapID = 1952, mapID = 723.1, instance = 558, name = "AuchenaiCrypts", wdmInstanceMap = true }, -- area 3790, floor 1
+    [257] = { 817.5405, 545.027, 215.0573, 334.951, mapType = 4, parentMapID = 1952, mapID = 723.2, instance = 558, name = "AuchenaiCrypts", wdmInstanceMap = true }, -- area 3790, floor 2
+    [258] = { 703.4954, 468.997, 515.7972, 173.654, mapType = 4, parentMapID = 1952, mapID = 724.1, instance = 556, name = "SethekkHalls", wdmInstanceMap = true }, -- area 3791, floor 1
+    [259] = { 703.4954, 468.997, 515.7972, 173.654, mapType = 4, parentMapID = 1952, mapID = 724.2, instance = 556, name = "SethekkHalls", wdmInstanceMap = true }, -- area 3791, floor 2
+    [260] = { 841.5224, 561.0149, 185.0792, 62.7969, mapType = 4, parentMapID = 1952, mapID = 725.1, instance = 555, name = "ShadowLabyrinth", wdmInstanceMap = true }, -- area 3789, floor 1
+    [261] = { 1003.519, 669.0127, 498.989, 603.136, mapType = 4, parentMapID = 1944, mapID = 726.1, instance = 542, name = "TheBloodFurnace", wdmInstanceMap = true }, -- area 3713, floor 1
+    [262] = { 894.92, 596.6134, 240.977, 423.7352, mapType = 4, parentMapID = 1946, mapID = 727.1, instance = 546, name = "TheUnderbog", wdmInstanceMap = true }, -- area 3716, floor 1
+    [263] = { 876.764, 584.5094, 160.022, 158.5672, mapType = 4, parentMapID = 1946, mapID = 728.1, instance = 545, name = "TheSteamvault", wdmInstanceMap = true }, -- area 3715, floor 1
+    [264] = { 876.764, 584.5094, 160.022, 158.5672, mapType = 4, parentMapID = 1946, mapID = 728.2, instance = 545, name = "TheSteamvault", wdmInstanceMap = true }, -- area 3715, floor 2
+    [265] = { 890.0581, 593.372, 53.9341, 201.72, mapType = 4, parentMapID = 1946, mapID = 729.1, instance = 547, name = "TheSlavePens", wdmInstanceMap = true }, -- area 3717, floor 1
+    [266] = { 757.4024, 504.935, 649.7532, 248.025, mapType = 4, parentMapID = 1953, mapID = 730.1, instance = 553, name = "TheBotanica", wdmInstanceMap = true }, -- area 3847, floor 1
+    [267] = { 676.238, 450.8254, 334.458, 349.9862, mapType = 4, parentMapID = 1953, mapID = 731.1, instance = 554, name = "TheMechanar", wdmInstanceMap = true }, -- area 3849, floor 1
+    [268] = { 676.238, 450.82534, 334.458, 412.986, mapType = 4, parentMapID = 1953, mapID = 731.2, instance = 554, name = "TheMechanar", wdmInstanceMap = true }, -- area 3849, floor 2
+    [269] = { 689.684, 459.78933, 284.579, 384.365, mapType = 4, parentMapID = 1953, mapID = 732.1, instance = 552, name = "TheArcatraz", wdmInstanceMap = true }, -- area 3848, floor 1
+    [270] = { 546.048, 364.032, 300.761, 408.032, mapType = 4, parentMapID = 1953, mapID = 732.2, instance = 552, name = "TheArcatraz", wdmInstanceMap = true }, -- area 3848, floor 2
+    [271] = { 636.684, 424.456, 214.079, 575.289, mapType = 4, parentMapID = 1953, mapID = 732.3, instance = 552, name = "TheArcatraz", wdmInstanceMap = true }, -- area 3848, floor 3
+    [272] = { 823.2852, 548.8568, 276.9341, 90.0708, mapType = 4, parentMapID = 1952, mapID = 733.1, instance = 557, name = "ManaTombs", wdmInstanceMap = true }, -- area 3792, floor 1
+    [273] = { 1087.5, 725, 7650, -1500, mapType = 4, parentMapID = 1446, mapID = 734, instance = 269, name = "CoTTheBlackMorass", wdmInstanceMap = true }, -- area 2366
+    [274] = { 2331.2503, 1554.166, 1854.167, 3127.083, mapType = 4, parentMapID = 1446, mapID = 735, instance = 560, name = "CoTHillsbradFoothills", wdmInstanceMap = true }, -- area 2367
+    [279] = { 936.475, 624.316, 560.529, 214.17, mapType = 4, parentMapID = 1413, mapID = 750.1, instance = 43, name = "WailingCaverns", wdmInstanceMap = true }, -- area 718, floor 1
+    [280] = { 975, 650, 147.5, 1200, mapType = 4, parentMapID = 1443, mapID = 751.1, instance = 349, name = "Maraudon", wdmInstanceMap = true }, -- area 2100, floor 1
+    [281] = { 1637.5, 1091.666, 478.75, 883.333, mapType = 4, parentMapID = 1443, mapID = 751.2, instance = 349, name = "Maraudon", wdmInstanceMap = true }, -- area 2100, floor 2
+    [287] = { 499.428, 332.95, -844.622, -7394.12, mapType = 6, parentMapID = 1428, mapID = 756.1, instance = 469, name = "BlackwingLair", wdmInstanceMap = true }, -- area 2677, floor 1
+    [288] = { 649.427, 432.95, -729.623, -7344.12, mapType = 6, parentMapID = 1428, mapID = 756.2, instance = 469, name = "BlackwingLair", wdmInstanceMap = true }, -- area 2677, floor 2
+    [289] = { 649.427, 432.95, -719.623, -7324.12, mapType = 6, parentMapID = 1428, mapID = 756.3, instance = 469, name = "BlackwingLair", wdmInstanceMap = true }, -- area 2677, floor 3
+    [290] = { 649.427, 432.95, -769.623, -7204.12, mapType = 6, parentMapID = 1428, mapID = 756.4, instance = 469, name = "BlackwingLair", wdmInstanceMap = true }, -- area 2677, floor 4
+    [291] = { 559.264, 372.8425, -237.358, 35.3335, mapType = 4, parentMapID = 1436, mapID = 757.1, instance = 36, name = "TheDeadmines", wdmInstanceMap = true }, -- area 1581, floor 1
+    [292] = { 499.263, 332.8423, -517.357, 65.3333, mapType = 4, parentMapID = 1436, mapID = 757.2, instance = 36, name = "TheDeadmines", wdmInstanceMap = true }, -- area 1581, floor 2
+    [300] = { 709.049, 472.7, 1279.94, 2682.55, mapType = 4, parentMapID = 1413, mapID = 761.1, instance = 129, name = "RazorfenDowns", wdmInstanceMap = true }, -- area 722, floor 1
+    [301] = { 736.45, 490.96, 2058.92, 2349.64, mapType = 4, parentMapID = 1413, mapID = 762.1, instance = 47, name = "RazorfenKraul", wdmInstanceMap = true }, -- area 491, floor 1
+    [302] = { 619.984, 413.322, 1567.97, 2030.181, mapType = 4, parentMapID = 1420, mapID = 763.1, instance = 189, name = "ScarletMonastery", wdmInstanceMap = true }, -- area 796, floor 1
+    [303] = { 320.191, 213.4605, -162.273, 307.366, mapType = 4, parentMapID = 1420, mapID = 763.2, instance = 189, name = "ScarletMonastery", wdmInstanceMap = true }, -- area 796, floor 2
+    [304] = { 612.6966, 408.46, 50.2726, 2009.1, mapType = 4, parentMapID = 1420, mapID = 763.3, instance = 189, name = "ScarletMonastery", wdmInstanceMap = true }, -- area 796, floor 3
+    [305] = { 703.3, 468.8663, 1743.99, 1281.29, mapType = 4, parentMapID = 1420, mapID = 763.4, instance = 189, name = "ScarletMonastery", wdmInstanceMap = true }, -- area 796, floor 4
+    [306] = { 320.0489, 213.365, 251.41, 317.698, mapType = 4, parentMapID = 1422, mapID = 764.1, instance = 289, name = "Scholomance", wdmInstanceMap = true }, -- area 2057, floor 1
+    [307] = { 440.049, 293.3664, 311.41, 337.699, mapType = 4, parentMapID = 1422, mapID = 764.2, instance = 289, name = "Scholomance", wdmInstanceMap = true }, -- area 2057, floor 2
+    [308] = { 410.078, 273.3858, 296.439, 307.707, mapType = 4, parentMapID = 1422, mapID = 764.3, instance = 289, name = "Scholomance", wdmInstanceMap = true }, -- area 2057, floor 3
+    [309] = { 531.042, 354.0282, 356.92, 287.707, mapType = 4, parentMapID = 1422, mapID = 764.4, instance = 289, name = "Scholomance", wdmInstanceMap = true }, -- area 2057, floor 4
+    [310] = { 352.43, 234.9534, 2356.2, -84.9296, mapType = 4, parentMapID = 1421, mapID = 765.1, instance = 33, name = "ShadowfangKeep", wdmInstanceMap = true }, -- area 209, floor 1
+    [311] = { 212.426, 141.618, 2359.983, -161.597, mapType = 4, parentMapID = 1421, mapID = 765.2, instance = 33, name = "ShadowfangKeep", wdmInstanceMap = true }, -- area 209, floor 2
+    [312] = { 152.43, 101.61993, 2256.2, -91.59607, mapType = 4, parentMapID = 1421, mapID = 765.3, instance = 33, name = "ShadowfangKeep", wdmInstanceMap = true }, -- area 209, floor 3
+    [313] = { 152.43, 101.6247, 2256.2, -91.5903, mapType = 4, parentMapID = 1421, mapID = 765.4, instance = 33, name = "ShadowfangKeep", wdmInstanceMap = true }, -- area 209, floor 4
+    [314] = { 152.43, 101.6247, 2256.2, -91.5903, mapType = 4, parentMapID = 1421, mapID = 765.5, instance = 33, name = "ShadowfangKeep", wdmInstanceMap = true }, -- area 209, floor 5
+    [315] = { 198.43, 132.28661, 2279.2, -50.25939, mapType = 4, parentMapID = 1421, mapID = 765.6, instance = 33, name = "ShadowfangKeep", wdmInstanceMap = true }, -- area 209, floor 6
+    [316] = { 272.43, 181.61993, 2296.2, -96.59607, mapType = 4, parentMapID = 1421, mapID = 765.7, instance = 33, name = "ShadowfangKeep", wdmInstanceMap = true }, -- area 209, floor 7
+    [317] = { 705.72, 470.48, -2911.96, 3809.45, mapType = 4, parentMapID = 1423, mapID = 766.1, instance = 329, name = "Stratholme", wdmInstanceMap = true }, -- area 2017, floor 1
+    [318] = { 1005.72, 670.48, -2961.96, 4169.45, mapType = 4, parentMapID = 1423, mapID = 766.2, instance = 329, name = "Stratholme", wdmInstanceMap = true }, -- area 2017, floor 2
+    [319] = { 2777.544, 1851.696, 2915.62, -7659.287, mapType = 6, parentMapID = 1451, mapID = 767.1, instance = 531, name = "AhnQiraj", wdmInstanceMap = true }, -- area 3428, floor 1
+    [320] = { 977.56, 651.707, 2515.63, -8051.796, mapType = 6, parentMapID = 1451, mapID = 767.2, instance = 531, name = "AhnQiraj", wdmInstanceMap = true }, -- area 3428, floor 2
+    [321] = { 577.56, 385.04, 2315.63, -8335.13, mapType = 6, parentMapID = 1451, mapID = 767.3, instance = 531, name = "AhnQiraj", wdmInstanceMap = true }, -- area 3428, floor 3
+    [329] = { 2500, 1666.666, -1525, 6145.833, mapType = 6, parentMapID = 1446, mapID = 776, instance = 534, name = "CoTMountHyjal", wdmInstanceMap = true }, -- area 3606
+    [330] = { 525, 350, 475, 337.5, mapType = 6, parentMapID = 1949, mapID = 777.1, instance = 565, name = "GruulsLair", wdmInstanceMap = true }, -- area 3923, floor 1
+    [331] = { 556, 370.6667, 385.5, 255.3333, mapType = 6, parentMapID = 1944, mapID = 780.1, instance = 544, name = "MagtheridonsLair", wdmInstanceMap = true }, -- area 3836, floor 1
+    [332] = { 1575.0025, 1050.002, 212.5025, 650.002, mapType = 6, parentMapID = 1946, mapID = 781.1, instance = 548, name = "CoilfangReservoir", wdmInstanceMap = true }, -- area 3607, floor 1
+    [333] = { 1268.7497, 845.8333, 1852.083, 568.75, mapType = 6, parentMapID = 1942, mapID = 782, instance = 568, name = "ZulAman", wdmInstanceMap = true }, -- area 3805
+    [334] = { 1575, 1050, 787.5, 950, mapType = 6, parentMapID = 1953, mapID = 783.1, instance = 550, name = "TempestKeep", wdmInstanceMap = true }, -- area 3845, floor 1
+    [335] = { 465, 310, 842.5, 1890, mapType = 6, parentMapID = 1957, mapID = 790.1, instance = 580, name = "SunwellPlateau", wdmInstanceMap = true }, -- area 4075, floor 1
+    [339] = { 1252.24946, 834.833, 1276.12, 594.833, mapType = 6, parentMapID = 1948, mapID = 797.1, instance = 564, name = "BlackTemple", wdmInstanceMap = true }, -- area 3959, floor 1
+    [340] = { 975, 650, 799, 1030, mapType = 6, parentMapID = 1948, mapID = 797.2, instance = 564, name = "BlackTemple", wdmInstanceMap = true }, -- area 3959, floor 2
+    [341] = { 1005, 670, 814, 1070, mapType = 6, parentMapID = 1948, mapID = 797.3, instance = 564, name = "BlackTemple", wdmInstanceMap = true }, -- area 3959, floor 3
+    [342] = { 440.001, 293.334, 575.0005, 636.667, mapType = 6, parentMapID = 1948, mapID = 797.4, instance = 564, name = "BlackTemple", wdmInstanceMap = true }, -- area 3959, floor 4
+    [343] = { 670, 446.6664, 600, 1110.83, mapType = 6, parentMapID = 1948, mapID = 797.5, instance = 564, name = "BlackTemple", wdmInstanceMap = true }, -- area 3959, floor 5
+    [344] = { 705, 470, 637.5, 920, mapType = 6, parentMapID = 1948, mapID = 797.6, instance = 564, name = "BlackTemple", wdmInstanceMap = true }, -- area 3959, floor 6
+    [345] = { 355, 236.6666, 492.5, 843.3333, mapType = 6, parentMapID = 1948, mapID = 797.7, instance = 564, name = "BlackTemple", wdmInstanceMap = true }, -- area 3959, floor 7
+    [347] = { 694.56, 463.04, 1989.28, -1029.44, mapType = 4, parentMapID = 1944, mapID = 798.1, instance = 543, name = "HellfireRamparts", wdmInstanceMap = true }, -- area 3562, floor 1
+    [348] = { 530.334, 353.55594, 226.108, 325.7601, mapType = 4, parentMapID = 1957, mapID = 799.1, instance = 585, name = "MagistersTerrace", wdmInstanceMap = true }, -- area 4131, floor 1
+    [349] = { 530.334, 353.55599, 226.108, 325.7601, mapType = 4, parentMapID = 1957, mapID = 799.2, instance = 585, name = "MagistersTerrace", wdmInstanceMap = true }, -- area 4131, floor 2
+    [350] = { 550.048, 366.7, -1674.976, -10822.9, mapType = 6, parentMapID = 1430, mapID = 800.1, instance = 532, name = "Karazhan", wdmInstanceMap = true }, -- area 3457, floor 1
+    [351] = { 257.86, 171.9, -1823.56, -11017.1, mapType = 6, parentMapID = 1430, mapID = 800.2, instance = 532, name = "Karazhan", wdmInstanceMap = true }, -- area 3457, floor 2
+    [352] = { 345.15, 230.1, -1787.425, -10836.2, mapType = 6, parentMapID = 1430, mapID = 800.3, instance = 532, name = "Karazhan", wdmInstanceMap = true }, -- area 3457, floor 3
+    [353] = { 520.048, 346.7, -1669.976, -10772.9, mapType = 6, parentMapID = 1430, mapID = 800.4, instance = 532, name = "Karazhan", wdmInstanceMap = true }, -- area 3457, floor 4
+    [354] = { 234.15, 156.1, -1698.43, -10813.2, mapType = 6, parentMapID = 1430, mapID = 800.5, instance = 532, name = "Karazhan", wdmInstanceMap = true }, -- area 3457, floor 5
+    [355] = { 581.548, 387.7, -1624.226, -10802.9, mapType = 6, parentMapID = 1430, mapID = 800.6, instance = 532, name = "Karazhan", wdmInstanceMap = true }, -- area 3457, floor 6
+    [356] = { 191.548, 127.7, -1875.226, -10987.9, mapType = 6, parentMapID = 1430, mapID = 800.7, instance = 532, name = "Karazhan", wdmInstanceMap = true }, -- area 3457, floor 7
+    [357] = { 139.35, 92.9, -1898.33, -11012.3, mapType = 6, parentMapID = 1430, mapID = 800.8, instance = 532, name = "Karazhan", wdmInstanceMap = true }, -- area 3457, floor 8
+    [358] = { 760.048, 506.7, -1509.976, -10952.9, mapType = 6, parentMapID = 1430, mapID = 800.9, instance = 532, name = "Karazhan", wdmInstanceMap = true }, -- area 3457, floor 9
+    [359] = { 450.25, 300.16, -1589.88, -11086.17, mapType = 6, parentMapID = 1430, mapID = 801, instance = 532, name = "Karazhan", wdmInstanceMap = true }, -- area 3457, floor 10
+    [360] = { 271.05, 180.7, -1554.48, -11104.4, mapType = 6, parentMapID = 1430, mapID = 801.1, instance = 532, name = "Karazhan", wdmInstanceMap = true }, -- area 3457, floor 11
+    [361] = { 595.048, 396.7, -1587.476, -11047.9, mapType = 6, parentMapID = 1430, mapID = 801.2, instance = 532, name = "Karazhan", wdmInstanceMap = true }, -- area 3457, floor 12
+    [362] = { 529.048, 352.7, -1433.976, -10986.4, mapType = 6, parentMapID = 1430, mapID = 801.3, instance = 532, name = "Karazhan", wdmInstanceMap = true }, -- area 3457, floor 13
+    [363] = { 245.25, 163.5, -1787.38, -10979.5, mapType = 6, parentMapID = 1430, mapID = 801.4, instance = 532, name = "Karazhan", wdmInstanceMap = true }, -- area 3457, floor 14
+    [364] = { 211.15, 140.76, -1813.93, -10972.87, mapType = 6, parentMapID = 1430, mapID = 801.5, instance = 532, name = "Karazhan", wdmInstanceMap = true }, -- area 3457, floor 15
+    [365] = { 101.25, 67.5, -1918.88, -11029.5, mapType = 6, parentMapID = 1430, mapID = 801.6, instance = 532, name = "Karazhan", wdmInstanceMap = true }, -- area 3457, floor 16
+    [366] = { 341.25, 227.5, -1813.88, -10874.5, mapType = 6, parentMapID = 1430, mapID = 801.7, instance = 532, name = "Karazhan", wdmInstanceMap = true }, -- area 3457, floor 17
+    [11001] = { 248.17677, 166.0355, 223.8693, -256.9759, mapType = 4, parentMapID = 1435, mapID = 688.2, instance = 109, name = "TheTempleOfAtalHakkar", wdmInstanceMap = true }, -- area 1477, floor 2
+    [11002] = { 556.1692, 370.388, 373.4946, -250.3959, mapType = 4, parentMapID = 1435, mapID = 688.3, instance = 109, name = "TheTempleOfAtalHakkar", wdmInstanceMap = true }, -- area 1477, floor 3
+    [11003] = { 886.839, 591.226, 10.587, 304.398, mapType = 4, parentMapID = 1428, mapID = 722.7, instance = 229, name = "BlackrockSpire", wdmInstanceMap = true }, -- area 1583, floor 7
+}
+
+for uiMapID, data in pairs(wdmInstanceMapData) do
+    QuestieCompat.UiMapData[uiMapID] = data
+end
+
+-- end support for WDM maps
+
 QuestieCompat.worldMapData = {
     [0] = { 48033.24, 32020.8, 36867.97, 14848.84 },
     [1] = { 47908.72, 31935.28, 8552.61, 18467.83 },

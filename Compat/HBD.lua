@@ -806,6 +806,10 @@ local function HandleWorldMapPin(icon, data, uiMapID)
         if uiMapID ~= data.uiMapID then
             local mapType = HBD.mapData[uiMapID].mapType
             if not data.uiMapID then
+                if HBD.mapData[uiMapID].wdmInstanceMap then
+                    return
+                end
+
                 if mapType == Enum.UIMapType.Continent and data.worldMapShowFlag >= HBD_PINS_WORLDMAP_SHOW_CONTINENT then
                     --pass
                 elseif mapType ~= Enum.UIMapType.Zone and mapType ~= Enum.UIMapType.Dungeon and mapType ~= Enum.UIMapType.Micro then
@@ -816,6 +820,10 @@ local function HandleWorldMapPin(icon, data, uiMapID)
                 local currentMapData = HBD.mapData[uiMapID]
                 local iconMapData = HBD.mapData[data.uiMapID]
                 if not iconMapData then
+                    return
+                end
+
+                if currentMapData.wdmInstanceMap and (not iconMapData.wdmInstanceMap or iconMapData.instance ~= currentMapData.instance) then
                     return
                 end
 
