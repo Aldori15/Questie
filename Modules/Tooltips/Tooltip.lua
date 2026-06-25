@@ -231,13 +231,11 @@ function QuestieTooltips:RemoveQuest(questId)
 
     if quest then
         for _, objective in pairs(quest.Objectives) do
-            objective.AlreadySpawned = {}
             objective.hasRegisteredTooltips = false
             objective.registeredItemTooltips = false
         end
 
         for _, objective in pairs(quest.SpecialObjectives) do
-            objective.AlreadySpawned = {}
             objective.hasRegisteredTooltips = false
             objective.registeredItemTooltips = false
         end

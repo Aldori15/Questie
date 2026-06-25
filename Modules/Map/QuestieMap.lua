@@ -193,7 +193,14 @@ function QuestieMap:UnloadQuestFrames(questId, iconType, noteType)
     if QuestieMap.questIdFrames[questId] then
         if (not iconType) and (not noteType) then
             QuestieMap:ForQuestFrames(questId, function(frame)
+                -- Capture this before Unload() because it clears frame.data.
+                local objective = frame.data and frame.data.ObjectiveData
+
                 frame:Unload();
+
+                if objective then
+                    objective.AlreadySpawned = {}
+                end
             end)
             QuestieMap.questIdFrames[questId] = nil;
         else
