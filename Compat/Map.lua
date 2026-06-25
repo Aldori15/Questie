@@ -2104,11 +2104,6 @@ function QuestieCompat.InitializeMapCompatibility()
         end
     end
 
-    -- Trimitor's WDM patch N assigns different WorldMapArea IDs to the Blood Elf and Draenei
-    -- starter zones (894/895) vs. the HD Client patchmenu values in UiMapData (6455/6456).
-    mapIdToUiMapId[894] = 467  -- Sunstrider Isle (Trimitor's WDM patch N)
-    mapIdToUiMapId[895] = 468  -- Ammen Vale (Trimitor's WDM patch N)
-
     BuildMapIdToCZ()
 
     local areaIdToUiMapId = ZoneDB.private and ZoneDB.private.areaIdToUiMapId
