@@ -251,6 +251,7 @@ Questie.icons = {
     ["tracker_database"] = QuestieLib.AddonPath.."Icons\\tracker_database.tga",
     ["tracker_giver"] = QuestieLib.AddonPath.."Icons\\tracker_giver.tga",
     ["tracker_quests"] = QuestieLib.AddonPath.."Icons\\tracker_quests.tga",
+    ["questbook"] = QuestieLib.AddonPath.."Icons\\QuestBook.blp",
     ["tracker_search"] = QuestieLib.AddonPath.."Icons\\tracker_search.tga",
     ["tracker_settings"] = QuestieLib.AddonPath.."Icons\\tracker_settings.tga",
     ["node_fish"] = QuestieLib.AddonPath.."Icons\\node_fish.blp",
