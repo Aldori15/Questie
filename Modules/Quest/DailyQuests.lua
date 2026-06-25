@@ -5,6 +5,8 @@ local _DailyQuests = {}
 --- COMPATIBILITY ---
 local IsQuestFlaggedCompleted = QuestieCompat.IsQuestFlaggedCompleted or C_QuestLog.IsQuestFlaggedCompleted
 local GetQuestLogIndexByID = QuestieCompat.GetQuestLogIndexByID
+local GetDailyQuestsCompleted = GetDailyQuestsCompleted
+local GetMaxDailyQuests = GetMaxDailyQuests
 
 ---@type QuestieMap
 local QuestieMap = QuestieLoader:ImportModule("QuestieMap");
@@ -152,6 +154,32 @@ function DailyQuests:IsDailyQuest(questId)
             cookingDailyIds[questId] ~= nil or
             fishingDailyIds[questId] ~= nil or
             pvpDailyIds[questId] ~= nil;
+end
+
+---@return boolean
+function DailyQuests:IsAtDailyQuestLimit()
+    local maxDailyQuests = GetMaxDailyQuests and GetMaxDailyQuests() or 0
+    if maxDailyQuests <= 0 then
+        return false
+    end
+
+    if GetDailyQuestsCompleted then
+        local dailyQuestsCompleted = GetDailyQuestsCompleted()
+        if dailyQuestsCompleted and dailyQuestsCompleted >= maxDailyQuests then
+            return true
+        end
+    end
+
+    if not Questie.db.profile.resetDailyQuests then
+        return false
+    end
+
+    local dailyQuestsCompleted = 0
+    for _ in pairs(Questie.db.char.daily or {}) do
+        dailyQuestsCompleted = dailyQuestsCompleted + 1
+    end
+
+    return dailyQuestsCompleted >= maxDailyQuests
 end
 
 nhcDailyIds = {

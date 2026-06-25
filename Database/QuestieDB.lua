@@ -2633,6 +2633,11 @@ function QuestieDB.IsDoable(questId, debugPrint)
         return false
     end
 
+    if QuestieDB.IsDailyQuest(questId) and DailyQuests:IsAtDailyQuestLimit() then
+        if debugPrint then Questie:Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Daily quest " .. questId .. " is unavailable because daily quest limit is reached") end
+        return false
+    end
+
     -- Check if this quest is visible until you turn in a certain quest
     local availableUntilCompleted = QuestieDB.QueryQuestSingle(questId, "availableUntilCompleted")
     if availableUntilCompleted and availableUntilCompleted ~= 0 then
@@ -3059,6 +3064,14 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
             return l10n("Unavailable")..l10n(": ")..l10n("Daily quest not active"), true, DoableStates.INACTIVE_DAILY
         elseif returnText then
             return "Daily quest " .. questId .. " is not active", true, DoableStates.INACTIVE_DAILY
+        end
+    end
+
+    if QuestieDB.IsDailyQuest(questId) and DailyQuests:IsAtDailyQuestLimit() then
+        if returnText and returnBrief then
+            return l10n("Unavailable")..l10n(": ")..l10n("Daily quest limit reached"), true, DoableStates.INACTIVE_DAILY
+        elseif returnText then
+            return "Daily quest " .. questId .. " is unavailable because daily quest limit is reached", true, DoableStates.INACTIVE_DAILY
         end
     end
 
