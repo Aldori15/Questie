@@ -78,8 +78,9 @@ end
 
 ---@return string
 function QuestieLink:GetQuestLinkStringById(questId)
-    local questName = QuestieDB.QueryQuestSingle(questId, "name");
-    local questLevel, _ = QuestieLib.GetTbcLevel(questId);
+    local questName = QuestieDB.QueryQuestSingle(questId, "name")
+    local questLevel, _ = QuestieLib.GetTbcLevel(questId)
+
     return QuestieLink:GetQuestLinkString(questLevel, questName, questId)
 end
 
@@ -110,6 +111,20 @@ function QuestieLink:GetQuestInsertString(questLevel, questName, questId)
     end
 
     return QuestieLink:GetQuestLinkString(questLevel, questName, questId)
+end
+
+---@return string
+function QuestieLink:GetQuestInsertStringById(questId)
+    if _ShouldInsertQuestIdForChatCommand() then
+        local nativeQuestLink = GetQuestLink(questId)
+        if nativeQuestLink then
+            return nativeQuestLink
+        end
+
+        return tostring(questId)
+    end
+
+    return QuestieLink:GetQuestLinkStringById(questId)
 end
 
 ---@return string
@@ -555,12 +570,10 @@ hooksecurefunc("ChatFrame_OnHyperlinkShow", function(...)
             Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieTooltips:OnHyperlinkShow] Relinking Quest Link to chat:", link)
             questId = tonumber(questId)
 
-            local questLevel = QuestieLib.GetTbcLevel(questId)
-            local questName = QuestieDB.QueryQuestSingle(questId, "name")
-            if questLevel and questName then
+            local replacement = QuestieLink:GetQuestInsertStringById(questId)
+            if replacement then
                 local msg = ChatFrame1EditBox:GetText()
                 if msg then
-                    local replacement = QuestieLink:GetQuestInsertString(questLevel, questName, questId)
                     ChatFrame1EditBox:SetText("")
                     ChatEdit_InsertLink(string.gsub(msg, "%|Hquestie:" .. questId .. ":.*%|h", function()
                         return replacement

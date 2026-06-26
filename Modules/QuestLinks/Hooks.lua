@@ -32,8 +32,8 @@ function Hooks:HookQuestLogTitle()
         end
 
         if (IsModifiedClick("CHATLINK") and ChatEdit_GetActiveWindow()) then
-            local title, level, _, _, _, _, _, questId = GetQuestLogTitle(questLogLineIndex)
-            ChatEdit_InsertLink(QuestieLink:GetQuestInsertString(level, title, questId))
+            local _, _, _, _, _, _, _, questId = GetQuestLogTitle(questLogLineIndex)
+            ChatEdit_InsertLink(QuestieLink:GetQuestInsertStringById(questId))
         else
             -- only call if we actually want to fix this quest (normal quests already call AQW_insert)
             if Questie.db.profile.trackerEnabled and GetNumQuestLeaderBoards(questLogLineIndex) == 0 and (not IsQuestWatched(questLogLineIndex)) then

@@ -215,7 +215,7 @@ function _Qframe:OnClick(button)
                     QuestieMap:UnloadManualFrames(self.data.id)
                 end
             else
-                ChatEdit_InsertLink(QuestieLink:GetQuestInsertString(self.data.QuestData.level, self.data.QuestData.name, self.data.Id))
+                ChatEdit_InsertLink(QuestieLink:GetQuestInsertStringById(self.data.Id))
             end
         end
     end
