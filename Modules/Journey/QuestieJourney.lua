@@ -60,12 +60,17 @@ function QuestieJourney:Initialize()
 
     coroutine.yield()
     self.continents = continents
-    self.zoneMap = ZoneDB:GetZonesWithQuests(true)
-    self.zones = ZoneDB:GetRelevantZones()
+    self:RefreshQuestZoneData(true)
     coroutine.yield()
 
     -- Set up default keybinding for Journey window
     self:SetupKeybinding()
+end
+
+---@param yield boolean?
+function QuestieJourney:RefreshQuestZoneData(yield)
+    self.zoneMap = ZoneDB:RebuildZonesWithQuests(yield)
+    self.zones = ZoneDB:GetRelevantZones()
 end
 
 function QuestieJourney:BuildMainFrame()

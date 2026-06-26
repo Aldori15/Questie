@@ -223,7 +223,9 @@ do
         local count = 0
 
         for questId in pairs(QuestieDB.QuestPointers) do
-            if (not QuestieCorrections.hiddenQuests[questId]) then
+            local hiddenQuest = QuestieCorrections.hiddenQuests[questId]
+            local isCurrentExpansionEventQuest = QuestieEvent:IsEventQuestInCurrentExpansion(questId)
+            if (not hiddenQuest) or isCurrentExpansionEventQuest then
                 if QuestiePlayer.HasRequiredRace(QuestieDB.QueryQuestSingle(questId, "requiredRaces"))
                     and QuestiePlayer.HasRequiredClass(QuestieDB.QueryQuestSingle(questId, "requiredClasses")) then
 
@@ -233,7 +235,13 @@ do
                         and requiredSkillId ~= QuestieProfessions.professionKeys.RIDING
                         and QuestieProfessions:GetSortIdByProfessionId(requiredSkillId)
 
-                    if professionZoneId then
+                    local eventSortKey = hiddenQuest and isCurrentExpansionEventQuest and _ZoneDB:GetEventSortKey(QuestieEvent:GetEventNameFor(questId))
+                    if eventSortKey then
+                        if (not zoneMap[eventSortKey]) then
+                            zoneMap[eventSortKey] = {}
+                        end
+                        zoneMap[eventSortKey][questId] = true
+                    elseif professionZoneId then
                         if (not zoneMap[professionZoneId]) then
                             zoneMap[professionZoneId] = {}
                         end
@@ -298,6 +306,33 @@ do
     end
 end
 
+---@param yield boolean?
+---@return table
+function ZoneDB:RebuildZonesWithQuests(yield)
+    zoneMap = {}
+    return self:GetZonesWithQuests(yield)
+end
+
+function _ZoneDB:GetEventSortKey(eventName)
+    local sortKeys = QuestieDB.sortKeys
+    local eventSortKeys = {
+        ["Brewfest"] = sortKeys.BREWFEST,
+        ["Children's Week"] = sortKeys.CHILDRENS_WEEK,
+        ["Darkmoon Faire"] = sortKeys.DARKMOON_FAIRE,
+        ["Day of the Dead"] = sortKeys.DAY_OF_THE_DEAD,
+        ["Harvest Festival"] = sortKeys.HARVEST_FESTIVAL,
+        ["Hallow's End"] = sortKeys.HALLOWS_END,
+        ["Love is in the Air"] = sortKeys.LOVE_IS_IN_THE_AIR,
+        ["Lunar Festival"] = sortKeys.LUNAR_FESTIVAL,
+        ["Midsummer"] = sortKeys.MIDSUMMER,
+        ["Noblegarden"] = sortKeys.NOBLEGARDEN,
+        ["Pilgrim's Bounty"] = sortKeys.PILGRIMS_BOUNTY,
+        ["Winter Veil"] = sortKeys.WINTER_VEIL,
+    }
+
+    return eventSortKeys[eventName]
+end
+
 
 ---@param zoneOrSort ZoneOrSort
 function _ZoneDB:IsSpecialQuest(zoneOrSort)
@@ -354,52 +389,29 @@ end
 function _ZoneDB:SplitSeasonalQuests()
     local sortKeys = QuestieDB.sortKeys
 
-    if (not zoneMap[sortKeys.SPECIAL]) or (not zoneMap[sortKeys.SEASONAL]) then
+    if (not zoneMap[sortKeys.SPECIAL]) and (not zoneMap[sortKeys.SEASONAL]) then
         return zoneMap
     end
-    local questsToSplit = zoneMap[sortKeys.SEASONAL]
+
+    local questsToSplit = {}
+    if zoneMap[sortKeys.SEASONAL] then
+        for k, v in pairs(zoneMap[sortKeys.SEASONAL]) do questsToSplit[k] = v end
+    end
+
     -- Merging SEASONAL and SPECIAL quests to be split into real groups
-    for k, v in pairs(zoneMap[sortKeys.SPECIAL]) do questsToSplit[k] = v end
+    if zoneMap[sortKeys.SPECIAL] then
+        for k, v in pairs(zoneMap[sortKeys.SPECIAL]) do questsToSplit[k] = v end
+    end
 
     local updatedZoneMap = zoneMap
 
     for questId, _ in pairs(questsToSplit) do
-        local eventName = QuestieEvent:GetEventNameFor(questId)
-        if eventName == "Love is in the Air" then
-            if (not updatedZoneMap[sortKeys.LOVE_IS_IN_THE_AIR]) then
-                updatedZoneMap[sortKeys.LOVE_IS_IN_THE_AIR] = {}
+        local eventSortKey = _ZoneDB:GetEventSortKey(QuestieEvent:GetEventNameFor(questId))
+        if eventSortKey then
+            if (not updatedZoneMap[eventSortKey]) then
+                updatedZoneMap[eventSortKey] = {}
             end
-            updatedZoneMap[sortKeys.LOVE_IS_IN_THE_AIR][questId] = true
-        elseif eventName == "Children's Week" then
-            if (not updatedZoneMap[sortKeys.CHILDRENS_WEEK]) then
-                updatedZoneMap[sortKeys.CHILDRENS_WEEK] = {}
-            end
-            updatedZoneMap[sortKeys.CHILDRENS_WEEK][questId] = true
-        elseif eventName == "Harvest Festival" then
-            if (not updatedZoneMap[sortKeys.HARVEST_FESTIVAL]) then
-                updatedZoneMap[sortKeys.HARVEST_FESTIVAL] = {}
-            end
-            updatedZoneMap[sortKeys.HARVEST_FESTIVAL][questId] = true
-        elseif eventName == "Hallow's End" then
-            if (not updatedZoneMap[sortKeys.HALLOWS_END]) then
-                updatedZoneMap[sortKeys.HALLOWS_END] = {}
-            end
-            updatedZoneMap[sortKeys.HALLOWS_END][questId] = true
-        elseif eventName == "Winter Veil" then
-            if (not updatedZoneMap[sortKeys.WINTER_VEIL]) then
-                updatedZoneMap[sortKeys.WINTER_VEIL] = {}
-            end
-            updatedZoneMap[sortKeys.WINTER_VEIL][questId] = true
-        elseif eventName == "Lunar Festival" then
-            if (not updatedZoneMap[sortKeys.LUNAR_FESTIVAL]) then
-                updatedZoneMap[sortKeys.LUNAR_FESTIVAL] = {}
-            end
-            updatedZoneMap[sortKeys.LUNAR_FESTIVAL][questId] = true
-        elseif eventName == "Midsummer" then
-            if (not updatedZoneMap[sortKeys.MIDSUMMER]) then
-                updatedZoneMap[sortKeys.MIDSUMMER] = {}
-            end
-            updatedZoneMap[sortKeys.MIDSUMMER][questId] = true
+            updatedZoneMap[eventSortKey][questId] = true
         else
             -- here for actual "Special" quests that are not part of events
             -- E.g. CLUCK!

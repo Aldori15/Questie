@@ -54,6 +54,7 @@ local _QuestieEvent = QuestieEvent.private
 
 QuestieEvent.activeQuests = {}
 _QuestieEvent.eventNamesForQuests = {}
+_QuestieEvent.eventQuestsInCurrentExpansion = {}
 _QuestieEvent.announcedEvents = {}
 _QuestieEvent.announcedUpcomingEvents = {}
 _QuestieEvent.timedEventStartTimers = {}
@@ -373,6 +374,9 @@ _RefreshAvailableQuests = function()
         return
     end
 
+    local QuestieJourney = QuestieLoader:ImportModule("QuestieJourney")
+    QuestieJourney:RefreshQuestZoneData()
+
     local AvailableQuests = QuestieLoader:ImportModule("AvailableQuests")
     AvailableQuests.CalculateAndDrawAll()
 end
@@ -505,8 +509,10 @@ function QuestieEvent:Load(isFinalPass)
 
         _QuestieEvent.eventNamesForQuests[questId] = eventName
 
-        if activeEvents[eventName] == true and _WithinDates(startDay, startMonth, endDay, endMonth) then
-            if _IsEventQuestVisible(questData[5]) then
+        if _IsEventQuestVisible(questData[5]) then
+            _QuestieEvent.eventQuestsInCurrentExpansion[questId] = true
+
+            if activeEvents[eventName] == true and _WithinDates(startDay, startMonth, endDay, endMonth) then
                 if not QuestieEvent.activeQuests[questId] then
                     addedActiveQuest = true
                 end
@@ -517,7 +523,7 @@ function QuestieEvent:Load(isFinalPass)
     end
 
     if Questie.IsClassic or Questie.IsWotlk then
-        _LoadDarkmoonFaire()
+        addedActiveQuest = _LoadDarkmoonFaire() or addedActiveQuest
     end
 
     if isFinalPass then
@@ -623,9 +629,10 @@ end
 _LoadDarkmoonFaire = function()
     local eventLocation = _GetDarkmoonFaireLocation()
     if (eventLocation == DMF_LOCATIONS.NONE) then
-        return
+        return false
     end
 
+    local addedActiveQuest = false
     local isInMulgore = eventLocation == DMF_LOCATIONS.MULGORE
     local darkmoonNpcFixes = nil
 
@@ -640,12 +647,18 @@ _LoadDarkmoonFaire = function()
     if isInMulgore then
         announcingQuestId = 7926 -- Horde announcement quest
     end
+    if not QuestieEvent.activeQuests[announcingQuestId] then
+        addedActiveQuest = true
+    end
     QuestieCorrections.hiddenQuests[announcingQuestId] = nil
     QuestieEvent.activeQuests[announcingQuestId] = true
 
     for _, questData in pairs(QuestieEvent.eventQuests) do
         if questData[1] == "Darkmoon Faire" and _IsEventQuestVisible(questData[5]) then
             local questId = questData[2]
+            if not QuestieEvent.activeQuests[questId] then
+                addedActiveQuest = true
+            end
             QuestieCorrections.hiddenQuests[questId] = nil
             QuestieEvent.activeQuests[questId] = true
         end
@@ -659,10 +672,13 @@ _LoadDarkmoonFaire = function()
 
     if not _QuestieEvent.announcedEvents["Darkmoon Faire"] then
         _QuestieEvent.announcedEvents["Darkmoon Faire"] = true
-        if not _ShouldAnnounceWorldEvents() then return end
 
-        print(Questie:Colorize("[Questie]", "yellow"), "|cFF6ce314" .. l10n("The '%s' world event is active!", _GetDarkmoonFaireEventName(eventLocation)))
+        if _ShouldAnnounceWorldEvents() then
+            print(Questie:Colorize("[Questie]", "yellow"), "|cFF6ce314" .. l10n("The '%s' world event is active!", _GetDarkmoonFaireEventName(eventLocation)))
+        end
     end
+
+    return addedActiveQuest
 end
 
 --- Checks wheather the current date is within the given date range
@@ -696,6 +712,10 @@ end
 
 function QuestieEvent:IsEventQuest(questId)
     return _QuestieEvent.eventNamesForQuests[questId] ~= nil
+end
+
+function QuestieEvent:IsEventQuestInCurrentExpansion(questId)
+    return _QuestieEvent.eventQuestsInCurrentExpansion[questId] == true
 end
 
 ---@param questId QuestId

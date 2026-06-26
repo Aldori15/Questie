@@ -2444,6 +2444,11 @@ function QuestieDB.IsDoable(questId, debugPrint)
         return true
     end
 
+    if QuestieEvent:IsEventQuestInCurrentExpansion(questId) and not QuestieEvent:IsEventActiveForQuest(questId) then
+        if debugPrint then Questie:Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Event quest " .. questId .. " is not active") end
+        return false
+    end
+
     if QuestieDB.activeChildQuests[questId] then -- The parent quest is active, so this quest is doable
         if debugPrint then Questie:Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Quest " .. questId .. " is eligible because it's a child quest and the parent is active!") end
         return true
@@ -2728,7 +2733,7 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
     if QuestieCorrectionshiddenQuests[questId] and QuestieCorrectionshiddenQuests[questId] ~= HIDE_ON_MAP then
         local msg = "Quest " .. questId .. " is hidden automatically"
         local msgevent = "Quest " .. questId .. " is unavailable because the world event is inactive"
-        if QuestieEvent:IsEventQuest(questId) and not QuestieEvent:IsEventActiveForQuest(questId) then
+        if QuestieEvent:IsEventQuestInCurrentExpansion(questId) and not QuestieEvent:IsEventActiveForQuest(questId) then
             if returnText and returnBrief then
                 return l10n("Unavailable")..l10n(": ")..l10n("Event inactive"), true, DoableStates.EVENT_INACTIVE
             elseif returnText and not returnBrief then
@@ -2739,6 +2744,15 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
             return l10n("Unknown")..l10n(": ")..l10n("Automatically blacklisted"), true, DoableStates.BLACKLISTED
         elseif returnText and not returnBrief then
             return msg, true, DoableStates.BLACKLISTED
+        end
+    end
+
+    if QuestieEvent:IsEventQuestInCurrentExpansion(questId) and not QuestieEvent:IsEventActiveForQuest(questId) then
+        local msg = "Quest " .. questId .. " is unavailable because the world event is inactive"
+        if returnText and returnBrief then
+            return l10n("Unavailable")..l10n(": ")..l10n("Event inactive"), true, DoableStates.EVENT_INACTIVE
+        elseif returnText and not returnBrief then
+            return msg, true, DoableStates.EVENT_INACTIVE
         end
     end
 
