@@ -26,6 +26,7 @@ EXCLUDED_MODULE_NAMES = {
 }
 
 FIELD_ORDER = [
+    "name",
     "questLevel",
     "requiredLevel",
     "requiredRaces",
@@ -52,6 +53,7 @@ FIELD_ORDER = [
 ]
 
 FIELD_KIND = {
+    "name": "string",
     "questLevel": "int",
     "requiredLevel": "int",
     "requiredRaces": "int",
@@ -108,6 +110,17 @@ QUEST_FACTION_REWARD_VALUES = {
     1: (0, 10, 25, 75, 150, 250, 350, 500, 1000, 5),
     2: (0, -10, -25, -75, -150, -250, -350, -500, -1000, -5),
 }
+
+
+def relation_has_sources(relation):
+    if not relation:
+        return False
+
+    return any(
+        relation[relation_type][source_type]
+        for relation_type in ("start", "end")
+        for source_type in relation[relation_type]
+    )
 
 # Quests where AC omits PrevQuestID even though a real prerequisite chain
 # exists (the gate is enforced by server-side C++ scripts, not SQL).
@@ -1411,6 +1424,8 @@ def objective_values_are_equivalent(acore_objectives, questie_objectives, questi
 
 def normalize_field(field, value):
     kind = FIELD_KIND[field]
+    if kind == "string":
+        return str(value or "")
     if kind == "int":
         return normalize_int(value)
     if kind == "list":
@@ -1455,6 +1470,8 @@ def default_field_value(field):
     kind = FIELD_KIND[field]
     if kind == "int":
         return 0
+    if kind == "string":
+        return ""
     if kind == "objectives":
         return EMPTY_OBJECTIVES
     return ()
@@ -2435,6 +2452,7 @@ def derive_acore_metadata(source_root, quest_template_sql=None, quest_template_a
 
         metadata = {field: default_field_value(field) for field in FIELD_ORDER}
 
+        metadata["name"] = str(row.get("LogTitle") or "")
         metadata["questLevel"] = normalize_int(row.get("QuestLevel"))
         metadata["requiredLevel"] = normalize_int(row.get("MinLevel"))
         metadata["requiredRaces"] = normalize_int(row.get("AllowableRaces"))
@@ -2511,6 +2529,7 @@ def compare_metadata(
     protected_required_race_quest_ids=None,
     questie_prequest_groups=None,
     smartai_gossip_kill_credit_sources=None,
+    active_acore_quest_ids=None,
 ):
     mismatches = []
     preserved_objective_expansions = []
@@ -2525,14 +2544,20 @@ def compare_metadata(
     protected_required_race_quest_ids = protected_required_race_quest_ids or set()
     questie_prequest_groups = questie_prequest_groups or {}
     smartai_gossip_kill_credit_sources = smartai_gossip_kill_credit_sources or {}
+    active_acore_quest_ids = active_acore_quest_ids or set()
 
     empty_entry = {field: default_field_value(field) for field in FIELD_ORDER}
 
     for quest_id in all_quest_ids:
+        if quest_id not in questie_metadata and quest_id not in active_acore_quest_ids:
+            continue
+
         acore = acore_metadata.get(quest_id, empty_entry)
         questie = questie_metadata.get(quest_id, empty_entry)
 
         for field in FIELD_ORDER:
+            if field == "name" and questie.get(field):
+                continue
             if field == "objectives":
                 if (
                     acore[field] == EMPTY_OBJECTIVES
@@ -2850,6 +2875,8 @@ def format_lua_value(field, value, constants):
         )
     if field == "requiredSkill":
         return format_required_skill(value, constants)
+    if kind == "string":
+        return lua_string_literal(str(value or ""))
     if kind == "int":
         return str(normalize_int(value))
     if kind == "rep":
@@ -2922,6 +2949,8 @@ def build_summary(mismatches):
 
 
 def main():
+    from validate_acore_quest_relations import apply_acore_relation_overrides, load_acore_relations
+
     parser = argparse.ArgumentParser(description="Validate Questie metadata against AzerothCore quest SQL.")
     parser.add_argument("--acore-source", default=r"P:\AC\source", help="Path to the AzerothCore source tree")
     parser.add_argument("--quest-db", default="Database/Wotlk/wotlkQuestDB.lua", help="Path to the Questie WotLK quest DB")
@@ -2979,6 +3008,13 @@ def main():
         spell_sql,
         args.spell_table,
     )
+    acore_relations = load_acore_relations(source_root, quest_template_sql)
+    apply_acore_relation_overrides(acore_relations)
+    active_acore_quest_ids = {
+        quest_id
+        for quest_id, relation in acore_relations.items()
+        if relation_has_sources(relation)
+    }
     creature_template_rows = load_acore_sql_table(source_root, "creature_template", key_column="entry")
     creature_kill_credits = build_creature_kill_credit_map(creature_template_rows)
     spawned_creature_ids = build_acore_spawned_creature_ids(source_root)
@@ -3001,6 +3037,7 @@ def main():
         protected_required_race_quest_ids,
         questie_prequest_groups,
         smartai_gossip_kill_credit_sources,
+        active_acore_quest_ids,
     )
     objective_display_risks = build_objective_display_risks(
         mismatches,
