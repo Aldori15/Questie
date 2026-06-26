@@ -10,9 +10,6 @@ local TrackerLinePool = QuestieLoader:ImportModule("TrackerLinePool")
 -------------------------
 --Import Questie modules.
 -------------------------
----@type QuestieCombatQueue
-local QuestieCombatQueue = QuestieLoader:ImportModule("QuestieCombatQueue")
-
 --- COMPATIBILITY ---
 local GetQuestLogIndexByID = QuestieCompat.GetQuestLogIndexByID
 
@@ -192,13 +189,7 @@ function TrackerQuestTimers:UpdateTimerFrame(frame, questId, timeRemainingString
         if timeRemainingString ~= nil then
             Questie:Debug(Questie.DEBUG_SPAM, "[TrackerQuestTimers:UpdateTimerFrame] - ", timeRemainingString)
 
-            QuestieCombatQueue:Queue(function()
-                if (not timerFrame) or (not timerFrame.label) then
-                    return
-                end
-
-                _ApplyTimerText(timerFrame, timeRemainingString)
-            end)
+            _ApplyTimerText(timerFrame, timeRemainingString)
         else
             Questie:Debug(Questie.DEBUG_SPAM, "[TrackerQuestTimers] Quest Timer Expired!")
             if timer and timer.frame == timerFrame and timer.questId == timerQuestId then
