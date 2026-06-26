@@ -32,6 +32,7 @@ FIELD_ORDER = [
     "requiredClasses",
     "objectivesText",
     "objectives",
+    "reputationReward",
     "sourceItemId",
     "requiredSourceItems",
     "requiredSkill",
@@ -57,6 +58,7 @@ FIELD_KIND = {
     "requiredClasses": "int",
     "objectivesText": "text_list",
     "objectives": "objectives",
+    "reputationReward": "rep_reward",
     "sourceItemId": "int",
     "requiredSourceItems": "list",
     "requiredSkill": "pair",
@@ -102,6 +104,10 @@ CONDITION_KEY_COLUMNS = (
 EMPTY_OBJECTIVES = ((), (), ())
 SPELL_EFFECT_CREATE_ITEM = {24, 157}
 ITEM_CLASS_QUEST = 12
+QUEST_FACTION_REWARD_VALUES = {
+    1: (0, 10, 25, 75, 150, 250, 350, 500, 1000, 5),
+    2: (0, -10, -25, -75, -150, -250, -350, -500, -1000, -5),
+}
 
 # Quests where AC omits PrevQuestID even though a real prerequisite chain
 # exists (the gate is enforced by server-side C++ scripts, not SQL).
@@ -687,6 +693,24 @@ def normalize_pair(value):
     if pair[0] == 0 and pair[1] == 0:
         return ()
     return tuple(pair)
+
+
+def normalize_reputation_reward(value):
+    if value is None or value is False:
+        return ()
+
+    pairs = []
+    for pair in value:
+        if not pair:
+            continue
+        if not isinstance(pair, (list, tuple)) or len(pair) < 2:
+            continue
+        faction = int(pair[0] or 0)
+        reward = int(pair[1] or 0)
+        if faction and reward:
+            pairs.append((faction, reward))
+
+    return tuple(sorted(pairs))
 
 
 def normalize_text_list(value):
@@ -1395,11 +1419,36 @@ def normalize_field(field, value):
         return normalize_pair(value)
     if kind == "rep":
         return normalize_pair(value)
+    if kind == "rep_reward":
+        return normalize_reputation_reward(value)
     if kind == "text_list":
         return normalize_text_list(value)
     if kind == "objectives":
         return normalize_objectives(value)
     raise ValueError(f"Unknown field kind: {kind}")
+
+
+def build_acore_reputation_reward(row):
+    rewards = []
+
+    for index in range(1, 6):
+        faction = normalize_int(row.get(f"RewardFactionID{index}"))
+        if not faction:
+            continue
+
+        override = normalize_int(row.get(f"RewardFactionOverride{index}"))
+        if override:
+            reward = int(override / 100)
+        else:
+            value_id = normalize_int(row.get(f"RewardFactionValue{index}"))
+            reward_row = QUEST_FACTION_REWARD_VALUES[2 if value_id < 0 else 1]
+            field_index = abs(value_id)
+            reward = reward_row[field_index] if field_index < len(reward_row) else 0
+
+        if reward:
+            rewards.append((faction, reward))
+
+    return normalize_reputation_reward(rewards)
 
 
 def default_field_value(field):
@@ -2395,6 +2444,7 @@ def derive_acore_metadata(source_root, quest_template_sql=None, quest_template_a
             row,
             get_item_spell_target_creatures(row, item_use_spells, spell_target_creatures),
         )
+        metadata["reputationReward"] = build_acore_reputation_reward(row)
         metadata["sourceItemId"] = normalize_int(row.get("StartItem"))
         required_source_items = normalize_list(
             [
@@ -2762,6 +2812,19 @@ def format_required_skill(value, constants):
     return "{" + f"{skill_expr},{level}" + "}"
 
 
+def format_reputation_reward(value, constants):
+    if not value:
+        return "{}"
+
+    faction_lookup = {faction_id: name for name, faction_id in constants["factionIDs"].items()}
+    rewards = []
+    for faction, reward in value:
+        faction_expr = f"factionIDs.{faction_lookup[faction]}" if faction in faction_lookup else str(faction)
+        rewards.append("{" + f"{faction_expr},{reward}" + "}")
+
+    return "{" + ",".join(rewards) + "}"
+
+
 def format_lua_value(field, value, constants):
     kind = FIELD_KIND[field]
     if field == "requiredRaces":
@@ -2793,6 +2856,8 @@ def format_lua_value(field, value, constants):
         if not value:
             return "false"
         return "{" + ",".join(str(part) for part in value) + "}"
+    if kind == "rep_reward":
+        return format_reputation_reward(value, constants)
     if kind == "text_list":
         if not value:
             return "{}"

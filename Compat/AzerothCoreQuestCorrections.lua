@@ -12,6 +12,7 @@ QuestieCompat.RegisterCorrection("questData", function()
     local questKeys = QuestieDB.questKeys
     local raceIDs = QuestieDB.raceKeys
     local classIDs = QuestieDB.classKeys
+    local factionIDs = QuestieDB.factionIDs
     local specialFlags = QuestieDB.specialFlags
     local profKeys = QuestieProfessions.professionKeys
 
@@ -2306,6 +2307,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [1] = {
             [questKeys.objectives] = {{{20000}}},
+            [questKeys.reputationReward] = {{factionIDs.BLOODSAIL_BUCCANEERS,50},{factionIDs.ARGENT_DAWN,100}},
             [questKeys.preQuestGroup] = {13929,13933,13950},
         },
 
@@ -2632,6 +2634,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.questLevel] = 1,
             [questKeys.requiredLevel] = 1,
             [questKeys.objectives] = {nil,nil,{{2688}}},
+            [questKeys.reputationReward] = {{factionIDs.ALLIANCE,500}},
             [questKeys.questFlags] = 8,
         },
 
@@ -2640,6 +2643,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 50,
             [questKeys.objectivesText] = {"x"},
             [questKeys.objectives] = {nil,nil,{{17114}}},
+            [questKeys.reputationReward] = {{factionIDs.HORDE,25},{factionIDs.ARGENT_DAWN,25}},
             [questKeys.questFlags] = 8,
         },
 
@@ -2932,6 +2936,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 32,
             [questKeys.objectivesText] = {"Return Catelyn's blade."},
             [questKeys.objectives] = {nil,nil,{{4027}}},
+            [questKeys.reputationReward] = {{factionIDs.BOOTY_BAY,150},{factionIDs.BLOODSAIL_BUCCANEERS,-150}},
             [questKeys.questFlags] = 8,
         },
 
@@ -6533,6 +6538,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [5229] = {
             [questKeys.objectivesText] = {"Go to Felstone Field in Western Plaguelands to locate and defeat the Cauldron Lord present there.  It may have a key that will allow access to the cauldron.  You must have the Empty Felstone Field Bottle with you to secure a sample of the poisons used inside the cauldron."},
+            [questKeys.reputationReward] = {{factionIDs.UNDERCITY,250},{factionIDs.ARGENT_DAWN,500}},
         },
 
         [5231] = {
@@ -6562,6 +6568,10 @@ QuestieCompat.RegisterCorrection("questData", function()
         [5261] = {
             [questKeys.questFlags] = 8,
             [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
+        },
+
+        [5263] = {
+            [questKeys.reputationReward] = {{factionIDs.ARGENT_DAWN,1000}},
         },
 
         [5282] = {
@@ -6600,11 +6610,13 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [5402] = {
             [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
+            [questKeys.reputationReward] = {{factionIDs.ARGENT_DAWN,50}},
             [questKeys.preQuestSingle] = {},
         },
 
         [5403] = {
             [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
+            [questKeys.reputationReward] = {{factionIDs.ARGENT_DAWN,50}},
             [questKeys.preQuestSingle] = {},
         },
 
@@ -6620,6 +6632,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [5406] = {
             [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
+            [questKeys.reputationReward] = {{factionIDs.ARGENT_DAWN,50}},
             [questKeys.preQuestSingle] = {},
         },
 
@@ -7684,6 +7697,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 100,
             [questKeys.requiredClasses] = classIDs.ROGUE,
             [questKeys.objectivesText] = {"TXT"},
+            [questKeys.reputationReward] = {{factionIDs.RAVENHOLDT,500}},
             [questKeys.questFlags] = 8,
         },
 
@@ -7691,6 +7705,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.questLevel] = 33,
             [questKeys.requiredLevel] = 25,
             [questKeys.requiredClasses] = classIDs.ROGUE,
+            [questKeys.reputationReward] = {{factionIDs.RAVENHOLDT,10}},
             [questKeys.questFlags] = 8,
         },
 
@@ -7699,6 +7714,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 100,
             [questKeys.requiredClasses] = classIDs.ROGUE,
             [questKeys.objectivesText] = {"TXT"},
+            [questKeys.reputationReward] = {{factionIDs.RAVENHOLDT,500}},
             [questKeys.questFlags] = 8,
         },
 
@@ -7706,6 +7722,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.questLevel] = 45,
             [questKeys.requiredLevel] = 35,
             [questKeys.requiredClasses] = classIDs.ROGUE,
+            [questKeys.reputationReward] = {{factionIDs.RAVENHOLDT,10}},
             [questKeys.questFlags] = 8,
         },
 
@@ -7714,6 +7731,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 100,
             [questKeys.requiredClasses] = classIDs.ROGUE,
             [questKeys.objectivesText] = {"TXT"},
+            [questKeys.reputationReward] = {{factionIDs.RAVENHOLDT,500}},
             [questKeys.questFlags] = 8,
         },
 
@@ -7721,6 +7739,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.questLevel] = 52,
             [questKeys.requiredLevel] = 45,
             [questKeys.requiredClasses] = classIDs.ROGUE,
+            [questKeys.reputationReward] = {{factionIDs.RAVENHOLDT,10}},
             [questKeys.questFlags] = 8,
         },
 
@@ -7729,6 +7748,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 100,
             [questKeys.requiredClasses] = classIDs.ROGUE,
             [questKeys.objectivesText] = {"TXT"},
+            [questKeys.reputationReward] = {{factionIDs.RAVENHOLDT,500}},
             [questKeys.questFlags] = 8,
         },
 
@@ -7736,6 +7756,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.questLevel] = 60,
             [questKeys.requiredLevel] = 55,
             [questKeys.requiredClasses] = classIDs.ROGUE,
+            [questKeys.reputationReward] = {{factionIDs.RAVENHOLDT,10}},
             [questKeys.questFlags] = 8,
         },
 
@@ -7744,6 +7765,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 1,
             [questKeys.requiredClasses] = classIDs.ROGUE,
             [questKeys.objectivesText] = {"TXT"},
+            [questKeys.reputationReward] = {{factionIDs.RAVENHOLDT,500}},
             [questKeys.questFlags] = 8,
         },
 
@@ -7751,6 +7773,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.questLevel] = 1,
             [questKeys.requiredLevel] = 1,
             [questKeys.requiredClasses] = classIDs.ROGUE,
+            [questKeys.reputationReward] = {{factionIDs.RAVENHOLDT,10}},
             [questKeys.questFlags] = 8,
         },
 
@@ -7900,6 +7923,10 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
             [questKeys.requiredMinRep] = false,
             [questKeys.breadcrumbs] = {},
+        },
+
+        [7202] = {
+            [questKeys.reputationReward] = {{factionIDs.IRONFORGE,250},{factionIDs.STORMPIKE_GUARD,500}},
         },
 
         [7223] = {
@@ -8122,7 +8149,12 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.preQuestSingle] = {},
         },
 
+        [7788] = {
+            [questKeys.reputationReward] = {{factionIDs.SILVERWING_SENTINELS,500},{factionIDs.SILVERWING_SENTINELS,500},{factionIDs.SILVERWING_SENTINELS,500},{factionIDs.SILVERWING_SENTINELS,500}},
+        },
+
         [7789] = {
+            [questKeys.reputationReward] = {{factionIDs.WARSONG_OUTRIDERS,500},{factionIDs.WARSONG_OUTRIDERS,500},{factionIDs.WARSONG_OUTRIDERS,500},{factionIDs.WARSONG_OUTRIDERS,500}},
             [questKeys.exclusiveTo] = {7874,7875,7876,7922,7923,7924,7925,8293,8294},
         },
 
@@ -8347,15 +8379,30 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.questFlags] = 8,
         },
 
+        [7871] = {
+            [questKeys.reputationReward] = {{factionIDs.SILVERWING_SENTINELS,500},{factionIDs.SILVERWING_SENTINELS,500},{factionIDs.SILVERWING_SENTINELS,500},{factionIDs.SILVERWING_SENTINELS,500}},
+        },
+
+        [7872] = {
+            [questKeys.reputationReward] = {{factionIDs.SILVERWING_SENTINELS,500},{factionIDs.SILVERWING_SENTINELS,500},{factionIDs.SILVERWING_SENTINELS,500},{factionIDs.SILVERWING_SENTINELS,500}},
+        },
+
+        [7873] = {
+            [questKeys.reputationReward] = {{factionIDs.SILVERWING_SENTINELS,500},{factionIDs.SILVERWING_SENTINELS,500},{factionIDs.SILVERWING_SENTINELS,500},{factionIDs.SILVERWING_SENTINELS,500}},
+        },
+
         [7874] = {
+            [questKeys.reputationReward] = {{factionIDs.WARSONG_OUTRIDERS,500},{factionIDs.WARSONG_OUTRIDERS,500},{factionIDs.WARSONG_OUTRIDERS,500},{factionIDs.WARSONG_OUTRIDERS,500}},
             [questKeys.exclusiveTo] = {7789,7875,7876,7922,7923,7924,7925,8293,8294},
         },
 
         [7875] = {
+            [questKeys.reputationReward] = {{factionIDs.WARSONG_OUTRIDERS,500},{factionIDs.WARSONG_OUTRIDERS,500},{factionIDs.WARSONG_OUTRIDERS,500},{factionIDs.WARSONG_OUTRIDERS,500}},
             [questKeys.exclusiveTo] = {7789,7874,7876,7922,7923,7924,7925,8293,8294},
         },
 
         [7876] = {
+            [questKeys.reputationReward] = {{factionIDs.WARSONG_OUTRIDERS,500},{factionIDs.WARSONG_OUTRIDERS,500},{factionIDs.WARSONG_OUTRIDERS,500},{factionIDs.WARSONG_OUTRIDERS,500}},
             [questKeys.exclusiveTo] = {7789,7874,7875,7922,7923,7924,7925,8293,8294},
         },
 
@@ -8456,6 +8503,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 1,
             [questKeys.objectivesText] = {"Bring 3 LeCrafty Rabbit Pelts to Jon LeCraft."},
             [questKeys.objectives] = {nil,nil,{{19482}}},
+            [questKeys.reputationReward] = {{factionIDs.STORMWIND,350}},
             [questKeys.questFlags] = 8,
         },
 
@@ -8807,12 +8855,21 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
+        [8291] = {
+            [questKeys.reputationReward] = {{factionIDs.SILVERWING_SENTINELS,500},{factionIDs.SILVERWING_SENTINELS,500},{factionIDs.SILVERWING_SENTINELS,500},{factionIDs.SILVERWING_SENTINELS,500}},
+        },
+
         [8293] = {
             [questKeys.exclusiveTo] = {7789,7874,7875,7876,7922,7923,7924,7925,8294},
         },
 
         [8294] = {
+            [questKeys.reputationReward] = {{factionIDs.WARSONG_OUTRIDERS,500},{factionIDs.WARSONG_OUTRIDERS,500},{factionIDs.WARSONG_OUTRIDERS,500},{factionIDs.WARSONG_OUTRIDERS,500}},
             [questKeys.exclusiveTo] = {7789,7874,7875,7876,7922,7923,7924,7925,8293},
+        },
+
+        [8295] = {
+            [questKeys.reputationReward] = {{factionIDs.WARSONG_OUTRIDERS,500},{factionIDs.WARSONG_OUTRIDERS,500},{factionIDs.WARSONG_OUTRIDERS,500},{factionIDs.WARSONG_OUTRIDERS,500}},
         },
 
         [8299] = {
@@ -8846,6 +8903,10 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [8317] = {
             [questKeys.requiredSourceItems] = {},
+        },
+
+        [8319] = {
+            [questKeys.reputationReward] = {{factionIDs.CENARION_CIRCLE,500}},
         },
 
         [8325] = {
@@ -9306,6 +9367,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 25,
             [questKeys.objectivesText] = {"Bring a Shadowstalker Scalp to Maurin Bonesplitter in Desolace."},
             [questKeys.objectives] = {nil,nil,{{6441}}},
+            [questKeys.reputationReward] = {{factionIDs.UNDERCITY,250}},
             [questKeys.nextQuestInChain] = 1482,
             [questKeys.questFlags] = 8,
         },
@@ -9521,6 +9583,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.questLevel] = 60,
             [questKeys.requiredLevel] = 40,
             [questKeys.objectives] = {nil,nil,{{15564}}},
+            [questKeys.reputationReward] = {{factionIDs.DARKMOON_FAIRE,250}},
             [questKeys.questFlags] = 8,
         },
 
@@ -10365,6 +10428,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8945] = {
+            [questKeys.reputationReward] = {{factionIDs.ARGENT_DAWN,1000}},
             [questKeys.specialFlags] = specialFlags.EXPLORATION_OR_EVENT,
         },
 
@@ -11260,6 +11324,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.questLevel] = 4,
             [questKeys.requiredLevel] = 1,
             [questKeys.objectivesText] = {"Speak with Vindicator Aldar at the Crash Site in Ammen Vale."},
+            [questKeys.reputationReward] = {{factionIDs.EXODAR,10}},
             [questKeys.nextQuestInChain] = 9307,
             [questKeys.questFlags] = 136,
         },
@@ -11269,6 +11334,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 2,
             [questKeys.objectivesText] = {"Kill 14 Mutated Owlkin and then return to Vindicator Aldar at the Crash Site in Ammen Vale."},
             [questKeys.objectives] = {{{16537}}},
+            [questKeys.reputationReward] = {{factionIDs.EXODAR,350}},
             [questKeys.questFlags] = 136,
         },
 
@@ -11276,6 +11342,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.questLevel] = 4,
             [questKeys.requiredLevel] = 3,
             [questKeys.objectivesText] = {"Take the Blood Elf Amulet to Vindicator Aldar at the Crash Site in Ammen Vale."},
+            [questKeys.reputationReward] = {{factionIDs.EXODAR,250}},
             [questKeys.sourceItemId] = 22989,
             [questKeys.questFlags] = 128,
         },
@@ -11306,6 +11373,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 50,
             [questKeys.objectivesText] = {"Brianna Schneider on Designer Island wants 10 Goblin Teeth."},
             [questKeys.objectives] = {nil,nil,{{23074}}},
+            [questKeys.reputationReward] = {{factionIDs.RAVASAUR_TRAINERS,250}},
             [questKeys.questFlags] = 8,
         },
 
@@ -11395,6 +11463,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.questLevel] = 61,
             [questKeys.requiredLevel] = 255,
             [questKeys.objectivesText] = {"Bring the Pulsating Voidwalker Essence to Mahuram Stouthoof in Thrallmar."},
+            [questKeys.reputationReward] = {{factionIDs.CENARION_CIRCLE,250}},
             [questKeys.sourceItemId] = 23216,
             [questKeys.questFlags] = 128,
         },
@@ -11404,6 +11473,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 255,
             [questKeys.objectivesText] = {"Slay 10 Captive Ravager Hatchlings and retrieve 12 Ravager Eggs for Mahuram Stouthoof in Thrallmar."},
             [questKeys.objectives] = {{{16900}},nil,{{23217}}},
+            [questKeys.reputationReward] = {{factionIDs.CENARION_CIRCLE,250}},
             [questKeys.questFlags] = 136,
         },
 
@@ -11412,6 +11482,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 58,
             [questKeys.objectivesText] = {"Gather 8 Clefthoof Hides and 8 sets of Clefthoof Bones from the Raging Clefthoof. Return to Watch Commander Krunk in Thrallmar once you have all the materials."},
             [questKeys.objectives] = {nil,nil,{{23223},{23222}}},
+            [questKeys.reputationReward] = {{factionIDs.THRALLMAR,250}},
             [questKeys.questFlags] = 136,
         },
 
@@ -11431,6 +11502,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 58,
             [questKeys.objectivesText] = {"Gather 8 Clefthoof Hides and 8 Clefthoof Sinews from the Raging Clefthoof. When you have the materials,bring them to Humphry in Honor Hold."},
             [questKeys.objectives] = {nil,nil,{{23222},{23231}}},
+            [questKeys.reputationReward] = {{factionIDs.HONOR_HOLD,250}},
             [questKeys.questFlags] = 136,
         },
 
@@ -11480,6 +11552,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 61,
             [questKeys.objectivesText] = {"Retrieve a Potent Voidwalker Essence from the Vengeful Voidwalkers and return to Taleris Dawngazer at Falcon Watch."},
             [questKeys.objectives] = {nil,nil,{{23352}}},
+            [questKeys.reputationReward] = {{factionIDs.SILVERMOON_CITY,250}},
             [questKeys.questFlags] = 136,
         },
 
@@ -11488,6 +11561,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 58,
             [questKeys.objectivesText] = {"Gather 6 Warp Hound Blood and bring them to Angela \"The Claw\" Kestrel in Thrallmar."},
             [questKeys.objectives] = {nil,nil,{{23374}}},
+            [questKeys.reputationReward] = {{factionIDs.THRALLMAR,250}},
             [questKeys.questFlags] = 136,
         },
 
@@ -11500,6 +11574,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 61,
             [questKeys.objectivesText] = {"Take the Glowing Sanctified Crystal to Rumatu at the Temple of Sha'naar,who will invoke the Light to smite the demon within."},
             [questKeys.objectives] = {{{17014}}},
+            [questKeys.reputationReward] = {{factionIDs.EXODAR,250}},
             [questKeys.sourceItemId] = 23442,
             [questKeys.questFlags] = 128,
         },
@@ -11546,6 +11621,10 @@ QuestieCompat.RegisterCorrection("questData", function()
         [9409] = {
             [questKeys.nextQuestInChain] = 0,
             [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
+        },
+
+        [9410] = {
+            [questKeys.reputationReward] = {{factionIDs.THE_MAGHAR,700}},
         },
 
         [9411] = {
@@ -11600,6 +11679,14 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.specialFlags] = specialFlags.SPELL_CAST,
         },
 
+        [9441] = {
+            [questKeys.reputationReward] = {{factionIDs.THE_MAGHAR,500}},
+        },
+
+        [9442] = {
+            [questKeys.reputationReward] = {{factionIDs.THE_MAGHAR,500}},
+        },
+
         [9443] = {
             [questKeys.nextQuestInChain] = 0,
         },
@@ -11623,6 +11710,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9447] = {
+            [questKeys.reputationReward] = {{factionIDs.THE_MAGHAR,500}},
             [questKeys.specialFlags] = specialFlags.SPELL_CAST,
         },
 
@@ -11758,6 +11846,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 67,
             [questKeys.objectivesText] = {"Slay Warbringer O'mrogg and capture the Fel Horde Banner,then return it to Overlord Hun Maimfist at Thrallmar."},
             [questKeys.objectives] = {{{16809}},nil,{{23729}}},
+            [questKeys.reputationReward] = {{factionIDs.ORGRIMMAR,150},{factionIDs.THRALLMAR,250}},
             [questKeys.questFlags] = 136,
         },
 
@@ -11793,6 +11882,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.questLevel] = 8,
             [questKeys.requiredLevel] = 5,
             [questKeys.objectivesText] = {"Take the Top Secret Venture Co. Plans to Admiral Odesyus at Odesyus' Landing."},
+            [questKeys.reputationReward] = {{factionIDs.STORMWIND,75},{factionIDs.EXODAR,150}},
             [questKeys.sourceItemId] = 23740,
             [questKeys.questFlags] = 128,
         },
@@ -11860,6 +11950,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 7,
             [questKeys.objectivesText] = {"Arugoo of the Stillpine has asked that you free 8 Stillpine Captives from cages found in Bristlelimb Village."},
             [questKeys.objectives] = {{{17375}}},
+            [questKeys.reputationReward] = {{factionIDs.EXODAR,500}},
             [questKeys.nextQuestInChain] = 9559,
             [questKeys.questFlags] = 136,
         },
@@ -12006,6 +12097,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.questLevel] = 70,
             [questKeys.requiredLevel] = 70,
             [questKeys.objectivesText] = {"The Shattered Blade you found in Karazhan wants you to ask Koren to repair it.  You'll also need to attain Honored reputation with the Violet Eye to complete this quest."},
+            [questKeys.reputationReward] = {{factionIDs.THE_VIOLET_EYE,250}},
             [questKeys.sourceItemId] = 23904,
             [questKeys.questFlags] = 200,
         },
@@ -12015,6 +12107,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 70,
             [questKeys.objectivesText] = {"Bring 40 Khorium Bars,1 Void Crystal and 8 Primal Fires to Koren inside Karazhan."},
             [questKeys.objectives] = {nil,nil,{{23449},{22450},{21884}}},
+            [questKeys.reputationReward] = {{factionIDs.THE_VIOLET_EYE,250}},
             [questKeys.questFlags] = 136,
         },
 
@@ -12023,6 +12116,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 70,
             [questKeys.objectivesText] = {"Bring 40 Khorium Bars,1 Void Crystal and 8 Primal Fires to Koren inside Karazhan."},
             [questKeys.objectives] = {nil,nil,{{23449},{22450},{21884}}},
+            [questKeys.reputationReward] = {{factionIDs.THE_VIOLET_EYE,250}},
             [questKeys.questFlags] = 136,
         },
 
@@ -12084,6 +12178,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.questLevel] = 70,
             [questKeys.requiredLevel] = 70,
             [questKeys.objectivesText] = {"<TXT>"},
+            [questKeys.reputationReward] = {{factionIDs.THE_VIOLET_EYE,250}},
             [questKeys.questFlags] = 136,
         },
 
@@ -12091,6 +12186,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.questLevel] = 70,
             [questKeys.requiredLevel] = 70,
             [questKeys.objectivesText] = {"<TXT>"},
+            [questKeys.reputationReward] = {{factionIDs.THE_VIOLET_EYE,250}},
             [questKeys.questFlags] = 136,
         },
 
@@ -12098,6 +12194,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.questLevel] = 70,
             [questKeys.requiredLevel] = 70,
             [questKeys.objectives] = {nil,nil,{{23905}}},
+            [questKeys.reputationReward] = {{factionIDs.THE_VIOLET_EYE,250}},
             [questKeys.questFlags] = 136,
         },
 
@@ -12105,6 +12202,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.questLevel] = 70,
             [questKeys.requiredLevel] = 70,
             [questKeys.objectives] = {nil,nil,{{23647}}},
+            [questKeys.reputationReward] = {{factionIDs.THE_VIOLET_EYE,250}},
             [questKeys.questFlags] = 136,
         },
 
@@ -12113,6 +12211,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 70,
             [questKeys.objectivesText] = {"The Facet of Keanna stored inside Keanna's Will wants you to gather 20 Arcane Residues from the Arcane Anomalies in Karazhan."},
             [questKeys.objectives] = {nil,nil,{{24068},{23916}}},
+            [questKeys.reputationReward] = {{factionIDs.THE_VIOLET_EYE,250}},
             [questKeys.questFlags] = 128,
         },
 
@@ -12121,6 +12220,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 70,
             [questKeys.objectivesText] = {"The Facet of Keanna stored inside Keanna's Will wants you to gather 20 Arcane Residues from the Arcane Anomalies in Karazhan."},
             [questKeys.objectives] = {nil,nil,{{24068},{23911}}},
+            [questKeys.reputationReward] = {{factionIDs.THE_VIOLET_EYE,250}},
             [questKeys.questFlags] = 128,
         },
 
@@ -12129,6 +12229,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 70,
             [questKeys.objectivesText] = {"The Facet of Keanna stored inside Keanna's Will wants you to gather 20 Arcane Residues from the Arcane Anomalies in Karazhan."},
             [questKeys.objectives] = {nil,nil,{{24068},{23916}}},
+            [questKeys.reputationReward] = {{factionIDs.THE_VIOLET_EYE,250}},
             [questKeys.questFlags] = 128,
         },
 
@@ -12137,6 +12238,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 70,
             [questKeys.objectivesText] = {"The Facet of Keanna stored inside Keanna's Will wants you to gather 20 Arcane Residues from the Arcane Anomalies in Karazhan."},
             [questKeys.objectives] = {nil,nil,{{24068},{23911}}},
+            [questKeys.reputationReward] = {{factionIDs.THE_VIOLET_EYE,250}},
             [questKeys.questFlags] = 128,
         },
 
@@ -12145,6 +12247,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 70,
             [questKeys.objectivesText] = {"The Facet of Keanna stored inside Keanna's Will wants you to gather 20 Arcane Residues from the Arcane Anomalies in Karazhan."},
             [questKeys.objectives] = {nil,nil,{{24068},{23649}}},
+            [questKeys.reputationReward] = {{factionIDs.THE_VIOLET_EYE,250}},
             [questKeys.questFlags] = 128,
         },
 
@@ -12153,6 +12256,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 70,
             [questKeys.objectivesText] = {"The Facet of Keanna stored inside Keanna's Will wants you to gather 20 Arcane Residues from the Arcane Anomalies in Karazhan."},
             [questKeys.objectives] = {nil,nil,{{24068},{23649}}},
+            [questKeys.reputationReward] = {{factionIDs.THE_VIOLET_EYE,250}},
             [questKeys.questFlags] = 128,
         },
 
@@ -12161,6 +12265,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 70,
             [questKeys.objectivesText] = {"The Facet of Keanna stored inside Keanna's Will wants you to gather 20 Arcane Residues from the Arcane Anomalies in Karazhan."},
             [questKeys.objectives] = {nil,nil,{{24068},{23648}}},
+            [questKeys.reputationReward] = {{factionIDs.THE_VIOLET_EYE,250}},
             [questKeys.questFlags] = 128,
         },
 
@@ -12169,6 +12274,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 70,
             [questKeys.objectivesText] = {"The Facet of Keanna stored inside Keanna's Will wants you to gather 20 Arcane Residues from the Arcane Anomalies in Karazhan."},
             [questKeys.objectives] = {nil,nil,{{24068},{23648}}},
+            [questKeys.reputationReward] = {{factionIDs.THE_VIOLET_EYE,250}},
             [questKeys.questFlags] = 128,
         },
 
@@ -12177,6 +12283,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 70,
             [questKeys.objectivesText] = {"Defeat Malchezar in Karazhan while equipped with Keanna's Will.  Facet of Keanna must survive."},
             [questKeys.objectives] = {{{15690}}},
+            [questKeys.reputationReward] = {{factionIDs.THE_VIOLET_EYE,500}},
             [questKeys.questFlags] = 200,
         },
 
@@ -12204,6 +12311,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 12,
             [questKeys.requiredClasses] = classIDs.PALADIN,
             [questKeys.objectivesText] = {"Report to Knight-Lord Bloodvalor in Silvermoon City."},
+            [questKeys.reputationReward] = {{factionIDs.SILVERMOON_CITY,250}},
             [questKeys.nextQuestInChain] = 9679,
             [questKeys.questFlags] = 136,
         },
@@ -12217,6 +12325,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.questLevel] = 16,
             [questKeys.requiredLevel] = 14,
             [questKeys.objectivesText] = {"Take the Sun King's Command to Vindicator Boros at Blood Watch."},
+            [questKeys.reputationReward] = {{factionIDs.EXODAR,150}},
             [questKeys.sourceItemId] = 24228,
             [questKeys.nextQuestInChain] = 9696,
             [questKeys.questFlags] = 128,
@@ -12239,13 +12348,37 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.specialFlags] = specialFlags.EXPLORATION_OR_EVENT,
         },
 
+        [9714] = {
+            [questKeys.reputationReward] = {{factionIDs.SPOREGGAR,750}},
+        },
+
+        [9715] = {
+            [questKeys.reputationReward] = {{factionIDs.SPOREGGAR,750}},
+        },
+
         [9716] = {
             [questKeys.objectivesText] = {"Investigate the cause of the water depletion at Umbrafen Lake.  Then return to Ysiel Windsinger at the Cenarion Refuge in Zangarmarsh."},
+        },
+
+        [9717] = {
+            [questKeys.reputationReward] = {{factionIDs.SPOREGGAR,1050}},
+        },
+
+        [9719] = {
+            [questKeys.reputationReward] = {{factionIDs.SPOREGGAR,1050}},
         },
 
         [9720] = {
             [questKeys.objectivesText] = {"Ysiel Windsinger wants you to use the Ironvine Seeds on the Steam Pump Controls at Serpent Lake, Umbrafen Lake, Marshlight Lake and the Lagoon.  Then return to her at the Cenarion Refuge in Zangarmarsh with any leftover seeds you have."},
             [questKeys.specialFlags] = specialFlags.SPELL_CAST,
+        },
+
+        [9726] = {
+            [questKeys.reputationReward] = {{factionIDs.SPOREGGAR,750}},
+        },
+
+        [9727] = {
+            [questKeys.reputationReward] = {{factionIDs.SPOREGGAR,750}},
         },
 
         [9728] = {
@@ -12254,6 +12387,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [9729] = {
             [questKeys.objectivesText] = {"Escort Fhwoor into the area of the Marshlight steam pump to retrieve the Ark of Ssslith.  Bring Fhwoor and the ark back safely and then report back to Gzhun'tt at Sporeggar in Zangarmarsh."},
+            [questKeys.reputationReward] = {{factionIDs.SPOREGGAR,1050}},
         },
 
         [9731] = {
@@ -12271,11 +12405,21 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9739] = {
+            [questKeys.reputationReward] = {{factionIDs.SPOREGGAR,750}},
             [questKeys.requiredMaxRep] = {970,3000},
         },
 
+        [9742] = {
+            [questKeys.reputationReward] = {{factionIDs.SPOREGGAR,750}},
+        },
+
         [9743] = {
+            [questKeys.reputationReward] = {{factionIDs.SPOREGGAR,750}},
             [questKeys.requiredMaxRep] = {970,3000},
+        },
+
+        [9744] = {
+            [questKeys.reputationReward] = {{factionIDs.SPOREGGAR,750}},
         },
 
         [9745] = {
@@ -12328,6 +12472,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.questLevel] = 70,
             [questKeys.requiredLevel] = 67,
             [questKeys.objectives] = {nil,nil,{{24369}}},
+            [questKeys.reputationReward] = {{factionIDs.CENARION_EXPEDITION,75}},
             [questKeys.questFlags] = 136,
         },
 
@@ -12358,10 +12503,20 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [9806] = {
             [questKeys.objectivesText] = {"Gshaff wants you to gather 6 Fertile Spores from the various Zangarmarsh Spore Bats and Marsh Walkers.  Return to Ghsaff at Sporeggar when you've completed this task."},
+            [questKeys.reputationReward] = {{factionIDs.SPOREGGAR,750}},
+        },
+
+        [9807] = {
+            [questKeys.reputationReward] = {{factionIDs.SPOREGGAR,750}},
         },
 
         [9808] = {
+            [questKeys.reputationReward] = {{factionIDs.SPOREGGAR,750}},
             [questKeys.requiredMinRep] = false,
+        },
+
+        [9809] = {
+            [questKeys.reputationReward] = {{factionIDs.SPOREGGAR,750}},
         },
 
         [9816] = {
@@ -12377,6 +12532,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9830] = {
+            [questKeys.reputationReward] = {{factionIDs.KURENAI,500}},
             [questKeys.requiredMinRep] = false,
         },
 
@@ -12385,15 +12541,25 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9833] = {
+            [questKeys.reputationReward] = {{factionIDs.KURENAI,500}},
             [questKeys.requiredMinRep] = false,
         },
 
         [9834] = {
+            [questKeys.reputationReward] = {{factionIDs.KURENAI,500}},
             [questKeys.requiredMinRep] = false,
+        },
+
+        [9835] = {
+            [questKeys.reputationReward] = {{factionIDs.KURENAI,500}},
         },
 
         [9837] = {
             [questKeys.preQuestSingle] = {9836,10737},
+        },
+
+        [9839] = {
+            [questKeys.reputationReward] = {{factionIDs.KURENAI,500}},
         },
 
         [9846] = {
@@ -12417,6 +12583,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9863] = {
+            [questKeys.reputationReward] = {{factionIDs.THE_MAGHAR,500}},
             [questKeys.requiredMinRep] = false,
         },
 
@@ -12424,12 +12591,18 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredMinRep] = false,
         },
 
+        [9865] = {
+            [questKeys.reputationReward] = {{factionIDs.THE_MAGHAR,500}},
+        },
+
         [9867] = {
             [questKeys.objectivesText] = {"Farseer Margadesh at Garadar in Nagrand wants you to bring him the Head of Ortor of Murkblood. "},
+            [questKeys.reputationReward] = {{factionIDs.THE_MAGHAR,500}},
             [questKeys.requiredMinRep] = false,
         },
 
         [9868] = {
+            [questKeys.reputationReward] = {{factionIDs.THE_MAGHAR,700}},
             [questKeys.requiredMinRep] = false,
         },
 
@@ -12441,7 +12614,20 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredMinRep] = false,
         },
 
+        [9871] = {
+            [questKeys.reputationReward] = {{factionIDs.KURENAI,500}},
+        },
+
+        [9872] = {
+            [questKeys.reputationReward] = {{factionIDs.THE_MAGHAR,500}},
+        },
+
+        [9873] = {
+            [questKeys.reputationReward] = {{factionIDs.KURENAI,500}},
+        },
+
         [9874] = {
+            [questKeys.reputationReward] = {{factionIDs.KURENAI,500}},
             [questKeys.requiredMinRep] = false,
             [questKeys.specialFlags] = specialFlags.SPELL_CAST,
         },
@@ -12451,10 +12637,12 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9878] = {
+            [questKeys.reputationReward] = {{factionIDs.KURENAI,500}},
             [questKeys.requiredMinRep] = false,
         },
 
         [9879] = {
+            [questKeys.reputationReward] = {{factionIDs.KURENAI,700}},
             [questKeys.requiredMinRep] = false,
         },
 
@@ -12492,16 +12680,35 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.MONTHLY,
         },
 
+        [9888] = {
+            [questKeys.reputationReward] = {{factionIDs.THE_MAGHAR,500}},
+        },
+
         [9889] = {
             [questKeys.objectives] = {{{18260}}},
+            [questKeys.reputationReward] = {{factionIDs.THE_MAGHAR,1000}},
+        },
+
+        [9891] = {
+            [questKeys.reputationReward] = {{factionIDs.THE_MAGHAR,500}},
         },
 
         [9902] = {
+            [questKeys.reputationReward] = {{factionIDs.KURENAI,500}},
             [questKeys.requiredMinRep] = false,
         },
 
         [9905] = {
+            [questKeys.reputationReward] = {{factionIDs.KURENAI,500}},
             [questKeys.requiredMinRep] = false,
+        },
+
+        [9906] = {
+            [questKeys.reputationReward] = {{factionIDs.THE_MAGHAR,500}},
+        },
+
+        [9907] = {
+            [questKeys.reputationReward] = {{factionIDs.THE_MAGHAR,700}},
         },
 
         [9908] = {
@@ -12520,6 +12727,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [9910] = {
             [questKeys.objectives] = {{{18305},{18306},{18307}}},
+            [questKeys.reputationReward] = {{factionIDs.THE_MAGHAR,500}},
             [questKeys.specialFlags] = specialFlags.SPELL_CAST,
         },
 
@@ -12527,27 +12735,76 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.exclusiveTo] = {},
         },
 
+        [9916] = {
+            [questKeys.reputationReward] = {{factionIDs.THE_MAGHAR,500}},
+        },
+
+        [9917] = {
+            [questKeys.reputationReward] = {{factionIDs.KURENAI,500}},
+        },
+
+        [9918] = {
+            [questKeys.reputationReward] = {{factionIDs.KURENAI,1000}},
+        },
+
+        [9919] = {
+            [questKeys.reputationReward] = {{factionIDs.SPOREGGAR,750}},
+        },
+
+        [9921] = {
+            [questKeys.reputationReward] = {{factionIDs.KURENAI,500}},
+        },
+
+        [9922] = {
+            [questKeys.reputationReward] = {{factionIDs.KURENAI,700}},
+        },
+
         [9923] = {
+            [questKeys.reputationReward] = {{factionIDs.KURENAI,500}},
             [questKeys.requiredMinRep] = false,
+        },
+
+        [9924] = {
+            [questKeys.reputationReward] = {{factionIDs.KURENAI,500}},
         },
 
         [9926] = {
             [questKeys.specialFlags] = specialFlags.EXPLORATION_OR_EVENT,
         },
 
+        [9933] = {
+            [questKeys.reputationReward] = {{factionIDs.KURENAI,700}},
+        },
+
+        [9934] = {
+            [questKeys.reputationReward] = {{factionIDs.THE_MAGHAR,700}},
+        },
+
         [9935] = {
+            [questKeys.reputationReward] = {{factionIDs.THE_MAGHAR,500}},
             [questKeys.requiredMinRep] = false,
         },
 
         [9936] = {
+            [questKeys.reputationReward] = {{factionIDs.KURENAI,500}},
             [questKeys.requiredMinRep] = false,
         },
 
+        [9937] = {
+            [questKeys.reputationReward] = {{factionIDs.THE_MAGHAR,700}},
+        },
+
+        [9938] = {
+            [questKeys.reputationReward] = {{factionIDs.KURENAI,700}},
+        },
+
         [9939] = {
+            [questKeys.reputationReward] = {{factionIDs.THE_MAGHAR,500}},
             [questKeys.requiredMinRep] = false,
         },
 
         [9940] = {
+            [questKeys.reputationReward] = {{factionIDs.KURENAI,500}},
             [questKeys.requiredMinRep] = false,
         },
 
@@ -12560,8 +12817,13 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9945] = {
+            [questKeys.reputationReward] = {{factionIDs.THE_MAGHAR,500}},
             [questKeys.requiredMinRep] = false,
             [questKeys.preQuestSingle] = {9944},
+        },
+
+        [9946] = {
+            [questKeys.reputationReward] = {{factionIDs.THE_MAGHAR,700}},
         },
 
         [9947] = {
@@ -12569,6 +12831,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9948] = {
+            [questKeys.reputationReward] = {{factionIDs.THE_MAGHAR,700}},
             [questKeys.requiredMinRep] = false,
         },
 
@@ -12576,11 +12839,17 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.preQuestSingle] = {9947},
         },
 
+        [9954] = {
+            [questKeys.reputationReward] = {{factionIDs.KURENAI,500}},
+        },
+
         [9955] = {
             [questKeys.objectives] = {{{18444}}},
+            [questKeys.reputationReward] = {{factionIDs.KURENAI,700}},
         },
 
         [9956] = {
+            [questKeys.reputationReward] = {{factionIDs.KURENAI,700}},
             [questKeys.requiredMinRep] = false,
         },
 
@@ -12760,6 +13029,10 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectivesText] = {"While in disguise, speak with the Shadowy Initiate, the Shadowy Laborer and the Shadowy Advisor.  Then return to Scout Neftis at Grangol'var Village in Terokkar Forest."},
         },
 
+        [10045] = {
+            [questKeys.reputationReward] = {{factionIDs.THE_MAGHAR,700}},
+        },
+
         [10047] = {
             [questKeys.preQuestSingle] = {},
         },
@@ -12839,8 +13112,13 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 255,
             [questKeys.objectivesText] = {"Kill 10 Gan'arg Servants,5 Forge Camp Legionnaires,and 5 Sisters of Grief,then search Forge Camp: Rage for evidence of the Legion's intentions."},
             [questKeys.objectives] = {{{16947},{16954},{16960}}},
+            [questKeys.reputationReward] = {{factionIDs.HONOR_HOLD,250}},
             [questKeys.nextQuestInChain] = 10083,
             [questKeys.questFlags] = 136,
+        },
+
+        [10082] = {
+            [questKeys.reputationReward] = {{factionIDs.THE_MAGHAR,500}},
         },
 
         [10083] = {
@@ -12848,8 +13126,13 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 255,
             [questKeys.objectivesText] = {"Retrieve the Forge Camp: Spite Plans and return them to Field Marshal Rohamus at Expedition Point."},
             [questKeys.objectives] = {nil,nil,{{27419}}},
+            [questKeys.reputationReward] = {{factionIDs.HONOR_HOLD,350}},
             [questKeys.nextQuestInChain] = 10084,
             [questKeys.questFlags] = 128,
+        },
+
+        [10085] = {
+            [questKeys.reputationReward] = {{factionIDs.THE_MAGHAR,500}},
         },
 
         [10087] = {
@@ -12873,6 +13156,14 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.preQuestSingle] = {10088},
         },
 
+        [10101] = {
+            [questKeys.reputationReward] = {{factionIDs.THE_SHA_TAR,250},{factionIDs.THE_MAGHAR,500}},
+        },
+
+        [10102] = {
+            [questKeys.reputationReward] = {{factionIDs.THE_SHA_TAR,250},{factionIDs.THE_MAGHAR,500}},
+        },
+
         [10106] = {
             [questKeys.questLevel] = 60,
         },
@@ -12891,6 +13182,14 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [10114] = {
             [questKeys.exclusiveTo] = {},
+        },
+
+        [10115] = {
+            [questKeys.reputationReward] = {{factionIDs.KURENAI,500}},
+        },
+
+        [10116] = {
+            [questKeys.reputationReward] = {{factionIDs.KURENAI,500}},
         },
 
         [10119] = {
@@ -12982,11 +13281,20 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [10167] = {
+            [questKeys.reputationReward] = {{factionIDs.THE_SHA_TAR,350},{factionIDs.THE_MAGHAR,700}},
             [questKeys.questFlags] = 136,
+        },
+
+        [10168] = {
+            [questKeys.reputationReward] = {{factionIDs.THE_SHA_TAR,350},{factionIDs.THE_MAGHAR,700}},
         },
 
         [10173] = {
             [questKeys.requiredSourceItems] = {29205,29206},
+        },
+
+        [10175] = {
+            [questKeys.reputationReward] = {{factionIDs.THE_MAGHAR,500}},
         },
 
         [10180] = {
@@ -13055,6 +13363,10 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [10211] = {
             [questKeys.objectivesText] = {"Follow Khadgar's servant and listen to its story.  Return to Khadgar after completing this task."},
+        },
+
+        [10212] = {
+            [questKeys.reputationReward] = {{factionIDs.THE_MAGHAR,2000}},
         },
 
         [10213] = {
@@ -13573,10 +13885,20 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [10476] = {
+            [questKeys.reputationReward] = {{factionIDs.KURENAI,500}},
             [questKeys.requiredMinRep] = false,
         },
 
+        [10477] = {
+            [questKeys.reputationReward] = {{factionIDs.KURENAI,500}},
+        },
+
+        [10478] = {
+            [questKeys.reputationReward] = {{factionIDs.THE_MAGHAR,500}},
+        },
+
         [10479] = {
+            [questKeys.reputationReward] = {{factionIDs.THE_MAGHAR,500}},
             [questKeys.requiredMinRep] = false,
         },
 
@@ -13691,6 +14013,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [10591] = {
             [questKeys.requiredClasses] = classIDs.PALADIN,
+            [questKeys.reputationReward] = {{factionIDs.ARGENT_DAWN,250},{factionIDs.SILVERMOON_CITY,250}},
             [questKeys.questFlags] = 136,
         },
 
@@ -13947,6 +14270,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.questLevel] = 70,
             [questKeys.requiredLevel] = 70,
             [questKeys.objectivesText] = {"Bring your Band of Eternity to Soridormi at the Caverns of Time after obtaining Exalted reputation with the Scale of the Sands."},
+            [questKeys.reputationReward] = {{factionIDs.THE_SCALE_OF_THE_SANDS,350}},
             [questKeys.sourceItemId] = 29304,
             [questKeys.questFlags] = 136,
         },
@@ -14412,6 +14736,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11026] = {
+            [questKeys.reputationReward] = {{factionIDs.SHA_TARI_SKYGUARD,350},{factionIDs.OGRILA,350}},
             [questKeys.preQuestSingle] = {},
         },
 
@@ -14575,6 +14900,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 70,
             [questKeys.objectivesText] = {"Soridormi at Caverns of Time wants you to retrieve Vashj's Vial Remnant from Lady Vashj at Coilfang Reservoir and Kael's Vial Remnant from Kael'thas Sunstrider at Tempest Keep."},
             [questKeys.objectives] = {nil,nil,{{29906},{29905}}},
+            [questKeys.reputationReward] = {{factionIDs.THE_SCALE_OF_THE_SANDS,3000}},
             [questKeys.questFlags] = 1224,
             [questKeys.specialFlags] = specialFlags.EXPLORATION_OR_EVENT,
         },
@@ -15115,6 +15441,10 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.specialFlags] = specialFlags.REPEATABLE,
         },
 
+        [11354] = {
+            [questKeys.reputationReward] = {{factionIDs.THE_CONSORTIUM,350},{factionIDs.HONOR_HOLD,350},{factionIDs.THRALLMAR,350}},
+        },
+
         [11355] = {
             [questKeys.objectives] = {{{24329}}},
             [questKeys.requiredSourceItems] = {33806},
@@ -15138,6 +15468,18 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [11361] = {
             [questKeys.requiredSourceItems] = {},
+        },
+
+        [11362] = {
+            [questKeys.reputationReward] = {{factionIDs.THE_CONSORTIUM,350},{factionIDs.HONOR_HOLD,350},{factionIDs.THRALLMAR,350}},
+        },
+
+        [11363] = {
+            [questKeys.reputationReward] = {{factionIDs.THE_CONSORTIUM,350},{factionIDs.HONOR_HOLD,350},{factionIDs.THRALLMAR,350}},
+        },
+
+        [11364] = {
+            [questKeys.reputationReward] = {{factionIDs.THE_CONSORTIUM,250},{factionIDs.HONOR_HOLD,250},{factionIDs.THRALLMAR,250}},
         },
 
         [11365] = {
@@ -15330,6 +15672,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11472] = {
+            [questKeys.reputationReward] = {{factionIDs.THE_KALUAK,250}},
             [questKeys.requiredSourceItems] = {34127,40946},
         },
 
@@ -15365,10 +15708,12 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11502] = {
+            [questKeys.reputationReward] = {{factionIDs.KURENAI,500}},
             [questKeys.requiredMinRep] = false,
         },
 
         [11503] = {
+            [questKeys.reputationReward] = {{factionIDs.THE_MAGHAR,500}},
             [questKeys.requiredMinRep] = false,
         },
 
@@ -15457,16 +15802,19 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [11551] = {
             [questKeys.objectivesText] = {},
+            [questKeys.reputationReward] = {{factionIDs.SHATTERED_SUN_OFFENSIVE,250}},
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [11552] = {
             [questKeys.objectivesText] = {},
+            [questKeys.reputationReward] = {{factionIDs.SHATTERED_SUN_OFFENSIVE,250}},
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
         [11553] = {
             [questKeys.objectivesText] = {},
+            [questKeys.reputationReward] = {{factionIDs.SHATTERED_SUN_OFFENSIVE,250}},
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
@@ -15909,6 +16257,10 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredSourceItems] = {35506},
         },
 
+        [11945] = {
+            [questKeys.reputationReward] = {{factionIDs.THE_KALUAK,250}},
+        },
+
         [11946] = {
             [questKeys.objectivesText] = {"Keristrasza wants you to speak to her when you are ready to prepare for a confrontation with Malygos.$b$bIf you lose your Augmented Arcane Prison, speak to Raelorasz at the Transitus Shield."},
             [questKeys.sourceItemId] = 0,
@@ -15955,6 +16307,10 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredSourceItems] = {35690},
         },
 
+        [11960] = {
+            [questKeys.reputationReward] = {{factionIDs.THE_KALUAK,250}},
+        },
+
         [11964] = {
             [questKeys.specialFlags] = specialFlags.EXPLORATION_OR_EVENT,
         },
@@ -15971,6 +16327,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.questLevel] = -1,
             [questKeys.requiredLevel] = 60,
             [questKeys.objectivesText] = {"Take your orphan, Salandria, to see L70ETC in Silvermoon City's Walk of Elder's.  Make sure to call for her if she is not present when you arrive."},
+            [questKeys.reputationReward] = {{factionIDs.LOWER_CITY,250}},
             [questKeys.questFlags] = 138,
         },
 
@@ -16016,6 +16373,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 68,
             [questKeys.objectivesText] = {"Obtain the missing parts of the Skadir Navigational Chart and bring it to Karuk in Riplash Stand."},
             [questKeys.objectives] = {nil,nil,{{35775},{35776},{35777},{35778}}},
+            [questKeys.reputationReward] = {{factionIDs.THE_KALUAK,250}},
             [questKeys.questFlags] = 136,
         },
 
@@ -18117,7 +18475,12 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12966] = {
+            [questKeys.reputationReward] = {},
             [questKeys.requiredMinRep] = false,
+        },
+
+        [12967] = {
+            [questKeys.reputationReward] = {},
         },
 
         [12968] = {
@@ -18211,6 +18574,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [13006] = {
             [questKeys.objectivesText] = {"You are to enter Hibernal Cavern west of Dun Niffelem and collect 5 units of Viscous Oil from the Viscous Oils there.$b$bYou are then to return to Dun Niffelem and apply the oil to Hodir's Helm."},
+            [questKeys.reputationReward] = {{factionIDs.THE_SONS_OF_HODIR,455}},
         },
 
         [13011] = {
@@ -20316,6 +20680,10 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.preQuestSingle] = {24711},
         },
 
+        [24510] = {
+            [questKeys.reputationReward] = {},
+        },
+
         [24511] = {
             [questKeys.preQuestSingle] = {24506},
         },
@@ -20551,6 +20919,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         [24797] = {
             [questKeys.questLevel] = 80,
             [questKeys.requiredLevel] = 77,
+            [questKeys.reputationReward] = {{factionIDs.THE_SILVER_COVENANT,500}},
             [questKeys.questFlags] = 136,
         },
 
@@ -20748,6 +21117,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 5,
             [questKeys.objectivesText] = {"Listen to a speech given by a Doomsayer in the Drag and obtain copies of the pamphlets \"Elemental Fire for the Soul\",\"What Does 'The End of All Things' Mean for Me?\",and \"Finding Security and Comfort in a Doomed World\"."},
             [questKeys.objectives] = {{{39454}},nil,{{52562},{52563},{52565}}},
+            [questKeys.reputationReward] = {{factionIDs.ORGRIMMAR,250}},
             [questKeys.nextQuestInChain] = 25254,
             [questKeys.questFlags] = 136,
         },
@@ -20776,6 +21146,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 5,
             [questKeys.objectivesText] = {"Listen to a speech given by a Doomsayer in Old Town and obtain copies of the pamphlets \"Elemental Fire for the Soul\",\"What Does 'The End of All Things' Mean for Me?\",and \"Finding Security and Comfort in a Doomed World\"."},
             [questKeys.objectives] = {{{39454}},nil,{{52562},{52563},{52565}}},
+            [questKeys.reputationReward] = {{factionIDs.STORMWIND,250}},
             [questKeys.nextQuestInChain] = 25282,
             [questKeys.questFlags] = 136,
         },
@@ -20785,6 +21156,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 5,
             [questKeys.objectivesText] = {"Setup 5 Warning Posters around the Valley of Strength,the Drag,or the Valley of Honor."},
             [questKeys.objectives] = {{{39581}}},
+            [questKeys.reputationReward] = {{factionIDs.ORGRIMMAR,250}},
             [questKeys.sourceItemId] = 52706,
             [questKeys.requiredSourceItems] = {52706},
             [questKeys.questFlags] = 8,
@@ -20795,6 +21167,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 5,
             [questKeys.objectivesText] = {"Setup 5 Warning Posters in the Trade District,Mage District,or Cathedral District of Stormwind."},
             [questKeys.objectives] = {{{39672}}},
+            [questKeys.reputationReward] = {{factionIDs.STORMWIND,250}},
             [questKeys.sourceItemId] = 52707,
             [questKeys.requiredSourceItems] = {52707},
             [questKeys.questFlags] = 8,
@@ -20855,6 +21228,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.questLevel] = -1,
             [questKeys.requiredLevel] = 5,
             [questKeys.objectivesText] = {"Take the Elemental Devices to Blood Guard Torek in Orgrimmar's Valley of Strength."},
+            [questKeys.reputationReward] = {{factionIDs.ORGRIMMAR,150}},
             [questKeys.sourceItemId] = 52835,
             [questKeys.nextQuestInChain] = 25348,
         },
@@ -20864,6 +21238,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 5,
             [questKeys.objectivesText] = {"Break Elemental Devices to release their elementals. You must defeat 5 Raging Fire Elementals."},
             [questKeys.objectives] = {{{39852}}},
+            [questKeys.reputationReward] = {{factionIDs.ORGRIMMAR,250}},
             [questKeys.nextQuestInChain] = 25351,
             [questKeys.questFlags] = 8,
         },
@@ -20872,6 +21247,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.questLevel] = -1,
             [questKeys.requiredLevel] = 5,
             [questKeys.objectivesText] = {"Speak with Thrall at Grommash Hold in Orgrimmar's Valley of Wisdom."},
+            [questKeys.reputationReward] = {{factionIDs.ORGRIMMAR,250}},
             [questKeys.requiredSourceItems] = {52729},
             [questKeys.questFlags] = 8,
         },
@@ -20899,6 +21275,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 5,
             [questKeys.objectivesText] = {"While wearing your Doomdsay Recruit's Robe,speak to Cultist Lethelyn,Cultish Kaima,Cultist Wyman,and Cultist Orlunn at Mirror Lake Orchard in Elywnn Forest."},
             [questKeys.objectives] = {{{39967},{39968},{39969},{39970}}},
+            [questKeys.reputationReward] = {{factionIDs.STORMWIND,250}},
             [questKeys.questFlags] = 8,
         },
 
@@ -20925,6 +21302,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.questLevel] = -1,
             [questKeys.requiredLevel] = 5,
             [questKeys.objectivesText] = {"Take the Elemental Devices to Captain Anton in Stormwind's Trade District."},
+            [questKeys.reputationReward] = {{factionIDs.STORMWIND,150}},
             [questKeys.sourceItemId] = 52835,
             [questKeys.nextQuestInChain] = 25418,
         },
@@ -20934,6 +21312,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredLevel] = 5,
             [questKeys.objectivesText] = {"Destroy Elemental Devices to release their captive elementals. Defeat 5 Raging Wind Elementals."},
             [questKeys.objectives] = {{{40104}}},
+            [questKeys.reputationReward] = {{factionIDs.STORMWIND,250}},
             [questKeys.nextQuestInChain] = 25425,
             [questKeys.questFlags] = 8,
         },
@@ -20942,6 +21321,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.questLevel] = -1,
             [questKeys.requiredLevel] = 5,
             [questKeys.objectivesText] = {"Speak with King Varian Wrynn in Stormwind Keep."},
+            [questKeys.reputationReward] = {{factionIDs.STORMWIND,250}},
             [questKeys.requiredSourceItems] = {52729},
             [questKeys.questFlags] = 8,
         },

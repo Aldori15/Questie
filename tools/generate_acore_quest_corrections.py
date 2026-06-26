@@ -79,6 +79,7 @@ def build_module_text(relation_suggestions: str, metadata_suggestions: str) -> s
         "    local questKeys = QuestieDB.questKeys",
         "    local raceIDs = QuestieDB.raceKeys",
         "    local classIDs = QuestieDB.classKeys",
+        "    local factionIDs = QuestieDB.factionIDs",
         "    local specialFlags = QuestieDB.specialFlags",
         "    local profKeys = QuestieProfessions.professionKeys",
         "",
