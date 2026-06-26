@@ -44,6 +44,28 @@ local _selected = 0
 local BY_NAME = 1
 local BY_ID = 2
 
+local function _GetFallbackName(resultType, id)
+    if resultType == "quest" then
+        return l10n("Quest ID") .. " " .. id
+    elseif resultType == "npc" then
+        return l10n("NPC ID") .. " " .. id
+    elseif resultType == "object" then
+        return l10n("Object ID") .. " " .. id
+    elseif resultType == "item" then
+        return l10n("Item ID") .. " " .. id
+    end
+
+    return tostring(id)
+end
+
+local function _GetDisplayName(resultType, id, name)
+    if name and name ~= "" then
+        return name
+    end
+
+    return _GetFallbackName(resultType, id)
+end
+
 local function _GetJourneyTooltipOwner()
     local journeyFrame = _G["QuestieJourneyFrame"]
     if journeyFrame and journeyFrame.frame then
@@ -261,7 +283,7 @@ function QuestieSearchResults:QuestDetailsFrame(details, id)
     -- header
     local title = AceGUI:Create("Heading")
     title:SetFullWidth(true);
-    title:SetText(name)
+    title:SetText(_GetDisplayName("quest", id, name))
     details:AddChild(title)
 
     -- is quest finished by player
@@ -401,7 +423,7 @@ function QuestieSearchResults:SpawnDetailsFrame(f, spawn, spawnType)
         spawnObject = QuestieDB:GetObject(spawn)
     end
 
-    header:SetText(spawnObject.name);
+    header:SetText(_GetDisplayName(spawnType, spawn, spawnObject.name));
     f:AddChild(header);
 
     QuestieJourneyUtils:Spacer(f);
@@ -734,7 +756,7 @@ function QuestieSearchResults:DrawResultTab(container, resultType)
     end
     for k=1, max do
         if QuestieSearch.LastResult[resultType][k] then
-            local name = database(k, "name")
+            local name = _GetDisplayName(resultType, k, database(k, "name"))
             if name then
                 local complete = ''
                 if Questie.db.char.complete[k] and resultType == "quest" then
