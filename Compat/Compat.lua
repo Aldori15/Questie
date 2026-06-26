@@ -661,7 +661,9 @@ function QuestieCompat.LoadCorrections(_LoadCorrections, validationTables)
         local dbKeysReversed = QuestieDB[dbName:sub(1, -5).."KeysReversed"]
         for i, corrections in ipairs(correctionsRegistry[dbName]) do
             _LoadCorrections(dbName, corrections(), dbKeysReversed, validationTables)
+            correctionsRegistry[dbName][i] = nil
         end
+        correctionsRegistry[dbName] = nil
     end
 end
 
@@ -677,6 +679,7 @@ function QuestieCompat.LoadBlacklists()
         for _, blacklist in ipairs(blacklistRegistry[blName]) do
             QuestieCompat.Merge(QuestieCorrections[blName], blacklist(), true)
         end
+        blacklistRegistry[blName] = nil
     end
 end
 
