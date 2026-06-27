@@ -2,6 +2,8 @@
 local QuestieProfessions = QuestieLoader:CreateModule("QuestieProfessions");
 ---@type QuestieQuest
 local QuestieQuest = QuestieLoader:ImportModule("QuestieQuest");
+---@type AvailableQuests
+local AvailableQuests = QuestieLoader:ImportModule("AvailableQuests")
 
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n");
@@ -23,6 +25,7 @@ hooksecurefunc("AbandonSkill", function(skillIndex)
             playerProfessions[professionTable[skillName]] = nil
             --? Reset all autoBlacklisted quests if a skill is abandoned
             QuestieQuest.ResetAutoblacklistCategory("skill")
+            AvailableQuests.CalculateAndDrawAll()
         end
     end
 end)
