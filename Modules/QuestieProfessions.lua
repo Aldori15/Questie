@@ -11,6 +11,7 @@ local l10n = QuestieLoader:ImportModule("l10n");
 local playerProfessions = {}
 local professionTable = {}
 local professionNames = {}
+local specializationNames = {}
 local alternativeProfessionNames = {}
 
 -- Fast local references
