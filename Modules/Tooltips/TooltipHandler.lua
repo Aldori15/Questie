@@ -77,24 +77,24 @@ function _QuestieTooltips:AddItemDataToTooltip()
         QuestieTooltips.lastFrameName ~= self:GetName()
     ) then
         QuestieTooltips.lastGametooltipItem = name
-        local tooltipData = QuestieTooltips:GetTooltip("i_" .. (itemId or 0));
-        if tooltipData then
-            if Questie.db.profile.enableTooltipsItemID == true then
-                GameTooltip:AddDoubleLine("Item ID", "|cFFFFFFFF" .. itemId .. "|r")
-            end
+        if Questie.db.profile.enableTooltipsItemID then
+            self:AddDoubleLine(l10n("Item ID"), "|cFFFFFFFF" .. itemId .. "|r")
+        end
 
-            if (not checkedQuestStartItems[itemId]) then
-                checkedQuestStartItems[itemId] = true
-                local itemIdAsNumber = tonumber(itemId)
-                if itemIdAsNumber then
-                    local startQuestId = QuestieDB.QueryItemSingle(itemIdAsNumber, "startQuest")
-                    local itemName = QuestieDB.QueryItemSingle(itemIdAsNumber, "name")
-                    if startQuestId and startQuestId ~= 0 and itemName then
-                        QuestieTooltips:RegisterQuestStartTooltip(startQuestId, itemName, itemIdAsNumber, "i_"..itemId, "itemFromMonster")
-                    end
+        if (not checkedQuestStartItems[itemId]) then
+            checkedQuestStartItems[itemId] = true
+            local itemIdAsNumber = tonumber(itemId)
+            if itemIdAsNumber then
+                local startQuestId = QuestieDB.QueryItemSingle(itemIdAsNumber, "startQuest")
+                local itemName = QuestieDB.QueryItemSingle(itemIdAsNumber, "name")
+                if startQuestId and startQuestId ~= 0 and itemName then
+                    QuestieTooltips:RegisterQuestStartTooltip(startQuestId, itemName, itemIdAsNumber, "i_"..itemId, "itemFromMonster")
                 end
             end
+        end
 
+        local tooltipData = QuestieTooltips:GetTooltip("i_" .. (itemId or 0));
+        if tooltipData then
             for _, v in pairs (tooltipData) do
                 self:AddLine(v)
             end
