@@ -40,11 +40,12 @@ function _QuestieTooltips:AddUnitDataToTooltip()
         lastGuid ~= guid
     ) then
         QuestieTooltips.lastGametooltipUnit = name
+        if Questie.db.profile.enableTooltipsNPCID then
+            GameTooltip:AddDoubleLine(l10n("NPC ID"), "|cFFFFFFFF" .. npcId .. "|r")
+        end
+
         local tooltipData = QuestieTooltips:GetTooltip("m_" .. npcId);
         if tooltipData then
-            if Questie.db.profile.enableTooltipsNPCID == true then
-                GameTooltip:AddDoubleLine("NPC ID", "|cFFFFFFFF" .. npcId .. "|r")
-            end
             for _, v in pairs (tooltipData) do
                 GameTooltip:AddLine(v)
             end
