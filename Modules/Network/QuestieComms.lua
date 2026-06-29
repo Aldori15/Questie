@@ -22,8 +22,6 @@ local l10n = QuestieLoader:ImportModule("l10n")
 local QuestLogCache = QuestieLoader:ImportModule("QuestLogCache")
 ---@type QuestiePartyObjectives
 local QuestiePartyObjectives = QuestieLoader:ImportModule("QuestiePartyObjectives")
----@type QuestieQuest
-local QuestieQuest = QuestieLoader:ImportModule("QuestieQuest")
 
 --- COMPATIBILITY ---
 local C_Timer = QuestieCompat.C_Timer
@@ -206,8 +204,7 @@ local function _BuildSortedFullSyncEntries(partyType)
                 Questie:Error(l10n("The quest %s is missing from Questie's database. Please report this on GitHub or Discord!", tostring(questId)))
                 Questie._sessionWarnings[questId] = true
             end
-        elseif QuestieQuest:IsQuestTracked(questId) then
-            -- Only communicate tracked quests to party members.
+        else
             local questType = data.questTag
             local entry = {
                 questId = questId,
@@ -279,12 +276,6 @@ end
 function _QuestieComms:BroadcastQuestUpdate(questId) -- broadcast quest update to group or raid
     Questie:Debug(Questie.DEBUG_INFO, "[QuestieComms:BroadcastQuestUpdate] Questid", questId)
     if(questId) then
-        -- Only tracked quests are communicated to party members. If the quest is not tracked,
-        -- tell peers to drop it instead of sending an update.
-        if not QuestieQuest:IsQuestTracked(questId) then
-            _QuestieComms:BroadcastQuestRemove(questId)
-            return
-        end
         local partyType = QuestiePlayer:GetGroupType()
         Questie:Debug(Questie.DEBUG_INFO, "[QuestieComms:BroadcastQuestUpdate] partyType", tostring(partyType))
         if partyType then
