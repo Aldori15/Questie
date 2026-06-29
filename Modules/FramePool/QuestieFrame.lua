@@ -1,3 +1,6 @@
+---@class QuestieFrame
+local QuestieFrame = QuestieLoader:CreateModule("QuestieFrame")
+local _QuestieFrame = QuestieFrame.private
 ---@type QuestieFramePool
 local QuestieFramePool = QuestieLoader:ImportModule("QuestieFramePool")
 ---@type QuestieMap
@@ -23,9 +26,6 @@ local WorldMapFrame = QuestieCompat.WorldMapFrame
 
 local HBDPins = QuestieCompat.HBDPins or LibStub("HereBeDragonsQuestie-Pins-2.0")
 
-QuestieFramePool.Qframe = {}
-
-local _Qframe = {}
 local NON_MONO_OBJECTIVE_GLOW_ALPHA = 0.45
 local reducedObjectiveGlowIconTypes = {
     [3] = true, -- Questie.ICON_TYPE_EVENT
@@ -45,7 +45,7 @@ local function GetObjectiveGlowAlpha(frame, alpha)
 end
 
 ---@return IconFrame
-function QuestieFramePool.Qframe:New(frameId, OnEnter)
+function QuestieFrame:New(frameId, OnEnter)
     ---@class IconFrame : Button
     ---@field isManualIcon boolean
     local newFrame = CreateFrame("Button", "QuestieFrame" .. frameId)
@@ -127,26 +127,26 @@ function QuestieFramePool.Qframe:New(frameId, OnEnter)
     newFrame.glow:SetPoint("CENTER", newFrame, 0, 0) -- 2 pixels bigger than normal icon
 
     newFrame:SetScript("OnEnter", OnEnter);        --Script Toolip
-    newFrame:SetScript("OnLeave", _Qframe.OnLeave) --Script Exit Tooltip
+    newFrame:SetScript("OnLeave", _QuestieFrame.OnLeave) --Script Exit Tooltip
     newFrame:RegisterForClicks("RightButtonUp", "LeftButtonUp")
-    newFrame:SetScript("OnClick", _Qframe.OnClick);
+    newFrame:SetScript("OnClick", _QuestieFrame.OnClick);
 
-    newFrame.GlowUpdate = _Qframe.GlowUpdate
-    newFrame.BaseOnUpdate = _Qframe.BaseOnUpdate
-    newFrame.BaseOnShow = _Qframe.BaseOnShow
-    newFrame.BaseOnHide = _Qframe.BaseOnHide
+    newFrame.GlowUpdate = _QuestieFrame.GlowUpdate
+    newFrame.BaseOnUpdate = _QuestieFrame.BaseOnUpdate
+    newFrame.BaseOnShow = _QuestieFrame.BaseOnShow
+    newFrame.BaseOnHide = _QuestieFrame.BaseOnHide
 
-    newFrame.UpdateTexture = _Qframe.UpdateTexture
-    newFrame.Unload = _Qframe.Unload
+    newFrame.UpdateTexture = _QuestieFrame.UpdateTexture
+    newFrame.Unload = _QuestieFrame.Unload
 
     -- functions for fake hide/unhide
-    newFrame.FadeOut = _Qframe.FadeOut
-    newFrame.FadeIn = _Qframe.FadeIn
-    newFrame.FakeHide = _Qframe.FakeHide
-    newFrame.FakeShow = _Qframe.FakeShow
-    newFrame.OnShow = _Qframe.OnShow
-    newFrame.OnHide = _Qframe.OnHide
-    newFrame.ShouldBeHidden = _Qframe.ShouldBeHidden
+    newFrame.FadeOut = _QuestieFrame.FadeOut
+    newFrame.FadeIn = _QuestieFrame.FadeIn
+    newFrame.FakeHide = _QuestieFrame.FakeHide
+    newFrame.FakeShow = _QuestieFrame.FakeShow
+    newFrame.OnShow = _QuestieFrame.OnShow
+    newFrame.OnHide = _QuestieFrame.OnHide
+    newFrame.ShouldBeHidden = _QuestieFrame.ShouldBeHidden
 
     newFrame.data = nil
     newFrame:Hide()
@@ -154,7 +154,7 @@ function QuestieFramePool.Qframe:New(frameId, OnEnter)
     return newFrame
 end
 
-function _Qframe:OnLeave()
+function _QuestieFrame:OnLeave()
     if WorldMapTooltip then
         WorldMapTooltip:Hide()
         WorldMapTooltip._rebuild = nil
@@ -187,7 +187,7 @@ function _Qframe:OnLeave()
     if QuestieCompat.Is335 then QuestieCompat.SetupTooltip(self, true) end
 end
 
-function _Qframe:OnClick(button)
+function _QuestieFrame:OnClick(button)
     if self and self.UiMapID and WorldMapFrame and WorldMapFrame:IsShown() and not IsModifierKeyDown() and not self.miniMapIcon then
         if button == "RightButton" then
             local currentMapParent = WorldMapFrame:GetMapID()
@@ -250,7 +250,7 @@ function _Qframe:OnClick(button)
     end
 end
 
-function _Qframe:GlowUpdate()
+function _QuestieFrame:GlowUpdate()
     if self.glow and self.glow.IsShown and self.glow:IsShown() then
         --Due to this always being 1:1 we can assume that if one isn't correct, the other isn't either
         --We can also assume that both change at the same time so we only check one.
@@ -269,7 +269,7 @@ function _Qframe:GlowUpdate()
     end
 end
 
-function _Qframe:BaseOnShow()
+function _QuestieFrame:BaseOnShow()
     local data = self.data
 
     if data and data.Type and data.Type == "complete" then
@@ -289,11 +289,11 @@ function _Qframe:BaseOnShow()
     end
 end
 
-function _Qframe:BaseOnHide()
+function _QuestieFrame:BaseOnHide()
     self.glow:Hide()
 end
 
-function _Qframe:UpdateTexture(texture)
+function _QuestieFrame:UpdateTexture(texture)
     --Different settings depending on noteType
     local globalScale
     local objectiveColor
@@ -361,14 +361,14 @@ function _Qframe:UpdateTexture(texture)
     end
 end
 
-function _Qframe:Unload()
+function _QuestieFrame:Unload()
     if not self._loaded then
         self._needsUnload = true
         return -- icon is still in the draw queue
     end
     self._needsUnload = nil
     self._loaded = nil
-    --Questie:Debug(Questie.DEBUG_SPAM, "[_Qframe:Unload]")
+    --Questie:Debug(Questie.DEBUG_SPAM, "[_QuestieFrame:Unload]")
     self:SetScript("OnUpdate", nil)
     self:SetScript("OnShow", nil)
     self:SetScript("OnHide", nil)
@@ -433,7 +433,7 @@ function _Qframe:Unload()
     QuestieFramePool:RecycleFrame(self)
 end
 
-function _Qframe:FadeOut()
+function _QuestieFrame:FadeOut()
     if not self.faded then
         self.faded = true
         if self.texture then
@@ -455,7 +455,7 @@ function _Qframe:FadeOut()
     end
 end
 
-function _Qframe:FadeIn()
+function _QuestieFrame:FadeIn()
     if self.faded then
         self.faded = nil
         if self.texture then
@@ -478,7 +478,7 @@ function _Qframe:FadeIn()
 end
 
 --- This is needed because HBD will show the icons again after switching zones and stuff like that
-function _Qframe:FakeHide()
+function _QuestieFrame:FakeHide()
     if not self.hidden then
         self.shouldBeShowing = self:IsShown();
         self._show = self.Show;
@@ -504,7 +504,7 @@ function _Qframe:FakeHide()
 end
 
 --- This is needed because HBD will show the icons again after switching zones and stuff like that
-function _Qframe:FakeShow()
+function _QuestieFrame:FakeShow()
     if self.hidden then
         self.hidden = false
         self.Show = self._show;
@@ -528,7 +528,7 @@ end
 
 ---Checks wheather the frame/icon should be hidden or not. Only for quest icons/frames.
 ---@return boolean @True if the frame/icon should be hidden and :FakeHide() should be called, false otherwise
-function _Qframe:ShouldBeHidden()
+function _QuestieFrame:ShouldBeHidden()
     local profile = Questie.db.profile
     local data = self.data
     local iconType = data.Type -- v6.5.1 values: available, complete, manual, monster, object, item, event. This function is not called with manual.
