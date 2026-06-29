@@ -2304,6 +2304,7 @@ function QuestieTBCQuestFixes:Load()
         },
         [9685] = {
             [questKeys.preQuestSingle] = {9684,63866},
+            [questKeys.objectives] = {{{17768,nil,Questie.ICON_TYPE_INTERACT}}},
         },
         [9686] = {
             [questKeys.triggerEnd] = {"Complete the Second Trial", {[zoneIDs.EVERSONG_WOODS]={{43.34,28.7}}}},
