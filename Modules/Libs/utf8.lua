@@ -48,5 +48,3 @@ function utf8.strlen(s)
 
     return count
 end
-
-return utf8

@@ -798,5 +798,3 @@ function QuestieLib.GetFullObjectiveText(rawObjectiveText)
     -- First pattern is for non-Chinese clients, second is for Chinese clients where the colon is different.
     return smatch(rawObjectiveText, "^(.*):%s*%d+/%d+$") or smatch(rawObjectiveText, "^(.*)：%s*%d+/%d+$")
 end
-
-return QuestieLib

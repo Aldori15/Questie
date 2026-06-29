@@ -202,5 +202,3 @@ function Comms.SendUnavailableQuestState(target)
     local serializedEvent = AceSerializer:Serialize(event)
     Questie:SendCommMessage(COMM_PREFIX, serializedEvent, "WHISPER", target)
 end
-
-return Comms

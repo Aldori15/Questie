@@ -323,5 +323,3 @@ function TooltipLayout:Render(tooltip, rows)
 
     _RenderTooltipRows(tooltip, rows)
 end
-
-return TooltipLayout

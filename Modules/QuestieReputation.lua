@@ -288,5 +288,3 @@ function QuestieReputation.GetReputationRewardString(reputationReward)
 
     return table.concat(rewardTable, " / ")
 end
-
-return QuestieReputation

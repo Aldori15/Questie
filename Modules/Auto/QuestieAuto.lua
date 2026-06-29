@@ -370,5 +370,3 @@ function QuestieAuto.QUEST_ACCEPTED()
         QuestFrameCloseButton:Click()
     end
 end
-
-return QuestieAuto

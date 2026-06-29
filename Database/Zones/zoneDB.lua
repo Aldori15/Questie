@@ -464,5 +464,3 @@ function _ZoneDB:RunTests()
     end
     Questie:Debug(Questie.DEBUG_CRITICAL, "[" .. Questie:Colorize("ZoneDBTests", "yellow") .. "] Testing ZoneDB done")
 end
-
-return ZoneDB

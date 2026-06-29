@@ -80,5 +80,3 @@ function Moonwell:HideAll()
         QuestieMap:UnloadManualFrames(objectID, "moonwell")
     end
 end
-
-return Moonwell

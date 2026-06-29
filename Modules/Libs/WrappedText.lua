@@ -525,5 +525,3 @@ function WrappedText:TextWrap(line, prefix, combineTrailing, desiredWidth, fontS
         return {prefix .. line}
     end
 end
-
-return WrappedText

@@ -72,5 +72,3 @@ _Phasing.CheckQuestLog = function(questLog)
         questLog[25560]
     ) and true or false
 end
-
-return Phasing

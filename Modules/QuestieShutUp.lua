@@ -32,5 +32,3 @@ function QuestieShutUp:ToggleFilters(value)
         ChatFrame_RemoveMessageEventFilter("CHAT_MSG_RAID_LEADER", QuestieShutUp.FilterFunc)
     end
 end
-
-return QuestieShutUp
