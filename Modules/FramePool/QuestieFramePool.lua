@@ -102,6 +102,7 @@ function QuestieFramePool:GetFrame()
     if returnFrame.texture then
         returnFrame.texture:SetVertexColor(1, 1, 1, 1)
     end
+    returnFrame:SetAlpha(1) -- party objective icons dim the frame to 0.5; reset so recycled frames don't inherit it
     returnFrame.loaded = true
     returnFrame.shouldBeShowing = nil
     returnFrame.hidden = nil
