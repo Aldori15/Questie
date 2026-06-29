@@ -6386,7 +6386,7 @@ function QuestieTBCQuestFixes:Load()
         [12513] = {
             [questKeys.zoneOrSort] = zoneIDs.CAVERNS_OF_TIME,
             [questKeys.exclusiveTo] = {12515},
-            [questKeys.requiredRaces] = raceIDs.GNOME + raceIDs.HUMAN + raceIDs.DWARF,
+            [questKeys.requiredRaces] = raceIDs.NONE,
         },
         [12515] = {
             [questKeys.zoneOrSort] = zoneIDs.CAVERNS_OF_TIME,
