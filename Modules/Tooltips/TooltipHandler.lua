@@ -59,8 +59,20 @@ end
 
 local checkedQuestStartItems = {} -- cache item IDs that were already checked if they start a quest
 local lastItemId = 0;
+
+local function _IsLootTooltip(tooltip)
+    if tooltip ~= GameTooltip or not tooltip.GetOwner then
+        return false
+    end
+
+    local owner = tooltip:GetOwner()
+    local ownerName = owner and owner.GetName and owner:GetName()
+
+    return ownerName and (string.match(ownerName, "^LootButton%d+$") or string.match(ownerName, "^GroupLootFrame%d+$"))
+end
+
 function _QuestieTooltips:AddItemDataToTooltip()
-    if (self.IsForbidden and self:IsForbidden()) or (not _AreQuestieTooltipsEnabled()) then
+    if (self.IsForbidden and self:IsForbidden()) or (not _AreQuestieTooltipsEnabled()) or _IsLootTooltip(self) then
         return
     end
 
