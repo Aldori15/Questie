@@ -46,9 +46,11 @@ function QuestieComms.data:GetTooltip(tooltipKey)
                 end
                 local oName = "";
                 if((objective.type == "monster" or objective.type == "m") and objective.id) then
-                    oName = QuestieDB:GetNPC(objective.id).name;
+                    local npc = QuestieDB:GetNPC(objective.id);
+                    oName = (npc and npc.name) or ("NPC missing from DB: " .. objective.id);
                 elseif((objective.type == "object" or objective.type == "o") and objective.id) then
-                    oName = QuestieDB:GetObject(objective.id).name;
+                    local object = QuestieDB:GetObject(objective.id);
+                    oName = (object and object.name) or ("Object missing from DB: " .. objective.id);
                 elseif((objective.type == "item" or objective.type == "i") and objective.id) then
                     local dbItem = QuestieDB:GetItem(objective.id);
                     if(dbItem and dbItem.name and (not dbItem.Hidden)) then
