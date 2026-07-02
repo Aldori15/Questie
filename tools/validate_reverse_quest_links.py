@@ -10,6 +10,30 @@ NPC_ENTRY_RE = re.compile(r"^\[(\d+)\]\s*=\s*(\{.*\})$", re.DOTALL)
 NPC_FIELD_RE = re.compile(r"^\[(npcKeys\.(?:questStarts|questEnds))\]\s*=\s*(.+)$", re.DOTALL)
 OBJECT_FIELD_RE = re.compile(r"^\[(objectKeys\.(?:questStarts|questEnds))\]\s*=\s*(.+)$", re.DOTALL)
 
+DEFAULT_QUEST_FIXES = [
+    "Database/Corrections/classicQuestFixes.lua",
+    "Database/Corrections/tbcQuestFixes.lua",
+    "Database/Corrections/wotlkQuestFixes.lua",
+]
+DEFAULT_NPC_FIXES = [
+    "Database/Corrections/classicNPCFixes.lua",
+    "Database/Corrections/tbcNPCFixes.lua",
+    "Database/Corrections/wotlkNPCFixes.lua",
+]
+DEFAULT_OBJECT_FIXES = [
+    "Database/Corrections/classicObjectFixes.lua",
+    "Database/Corrections/tbcObjectFixes.lua",
+    "Database/Corrections/wotlkObjectFixes.lua",
+]
+ACORE_QUEST_FIXES = ["Compat/AzerothCoreQuestCorrections.lua"]
+ACORE_NPC_FIXES = ["Compat/AzerothCoreNPCCorrections.lua"]
+ACORE_OBJECT_FIXES = ["Compat/AzerothCoreObjectCorrections.lua"]
+QUEST_CORRECTION_TABLE_MARKERS = [
+    "return {",
+    "local relationCorrections = ",
+    "local metadataCorrections = ",
+]
+
 
 class LuaTableParser:
     def __init__(self, text: str):
@@ -329,7 +353,7 @@ def load_quest_relation_overrides(fix_file_path: Path):
     text = strip_lua_comments(fix_file_path.read_text(encoding="utf-8"))
     overrides = {}
 
-    for table_text in extract_named_tables(text, ["return {"]):
+    for table_text in extract_named_tables(text, QUEST_CORRECTION_TABLE_MARKERS):
         for entry in split_top_level_lua_table(table_text):
             match = QUEST_ENTRY_RE.match(entry.strip())
             if not match:
@@ -548,34 +572,28 @@ def main():
     parser.add_argument(
         "--quest-fixes",
         nargs="*",
-        default=[
-            "Database/Corrections/classicQuestFixes.lua",
-            "Database/Corrections/tbcQuestFixes.lua",
-            "Database/Corrections/wotlkQuestFixes.lua",
-        ],
+        default=DEFAULT_QUEST_FIXES,
     )
     parser.add_argument(
         "--npc-fixes",
         nargs="*",
-        default=[
-            "Database/Corrections/classicNPCFixes.lua",
-            "Database/Corrections/tbcNPCFixes.lua",
-            "Database/Corrections/wotlkNPCFixes.lua",
-        ],
+        default=DEFAULT_NPC_FIXES,
     )
     parser.add_argument(
         "--object-fixes",
         nargs="*",
-        default=[
-            "Database/Corrections/classicObjectFixes.lua",
-            "Database/Corrections/tbcObjectFixes.lua",
-            "Database/Corrections/wotlkObjectFixes.lua",
-        ],
+        default=DEFAULT_OBJECT_FIXES,
     )
+    parser.add_argument("--no-acore", action="store_true", help="Validate without AzerothCore compat corrections")
     parser.add_argument("--report", help="Optional path to write the full JSON report")
     parser.add_argument("--suggest-npc-lua", help="Optional path to write NPC reverse-link fix suggestions")
     parser.add_argument("--suggest-object-lua", help="Optional path to write object reverse-link fix suggestions")
     args = parser.parse_args()
+
+    if not args.no_acore:
+        args.quest_fixes = args.quest_fixes + ACORE_QUEST_FIXES
+        args.npc_fixes = args.npc_fixes + ACORE_NPC_FIXES
+        args.object_fixes = args.object_fixes + ACORE_OBJECT_FIXES
 
     quest_relations = load_questie_relations(Path(args.quest_db))
     for fix_file in args.quest_fixes:
