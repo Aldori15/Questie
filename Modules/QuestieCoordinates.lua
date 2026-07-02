@@ -178,7 +178,7 @@ function QuestieCoords:WriteCoords()
         curY = (top - curY) / height * 100;
         local precision = "%.".. Questie.db.profile.mapCoordinatePrecision .."f";
 
-        if QuestieCompat.Is335 and (not canvas:IsMouseOver()) or (position.uiMapID == 946)then
+        if QuestieCompat.Is335 and ((not canvas:IsMouseOver()) or (position.uiMapID == 946)) then
             curX, curY = 0, 0
         end
 
