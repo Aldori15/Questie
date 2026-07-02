@@ -334,7 +334,9 @@ local _classToIndex = {
     ["ROGUE"] = 5,
     ["SHAMAN"] = 6,
     ["WARLOCK"] = 7,
-    ["WARRIOR"] = 8
+    ["WARRIOR"] = 8,
+    ["PALADIN"] = 9,
+    ["DEATHKNIGHT"] = 10,
 }
 local _indexToClass = {}
 for class, index in pairs(_classToIndex) do
