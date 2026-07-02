@@ -54,17 +54,13 @@ function QuestieComms.data:GetTooltip(tooltipKey)
                     if(dbItem and dbItem.name and (not dbItem.Hidden)) then
                         oName = dbItem.name;-- this is capital letters for some reason...
                     else
-                        local itemName = GetItemInfo(objective.id)
+                        local itemName = QuestieCompat.GetItemNameAsync(objective.id, function(name)
+                            tooltipData[questId][playerName][objectiveIndex].text = name;
+                        end)
                         if(itemName) then
                             oName = itemName;
                         else
                             oName = "Item missing from DB, fetching from server!";
-                            local item = Item:CreateFromItemID(objective.id)
-                            item:ContinueOnItemLoad(function()
-                                local name = item:GetItemName();
-                                oName = name;
-                                tooltipData[questId][playerName][objectiveIndex].text = name;
-                            end)
                         end
                     end
                 end

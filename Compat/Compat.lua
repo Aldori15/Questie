@@ -436,6 +436,59 @@ function QuestieCompat.GetItemInfo(item)
         itemSubType, itemStackCount,itemEquipLoc, itemTexture, itemSellPrice, itemClass[itemType]
 end
 
+local itemInfoCallbacks = {}
+
+---Gets an item name, requesting it from the client item cache if needed.
+---@param itemId number
+---@param callback function?
+---@return string|nil itemName
+function QuestieCompat.GetItemNameAsync(itemId, callback)
+    itemId = tonumber(itemId)
+    if not itemId then
+        return nil
+    end
+
+    local itemName = GetItemInfo(itemId)
+    if itemName then
+        return itemName
+    end
+
+    if callback then
+        if not itemInfoCallbacks[itemId] then
+            itemInfoCallbacks[itemId] = {}
+        end
+
+        table.insert(itemInfoCallbacks[itemId], callback)
+    end
+
+    return nil
+end
+
+function QuestieCompat.GET_ITEM_INFO_RECEIVED(_, _, itemId, success)
+    itemId = tonumber(itemId)
+    local callbacks = itemInfoCallbacks[itemId]
+    if not callbacks then
+        return
+    end
+
+    itemInfoCallbacks[itemId] = nil
+
+    if success == false then
+        return
+    end
+
+    local itemName = GetItemInfo(itemId)
+    if not itemName then
+        return
+    end
+
+    for _, callback in pairs(callbacks) do
+        callback(itemName, itemId)
+    end
+end
+
+QuestieCompat.frame:RegisterEvent("GET_ITEM_INFO_RECEIVED")
+
 -- Returns info for an item in a container slot.
 -- https://wowpedia.fandom.com/wiki/API_GetContainerItemInfo
 function QuestieCompat.GetContainerItemInfo(bagID, slot)
