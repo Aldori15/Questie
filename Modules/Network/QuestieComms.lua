@@ -1057,9 +1057,10 @@ function _QuestieComms.OnCommReceived_unsafe(prefix, message, distribution, send
                 if(suggestUpdate) then
                     local major, minor, patch = strsplit(".", decompressedData.ver);
                     local majorOwn, minorOwn, patchOwn = QuestieLib:GetAddonVersionInfo();
-                    if(majorOwn < tonumber(major) or (majorOwn == tonumber(major) and minorOwn < tonumber(minor)) or (majorOwn == tonumber(major) and minorOwn == tonumber(minor) and patchOwn < tonumber(patch)) and (not UnitAffectingCombat("player"))) then
+                    major, minor, patch = tonumber(major), tonumber(minor), tonumber(patch);
+                    if((majorOwn < major or (majorOwn == major and minorOwn < minor) or (majorOwn == major and minorOwn == minor and patchOwn < patch)) and (not UnitAffectingCombat("player"))) then
                         suggestUpdate = false;
-                        if(majorOwn < tonumber(major)) then
+                        if(majorOwn < major) then
                             Questie:Print("|cffff0000", l10n("A Major patch for Questie exists!"), "|r");
                             Questie:Print("|cffff0000", l10n("Please update as soon as possible!"), "|r");
                         else
