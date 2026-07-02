@@ -2395,6 +2395,7 @@ QuestieCompat.RegisterCorrection("objectData", function()
         },
 
         [123309] = {
+            [objectKeys.spawns] = {[zoneIDs.FERALAS] = {{71.8,63.75},{73.54,62.33},{73.54,64.08},{74.01,64.66},{74.51,65.34},{76.88,61.62},{77.55,63.26}}, [zoneIDs.THOUSAND_NEEDLES] = {{63.65,86.45},{64.46,85.69},{64.9,84.43},{65.32,86.98},{65.58,85.77},{69.03,86.79},{69.3,82.8},{69.41,84.94}}, [zoneIDs.UN_GORO_CRATER] = {{43.41,80.94},{45.03,83.53},{46.36,84.62},{46.7,82.76},{47.9,87.22},{48.16,84.98},{48.25,81.69},{49.19,80.2},{49.55,83},{49.84,81.25}}, [zoneIDs.SILITHUS] = {{16.76,66.77},{17.58,69.59},{19.43,55.2},{21.18,50.67},{22.69,71.79},{23.84,71.7},{28.81,67.04},{32.14,63.08},{36.34,60.26},{38.82,16.25},{39.73,13.09},{40.33,27.27},{40.39,16.18},{42.15,30.16},{42.34,18.97},{42.39,27.04},{43.78,26.6},{45.4,15.82},{45.5,32.35},{45.71,29.19},{49.77,24.43},{51.06,27.66},{53.02,99},{54.2,95.11},{59.22,99.33},{60.95,96.06},{62.87,76.83},{66.22,75.54},{66.28,80.01}}},
             [objectKeys.factionID] = 94,
         },
 
@@ -3857,6 +3858,7 @@ QuestieCompat.RegisterCorrection("objectData", function()
         },
 
         [177388] = {
+            [objectKeys.spawns] = {[zoneIDs.SILITHUS] = {{16.76,66.77},{17.58,69.59},{19.43,55.2},{21.18,50.67},{22.69,71.79},{23.84,71.7},{28.81,67.04},{32.14,63.08},{36.34,60.26},{38.82,16.25},{39.73,13.09},{40.33,27.27},{40.39,16.18},{42.15,30.16},{42.34,18.97},{42.39,27.04},{43.78,26.6},{45.4,15.82},{45.5,32.35},{45.71,29.19},{49.77,24.43},{51.06,27.66},{53.02,99},{54.2,95.11},{59.22,99.33},{60.95,96.06},{62.87,76.83},{66.22,75.54},{66.28,80.01}}},
             [objectKeys.factionID] = 94,
         },
 
@@ -5095,6 +5097,7 @@ QuestieCompat.RegisterCorrection("objectData", function()
         },
 
         [180453] = {
+            [objectKeys.spawns] = {[zoneIDs.SILITHUS] = {{51.99,99}}},
             [objectKeys.factionID] = 35,
         },
 
@@ -10089,7 +10092,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
         },
 
         [187559] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.questEnds] = {11580},
             [objectKeys.factionID] = 1732,
         },
@@ -10099,7 +10101,6 @@ QuestieCompat.RegisterCorrection("objectData", function()
         },
 
         [187564] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.questEnds] = {11581},
             [objectKeys.factionID] = 1735,
         },
@@ -10335,17 +10336,14 @@ QuestieCompat.RegisterCorrection("objectData", function()
         },
 
         [187914] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1735,
         },
 
         [187916] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1735,
         },
 
         [187917] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.spawns] = {[zoneIDs.AZUREMYST_ISLE] = {{44.67,52.68}}},
             [objectKeys.factionID] = 1735,
         },
@@ -10355,306 +10353,249 @@ QuestieCompat.RegisterCorrection("objectData", function()
         },
 
         [187919] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.spawns] = {[zoneIDs.BLADES_EDGE_MOUNTAINS] = {{41.76,66.04}}},
             [objectKeys.factionID] = 1735,
         },
 
         [187920] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1735,
         },
 
         [187921] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.spawns] = {[zoneIDs.BLOODMYST_ISLE] = {{55.88,68.45}}},
             [objectKeys.factionID] = 1735,
         },
 
         [187922] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.spawns] = {[zoneIDs.BURNING_STEPPES] = {{80.55,62.41}}},
             [objectKeys.factionID] = 1735,
         },
 
         [187923] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1735,
         },
 
         [187924] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1735,
         },
 
         [187925] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1735,
         },
 
         [187926] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1735,
         },
 
         [187927] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1735,
         },
 
         [187928] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1735,
         },
 
         [187929] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.spawns] = {[zoneIDs.FERALAS] = {{28.16,43.91}}},
             [objectKeys.factionID] = 1735,
         },
 
         [187930] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1735,
         },
 
         [187931] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1735,
         },
 
         [187932] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1735,
         },
 
         [187933] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.spawns] = {[zoneIDs.NAGRAND] = {{49.67,69.72}}},
             [objectKeys.factionID] = 1735,
         },
 
         [187934] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1735,
         },
 
         [187935] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.spawns] = {[zoneIDs.SHADOWMOON_VALLEY] = {{39.56,54.43}}},
             [objectKeys.factionID] = 1735,
         },
 
         [187936] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1735,
         },
 
         [187937] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.spawns] = {[zoneIDs.TEROKKAR_FOREST] = {{54.22,55.55}}},
             [objectKeys.factionID] = 1735,
         },
 
         [187938] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1735,
         },
 
         [187939] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.spawns] = {[zoneIDs.WESTERN_PLAGUELANDS] = {{43.5,82.59}}},
             [objectKeys.factionID] = 1735,
         },
 
         [187940] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1735,
         },
 
         [187941] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.spawns] = {[zoneIDs.ZANGARMARSH] = {{68.63,52.13}}},
             [objectKeys.factionID] = 1735,
         },
 
         [187942] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.spawns] = {[zoneIDs.NETHERSTORM] = {{31.1,62.86}}},
             [objectKeys.factionID] = 1735,
         },
 
         [187943] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1735,
         },
 
         [187944] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1735,
         },
 
         [187945] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1735,
         },
 
         [187946] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1735,
         },
 
         [187947] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1732,
         },
 
         [187948] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1732,
         },
 
         [187949] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.spawns] = {[zoneIDs.NETHERSTORM] = {{32.29,68.26}}},
             [objectKeys.factionID] = 1732,
         },
 
         [187950] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1732,
         },
 
         [187951] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1732,
         },
 
         [187952] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1732,
         },
 
         [187953] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1732,
         },
 
         [187954] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1732,
         },
 
         [187955] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.spawns] = {[zoneIDs.BLADES_EDGE_MOUNTAINS] = {{50.01,59}}},
             [objectKeys.factionID] = 1732,
         },
 
         [187956] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1732,
         },
 
         [187957] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1732,
         },
 
         [187958] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.spawns] = {[zoneIDs.DUROTAR] = {{52.03,47.17}}},
             [objectKeys.factionID] = 1732,
         },
 
         [187959] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1732,
         },
 
         [187960] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.spawns] = {[zoneIDs.EVERSONG_WOODS] = {{46.39,50.4}}},
             [objectKeys.factionID] = 1732,
         },
 
         [187961] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1732,
         },
 
         [187962] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.spawns] = {[zoneIDs.GHOSTLANDS] = {{47.07,26.05}}},
             [objectKeys.factionID] = 1732,
         },
 
         [187963] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1732,
         },
 
         [187964] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1732,
         },
 
         [187965] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.spawns] = {[zoneIDs.MULGORE] = {{52.05,60.04}}},
             [objectKeys.factionID] = 1732,
         },
 
         [187966] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1732,
         },
 
         [187967] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.spawns] = {[zoneIDs.SHADOWMOON_VALLEY] = {{33.49,30.33}}},
             [objectKeys.factionID] = 1732,
         },
 
         [187968] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1732,
         },
 
         [187969] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1732,
         },
 
         [187970] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1732,
         },
 
         [187971] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1732,
         },
 
         [187972] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1732,
         },
 
         [187973] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1732,
         },
 
         [187974] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.questEnds] = {11786},
             [objectKeys.spawns] = {[zoneIDs.TIRISFAL_GLADES] = {{57.04,51.73}}},
             [objectKeys.factionID] = 1732,
         },
 
         [187975] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1732,
         },
 
@@ -17052,83 +16993,67 @@ QuestieCompat.RegisterCorrection("objectData", function()
         },
 
         [194032] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1735,
         },
 
         [194033] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1732,
         },
 
         [194034] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1732,
         },
 
         [194035] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1735,
         },
 
         [194036] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1735,
         },
 
         [194037] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1732,
         },
 
         [194038] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1735,
         },
 
         [194039] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1732,
         },
 
         [194040] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1735,
         },
 
         [194042] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.spawns] = {[zoneIDs.GRIZZLY_HILLS] = {{19.12,61.46}}},
             [objectKeys.factionID] = 1732,
         },
 
         [194043] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1732,
         },
 
         [194044] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1735,
         },
 
         [194045] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1735,
         },
 
         [194046] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1732,
         },
 
         [194048] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1732,
         },
 
         [194049] = {
-            [objectKeys.questStarts] = {},
             [objectKeys.factionID] = 1735,
         },
 
