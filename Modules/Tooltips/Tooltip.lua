@@ -26,6 +26,7 @@ local GetClassColor = QuestieCompat.GetClassColor
 local C_Map = QuestieCompat.C_Map
 
 local tinsert = table.insert
+local tsort = table.sort
 local strfind = string.find
 local zoneNameToAreaIds
 QuestieTooltips.lastGametooltip = ""
@@ -74,6 +75,32 @@ local function _StoreTooltipTracking(tooltip)
             QuestieTooltips.lastGametooltipCount = tooltipLineCount
         end
     end
+end
+
+local function _GetSortedTooltipEntries(tooltips)
+    local sortedTooltips = {}
+
+    for tooltipKey, tooltip in pairs(tooltips or {}) do
+        tinsert(sortedTooltips, {
+            key = tooltipKey,
+            tooltip = tooltip,
+        })
+    end
+
+    tsort(sortedTooltips, function(left, right)
+        local leftTooltip = left.tooltip
+        local rightTooltip = right.tooltip
+        local leftQuestId = leftTooltip and leftTooltip.questId or 0
+        local rightQuestId = rightTooltip and rightTooltip.questId or 0
+
+        if leftQuestId ~= rightQuestId then
+            return leftQuestId < rightQuestId
+        end
+
+        return left.key < right.key
+    end)
+
+    return sortedTooltips
 end
 
 local function GetZoneNameToAreaIds()
@@ -442,19 +469,23 @@ function QuestieTooltips:GetTooltip(key)
     if QuestieTooltips.lookupByKey[key] then
         tooltipLines = {}
         local playerName = UnitName("player")
+        local sortedTooltipEntries = _GetSortedTooltipEntries(QuestieTooltips.lookupByKey[key])
 
         local finishedAndUnacceptedQuests = {}
         if Questie.db.profile.showQuestsInNpcTooltip then
             -- We built a table of all quests in the tooltip that can be accepted or turned in, to not show the objectives for those
             -- and also don't add the quest title twice.
-            for _, tooltip in pairs(QuestieTooltips.lookupByKey[key]) do
+            for _, tooltipEntry in ipairs(sortedTooltipEntries) do
+                local tooltip = tooltipEntry.tooltip
                 if tooltip.name then
                     finishedAndUnacceptedQuests[tooltip.questId] = true
                 end
             end
         end
 
-        for k, tooltip in pairs(QuestieTooltips.lookupByKey[key]) do
+        for _, tooltipEntry in ipairs(sortedTooltipEntries) do
+            local k = tooltipEntry.key
+            local tooltip = tooltipEntry.tooltip
             local questId = tooltip.questId
             if tooltip.name then
                 if Questie.db.profile.showQuestsInNpcTooltip then
@@ -546,7 +577,14 @@ function QuestieTooltips:GetTooltip(key)
 
     local playerName = UnitName("player")
 
-    for questId, questData in pairs(tooltipData) do
+    local sortedQuestIds = {}
+    for questId in pairs(tooltipData) do
+        tinsert(sortedQuestIds, questId)
+    end
+    tsort(sortedQuestIds)
+
+    for _, questId in ipairs(sortedQuestIds) do
+        local questData = tooltipData[questId]
         local hasObjective = false
         local tempObjectives = {}
         for _, playerList in pairs(questData.objectivesText or {}) do
