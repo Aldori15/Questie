@@ -3214,6 +3214,7 @@ function QuestieWotlkNpcFixes:LoadDarkmoonFixes(eventLocation)
     for npcId, spawns in pairs(darkmoonSpawns) do
         npcFixes[npcId] = {
             [npcKeys.spawns] = spawns,
+            [npcKeys.waypoints] = {},
             [npcKeys.zoneID] = activeZone,
         }
     end

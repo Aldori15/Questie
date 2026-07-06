@@ -668,6 +668,10 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.startedBy] = {{14832}},
         },
 
+        [7946] = {
+            [questKeys.startedBy] = {},
+        },
+
         [8080] = {
             [questKeys.startedBy] = {},
             [questKeys.finishedBy] = {},

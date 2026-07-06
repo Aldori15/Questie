@@ -41,6 +41,16 @@ RELATION_SOURCE_ID_ALIASES = {
 RELATION_EXPORT_FILES = tuple(table for table in TARGET_TABLES if table not in EVENT_RELATION_TABLES)
 
 MANUAL_ACORE_RELATION_OVERRIDES = {
+    # Morja is listed in creature_queststarter, but AC SmartAI removes her
+    # questgiver flag on respawn and only adds it during the Dark Iron Ale
+    # Jubjub script window. Do not show Spawn of Jubjub as always available.
+    7946: {
+        "start": {
+            "creature": set(),
+            "object": set(),
+            "item": set(),
+        },
+    },
     13966: {
         "start": {
             "creature": set(),
