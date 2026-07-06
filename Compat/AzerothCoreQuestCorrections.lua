@@ -13281,10 +13281,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.specialFlags] = specialFlags.SPELL_CAST,
         },
 
-        [11432] = {
-            [questKeys.preQuestSingle] = {11239},
-        },
-
         [11439] = {
             [questKeys.requiredSourceItems] = {},
         },
