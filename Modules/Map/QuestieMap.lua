@@ -76,6 +76,69 @@ local function _IsSpawnVisible(spawn)
     return Phasing.IsSpawnVisible(spawn and spawn[3])
 end
 
+local function _RememberWaypointDrawData(icon, waypoints, zone, color)
+    if not icon or not icon.data then
+        return
+    end
+
+    if not icon.data.waypointDrawData then
+        icon.data.waypointDrawData = {}
+    end
+
+    for _, waypointDrawData in ipairs(icon.data.waypointDrawData) do
+        if waypointDrawData.waypoints == waypoints and waypointDrawData.zone == zone and waypointDrawData.color == color then
+            return
+        end
+    end
+
+    tinsert(icon.data.waypointDrawData, {
+        waypoints = waypoints,
+        zone = zone,
+        color = color,
+    })
+end
+
+local function _SetIconWaypointLinesVisible(icon, visible)
+    if not icon or not icon.data then
+        return
+    end
+
+    if visible and (not icon.data.lineFrames) and icon.data.waypointDrawData then
+        for _, waypointDrawData in ipairs(icon.data.waypointDrawData) do
+            QuestieMap:DrawWaypoints(icon, waypointDrawData.waypoints, waypointDrawData.zone, waypointDrawData.color)
+        end
+    end
+
+    if not icon.data.lineFrames then
+        return
+    end
+
+    local shouldShow = visible and (not icon.hidden) and (not icon.ShouldBeHidden or not icon:ShouldBeHidden())
+    for _, lineIcon in pairs(icon.data.lineFrames) do
+        if shouldShow then
+            lineIcon:FakeShow()
+        else
+            lineIcon:FakeHide()
+        end
+    end
+end
+
+function QuestieMap:SetWaypointLinesVisible(visible)
+    for _, frameList in pairs(QuestieMap.questIdFrames) do
+        for _, frameName in pairs(frameList) do
+            _SetIconWaypointLinesVisible(_G[frameName], visible)
+        end
+    end
+
+    for _, frameTypeList in pairs(QuestieMap.manualFrames) do
+        for _, frameList in pairs(frameTypeList) do
+            for _, frameName in pairs(frameList) do
+                _SetIconWaypointLinesVisible(_G[frameName], visible)
+            end
+        end
+    end
+end
+
 local function _CopyManualTooltipDataWithCoordinates(data, x, y)
     local tooltipData = data.ManualTooltipData
     if not tooltipData then
@@ -1209,6 +1272,9 @@ QuestieMap.zoneWaypointHoverColorOverrides = {
 
 function QuestieMap:DrawWaypoints(icon, waypoints, zone, color)
     if waypoints and waypoints[1] and waypoints[1][1] and waypoints[1][1][1] then -- check that waypoint data actually exists
+        _RememberWaypointDrawData(icon, waypoints, zone, color)
+        if not Questie.db.profile.showWaypointLines then return end
+
         local shouldBeHidden = icon:ShouldBeHidden()
         local lineFrames = QuestieFramePool:CreateWaypoints(icon, waypoints, nil, color or QuestieMap.zoneWaypointColorOverrides[zone], zone)
         for _, lineFrame in ipairs(lineFrames) do

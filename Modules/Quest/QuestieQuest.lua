@@ -158,7 +158,7 @@ function _QuestieQuest:ShowQuestIcons()
                         if icon.hidden and (not icon:ShouldBeHidden()) then
                             icon:FakeShow()
 
-                            if icon.data.lineFrames then
+                            if Questie.db.profile.showWaypointLines and icon.data.lineFrames then
                                 for _, lineIcon in pairs(icon.data.lineFrames) do
                                     lineIcon:FakeShow()
                                 end

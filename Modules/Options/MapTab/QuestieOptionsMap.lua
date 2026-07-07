@@ -107,6 +107,23 @@ function QuestieOptions.tabs.map:Initialize()
                     QuestieOptions:SetProfileValue(info, value)
                 end,
             },
+            waypoint_lines_header = {
+                type = "header",
+                order = 7,
+                name = function() return l10n('Waypoint Lines'); end,
+            },
+            showWaypointLines = {
+                type = "toggle",
+                order = 8,
+                name = function() return l10n('Show Waypoint Lines'); end,
+                desc = function() return l10n('Draw path lines for NPCs and other map waypoints.'); end,
+                width = 1.55,
+                get = function(info) return QuestieOptions:GetProfileValue(info); end,
+                set = function(info, value)
+                    QuestieOptions:SetProfileValue(info, value)
+                    QuestieMap:SetWaypointLinesVisible(value)
+                end,
+            },
         },
     }
 end

@@ -39,6 +39,7 @@ function QuestieOptionsDefaults:Load()
             mapCoordinatesEnabled = true,
             showManualTooltipCoordinates = true,
             mapCoordinatePrecision = 1,
+            showWaypointLines = true,
             dbmHUDEnable = false,
             dbmHUDShowAlert = true,
             DBMHUDRefresh = 0.03,
