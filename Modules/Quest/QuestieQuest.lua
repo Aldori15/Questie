@@ -1529,7 +1529,7 @@ end
 
 _DrawObjectiveWaypoints = function(objective, icon, iconPerZone)
     for _, spawnData in pairs(objective.spawnList) do -- spawnData.Name, spawnData.Spawns
-        if spawnData.Waypoints then
+        if spawnData.Waypoints and not spawnData.Hostile then
             for zone, waypoints in pairs(spawnData.Waypoints) do
                 if _HasVisibleSpawnInZone(spawnData.Spawns[zone]) then
                     local firstWaypoint = waypoints[1][1]
