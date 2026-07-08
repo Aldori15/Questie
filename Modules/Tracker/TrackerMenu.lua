@@ -339,7 +339,7 @@ StaticPopupDialogs["QUESTIE_WOWHEAD_URL"] = {
         local name = quest_wow.name
 
         -- self.text:SetText(self.text:GetText() .. "\n\n|cffff7f00" .. name .. "|r")
-        self.text:SetFont("GameFontNormal", 12)
+        self.text:SetFont(GameFontNormal:GetFont(), 12)
         -- self.text:SetText(self.text:GetText() .. "\n\n|c FFFFB9 00" .. name .. "|r")
         self.text:SetText(self.text:GetText() .. Questie:Colorize("\n\n" .. name, "gold"))
 
@@ -515,7 +515,7 @@ StaticPopupDialogs["QUESTIE_WOWHEAD_AURL"] = {
         local achieveID = self.text.text_arg1 or self.data
         local name = select(2, GetAchievementInfo(achieveID))
 
-        self.text:SetFont("GameFontNormal", 12)
+        self.text:SetFont(GameFontNormal:GetFont(), 12)
         self.text:SetText(self.text:GetText() .. Questie:Colorize("\n\n" .. name, "gold"))
 
         local langShort = string.sub(l10n:GetUILocale(), 1, 2) .. "."
