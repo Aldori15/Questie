@@ -189,10 +189,21 @@ QuestieCompat.LibUIDropDownMenu = {
     end,
 }
 
+local function GetDropDownFrameName(frame)
+    if not frame or type(frame.GetName) ~= "function" then return nil end
+
+    local success, name = pcall(frame.GetName, frame)
+    if success and type(name) == "string" then
+        return name
+    end
+
+    return nil
+end
+
 local function RepositionQuestieDropDownSubmenu(level, _, _, _, _, _, _, button)
     if not level or level <= 1 or not button then return end
 
-    local openMenuName = UIDROPDOWNMENU_OPEN_MENU and UIDROPDOWNMENU_OPEN_MENU.GetName and UIDROPDOWNMENU_OPEN_MENU:GetName()
+    local openMenuName = GetDropDownFrameName(UIDROPDOWNMENU_OPEN_MENU)
     if not openMenuName or string.sub(openMenuName, 1, 7) ~= "Questie" then return end
 
     local listFrame = _G["DropDownList" .. level]
