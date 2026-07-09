@@ -751,6 +751,8 @@ function QuestieQuest:GetAllQuestIds()
     Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest] Getting all quests")
 
     QuestiePlayer.currentQuestlog = {}
+    local trackerHiddenQuests = Questie.db.char.TrackerHiddenQuests or {}
+    local trackerHiddenObjectives = Questie.db.char.TrackerHiddenObjectives or {}
 
     for questId, data in pairs(QuestLogCache.questLog_DO_NOT_MODIFY) do -- DO NOT MODIFY THE RETURNED TABLE
         if (not QuestieDB.QuestPointers[questId]) then
@@ -773,6 +775,21 @@ function QuestieQuest:GetAllQuestIds()
                 else
                     QuestieQuest:CheckQuestSourceItem(questId, true)
                     QuestieQuest:PopulateQuestLogInfo(quest)
+
+                    -- Restore hidden icon state before objective notes spawn map icons.
+                    if trackerHiddenQuests[questId] then
+                        quest.HideIcons = true
+                    end
+                    for _, objective in pairs(quest.Objectives) do
+                        if trackerHiddenObjectives[tostring(questId) .. " " .. tostring(objective.Index)] then
+                            objective.HideIcons = true
+                        end
+                    end
+                    for _, objective in pairs(quest.SpecialObjectives) do
+                        if trackerHiddenObjectives[tostring(questId) .. " " .. tostring(objective.Index)] then
+                            objective.HideIcons = true
+                        end
+                    end
 
                     if QuestieQuest:ShouldShowQuestNotes(questId) then
                         QuestieQuest:PopulateObjectiveNotes(quest)
