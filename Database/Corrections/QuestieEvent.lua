@@ -634,6 +634,7 @@ _LoadDarkmoonFaire = function()
 
     local addedActiveQuest = false
     local isInMulgore = eventLocation == DMF_LOCATIONS.MULGORE
+    local isInTerokkar = eventLocation == DMF_LOCATIONS.TEROKKAR_FOREST
     local darkmoonNpcFixes = nil
 
     if Questie.IsWotlk then
@@ -643,15 +644,36 @@ _LoadDarkmoonFaire = function()
     end
 
     -- The faire is setting up right now or is already up
-    local announcingQuestId = 7905 -- Alliance announcement quest
-    if isInMulgore then
-        announcingQuestId = 7926 -- Horde announcement quest
+    local allianceAnnouncingQuestId = 7905 -- Alliance announcement quest
+    local hordeAnnouncingQuestId = 7926 -- Horde announcement quest
+    if isInTerokkar then
+        if not QuestieEvent.activeQuests[allianceAnnouncingQuestId] then
+            addedActiveQuest = true
+        end
+        if not QuestieEvent.activeQuests[hordeAnnouncingQuestId] then
+            addedActiveQuest = true
+        end
+        QuestieCorrections.hiddenQuests[allianceAnnouncingQuestId] = nil
+        QuestieCorrections.hiddenQuests[hordeAnnouncingQuestId] = nil
+        QuestieEvent.activeQuests[allianceAnnouncingQuestId] = true
+        QuestieEvent.activeQuests[hordeAnnouncingQuestId] = true
+    elseif isInMulgore then
+        if not QuestieEvent.activeQuests[hordeAnnouncingQuestId] then
+            addedActiveQuest = true
+        end
+        QuestieCorrections.hiddenQuests[hordeAnnouncingQuestId] = nil
+        QuestieCorrections.hiddenQuests[allianceAnnouncingQuestId] = true
+        QuestieEvent.activeQuests[hordeAnnouncingQuestId] = true
+        QuestieEvent.activeQuests[allianceAnnouncingQuestId] = nil
+    else
+        if not QuestieEvent.activeQuests[allianceAnnouncingQuestId] then
+            addedActiveQuest = true
+        end
+        QuestieCorrections.hiddenQuests[allianceAnnouncingQuestId] = nil
+        QuestieCorrections.hiddenQuests[hordeAnnouncingQuestId] = true
+        QuestieEvent.activeQuests[allianceAnnouncingQuestId] = true
+        QuestieEvent.activeQuests[hordeAnnouncingQuestId] = nil
     end
-    if not QuestieEvent.activeQuests[announcingQuestId] then
-        addedActiveQuest = true
-    end
-    QuestieCorrections.hiddenQuests[announcingQuestId] = nil
-    QuestieEvent.activeQuests[announcingQuestId] = true
 
     for _, questData in pairs(QuestieEvent.eventQuests) do
         if questData[1] == "Darkmoon Faire" and _IsEventQuestVisible(questData[5]) then
