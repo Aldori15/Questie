@@ -736,6 +736,11 @@ function QuestieCompat.LoadBlacklists()
     end
 end
 
+function QuestieCompat.ReleaseCorrectionRegistries()
+    correctionsRegistry = {}
+    blacklistRegistry = {}
+end
+
 function QuestieCompat.Merge(target, source, override)
 	if type(target) ~= "table" then target = {} end
 	for k,v in pairs(source) do

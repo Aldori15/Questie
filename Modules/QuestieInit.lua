@@ -222,6 +222,7 @@ QuestieInit.Stages[1] = function() -- run as a coroutine
     end
 
     -- The remaining init path no longer needs the source lookup blobs after database setup.
+    QuestieCompat.ReleaseCorrectionRegistries()
     QuestieCleanup:ClearLocalization()
     collectgarbage()
 
