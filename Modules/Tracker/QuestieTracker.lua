@@ -839,7 +839,7 @@ function QuestieTracker:Update(force)
                     if timedQuest then
                         coloredQuestName = QuestieLib:GetColoredQuestName(quest.Id, Questie.db.profile.trackerShowQuestLevel, false, false)
                     else
-                        coloredQuestName = QuestieLib:GetColoredQuestName(quest.Id, Questie.db.profile.trackerShowQuestLevel, (Questie.db.profile.collapseCompletedQuests and isMinimizable), false)
+                        coloredQuestName = QuestieLib:GetColoredQuestName(quest.Id, Questie.db.profile.trackerShowQuestLevel, ((isMinimizable and Questie.db.profile.collapseCompletedQuests) or Questie.db.char.collapsedQuests[quest.Id] ~= nil), false)
                     end
 
                     if Questie.db.profile.showQuestPercent and questDetails[quest.Id] and type(questDetails[quest.Id].questCompletePercent) == "number" then
