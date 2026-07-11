@@ -1159,6 +1159,8 @@ function QuestieQuestBlacklist:Load()
         [10901] = QuestieCorrections.WOTLK_ONLY, -- Got replaced by 13431
         [10445] = QuestieCorrections.WOTLK_ONLY, -- Got replaced by 13432
         [6144] = QuestieCorrections.WOTLK_ONLY, -- Got replaced by 14349
+        [6521] = QuestieCorrections.WOTLK_ONLY, -- Got replaced by 14353
+        [6522] = QuestieCorrections.WOTLK_ONLY, -- Got replaced by 14352
         [6821] = QuestieCorrections.WOTLK_ONLY, -- Not in the game
         [6822] = QuestieCorrections.WOTLK_ONLY, -- Not in the game
         [6823] = QuestieCorrections.WOTLK_ONLY, -- Not in the game
@@ -1173,7 +1175,6 @@ function QuestieQuestBlacklist:Load()
         [5640] = QuestieCorrections.WOTLK_ONLY, -- removed in wotlk
         [12881] = true, -- Not in the game
         [14351] = true, -- Not in the game
-        [14353] = true, -- Not in the game
         [11621] = true, -- Not in the game
         [11179] = true, -- Not in the game
         [11622] = true, -- Not in the game

@@ -65,8 +65,9 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.finishedBy] = {},
         },
 
-        [1155] = {
-            [questKeys.startedBy] = {nil,nil,{17409}},
+        [1318] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
         [1470] = {
@@ -158,10 +159,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.startedBy] = {{5387}},
         },
 
-        [3111] = {
-            [questKeys.startedBy] = {nil,nil,{9572}},
-        },
-
         [3631] = {
             [questKeys.startedBy] = {},
             [questKeys.finishedBy] = {},
@@ -182,14 +179,24 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.finishedBy] = {},
         },
 
+        [3644] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
         [3645] = {
-            [questKeys.startedBy] = {{7944}},
-            [questKeys.finishedBy] = {{7944}},
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [3646] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
         [3647] = {
-            [questKeys.startedBy] = {{7406}},
-            [questKeys.finishedBy] = {{7406}},
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
         [4108] = {
@@ -474,7 +481,13 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [6144] = {
-            [questKeys.finishedBy] = {{36273}},
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [6145] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
         [6402] = {
@@ -498,12 +511,13 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [6521] = {
-            [questKeys.startedBy] = {{2425}},
-            [questKeys.finishedBy] = {{2425}},
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
         [6522] = {
-            [questKeys.finishedBy] = {{2425}},
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
         [6661] = {
@@ -534,6 +548,16 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.startedBy] = {{13434}},
         },
 
+        [7181] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [7202] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
         [7281] = {
             [questKeys.startedBy] = {},
             [questKeys.finishedBy] = {},
@@ -550,6 +574,16 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [7302] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [7381] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
+        [7382] = {
             [questKeys.startedBy] = {},
             [questKeys.finishedBy] = {},
         },
@@ -584,10 +618,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         [7509] = {
             [questKeys.startedBy] = {},
             [questKeys.finishedBy] = {},
-        },
-
-        [7561] = {
-            [questKeys.startedBy] = {nil,nil,{18589}},
         },
 
         [7632] = {
@@ -1493,12 +1523,21 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.startedBy] = {nil,nil,{31363}},
         },
 
+        [10871] = {
+            [questKeys.startedBy] = {},
+        },
+
         [10872] = {
+            [questKeys.finishedBy] = {},
+        },
+
+        [10888] = {
             [questKeys.finishedBy] = {},
         },
 
         [10960] = {
             [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
         [11052] = {
@@ -1892,6 +1931,11 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.startedBy] = {},
         },
 
+        [13381] = {
+            [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
+        },
+
         [13390] = {
             [questKeys.startedBy] = {nil,{193195}},
         },
@@ -2118,6 +2162,10 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.startedBy] = {nil,nil,{38567}},
         },
 
+        [14441] = {
+            [questKeys.finishedBy] = {},
+        },
+
         [24216] = {
             [questKeys.startedBy] = {},
             [questKeys.finishedBy] = {},
@@ -2175,6 +2223,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [24427] = {
             [questKeys.startedBy] = {},
+            [questKeys.finishedBy] = {},
         },
 
         [24800] = {
@@ -3384,13 +3433,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [1150] = {
             [questKeys.requiredSourceItems] = {5845},
-        },
-
-        [1155] = {
-            [questKeys.name] = "<NYI> <TXT> bug crystal side quest",
-            [questKeys.questLevel] = 55,
-            [questKeys.requiredLevel] = 54,
-            [questKeys.objectivesText] = {"x"},
         },
 
         [1190] = {
@@ -4734,15 +4776,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         [3110] = {
             [questKeys.questFlags] = 0,
             [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
-        },
-
-        [3111] = {
-            [questKeys.name] = "<UNUSED>",
-            [questKeys.questLevel] = 1,
-            [questKeys.requiredLevel] = 1,
-            [questKeys.requiredClasses] = classIDs.MAGE,
-            [questKeys.objectivesText] = {"Speak to Marrek Stromnur inside Anvilmar."},
-            [questKeys.sourceItemId] = 9572,
         },
 
         [3112] = {
@@ -6717,14 +6750,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         [7521] = {
             [questKeys.objectivesText] = {"To free Thunderaan the Windseeker from his prison, you must present the right and left halves of the Bindings of the Wind Seeker, 10 bars of Elementium, and the Essence of the Firelord to Highlord Demitrian. "},
             [questKeys.preQuestSingle] = {7522},
-        },
-
-        [7561] = {
-            [questKeys.name] = "Rise,Thunderfury!",
-            [questKeys.questLevel] = 60,
-            [questKeys.requiredLevel] = 100,
-            [questKeys.objectivesText] = {"Present the Dormant Wind Kissed Blade to Highlord Demitrian."},
-            [questKeys.sourceItemId] = 18589,
         },
 
         [7562] = {

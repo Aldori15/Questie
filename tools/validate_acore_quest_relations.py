@@ -15,6 +15,11 @@ from validate_acore_quest_metadata import (
     get_excluded_module_sql_roots,
     load_acore_sql_table,
     load_module_created_quest_ids,
+    parse_sql_value,
+    split_sql_rows,
+    split_sql_statements,
+    split_sql_values,
+    strip_sql_comments,
 )
 
 
@@ -39,6 +44,9 @@ RELATION_SOURCE_ID_ALIASES = {
 }
 
 RELATION_EXPORT_FILES = tuple(table for table in TARGET_TABLES if table not in EVENT_RELATION_TABLES)
+
+DISABLES_COLUMNS = ("sourceType", "entry", "flags", "params_0", "params_1", "comment")
+QUEST_DISABLE_SOURCE_TYPE = 1
 
 MANUAL_ACORE_RELATION_OVERRIDES = {
     # Morja is listed in creature_queststarter, but AC SmartAI removes her
@@ -440,9 +448,89 @@ def remove_excluded_module_relations(state, acore_source: Path):
         state[table].update(core_state[table])
 
 
+def load_disabled_quest_ids(acore_source: Path):
+    """Return quest IDs disabled by AzerothCore's disables table."""
+    disabled_quest_ids = set()
+    base_dir = acore_source / "data" / "sql" / "base" / "db_world"
+    updates_dir = acore_source / "data" / "sql" / "updates" / "db_world"
+    sql_files = [base_dir / "disables.sql"]
+    if updates_dir.exists():
+        sql_files.extend(sorted(updates_dir.glob("*.sql")))
+
+    def apply_file(path):
+        if not path.exists():
+            return
+
+        text = strip_sql_comments(path.read_text(encoding="utf-8"))
+        for statement in split_sql_statements(text):
+            if not re.search(r"\bdisables\b", statement, re.IGNORECASE):
+                continue
+
+            insert_match = re.search(
+                r"(?:INSERT INTO|REPLACE INTO)\s+`?disables`?"
+                r"(?:\s*\((?P<columns>.*?)\))?\s+VALUES\s+(?P<values>.*)$",
+                statement,
+                re.IGNORECASE | re.DOTALL,
+            )
+            if insert_match:
+                columns = DISABLES_COLUMNS
+                if insert_match.group("columns"):
+                    columns = tuple(
+                        column_match.group(1)
+                        for column_match in re.finditer(r"`([^`]+)`", insert_match.group("columns"))
+                    )
+
+                for row_text in split_sql_rows(insert_match.group("values")):
+                    values = split_sql_values(row_text)
+                    if len(values) != len(columns):
+                        continue
+                    try:
+                        row = {
+                            column: parse_sql_value(value)
+                            for column, value in zip(columns, values)
+                        }
+                    except (SyntaxError, ValueError):
+                        continue
+
+                    if row.get("sourceType") == QUEST_DISABLE_SOURCE_TYPE:
+                        disabled_quest_ids.add(int(row["entry"]))
+                continue
+
+            delete_match = re.search(
+                r"DELETE FROM\s+`?disables`?\s+WHERE\s+(?P<where>.*)$",
+                statement,
+                re.IGNORECASE | re.DOTALL,
+            )
+            if not delete_match:
+                continue
+
+            where = delete_match.group("where")
+            if not re.search(r"`?sourceType`?\s*=\s*1", where, re.IGNORECASE):
+                continue
+
+            entry_match = re.search(r"`?entry`?\s*=\s*(\d+)", where, re.IGNORECASE)
+            if entry_match:
+                disabled_quest_ids.discard(int(entry_match.group(1)))
+                continue
+
+            entry_match = re.search(r"`?entry`?\s+IN\s*\(([^)]+)\)", where, re.IGNORECASE)
+            if entry_match:
+                disabled_quest_ids.difference_update(
+                    int(value.strip())
+                    for value in entry_match.group(1).split(",")
+                    if value.strip().isdigit()
+                )
+
+    for sql_file in sql_files:
+        apply_file(sql_file)
+
+    return disabled_quest_ids
+
+
 def load_acore_relations(acore_source: Path, quest_template_sql: Optional[Path] = None):
     state = {table: set() for table in TARGET_TABLES}
     module_quest_ids = load_module_created_quest_ids(acore_source)
+    disabled_quest_ids = load_disabled_quest_ids(acore_source)
 
     relation_export_dir = quest_template_sql.parent if quest_template_sql else None
     relation_export_files = {}
@@ -464,6 +552,8 @@ def load_acore_relations(acore_source: Path, quest_template_sql: Optional[Path] 
     for table, pairs in state.items():
         relation_type, source_type = TARGET_TABLES[table]
         for source_id, quest_id in pairs:
+            if quest_id in module_quest_ids or quest_id in disabled_quest_ids:
+                continue
             relation = per_quest.setdefault(quest_id, empty_relation())
             relation[relation_type][source_type].add(source_id)
 
@@ -483,7 +573,7 @@ def load_acore_relations(acore_source: Path, quest_template_sql: Optional[Path] 
         start_quest = int(row.get("startquest") or row.get("StartQuest") or 0)
         if start_quest <= 0:
             continue
-        if start_quest in module_quest_ids:
+        if start_quest in module_quest_ids or start_quest in disabled_quest_ids:
             continue
 
         relation = per_quest.setdefault(start_quest, empty_relation())
