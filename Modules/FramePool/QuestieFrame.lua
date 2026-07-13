@@ -1,8 +1,6 @@
 ---@class QuestieFrame
 local QuestieFrame = QuestieLoader:CreateModule("QuestieFrame")
 local _QuestieFrame = QuestieFrame.private
----@type QuestieFramePool
-local QuestieFramePool = QuestieLoader:ImportModule("QuestieFramePool")
 ---@type QuestieMap
 local QuestieMap = QuestieLoader:ImportModule("QuestieMap")
 ---@type QuestieDBMIntegration
@@ -44,6 +42,8 @@ local function GetObjectiveGlowAlpha(frame, alpha)
     return alpha
 end
 
+---@param frameId number
+---@param OnEnter function
 ---@return IconFrame
 function QuestieFrame:New(frameId, OnEnter)
     ---@class IconFrame : Button
@@ -58,10 +58,6 @@ function QuestieFrame:New(frameId, OnEnter)
         tinsert(MBB_Ignore, newFrame:GetName())
     end
     newFrame.isSkinned = true -- prevents ElvUI_Enhanced_MinimapButtonGrabber from hidding our pins
-
-    if frameId > 5000 then
-        Questie:Debug(Questie.DEBUG_CRITICAL, "[QuestieFramePool] Over 5000 frames... maybe there is a leak?", frameId)
-    end
 
     newFrame:SetFrameStrata("FULLSCREEN");
     newFrame:SetWidth(16)  -- Set these to whatever height/width is needed
@@ -430,7 +426,6 @@ function _QuestieFrame:Unload()
     self.lastGlowFade = nil
     self.worldX = nil
     self.worldY = nil
-    QuestieFramePool:RecycleFrame(self)
 end
 
 function _QuestieFrame:FadeOut()

@@ -21,6 +21,8 @@ local QuestieTracker = QuestieLoader:ImportModule("QuestieTracker")
 local QuestieDBMIntegration = QuestieLoader:ImportModule("QuestieDBMIntegration")
 ---@type QuestieMap
 local QuestieMap = QuestieLoader:ImportModule("QuestieMap")
+---@type QuestieFramePool
+local QuestieFramePool = QuestieLoader:ImportModule("QuestieFramePool")
 ---@type QuestieLib
 local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
 ---@type QuestiePlayer
@@ -264,7 +266,7 @@ function QuestieQuest:ClearAllNotes()
         for _, frameName in pairs(frameList) do
             local icon = _G[frameName]
             if icon and icon.Unload then
-                icon:Unload()
+                QuestieFramePool:UnloadFrame(icon)
             end
         end
     end
@@ -1310,10 +1312,10 @@ _UnloadAlreadySpawnedIcons = function(objective)
             local spawn = objective.AlreadySpawned[id]
             if spawn then
                 for _, mapIcon in pairs(spawn.mapRefs) do
-                    mapIcon:Unload()
+                    QuestieFramePool:UnloadFrame(mapIcon)
                 end
                 for _, minimapIcon in pairs(spawn.minimapRefs) do
-                    minimapIcon:Unload()
+                    QuestieFramePool:UnloadFrame(minimapIcon)
                 end
                 spawn.mapRefs = {}
                 spawn.minimapRefs = {}
