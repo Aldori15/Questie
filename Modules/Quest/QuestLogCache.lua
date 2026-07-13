@@ -77,6 +77,12 @@ local cache = {
 local cache = {}
 local questCount = 0
 
+-- Tracks quests where objectives regressed on the last scan (e.g. due to zone transition stale data).
+-- On the first regression, we set cacheMiss and skip the update so no sounds/announces fire.
+-- On the second consecutive regression of the same quest, we accept it as legitimate (e.g. item deletion).
+---@type table<QuestId, boolean>
+local consecutiveRegressions = {}
+
 --- NEVER EVER EDIT this table outside of the QuestLogCache module!  !!!
 ---@type table<QuestId, QuestLogCacheData>
 QuestLogCache.questLog_DO_NOT_MODIFY = cache
@@ -94,6 +100,7 @@ local function GetNewObjectives(questId, oldObjectives, questLogIndex, isComplet
     local newObjectives = {} -- creating a fresh one to be able revert to old easily in case of missing data
     local changedObjIds -- not assigning {} for easier nil when nothing changed
     local allObjectivesFinished = true -- default to true for easier handling
+    local pendingSounds = {}
     local objectives = C_QuestLog_GetQuestObjectives(questId, questLogIndex)
 
     for objIndex=1, #objectives do -- iterate manually to be sure getting those in order
@@ -109,6 +116,18 @@ local function GetNewObjectives(questId, oldObjectives, questLogIndex, isComplet
                     newObjectives[objIndex] = oldObj
                     allObjectivesFinished = allObjectivesFinished and oldObj.finished -- if any objective is not finished, whole quest is not complete
                 else
+                    -- Detect a regression: numFulfilled went down from what we had cached.
+                    -- This can happen during zone transitions when Blizzard temporarily returns incorrect data.
+                    -- On the first sighting we treat it as a cache miss so no sounds/announces fire.
+                    -- On the second consecutive sighting we accept it as a legitimate change (e.g. player deleted a collected item).
+                    if oldObj and newObj.numFulfilled < oldObj.raw_numFulfilled then
+                        if (not consecutiveRegressions[questId]) then
+                            consecutiveRegressions[questId] = true
+                            return nil, nil, isCompleteAccordingToBlizzard
+                        end
+                        -- Second consecutive regression — fall through and accept it
+                    end
+
                     -- objective has changed, add it to list of change ones
                     if (not changedObjIds) then
                         changedObjIds = { objIndex }
@@ -117,11 +136,11 @@ local function GetNewObjectives(questId, oldObjectives, questLogIndex, isComplet
                     end
 
                     if oldObj and newObj and oldObj.numRequired ~= oldObj.numFulfilled and newObj.numRequired == newObj.numFulfilled then
-                        Sounds.PlayObjectiveComplete()
+                        pendingSounds[#pendingSounds + 1] = "objectiveComplete"
                     end
 
-                    if oldObj and newObj and oldObj.numRequired ~= oldObj.numFulfilled and newObj.numRequired ~= newObj.numFulfilled then
-                        Sounds.PlayObjectiveProgress()
+                    if oldObj and newObj and oldObj.numRequired ~= oldObj.numFulfilled and newObj.numRequired ~= newObj.numFulfilled and newObj.numFulfilled > oldObj.raw_numFulfilled then
+                        pendingSounds[#pendingSounds + 1] = "objectiveProgress"
                     end
 
                     allObjectivesFinished = allObjectivesFinished and newObj.finished -- if any objective is not finished, whole quest is not complete
@@ -165,6 +184,18 @@ local function GetNewObjectives(questId, oldObjectives, questLogIndex, isComplet
         isComplete = (#newObjectives > 0 and allObjectivesFinished) and 1 or 0
     end
 
+    -- Play objective sounds only after the complete scan is accepted. Invalid scans can be retried.
+    for _, soundType in ipairs(pendingSounds) do
+        if soundType == "objectiveComplete" then
+            Sounds.PlayObjectiveComplete()
+        elseif soundType == "objectiveProgress" then
+            Sounds.PlayObjectiveProgress()
+        end
+    end
+
+    -- Completed a full scan without a first-sighting regression, so any previously recorded regression is resolved.
+    consecutiveRegressions[questId] = nil
+
     return newObjectives, changedObjIds, isComplete
 end
 
@@ -194,52 +225,60 @@ function QuestLogCache.CheckForChanges(questIdsToCheck)
                 local cachedQuest = cache[questId]
                 local cachedObjectives = cachedQuest and cachedQuest.objectives or {}
 
-                local newObjectives, changedObjIds, isComplete = GetNewObjectives(questId, cachedObjectives, questLogIndex, isCompleteAccordingToBlizzard)
+                -- During zone transitions (e.g. entering/leaving a dungeon) GetQuestLogTitle temporarily
+                -- returns incorrect values (e.g. isCompleteAccordingToBlizzard being nil for quests that are actually complete).
+                -- To avoid caching incorrect values, we skip the update entirely and set cacheMiss so we retry next QUEST_LOG_UPDATE.
+                local blizzardCacheIncorrect = (not isCompleteAccordingToBlizzard) and cachedQuest and cachedQuest.isComplete == 1
+                if blizzardCacheIncorrect then
+                    cacheMiss = true
+                else
+                    local newObjectives, changedObjIds, isComplete = GetNewObjectives(questId, cachedObjectives, questLogIndex, isCompleteAccordingToBlizzard)
 
-                if newObjectives then
-                    if (not cachedQuest) or (#cachedObjectives == #newObjectives and #cachedObjectives > 0 and
-                        (cachedQuest.title ~= title or cachedQuest.questTag ~= questTag or cachedQuest.isComplete ~= isComplete)) or
-                       (cachedQuest and #cachedObjectives == 0 and cachedQuest.isComplete ~= isComplete) then
-                        -- Mark all objectives changed to force update those too.
+                    if newObjectives then
+                        if (not cachedQuest) or (#cachedObjectives == #newObjectives and #cachedObjectives > 0 and
+                            (cachedQuest.title ~= title or cachedQuest.questTag ~= questTag or cachedQuest.isComplete ~= isComplete)) or
+                           (cachedQuest and #cachedObjectives == 0 and cachedQuest.isComplete ~= isComplete) then
+                            -- Mark all objectives changed to force update those too.
 
-                        -- changedObjIds is nil from GetObjectives() for quests not having objectives. This is easiest place to change it to {}.
-                        changedObjIds = {}
-                        for i=1, #newObjectives do
-                            changedObjIds[i] = i
-                        end
-
-                        if isComplete == 1 then
-                            -- Set all objectives finished if whole quest isComplete.
-                            -- Because of: Game API returns "event" type objectives as unfinished while whole quest isComplete.
-
-                            local o
+                            -- changedObjIds is nil from GetObjectives() for quests not having objectives. This is easiest place to change it to {}.
+                            changedObjIds = {}
                             for i=1, #newObjectives do
-                                o = newObjectives[i]
-                                o.finished = true
-                                o.numFulfilled = o.numRequired
+                                changedObjIds[i] = i
+                            end
+
+                            if isComplete == 1 then
+                                -- Set all objectives finished if whole quest isComplete.
+                                -- Because of: Game API returns "event" type objectives as unfinished while whole quest isComplete.
+
+                                local o
+                                for i=1, #newObjectives do
+                                    o = newObjectives[i]
+                                    o.finished = true
+                                    o.numFulfilled = o.numRequired
+                                end
                             end
                         end
-                    end
 
-                    if cachedQuest and cachedQuest.isComplete == 0 and isComplete == 1 then
-                        Sounds.PlayQuestComplete()
-                    end
-
-                    if changedObjIds then
-                        if (not cache[questId]) then
-                            questCount = questCount + 1
+                        if cachedQuest and cachedQuest.isComplete == 0 and isComplete == 1 then
+                            Sounds.PlayQuestComplete()
                         end
-                        -- Save to cache
-                        cache[questId] = {
-                            title = title,
-                            questTag = questTag,
-                            isComplete = isComplete,
-                            objectives = newObjectives,
-                        }
-                        changes[questId] = changedObjIds
+
+                        if changedObjIds then
+                            if (not cache[questId]) then
+                                questCount = questCount + 1
+                            end
+                            -- Save to cache
+                            cache[questId] = {
+                                title = title,
+                                questTag = questTag,
+                                isComplete = isComplete,
+                                objectives = newObjectives,
+                            }
+                            changes[questId] = changedObjIds
+                        end
+                    else
+                        cacheMiss = true
                     end
-                else
-                    cacheMiss = true
                 end
             else
                 Questie:Debug(Questie.DEBUG_CRITICAL, "[QuestLogCache.CheckForChanges] HaveQuestData() == false. questId, index:", questId, questLogIndex)
@@ -279,6 +318,7 @@ function QuestLogCache.RemoveQuest(questId)
         cache[questId] = nil
         questCount = questCount - 1
     end
+    consecutiveRegressions[questId] = nil
 end
 
 
