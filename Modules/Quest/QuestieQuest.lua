@@ -123,6 +123,20 @@ function QuestieQuest:ToggleNotes(showIcons)
     end
 end
 
+---Updates all quest icons to ensure they are correctly shown/hidden
+---@param showIcons boolean @ Whether to show or hide the icons
+function QuestieQuest.ToggleQuestNotes(showIcons)
+    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest.ToggleQuestNotes] showIcons:", showIcons)
+    QuestieQuest:GetAllQuestIds() -- add notes that weren't added from previous hidden state
+
+    if showIcons then
+        _QuestieQuest:ShowQuestIcons()
+    else
+        _QuestieQuest:HideQuestIcons()
+    end
+end
+
+---Refreshes visibility for existing quest icons without rebuilding quest notes
 function QuestieQuest:RefreshQuestIconVisibility()
     _QuestieQuest:HideQuestIcons()
     _QuestieQuest:ShowQuestIcons()
