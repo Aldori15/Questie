@@ -122,6 +122,90 @@ def relation_has_sources(relation):
         for source_type in relation[relation_type]
     )
 
+
+def is_friendly_to(template, other):
+    if not template or not other:
+        return False
+
+    faction = int(template.get("Faction") or 0)
+    other_faction = int(other.get("Faction") or 0)
+    other_group = int(other.get("FactionGroup") or 0)
+    own_group = int(template.get("FactionGroup") or 0)
+    other_friend_group = int(other.get("FriendGroup") or 0)
+
+    if faction and other_faction:
+        for column in ("Enemies_1", "Enemies_2", "Enemies_3", "Enemies_4"):
+            if int(template.get(column) or 0) == other_faction:
+                return False
+        for column in ("Friend_1", "Friend_2", "Friend_3", "Friend_4"):
+            if int(template.get(column) or 0) == other_faction:
+                return True
+
+    if int(template.get("EnemyGroup") or 0) & other_group:
+        return False
+    if int(template.get("FriendGroup") or 0) & other_group:
+        return True
+    if own_group & other_friend_group:
+        return True
+    return False
+
+
+def parse_friendly_to_faction(faction_id, faction_templates):
+    template = faction_templates.get(int(faction_id or 0))
+    if not template:
+        return ""
+
+    alliance_templates = [1, 3, 4, 115, 1629]
+    horde_templates = [2, 5, 6, 116, 1610]
+    friendly_a = any(is_friendly_to(template, faction_templates.get(other_id)) for other_id in alliance_templates)
+    friendly_h = any(is_friendly_to(template, faction_templates.get(other_id)) for other_id in horde_templates)
+    if friendly_a and friendly_h:
+        return "AH"
+    if friendly_a:
+        return "A"
+    if friendly_h:
+        return "H"
+    return ""
+
+
+def infer_acore_required_races(acore_metadata, acore_relations, creature_factions, race_ids):
+    """Infer faction restrictions from unambiguous creature quest endpoints.
+
+    AzerothCore often leaves AllowableRaces empty when faction access is enforced
+    by the NPC offering or ending the quest. Require every related creature to
+    resolve to the same single faction so neutral, mixed, and unknown relations
+    remain untouched.
+    """
+    inferred = {}
+    for quest_id, metadata in acore_metadata.items():
+        if metadata.get("requiredRaces", 0) != 0:
+            continue
+
+        relation = acore_relations.get(quest_id)
+        if not relation:
+            continue
+
+        creature_ids = set(relation["start"]["creature"]) | set(relation["end"]["creature"])
+        if not creature_ids:
+            continue
+
+        factions = {creature_factions.get(creature_id, "") for creature_id in creature_ids}
+        if len(factions) != 1:
+            continue
+
+        faction = next(iter(factions))
+        if faction == "A":
+            metadata["requiredRaces"] = race_ids["ALL_ALLIANCE"]
+        elif faction == "H":
+            metadata["requiredRaces"] = race_ids["ALL_HORDE"]
+        else:
+            continue
+
+        inferred[quest_id] = faction
+
+    return inferred
+
+
 # Quests where AC omits PrevQuestID even though a real prerequisite chain
 # exists (the gate is enforced by server-side C++ scripts, not SQL).
 _PRE_QUEST_SINGLE_CHAIN_PRESERVE = {
@@ -3010,12 +3094,23 @@ def main():
     )
     acore_relations = load_acore_relations(source_root, quest_template_sql)
     apply_acore_relation_overrides(acore_relations)
+    faction_template_rows = load_acore_sql_table(source_root, "factiontemplate_dbc", key_column="ID")
+    creature_template_rows = load_acore_sql_table(source_root, "creature_template", key_column="entry")
+    creature_factions = {
+        creature_id: parse_friendly_to_faction(row.get("faction"), faction_template_rows)
+        for creature_id, row in creature_template_rows.items()
+    }
+    inferred_required_races = infer_acore_required_races(
+        acore_metadata,
+        acore_relations,
+        creature_factions,
+        constants["raceIDs"],
+    )
     active_acore_quest_ids = {
         quest_id
         for quest_id, relation in acore_relations.items()
         if relation_has_sources(relation)
     }
-    creature_template_rows = load_acore_sql_table(source_root, "creature_template", key_column="entry")
     creature_kill_credits = build_creature_kill_credit_map(creature_template_rows)
     spawned_creature_ids = build_acore_spawned_creature_ids(source_root)
     smartai_gossip_kill_credit_sources = build_smartai_gossip_kill_credit_source_map(source_root)
@@ -3058,6 +3153,7 @@ def main():
     print(f"  preservedEmptyPreQuestClears: {len(preserved_empty_prequest_clears)}")
     print(f"  preservedEmptyPreQuestGroupClears: {len(preserved_empty_prequest_group_clears)}")
     print(f"  preservedEmptyRequiredRaceClears: {len(preserved_empty_required_race_clears)}")
+    print(f"  inferredRequiredRaces: {len(inferred_required_races)}")
     print(f"  preservedGroupAsSinglePreQuests: {len(preserved_group_as_single_prequest)}")
     print(f"  preservedRequiredSourceItemSupersets: {len(preserved_required_source_item_supersets)}")
     print(f"  objectiveDisplayRisks: {len(objective_display_risks)}")
@@ -3081,6 +3177,7 @@ def main():
                     "preservedEmptyPreQuestClears": preserved_empty_prequest_clears,
                     "preservedEmptyPreQuestGroupClears": preserved_empty_prequest_group_clears,
                     "preservedEmptyRequiredRaceClears": preserved_empty_required_race_clears,
+                    "inferredRequiredRaces": inferred_required_races,
                     "preservedGroupAsSinglePreQuests": preserved_group_as_single_prequest,
                     "preservedRequiredSourceItemSupersets": preserved_required_source_item_supersets,
                     "objectiveDisplayRisks": objective_display_risks,
