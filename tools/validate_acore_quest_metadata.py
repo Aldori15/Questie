@@ -220,6 +220,23 @@ _PRE_QUEST_SINGLE_CHAIN_PRESERVE = {
     13171,  # prereq 13168
 }
 
+# AzerothCore intentionally offers these initial Runecloth donation quests
+# independently from the Wool, Silk, and Mageweave donations. Questie's TBC
+# corrections add preQuestGroup entries for the retail progression, so AC's
+# empty prerequisite groups must override those entries.
+_ACORE_AUTHORITATIVE_EMPTY_PRE_QUEST_GROUPS = {
+    7795,
+    7800,
+    7805,
+    7811,
+    7818,
+    7823,
+    7824,
+    7836,
+    10357,
+    10362,
+}
+
 QUEST_KEY_RE = re.compile(r"\['([^']+)'\]\s*=\s*(\d+)")
 TABLE_ENTRY_RE = re.compile(r"^([A-Za-z0-9_]+)\s*=\s*(.+)$", re.DOTALL)
 QUEST_ROW_RE = re.compile(r"^\[(\d+)\]\s*=\s*(\{.*\}),?$", re.DOTALL)
@@ -2782,7 +2799,12 @@ def compare_metadata(
                 )
                 continue
 
-            if field == "preQuestGroup" and acore[field] == () and questie[field]:
+            if (
+                field == "preQuestGroup"
+                and acore[field] == ()
+                and questie[field]
+                and quest_id not in _ACORE_AUTHORITATIVE_EMPTY_PRE_QUEST_GROUPS
+            ):
                 preserved_empty_prequest_group_clears.append(
                     {
                         "questId": quest_id,

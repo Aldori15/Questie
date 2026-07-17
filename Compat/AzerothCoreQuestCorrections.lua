@@ -7656,6 +7656,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [7795] = {
             [questKeys.questLevel] = 60,
+            [questKeys.preQuestGroup] = {},
             [questKeys.nextQuestInChain] = 0,
             [questKeys.specialFlags] = specialFlags.NO_REP_SPILLOVER,
         },
@@ -7676,6 +7677,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [7800] = {
             [questKeys.questLevel] = 60,
+            [questKeys.preQuestGroup] = {},
             [questKeys.nextQuestInChain] = 0,
             [questKeys.specialFlags] = specialFlags.NO_REP_SPILLOVER,
         },
@@ -7701,6 +7703,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [7805] = {
             [questKeys.questLevel] = 60,
+            [questKeys.preQuestGroup] = {},
             [questKeys.nextQuestInChain] = 0,
             [questKeys.specialFlags] = specialFlags.NO_REP_SPILLOVER,
         },
@@ -7726,6 +7729,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [7811] = {
             [questKeys.questLevel] = 60,
+            [questKeys.preQuestGroup] = {},
             [questKeys.nextQuestInChain] = 0,
             [questKeys.specialFlags] = specialFlags.NO_REP_SPILLOVER,
         },
@@ -7751,6 +7755,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [7818] = {
             [questKeys.questLevel] = 60,
+            [questKeys.preQuestGroup] = {},
             [questKeys.nextQuestInChain] = 0,
             [questKeys.specialFlags] = specialFlags.NO_REP_SPILLOVER,
         },
@@ -7776,12 +7781,14 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [7823] = {
             [questKeys.questLevel] = 60,
+            [questKeys.preQuestGroup] = {},
             [questKeys.nextQuestInChain] = 0,
             [questKeys.specialFlags] = specialFlags.NO_REP_SPILLOVER,
         },
 
         [7824] = {
             [questKeys.questLevel] = 60,
+            [questKeys.preQuestGroup] = {},
             [questKeys.nextQuestInChain] = 0,
             [questKeys.specialFlags] = specialFlags.NO_REP_SPILLOVER,
         },
@@ -7826,6 +7833,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [7836] = {
             [questKeys.questLevel] = 60,
+            [questKeys.preQuestGroup] = {},
             [questKeys.nextQuestInChain] = 0,
             [questKeys.specialFlags] = specialFlags.NO_REP_SPILLOVER,
         },
@@ -12507,6 +12515,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [10357] = {
             [questKeys.questLevel] = 60,
+            [questKeys.preQuestGroup] = {},
             [questKeys.nextQuestInChain] = 0,
             [questKeys.specialFlags] = specialFlags.NO_REP_SPILLOVER,
         },
@@ -12532,6 +12541,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [10362] = {
             [questKeys.questLevel] = 60,
+            [questKeys.preQuestGroup] = {},
             [questKeys.nextQuestInChain] = 0,
             [questKeys.specialFlags] = specialFlags.NO_REP_SPILLOVER,
         },
