@@ -62,11 +62,28 @@ local questLogUpdateQueueSize = 1
 local deletedQuestItem = false
 local requiredItemConditionStates = {}
 local requiredItemConditionUpdatePending = false
+local itemRegressionConfirmationPending = false
+local GetCursorInfo = GetCursorInfo
 
 local function CacheRequiredItemConditionStates()
     for questId in pairs(QuestieDB.requiredItemConditionQuestIds) do
         requiredItemConditionStates[questId] = QuestieDB.IsDoable(questId)
     end
+end
+
+local function ScheduleItemRegressionConfirmation()
+    if itemRegressionConfirmationPending then
+        return
+    end
+
+    itemRegressionConfirmationPending = true
+    C_Timer.After(0.25, function()
+        itemRegressionConfirmationPending = false
+        local cursorType = GetCursorInfo()
+        if cursorType ~= "item" and QuestLogCache.HasPendingItemRegression() then
+            _QuestEventHandler:UpdateAllQuests(true)
+        end
+    end)
 end
 
 --- Registers all events that are required for questing (accepting, removing, objective updates, ...)
@@ -78,6 +95,7 @@ function QuestEventHandler:RegisterEvents()
     eventFrame:RegisterEvent("QUEST_LOG_UPDATE")
     eventFrame:RegisterEvent("QUEST_WATCH_UPDATE")
     eventFrame:RegisterEvent("UNIT_QUEST_LOG_CHANGED")
+    eventFrame:RegisterEvent("PLAYER_LEAVING_WORLD")
     eventFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
     eventFrame:RegisterEvent("NEW_RECIPE_LEARNED") -- Spell objectives
     eventFrame:RegisterEvent("CURRENCY_DISPLAY_UPDATE")
@@ -299,7 +317,7 @@ function _QuestEventHandler:HandleQuestAccepted(questId)
     end
 
     -- We first check the quest objectives and retry in the next QLU event if they are not correct yet
-    local cacheMiss, _ = QuestLogCache.CheckForChanges({[questId] = true})
+    local cacheMiss, _ = QuestLogCache.CheckForChanges({[questId] = true}, false)
     if cacheMiss then
         -- if cacheMiss, no need to check changes as only 1 questId
         Questie:Debug(Questie.DEBUG_INFO, "Objectives are not cached yet")
@@ -456,7 +474,8 @@ end
 
 --- Does a full scan of the quest log and updates every quest that is in the QUEST_ACCEPTED state and which hash changed
 --- since the last check
-function _QuestEventHandler:UpdateAllQuests()
+---@param confirmItemRegressions boolean? @Whether a settled bag scan may accept item-count decreases.
+function _QuestEventHandler:UpdateAllQuests(confirmItemRegressions)
     Questie:Debug(Questie.DEBUG_INFO, "Running full questlog check")
     local questIdsToCheck = {}
 
@@ -467,7 +486,7 @@ function _QuestEventHandler:UpdateAllQuests()
         end
     end
 
-    local cacheMiss, changes = QuestLogCache.CheckForChanges(questIdsToCheck)
+    local cacheMiss, changes = QuestLogCache.CheckForChanges(questIdsToCheck, true, confirmItemRegressions)
 
     if next(changes) then
         for questId, objIds in pairs(changes) do
@@ -491,12 +510,20 @@ function _QuestEventHandler:UpdateAllQuests()
             QuestieQuest:UpdateQuest(questId)
         end
         QuestieCombatQueue:Queue(function()
-            C_Timer.After(1.0, function()
+            if confirmItemRegressions then
                 QuestieTracker:Update()
-            end)
+            else
+                C_Timer.After(1.0, function()
+                    QuestieTracker:Update()
+                end)
+            end
         end)
     else
         Questie:Debug(Questie.DEBUG_INFO, "Nothing to update")
+    end
+
+    if (not confirmItemRegressions) and QuestLogCache.HasPendingItemRegression() then
+        ScheduleItemRegressionConfirmation()
     end
 end
 
@@ -614,6 +641,11 @@ function _QuestEventHandler:BagUpdate()
         if availabilityChanged then
             AvailableQuests.RebuildAll(nil, true)
         end
+
+        local cursorType = GetCursorInfo()
+        if cursorType ~= "item" and QuestLogCache.HasPendingItemRegression() then
+            _QuestEventHandler:UpdateAllQuests(true)
+        end
     end)
 end
 
@@ -633,6 +665,8 @@ function _QuestEventHandler:OnEvent(event, ...)
         _QuestEventHandler:QuestWatchUpdate(...)
     elseif event == "UNIT_QUEST_LOG_CHANGED" and select(1, ...) == "player" then
         _QuestEventHandler:UnitQuestLogChanged(...)
+    elseif event == "PLAYER_LEAVING_WORLD" then
+        QuestLogCache.OnPlayerLeavingWorld()
     elseif event == "ZONE_CHANGED_NEW_AREA" then
         _QuestEventHandler:ZoneChangedNewArea()
     elseif event == "NEW_RECIPE_LEARNED" then

@@ -77,11 +77,12 @@ local cache = {
 local cache = {}
 local questCount = 0
 
--- Tracks quests where objectives regressed on the last scan (e.g. due to zone transition stale data).
--- On the first regression, we set cacheMiss and skip the update so no sounds/announces fire.
--- On the second consecutive regression of the same quest, we accept it as legitimate (e.g. item deletion).
----@type table<QuestId, boolean>
-local consecutiveRegressions = {}
+-- Loading screens can temporarily expose stale objective counts while the client rebuilds its quest cache.
+-- Regressions are suppressed during that window so they don't trigger sounds or announcements.
+local blizzardQuestCacheStale = false
+local staleRegressionScanCount = 0
+local MAX_STALE_REGRESSION_SCANS = 10
+local pendingItemRegression = false
 
 --- NEVER EVER EDIT this table outside of the QuestLogCache module!  !!!
 ---@type table<QuestId, QuestLogCacheData>
@@ -95,8 +96,10 @@ end
 
 
 ---@param isCompleteAccordingToBlizzard -1|0|1|nil
----@return table? newObjectives, ObjectiveIndex[] changedObjIds, -1|0|1|nil isComplete @nil == cache miss in both addon and game caches. table {} == no objectives.
-local function GetNewObjectives(questId, oldObjectives, questLogIndex, isCompleteAccordingToBlizzard)
+---@param suppressRegressions boolean @Treat objective-count decreases as cache misses during loading transitions.
+---@param confirmItemRegressions boolean @Accept item-count decreases after bag updates have settled.
+---@return table? newObjectives, ObjectiveIndex[] changedObjIds, -1|0|1|nil isComplete, boolean suppressedRegression, boolean deferredItemRegression @nil == cache miss in both addon and game caches. table {} == no objectives.
+local function GetNewObjectives(questId, oldObjectives, questLogIndex, isCompleteAccordingToBlizzard, suppressRegressions, confirmItemRegressions)
     local newObjectives = {} -- creating a fresh one to be able revert to old easily in case of missing data
     local changedObjIds -- not assigning {} for easier nil when nothing changed
     local allObjectivesFinished = true -- default to true for easier handling
@@ -117,15 +120,16 @@ local function GetNewObjectives(questId, oldObjectives, questLogIndex, isComplet
                     allObjectivesFinished = allObjectivesFinished and oldObj.finished -- if any objective is not finished, whole quest is not complete
                 else
                     -- Detect a regression: numFulfilled went down from what we had cached.
-                    -- This can happen during zone transitions when Blizzard temporarily returns incorrect data.
-                    -- On the first sighting we treat it as a cache miss so no sounds/announces fire.
-                    -- On the second consecutive sighting we accept it as a legitimate change (e.g. player deleted a collected item).
+                    -- During zone transitions the client can temporarily return stale objective counts.
+                    -- Outside that window, decreases are legitimate changes such as banking or deleting items.
                     if oldObj and newObj.numFulfilled < oldObj.raw_numFulfilled then
-                        if (not consecutiveRegressions[questId]) then
-                            consecutiveRegressions[questId] = true
-                            return nil, nil, isCompleteAccordingToBlizzard
+                        if suppressRegressions then
+                            return nil, nil, isCompleteAccordingToBlizzard, true, false
+                        elseif newObj.type == "item" and (not confirmItemRegressions) then
+                            -- Stack splitting temporarily removes the cursor-held item from the 3.3.5 quest count.
+                            -- Wait for the settled bag scan before accepting item objective decreases.
+                            return nil, nil, isCompleteAccordingToBlizzard, false, true
                         end
-                        -- Second consecutive regression — fall through and accept it
                     end
 
                     -- objective has changed, add it to list of change ones
@@ -169,7 +173,7 @@ local function GetNewObjectives(questId, oldObjectives, questLogIndex, isComplet
                 -- Objective has been never cached
                 -- Tell to function caller that we couldn't get all required data from game's cache
                 -- Don't loop rest of objectives as we won't anyway save those into cache[] and C_QuestLog.GetQuestObjectives() call already triggered game to initiate caching those into game's cache.
-                return nil, nil, isCompleteAccordingToBlizzard
+                return nil, nil, isCompleteAccordingToBlizzard, false, false
             end
         end
     end
@@ -193,10 +197,7 @@ local function GetNewObjectives(questId, oldObjectives, questLogIndex, isComplet
         end
     end
 
-    -- Completed a full scan without a first-sighting regression, so any previously recorded regression is resolved.
-    consecutiveRegressions[questId] = nil
-
-    return newObjectives, changedObjIds, isComplete
+    return newObjectives, changedObjIds, isComplete, false, false
 end
 
 -- For profiling
@@ -206,11 +207,17 @@ QuestLogCache._GetNewObjectives = GetNewObjectives
 --- Remember to handle returned changes table even when cacheMiss == true. Returned changes are still valid. There may just be more changes that we couldn't get yet.
 --- Called only from QuestEventHandler.
 ---@param questIdsToCheck table? @keys are the questIds
+---@param fullScan boolean? @Whether questIdsToCheck contains every accepted quest.
+---@param confirmItemRegressions boolean? @Whether a settled bag scan may accept item-count decreases.
 ---@return boolean cacheMiss, table changes, table questIdsChecked @cacheMiss = couldn't get all required data  ; changes[questId] = list of changed objectiveIndexes (may be an empty list if quest has no objectives)
-function QuestLogCache.CheckForChanges(questIdsToCheck)
+function QuestLogCache.CheckForChanges(questIdsToCheck, fullScan, confirmItemRegressions)
     local cacheMiss = false
     local changes = {} -- table key = questid of the changed quest, table value = list of changed objective ids
     local questIdsChecked = {} -- for debug / error detection
+
+    local suppressRegressions = blizzardQuestCacheStale
+    local hadRegressionCacheMiss = false
+    local hadDeferredItemRegression = false
 
     for questLogIndex = 1, MAX_QUEST_LOG_INDEX do
         ----- title, level, questTag, isHeader, isCollapsed, isComplete, frequency, questID, startEvent, displayQuestID, isOnMap, hasLocalPOI, isTask, isBounty, isStory, isHidden, isScaling = GetQuestLogTitle(questLogIndex)
@@ -232,7 +239,7 @@ function QuestLogCache.CheckForChanges(questIdsToCheck)
                 if blizzardCacheIncorrect then
                     cacheMiss = true
                 else
-                    local newObjectives, changedObjIds, isComplete = GetNewObjectives(questId, cachedObjectives, questLogIndex, isCompleteAccordingToBlizzard)
+                    local newObjectives, changedObjIds, isComplete, suppressedRegression, deferredItemRegression = GetNewObjectives(questId, cachedObjectives, questLogIndex, isCompleteAccordingToBlizzard, suppressRegressions, confirmItemRegressions)
 
                     if newObjectives then
                         if (not cachedQuest) or (#cachedObjectives == #newObjectives and #cachedObjectives > 0 and
@@ -277,6 +284,12 @@ function QuestLogCache.CheckForChanges(questIdsToCheck)
                             changes[questId] = changedObjIds
                         end
                     else
+                        if suppressedRegression then
+                            hadRegressionCacheMiss = true
+                        end
+                        if deferredItemRegression then
+                            hadDeferredItemRegression = true
+                        end
                         cacheMiss = true
                     end
                 end
@@ -308,7 +321,39 @@ function QuestLogCache.CheckForChanges(questIdsToCheck)
         end
     end
 
+    -- Only a scan of every accepted quest can confirm that the client cache recovered.
+    -- The scan limit prevents a legitimate decrease during loading from being suppressed forever.
+    if blizzardQuestCacheStale and fullScan then
+        if hadRegressionCacheMiss then
+            staleRegressionScanCount = staleRegressionScanCount + 1
+            if staleRegressionScanCount >= MAX_STALE_REGRESSION_SCANS then
+                blizzardQuestCacheStale = false
+                staleRegressionScanCount = 0
+            end
+        else
+            blizzardQuestCacheStale = false
+            staleRegressionScanCount = 0
+        end
+    end
+
+    if confirmItemRegressions and (not blizzardQuestCacheStale) then
+        pendingItemRegression = false
+    elseif hadDeferredItemRegression then
+        pendingItemRegression = true
+    end
+
     return cacheMiss, changes, questIdsChecked
+end
+
+---@return boolean
+function QuestLogCache.HasPendingItemRegression()
+    return pendingItemRegression
+end
+
+--- Marks the client quest cache as stale when the player leaves the world for a loading transition.
+function QuestLogCache.OnPlayerLeavingWorld()
+    blizzardQuestCacheStale = true
+    staleRegressionScanCount = 0
 end
 
 
@@ -318,7 +363,6 @@ function QuestLogCache.RemoveQuest(questId)
         cache[questId] = nil
         questCount = questCount - 1
     end
-    consecutiveRegressions[questId] = nil
 end
 
 
