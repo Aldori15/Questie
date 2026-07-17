@@ -50,6 +50,7 @@ QuestieDB.questKeys = {
     ['availableStartingWith'] = 34, -- int: the ID of the quest that needs to be in quest log OR turned in for the current one to be available.
     ['requiredRanks'] = 35, -- table: {{skill(int), value(int)}}. Table of professions and ranks to be checked with OR logic
     ['disabledByQuest'] = 36, -- int: quest that, if in player's quest log, makes current quest unavailable for the duration
+    ['requiredItemConditions'] = 37, -- table: {{item(int), count(int)}}. Positive item IDs must be present; negative item IDs must be absent. Bank items do not count.
 }
 
 QuestieDB.questKeysReversed = {}
@@ -94,6 +95,7 @@ QuestieDB.questCompilerTypes = {
     ['availableStartingWith'] = "u24", -- int, the ID of the quest that needs to be in quest log OR turned in for the current one to be available.
     ['requiredRanks'] = "u8s24pairs", -- table: {{skill(int), value(int)}}
     ['disabledByQuest'] = "u24", -- int: quest that, if in player's quest log, makes current quest unavailable for the duration
+    ['requiredItemConditions'] = "u8s24pairs", -- table: {{item(int), count(int)}}. Positive item IDs must be present; negative item IDs must be absent.
 }
 
 QuestieDB.questCompilerOrder = { -- order easily skipable data first for efficiency
@@ -104,7 +106,8 @@ QuestieDB.questCompilerOrder = { -- order easily skipable data first for efficie
 
     -- variable size
     'name', 'preQuestGroup', 'preQuestSingle', 'childQuests', 'inGroupWith', 'exclusiveTo', 'requiredSourceItems',
-    'objectivesText', 'triggerEnd', 'startedBy', 'finishedBy', 'breadcrumbs', 'objectives', 'reputationReward', 'extraObjectives', 'requiredRanks'
+    'objectivesText', 'triggerEnd', 'startedBy', 'finishedBy', 'breadcrumbs', 'objectives', 'reputationReward', 'extraObjectives', 'requiredRanks',
+    'requiredItemConditions'
 }
 
 QuestieDB.questFlags = {

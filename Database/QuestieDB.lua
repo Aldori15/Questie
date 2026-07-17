@@ -47,6 +47,10 @@ local _QuestieQuest = QuestieQuest.private
 ---@type table<number, AutoBlacklistString>
 QuestieDB.autoBlacklist = {}
 
+--- Quests whose availability depends on items currently in the player's bags.
+---@type table<number, boolean>
+QuestieDB.requiredItemConditionQuestIds = {}
+
 local tinsert = table.insert
 local bitband = bit.band
 
@@ -2398,6 +2402,32 @@ function QuestieDB:IsPreQuestSingleFulfilled(preQuestSingle)
     return false
 end
 
+---@param requiredItemConditions table<number, {number, number}>
+---@return boolean fulfilled
+---@return number? itemId
+---@return boolean? itemRequired
+---@return number? requiredCount
+function QuestieDB:IsRequiredItemConditionsFulfilled(requiredItemConditions)
+    if not requiredItemConditions then
+        return true
+    end
+
+    for _, condition in pairs(requiredItemConditions) do
+        local signedItemId = condition[1]
+        local requiredCount = condition[2] or 1
+        local itemId = math.abs(signedItemId)
+        local itemCount = GetItemCount(itemId)
+
+        if signedItemId > 0 and itemCount < requiredCount then
+            return false, itemId, true, requiredCount
+        elseif signedItemId < 0 and itemCount >= requiredCount then
+            return false, itemId, false, requiredCount
+        end
+    end
+
+    return true
+end
+
 ---@param questId number
 ---@param debugPrint boolean? -- if true, IsDoable will print conclusions to debug channel
 ---@return boolean
@@ -2583,6 +2613,16 @@ function QuestieDB.IsDoable(questId, debugPrint)
             return false
         elseif (requiredSpell < 0) and (hasSpell or hasProfSpell) then --if requiredSpell is negative, we make the quest unavailable if the player DOES  have the spell
             if debugPrint then Questie:Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Player does not meet unlearned spell requirements for quest " .. questId) end
+            return false
+        end
+    end
+
+    local requiredItemConditions = QuestieDB.QueryQuestSingle(questId, "requiredItemConditions")
+    if requiredItemConditions then
+        QuestieDB.requiredItemConditionQuestIds[questId] = true
+        local itemConditionsFulfilled = QuestieDB:IsRequiredItemConditionsFulfilled(requiredItemConditions)
+        if not itemConditionsFulfilled then
+            if debugPrint then Questie:Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Player does not meet item requirements for quest " .. questId) end
             return false
         end
     end
@@ -3036,6 +3076,26 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
         end
     end
 
+    local requiredItemConditions = QuestieDB.QueryQuestSingle(questId, "requiredItemConditions")
+    if requiredItemConditions then
+        QuestieDB.requiredItemConditionQuestIds[questId] = true
+        local itemConditionsFulfilled, itemId, itemRequired, requiredCount = QuestieDB:IsRequiredItemConditionsFulfilled(requiredItemConditions)
+        if not itemConditionsFulfilled then
+            local msg
+            if itemRequired then
+                msg = "Quest " .. questId .. " requires " .. requiredCount .. " of item " .. itemId .. " in the player's bags"
+            else
+                msg = "Quest " .. questId .. " requires fewer than " .. requiredCount .. " of item " .. itemId .. " in the player's bags"
+            end
+
+            if returnText and returnBrief then
+                return l10n("Unavailable")..l10n(": ")..l10n("Missing Requirement"), true, DoableStates.MISSING_START_ITEM
+            elseif returnText and not returnBrief then
+                return msg, true, DoableStates.MISSING_START_ITEM
+            end
+        end
+    end
+
     -- Check and see if the Quest requires an achievement before showing as available
     if _QuestieDB:CheckAchievementRequirements(questId) == false then
         local msg = "Player does not meet achievement requirements for quest " .. questId
@@ -3296,6 +3356,7 @@ function QuestieDB.GetQuest(questId) -- /dump QuestieDB.GetQuest(867)
     ---@field public availableStartingWith QuestId
     ---@field public requiredRanks SkillPair[]
     ---@field public disabledByQuest QuestId
+    ---@field public requiredItemConditions table<number, {number, number}>
     local QO = {
         Id = questId
     }

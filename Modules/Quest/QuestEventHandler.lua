@@ -60,6 +60,14 @@ local eventFrame = CreateFrame("Frame", "QuestieQuestEventFrame")
 local questLog = {}
 local questLogUpdateQueueSize = 1
 local deletedQuestItem = false
+local requiredItemConditionStates = {}
+local requiredItemConditionUpdatePending = false
+
+local function CacheRequiredItemConditionStates()
+    for questId in pairs(QuestieDB.requiredItemConditionQuestIds) do
+        requiredItemConditionStates[questId] = QuestieDB.IsDoable(questId)
+    end
+end
 
 --- Registers all events that are required for questing (accepting, removing, objective updates, ...)
 function QuestEventHandler:RegisterEvents()
@@ -73,12 +81,16 @@ function QuestEventHandler:RegisterEvents()
     eventFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
     eventFrame:RegisterEvent("NEW_RECIPE_LEARNED") -- Spell objectives
     eventFrame:RegisterEvent("CURRENCY_DISPLAY_UPDATE")
+    eventFrame:RegisterEvent("BAG_UPDATE")
+    eventFrame:RegisterEvent("BAG_UPDATE_DELAYED")
     --eventFrame:RegisterEvent("SPELLS_CHANGED") -- Spell objectives
 
     eventFrame:RegisterEvent("PLAYER_INTERACTION_MANAGER_FRAME_HIDE")
 
     eventFrame:RegisterEvent("CHAT_MSG_COMBAT_FACTION_CHANGE")
     eventFrame:SetScript("OnEvent", _QuestEventHandler.OnEvent)
+
+    CacheRequiredItemConditionStates()
 
     -- StaticPopup dialog hooks. Deleteing Quest items do not always trigger a Quest Log Update.
     hooksecurefunc("StaticPopup_Show", function(...)
@@ -581,6 +593,30 @@ function _QuestEventHandler:ZoneChangedNewArea()
     end
 end
 
+function _QuestEventHandler:BagUpdate()
+    if requiredItemConditionUpdatePending then
+        return
+    end
+
+    requiredItemConditionUpdatePending = true
+    C_Timer.After(0.25, function()
+        requiredItemConditionUpdatePending = false
+        local availabilityChanged = false
+
+        for questId in pairs(QuestieDB.requiredItemConditionQuestIds) do
+            local isDoable = QuestieDB.IsDoable(questId)
+            if requiredItemConditionStates[questId] ~= isDoable then
+                requiredItemConditionStates[questId] = isDoable
+                availabilityChanged = true
+            end
+        end
+
+        if availabilityChanged then
+            AvailableQuests.RebuildAll(nil, true)
+        end
+    end)
+end
+
 --- Is executed whenever an event is fired and triggers relevant event handling.
 ---@param event string
 function _QuestEventHandler:OnEvent(event, ...)
@@ -604,6 +640,8 @@ function _QuestEventHandler:OnEvent(event, ...)
         -- If this event is related to a spell objective, a QUEST_LOG_UPDATE will be fired afterwards which calls UpdateAllQuests.
     elseif event == "CURRENCY_DISPLAY_UPDATE" then
         _QuestEventHandler:CurrencyDisplayUpdate()
+    elseif event == "BAG_UPDATE" or event == "BAG_UPDATE_DELAYED" then
+        _QuestEventHandler:BagUpdate()
     elseif event == "PLAYER_INTERACTION_MANAGER_FRAME_HIDE" then
         local eventType = select(1, ...)
         if eventType == 1 then

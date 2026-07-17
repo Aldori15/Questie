@@ -36,6 +36,7 @@ FIELD_ORDER = [
     "reputationReward",
     "sourceItemId",
     "requiredSourceItems",
+    "requiredItemConditions",
     "requiredSkill",
     "requiredMinRep",
     "requiredMaxRep",
@@ -63,6 +64,7 @@ FIELD_KIND = {
     "reputationReward": "rep_reward",
     "sourceItemId": "int",
     "requiredSourceItems": "list",
+    "requiredItemConditions": "item_conditions",
     "requiredSkill": "pair",
     "requiredMinRep": "rep",
     "requiredMaxRep": "rep",
@@ -81,6 +83,7 @@ FIELD_KIND = {
 
 CONDITION_SOURCE_TYPE_QUEST_AVAILABLE = 19
 CONDITION_SOURCE_TYPE_SPELL = 17
+CONDITION_ITEM = 2
 CONDITION_QUESTREWARDED = 8
 CONDITION_SPELL = 25
 CONDITION_OBJECT_ENTRY_GUID = 31
@@ -809,6 +812,22 @@ def normalize_pair(value):
     return tuple(pair)
 
 
+def normalize_item_conditions(value):
+    if value is None or value is False:
+        return ()
+
+    conditions = set()
+    for condition in value:
+        if not isinstance(condition, (list, tuple)) or not condition:
+            continue
+        item_id = int(condition[0] or 0)
+        count = int(condition[1] or 1) if len(condition) > 1 else 1
+        if item_id:
+            conditions.add((item_id, max(count, 1)))
+
+    return tuple(sorted(conditions, key=lambda condition: (abs(condition[0]), condition[0], condition[1])))
+
+
 def normalize_reputation_reward(value):
     if value is None or value is False:
         return ()
@@ -1533,6 +1552,8 @@ def normalize_field(field, value):
         return normalize_list(value)
     if kind == "pair":
         return normalize_pair(value)
+    if kind == "item_conditions":
+        return normalize_item_conditions(value)
     if kind == "rep":
         return normalize_pair(value)
     if kind == "rep_reward":
@@ -2423,12 +2444,45 @@ def load_module_created_quest_ids(source_root):
     return module_quest_ids - core_quest_ids
 
 
+def find_simple_item_condition_quest_ids(condition_rows):
+    quest_conditions = defaultdict(list)
+
+    for row in condition_rows:
+        if int(row.get("SourceTypeOrReferenceId") or 0) != CONDITION_SOURCE_TYPE_QUEST_AVAILABLE:
+            continue
+
+        quest_id = int(row.get("SourceEntry") or 0)
+        if quest_id:
+            quest_conditions[quest_id].append(row)
+
+    return {
+        quest_id
+        for quest_id, rows in quest_conditions.items()
+        if rows
+        and all(
+            int(row.get("ConditionTypeOrReference") or 0) == CONDITION_ITEM
+            and int(row.get("SourceGroup") or 0) == 0
+            and int(row.get("SourceId") or 0) == 0
+            and int(row.get("ElseGroup") or 0) == 0
+            and int(row.get("ConditionTarget") or 0) == 0
+            and int(row.get("ConditionValue1") or 0) > 0
+            and int(row.get("ConditionValue2") or 0) > 0
+            and int(row.get("ConditionValue3") or 0) == 0
+            and not row.get("ScriptName")
+            for row in rows
+        )
+    }
+
+
 def derive_quest_availability_conditions(source_root, condition_rows=None):
     condition_prereqs = defaultdict(set)
     spell_conditions = defaultdict(list)
+    item_conditions = defaultdict(set)
 
     if condition_rows is None:
         condition_rows = load_acore_conditions(source_root)
+
+    simple_item_condition_quest_ids = find_simple_item_condition_quest_ids(condition_rows)
 
     for row in condition_rows:
         if int(row.get("SourceTypeOrReferenceId") or 0) != CONDITION_SOURCE_TYPE_QUEST_AVAILABLE:
@@ -2446,6 +2500,14 @@ def derive_quest_availability_conditions(source_root, condition_rows=None):
             condition_prereqs[quest_id].add(condition_value)
         elif condition_type == CONDITION_SPELL and condition_value > 0:
             spell_conditions[quest_id].append(-condition_value if is_negative else condition_value)
+        elif (
+            condition_type == CONDITION_ITEM
+            and quest_id in simple_item_condition_quest_ids
+            and condition_value > 0
+        ):
+            item_count = max(int(row.get("ConditionValue2") or 1), 1)
+            signed_item_id = -condition_value if is_negative else condition_value
+            item_conditions[quest_id].add((signed_item_id, item_count))
 
     required_spells = {}
     for quest_id, spells in spell_conditions.items():
@@ -2453,7 +2515,12 @@ def derive_quest_availability_conditions(source_root, condition_rows=None):
         if len(unique_spells) == 1:
             required_spells[quest_id] = unique_spells[0]
 
-    return condition_prereqs, required_spells
+    required_item_conditions = {
+        quest_id: normalize_item_conditions(conditions)
+        for quest_id, conditions in item_conditions.items()
+    }
+
+    return condition_prereqs, required_spells, required_item_conditions
 
 
 def derive_acore_metadata(source_root, quest_template_sql=None, quest_template_addon_sql=None, spell_sql=None, spell_table="spell"):
@@ -2479,7 +2546,7 @@ def derive_acore_metadata(source_root, quest_template_sql=None, quest_template_a
     exclusive_groups = defaultdict(set)
     breadcrumbs_for = defaultdict(set)
     condition_rows = load_acore_conditions(source_root)
-    condition_prereqs, required_spells = derive_quest_availability_conditions(source_root, condition_rows)
+    condition_prereqs, required_spells, required_item_conditions = derive_quest_availability_conditions(source_root, condition_rows)
     item_template_rows = load_acore_sql_table(source_root, "item_template", key_column="entry")
     item_use_spells = build_item_use_spell_map(item_template_rows)
     spell_created_items = {}
@@ -2585,6 +2652,7 @@ def derive_acore_metadata(source_root, quest_template_sql=None, quest_template_a
                 ),
             )
         )
+        metadata["requiredItemConditions"] = required_item_conditions.get(quest_id, ())
         metadata["requiredSkill"] = normalize_pair(
             [
                 row.get("RequiredSkillID"),
@@ -2997,6 +3065,10 @@ def format_lua_value(field, value, constants):
         return "{" + ",".join(lua_string_literal(str(part)) for part in value) + "}"
     if kind == "objectives":
         return format_objectives_value(value)
+    if kind == "item_conditions":
+        if not value:
+            return "{}"
+        return "{" + ",".join("{" + f"{item_id},{count}" + "}" for item_id, count in value) + "}"
     if kind in {"list", "pair"}:
         if not value:
             return "{}"

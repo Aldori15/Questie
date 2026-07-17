@@ -265,7 +265,13 @@ function QuestieCorrections:Initialize(validationTables)
     if QuestieCompat.Is335 then QuestieCompat.LoadCorrections(_LoadCorrections, validationTables) end
 
     local patchCount = 0
-    for _, quest in pairs(QuestieDB.questData) do
+    QuestieDB.requiredItemConditionQuestIds = {}
+    for questId, quest in pairs(QuestieDB.questData) do
+        local requiredItemConditions = quest[QuestieDB.questKeys.requiredItemConditions]
+        if requiredItemConditions and next(requiredItemConditions) then
+            QuestieDB.requiredItemConditionQuestIds[questId] = true
+        end
+
         if (not quest[QuestieDB.questKeys.requiredRaces]) or quest[QuestieDB.questKeys.requiredRaces] == 0 then
             -- check against questgiver
             local canHorde = false

@@ -6013,6 +6013,10 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.NO_LOREMASTER_COUNT,
         },
 
+        [4463] = {
+            [questKeys.requiredItemConditions] = {{11732,1}},
+        },
+
         [4464] = {
             [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.NO_LOREMASTER_COUNT,
         },
@@ -6027,6 +6031,22 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [4467] = {
             [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.NO_LOREMASTER_COUNT,
+        },
+
+        [4481] = {
+            [questKeys.requiredItemConditions] = {{-11732,1},{11733,1}},
+        },
+
+        [4482] = {
+            [questKeys.requiredItemConditions] = {{-11732,1},{-11733,1},{11734,1}},
+        },
+
+        [4483] = {
+            [questKeys.requiredItemConditions] = {{-11732,1},{-11733,1},{-11734,1},{11736,1}},
+        },
+
+        [4484] = {
+            [questKeys.requiredItemConditions] = {{-11732,1},{-11733,1},{-11734,1},{-11736,1},{11737,1}},
         },
 
         [4485] = {
@@ -9383,6 +9403,18 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
             [questKeys.objectivesText] = {"Find Metzen the Reindeer.  Use the notes provided to you for clues as to where he is being held.","","When you find Metzen, have the Pouch of Reindeer Dust in your possession so you can sprinkle some of the dust on him; this should free Metzen from his bonds of captivity.","","Return the Pouch of Reindeer Dust to Wulmort Jinglepocket in Ironforge once Metzen is freed."},
             [questKeys.requiredSourceItems] = {},
+        },
+
+        [8764] = {
+            [questKeys.requiredItemConditions] = {{21200,1}},
+        },
+
+        [8765] = {
+            [questKeys.requiredItemConditions] = {{21210,1}},
+        },
+
+        [8766] = {
+            [questKeys.requiredItemConditions] = {{21205,1}},
         },
 
         [8767] = {
@@ -19398,55 +19430,131 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [24819] = {
+            [questKeys.requiredItemConditions] = {{50377,1}},
             [questKeys.requiredMinRep] = {1156,6000},
             [questKeys.exclusiveTo] = {},
         },
 
         [24820] = {
+            [questKeys.requiredItemConditions] = {{50376,1}},
             [questKeys.requiredMinRep] = {1156,6000},
             [questKeys.exclusiveTo] = {},
         },
 
         [24821] = {
+            [questKeys.requiredItemConditions] = {{50375,1}},
             [questKeys.requiredMinRep] = {1156,6000},
             [questKeys.exclusiveTo] = {},
         },
 
         [24822] = {
+            [questKeys.requiredItemConditions] = {{50378,1}},
             [questKeys.requiredMinRep] = {1156,6000},
             [questKeys.exclusiveTo] = {},
         },
 
+        [24823] = {
+            [questKeys.requiredItemConditions] = {{50384,1}},
+        },
+
+        [24825] = {
+            [questKeys.requiredItemConditions] = {{50378,1}},
+        },
+
+        [24826] = {
+            [questKeys.requiredItemConditions] = {{50376,1}},
+        },
+
+        [24827] = {
+            [questKeys.requiredItemConditions] = {{50375,1}},
+        },
+
+        [24828] = {
+            [questKeys.requiredItemConditions] = {{50377,1}},
+        },
+
+        [24829] = {
+            [questKeys.requiredItemConditions] = {{50397,1}},
+        },
+
+        [24830] = {
+            [questKeys.requiredItemConditions] = {{50386,1}},
+        },
+
+        [24831] = {
+            [questKeys.requiredItemConditions] = {{50399,1}},
+        },
+
+        [24832] = {
+            [questKeys.requiredItemConditions] = {{50387,1}},
+        },
+
+        [24833] = {
+            [questKeys.requiredItemConditions] = {{50401,1}},
+        },
+
+        [24834] = {
+            [questKeys.requiredItemConditions] = {{50388,1}},
+        },
+
+        [24835] = {
+            [questKeys.requiredItemConditions] = {{50403,1}},
+        },
+
         [24836] = {
+            [questKeys.requiredItemConditions] = {{50384,1}},
             [questKeys.exclusiveTo] = {},
         },
 
         [24837] = {
+            [questKeys.requiredItemConditions] = {{50386,1}},
             [questKeys.exclusiveTo] = {},
         },
 
         [24838] = {
+            [questKeys.requiredItemConditions] = {{50387,1}},
             [questKeys.exclusiveTo] = {},
         },
 
         [24839] = {
+            [questKeys.requiredItemConditions] = {{50388,1}},
             [questKeys.exclusiveTo] = {},
         },
 
         [24840] = {
+            [questKeys.requiredItemConditions] = {{50397,1}},
             [questKeys.exclusiveTo] = {},
         },
 
         [24841] = {
+            [questKeys.requiredItemConditions] = {{50399,1}},
             [questKeys.exclusiveTo] = {},
         },
 
         [24842] = {
+            [questKeys.requiredItemConditions] = {{50401,1}},
             [questKeys.exclusiveTo] = {},
         },
 
         [24843] = {
+            [questKeys.requiredItemConditions] = {{50403,1}},
             [questKeys.exclusiveTo] = {},
+        },
+
+        [24844] = {
+            [questKeys.requiredItemConditions] = {{50398,1}},
+        },
+
+        [24845] = {
+            [questKeys.requiredItemConditions] = {{50400,1}},
+        },
+
+        [24846] = {
+            [questKeys.requiredItemConditions] = {{50402,1}},
+        },
+
+        [24847] = {
+            [questKeys.requiredItemConditions] = {{50404,1}},
         },
 
         [24857] = {
@@ -19533,16 +19641,35 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredSourceItems] = {52566},
         },
 
+        [25239] = {
+            [questKeys.requiredItemConditions] = {{52569,1}},
+        },
+
+        [25240] = {
+            [questKeys.requiredItemConditions] = {{52570,1}},
+        },
+
+        [25242] = {
+            [questKeys.requiredItemConditions] = {{52571,1}},
+        },
+
+        [25246] = {
+            [questKeys.requiredItemConditions] = {{52572,1}},
+        },
+
         [25247] = {
+            [questKeys.requiredItemConditions] = {{52569,1}},
             [questKeys.requiredMinRep] = {1156,6000},
             [questKeys.exclusiveTo] = {},
         },
 
         [25248] = {
+            [questKeys.requiredItemConditions] = {{52570,1}},
             [questKeys.exclusiveTo] = {},
         },
 
         [25249] = {
+            [questKeys.requiredItemConditions] = {{52571,1}},
             [questKeys.exclusiveTo] = {},
         },
 
