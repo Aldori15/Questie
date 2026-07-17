@@ -225,7 +225,7 @@ end
 
 setmetatable(l10n, { __call = function(_, ...) return _l10n:translate(...) end})
 
-function _l10n:GetFallbackLocale(lang)
+function l10n:GetFallbackLocale(lang)
     if (not lang) then
         return 'enUS'
     end
@@ -249,9 +249,9 @@ end
 
 function l10n:SetUILocale(lang)
     if lang then
-        locale = _l10n:GetFallbackLocale(lang)
+        locale = l10n:GetFallbackLocale(lang)
     else
-        locale = _l10n:GetFallbackLocale(GetLocale())
+        locale = l10n:GetFallbackLocale(GetLocale())
     end
 end
 
