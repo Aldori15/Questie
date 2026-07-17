@@ -81,8 +81,6 @@ local TrackerQuestTimers = QuestieLoader:ImportModule("TrackerQuestTimers")
 local QuestieCombatQueue = QuestieLoader:ImportModule("QuestieCombatQueue")
 ---@type QuestieSlash
 local QuestieSlash = QuestieLoader:ImportModule("QuestieSlash")
----@type QuestXP
-local QuestXP = QuestieLoader:ImportModule("QuestXP")
 ---@type Tutorial
 local Tutorial = QuestieLoader:ImportModule("Tutorial")
 ---@type WorldMapButton
@@ -197,7 +195,6 @@ QuestieInit.Stages[1] = function() -- run as a coroutine
 
     QuestieProfessions:Init()
     l10n:CompactTranslations()
-    QuestXP.Init()
     coYield()
 
     local dbCompiled = false

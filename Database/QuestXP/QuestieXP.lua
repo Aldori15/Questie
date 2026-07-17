@@ -6,36 +6,11 @@ local QuestXP = QuestieLoader:CreateModule("QuestXP")
 QuestXP.db = {}
 
 --- COMPATIBILITY ---
-local UnitBuff = QuestieCompat.UnitBuff
 local GetMaxPlayerLevel = QuestieCompat.GetMaxPlayerLevel
 local GetQuestLogRewardMoney = QuestieCompat.GetQuestLogRewardMoney
 
 local floor = floor
 local UnitLevel = UnitLevel
-
-local globalXPMultiplier = 1
-local isDiscovererDelightActive = false
-
-function QuestXP.Init()
-    if (Questie.IsWotlk) and globalXPMultiplier == 1 then
-        for i = 1, 40 do
-            local _, _, _, _, _, _, _, _, _, buffSpellId = UnitBuff("player", i)
-
-            if buffSpellId == 377749 then
-                -- Joyous Journeys is active - 50% bonus XP
-                globalXPMultiplier = 1.5
-                break
-            end
-
-            if buffSpellId == 436412 then
-                -- Discoverer's Delight is active - 100% bonus XP
-                globalXPMultiplier = 2
-                isDiscovererDelightActive = true
-                break
-            end
-        end
-    end
-end
 
 ---@param xp XP
 ---@param qLevel Level
@@ -67,7 +42,7 @@ local function getAdjustedXP(xp, qLevel, ignorePlayerLevel)
         xp = 50 * floor((xp + 25) / 50)
     end
 
-    return floor(xp * globalXPMultiplier)
+    return floor(xp)
 end
 
 
@@ -90,21 +65,6 @@ function QuestXP:GetQuestLogRewardXP(questId, ignorePlayerLevel)
     return 0
 end
 
-local exclusions = {
-    [78612] = true,
-    [78872] = true,
-    [79101] = true,
-    [79102] = true,
-    [79103] = true,
-    [80307] = true,
-    [80308] = true,
-    [80309] = true,
-}
-
 function QuestXP.GetQuestRewardMoney(questId)
-    local modifier = 1
-    if isDiscovererDelightActive and (not exclusions[questId]) then
-        modifier = 3
-    end
-    return floor(GetQuestLogRewardMoney(questId) * modifier)
+    return floor(GetQuestLogRewardMoney(questId))
 end
