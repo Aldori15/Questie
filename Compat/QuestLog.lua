@@ -22,11 +22,13 @@ local QuestiePlayer = QuestieLoader:ImportModule("QuestiePlayer")
 local QuestXP = QuestieLoader:ImportModule("QuestXP")
 
 local math_max = math.max
+local bitband = bit.band
 local strfind = string.find
 local questLogCompatibilityInitialized = false
 local questObjectivesCache = {}
 local uiInfoChangedQuestIds = {}
 local QUEST_OBJECTIVE_CACHE_TTL_SECONDS = 3
+local QUEST_FLAGS_NO_MONEY_FROM_XP = 0x100
 
 -- Forward declarations for the 3.3.5 reward-completion fallback near the end
 -- of this file. The raw cache is kept before repeatable quests are filtered
@@ -242,22 +244,25 @@ end
 -- Returns the amount of money rewarded for a quest.
 function QuestieCompat.GetQuestLogRewardMoney(questID)
     local rewardMoney = QuestieCompat.RewardMoney[questID] or 0
-	local rewardMoneyDifficulty = QuestieCompat.RewardMoneyDifficulty[questID] or 0
-
-    if rewardMoney < 0 then -- required money
-        return rewardMoney
-    end
+    local rewardMoneyDifficulty = QuestieCompat.RewardMoneyDifficulty[questID] or 0
 
     local playerLevel = QuestiePlayer.GetPlayerLevel()
-    if playerLevel > 0 and rewardMoneyDifficulty > 0 then
-        rewardMoney = QuestieCompat.QuestMoneyReward[playerLevel][rewardMoneyDifficulty]
+    if rewardMoney >= 0 and playerLevel > 0 and rewardMoneyDifficulty > 0 then
+        local levelRewards = QuestieCompat.QuestMoneyReward[playerLevel]
+        local scaledRewardMoney = levelRewards and levelRewards[rewardMoneyDifficulty]
+        if scaledRewardMoney and scaledRewardMoney > 0 then
+            rewardMoney = scaledRewardMoney
+        end
     end
 
     -- https://wowpedia.fandom.com/wiki/Quest?oldid=1035002 Formula is XP gained * 6c
     if QuestiePlayer.IsMaxLevel() then
-        local xpReward = QuestXP:GetQuestLogRewardXP(questID, true)
-        if xpReward > 0 then
-            rewardMoney = rewardMoney + xpReward*6
+        local questFlags = QuestieDB.QueryQuestSingle(questID, "questFlags") or 0
+        if bitband(questFlags, QUEST_FLAGS_NO_MONEY_FROM_XP) == 0 then
+            local xpReward = QuestXP:GetQuestLogRewardXP(questID, true)
+            if xpReward > 0 then
+                rewardMoney = rewardMoney + xpReward * 6
+            end
         end
     end
 
