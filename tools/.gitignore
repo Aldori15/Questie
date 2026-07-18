@@ -1,3 +1,4 @@
 *.py
 __pycache__/
 !.gitignore
+!generate_acore_quest_xp.py

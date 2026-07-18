@@ -2,8 +2,11 @@
 ---@class QuestXP
 local QuestXP = QuestieLoader:CreateModule("QuestXP")
 
----@type table<QuestId,table<Level,XP>> -- { questId={level, xp}, ..... }
+---@type table<QuestId,table<Level,number>> -- {questId = {QuestLevel, RewardXPDifficulty}}
 QuestXP.db = {}
+
+---@type table<Level,table<number,XP>> -- QuestXP.dbc rows by level and difficulty
+QuestXP.xpByLevel = {}
 
 --- COMPATIBILITY ---
 local GetMaxPlayerLevel = QuestieCompat.GetMaxPlayerLevel
@@ -51,12 +54,19 @@ end
 ---@param ignorePlayerLevel boolean
 ---@return XP experience
 function QuestXP:GetQuestLogRewardXP(questId, ignorePlayerLevel)
-    if QuestXP.db[questId] then
-        local level = QuestXP.db[questId][1]
-        local xp = QuestXP.db[questId][2]
+    local questData = QuestXP.db[questId]
+    if questData then
+        local level = questData[1]
+        local rewardDifficulty = questData[2]
 
-        --? We have -1 as a level for quests that are event quests and so on for TBC and WOTLK.
-        if level > 0 and xp > 0 then
+        -- AzerothCore uses the player's current level for quests with QuestLevel -1.
+        if level == -1 then
+            level = UnitLevel("player")
+        end
+
+        local levelRewards = QuestXP.xpByLevel[level]
+        local xp = levelRewards and levelRewards[rewardDifficulty + 1]
+        if level > 0 and xp and xp > 0 then
             return getAdjustedXP(xp, level, ignorePlayerLevel)
         end
     end

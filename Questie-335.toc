@@ -29,7 +29,7 @@ Modules\Libs\ThreadLib.lua
 
 #Quest XP
 Database\QuestXP\QuestieXP.lua
-Database\QuestXP\DB\xpDB-wotlk.lua
+Database\QuestXP\DB\xpDB-azerothcore-wotlk.lua
 
 # stream module (used by DB)
 Modules\QuestieStream.lua
