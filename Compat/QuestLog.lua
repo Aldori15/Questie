@@ -259,7 +259,9 @@ function QuestieCompat.GetQuestLogRewardMoney(questID)
     if QuestiePlayer.IsMaxLevel() then
         local questFlags = QuestieDB.QueryQuestSingle(questID, "questFlags") or 0
         if bitband(questFlags, QUEST_FLAGS_NO_MONEY_FROM_XP) == 0 then
-            local xpReward = QuestXP:GetQuestLogRewardXP(questID, true)
+            -- AzerothCore's max-level XP-to-money conversion does not apply
+            -- player quest XP aura modifiers such as heirloom bonuses.
+            local xpReward = QuestXP:GetQuestLogRewardXP(questID, true, true)
             if xpReward > 0 then
                 rewardMoney = rewardMoney + xpReward * 6
             end

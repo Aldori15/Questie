@@ -8,18 +8,45 @@ QuestXP.db = {}
 ---@type table<Level,table<number,XP>> -- QuestXP.dbc rows by level and difficulty
 QuestXP.xpByLevel = {}
 
+---@type table<ItemId,table<number>> -- Equipped item quest XP bonus percentages
+QuestXP.itemQuestXPBonuses = {}
+
 --- COMPATIBILITY ---
 local GetMaxPlayerLevel = QuestieCompat.GetMaxPlayerLevel
 local GetQuestLogRewardMoney = QuestieCompat.GetQuestLogRewardMoney
 
 local floor = floor
+local GetInventoryItemID = GetInventoryItemID
 local UnitLevel = UnitLevel
+
+local FIRST_EQUIPMENT_SLOT = 1
+local LAST_EQUIPMENT_SLOT = 19
+
+---@return number multiplier
+local function getEquippedQuestXPMultiplier()
+    local multiplier = 1
+
+    for inventorySlot = FIRST_EQUIPMENT_SLOT, LAST_EQUIPMENT_SLOT do
+        local itemId = GetInventoryItemID("player", inventorySlot)
+        local bonuses = itemId and QuestXP.itemQuestXPBonuses[itemId]
+        if bonuses then
+            for _, bonusPercent in ipairs(bonuses) do
+                -- AzerothCore's GetTotalAuraMultiplier applies each percentage
+                -- to the accumulated multiplier.
+                multiplier = multiplier * (1 + bonusPercent / 100)
+            end
+        end
+    end
+
+    return multiplier
+end
 
 ---@param xp XP
 ---@param qLevel Level
 ---@param ignorePlayerLevel boolean
+---@param ignoreQuestXPModifiers boolean
 ---@return XP experience
-local function getAdjustedXP(xp, qLevel, ignorePlayerLevel)
+local function getAdjustedXP(xp, qLevel, ignorePlayerLevel, ignoreQuestXPModifiers)
     local charLevel = UnitLevel("player")
     if charLevel == GetMaxPlayerLevel() and (not ignorePlayerLevel) then
         return 0
@@ -45,6 +72,10 @@ local function getAdjustedXP(xp, qLevel, ignorePlayerLevel)
         xp = 50 * floor((xp + 25) / 50)
     end
 
+    if not ignoreQuestXPModifiers then
+        xp = xp * getEquippedQuestXPMultiplier()
+    end
+
     return floor(xp)
 end
 
@@ -52,8 +83,9 @@ end
 ---Get the adjusted XP for a quest.
 ---@param questId QuestId
 ---@param ignorePlayerLevel boolean
+---@param ignoreQuestXPModifiers boolean?
 ---@return XP experience
-function QuestXP:GetQuestLogRewardXP(questId, ignorePlayerLevel)
+function QuestXP:GetQuestLogRewardXP(questId, ignorePlayerLevel, ignoreQuestXPModifiers)
     local questData = QuestXP.db[questId]
     if questData then
         local level = questData[1]
@@ -67,7 +99,7 @@ function QuestXP:GetQuestLogRewardXP(questId, ignorePlayerLevel)
         local levelRewards = QuestXP.xpByLevel[level]
         local xp = levelRewards and levelRewards[rewardDifficulty + 1]
         if level > 0 and xp and xp > 0 then
-            return getAdjustedXP(xp, level, ignorePlayerLevel)
+            return getAdjustedXP(xp, level, ignorePlayerLevel, ignoreQuestXPModifiers)
         end
     end
 
