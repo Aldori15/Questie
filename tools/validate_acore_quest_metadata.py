@@ -2335,7 +2335,37 @@ def load_acore_sql_table(source_root, table_name, base_file_override=None, key_c
 
     def apply_file(path):
         text = strip_sql_comments(path.read_text(encoding="utf-8"))
+        sql_variables = {}
+
+        def replace_sql_variables(statement):
+            def replacement(match):
+                value = sql_variables.get(match.group(1).lower(), match.group(0))
+                if isinstance(value, str) and value != match.group(0):
+                    return repr(value)
+                if value is None:
+                    return "NULL"
+                return str(value)
+
+            return re.sub(r"(?<!@)@([A-Za-z0-9_]+)", replacement, statement)
+
         for statement in split_sql_statements(text):
+            variable_match = re.match(
+                r"SET\s+@([A-Za-z0-9_]+)\s*(?::=|=)\s*(.+)$",
+                statement,
+                re.IGNORECASE | re.DOTALL,
+            )
+            if variable_match:
+                variable_name = variable_match.group(1)
+                variable_value = replace_sql_variables(variable_match.group(2).strip())
+                try:
+                    sql_variables[variable_name.lower()] = parse_sql_value(variable_value)
+                except Exception:
+                    pass
+                continue
+
+            if sql_variables:
+                statement = replace_sql_variables(statement)
+
             if not re.search(rf"\b{re.escape(table_name)}\b", statement, re.IGNORECASE):
                 continue
             if statement.upper().startswith(("INSERT INTO", "REPLACE INTO")):
