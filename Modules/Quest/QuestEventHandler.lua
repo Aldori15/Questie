@@ -62,12 +62,19 @@ local questLogUpdateQueueSize = 1
 local deletedQuestItem = false
 local requiredItemConditionStates = {}
 local requiredItemConditionUpdatePending = false
+local acoreAuraConditionStates = {}
+local acoreAuraConditionUpdatePending = false
 local itemRegressionConfirmationPending = false
 local GetCursorInfo = GetCursorInfo
 
 local function CacheRequiredItemConditionStates()
+    QuestieDB:InitializeAzerothCoreAvailabilityConditionIndexes()
     for questId in pairs(QuestieDB.requiredItemConditionQuestIds) do
-        requiredItemConditionStates[questId] = QuestieDB.IsDoable(questId)
+        requiredItemConditionStates[questId] = QuestieDB:GetAvailabilityItemConditionState(questId)
+    end
+
+    for questId in pairs(QuestieDB.acoreAuraConditionQuestIds) do
+        acoreAuraConditionStates[questId] = QuestieDB.IsDoable(questId)
     end
 end
 
@@ -101,6 +108,8 @@ function QuestEventHandler:RegisterEvents()
     eventFrame:RegisterEvent("CURRENCY_DISPLAY_UPDATE")
     eventFrame:RegisterEvent("BAG_UPDATE")
     eventFrame:RegisterEvent("BAG_UPDATE_DELAYED")
+    eventFrame:RegisterEvent("PLAYERBANKSLOTS_CHANGED")
+    eventFrame:RegisterEvent("UNIT_AURA")
     --eventFrame:RegisterEvent("SPELLS_CHANGED") -- Spell objectives
 
     eventFrame:RegisterEvent("PLAYER_INTERACTION_MANAGER_FRAME_HIDE")
@@ -631,9 +640,9 @@ function _QuestEventHandler:BagUpdate()
         local availabilityChanged = false
 
         for questId in pairs(QuestieDB.requiredItemConditionQuestIds) do
-            local isDoable = QuestieDB.IsDoable(questId)
-            if requiredItemConditionStates[questId] ~= isDoable then
-                requiredItemConditionStates[questId] = isDoable
+            local itemConditionState = QuestieDB:GetAvailabilityItemConditionState(questId)
+            if requiredItemConditionStates[questId] ~= itemConditionState then
+                requiredItemConditionStates[questId] = itemConditionState
                 availabilityChanged = true
             end
         end
@@ -645,6 +654,30 @@ function _QuestEventHandler:BagUpdate()
         local cursorType = GetCursorInfo()
         if cursorType ~= "item" and QuestLogCache.HasPendingItemRegression() then
             _QuestEventHandler:UpdateAllQuests(true)
+        end
+    end)
+end
+
+function _QuestEventHandler:AuraUpdate()
+    if acoreAuraConditionUpdatePending then
+        return
+    end
+
+    acoreAuraConditionUpdatePending = true
+    C_Timer.After(0.10, function()
+        acoreAuraConditionUpdatePending = false
+        local availabilityChanged = false
+
+        for questId in pairs(QuestieDB.acoreAuraConditionQuestIds) do
+            local isDoable = QuestieDB.IsDoable(questId)
+            if acoreAuraConditionStates[questId] ~= isDoable then
+                acoreAuraConditionStates[questId] = isDoable
+                availabilityChanged = true
+            end
+        end
+
+        if availabilityChanged then
+            AvailableQuests.RebuildAll(nil, true)
         end
     end)
 end
@@ -671,11 +704,15 @@ function _QuestEventHandler:OnEvent(event, ...)
         _QuestEventHandler:ZoneChangedNewArea()
     elseif event == "NEW_RECIPE_LEARNED" then
         Questie:Debug(Questie.DEBUG_DEVELOP, "[EVENT] NEW_RECIPE_LEARNED (QuestEventHandler)")
-        -- If this event is related to a spell objective, a QUEST_LOG_UPDATE will be fired afterwards which calls UpdateAllQuests.
+        -- AzerothCore can also use learned spells as quest availability
+        -- conditions (for example, Cold Weather Flying).
+        AvailableQuests.CalculateAndDrawAll()
     elseif event == "CURRENCY_DISPLAY_UPDATE" then
         _QuestEventHandler:CurrencyDisplayUpdate()
-    elseif event == "BAG_UPDATE" or event == "BAG_UPDATE_DELAYED" then
+    elseif event == "BAG_UPDATE" or event == "BAG_UPDATE_DELAYED" or event == "PLAYERBANKSLOTS_CHANGED" then
         _QuestEventHandler:BagUpdate()
+    elseif event == "UNIT_AURA" and select(1, ...) == "player" then
+        _QuestEventHandler:AuraUpdate()
     elseif event == "PLAYER_INTERACTION_MANAGER_FRAME_HIDE" then
         local eventType = select(1, ...)
         if eventType == 1 then

@@ -199,6 +199,10 @@ function QuestieEventHandler:RegisterLateEvents()
             QuestieCombatQueue:Queue(function()
                 QuestieTracker:Update()
             end)
+
+            -- AzerothCore can gate quest availability directly on earned
+            -- achievements, so refresh quest markers immediately.
+            AvailableQuests.CalculateAndDrawAll()
         end)
 
         -- Track/Untrack Achievement updates

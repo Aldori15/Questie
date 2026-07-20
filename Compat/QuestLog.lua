@@ -357,7 +357,9 @@ function QuestieCompat.ResetDailyQuests(reset)
         for questId in pairs(Questie.db.char.daily) do
             Questie.db.char.daily[questId] = nil
             Questie.db.char.complete[questId] = nil
+            serverCompletedQuests[questId] = nil
         end
+        Questie.db.char.acoreDailyQuestCompletions = {}
         Questie.db.profile.dailyResetTime = nil
         QuestieCompat.CalculateNextResetTime()
         if Questie.started then
@@ -419,6 +421,41 @@ function QuestieCompat.GetQuestsCompleted()
     return Questie.db.char.complete
 end
 
+---Returns the unfiltered completion state sent by the 3.3.5 server.
+---Unlike Questie.db.char.complete, this retains daily/repeatable entries long
+---enough for AzerothCore availability conditions to inspect them.
+---@param questId number
+---@return boolean
+function QuestieCompat.IsQuestCompletedOnServer(questId)
+    return serverCompletedQuests[questId] == true
+        or (Questie.db.char.complete and Questie.db.char.complete[questId] == true)
+end
+
+local function EnsureAzerothCoreDailyCompletionReset()
+    Questie.db.char.acoreDailyQuestCompletions = Questie.db.char.acoreDailyQuestCompletions or {}
+
+    local currentTime = QuestieCompat.GetServerTime()
+    local resetTime = Questie.db.profile.dailyResetTime
+    if type(resetTime) ~= "number" or resetTime <= currentTime then
+        Questie.db.char.acoreDailyQuestCompletions = {}
+        Questie.db.profile.dailyResetTime = nil
+        QuestieCompat.CalculateNextResetTime()
+    end
+end
+
+---@param questId number
+function QuestieCompat.SetAzerothCoreDailyQuestComplete(questId)
+    EnsureAzerothCoreDailyCompletionReset()
+    Questie.db.char.acoreDailyQuestCompletions[questId] = true
+end
+
+---@param questId number
+---@return boolean
+function QuestieCompat.IsAzerothCoreDailyQuestComplete(questId)
+    EnsureAzerothCoreDailyCompletionReset()
+    return Questie.db.char.acoreDailyQuestCompletions[questId] == true
+end
+
 -- Fires when the data requested by QueryQuestsCompleted() is available.
 -- https://wowpedia.fandom.com/wiki/QUEST_QUERY_COMPLETE
 function QuestieCompat:QUEST_QUERY_COMPLETE(event)
@@ -452,6 +489,12 @@ function QuestieCompat:QUEST_QUERY_COMPLETE(event)
             end
             QuestieCompat.Merge(Questie.db.char.complete, Questie.db.char.weekly)
         end
+    end
+
+    -- The completed-quest response is authoritative for AzerothCore quest
+    -- status conditions. It can arrive after Questie's initial map draw.
+    if Questie.started then
+        AvailableQuests.CalculateAndDrawAll()
     end
 end
 
@@ -811,6 +854,9 @@ local function CompleteRewardQuest(questId)
     -- Keep the raw cache in sync even when the normal chat path handled the
     -- turn-in before another completed-quest query was needed.
     serverCompletedQuests[questId] = true
+    if QuestieDB.IsDailyQuest(questId) then
+        QuestieCompat.SetAzerothCoreDailyQuestComplete(questId)
+    end
     _QuestEventHandler:QuestTurnedIn(questId)
     _QuestEventHandler:QuestRemoved(questId)
 end

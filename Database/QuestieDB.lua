@@ -51,6 +51,10 @@ QuestieDB.autoBlacklist = {}
 ---@type table<number, boolean>
 QuestieDB.requiredItemConditionQuestIds = {}
 
+--- Quests whose AzerothCore availability expression depends on player auras.
+---@type table<number, boolean>
+QuestieDB.acoreAuraConditionQuestIds = {}
+
 local tinsert = table.insert
 local bitband = bit.band
 
@@ -60,6 +64,24 @@ local QUEST_FLAGS_WEEKLY = 32768
 -- Pre calculated 2 * QUEST_FLAGS, for testing a bit flag
 local QUEST_FLAGS_DAILY_X2 = 2 * QUEST_FLAGS_DAILY
 local QUEST_FLAGS_WEEKLY_X2 = 2 * QUEST_FLAGS_WEEKLY
+local ACORE_QUEST_AVAILABILITY_CONDITIONS = QuestieCompat.AzerothCoreQuestAvailabilityConditions or {}
+local ACORE_CONDITION_AURA = 1
+local ACORE_CONDITION_ITEM = 2
+local ACORE_CONDITION_REPUTATION_RANK = 5
+local ACORE_CONDITION_QUEST_REWARDED = 8
+local ACORE_CONDITION_QUEST_TAKEN = 9
+local ACORE_CONDITION_QUEST_NONE = 14
+local ACORE_CONDITION_CLASS = 15
+local ACORE_CONDITION_ACHIEVEMENT = 17
+local ACORE_CONDITION_SPELL = 25
+local ACORE_CONDITION_QUEST_COMPLETE = 28
+local ACORE_CONDITION_DAILY_QUEST_DONE = 43
+local ACORE_CONDITION_QUEST_STATE = 47
+local ACORE_QUEST_STATUS_NONE = 1
+local ACORE_QUEST_STATUS_COMPLETE = 2
+local ACORE_QUEST_STATUS_IN_PROGRESS = 8
+local ACORE_QUEST_STATUS_FAILED = 32
+local ACORE_QUEST_STATUS_REWARDED = 64
 local playerFaction = UnitFactionGroup("Player")
 local serverName = GetRealmName()
 
@@ -112,6 +134,7 @@ QuestieDB.DoableStates = {
     PROFESSION_RANK = 30,
     DISABLED_BY = 31,
     MISSING_START_ITEM = 32,
+    ACORE_CONDITION = 33,
 }
 --- COMPATIBILITY ---
 local WOW_PROJECT_ID = QuestieCompat.WOW_PROJECT_ID
@@ -122,6 +145,8 @@ local GetQuestTagInfo = QuestieCompat.GetQuestTagInfo
 local IsPlayerSpell = QuestieCompat.IsPlayerSpell
 local IsSpellKnownOrOverridesKnown = QuestieCompat.IsSpellKnownOrOverridesKnown
 local IsQuestFlaggedCompleted = QuestieCompat.IsQuestFlaggedCompleted or C_QuestLog.IsQuestFlaggedCompleted
+local IsQuestCompletedOnServer = QuestieCompat.IsQuestCompletedOnServer or IsQuestFlaggedCompleted
+local IsAzerothCoreDailyQuestComplete = QuestieCompat.IsAzerothCoreDailyQuestComplete
 
 --- Tag corrections for quests for which the API returns the wrong values.
 --- Strucute: [questId] = {tagId, "questType"}
@@ -2428,6 +2453,193 @@ function QuestieDB:IsRequiredItemConditionsFulfilled(requiredItemConditions)
     return true
 end
 
+local ACORE_CONDITION_NAMES = {
+    [ACORE_CONDITION_AURA] = "aura",
+    [ACORE_CONDITION_ITEM] = "item",
+    [ACORE_CONDITION_REPUTATION_RANK] = "reputation rank",
+    [ACORE_CONDITION_QUEST_REWARDED] = "rewarded quest",
+    [ACORE_CONDITION_QUEST_TAKEN] = "active quest",
+    [ACORE_CONDITION_QUEST_NONE] = "untaken quest",
+    [ACORE_CONDITION_CLASS] = "class",
+    [ACORE_CONDITION_ACHIEVEMENT] = "achievement",
+    [ACORE_CONDITION_SPELL] = "spell",
+    [ACORE_CONDITION_QUEST_COMPLETE] = "completed quest",
+    [ACORE_CONDITION_DAILY_QUEST_DONE] = "daily quest completion",
+    [ACORE_CONDITION_QUEST_STATE] = "quest state",
+}
+
+local function HasPlayerAura(spellId)
+    for index = 1, 40 do
+        local auraSpellId = select(11, UnitBuff("player", index))
+        if not auraSpellId then
+            break
+        elseif auraSpellId == spellId then
+            return true
+        end
+    end
+
+    for index = 1, 40 do
+        local auraSpellId = select(11, UnitDebuff("player", index))
+        if not auraSpellId then
+            break
+        elseif auraSpellId == spellId then
+            return true
+        end
+    end
+
+    return false
+end
+
+local function IsAzerothCoreQuestRewarded(questId)
+    -- AzerothCore's GetQuestRewardStatus intentionally returns false for
+    -- ordinary repeatable quests. Daily completion has its own condition type.
+    return not QuestieDB.IsRepeatable(questId) and IsQuestCompletedOnServer(questId)
+end
+
+local function GetAzerothCoreQuestStatusMask(questId)
+    if QuestiePlayer.currentQuestlog[questId] then
+        local questLogEntry = QuestLogCache.questLog_DO_NOT_MODIFY[questId]
+        if questLogEntry and questLogEntry.isComplete == 1 then
+            return ACORE_QUEST_STATUS_COMPLETE
+        elseif questLogEntry and questLogEntry.isComplete == -1 then
+            return ACORE_QUEST_STATUS_FAILED
+        end
+
+        return ACORE_QUEST_STATUS_IN_PROGRESS
+    end
+
+    if IsAzerothCoreQuestRewarded(questId) then
+        return ACORE_QUEST_STATUS_REWARDED
+    end
+
+    return ACORE_QUEST_STATUS_NONE
+end
+
+---@param condition number[]
+---@return boolean
+local function IsAzerothCoreConditionFulfilled(condition)
+    local conditionType = condition[1]
+    local value1 = condition[2]
+    local value2 = condition[3]
+    local value3 = condition[4]
+    local isNegative = condition[5] == 1
+    local fulfilled = false
+
+    if conditionType == ACORE_CONDITION_AURA then
+        fulfilled = HasPlayerAura(value1)
+    elseif conditionType == ACORE_CONDITION_ITEM then
+        fulfilled = GetItemCount(value1, value3 ~= 0) >= value2
+    elseif conditionType == ACORE_CONDITION_REPUTATION_RANK then
+        local standingId = QuestieReputation:GetFactionStandingId(value1)
+        local rankMask = 2 ^ math.max((standingId or 4) - 1, 0)
+        fulfilled = bitband(value2, rankMask) ~= 0
+    elseif conditionType == ACORE_CONDITION_QUEST_REWARDED then
+        fulfilled = IsAzerothCoreQuestRewarded(value1)
+    elseif conditionType == ACORE_CONDITION_QUEST_TAKEN then
+        fulfilled = GetAzerothCoreQuestStatusMask(value1) == ACORE_QUEST_STATUS_IN_PROGRESS
+    elseif conditionType == ACORE_CONDITION_QUEST_NONE then
+        fulfilled = GetAzerothCoreQuestStatusMask(value1) == ACORE_QUEST_STATUS_NONE
+    elseif conditionType == ACORE_CONDITION_CLASS then
+        fulfilled = QuestiePlayer.HasRequiredClass(value1)
+    elseif conditionType == ACORE_CONDITION_ACHIEVEMENT then
+        fulfilled = select(4, GetAchievementInfo(value1)) == true
+    elseif conditionType == ACORE_CONDITION_SPELL then
+        fulfilled = IsSpellKnownOrOverridesKnown(value1) or IsPlayerSpell(value1)
+    elseif conditionType == ACORE_CONDITION_QUEST_COMPLETE then
+        fulfilled = GetAzerothCoreQuestStatusMask(value1) == ACORE_QUEST_STATUS_COMPLETE
+    elseif conditionType == ACORE_CONDITION_DAILY_QUEST_DONE then
+        fulfilled = (IsAzerothCoreDailyQuestComplete and IsAzerothCoreDailyQuestComplete(value1))
+            or (Questie.db.char.daily and Questie.db.char.daily[value1] == true)
+    elseif conditionType == ACORE_CONDITION_QUEST_STATE then
+        fulfilled = bitband(value2, GetAzerothCoreQuestStatusMask(value1)) ~= 0
+    end
+
+    return isNegative and not fulfilled or (not isNegative and fulfilled)
+end
+
+---Evaluates AzerothCore's ConditionMgr grouping: conditions inside an
+---ElseGroup are ANDed, while ElseGroups are ORed.
+---@param questId number
+---@return boolean fulfilled
+---@return number[]? failedCondition
+function QuestieDB:IsAzerothCoreAvailabilityConditionFulfilled(questId)
+    local groups = ACORE_QUEST_AVAILABILITY_CONDITIONS[questId]
+    if not groups then
+        return true
+    end
+
+    local lastFailedCondition
+    for _, group in ipairs(groups) do
+        local groupFulfilled = true
+        for _, condition in ipairs(group) do
+            if not IsAzerothCoreConditionFulfilled(condition) then
+                groupFulfilled = false
+                lastFailedCondition = condition
+                break
+            end
+        end
+
+        if groupFulfilled then
+            return true
+        end
+    end
+
+    return false, lastFailedCondition
+end
+
+function QuestieDB:InitializeAzerothCoreAvailabilityConditionIndexes()
+    QuestieDB.acoreAuraConditionQuestIds = {}
+
+    for questId, groups in pairs(ACORE_QUEST_AVAILABILITY_CONDITIONS) do
+        for _, group in ipairs(groups) do
+            for _, condition in ipairs(group) do
+                if condition[1] == ACORE_CONDITION_ITEM then
+                    QuestieDB.requiredItemConditionQuestIds[questId] = true
+                elseif condition[1] == ACORE_CONDITION_AURA then
+                    QuestieDB.acoreAuraConditionQuestIds[questId] = true
+                end
+            end
+        end
+    end
+end
+
+---@param questId number
+---@return string stateKey
+function QuestieDB:GetAvailabilityItemConditionState(questId)
+    local states = {}
+    local requiredItemConditions = QuestieDB.QueryQuestSingle(questId, "requiredItemConditions")
+    for _, condition in ipairs(requiredItemConditions or {}) do
+        local signedItemId = condition[1]
+        local itemCount = GetItemCount(math.abs(signedItemId))
+        local requiredCount = condition[2] or 1
+        local fulfilled = signedItemId > 0 and itemCount >= requiredCount
+            or signedItemId < 0 and itemCount < requiredCount
+        states[#states + 1] = fulfilled and "1" or "0"
+    end
+
+    for _, group in ipairs(ACORE_QUEST_AVAILABILITY_CONDITIONS[questId] or {}) do
+        for _, condition in ipairs(group) do
+            if condition[1] == ACORE_CONDITION_ITEM then
+                states[#states + 1] = IsAzerothCoreConditionFulfilled(condition) and "1" or "0"
+            end
+        end
+    end
+
+    return table.concat(states)
+end
+
+---@param condition number[]?
+---@return string
+function QuestieDB:GetAzerothCoreAvailabilityConditionDescription(condition)
+    if not condition then
+        return "unknown AzerothCore condition"
+    end
+
+    local conditionName = ACORE_CONDITION_NAMES[condition[1]] or ("condition " .. tostring(condition[1]))
+    local negativeText = condition[5] == 1 and "negative " or ""
+    return negativeText .. conditionName .. " " .. tostring(condition[2])
+end
+
 ---@param questId number
 ---@param debugPrint boolean? -- if true, IsDoable will print conclusions to debug channel
 ---@return boolean
@@ -2625,6 +2837,12 @@ function QuestieDB.IsDoable(questId, debugPrint)
             if debugPrint then Questie:Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Player does not meet item requirements for quest " .. questId) end
             return false
         end
+    end
+
+    local acoreConditionsFulfilled = QuestieDB:IsAzerothCoreAvailabilityConditionFulfilled(questId)
+    if not acoreConditionsFulfilled then
+        if debugPrint then Questie:Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Player does not meet AzerothCore availability conditions for quest " .. questId) end
+        return false
     end
 
     -- Check and see if the Quest requires an achievement before showing as available
@@ -3093,6 +3311,16 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
             elseif returnText and not returnBrief then
                 return msg, true, DoableStates.MISSING_START_ITEM
             end
+        end
+    end
+
+    local acoreConditionsFulfilled, failedAcoreCondition = QuestieDB:IsAzerothCoreAvailabilityConditionFulfilled(questId)
+    if not acoreConditionsFulfilled then
+        local msg = "Player does not meet AzerothCore " .. QuestieDB:GetAzerothCoreAvailabilityConditionDescription(failedAcoreCondition) .. " requirement for quest " .. questId
+        if returnText and returnBrief then
+            return l10n("Unavailable")..l10n(": ")..l10n("Missing Requirement"), true, DoableStates.ACORE_CONDITION
+        elseif returnText and not returnBrief then
+            return msg, true, DoableStates.ACORE_CONDITION
         end
     end
 

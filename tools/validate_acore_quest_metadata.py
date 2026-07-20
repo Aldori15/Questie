@@ -83,9 +83,18 @@ FIELD_KIND = {
 
 CONDITION_SOURCE_TYPE_QUEST_AVAILABLE = 19
 CONDITION_SOURCE_TYPE_SPELL = 17
+CONDITION_AURA = 1
 CONDITION_ITEM = 2
+CONDITION_REPUTATION_RANK = 5
 CONDITION_QUESTREWARDED = 8
+CONDITION_QUESTTAKEN = 9
+CONDITION_QUEST_NONE = 14
+CONDITION_CLASS = 15
+CONDITION_ACHIEVEMENT = 17
 CONDITION_SPELL = 25
+CONDITION_QUEST_COMPLETE = 28
+CONDITION_DAILY_QUEST_DONE = 43
+CONDITION_QUESTSTATE = 47
 CONDITION_OBJECT_ENTRY_GUID = 31
 CONDITION_OBJECT_TYPE_UNIT = 3
 SMART_SOURCE_TYPE_CREATURE = 0
@@ -222,6 +231,83 @@ _PRE_QUEST_SINGLE_CHAIN_PRESERVE = {
     13170,  # prereq 13168
     13171,  # prereq 13168
 }
+
+QUEST_AVAILABILITY_CONDITION_NAMES = {
+    0: "NONE",
+    1: "AURA",
+    2: "ITEM",
+    3: "ITEM_EQUIPPED",
+    4: "ZONEID",
+    5: "REPUTATION_RANK",
+    6: "TEAM",
+    7: "SKILL",
+    8: "QUESTREWARDED",
+    9: "QUESTTAKEN",
+    10: "DRUNKENSTATE",
+    11: "WORLD_STATE",
+    12: "ACTIVE_EVENT",
+    13: "INSTANCE_INFO",
+    14: "QUEST_NONE",
+    15: "CLASS",
+    16: "RACE",
+    17: "ACHIEVEMENT",
+    18: "TITLE",
+    19: "SPAWNMASK",
+    20: "GENDER",
+    21: "UNIT_STATE",
+    22: "MAPID",
+    23: "AREAID",
+    24: "CREATURE_TYPE",
+    25: "SPELL",
+    26: "PHASEMASK",
+    27: "LEVEL",
+    28: "QUEST_COMPLETE",
+    29: "NEAR_CREATURE",
+    30: "NEAR_GAMEOBJECT",
+    31: "OBJECT_ENTRY_GUID",
+    32: "TYPE_MASK",
+    33: "RELATION_TO",
+    34: "REACTION_TO",
+    35: "DISTANCE_TO",
+    36: "ALIVE",
+    37: "HP_VAL",
+    38: "HP_PCT",
+    39: "REALM_ACHIEVEMENT",
+    40: "IN_WATER",
+    41: "TERRAIN_SWAP",
+    42: "STAND_STATE",
+    43: "DAILY_QUEST_DONE",
+    44: "CHARMED",
+    45: "PET_TYPE",
+    46: "TAXI",
+    47: "QUESTSTATE",
+    48: "QUEST_OBJECTIVE_PROGRESS",
+    49: "DIFFICULTY_ID",
+    101: "QUEST_SATISFY_EXCLUSIVE",
+    102: "HAS_AURA_TYPE",
+    103: "WORLD_SCRIPT",
+    104: "AI_DATA",
+    105: "PLAYER_QUEUED_RANDOM_DUNGEON",
+}
+
+# Quest availability conditions whose state can be reproduced by the 3.3.5
+# client. Conditions tied to server world state, events, the player's current
+# area, or an instance spawn mask intentionally remain on Questie's existing
+# event/location handling or are reported for manual review.
+ACORE_RUNTIME_QUEST_AVAILABILITY_CONDITION_TYPES = frozenset({
+    CONDITION_AURA,
+    CONDITION_ITEM,
+    CONDITION_REPUTATION_RANK,
+    CONDITION_QUESTREWARDED,
+    CONDITION_QUESTTAKEN,
+    CONDITION_QUEST_NONE,
+    CONDITION_CLASS,
+    CONDITION_ACHIEVEMENT,
+    CONDITION_SPELL,
+    CONDITION_QUEST_COMPLETE,
+    CONDITION_DAILY_QUEST_DONE,
+    CONDITION_QUESTSTATE,
+})
 
 # AzerothCore intentionally offers these initial Runecloth donation quests
 # independently from the Wool, Silk, and Mageweave donations. Questie's TBC
@@ -2504,8 +2590,75 @@ def find_simple_item_condition_quest_ids(condition_rows):
     }
 
 
+def is_runtime_quest_availability_condition_row(row):
+    base_shape_supported = (
+        int(row.get("SourceTypeOrReferenceId") or 0) == CONDITION_SOURCE_TYPE_QUEST_AVAILABLE
+        and int(row.get("SourceEntry") or 0) > 0
+        and int(row.get("SourceGroup") or 0) == 0
+        and int(row.get("SourceId") or 0) == 0
+        and int(row.get("ConditionTarget") or 0) == 0
+        and int(row.get("ConditionTypeOrReference") or 0)
+        in ACORE_RUNTIME_QUEST_AVAILABILITY_CONDITION_TYPES
+        and not row.get("ScriptName")
+    )
+    if not base_shape_supported:
+        return False
+
+    condition_type = int(row.get("ConditionTypeOrReference") or 0)
+    value1 = int(row.get("ConditionValue1") or 0)
+    value2 = int(row.get("ConditionValue2") or 0)
+    value3 = int(row.get("ConditionValue3") or 0)
+
+    if condition_type == CONDITION_AURA:
+        # The 3.3.5 API exposes the aura's spell ID, but not an individual
+        # aura-effect index. All current quest-availability rows use effect 0.
+        return value1 > 0 and value2 == 0 and value3 == 0
+    if condition_type == CONDITION_ITEM:
+        return value1 > 0 and value2 > 0 and value3 in {0, 1}
+    if condition_type == CONDITION_REPUTATION_RANK:
+        return value1 > 0 and value2 > 0 and value3 == 0
+    if condition_type == CONDITION_QUESTSTATE:
+        return value1 > 0 and value2 > 0 and value3 == 0
+
+    return value1 > 0 and value2 == 0 and value3 == 0
+
+
+def build_runtime_quest_availability_conditions(condition_rows):
+    rows_by_quest = defaultdict(list)
+    for row in condition_rows:
+        if (
+            int(row.get("SourceTypeOrReferenceId") or 0)
+            == CONDITION_SOURCE_TYPE_QUEST_AVAILABLE
+            and int(row.get("SourceEntry") or 0) > 0
+        ):
+            rows_by_quest[int(row.get("SourceEntry") or 0)].append(row)
+
+    conditions_by_quest = {}
+    for quest_id, rows in rows_by_quest.items():
+        if not rows or not all(is_runtime_quest_availability_condition_row(row) for row in rows):
+            continue
+
+        groups = defaultdict(list)
+        for row in rows:
+            groups[int(row.get("ElseGroup") or 0)].append(
+                (
+                    int(row.get("ConditionTypeOrReference") or 0),
+                    int(row.get("ConditionValue1") or 0),
+                    int(row.get("ConditionValue2") or 0),
+                    int(row.get("ConditionValue3") or 0),
+                    1 if int(row.get("NegativeCondition") or 0) != 0 else 0,
+                )
+            )
+
+        conditions_by_quest[quest_id] = tuple(
+            tuple(sorted(groups[else_group]))
+            for else_group in sorted(groups)
+        )
+
+    return conditions_by_quest
+
+
 def derive_quest_availability_conditions(source_root, condition_rows=None):
-    condition_prereqs = defaultdict(set)
     spell_conditions = defaultdict(list)
     item_conditions = defaultdict(set)
 
@@ -2526,9 +2679,7 @@ def derive_quest_availability_conditions(source_root, condition_rows=None):
         condition_value = int(row.get("ConditionValue1") or 0)
         is_negative = int(row.get("NegativeCondition") or 0) != 0
 
-        if condition_type == CONDITION_QUESTREWARDED and condition_value > 0 and not is_negative:
-            condition_prereqs[quest_id].add(condition_value)
-        elif condition_type == CONDITION_SPELL and condition_value > 0:
+        if condition_type == CONDITION_SPELL and condition_value > 0:
             spell_conditions[quest_id].append(-condition_value if is_negative else condition_value)
         elif (
             condition_type == CONDITION_ITEM
@@ -2550,6 +2701,10 @@ def derive_quest_availability_conditions(source_root, condition_rows=None):
         for quest_id, conditions in item_conditions.items()
     }
 
+    # Complex conditions are evaluated by the generated AzerothCore runtime
+    # condition table. Converting rewarded-quest predicates to preQuestSingle
+    # would flatten AzerothCore's AND/OR groups and lose negative predicates.
+    condition_prereqs = defaultdict(set)
     return condition_prereqs, required_spells, required_item_conditions
 
 
@@ -3156,6 +3311,269 @@ def build_summary(mismatches):
     return summary
 
 
+QUEST_AVAILABILITY_REPORT_FIELDS = (
+    "SourceGroup",
+    "SourceEntry",
+    "SourceId",
+    "ElseGroup",
+    "ConditionTypeOrReference",
+    "ConditionTarget",
+    "ConditionValue1",
+    "ConditionValue2",
+    "ConditionValue3",
+    "NegativeCondition",
+    "ScriptName",
+)
+
+
+def build_quest_availability_condition_audit(condition_rows, quest_names=None):
+    quest_names = quest_names or {}
+    availability_rows = [
+        row
+        for row in condition_rows
+        if int(row.get("SourceTypeOrReferenceId") or 0) == CONDITION_SOURCE_TYPE_QUEST_AVAILABLE
+        and int(row.get("SourceEntry") or 0) > 0
+    ]
+    rows_by_quest = defaultdict(list)
+    for row in availability_rows:
+        rows_by_quest[int(row.get("SourceEntry") or 0)].append(row)
+
+    simple_item_quests = find_simple_item_condition_quest_ids(availability_rows)
+    runtime_conditions = build_runtime_quest_availability_conditions(availability_rows)
+    type_stats = defaultdict(lambda: {"rows": 0, "quests": set()})
+    issue_counts = Counter()
+    classification_counts = Counter()
+    audited_quests = []
+
+    def row_sort_key(row):
+        return tuple(
+            str(row.get(field) or "")
+            for field in (
+                "ElseGroup",
+                "ConditionTypeOrReference",
+                "ConditionValue1",
+                "ConditionValue2",
+                "ConditionValue3",
+                "NegativeCondition",
+                "ConditionTarget",
+                "SourceGroup",
+                "SourceId",
+                "ScriptName",
+            )
+        )
+
+    def has_default_source_shape(row):
+        return (
+            int(row.get("SourceGroup") or 0) == 0
+            and int(row.get("SourceId") or 0) == 0
+            and int(row.get("ConditionTarget") or 0) == 0
+            and not row.get("ScriptName")
+        )
+
+    for quest_id in sorted(rows_by_quest):
+        rows = sorted(rows_by_quest[quest_id], key=row_sort_key)
+        condition_types = sorted(
+            {int(row.get("ConditionTypeOrReference") or 0) for row in rows}
+        )
+        else_group_counts = Counter(int(row.get("ElseGroup") or 0) for row in rows)
+        issues = set()
+        current_representation = []
+        runtime_exact = quest_id in runtime_conditions
+
+        if runtime_exact:
+            current_representation.append("AzerothCoreQuestAvailabilityConditions")
+
+        for condition_type in condition_types:
+            matching_rows = [
+                row
+                for row in rows
+                if int(row.get("ConditionTypeOrReference") or 0) == condition_type
+            ]
+            type_stats[condition_type]["rows"] += len(matching_rows)
+            type_stats[condition_type]["quests"].add(quest_id)
+
+        if len(condition_types) > 1:
+            issues.add("mixedConditionTypes")
+
+        if any(not has_default_source_shape(row) for row in rows):
+            issues.add("nonDefaultSourceShape")
+        if any(row.get("ScriptName") for row in rows):
+            issues.add("scriptedCondition")
+
+        item_rows = [
+            row
+            for row in rows
+            if int(row.get("ConditionTypeOrReference") or 0) == CONDITION_ITEM
+        ]
+        rewarded_rows = [
+            row
+            for row in rows
+            if int(row.get("ConditionTypeOrReference") or 0) == CONDITION_QUESTREWARDED
+        ]
+        spell_rows = [
+            row
+            for row in rows
+            if int(row.get("ConditionTypeOrReference") or 0) == CONDITION_SPELL
+        ]
+
+        if item_rows:
+            if not runtime_exact and any(int(row.get("ConditionValue3") or 0) != 0 for row in item_rows):
+                issues.add("bankInclusiveItemCondition")
+            if not runtime_exact and len(item_rows) != len(rows):
+                issues.add("itemConditionMixedWithOtherTypes")
+            if quest_id in simple_item_quests:
+                current_representation.append("requiredItemConditions")
+
+        positive_rewarded_rows = [
+            row
+            for row in rewarded_rows
+            if int(row.get("ConditionValue1") or 0) > 0
+            and int(row.get("NegativeCondition") or 0) == 0
+        ]
+        if not runtime_exact and len(positive_rewarded_rows) != len(rewarded_rows):
+            issues.add("unsupportedQuestRewardedVariant")
+
+        signed_spells = {
+            -int(row.get("ConditionValue1") or 0)
+            if int(row.get("NegativeCondition") or 0) != 0
+            else int(row.get("ConditionValue1") or 0)
+            for row in spell_rows
+            if int(row.get("ConditionValue1") or 0) > 0
+        }
+        if spell_rows:
+            if len(signed_spells) == 1:
+                current_representation.append("requiredSpell")
+            else:
+                issues.add("multipleSpellRequirements")
+
+        unsupported_types = [
+            condition_type
+            for condition_type in condition_types
+            if condition_type not in ACORE_RUNTIME_QUEST_AVAILABILITY_CONDITION_TYPES
+        ]
+        for condition_type in unsupported_types:
+            condition_name = QUEST_AVAILABILITY_CONDITION_NAMES.get(
+                condition_type,
+                f"UNKNOWN_{condition_type}",
+            )
+            issues.add(f"unsupportedConditionType:{condition_name}")
+
+        rewarded_exact = (
+            condition_types == [CONDITION_QUESTREWARDED]
+            and len(positive_rewarded_rows) == len(rows)
+            and all(has_default_source_shape(row) for row in rows)
+            and all(int(row.get("ConditionValue2") or 0) == 0 for row in rows)
+            and all(int(row.get("ConditionValue3") or 0) == 0 for row in rows)
+            and all(count == 1 for count in else_group_counts.values())
+        )
+        item_exact = quest_id in simple_item_quests
+        spell_exact = (
+            condition_types == [CONDITION_SPELL]
+            and len(signed_spells) == 1
+            and all(int(row.get("ConditionValue1") or 0) > 0 for row in rows)
+            and all(int(row.get("ConditionValue2") or 0) == 0 for row in rows)
+            and all(int(row.get("ConditionValue3") or 0) == 0 for row in rows)
+            and all(has_default_source_shape(row) for row in rows)
+        )
+
+        fully_represented = runtime_exact or item_exact or rewarded_exact or spell_exact
+        if not fully_represented and len(rows) > 1 and (
+            len(else_group_counts) > 1 or any(count > 1 for count in else_group_counts.values())
+        ):
+            issues.add("groupedAndOrLogicNotPreserved")
+
+        if fully_represented:
+            classification = "fullyRepresented"
+        elif current_representation:
+            classification = "partiallyRepresented"
+        else:
+            classification = "notRepresented"
+
+        classification_counts[classification] += 1
+        issue_counts.update(issues)
+
+        normalized_rows = []
+        for row in rows:
+            normalized_row = {}
+            for field in QUEST_AVAILABILITY_REPORT_FIELDS:
+                value = row.get(field)
+                if field == "ScriptName":
+                    normalized_row[field] = str(value or "")
+                else:
+                    normalized_row[field] = int(value or 0)
+            condition_type = normalized_row["ConditionTypeOrReference"]
+            normalized_row["ConditionTypeName"] = QUEST_AVAILABILITY_CONDITION_NAMES.get(
+                condition_type,
+                f"UNKNOWN_{condition_type}",
+            )
+            normalized_rows.append(normalized_row)
+
+        audited_quests.append(
+            {
+                "questId": quest_id,
+                "questName": str(quest_names.get(quest_id) or ""),
+                "classification": classification,
+                "currentRepresentation": sorted(set(current_representation)),
+                "issues": sorted(issues),
+                "conditionTypes": [
+                    {
+                        "id": condition_type,
+                        "name": QUEST_AVAILABILITY_CONDITION_NAMES.get(
+                            condition_type,
+                            f"UNKNOWN_{condition_type}",
+                        ),
+                    }
+                    for condition_type in condition_types
+                ],
+                "conditions": normalized_rows,
+            }
+        )
+
+    condition_type_summary = {}
+    for condition_type in sorted(type_stats):
+        stats = type_stats[condition_type]
+        condition_type_summary[str(condition_type)] = {
+            "name": QUEST_AVAILABILITY_CONDITION_NAMES.get(
+                condition_type,
+                f"UNKNOWN_{condition_type}",
+            ),
+            "rows": stats["rows"],
+            "quests": len(stats["quests"]),
+        }
+
+    return {
+        "summary": {
+            "sourceType": CONDITION_SOURCE_TYPE_QUEST_AVAILABLE,
+            "totalRows": len(availability_rows),
+            "totalQuests": len(rows_by_quest),
+            "classificationCounts": {
+                key: classification_counts.get(key, 0)
+                for key in (
+                    "fullyRepresented",
+                    "partiallyRepresented",
+                    "notRepresented",
+                )
+            },
+            "questsWithNonzeroElseGroup": sum(
+                any(int(row.get("ElseGroup") or 0) != 0 for row in rows)
+                for rows in rows_by_quest.values()
+            ),
+            "questsWithMixedConditionTypes": sum(
+                len({int(row.get("ConditionTypeOrReference") or 0) for row in rows}) > 1
+                for rows in rows_by_quest.values()
+            ),
+            "conditionTypes": condition_type_summary,
+            "issueCounts": dict(sorted(issue_counts.items())),
+        },
+        "classificationNotes": {
+            "fullyRepresented": "Questie's generated fields or AzerothCore runtime condition table preserve the complete condition expression.",
+            "partiallyRepresented": "Questie imports at least one predicate, but not the complete AzerothCore expression or grouping.",
+            "notRepresented": "Questie intentionally defers this expression to specialized handling or cannot reproduce its server/context state.",
+        },
+        "quests": audited_quests,
+    }
+
+
 def main():
     from validate_acore_quest_relations import apply_acore_relation_overrides, load_acore_relations
 
@@ -3174,6 +3592,15 @@ def main():
     )
     parser.add_argument("--limit", type=int, default=20, help="How many mismatches to print")
     parser.add_argument("--report", help="Optional path to write the full JSON report")
+    parser.add_argument(
+        "--condition-report",
+        help="Optional path to write an AzerothCore quest-availability condition coverage report",
+    )
+    parser.add_argument(
+        "--condition-report-only",
+        action="store_true",
+        help="Generate only --condition-report without running the full metadata comparison",
+    )
     parser.add_argument("--suggest-lua", help="Optional path to write candidate Lua quest metadata fixes")
     args = parser.parse_args()
 
@@ -3183,6 +3610,41 @@ def main():
     quest_template_sql = Path(args.quest_template_sql) if args.quest_template_sql else None
     quest_template_addon_sql = Path(args.quest_template_addon_sql) if args.quest_template_addon_sql else None
     spell_sql = Path(args.spell_sql) if args.spell_sql else None
+
+    if args.condition_report_only:
+        if not args.condition_report:
+            parser.error("--condition-report-only requires --condition-report")
+
+        quest_rows = load_acore_sql_table(
+            source_root,
+            "quest_template",
+            include_modules=True,
+        )
+        availability_audit = build_quest_availability_condition_audit(
+            load_acore_conditions(source_root),
+            {
+                int(quest_id): str(row.get("LogTitle") or "")
+                for quest_id, row in quest_rows.items()
+            },
+        )
+        condition_summary = availability_audit["summary"]
+        classification_counts = condition_summary["classificationCounts"]
+        print("AzerothCore quest availability condition audit")
+        print(f"AzerothCore source: {source_root}")
+        print(f"Rows: {condition_summary['totalRows']}")
+        print(f"Quests: {condition_summary['totalQuests']}")
+        print(f"  fullyRepresented: {classification_counts['fullyRepresented']}")
+        print(f"  partiallyRepresented: {classification_counts['partiallyRepresented']}")
+        print(f"  notRepresented: {classification_counts['notRepresented']}")
+
+        condition_report_path = Path(args.condition_report)
+        condition_report_path.parent.mkdir(parents=True, exist_ok=True)
+        condition_report_path.write_text(
+            json.dumps(availability_audit, indent=2),
+            encoding="utf-8",
+        )
+        print(f"Report written to {condition_report_path}")
+        return
 
     constants = load_constants(addon_root)
     questie_metadata = load_questie_base_metadata(quest_db_path, constants["quest_keys"], constants)
@@ -3265,6 +3727,15 @@ def main():
         creature_template_rows,
     )
     summary = build_summary(mismatches)
+    availability_audit = None
+    if args.condition_report:
+        availability_audit = build_quest_availability_condition_audit(
+            load_acore_conditions(source_root),
+            {
+                quest_id: metadata.get("name", "")
+                for quest_id, metadata in acore_metadata.items()
+            },
+        )
 
     print("AzerothCore quest metadata validation")
     print(f"AzerothCore source: {source_root}")
@@ -3281,6 +3752,16 @@ def main():
     print(f"  preservedGroupAsSinglePreQuests: {len(preserved_group_as_single_prequest)}")
     print(f"  preservedRequiredSourceItemSupersets: {len(preserved_required_source_item_supersets)}")
     print(f"  objectiveDisplayRisks: {len(objective_display_risks)}")
+
+    if availability_audit:
+        condition_summary = availability_audit["summary"]
+        classification_counts = condition_summary["classificationCounts"]
+        print("Quest availability condition coverage:")
+        print(f"  rows: {condition_summary['totalRows']}")
+        print(f"  quests: {condition_summary['totalQuests']}")
+        print(f"  fullyRepresented: {classification_counts['fullyRepresented']}")
+        print(f"  partiallyRepresented: {classification_counts['partiallyRepresented']}")
+        print(f"  notRepresented: {classification_counts['notRepresented']}")
 
     if mismatches:
         print("")
@@ -3313,6 +3794,16 @@ def main():
         )
         print("")
         print(f"Full report written to {report_path}")
+
+    if args.condition_report:
+        condition_report_path = Path(args.condition_report)
+        condition_report_path.parent.mkdir(parents=True, exist_ok=True)
+        condition_report_path.write_text(
+            json.dumps(availability_audit, indent=2),
+            encoding="utf-8",
+        )
+        print("")
+        print(f"Quest availability condition report written to {condition_report_path}")
 
     if args.suggest_lua:
         suggestion_path = Path(args.suggest_lua)

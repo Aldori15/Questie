@@ -135,6 +135,23 @@ function QuestieReputation:HasFactionAndReputationLevel(requiredMinRep, required
     return aboveMinRep, hasMinFaction, belowMaxRep, hasMaxFaction
 end
 
+---@param factionId number
+---@return number standingId @Client standing IDs range from 1 (Hated) to 8 (Exalted).
+function QuestieReputation:GetFactionStandingId(factionId)
+    local reputation = playerReputations[factionId]
+    if reputation then
+        return reputation[1]
+    end
+
+    -- Match the defaults used by HasFactionAndReputationLevel for factions
+    -- that have not appeared in the client's reputation pane yet.
+    if QuestieReputation.factionsStartingBelowNeutral[factionId] then
+        return 1
+    end
+
+    return 4
+end
+
 --- Checkout https://github.com/Questie/Questie/wiki/Corrections#reputation-levels for more information
 ---@return boolean HasReputation Is the player within the required reputation ranges specified by the parameters
 function QuestieReputation:HasReputation(requiredMinRep, requiredMaxRep)

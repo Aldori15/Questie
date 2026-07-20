@@ -2723,6 +2723,10 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
 
+        [374] = {
+            [questKeys.preQuestSingle] = {},
+        },
+
         [376] = {
             [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
@@ -3914,7 +3918,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [1191] = {
-            [questKeys.preQuestSingle] = {1190},
             [questKeys.parentQuest] = 0,
         },
 
@@ -4293,7 +4296,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [1645] = {
-            [questKeys.preQuestSingle] = {2997,2999,3000},
             [questKeys.exclusiveTo] = {},
         },
 
@@ -7097,7 +7099,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [6146] = {
-            [questKeys.preQuestSingle] = {6145,14350},
+            [questKeys.preQuestSingle] = {},
         },
 
         [6148] = {
@@ -7291,7 +7293,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [6962] = {
-            [questKeys.preQuestSingle] = {6961,7021,7024},
             [questKeys.breadcrumbs] = {},
         },
 
@@ -7320,10 +7321,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         [7024] = {
             [questKeys.nextQuestInChain] = 0,
             [questKeys.breadcrumbForQuestId] = 0,
-        },
-
-        [7025] = {
-            [questKeys.preQuestSingle] = {7022,7023},
         },
 
         [7043] = {
@@ -7423,6 +7420,18 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [7482] = {
             [questKeys.objectivesText] = {"Search Dire Maul for Kariel Winthalus. Report back to Scholar Runethorn at Feathermoon with whatever information that you may find."},
+        },
+
+        [7483] = {
+            [questKeys.preQuestSingle] = {},
+        },
+
+        [7484] = {
+            [questKeys.preQuestSingle] = {},
+        },
+
+        [7485] = {
+            [questKeys.preQuestSingle] = {},
         },
 
         [7488] = {
@@ -12933,6 +12942,18 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectivesText] = {"Use the Felhound Whistle to summon a Fel Guard Hound.  Take the Fel Guard Hound for a walk and kill some Deranged Helboars.  Search for the Shredder Keys in the Fel Guard Hound's \"leavings.\"  Return the Shredder Keys to Foreman Razelcraz by the mine northwest of Thrallmar."},
         },
 
+        [10634] = {
+            [questKeys.preQuestSingle] = {},
+        },
+
+        [10635] = {
+            [questKeys.preQuestSingle] = {},
+        },
+
+        [10636] = {
+            [questKeys.preQuestSingle] = {},
+        },
+
         [10637] = {
             [questKeys.specialFlags] = specialFlags.SPELL_CAST,
         },
@@ -13516,15 +13537,15 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [10995] = {
-            [questKeys.preQuestSingle] = {10983,10989},
+            [questKeys.preQuestSingle] = {},
         },
 
         [10996] = {
-            [questKeys.preQuestSingle] = {10983,10989},
+            [questKeys.preQuestSingle] = {},
         },
 
         [10997] = {
-            [questKeys.preQuestSingle] = {10983,10989},
+            [questKeys.preQuestSingle] = {},
         },
 
         [11005] = {
@@ -13808,7 +13829,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         [11131] = {
             [questKeys.objectivesText] = {"The Costumed Orphan Matron wants you to help put out all the village fires.  When they are out, speak again to the Costumed Orphan Matron."},
             [questKeys.requiredSourceItems] = {},
-            [questKeys.preQuestSingle] = {11360,11439,11440},
             [questKeys.exclusiveTo] = {12135},
         },
 
@@ -13950,7 +13970,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         [11219] = {
             [questKeys.objectivesText] = {"The Masked Orphan Matron wants you to help put out all the village fires.  When they are out, speak again to the Masked Orphan Matron in town."},
             [questKeys.requiredSourceItems] = {},
-            [questKeys.preQuestSingle] = {11361,11449,11450},
             [questKeys.exclusiveTo] = {12139},
         },
 
@@ -14556,7 +14575,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11586] = {
-            [questKeys.preQuestSingle] = {10172},
+            [questKeys.preQuestSingle] = {},
         },
 
         [11587] = {
@@ -14576,17 +14595,12 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11595] = {
-            [questKeys.preQuestSingle] = {7784},
             [questKeys.exclusiveTo] = {11596,11597},
         },
 
         [11596] = {
             [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {11595,11597},
-        },
-
-        [11597] = {
-            [questKeys.preQuestSingle] = {8743},
         },
 
         [11603] = {
@@ -15284,6 +15298,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         [12135] = {
             [questKeys.objectivesText] = {"The Costumed Orphan Matron wants you to help put out all the village fires after the Headless Horseman lights them.  When they are out, speak again to the Costumed Orphan Matron."},
             [questKeys.requiredSourceItems] = {},
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {11131},
             [questKeys.questFlags] = 4170,
             [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.EXPLORATION_OR_EVENT,
@@ -15301,6 +15316,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         [12139] = {
             [questKeys.objectivesText] = {"The Masked Orphan Matron wants you to help put out all the village fires.  When they are out, speak again to the Masked Orphan Matron in town."},
             [questKeys.requiredSourceItems] = {},
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {11219},
             [questKeys.questFlags] = 4170,
             [questKeys.specialFlags] = specialFlags.REPEATABLE + specialFlags.EXPLORATION_OR_EVENT,
@@ -15483,10 +15499,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [12223] = {
             [questKeys.nextQuestInChain] = 12255,
-        },
-
-        [12224] = {
-            [questKeys.preQuestSingle] = {12008,12072,12140,12221},
         },
 
         [12225] = {
@@ -16126,6 +16138,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12486] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.parentQuest] = 11598,
         },
 
@@ -16847,6 +16860,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [12821] = {
             [questKeys.sourceItemId] = 0,
+            [questKeys.preQuestSingle] = {12828},
             [questKeys.questFlags] = 138,
         },
 
@@ -16966,7 +16980,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [12924] = {
             [questKeys.requiredSourceItems] = {41557},
-            [questKeys.preQuestSingle] = {12915,12956},
         },
 
         [12925] = {
@@ -17002,6 +17015,10 @@ QuestieCompat.RegisterCorrection("questData", function()
         [12932] = {
             [questKeys.exclusiveTo] = {12954},
             [questKeys.nextQuestInChain] = 0,
+        },
+
+        [12933] = {
+            [questKeys.preQuestSingle] = {},
         },
 
         [12937] = {
@@ -17241,7 +17258,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [13068] = {
             [questKeys.objectivesText] = {"Highlord Tirion Fordring at Crusaders' Pinnacle has requested that you locate the hero, Crusader Bridenbrad at the Silent Vigil, in northeast Icecrown.  His fire pit will likely be the most obvious indication of his location from the air."},
-            [questKeys.preQuestSingle] = {13139},
+            [questKeys.preQuestSingle] = {},
         },
 
         [13071] = {
@@ -17304,7 +17321,7 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [13110] = {
             [questKeys.requiredSourceItems] = {43153},
-            [questKeys.preQuestSingle] = {13104,13105},
+            [questKeys.preQuestSingle] = {},
             [questKeys.specialFlags] = specialFlags.SPELL_CAST,
         },
 
@@ -17313,7 +17330,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13118] = {
-            [questKeys.preQuestSingle] = {13104,13105},
+            [questKeys.preQuestSingle] = {},
         },
 
         [13119] = {
@@ -17322,11 +17339,10 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [13120] = {
             [questKeys.requiredSourceItems] = {43229},
-            [questKeys.preQuestSingle] = {13104,13105,13117},
         },
 
         [13122] = {
-            [questKeys.preQuestSingle] = {13104,13105},
+            [questKeys.preQuestSingle] = {},
         },
 
         [13124] = {
@@ -17338,7 +17354,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13130] = {
-            [questKeys.preQuestSingle] = {13104,13105},
+            [questKeys.preQuestSingle] = {},
         },
 
         [13133] = {
@@ -17347,7 +17363,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13135] = {
-            [questKeys.preQuestSingle] = {13104,13105},
+            [questKeys.preQuestSingle] = {},
         },
 
         [13138] = {
@@ -17376,7 +17392,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [13152] = {
             [questKeys.objectives] = {{{30993}},{{193025}}},
-            [questKeys.preQuestSingle] = {13138,13140},
             [questKeys.specialFlags] = specialFlags.NONE,
         },
 
@@ -17393,15 +17408,15 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13161] = {
-            [questKeys.preQuestSingle] = {13146,13147,13160},
+            [questKeys.preQuestSingle] = {},
         },
 
         [13162] = {
-            [questKeys.preQuestSingle] = {13146,13147,13160},
+            [questKeys.preQuestSingle] = {},
         },
 
         [13163] = {
-            [questKeys.preQuestSingle] = {13146,13147,13160},
+            [questKeys.preQuestSingle] = {},
         },
 
         [13183] = {
@@ -17472,7 +17487,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [13211] = {
             [questKeys.requiredSourceItems] = {43524},
-            [questKeys.preQuestSingle] = {13138,13140},
             [questKeys.specialFlags] = specialFlags.SPELL_CAST,
         },
 
@@ -17481,10 +17495,12 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13224] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {13225},
         },
 
         [13225] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {13224},
         },
 
@@ -17499,10 +17515,12 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13230] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.parentQuest] = 0,
         },
 
         [13232] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.parentQuest] = 0,
         },
 
@@ -17577,10 +17595,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [13256] = {
             [questKeys.exclusiveTo] = {13245,13246,13247,13248,13249,13250,13251,13252,13253,13254,13255},
-        },
-
-        [13258] = {
-            [questKeys.preQuestSingle] = {12899,13224},
         },
 
         [13261] = {
@@ -18064,25 +18078,29 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13592] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13593] = {
-            [questKeys.preQuestSingle] = {13700},
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
             [questKeys.nextQuestInChain] = 13718,
         },
 
         [13600] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13603] = {
             [questKeys.requiredSourceItems] = {44986},
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13616] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
@@ -18119,10 +18137,11 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13664] = {
-            [questKeys.preQuestSingle] = {13663,13700,13701},
+            [questKeys.preQuestSingle] = {13663},
         },
 
         [13665] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
@@ -18220,57 +18239,97 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectivesText] = {"Speak with Eressea Dawnsinger at the Argent Tournament Grounds  to become a valiant of Silvermoon."},
         },
 
+        [13697] = {
+            [questKeys.preQuestSingle] = {},
+        },
+
         [13699] = {
             [questKeys.objectives] = {{{33708}}},
         },
 
         [13703] = {
-            [questKeys.preQuestSingle] = {13700},
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13704] = {
-            [questKeys.preQuestSingle] = {13700},
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13705] = {
-            [questKeys.preQuestSingle] = {13700},
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13706] = {
-            [questKeys.preQuestSingle] = {13700},
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13707] = {
-            [questKeys.preQuestSingle] = {13701},
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13708] = {
-            [questKeys.preQuestSingle] = {13701},
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13709] = {
-            [questKeys.preQuestSingle] = {13701},
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13710] = {
-            [questKeys.preQuestSingle] = {13701},
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13711] = {
-            [questKeys.preQuestSingle] = {13701},
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13713] = {
             [questKeys.objectives] = {{{33708}}},
+        },
+
+        [13714] = {
+            [questKeys.preQuestSingle] = {},
+        },
+
+        [13715] = {
+            [questKeys.preQuestSingle] = {},
+        },
+
+        [13716] = {
+            [questKeys.preQuestSingle] = {},
+        },
+
+        [13717] = {
+            [questKeys.preQuestSingle] = {},
+        },
+
+        [13718] = {
+            [questKeys.preQuestSingle] = {},
+        },
+
+        [13719] = {
+            [questKeys.preQuestSingle] = {},
+        },
+
+        [13720] = {
+            [questKeys.preQuestSingle] = {},
+        },
+
+        [13721] = {
+            [questKeys.preQuestSingle] = {},
+        },
+
+        [13722] = {
+            [questKeys.preQuestSingle] = {},
         },
 
         [13723] = {
@@ -18307,190 +18366,235 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [13741] = {
             [questKeys.requiredSourceItems] = {44986},
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13742] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13743] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13744] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13745] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13746] = {
             [questKeys.requiredSourceItems] = {44986},
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13747] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13748] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13749] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13750] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13752] = {
             [questKeys.requiredSourceItems] = {44986},
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13753] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13754] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13755] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13756] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13757] = {
             [questKeys.requiredSourceItems] = {44986},
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13758] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13759] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13760] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13761] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13762] = {
             [questKeys.requiredSourceItems] = {44986},
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13763] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13764] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13765] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13767] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13768] = {
             [questKeys.requiredSourceItems] = {44986},
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13769] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13770] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13771] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13772] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13773] = {
             [questKeys.requiredSourceItems] = {44986},
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13774] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13775] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13776] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13777] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13778] = {
             [questKeys.requiredSourceItems] = {44986},
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13779] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13780] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13781] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13782] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13783] = {
             [questKeys.requiredSourceItems] = {44986},
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13784] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13785] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13786] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13787] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
@@ -18516,6 +18620,11 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [13794] = {
             [questKeys.requiredClasses] = classIDs.WARRIOR + classIDs.PALADIN + classIDs.HUNTER + classIDs.ROGUE + classIDs.PRIEST + classIDs.SHAMAN + classIDs.MAGE + classIDs.WARLOCK + classIDs.DRUID,
+            [questKeys.preQuestSingle] = {},
+        },
+
+        [13795] = {
+            [questKeys.preQuestSingle] = {},
         },
 
         [13809] = {
@@ -18586,45 +18695,56 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [13846] = {
             [questKeys.requiredMaxRep] = false,
+            [questKeys.preQuestSingle] = {},
         },
 
         [13847] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13851] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13852] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13854] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13855] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13856] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13857] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13858] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13859] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
         [13860] = {
+            [questKeys.preQuestSingle] = {},
             [questKeys.exclusiveTo] = {},
         },
 
