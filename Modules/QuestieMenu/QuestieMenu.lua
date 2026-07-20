@@ -107,7 +107,7 @@ local function getNpcTitle(id, key)
     local npcTitle = Questie:Colorize(npcName, "white")
 
     local subName = QuestieDB.QueryNPCSingle(id, "subName")
-    if (not subName) then
+    if (not subName) or subName == "" then
         local trainerName = QuestieProfessions.GetTrainerName(key)
         if trainerName then
             subName = l10n(trainerName)
