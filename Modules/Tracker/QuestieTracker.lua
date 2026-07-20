@@ -548,9 +548,10 @@ local function _UpdateLineWidth(line, objectiveMarginLeft)
     if unboundedWidth <= labelWidth + 1 then
         trackerLineWidth = math_max(trackerLineWidth, unboundedWidth + objectiveMarginLeft)
     else
-        -- We use the fontSize as reliable way to determine the line height. GetStringHeight can be inconsistent
+        -- We use the fontSize as reliable way to determine the line height. GetStringHeight can be inconsistent.
+        -- Add an extra pixel per line to account for WoW's internal line spacing on top of the raw font size.
         local _, fontSize = line.label:GetFont()
-        local lineHeight = (fontSize * line.label:GetNumLines()) + 1 -- add an extra pixel to make sure it really wraps
+        local lineHeight = ((fontSize + 1) * line.label:GetNumLines()) + 1 -- add an extra pixel to make sure it really wraps
         line.label:SetHeight(lineHeight)
         line:SetHeight(line.label:GetHeight() + 1)
 
@@ -649,7 +650,7 @@ function QuestieTracker:Update(force)
             local cachedObjectives = QuestLogCache.questLog_DO_NOT_MODIFY[questId] and QuestLogCache.questLog_DO_NOT_MODIFY[questId].objectives
             local complete = quest:IsComplete()
             local zoneName = questDetails[questId].zoneName
-            local remainingSeconds = TrackerQuestTimers:GetRemainingTime(quest, nil, true)
+            local timeRemainingString, timeRemaining = TrackerQuestTimers:GetRemainingTime(quest, nil, true)
             local timedQuest = (quest.trackTimedQuest or quest.timedBlizzardQuest)
 
             if (complete ~= 1 or Questie.db.profile.trackerShowCompleteQuests or timedQuest)
@@ -755,7 +756,7 @@ function QuestieTracker:Update(force)
                     local completionText = TrackerUtils:GetCompletionText(quest)
 
                     -- Clear Blizzard Completion Text
-                    if ((Questie.db.profile.hideBlizzardCompletionText or objectiveColor == "minimal") and not timedQuest) or complete == -1 then
+                    if (Questie.db.profile.hideBlizzardCompletionText or objectiveColor == "minimal") and (not timedQuest or complete ~= 0) or complete == -1 then
                         completionText = nil
                     end
 
@@ -772,7 +773,7 @@ function QuestieTracker:Update(force)
                     end
 
                     -- Set minimizable quest flag
-                    local isMinimizable = ((complete == 1 or complete == -1) or (#quest.Objectives == 0 and quest.isComplete == true)) and completionText == nil
+                    local isMinimizable = (complete == 1 or complete == -1) or (#quest.Objectives == 0 and quest.isComplete == true)
 
                     -- Handles the collapseCompletedQuests option from the Questie Config --> Tracker options.
                     if Questie.db.profile.collapseCompletedQuests and isMinimizable and not timedQuest then
@@ -802,7 +803,8 @@ function QuestieTracker:Update(force)
                     local coloredQuestName
 
                     if timedQuest then
-                        coloredQuestName = QuestieLib:GetColoredQuestName(quest.Id, Questie.db.profile.trackerShowQuestLevel, false, false)
+                        local showTimedState = isMinimizable and (Questie.db.profile.collapseCompletedQuests or Questie.db.char.collapsedQuests[quest.Id] ~= nil)
+                        coloredQuestName = QuestieLib:GetColoredQuestName(quest.Id, Questie.db.profile.trackerShowQuestLevel, showTimedState, false)
                     else
                         coloredQuestName = QuestieLib:GetColoredQuestName(quest.Id, Questie.db.profile.trackerShowQuestLevel, ((isMinimizable and Questie.db.profile.collapseCompletedQuests) or Questie.db.char.collapsedQuests[quest.Id] ~= nil), false)
                     end
@@ -893,7 +895,7 @@ function QuestieTracker:Update(force)
 
                             -- If the Quest is minimized show the Expand Quest button
                             if Questie.db.char.collapsedQuests[quest.Id] then
-                                if Questie.db.profile.collapseCompletedQuests and isMinimizable and not timedQuest then
+                                if Questie.db.profile.collapseCompletedQuests and isMinimizable then
                                     button.line.expandQuest:Hide()
                                 else
                                     button.line.expandQuest:Show()
@@ -922,7 +924,7 @@ function QuestieTracker:Update(force)
                             -- See previous comment for details on why we're setting this button to UIParent.
                             button:SetParent(UIParent)
 
-                            if (Questie.db.profile.collapseCompletedQuests and isMinimizable and not timedQuest) then
+                            if Questie.db.profile.collapseCompletedQuests and isMinimizable then
                                 line.expandQuest:Hide()
                             else
                                 line.expandQuest:Show()
@@ -935,7 +937,7 @@ function QuestieTracker:Update(force)
                         line.button = button
 
                         -- Hide button if quest complete or failed
-                    elseif (Questie.db.profile.collapseCompletedQuests and isMinimizable and not timedQuest) then
+                    elseif Questie.db.profile.collapseCompletedQuests and isMinimizable then
                         line.expandQuest:Hide()
                     else
                         line.expandQuest:Show()
@@ -1034,10 +1036,24 @@ function QuestieTracker:Update(force)
                     line:Show()
                     line.label:Show()
 
-                    -- Add quest Objectives (if applicable)
-                    if (not Questie.db.char.collapsedQuests[quest.Id]) then
-                        -- Add Quest Timers (if applicable)
-                        if timedQuest then
+                    -- Add Quest Timers (if applicable) - always shown for timed quests, even when collapsed
+                    if timedQuest then
+                        local timerLabelText
+                        local activeTimer = false
+
+                        if quest.timedBlizzardQuest then
+                            timerLabelText = Questie:Colorize(l10n("Blizzard Timer Active") .. "!", "blue")
+                        elseif timeRemaining then
+                            if timeRemaining <= 1 then
+                                timerLabelText = Questie:Colorize(l10n("Time's up"), "lightBlue")
+                            else
+                                timerLabelText = Questie:Colorize(timeRemainingString, "lightBlue")
+                                activeTimer = true
+                            end
+                        end
+
+                        -- Only create a timer line when there is text to display.
+                        if timerLabelText then
                             -- Get next line in linePool
                             line = TrackerLinePool.GetNextLine()
 
@@ -1061,23 +1077,8 @@ function QuestieTracker:Update(force)
                             line.label:SetFont(LSM30:Fetch("font", Questie.db.profile.trackerFontObjective), Questie.db.profile.trackerFontSizeObjective, Questie.db.profile.trackerFontOutline)
 
                             -- Set Timer Title based on states
-                            line.label.activeTimer = false
-                            local timerLabelText
-                            if quest.timedBlizzardQuest then
-                                timerLabelText = Questie:Colorize(l10n("Blizzard Timer Active") .. "!", "blue")
-                            else
-                                local timeRemainingString, timeRemaining = TrackerQuestTimers:GetRemainingTime(quest, line, false)
-                                if timeRemaining then
-                                    if timeRemaining <= 1 then
-                                        timerLabelText = Questie:Colorize("0 Seconds", "lightBlue")
-                                        line.label.activeTimer = false
-                                    else
-                                        timerLabelText = Questie:Colorize(timeRemainingString, "lightBlue")
-                                        line.label.activeTimer = true
-                                    end
-                                end
-                            end
-                            line.label:SetText(timerLabelText or "")
+                            line.label.activeTimer = activeTimer
+                            line.label:SetText(timerLabelText)
                             line:RefreshTimedQuestUpdater()
 
                             -- Reserve enough width for "MM Minutes SS Seconds" so timer text
@@ -1089,7 +1090,7 @@ function QuestieTracker:Update(force)
                             line.label:SetText(Questie:Colorize(timerSampleText, "lightBlue"))
                             local timerReserveWidth = line.label:GetUnboundedStringWidth()
                             line.timerReserveWidth = timerReserveWidth + 2
-                            line.label:SetText(timerLabelText or "")
+                            line.label:SetText(timerLabelText)
                             local timerLabelWidth = math_max(line.label:GetUnboundedStringWidth(), timerReserveWidth)
 
                             -- Check and measure Timer text width and update tracker width
@@ -1108,7 +1109,10 @@ function QuestieTracker:Update(force)
                             line:Show()
                             line.label:Show()
                         end
+                    end
 
+                    -- Add quest Objectives (if applicable)
+                    if (not Questie.db.char.collapsedQuests[quest.Id]) then
                         -- Add incomplete Quest Objectives
                         if complete == 0 and quest.isComplete ~= true then
                             for _, objective in pairs(quest.Objectives) do
@@ -1233,7 +1237,7 @@ function QuestieTracker:Update(force)
 
                             -- Add complete/failed Quest Objectives and tag them as either complete or failed so as to always have at least one objective.
                             -- Some quests have "Blizzard Completion Text" that is displayed to show where to go next or where to turn in the quest.
-                        elseif complete == 1 or complete == -1 or quest.isComplete == true then
+                        elseif (complete == 1 or complete == -1 or quest.isComplete == true) and (not (timedQuest and isMinimizable and Questie.db.profile.collapseCompletedQuests)) then
                             -- Get next line in linePool
                             line = TrackerLinePool.GetNextLine()
 

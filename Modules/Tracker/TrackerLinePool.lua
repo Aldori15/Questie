@@ -199,10 +199,8 @@ function TrackerLinePool.Initialize(questFrame)
                     if timeRemaining ~= nil then
                         if timeRemaining > 1 then
                             TrackerQuestTimers:UpdateTimerFrame(self, self.Quest.Id, timeRemainingString)
-                        end
-
-                        if timeRemaining == 1 then
-                            TrackerQuestTimers:UpdateTimerFrame(self, self.Quest.Id, timeRemainingString)
+                        else
+                            TrackerQuestTimers:UpdateTimerFrame(self, self.Quest.Id, l10n("Time's up"))
                         end
 
                         timeElapsed = 0
@@ -210,6 +208,10 @@ function TrackerLinePool.Initialize(questFrame)
                         self.label.activeTimer = false
                         self:RefreshTimedQuestUpdater()
                         timeElapsed = 0
+
+                        QuestieCombatQueue:Queue(function()
+                            QuestieTracker:Update(true)
+                        end)
                         return
                     end
                 end

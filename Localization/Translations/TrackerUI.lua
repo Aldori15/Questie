@@ -401,6 +401,18 @@ local trackerUILocales = {
         ["zhCN"] = "任务失败！",
         ["zhTW"] = "任務失敗！",
     },
+    ["Time's up"] = {
+        ["enUS"] = true,
+        ["deDE"] = "Zeit abgelaufen",
+        ["esES"] = "Se acabó el tiempo",
+        ["esMX"] = "Se acabó el tiempo",
+        ["frFR"] = "Le temps est écoulé",
+        ["koKR"] = "시간 종료",
+        ["ptBR"] = "O tempo acabou",
+        ["ruRU"] = "Время закончилось",
+        ["zhCN"] = "计时结束",
+        ["zhTW"] = false,
+    },
     ["Can't open Quest Log while in combat. Open it manually."] = {
         ["enUS"] = true,
         ["deDE"] = "Das Quest Log kann nicht im Kampf geöffnet werden. Bitte öffne es manuell.",
