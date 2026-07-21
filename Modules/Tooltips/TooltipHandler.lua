@@ -46,6 +46,7 @@ function _QuestieTooltips:AddUnitDataToTooltip()
 
         local tooltipData = QuestieTooltips:GetTooltip("m_" .. npcId);
         if tooltipData then
+            GameTooltip:AddLine(" ")
             for _, v in pairs (tooltipData) do
                 GameTooltip:AddLine(v)
             end
