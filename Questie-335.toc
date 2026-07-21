@@ -83,8 +83,6 @@ Database\Corrections\wotlkObjectFixes.lua
 
 # Item Drops
 Database\DropTables\dropDB.lua
-Database\DropTables\data\itemDropCorrections.lua
-Database\DropTables\data\wotlkItemDrops.lua
 Database\DropTables\data\wotlkAcoreItemDrops.lua
 
 # Compiler
