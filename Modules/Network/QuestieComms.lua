@@ -1054,7 +1054,7 @@ function _QuestieComms.OnCommReceived_unsafe(prefix, message, distribution, send
             if(decompressedData and decompressedData.msgId and _QuestieComms.packets[decompressedData.msgId]) then
 
                 --If a new version exist, tell them!
-                if(suggestUpdate) then
+                if ((suggestUpdate) and not Questie.db.profile.debugEnabled) then
                     local major, minor, patch = strsplit(".", decompressedData.ver);
                     local majorOwn, minorOwn, patchOwn = QuestieLib:GetAddonVersionInfo();
                     major, minor, patch = tonumber(major), tonumber(minor), tonumber(patch);
