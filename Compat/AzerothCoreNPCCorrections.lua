@@ -15106,8 +15106,8 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [10404] = {
-            [npcKeys.spawns] = {[4830] = {{39.7,54.45},{39.8,52.9}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{39.7,54.45},{39.8,52.9}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [10408] = {
@@ -23849,13 +23849,13 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [15989] = {
-            [npcKeys.spawns] = {[4842] = {{56.47,67.27}}},
-            [npcKeys.zoneID] = 4842,
+            [npcKeys.spawns] = {[zoneIDs.NAXXRAMAS_FROSTWYRM_LAIR] = {{56.47,67.27}}},
+            [npcKeys.zoneID] = zoneIDs.NAXXRAMAS_FROSTWYRM_LAIR,
         },
 
         [15990] = {
-            [npcKeys.spawns] = {[4842] = {{37.76,15.29}}},
-            [npcKeys.zoneID] = 4842,
+            [npcKeys.spawns] = {[zoneIDs.NAXXRAMAS_FROSTWYRM_LAIR] = {{37.76,15.29}}},
+            [npcKeys.zoneID] = zoneIDs.NAXXRAMAS_FROSTWYRM_LAIR,
         },
 
         [16000] = {
@@ -26777,8 +26777,8 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [16980] = {
-            [npcKeys.spawns] = {[4842] = {{37.76,15.29}}},
-            [npcKeys.zoneID] = 4842,
+            [npcKeys.spawns] = {[zoneIDs.NAXXRAMAS_FROSTWYRM_LAIR] = {{37.76,15.29}}},
+            [npcKeys.zoneID] = zoneIDs.NAXXRAMAS_FROSTWYRM_LAIR,
             [npcKeys.friendlyToFaction] = "",
         },
 
@@ -66531,8 +66531,8 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [30298] = {
-            [npcKeys.spawns] = {[zoneIDs.ICECROWN] = {{74.16,23.61}}, [zoneIDs.GUNDRAK_UPPER_LEVEL] = {{39.78,49.16},{45,48.68},{46.57,62.21},{46.6,51.03},{48.14,48.68},{53.63,48.66}}, [4830] = {{20.11,51.37},{20.32,56.26},{23.13,51.13},{23.23,56.28},{44.78,56.22},{44.85,50.61},{45.07,58.27},{45.99,57.15},{46.13,50.63},{46.25,48.87},{46.98,55.86},{47.24,60.5},{47.41,47.14},{47.51,58.04},{47.77,50.68},{47.97,57.07},{48.46,50.31},{48.51,62.06},{48.6,47.34},{49.11,44.12},{49.24,58.62},{49.62,48.57},{49.69,62.07},{49.76,45.6},{50.17,60.03},{50.52,47.21},{50.67,44.24},{51.83,53.69},{53.25,63.23},{53.28,60.25},{53.57,43.78},{53.69,45.69},{53.84,48.14},{54.1,61.78},{54.12,58.8},{54.16,49.13},{54.75,59.54},{54.8,63.21},{54.87,45.68},{55.21,56.97},{55.44,50.67},{56.15,47.22},{56.15,49.02},{56.19,55.63},{56.38,60.04},{56.44,51.86},{57.43,50.56},{57.47,58.2},{57.52,56.43},{58.34,49.43},{58.43,51.75},{58.8,56.34}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN] = {{74.16,23.61}}, [zoneIDs.GUNDRAK_UPPER_LEVEL] = {{39.78,49.16},{45,48.68},{46.57,62.21},{46.6,51.03},{48.14,48.68},{53.63,48.66}}, [zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{20.11,51.37},{20.32,56.26},{23.13,51.13},{23.23,56.28},{44.78,56.22},{44.85,50.61},{45.07,58.27},{45.99,57.15},{46.13,50.63},{46.25,48.87},{46.98,55.86},{47.24,60.5},{47.41,47.14},{47.51,58.04},{47.77,50.68},{47.97,57.07},{48.46,50.31},{48.51,62.06},{48.6,47.34},{49.11,44.12},{49.24,58.62},{49.62,48.57},{49.69,62.07},{49.76,45.6},{50.17,60.03},{50.52,47.21},{50.67,44.24},{51.83,53.69},{53.25,63.23},{53.28,60.25},{53.57,43.78},{53.69,45.69},{53.84,48.14},{54.1,61.78},{54.12,58.8},{54.16,49.13},{54.75,59.54},{54.8,63.21},{54.87,45.68},{55.21,56.97},{55.44,50.67},{56.15,47.22},{56.15,49.02},{56.19,55.63},{56.38,60.04},{56.44,51.86},{57.43,50.56},{57.47,58.2},{57.52,56.43},{58.34,49.43},{58.43,51.75},{58.8,56.34}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [30299] = {
@@ -68956,7 +68956,7 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [31125] = {
-            [npcKeys.spawns] = {[4603] = {{49.15,17.08}}},
+            [npcKeys.spawns] = {[zoneIDs.VAULT_OF_ARCHAVON] = {{49.15,17.08}}},
         },
 
         [31126] = {
@@ -72848,8 +72848,8 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [32353] = {
-            [npcKeys.spawns] = {[4603] = {{48.52,57.12},{49.28,68.59},{49.33,41.77}}},
-            [npcKeys.waypoints] = {[4603] = {{{48.03,56.58},{47.87,55.88},{47.77,54.76},{48.22,53.85},{48.81,53.16},{49.63,52.95},{50.14,53.38},{50.71,54.62},{50.78,55.49},{50.58,56.45},{50.21,57.29},{49.5,57.65},{48.75,57.5},{48.46,57.17}},{{49.23,67.63},{49.26,65.37},{49.25,64.24},{49.26,61.61},{49.26,58.86},{49.35,58.12},{50.12,57.37},{50.82,56.48},{50.97,55.5},{50.96,54.38},{50.1,53.19},{49.37,52.58},{49.34,52.21},{49.33,51.08},{49.32,49.08},{49.31,47.2},{49.3,45.07},{49.29,43.07},{49.32,44.57},{49.37,47.83},{49.36,50.21},{49.31,51.83},{49.25,52.44},{48.87,53.11},{48.06,54},{47.61,55.05},{47.76,56.28},{48.52,57.45},{49.36,58.48},{49.36,58.86},{49.36,60.23},{49.35,62.49},{49.35,64.12},{49.35,66.24},{49.36,67.61}}}},
+            [npcKeys.spawns] = {[zoneIDs.VAULT_OF_ARCHAVON] = {{48.52,57.12},{49.28,68.59},{49.33,41.77}}},
+            [npcKeys.waypoints] = {[zoneIDs.VAULT_OF_ARCHAVON] = {{{48.03,56.58},{47.87,55.88},{47.77,54.76},{48.22,53.85},{48.81,53.16},{49.63,52.95},{50.14,53.38},{50.71,54.62},{50.78,55.49},{50.58,56.45},{50.21,57.29},{49.5,57.65},{48.75,57.5},{48.46,57.17}},{{49.23,67.63},{49.26,65.37},{49.25,64.24},{49.26,61.61},{49.26,58.86},{49.35,58.12},{50.12,57.37},{50.82,56.48},{50.97,55.5},{50.96,54.38},{50.1,53.19},{49.37,52.58},{49.34,52.21},{49.33,51.08},{49.32,49.08},{49.31,47.2},{49.3,45.07},{49.29,43.07},{49.32,44.57},{49.37,47.83},{49.36,50.21},{49.31,51.83},{49.25,52.44},{48.87,53.11},{48.06,54},{47.61,55.05},{47.76,56.28},{48.52,57.45},{49.36,58.48},{49.36,58.86},{49.36,60.23},{49.35,62.49},{49.35,64.12},{49.35,66.24},{49.36,67.61}}}},
         },
 
         [32354] = {
@@ -74506,7 +74506,7 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [32780] = {
-            [npcKeys.spawns] = {[4603] = {{49.98,56.81}}, [zoneIDs.THE_INNER_SANCTUM_OF_ULDUAR] = {{65.9,49},{65.91,48.57},{65.93,48.08},{66.15,49.29},{66.16,50.27},{66.17,47.81},{66.21,46.72},{66.23,50.55},{66.25,46.36},{66.26,50.88},{66.31,47.08},{66.34,49.88},{66.36,47.56},{66.37,49.53},{66.41,51.08},{66.49,45.85},{66.52,51.38},{66.82,45.73},{66.9,51.27},{67.06,51.48},{67.08,45.6},{67.15,44.81},{67.17,45.12},{67.17,51.92},{67.26,52.43},{67.4,44.51},{67.45,52.67},{67.64,44.36},{67.64,52.86},{67.85,52.93},{67.93,44.17},{68.07,53.08},{68.26,44.09},{68.29,53.17},{68.56,53.19},{68.71,44.49},{68.76,52.91},{68.94,44.47},{69.17,52.87},{69.24,44.44},{69.37,53.13},{69.4,44.45},{69.7,53.21},{69.85,44.11},{70.05,53.01},{70.1,44.21},{70.38,52.58},{70.39,44.35},{70.63,44.55},{70.64,52.06},{70.86,44.81},{70.86,45.24},{70.93,51.39},{70.94,45.67},{70.97,48.24},{70.97,48.78},{71.01,49.29},{71.04,47.6},{71.06,49.62},{71.11,51.07},{71.16,46.91},{71.18,50.15},{71.31,45.72},{71.39,46.33},{71.39,50.85}}},
+            [npcKeys.spawns] = {[zoneIDs.VAULT_OF_ARCHAVON] = {{49.98,56.81}}, [zoneIDs.THE_INNER_SANCTUM_OF_ULDUAR] = {{65.9,49},{65.91,48.57},{65.93,48.08},{66.15,49.29},{66.16,50.27},{66.17,47.81},{66.21,46.72},{66.23,50.55},{66.25,46.36},{66.26,50.88},{66.31,47.08},{66.34,49.88},{66.36,47.56},{66.37,49.53},{66.41,51.08},{66.49,45.85},{66.52,51.38},{66.82,45.73},{66.9,51.27},{67.06,51.48},{67.08,45.6},{67.15,44.81},{67.17,45.12},{67.17,51.92},{67.26,52.43},{67.4,44.51},{67.45,52.67},{67.64,44.36},{67.64,52.86},{67.85,52.93},{67.93,44.17},{68.07,53.08},{68.26,44.09},{68.29,53.17},{68.56,53.19},{68.71,44.49},{68.76,52.91},{68.94,44.47},{69.17,52.87},{69.24,44.44},{69.37,53.13},{69.4,44.45},{69.7,53.21},{69.85,44.11},{70.05,53.01},{70.1,44.21},{70.38,52.58},{70.39,44.35},{70.63,44.55},{70.64,52.06},{70.86,44.81},{70.86,45.24},{70.93,51.39},{70.94,45.67},{70.97,48.24},{70.97,48.78},{71.01,49.29},{71.04,47.6},{71.06,49.62},{71.11,51.07},{71.16,46.91},{71.18,50.15},{71.31,45.72},{71.39,46.33},{71.39,50.85}}},
             [npcKeys.zoneID] = zoneIDs.THE_INNER_SANCTUM_OF_ULDUAR,
         },
 
@@ -77169,7 +77169,7 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [33993] = {
-            [npcKeys.spawns] = {[4603] = {{62.53,55.44}}},
+            [npcKeys.spawns] = {[zoneIDs.VAULT_OF_ARCHAVON] = {{62.53,55.44}}},
         },
 
         [33996] = {
@@ -77202,8 +77202,8 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [34015] = {
-            [npcKeys.spawns] = {[4603] = {{55.92,55.46},{58.28,55.46}}},
-            [npcKeys.waypoints] = {[4603] = {{{56.25,55.46},{55.17,55.46},{54.51,55.45},{53.8,55.46},{52.88,55.45},{53.8,55.46},{54.51,55.45},{55.17,55.46},{56.25,55.46},{56.99,55.46}}}},
+            [npcKeys.spawns] = {[zoneIDs.VAULT_OF_ARCHAVON] = {{55.92,55.46},{58.28,55.46}}},
+            [npcKeys.waypoints] = {[zoneIDs.VAULT_OF_ARCHAVON] = {{{56.25,55.46},{55.17,55.46},{54.51,55.45},{53.8,55.46},{52.88,55.45},{53.8,55.46},{54.51,55.45},{55.17,55.46},{56.25,55.46},{56.99,55.46}}}},
         },
 
         [34017] = {
@@ -79254,7 +79254,7 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [35013] = {
-            [npcKeys.spawns] = {[4603] = {{34.42,55.42}}},
+            [npcKeys.spawns] = {[zoneIDs.VAULT_OF_ARCHAVON] = {{34.42,55.42}}},
         },
 
         [35014] = {
@@ -79654,8 +79654,8 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [35143] = {
             [npcKeys.minLevel] = 78,
             [npcKeys.maxLevel] = 78,
-            [npcKeys.spawns] = {[4603] = {{39.93,55.52},{44.61,55.43}}},
-            [npcKeys.waypoints] = {[4603] = {{{41.73,55.43},{44.61,55.43}}}},
+            [npcKeys.spawns] = {[zoneIDs.VAULT_OF_ARCHAVON] = {{39.93,55.52},{44.61,55.43}}},
+            [npcKeys.waypoints] = {[zoneIDs.VAULT_OF_ARCHAVON] = {{{41.73,55.43},{44.61,55.43}}}},
         },
 
         [35145] = {
@@ -81175,7 +81175,7 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [36093] = {
             [npcKeys.minLevel] = 1,
             [npcKeys.maxLevel] = 1,
-            [npcKeys.spawns] = {[4603] = {{49.27,55.45}}},
+            [npcKeys.spawns] = {[zoneIDs.VAULT_OF_ARCHAVON] = {{49.27,55.45}}},
         },
 
         [36095] = {
@@ -81620,8 +81620,8 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [36597] = {
-            [npcKeys.spawns] = {[4837] = {{49.65,90.64}}},
-            [npcKeys.zoneID] = 4837,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_THE_FROZEN_THRONE] = {{49.65,90.64}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_THE_FROZEN_THRONE,
             [npcKeys.factionID] = 974,
         },
 
@@ -81661,13 +81661,13 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [36626] = {
-            [npcKeys.spawns] = {[4830] = {{19.81,65.33}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{19.81,65.33}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [36627] = {
-            [npcKeys.spawns] = {[4830] = {{19.8,42.09}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{19.8,42.09}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [36633] = {
@@ -81713,8 +81713,8 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [36659] = {
             [npcKeys.minLevel] = 83,
             [npcKeys.maxLevel] = 83,
-            [npcKeys.spawns] = {[4830] = {{19.8,65.34}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{19.8,65.34}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [36661] = {
@@ -81744,8 +81744,8 @@ QuestieCompat.RegisterCorrection("npcData", function()
 
         [36678] = {
             [npcKeys.rank] = 3,
-            [npcKeys.spawns] = {[4830] = {{8.87,53.8}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{8.87,53.8}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [36679] = {
@@ -81858,8 +81858,8 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [36789] = {
-            [npcKeys.spawns] = {[4830] = {{76.68,73.72}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{76.68,73.72}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [36794] = {
@@ -82059,9 +82059,9 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [36880] = {
-            [npcKeys.spawns] = {[4830] = {{26.37,53.72}}},
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{26.37,53.72}}},
             [npcKeys.waypoints] = {},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [36881] = {
@@ -82133,8 +82133,8 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [36934] = {
-            [npcKeys.spawns] = {[4830] = {{44.39,25.37},{51.84,32.09},{59.33,25.29}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{44.39,25.37},{51.84,32.09},{59.33,25.29}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [36939] = {
@@ -82317,8 +82317,8 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [37013] = {
             [npcKeys.minLevel] = 83,
             [npcKeys.maxLevel] = 83,
-            [npcKeys.spawns] = {[4830] = {{15.93,38.99},{15.93,45.24},{15.94,68.47},{15.98,62.26},{16.64,44.3},{16.73,39.74},{17.47,45.55},{17.49,38.69},{17.68,71.27},{17.74,36.31},{17.76,47.91},{17.76,59.53},{18.29,46.64},{18.36,37.38},{21.37,46.82},{21.4,37.53},{21.87,71.13},{21.89,36.29},{21.92,47.92},{21.92,59.56},{22.11,38.61},{22.19,45.6},{22.91,39.74},{22.95,44.41},{23.67,38.98},{23.67,62.29},{23.69,68.45},{23.71,45.22}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{15.93,38.99},{15.93,45.24},{15.94,68.47},{15.98,62.26},{16.64,44.3},{16.73,39.74},{17.47,45.55},{17.49,38.69},{17.68,71.27},{17.74,36.31},{17.76,47.91},{17.76,59.53},{18.29,46.64},{18.36,37.38},{21.37,46.82},{21.4,37.53},{21.87,71.13},{21.89,36.29},{21.92,47.92},{21.92,59.56},{22.11,38.61},{22.19,45.6},{22.91,39.74},{22.95,44.41},{23.67,38.98},{23.67,62.29},{23.69,68.45},{23.71,45.22}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [37014] = {
@@ -82341,20 +82341,20 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [37022] = {
-            [npcKeys.spawns] = {[4830] = {{42.99,55.67},{43.05,51.86}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{42.99,55.67},{43.05,51.86}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [37023] = {
             [npcKeys.minLevel] = 80,
-            [npcKeys.spawns] = {[4830] = {{28.43,55.91},{30.13,42.44},{30.27,49.32},{30.44,64.67},{40.05,52.64},{41.29,54.77}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{28.43,55.91},{30.13,42.44},{30.27,49.32},{30.44,64.67},{40.05,52.64},{41.29,54.77}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [37025] = {
-            [npcKeys.spawns] = {[4830] = {{29.28,61.69}}},
-            [npcKeys.waypoints] = {[4830] = {{{29.59,55.28},{29.34,65.46}}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{29.28,61.69}}},
+            [npcKeys.waypoints] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{{29.59,55.28},{29.34,65.46}}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [37026] = {
@@ -82413,9 +82413,9 @@ QuestieCompat.RegisterCorrection("npcData", function()
 
         [37038] = {
             [npcKeys.minLevel] = 80,
-            [npcKeys.spawns] = {[4830] = {{28.1,51.94},{28.14,43.88},{33.32,53.21},{33.38,54.55},{33.41,52.33},{33.65,54.08},{33.7,53.32},{33.86,52.35},{33.87,54.69},{34.05,53},{34.18,53.93},{34.41,52.58},{34.48,53.29},{34.53,54.37}}},
-            [npcKeys.waypoints] = {[4830] = {{{34.32,51.49},{35.21,49.97},{36.34,49.11},{37.43,48.93},{39.05,49.53},{40.13,51.68},{40.39,55.41},{39.41,57.57},{38.22,58.24},{36.75,58.47},{35.33,57.56},{34.4,55.93},{34.01,52.88}}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{28.1,51.94},{28.14,43.88},{33.32,53.21},{33.38,54.55},{33.41,52.33},{33.65,54.08},{33.7,53.32},{33.86,52.35},{33.87,54.69},{34.05,53},{34.18,53.93},{34.41,52.58},{34.48,53.29},{34.53,54.37}}},
+            [npcKeys.waypoints] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{{34.32,51.49},{35.21,49.97},{36.34,49.11},{37.43,48.93},{39.05,49.53},{40.13,51.68},{40.39,55.41},{39.41,57.57},{38.22,58.24},{36.75,58.47},{35.33,57.56},{34.4,55.93},{34.01,52.88}}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [37039] = {
@@ -82457,9 +82457,9 @@ QuestieCompat.RegisterCorrection("npcData", function()
 
         [37098] = {
             [npcKeys.minLevel] = 80,
-            [npcKeys.spawns] = {[4830] = {{51.9,44.12},{54.6,58.14}}},
-            [npcKeys.waypoints] = {[4830] = {{{48.13,46.4},{51.91,44.12},{56.47,46.34},{58.17,53.53},{55.95,60.62},{51.97,64.43},{46.78,62.17},{45.29,54.07},{48.13,46.4},{51.91,44.12},{56.47,46.34}},{{48.71,59.6},{51.45,60.63},{52.2,60.86},{53.92,59.4},{56.13,54},{55.2,49.34},{52.14,46.29},{49.07,49.36},{47.22,53.62},{48.71,59.6},{51.45,60.63},{52.2,60.86}}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{51.9,44.12},{54.6,58.14}}},
+            [npcKeys.waypoints] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{{48.13,46.4},{51.91,44.12},{56.47,46.34},{58.17,53.53},{55.95,60.62},{51.97,64.43},{46.78,62.17},{45.29,54.07},{48.13,46.4},{51.91,44.12},{56.47,46.34}},{{48.71,59.6},{51.45,60.63},{52.2,60.86},{53.92,59.4},{56.13,54},{55.2,49.34},{52.14,46.29},{49.07,49.36},{47.22,53.62},{48.71,59.6},{51.45,60.63},{52.2,60.86}}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [37100] = {
@@ -82493,37 +82493,37 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [37122] = {
-            [npcKeys.spawns] = {[4830] = {{60.25,52.53}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{60.25,52.53}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
             [npcKeys.friendlyToFaction] = "",
         },
 
         [37123] = {
-            [npcKeys.spawns] = {[4830] = {{59.98,53.13}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{59.98,53.13}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
             [npcKeys.friendlyToFaction] = "",
         },
 
         [37124] = {
-            [npcKeys.spawns] = {[4830] = {{59.83,54.62}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{59.83,54.62}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
             [npcKeys.friendlyToFaction] = "",
         },
 
         [37125] = {
-            [npcKeys.spawns] = {[4830] = {{60.16,55}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{60.16,55}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
             [npcKeys.friendlyToFaction] = "",
         },
 
         [37126] = {
-            [npcKeys.spawns] = {[4830] = {{76.65,53.74}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{76.65,53.74}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [37127] = {
-            [npcKeys.spawns] = {[4830] = {{65.89,55.04},{69.14,51.82}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{65.89,55.04},{69.14,51.82}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [37128] = {
@@ -82534,8 +82534,8 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [37129] = {
-            [npcKeys.spawns] = {[4830] = {{60.2,53.71}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{60.2,53.71}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [37130] = {
@@ -82553,18 +82553,18 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [37132] = {
-            [npcKeys.spawns] = {[4830] = {{64.44,54.71},{64.48,52.62},{68.41,52.26},{68.52,55.15},{73.07,55.42},{73.1,52.1}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{64.44,54.71},{64.48,52.62},{68.41,52.26},{68.52,55.15},{73.07,55.42},{73.1,52.1}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [37133] = {
-            [npcKeys.spawns] = {[4830] = {{63.41,53.72},{73.17,53.73},{74.17,55.01},{74.39,52.41}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{63.41,53.72},{73.17,53.73},{74.17,55.01},{74.39,52.41}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [37134] = {
-            [npcKeys.spawns] = {[4830] = {{62.84,53.02},{62.84,54.4},{67.88,52.85},{67.92,54.7},{72.82,54.53},{72.87,52.95}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{62.84,53.02},{62.84,54.4},{67.88,52.85},{67.92,54.7},{72.82,54.53},{72.87,52.95}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [37144] = {
@@ -82662,9 +82662,9 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [37217] = {
-            [npcKeys.spawns] = {[4830] = {{29.25,48.78}}},
-            [npcKeys.waypoints] = {[4830] = {{{29.49,51.89},{29.16,42.27}}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{29.25,48.78}}},
+            [npcKeys.waypoints] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{{29.49,51.89},{29.16,42.27}}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [37221] = {
@@ -83900,8 +83900,8 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [37503] = {
-            [npcKeys.spawns] = {[4830] = {{76.68,76.61}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{76.68,76.61}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [37509] = {
@@ -83951,25 +83951,25 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [37531] = {
-            [npcKeys.spawns] = {[4830] = {{74.03,52.93},{79.25,53.18}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{74.03,52.93},{79.25,53.18}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [37532] = {
-            [npcKeys.spawns] = {[4830] = {{72.19,49.85},{72.33,49.43},{72.4,50.49},{72.63,49.95},{72.73,50.22},{72.76,49.48},{73.25,50.3},{73.61,51.02},{73.79,50.76},{74.03,51.81},{74.18,49.96},{74.26,50.96},{74.39,50.77},{74.5,51.21},{78.5,50.93},{78.55,51.18},{78.63,51.48},{78.98,51.47},{79.08,50.69},{79.15,51.23},{79.42,51.67},{80.11,50.51},{80.32,51.21},{80.39,51.93},{80.53,50.32},{80.53,50.8},{80.62,51.51},{80.94,50.63}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{72.19,49.85},{72.33,49.43},{72.4,50.49},{72.63,49.95},{72.73,50.22},{72.76,49.48},{73.25,50.3},{73.61,51.02},{73.79,50.76},{74.03,51.81},{74.18,49.96},{74.26,50.96},{74.39,50.77},{74.5,51.21},{78.5,50.93},{78.55,51.18},{78.63,51.48},{78.98,51.47},{79.08,50.69},{79.15,51.23},{79.42,51.67},{80.11,50.51},{80.32,51.21},{80.39,51.93},{80.53,50.32},{80.53,50.8},{80.62,51.51},{80.94,50.63}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [37533] = {
-            [npcKeys.spawns] = {[4830] = {{79.66,34.14}}},
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{79.66,34.14}}},
             [npcKeys.waypoints] = {},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [37534] = {
-            [npcKeys.spawns] = {[4830] = {{70.81,35.68}}},
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{70.81,35.68}}},
             [npcKeys.waypoints] = {},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [37535] = {
@@ -84059,8 +84059,8 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [37571] = {
-            [npcKeys.spawns] = {[4830] = {{44.84,26.63},{50.41,18.18},{51.89,30.32},{53.69,18.42},{58.76,26.63}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{44.84,26.63},{50.41,18.18},{51.89,30.32},{53.69,18.42},{58.76,26.63}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [37574] = {
@@ -84129,8 +84129,8 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [37595] = {
-            [npcKeys.spawns] = {[4830] = {{45.03,25.96},{52.33,32.75},{52.52,31.23},{59.73,24.33}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{45.03,25.96},{52.33,32.75},{52.52,31.23},{59.73,24.33}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [37596] = {
@@ -84241,30 +84241,30 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [37662] = {
-            [npcKeys.spawns] = {[4830] = {{43.2,21.89},{48.9,15.66},{50.94,19.7},{54.31,18.97},{60.6,23.01}}},
-            [npcKeys.waypoints] = {[4830] = {{{49.54,15.58},{51.06,15.41},{52.68,15.22},{54.29,15.04},{55.51,14.91},{54.49,15.01},{53.08,15.16},{51.97,15.28},{50.45,15.44},{49.44,15.55},{48.42,15.66}}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{43.2,21.89},{48.9,15.66},{50.94,19.7},{54.31,18.97},{60.6,23.01}}},
+            [npcKeys.waypoints] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{{49.54,15.58},{51.06,15.41},{52.68,15.22},{54.29,15.04},{55.51,14.91},{54.49,15.01},{53.08,15.16},{51.97,15.28},{50.45,15.44},{49.44,15.55},{48.42,15.66}}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [37663] = {
-            [npcKeys.spawns] = {[4830] = {{43.88,24.08},{51.23,31.09},{52.34,31.33},{58.5,25.61}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{43.88,24.08},{51.23,31.09},{52.34,31.33},{58.5,25.61}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [37664] = {
-            [npcKeys.spawns] = {[4830] = {{44.26,26.54},{51.28,32.82},{51.35,31.32},{51.78,33.39},{59.5,26.5}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{44.26,26.54},{51.28,32.82},{51.35,31.32},{51.78,33.39},{59.5,26.5}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [37665] = {
-            [npcKeys.spawns] = {[4830] = {{42.86,21.53},{48.66,15.38},{50.36,20.25},{53.53,20.15},{60.5,22.14}}},
-            [npcKeys.waypoints] = {[4830] = {{{42.86,21.53},{42.55,19.79},{42.65,18.15},{43.05,16.75},{43.77,15.54},{44.74,14.7},{45.71,14.38},{44.74,14.7},{43.77,15.54},{43.05,16.75},{42.65,18.15},{42.55,19.79}},{{60.53,22.13},{61,20.62},{61.02,18.37},{60.65,16.86},{59.92,15.59},{59.05,14.76},{57.98,14.41},{59.05,14.76},{59.92,15.59},{60.65,16.86},{61.02,18.37},{61,20.62}}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{42.86,21.53},{48.66,15.38},{50.36,20.25},{53.53,20.15},{60.5,22.14}}},
+            [npcKeys.waypoints] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{{42.86,21.53},{42.55,19.79},{42.65,18.15},{43.05,16.75},{43.77,15.54},{44.74,14.7},{45.71,14.38},{44.74,14.7},{43.77,15.54},{43.05,16.75},{42.65,18.15},{42.55,19.79}},{{60.53,22.13},{61,20.62},{61.02,18.37},{60.65,16.86},{59.92,15.59},{59.05,14.76},{57.98,14.41},{59.05,14.76},{59.92,15.59},{60.65,16.86},{61.02,18.37},{61,20.62}}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [37666] = {
-            [npcKeys.spawns] = {[4830] = {{42.84,22.28},{48.67,16.08},{49.88,19.18},{53.04,19.4},{60.08,22.67}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{42.84,22.28},{48.67,16.08},{49.88,19.18},{53.04,19.4},{60.08,22.67}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [37671] = {
@@ -84426,8 +84426,8 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [37744] = {
-            [npcKeys.spawns] = {[4830] = {{46.64,75.11},{48.8,79.45},{48.81,70.97},{50.19,79.41},{50.2,70.92},{50.77,82.59},{50.78,79.86},{53.38,76.32},{53.47,73.96},{54.8,70.96},{54.82,79.46},{54.98,75.17}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{46.64,75.11},{48.8,79.45},{48.81,70.97},{50.19,79.41},{50.2,70.92},{50.77,82.59},{50.78,79.86},{53.38,76.32},{53.47,73.96},{54.8,70.96},{54.82,79.46},{54.98,75.17}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [37745] = {
@@ -84579,8 +84579,8 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [37782] = {
-            [npcKeys.spawns] = {[4830] = {{21.39,54.15},{21.4,53.93}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{21.39,54.15},{21.4,53.93}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [37787] = {
@@ -84658,8 +84658,8 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [37824] = {
             [npcKeys.minLevel] = 83,
             [npcKeys.maxLevel] = 83,
-            [npcKeys.spawns] = {[4830] = {{13.04,57.97},{13.19,49.64}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{13.04,57.97},{13.19,49.64}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [37825] = {
@@ -84812,8 +84812,8 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [37868] = {
             [npcKeys.minLevel] = 83,
             [npcKeys.maxLevel] = 83,
-            [npcKeys.spawns] = {[4830] = {{74.88,71.21},{74.91,76.27},{76.13,70.21},{77.15,70.22},{78.18,76.53},{78.32,71.14}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{74.88,71.21},{74.91,76.27},{76.13,70.21},{77.15,70.22},{78.18,76.53},{78.32,71.14}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [37869] = {
@@ -84992,14 +84992,14 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [37950] = {
             [npcKeys.minLevel] = 83,
             [npcKeys.maxLevel] = 83,
-            [npcKeys.spawns] = {[4830] = {{76.6,73.83}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{76.6,73.83}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
             [npcKeys.factionID] = 1665,
         },
 
         [37955] = {
-            [npcKeys.spawns] = {[4830] = {{51.93,18.72}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{51.93,18.72}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
             [npcKeys.factionID] = 16,
         },
 
@@ -85032,18 +85032,18 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [37970] = {
-            [npcKeys.spawns] = {[4830] = {{51.84,11.48}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{51.84,11.48}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [37972] = {
-            [npcKeys.spawns] = {[4830] = {{50.61,11.16}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{50.61,11.16}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [37973] = {
-            [npcKeys.spawns] = {[4830] = {{53.07,11.14}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{53.07,11.14}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [37976] = {
@@ -85086,8 +85086,8 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [37985] = {
             [npcKeys.minLevel] = 80,
             [npcKeys.maxLevel] = 80,
-            [npcKeys.spawns] = {[4830] = {{73.96,71.54},{73.98,76.6},{74.59,73.91},{74.92,77.64},{75.23,69.4},{75.8,79.59},{75.88,68.35},{77.13,80.01},{77.29,68.55},{78.38,70.07},{78.38,77.78},{79.11,74.07},{79.18,71.29},{79.55,75.93}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{73.96,71.54},{73.98,76.6},{74.59,73.91},{74.92,77.64},{75.23,69.4},{75.8,79.59},{75.88,68.35},{77.13,80.01},{77.29,68.55},{78.38,70.07},{78.38,77.78},{79.11,74.07},{79.18,71.29},{79.55,75.93}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
             [npcKeys.factionID] = 2022,
             [npcKeys.friendlyToFaction] = "",
         },
@@ -85123,8 +85123,8 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [38004] = {
-            [npcKeys.spawns] = {[4830] = {{51.83,10.68}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{51.83,10.68}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [38006] = {
@@ -85375,8 +85375,8 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [38125] = {
-            [npcKeys.spawns] = {[4830] = {{65.97,52.03},{69.01,55.81}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{65.97,52.03},{69.01,55.81}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [38138] = {
@@ -85386,8 +85386,8 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [38153] = {
             [npcKeys.minLevel] = 83,
             [npcKeys.maxLevel] = 83,
-            [npcKeys.spawns] = {[4830] = {{76.6,73.72}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{76.6,73.72}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
             [npcKeys.factionID] = 114,
             [npcKeys.friendlyToFaction] = "",
         },
@@ -85562,26 +85562,26 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [38228] = {
-            [npcKeys.spawns] = {[4830] = {{25.54,43.28},{25.68,42.36},{25.79,42.01},{27.76,65.4},{28.64,66.01},{29.25,51.95},{29.27,53.94},{29.61,53.73},{29.67,54.26},{29.76,53.66},{41.9,53.7},{41.92,53.55}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{25.54,43.28},{25.68,42.36},{25.79,42.01},{27.76,65.4},{28.64,66.01},{29.25,51.95},{29.27,53.94},{29.61,53.73},{29.67,54.26},{29.76,53.66},{41.9,53.7},{41.92,53.55}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
             [npcKeys.friendlyToFaction] = "",
         },
 
         [38229] = {
-            [npcKeys.spawns] = {[4830] = {{60.95,54.35},{61.66,53.37},{65.7,54.26},{65.85,53.56},{73.07,53.74},{76.28,54.47},{83.25,53.73}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{60.95,54.35},{61.66,53.37},{65.7,54.26},{65.85,53.56},{73.07,53.74},{76.28,54.47},{83.25,53.73}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
             [npcKeys.friendlyToFaction] = "",
         },
 
         [38231] = {
-            [npcKeys.spawns] = {[4830] = {{50.05,32.09},{51.05,30.97},{51.27,40.51},{51.87,38.74}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{50.05,32.09},{51.05,30.97},{51.27,40.51},{51.87,38.74}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
             [npcKeys.friendlyToFaction] = "",
         },
 
         [38232] = {
-            [npcKeys.spawns] = {[4830] = {{44.16,25.38},{50.05,32.09},{52.41,32.65},{52.96,30.96},{53.59,32.74},{59.55,24.88}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{44.16,25.38},{50.05,32.09},{52.41,32.65},{52.96,30.96},{53.59,32.74},{59.55,24.88}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
             [npcKeys.friendlyToFaction] = "",
         },
 
@@ -85706,8 +85706,8 @@ QuestieCompat.RegisterCorrection("npcData", function()
 
         [38310] = {
             [npcKeys.name] = "Invisible Stalker (Float,Uninteractible,LargeAOI) (3.00)",
-            [npcKeys.spawns] = {[4830] = {{65.97,49.87},{65.97,57.57},{69.05,49.87},{69.05,57.57}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{65.97,49.87},{65.97,57.57},{69.05,49.87},{69.05,57.57}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [38316] = {
@@ -85720,15 +85720,15 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [38317] = {
             [npcKeys.minLevel] = 83,
             [npcKeys.maxLevel] = 83,
-            [npcKeys.spawns] = {[4830] = {{13.32,53.74}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{13.32,53.74}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [38319] = {
             [npcKeys.minLevel] = 82,
             [npcKeys.maxLevel] = 82,
-            [npcKeys.spawns] = {[4830] = {{51.81,30.25}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{51.81,30.25}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [38325] = {
@@ -85892,8 +85892,8 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [38421] = {
             [npcKeys.minLevel] = 80,
             [npcKeys.maxLevel] = 80,
-            [npcKeys.spawns] = {[4830] = {{73.96,71.54},{73.98,76.6},{74.59,73.91},{75.23,69.4},{75.8,79.59},{77.13,80.01},{78.38,77.78},{79.11,74.07},{79.18,71.29}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{73.96,71.54},{73.98,76.6},{74.59,73.91},{75.23,69.4},{75.8,79.59},{77.13,80.01},{78.38,77.78},{79.11,74.07},{79.18,71.29}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
             [npcKeys.factionID] = 2022,
             [npcKeys.friendlyToFaction] = "",
         },
@@ -85919,7 +85919,7 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [38433] = {
-            [npcKeys.spawns] = {[4603] = {{62.54,36.63}}},
+            [npcKeys.spawns] = {[zoneIDs.VAULT_OF_ARCHAVON] = {{62.54,36.63}}},
         },
 
         [38434] = {
@@ -85954,8 +85954,8 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [38463] = {
-            [npcKeys.spawns] = {[4830] = {{44.38,25.36},{51.85,32.03},{59.29,25.33}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{44.38,25.36},{51.85,32.03},{59.29,25.33}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [38471] = {
@@ -85964,8 +85964,8 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [38482] = {
-            [npcKeys.spawns] = {[4603] = {{57.2,36.63},{58.3,36.58}}},
-            [npcKeys.waypoints] = {[4603] = {{{56.71,36.6},{55.71,36.61},{54.79,36.62},{53.87,36.63},{54.86,36.63},{55.86,36.62},{56.7,36.61},{57.53,36.61}}}},
+            [npcKeys.spawns] = {[zoneIDs.VAULT_OF_ARCHAVON] = {{57.2,36.63},{58.3,36.58}}},
+            [npcKeys.waypoints] = {[zoneIDs.VAULT_OF_ARCHAVON] = {{{56.71,36.6},{55.71,36.61},{54.79,36.62},{53.87,36.63},{54.86,36.63},{55.86,36.62},{56.7,36.61},{57.53,36.61}}}},
         },
 
         [38485] = {
@@ -85989,7 +85989,7 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [38491] = {
             [npcKeys.minLevel] = 80,
             [npcKeys.maxLevel] = 80,
-            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL] = {{34.49,74.09},{40.58,19.99}}},
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL] = {{40.58,19.99}}, [zoneIDs.ICECROWN_CITADEL_RAMPART_OF_SKULLS] = {{39.9,68.51}}},
             [npcKeys.npcFlags] = 2,
         },
 
@@ -86036,8 +86036,8 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [38501] = {
-            [npcKeys.spawns] = {[4830] = {{53.24,68.06}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{53.24,68.06}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
             [npcKeys.friendlyToFaction] = "",
         },
 
@@ -86083,8 +86083,8 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [38551] = {
             [npcKeys.minLevel] = 80,
             [npcKeys.maxLevel] = 80,
-            [npcKeys.spawns] = {[4830] = {{50.21,39.43}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{50.21,39.43}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
             [npcKeys.questEnds] = {24874,24879},
             [npcKeys.npcFlags] = 2,
         },
@@ -86098,15 +86098,15 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [38557] = {
             [npcKeys.minLevel] = 80,
             [npcKeys.maxLevel] = 80,
-            [npcKeys.spawns] = {[4830] = {{48.99,17.95},{49.19,18.01},{51.63,16.04},{51.64,16.4}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{48.99,17.95},{49.19,18.01},{51.63,16.04},{51.64,16.4}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
             [npcKeys.factionID] = 14,
             [npcKeys.friendlyToFaction] = "",
         },
 
         [38558] = {
-            [npcKeys.spawns] = {[4830] = {{50.36,17.1}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{50.36,17.1}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
             [npcKeys.questEnds] = {},
         },
 
@@ -86191,8 +86191,8 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [38589] = {
-            [npcKeys.spawns] = {[4830] = {{76.63,72.85}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{76.63,72.85}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
             [npcKeys.npcFlags] = 2,
         },
 
@@ -86414,8 +86414,8 @@ QuestieCompat.RegisterCorrection("npcData", function()
         },
 
         [38752] = {
-            [npcKeys.spawns] = {[4830] = {{76.66,73.69}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{76.66,73.69}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
         },
 
         [38757] = {
@@ -86547,8 +86547,8 @@ QuestieCompat.RegisterCorrection("npcData", function()
         [38879] = {
             [npcKeys.minLevel] = 1,
             [npcKeys.maxLevel] = 1,
-            [npcKeys.spawns] = {[4830] = {{20.13,53.73},{23.19,53.71}}},
-            [npcKeys.zoneID] = 4830,
+            [npcKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE] = {{20.13,53.73},{23.19,53.71}}},
+            [npcKeys.zoneID] = zoneIDs.ICECROWN_CITADEL_UPPER_SPIRE,
             [npcKeys.friendlyToFaction] = "",
         },
 
