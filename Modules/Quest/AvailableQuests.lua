@@ -734,6 +734,14 @@ end
 ---@type string|nil
 local lastNpcGuid
 
+---@param questId QuestId
+---@return boolean
+local function _ShouldCacheUnavailableQuest(questId)
+    return (QuestieDB.IsDailyQuest(questId) or QuestieDB.IsWeeklyQuest(questId))
+        and QuestieDB:IsAzerothCoreAvailabilityConditionFulfilled(questId)
+        and QuestieDB.IsDoable(questId)
+end
+
 --- Called on GOSSIP_SHOW to hide all quests that are not available from the NPC.
 function AvailableQuests.ValidateAvailableQuestsFromGossipShow()
     _GetUnavailableQuestsDeterminedByTalking()
@@ -789,7 +797,7 @@ function AvailableQuests.ValidateAvailableQuestsFromGossipShow()
             end
         end
 
-        if (not isAvailableInGossip) and (QuestieDB.IsDailyQuest(questId) or QuestieDB.IsWeeklyQuest(questId)) then -- no monthly quests here, those are personal
+        if (not isAvailableInGossip) and _ShouldCacheUnavailableQuest(questId) then -- no monthly quests here, those are personal
             tinsert(unavailableQuestsToBroadcast, questId)
         end
     end
@@ -841,7 +849,7 @@ function AvailableQuests.ValidateAvailableQuestsFromQuestDetail()
 
     local unavailableQuestsToBroadcast = {}
     for questId in pairs(availableQuestsByNpc[npcId] or {}) do
-        if questId ~= availableQuestId and (QuestieDB.IsDailyQuest(questId) or QuestieDB.IsWeeklyQuest(questId)) then -- no monthly quests here, those are personal
+        if questId ~= availableQuestId and _ShouldCacheUnavailableQuest(questId) then -- no monthly quests here, those are personal
             tinsert(unavailableQuestsToBroadcast, questId)
         end
     end
@@ -910,7 +918,7 @@ function AvailableQuests.ValidateAvailableQuestsFromQuestGreeting()
 
     local unavailableQuestsToBroadcast = {}
     for questId in pairs(availableQuestsByNpc[npcId] or {}) do
-        if (not availableQuestsInGreeting[questId]) and (QuestieDB.IsDailyQuest(questId) or QuestieDB.IsWeeklyQuest(questId)) then -- no monthly quests here, those are personal
+        if (not availableQuestsInGreeting[questId]) and _ShouldCacheUnavailableQuest(questId) then -- no monthly quests here, those are personal
             tinsert(unavailableQuestsToBroadcast, questId)
         end
     end
