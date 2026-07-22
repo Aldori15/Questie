@@ -91,6 +91,7 @@ CONDITION_QUESTTAKEN = 9
 CONDITION_QUEST_NONE = 14
 CONDITION_CLASS = 15
 CONDITION_ACHIEVEMENT = 17
+CONDITION_SPAWNMASK = 19
 CONDITION_SPELL = 25
 CONDITION_QUEST_COMPLETE = 28
 CONDITION_DAILY_QUEST_DONE = 43
@@ -291,9 +292,9 @@ QUEST_AVAILABILITY_CONDITION_NAMES = {
 }
 
 # Quest availability conditions whose state can be reproduced by the 3.3.5
-# client. Conditions tied to server world state, events, the player's current
-# area, or an instance spawn mask intentionally remain on Questie's existing
-# event/location handling or are reported for manual review.
+# client. Conditions tied to server world state, events, or the player's
+# current area intentionally remain on Questie's existing event/location
+# handling or are reported for manual review.
 ACORE_RUNTIME_QUEST_AVAILABILITY_CONDITION_TYPES = frozenset({
     CONDITION_AURA,
     CONDITION_ITEM,
@@ -303,6 +304,7 @@ ACORE_RUNTIME_QUEST_AVAILABILITY_CONDITION_TYPES = frozenset({
     CONDITION_QUEST_NONE,
     CONDITION_CLASS,
     CONDITION_ACHIEVEMENT,
+    CONDITION_SPAWNMASK,
     CONDITION_SPELL,
     CONDITION_QUEST_COMPLETE,
     CONDITION_DAILY_QUEST_DONE,
@@ -2617,6 +2619,8 @@ def is_runtime_quest_availability_condition_row(row):
         return value1 > 0 and value2 > 0 and value3 in {0, 1}
     if condition_type == CONDITION_REPUTATION_RANK:
         return value1 > 0 and value2 > 0 and value3 == 0
+    if condition_type == CONDITION_SPAWNMASK:
+        return value1 > 0 and value2 == 0 and value3 == 0
     if condition_type == CONDITION_QUESTSTATE:
         return value1 > 0 and value2 > 0 and value3 == 0
 

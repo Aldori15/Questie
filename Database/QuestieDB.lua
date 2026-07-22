@@ -73,6 +73,7 @@ local ACORE_CONDITION_QUEST_TAKEN = 9
 local ACORE_CONDITION_QUEST_NONE = 14
 local ACORE_CONDITION_CLASS = 15
 local ACORE_CONDITION_ACHIEVEMENT = 17
+local ACORE_CONDITION_SPAWNMASK = 19
 local ACORE_CONDITION_SPELL = 25
 local ACORE_CONDITION_QUEST_COMPLETE = 28
 local ACORE_CONDITION_DAILY_QUEST_DONE = 43
@@ -2462,6 +2463,7 @@ local ACORE_CONDITION_NAMES = {
     [ACORE_CONDITION_QUEST_NONE] = "untaken quest",
     [ACORE_CONDITION_CLASS] = "class",
     [ACORE_CONDITION_ACHIEVEMENT] = "achievement",
+    [ACORE_CONDITION_SPAWNMASK] = "spawn mask",
     [ACORE_CONDITION_SPELL] = "spell",
     [ACORE_CONDITION_QUEST_COMPLETE] = "completed quest",
     [ACORE_CONDITION_DAILY_QUEST_DONE] = "daily quest completion",
@@ -2515,6 +2517,26 @@ local function GetAzerothCoreQuestStatusMask(questId)
     return ACORE_QUEST_STATUS_NONE
 end
 
+---Converts the 3.3.5 client difficulty values to AzerothCore's zero-based
+---Map::GetSpawnMode value. Dynamic raids expose size and normal/heroic mode
+---as separate GetInstanceInfo return values.
+---@return number spawnMode
+local function GetAzerothCoreSpawnMode()
+    local isInInstance, instanceType = IsInInstance()
+    if not isInInstance then
+        return 0
+    end
+
+    local _, _, difficulty, _, _, playerDifficulty, isDynamicInstance = GetInstanceInfo()
+    difficulty = difficulty or 1
+
+    if instanceType == "raid" and isDynamicInstance and (difficulty == 1 or difficulty == 2) then
+        return difficulty - 1 + ((playerDifficulty or 0) * 2)
+    end
+
+    return math.max(difficulty - 1, 0)
+end
+
 ---@param condition number[]
 ---@return boolean
 local function IsAzerothCoreConditionFulfilled(condition)
@@ -2543,6 +2565,8 @@ local function IsAzerothCoreConditionFulfilled(condition)
         fulfilled = QuestiePlayer.HasRequiredClass(value1)
     elseif conditionType == ACORE_CONDITION_ACHIEVEMENT then
         fulfilled = select(4, GetAchievementInfo(value1)) == true
+    elseif conditionType == ACORE_CONDITION_SPAWNMASK then
+        fulfilled = bitband(value1, 2 ^ GetAzerothCoreSpawnMode()) ~= 0
     elseif conditionType == ACORE_CONDITION_SPELL then
         fulfilled = IsSpellKnownOrOverridesKnown(value1) or IsPlayerSpell(value1)
     elseif conditionType == ACORE_CONDITION_QUEST_COMPLETE then
