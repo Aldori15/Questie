@@ -438,6 +438,10 @@ function QuestieTooltips:GetTooltip(key)
         return nil -- temporary disable tooltips in raids, we should make a proper fix
     end
 
+    if type(key) ~= "string" then
+        return nil
+    end
+
     local isObjectTooltip = key:sub(1, 2) == "o_"
     if isObjectTooltip then
         local objectId = tonumber(key:sub(3))
