@@ -317,9 +317,13 @@ local outdoorWorldInstanceIDs = {
     [571] = true, -- Northrend
 }
 
-local function IsOutdoorPositionWhileInInstance(instanceID)
+local function IsPlayerInstanceMismatch(instanceID)
     local isInInstance = IsInInstance()
-    return isInInstance and (not instanceID or outdoorWorldInstanceIDs[instanceID])
+    if isInInstance then
+        return not instanceID or outdoorWorldInstanceIDs[instanceID]
+    end
+
+    return instanceID and not outdoorWorldInstanceIDs[instanceID]
 end
 
 local function drawMinimapPin(pin, data)
@@ -575,7 +579,7 @@ local function UpdateMinimapPins(force)
 
     -- get the current player position
     local x, y, instanceID, currentUiMapID = QuestieCompat.GetCurrentPlayerMinimapWorldPosition()
-    if IsOutdoorPositionWhileInInstance(instanceID) then
+    if IsPlayerInstanceMismatch(instanceID) then
         _ClearActiveMinimapPins()
         return
     end
@@ -689,7 +693,7 @@ local function UpdateMinimapIconPosition()
     if minimapPinCount == 0 then return end
 
     local x, y, instanceID = QuestieCompat.GetCurrentPlayerMinimapWorldPosition()
-    if IsOutdoorPositionWhileInInstance(instanceID) then
+    if IsPlayerInstanceMismatch(instanceID) then
         _ClearActiveMinimapPins()
         return
     end
