@@ -25,7 +25,6 @@ function QuestieCompat.QuestieEventHandler_RegisterLateEvents()
     end
 
     Questie:UnregisterEvent("MAP_EXPLORATION_UPDATED") -- https://wowpedia.fandom.com/wiki/MAP_EXPLORATION_UPDATED
-    Questie:UnregisterEvent("NEW_RECIPE_LEARNED")
 
     -- Party join event for QuestieComms, Use bucket to hinder this from spamming (Ex someone using a raid invite addon etc)
     Questie:UnregisterEvent("GROUP_ROSTER_UPDATE") -- https://wowpedia.fandom.com/wiki/GROUP_ROSTER_UPDATE

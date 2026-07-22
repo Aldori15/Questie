@@ -104,14 +104,12 @@ function QuestEventHandler:RegisterEvents()
     eventFrame:RegisterEvent("UNIT_QUEST_LOG_CHANGED")
     eventFrame:RegisterEvent("PLAYER_LEAVING_WORLD")
     eventFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
-    eventFrame:RegisterEvent("NEW_RECIPE_LEARNED") -- Spell objectives
+    eventFrame:RegisterEvent("SPELLS_CHANGED") -- Spell objectives and availability conditions
     eventFrame:RegisterEvent("CURRENCY_DISPLAY_UPDATE")
     eventFrame:RegisterEvent("BAG_UPDATE")
     eventFrame:RegisterEvent("BAG_UPDATE_DELAYED")
     eventFrame:RegisterEvent("PLAYERBANKSLOTS_CHANGED")
     eventFrame:RegisterEvent("UNIT_AURA")
-    --eventFrame:RegisterEvent("SPELLS_CHANGED") -- Spell objectives
-
     eventFrame:RegisterEvent("PLAYER_INTERACTION_MANAGER_FRAME_HIDE")
 
     eventFrame:RegisterEvent("CHAT_MSG_COMBAT_FACTION_CHANGE")
@@ -702,8 +700,8 @@ function _QuestEventHandler:OnEvent(event, ...)
         QuestLogCache.OnPlayerLeavingWorld()
     elseif event == "ZONE_CHANGED_NEW_AREA" then
         _QuestEventHandler:ZoneChangedNewArea()
-    elseif event == "NEW_RECIPE_LEARNED" then
-        Questie:Debug(Questie.DEBUG_DEVELOP, "[EVENT] NEW_RECIPE_LEARNED (QuestEventHandler)")
+    elseif event == "SPELLS_CHANGED" then
+        Questie:Debug(Questie.DEBUG_DEVELOP, "[EVENT] SPELLS_CHANGED (QuestEventHandler)")
         -- AzerothCore can also use learned spells as quest availability
         -- conditions (for example, Cold Weather Flying).
         AvailableQuests.CalculateAndDrawAll()
