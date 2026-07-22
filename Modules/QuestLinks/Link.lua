@@ -27,6 +27,7 @@ local CALENDAR_FULLDATE_MONTH_NAMES = QuestieCompat.CALENDAR_FULLDATE_MONTH_NAME
 local HaveQuestData = QuestieCompat.HaveQuestData
 local GetQuestObjectives = QuestieCompat.C_QuestLog.GetQuestObjectives
 local GetQuestLogIndexByID = QuestieCompat.GetQuestLogIndexByID
+local GetSpellName = QuestieCompat.GetSpellName
 local strfind = string.find
 
 QuestieLink.lastItemRefTooltip = ""
@@ -357,7 +358,7 @@ _GetObjectiveText = function(objectiveId, objectiveType)
     elseif objectiveType == "reputation" then
         return QuestieReputation.GetFactionName(objectiveId)
     elseif objectiveType == "spell" then
-        return C_Spell.GetSpellName(objectiveId)
+        return GetSpellName(objectiveId)
     end
     return ""
 end

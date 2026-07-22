@@ -508,6 +508,11 @@ end
 QuestieCompat.IsSpellKnownOrOverridesKnown = IsSpellKnown
 QuestieCompat.IsPlayerSpell = IsSpellKnown
 
+function QuestieCompat.GetSpellName(spellId)
+    local spellName = GetSpellInfo(spellId)
+    return spellName
+end
+
 local LARGE_NUMBER_SEPERATOR = ",";
 function QuestieCompat.FormatLargeNumber(amount)
 	amount = tostring(amount);
