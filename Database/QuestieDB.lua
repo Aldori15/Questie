@@ -55,6 +55,10 @@ QuestieDB.requiredItemConditionQuestIds = {}
 ---@type table<number, boolean>
 QuestieDB.acoreAuraConditionQuestIds = {}
 
+--- Quests whose AzerothCore availability expression depends on player location.
+---@type table<number, boolean>
+QuestieDB.acoreLocationConditionQuestIds = {}
+
 local tinsert = table.insert
 local bitband = bit.band
 
@@ -67,6 +71,7 @@ local QUEST_FLAGS_WEEKLY_X2 = 2 * QUEST_FLAGS_WEEKLY
 local ACORE_QUEST_AVAILABILITY_CONDITIONS = QuestieCompat.AzerothCoreQuestAvailabilityConditions or {}
 local ACORE_CONDITION_AURA = 1
 local ACORE_CONDITION_ITEM = 2
+local ACORE_CONDITION_ZONE_ID = 4
 local ACORE_CONDITION_REPUTATION_RANK = 5
 local ACORE_CONDITION_QUEST_REWARDED = 8
 local ACORE_CONDITION_QUEST_TAKEN = 9
@@ -74,6 +79,7 @@ local ACORE_CONDITION_QUEST_NONE = 14
 local ACORE_CONDITION_CLASS = 15
 local ACORE_CONDITION_ACHIEVEMENT = 17
 local ACORE_CONDITION_SPAWNMASK = 19
+local ACORE_CONDITION_AREA_ID = 23
 local ACORE_CONDITION_SPELL = 25
 local ACORE_CONDITION_QUEST_COMPLETE = 28
 local ACORE_CONDITION_DAILY_QUEST_DONE = 43
@@ -2457,6 +2463,7 @@ end
 local ACORE_CONDITION_NAMES = {
     [ACORE_CONDITION_AURA] = "aura",
     [ACORE_CONDITION_ITEM] = "item",
+    [ACORE_CONDITION_ZONE_ID] = "zone",
     [ACORE_CONDITION_REPUTATION_RANK] = "reputation rank",
     [ACORE_CONDITION_QUEST_REWARDED] = "rewarded quest",
     [ACORE_CONDITION_QUEST_TAKEN] = "active quest",
@@ -2464,6 +2471,7 @@ local ACORE_CONDITION_NAMES = {
     [ACORE_CONDITION_CLASS] = "class",
     [ACORE_CONDITION_ACHIEVEMENT] = "achievement",
     [ACORE_CONDITION_SPAWNMASK] = "spawn mask",
+    [ACORE_CONDITION_AREA_ID] = "area",
     [ACORE_CONDITION_SPELL] = "spell",
     [ACORE_CONDITION_QUEST_COMPLETE] = "completed quest",
     [ACORE_CONDITION_DAILY_QUEST_DONE] = "daily quest completion",
@@ -2537,9 +2545,16 @@ local function GetAzerothCoreSpawnMode()
     return math.max(difficulty - 1, 0)
 end
 
----@param condition number[]
+---@param conditionType number
 ---@return boolean
-local function IsAzerothCoreConditionFulfilled(condition)
+local function IsAzerothCoreLocationConditionType(conditionType)
+    return conditionType == ACORE_CONDITION_ZONE_ID or conditionType == ACORE_CONDITION_AREA_ID
+end
+
+---@param condition number[]
+---@param ignoreLocationConditions boolean?
+---@return boolean
+local function IsAzerothCoreConditionFulfilled(condition, ignoreLocationConditions)
     local conditionType = condition[1]
     local value1 = condition[2]
     local value2 = condition[3]
@@ -2547,10 +2562,16 @@ local function IsAzerothCoreConditionFulfilled(condition)
     local isNegative = condition[5] == 1
     local fulfilled = false
 
+    if ignoreLocationConditions and IsAzerothCoreLocationConditionType(conditionType) then
+        return true
+    end
+
     if conditionType == ACORE_CONDITION_AURA then
         fulfilled = HasPlayerAura(value1)
     elseif conditionType == ACORE_CONDITION_ITEM then
         fulfilled = GetItemCount(value1, value3 ~= 0) >= value2
+    elseif conditionType == ACORE_CONDITION_ZONE_ID then
+        fulfilled = QuestiePlayer:GetCurrentZoneId() == value1
     elseif conditionType == ACORE_CONDITION_REPUTATION_RANK then
         local standingId = QuestieReputation:GetFactionStandingId(value1)
         local rankMask = 2 ^ math.max((standingId or 4) - 1, 0)
@@ -2567,6 +2588,8 @@ local function IsAzerothCoreConditionFulfilled(condition)
         fulfilled = select(4, GetAchievementInfo(value1)) == true
     elseif conditionType == ACORE_CONDITION_SPAWNMASK then
         fulfilled = bitband(value1, 2 ^ GetAzerothCoreSpawnMode()) ~= 0
+    elseif conditionType == ACORE_CONDITION_AREA_ID then
+        fulfilled = QuestiePlayer:GetCurrentAreaId() == value1
     elseif conditionType == ACORE_CONDITION_SPELL then
         fulfilled = IsSpellKnownOrOverridesKnown(value1) or IsPlayerSpell(value1)
     elseif conditionType == ACORE_CONDITION_QUEST_COMPLETE then
@@ -2584,9 +2607,10 @@ end
 ---Evaluates AzerothCore's ConditionMgr grouping: conditions inside an
 ---ElseGroup are ANDed, while ElseGroups are ORed.
 ---@param questId number
+---@param ignoreLocationConditions boolean?
 ---@return boolean fulfilled
 ---@return number[]? failedCondition
-function QuestieDB:IsAzerothCoreAvailabilityConditionFulfilled(questId)
+function QuestieDB:IsAzerothCoreAvailabilityConditionFulfilled(questId, ignoreLocationConditions)
     local groups = ACORE_QUEST_AVAILABILITY_CONDITIONS[questId]
     if not groups then
         return true
@@ -2596,7 +2620,7 @@ function QuestieDB:IsAzerothCoreAvailabilityConditionFulfilled(questId)
     for _, group in ipairs(groups) do
         local groupFulfilled = true
         for _, condition in ipairs(group) do
-            if not IsAzerothCoreConditionFulfilled(condition) then
+            if not IsAzerothCoreConditionFulfilled(condition, ignoreLocationConditions) then
                 groupFulfilled = false
                 lastFailedCondition = condition
                 break
@@ -2611,8 +2635,75 @@ function QuestieDB:IsAzerothCoreAvailabilityConditionFulfilled(questId)
     return false, lastFailedCondition
 end
 
+---@param questId number
+---@return boolean
+function QuestieDB:HasAzerothCoreLocationCondition(questId)
+    if QuestieDB.acoreLocationConditionQuestIds[questId] then
+        return true
+    end
+
+    for _, group in ipairs(ACORE_QUEST_AVAILABILITY_CONDITIONS[questId] or {}) do
+        for _, condition in ipairs(group) do
+            if IsAzerothCoreLocationConditionType(condition[1]) then
+                return true
+            end
+        end
+    end
+
+    return false
+end
+
+---Evaluates a quest's availability expression for a specific starter spawn
+---zone. AREAID conditions are mapped to their parent zone because Questie's
+---NPC spawn tables are keyed by parent zone rather than exact subzone.
+---@param questId number
+---@param spawnZoneId number
+---@return boolean
+function QuestieDB:IsAzerothCoreAvailabilityConditionFulfilledForSpawnZone(questId, spawnZoneId)
+    if not QuestieDB:HasAzerothCoreLocationCondition(questId) then
+        return true
+    end
+
+    local groups = ACORE_QUEST_AVAILABILITY_CONDITIONS[questId]
+    local subZoneToParentZone = ZoneDB.private and ZoneDB.private.subZoneToParentZone
+
+    for _, group in ipairs(groups) do
+        local groupFulfilled = true
+
+        for _, condition in ipairs(group) do
+            local conditionType = condition[1]
+            if IsAzerothCoreLocationConditionType(conditionType) then
+                local requiredZoneId = condition[2]
+                if conditionType == ACORE_CONDITION_AREA_ID and subZoneToParentZone then
+                    requiredZoneId = subZoneToParentZone[requiredZoneId] or requiredZoneId
+                end
+
+                local fulfilled = spawnZoneId == requiredZoneId
+                if condition[5] == 1 then
+                    fulfilled = not fulfilled
+                end
+
+                if not fulfilled then
+                    groupFulfilled = false
+                    break
+                end
+            elseif not IsAzerothCoreConditionFulfilled(condition) then
+                groupFulfilled = false
+                break
+            end
+        end
+
+        if groupFulfilled then
+            return true
+        end
+    end
+
+    return false
+end
+
 function QuestieDB:InitializeAzerothCoreAvailabilityConditionIndexes()
     QuestieDB.acoreAuraConditionQuestIds = {}
+    QuestieDB.acoreLocationConditionQuestIds = {}
 
     for questId, groups in pairs(ACORE_QUEST_AVAILABILITY_CONDITIONS) do
         for _, group in ipairs(groups) do
@@ -2621,6 +2712,10 @@ function QuestieDB:InitializeAzerothCoreAvailabilityConditionIndexes()
                     QuestieDB.requiredItemConditionQuestIds[questId] = true
                 elseif condition[1] == ACORE_CONDITION_AURA then
                     QuestieDB.acoreAuraConditionQuestIds[questId] = true
+                elseif condition[1] == ACORE_CONDITION_ZONE_ID
+                    or condition[1] == ACORE_CONDITION_AREA_ID
+                then
+                    QuestieDB.acoreLocationConditionQuestIds[questId] = true
                 end
             end
         end
@@ -2666,8 +2761,9 @@ end
 
 ---@param questId number
 ---@param debugPrint boolean? -- if true, IsDoable will print conclusions to debug channel
+---@param ignoreAcoreLocationConditions boolean? -- map pins filter these conditions per starter spawn
 ---@return boolean
-function QuestieDB.IsDoable(questId, debugPrint)
+function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions)
 
     --!  Before changing any logic in QuestieDB.IsDoable, make sure
     --!  to mirror the same logic to QuestieDB.IsDoableVerbose!
@@ -2863,7 +2959,7 @@ function QuestieDB.IsDoable(questId, debugPrint)
         end
     end
 
-    local acoreConditionsFulfilled = QuestieDB:IsAzerothCoreAvailabilityConditionFulfilled(questId)
+    local acoreConditionsFulfilled = QuestieDB:IsAzerothCoreAvailabilityConditionFulfilled(questId, ignoreAcoreLocationConditions)
     if not acoreConditionsFulfilled then
         if debugPrint then Questie:Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Player does not meet AzerothCore availability conditions for quest " .. questId) end
         return false

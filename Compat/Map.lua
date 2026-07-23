@@ -569,6 +569,34 @@ local function GetParentUiMapIdForAreaId(areaId)
     return GetUiMapIdForAreaId(parentAreaId)
 end
 
+local localizedZoneMappingsLocale = nil
+local function EnsureLocalizedZoneNameMappings()
+    local activeLocale = l10n.GetUILocale and l10n:GetUILocale() or "enUS"
+    if localizedZoneMappingsLocale == activeLocale then
+        return
+    end
+
+    localizedZoneMappingsLocale = activeLocale
+    for _, lookupTable in pairs(l10n.zoneLookup or {}) do
+        if type(lookupTable) == "table" then
+            for areaId, zoneName in pairs(lookupTable) do
+                if zoneName and zoneName ~= "" then
+                    local localizedZoneName = zoneName
+                    if l10n.translations and l10n.translations[zoneName] then
+                        localizedZoneName = l10n(zoneName)
+                    end
+
+                    zoneNameToAreaId[localizedZoneName] = zoneNameToAreaId[localizedZoneName] or areaId
+                    local uiMapID = GetUiMapIdForAreaId(areaId) or GetParentUiMapIdForAreaId(areaId)
+                    if uiMapID then
+                        zoneNameToUiMapId[localizedZoneName] = zoneNameToUiMapId[localizedZoneName] or uiMapID
+                    end
+                end
+            end
+        end
+    end
+end
+
 local function IsAzerothOutlandChooserVisible(rawMapID)
     if rawMapID ~= -1 or not WorldMapFrame or not WorldMapFrame:IsVisible() then
         return false
@@ -583,6 +611,8 @@ local function IsAzerothOutlandChooserVisible(rawMapID)
 end
 
 local function ResolveUiMapIDByZoneTexts()
+    EnsureLocalizedZoneNameMappings()
+
     local zoneCandidates = {
         {name = GetSubZoneText and GetSubZoneText(), source = "sub"},
         {name = GetMinimapZoneText and GetMinimapZoneText(), source = "minimap"},
@@ -1096,6 +1126,59 @@ function QuestieCompat.GetCurrentUiMapID()
         return lastKnownZoneLikeUiMapID
     end
     return 946
+end
+
+local function ResolveCurrentAreaIdByZoneTexts()
+    EnsureLocalizedZoneNameMappings()
+
+    local candidates = {
+        GetMinimapZoneText and GetMinimapZoneText(),
+        GetSubZoneText and GetSubZoneText(),
+        GetRealZoneText and GetRealZoneText(),
+        GetZoneText and GetZoneText(),
+    }
+
+    for _, zoneName in ipairs(candidates) do
+        if zoneName and zoneName ~= "" then
+            local areaId = zoneNameToAreaId[zoneName]
+            if areaId then
+                return areaId
+            end
+        end
+    end
+
+    return nil
+end
+
+---Returns the player's current AzerothCore AreaTable area ID.
+---@return number?
+function QuestieCompat.GetCurrentAreaId()
+    local areaId = ResolveCurrentAreaIdByZoneTexts()
+    if areaId then
+        return areaId
+    end
+
+    local uiMapID = QuestieCompat.GetCurrentUiMapID()
+    if uiMapID and ZoneDB.GetAreaIdByUiMapId then
+        local success, resolvedAreaId = pcall(ZoneDB.GetAreaIdByUiMapId, ZoneDB, uiMapID)
+        if success then
+            return resolvedAreaId
+        end
+    end
+
+    return nil
+end
+
+---Returns the player's current AzerothCore AreaTable parent zone ID.
+---@return number?
+function QuestieCompat.GetCurrentZoneId()
+    local areaId = QuestieCompat.GetCurrentAreaId()
+    if not areaId then
+        return nil
+    end
+
+    local subZoneToParentZone = ZoneDB.private and ZoneDB.private.subZoneToParentZone
+    return subZoneToParentZone and subZoneToParentZone[areaId] or areaId
 end
 
 -- maps mapAreaID to Zone and Continent index

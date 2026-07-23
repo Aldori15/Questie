@@ -64,6 +64,8 @@ local requiredItemConditionStates = {}
 local requiredItemConditionUpdatePending = false
 local acoreAuraConditionStates = {}
 local acoreAuraConditionUpdatePending = false
+local acoreLocationConditionStates = {}
+local acoreLocationConditionUpdatePending = false
 local itemRegressionConfirmationPending = false
 local GetCursorInfo = GetCursorInfo
 
@@ -75,6 +77,10 @@ local function CacheRequiredItemConditionStates()
 
     for questId in pairs(QuestieDB.acoreAuraConditionQuestIds) do
         acoreAuraConditionStates[questId] = QuestieDB.IsDoable(questId)
+    end
+
+    for questId in pairs(QuestieDB.acoreLocationConditionQuestIds) do
+        acoreLocationConditionStates[questId] = QuestieDB.IsDoable(questId)
     end
 end
 
@@ -103,6 +109,8 @@ function QuestEventHandler:RegisterEvents()
     eventFrame:RegisterEvent("QUEST_WATCH_UPDATE")
     eventFrame:RegisterEvent("UNIT_QUEST_LOG_CHANGED")
     eventFrame:RegisterEvent("PLAYER_LEAVING_WORLD")
+    eventFrame:RegisterEvent("ZONE_CHANGED")
+    eventFrame:RegisterEvent("ZONE_CHANGED_INDOORS")
     eventFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
     eventFrame:RegisterEvent("SPELLS_CHANGED") -- Spell objectives and availability conditions
     eventFrame:RegisterEvent("CURRENCY_DISPLAY_UPDATE")
@@ -680,6 +688,30 @@ function _QuestEventHandler:AuraUpdate()
     end)
 end
 
+function _QuestEventHandler:LocationUpdate()
+    if acoreLocationConditionUpdatePending then
+        return
+    end
+
+    acoreLocationConditionUpdatePending = true
+    C_Timer.After(0.10, function()
+        acoreLocationConditionUpdatePending = false
+        local availabilityChanged = false
+
+        for questId in pairs(QuestieDB.acoreLocationConditionQuestIds) do
+            local isDoable = QuestieDB.IsDoable(questId)
+            if acoreLocationConditionStates[questId] ~= isDoable then
+                acoreLocationConditionStates[questId] = isDoable
+                availabilityChanged = true
+            end
+        end
+
+        if availabilityChanged then
+            AvailableQuests.RebuildAll(nil, true)
+        end
+    end)
+end
+
 --- Is executed whenever an event is fired and triggers relevant event handling.
 ---@param event string
 function _QuestEventHandler:OnEvent(event, ...)
@@ -698,8 +730,14 @@ function _QuestEventHandler:OnEvent(event, ...)
         _QuestEventHandler:UnitQuestLogChanged(...)
     elseif event == "PLAYER_LEAVING_WORLD" then
         QuestLogCache.OnPlayerLeavingWorld()
-    elseif event == "ZONE_CHANGED_NEW_AREA" then
-        _QuestEventHandler:ZoneChangedNewArea()
+    elseif event == "ZONE_CHANGED"
+        or event == "ZONE_CHANGED_INDOORS"
+        or event == "ZONE_CHANGED_NEW_AREA"
+    then
+        if event == "ZONE_CHANGED_NEW_AREA" then
+            _QuestEventHandler:ZoneChangedNewArea()
+        end
+        _QuestEventHandler:LocationUpdate()
     elseif event == "SPELLS_CHANGED" then
         Questie:Debug(Questie.DEBUG_DEVELOP, "[EVENT] SPELLS_CHANGED (QuestEventHandler)")
         -- AzerothCore can also use learned spells as quest availability

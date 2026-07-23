@@ -4,9 +4,9 @@
 --
 -- Conditions in one inner table are ANDed. The inner tables are ORed.
 -- Tuple: {conditionType, value1, value2, value3, negativeCondition}
--- Supported types: aura=1, item=2, reputation rank=5, quest rewarded=8,
+-- Supported types: aura=1, item=2, zone=4, reputation rank=5, quest rewarded=8,
 -- quest taken=9, quest none=14, class=15, achievement=17, spawn mask=19,
--- spell=25, quest complete=28, daily quest done=43, quest state=47.
+-- area=23, spell=25, quest complete=28, daily quest done=43, quest state=47.
 
 if not QuestieCompat.Is335 then return end
 
@@ -178,6 +178,24 @@ QuestieCompat.AzerothCoreQuestAvailabilityConditions = {
     [8766] = {
         {{2,21205,1,0,0}},
     },
+    [8870] = {
+        {{4,1537,0,0,0}},
+    },
+    [8871] = {
+        {{4,1519,0,0,0}},
+    },
+    [8872] = {
+        {{4,1657,0,0,0}},
+    },
+    [8873] = {
+        {{4,1637,0,0,0}},
+    },
+    [8874] = {
+        {{4,1497,0,0,0}},
+    },
+    [8875] = {
+        {{4,1638,0,0,0}},
+    },
     [10017] = {
         {{5,932,7,0,0}},
     },
@@ -235,6 +253,24 @@ QuestieCompat.AzerothCoreQuestAvailabilityConditions = {
         {{8,11361,0,0,0}},
         {{8,11449,0,0,0}},
         {{8,11450,0,0,0}},
+    },
+    [11360] = {
+        {{23,87,0,0,0}},
+    },
+    [11361] = {
+        {{23,362,0,0,0}},
+    },
+    [11439] = {
+        {{23,131,0,0,0}},
+    },
+    [11440] = {
+        {{23,3576,0,0,0}},
+    },
+    [11449] = {
+        {{23,159,0,0,0}},
+    },
+    [11450] = {
+        {{23,3665,0,0,0}},
     },
     [11585] = {
         {{14,10172,0,0,0}},

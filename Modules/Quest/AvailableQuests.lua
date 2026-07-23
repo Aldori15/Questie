@@ -75,6 +75,10 @@ local function _ShouldTrackNpcAvailability(questId)
     return QuestieDB.IsDailyQuest(questId) or QuestieDB.IsWeeklyQuest(questId) or QuestieDB.IsMonthlyQuest(questId)
 end
 
+local function _ShouldRegisterQuestStartTooltip(questId)
+    return not QuestieDB:HasAzerothCoreLocationCondition(questId) or QuestieDB:IsAzerothCoreAvailabilityConditionFulfilled(questId)
+end
+
 local function _ApplyRefreshSpeed(useFastRefresh)
     if useFastRefresh then
         questsPerYield = QUESTS_PER_YIELD_FAST
@@ -554,7 +558,7 @@ function AvailableQuests.DrawAvailableQuest(quest) -- prevent recursion
 
         if limit == 0 or added < limit then
             added = added + _AddStarter(starter, quest, drawTooltipKey, (limit == 0 and 0) or (limit - added))
-        else
+        elseif _ShouldRegisterQuestStartTooltip(quest.Id) then
             QuestieTooltips:RegisterQuestStartTooltip(quest.Id, starter.name, starter.id, fallbackTooltipKey, tooltipType)
         end
     end
@@ -1021,7 +1025,7 @@ _CalculateAvailableQuests = function()
 
         if (
             (not _IsLevelRequirementsFulfilledForAvailable(questId, minLevel, maxLevel, playerLevel, isRepeatableQuest)) or
-            (not QuestieDB.IsDoable(questId, debugEnabled))
+            (not QuestieDB.IsDoable(questId, debugEnabled, true))
         ) then
             --If the quests are not within level range we want to unload them
             --(This is for when people level up or change settings etc)
@@ -1097,6 +1101,10 @@ end
 ---@param quest Quest|nil
 _RegisterQuestStartTooltips = function(quest)
     if (not quest) or (not quest.Starts) then
+        return
+    end
+
+    if not _ShouldRegisterQuestStartTooltip(quest.Id) then
         return
     end
 
@@ -1300,14 +1308,16 @@ _AddStarter = function(starter, quest, tooltipKey, limit)
     local isDungeonQuest = QuestieDB.IsDungeonQuest(quest.Id)
     local isRaidQuest = QuestieDB.IsRaidQuest(quest.Id)
 
-    QuestieTooltips:RegisterQuestStartTooltip(quest.Id, starter.name, starter.id, tooltipKey, (starterType or "NPC"))
+    if _ShouldRegisterQuestStartTooltip(quest.Id) then
+        QuestieTooltips:RegisterQuestStartTooltip(quest.Id, starter.name, starter.id, tooltipKey, (starterType or "NPC"))
+    end
 
     local starterIcons = {}
     local starterLocs = {}
     local visibleStarterZones = {}
     for zone, spawns in pairs(starter.spawns or {}) do
         local alreadyAddedSpawns = {}
-        if (zone and spawns) then
+        if zone and spawns and QuestieDB:IsAzerothCoreAvailabilityConditionFulfilledForSpawnZone(quest.Id, zone) then
             local coords
             for spawnIndex = 1, #spawns do
                 coords = spawns[spawnIndex]
@@ -1361,7 +1371,8 @@ _AddStarter = function(starter, quest, tooltipKey, limit)
     -- Only for NPCs since objects do not move
     if starter.waypoints then
         for zone, waypoints in pairs(starter.waypoints or {}) do
-            if (visibleStarterZones[zone] or (not starter.spawns) or (not starter.spawns[zone]) or _HasVisibleSpawnInZone(starter.spawns[zone])) and
+            if QuestieDB:IsAzerothCoreAvailabilityConditionFulfilledForSpawnZone(quest.Id, zone) and
+                (visibleStarterZones[zone] or (not starter.spawns) or (not starter.spawns[zone]) or _HasVisibleSpawnInZone(starter.spawns[zone])) and
                 (not dungeons[zone]) and waypoints[1] and waypoints[1][1] and waypoints[1][1][1] then
                 if not starterIcons[zone] then
                     if limit == 0 or added < limit then

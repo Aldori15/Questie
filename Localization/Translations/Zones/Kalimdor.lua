@@ -314,6 +314,18 @@ local kalimdorLocales = {
         ["zhCN"] = "试炼谷",
         ["zhTW"] = "試煉谷",
     },
+    ["Razor Hill"] = {
+        ["enUS"] = true,
+        ["deDE"] = "Klingenhügel",
+        ["esES"] = "Cerrotajo",
+        ["esMX"] = "Cerrotajo",
+        ["frFR"] = "Tranchecolline",
+        ["koKR"] = "칼바위 언덕",
+        ["ptBR"] = "Monte Navalha",
+        ["ruRU"] = "Колючий Холм",
+        ["zhCN"] = "剃刀岭",
+        ["zhTW"] = "剃刀嶺",
+    },
     ["Echo Isles"] = {
         ["enUS"] = true,
         ["deDE"] = "Die Echoinseln",

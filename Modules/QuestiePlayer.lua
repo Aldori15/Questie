@@ -127,6 +127,13 @@ function QuestiePlayer.HasRequiredClass(requiredClasses)
 end
 
 function QuestiePlayer:GetCurrentZoneId()
+    if QuestieCompat.GetCurrentZoneId then
+        local zoneId = QuestieCompat.GetCurrentZoneId()
+        if zoneId then
+            return zoneId
+        end
+    end
+
     local uiMapId = C_Map.GetBestMapForUnit("player")
     if uiMapId and uiMapId > 0 then
         local success, areaId = pcall(ZoneDB.GetAreaIdByUiMapId, ZoneDB, uiMapId)
@@ -141,6 +148,14 @@ function QuestiePlayer:GetCurrentZoneId()
     end
 
     return nil
+end
+
+function QuestiePlayer:GetCurrentAreaId()
+    if QuestieCompat.GetCurrentAreaId then
+        return QuestieCompat.GetCurrentAreaId()
+    end
+
+    return QuestiePlayer:GetCurrentZoneId()
 end
 
 ---@return number
