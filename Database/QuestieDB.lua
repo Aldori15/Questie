@@ -2068,10 +2068,15 @@ function QuestieDB:Initialize()
     itemBin = Questie.db.global.itemBin
     itemPtrs = Questie.db.global.itemPtrs
 
+    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieDB:Init] Begin GetDBHandles.")
     QuestieDB.QueryNPC = QuestieDBCompiler:GetDBHandle(npcBin, npcPtrs, QuestieDBCompiler:BuildSkipMap(QuestieDB.npcCompilerTypes, QuestieDB.npcCompilerOrder), QuestieDB.npcKeys, QuestieDB.npcDataOverrides)
+    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieDB:Init] NPC GetDBHandle complete.")
     QuestieDB.QueryQuest = QuestieDBCompiler:GetDBHandle(questBin, questPtrs, QuestieDBCompiler:BuildSkipMap(QuestieDB.questCompilerTypes, QuestieDB.questCompilerOrder), QuestieDB.questKeys, QuestieDB.questDataOverrides)
+    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieDB:Init] Quest GetDBHandle complete.")
     QuestieDB.QueryObject = QuestieDBCompiler:GetDBHandle(objBin, objPtrs, QuestieDBCompiler:BuildSkipMap(QuestieDB.objectCompilerTypes, QuestieDB.objectCompilerOrder), QuestieDB.objectKeys, QuestieDB.objectDataOverrides)
+    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieDB:Init] Object GetDBHandle complete.")
     QuestieDB.QueryItem = QuestieDBCompiler:GetDBHandle(itemBin, itemPtrs, QuestieDBCompiler:BuildSkipMap(QuestieDB.itemCompilerTypes, QuestieDB.itemCompilerOrder), QuestieDB.itemKeys, QuestieDB.itemDataOverrides)
+    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieDB:Init] Item GetDBHandle complete.")
 
     QuestieDB.NPCPointers = QuestieDB.QueryNPC.pointers
     QuestieDB.QuestPointers = QuestieDB.QueryQuest.pointers

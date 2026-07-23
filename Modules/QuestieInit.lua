@@ -168,6 +168,7 @@ QuestieInit.Stages[1] = function() -- run as a coroutine
 
     Questie:SetIcons()
 
+    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage1] UI locale initializing.")
     if QUESTIE_LOCALES_OVERRIDE ~= nil then
         l10n:InitializeLocaleOverride()
     end
@@ -208,14 +209,19 @@ QuestieInit.Stages[1] = function() -- run as a coroutine
 
     -- Check if the DB needs to be recompiled
     if (not dbIsCompiled) or (QuestieLib:GetAddonVersionString() ~= dbCompiledOnVersion) or (l10n:GetUILocale() ~= dbCompiledLang) or (dbCompiledSchemaVersion ~= QuestieDBCompiler.compiledSchemaVersion) or (Questie.db.global.dbCompiledExpansion ~= WOW_PROJECT_ID) then
+        Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage1] DB compile beginning.")
         print("\124cFFAAEEFF" .. l10n("Questie DB has updated!") .. "\124r\124cFFFF6F22 " .. l10n("Data is being processed, this may take a few moments and cause some lag..."))
         loadFullDatabase()
         QuestieDBCompiler:Compile()
         dbCompiled = true
+        Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage1] DB compile completed.")
     else
+        Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage1] Cached DB loading.")
         l10n:Initialize()
+        Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage1] Localizations initialized.")
         coYield()
         QuestieCorrections:MinimalInit()
+        Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage1] Cached DB loaded.")
     end
 
     -- The remaining init path no longer needs the source lookup blobs after database setup.
@@ -227,22 +233,27 @@ QuestieInit.Stages[1] = function() -- run as a coroutine
 
     -- For townsfolkClass we use UnitClassBase so it works across locales
     if (not Questie.db.char.townsfolk) or (dbCompiledCount ~= Questie.db.char.townsfolkVersion) or (Questie.db.char.townsfolkClass ~= select(2, UnitClassBase("player"))) then
+        Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage1] Townsfolk building.")
         Questie.db.char.townsfolkVersion = dbCompiledCount
         coYield()
         Townsfolk:BuildCharacterTownsfolk()
     end
 
+    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage1] QuestieDB initializing.")
     coYield()
     QuestieDB:Initialize()
 
+    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage1] Object name cache building.")
     l10n:BuildObjectNameCache()
 
+    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage1] Tutorial initializing.")
     coYield()
     Tutorial.Initialize()
 
     --? Only run the validator on recompile if debug is enabled, otherwise it's a waste of time.
     if Questie.db.profile.debugEnabled and dbCompiled then
         if Questie.db.profile.skipValidation ~= true then
+            Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage1] Validator running.")
             runValidator()
             print("\124cFF4DDBFF Load and Validation complete.")
         else
@@ -255,8 +266,10 @@ end
 
 QuestieInit.Stages[2] = function()
     Questie:Debug(Questie.DEBUG_INFO, "[QuestieInit:Stage2] Stage 2 start.")
+    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage2] QuestiePlayer initializing.")
     QuestiePlayer:Initialize()
     coYield()
+    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage2] QuestieJourney initializing.")
     QuestieJourney:Initialize()
 
     local keepWaiting = true
@@ -274,22 +287,30 @@ QuestieInit.Stages[2] = function()
         coYield()
     end
     keepWaiting = false
+    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage2] Game cache ready.")
 end
 
 QuestieInit.Stages[3] = function() -- run as a coroutine
     Questie:Debug(Questie.DEBUG_INFO, "[QuestieInit:Stage3] Stage 3 start.")
 
     -- register events that rely on questie being initialized
+    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage3] Late events registering.")
     QuestieEventHandler:RegisterLateEvents()
 
     -- ** OLD ** Questie:ContinueInit() ** START **
+    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage3] QuestieTooltips initializing.")
     QuestieTooltips:Initialize()
+    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage3] DropDB initializing.")
     DropDB:Initialize()
+    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage3] QuestieCoords initializing.")
     QuestieCoords:Initialize()
+    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage3] Quest timers initializing.")
     TrackerQuestTimers:Initialize()
+    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage3] Communications initializing.")
     Comms.Initialize()
     QuestieComms:Initialize()
 
+    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage3] Slash commands registering.")
     QuestieSlash.RegisterSlashCommands()
 
     QuestieAnnounce:InitializeLogoFilter()
@@ -297,17 +318,22 @@ QuestieInit.Stages[3] = function() -- run as a coroutine
     coYield()
 
     if Questie.db.profile.dbmHUDEnable then
+        Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage3] QuestieDBM initializing.")
         QuestieDBMIntegration:EnableHUD()
     end
     -- ** OLD ** Questie:ContinueInit() ** END **
 
+    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage3] QuestieMap initializing.")
     QuestieMap:InitializeQueue()
 
     coYield()
+    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage3] QuestieQuest initializing.")
     QuestieQuest:Initialize()
     coYield()
+    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage3] World map button initializing.")
     WorldMapButton.Initialize()
     coYield()
+    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage3] Instance locations initializing.")
     InstanceLocations.Initialize()
     coYield()
     -- Seed the quest log baseline before live quest events are registered.
@@ -326,6 +352,7 @@ QuestieInit.Stages[3] = function() -- run as a coroutine
     QuestieQuest:GetAllQuestIds()
 
     -- Initialize the tracker
+    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage3] QuestieTracker initializing.")
     coYield()
     QuestieTracker.Initialize()
     Hooks:HookQuestLogTitle()
@@ -357,9 +384,11 @@ QuestieInit.Stages[3] = function() -- run as a coroutine
         end)
     end
 
+    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage3] QuestieMenu initializing.")
     coYield()
     QuestieMenu:OnLogin()
 
+    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage3] DailyQuests initializing.")
     coYield()
     DailyQuests.Initialize()
 
@@ -371,6 +400,7 @@ QuestieInit.Stages[3] = function() -- run as a coroutine
     Questie.started = true
 
     if QuestieIconVisibility:IsEnabledAnywhere("event") then
+        Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage3] QuestieEvent initializing.")
         QuestieEvent.Initialize()
     end
 
@@ -409,6 +439,7 @@ QuestieInit.Stages[3] = function() -- run as a coroutine
     end
 
     -- We do this last because it will run for a while and we don't want to block the rest of the init
+    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage3] Drawing available quests.")
     coYield()
     AvailableQuests.CalculateAndDrawAll()
 
