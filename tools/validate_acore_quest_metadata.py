@@ -89,6 +89,8 @@ CONDITION_ZONEID = 4
 CONDITION_REPUTATION_RANK = 5
 CONDITION_QUESTREWARDED = 8
 CONDITION_QUESTTAKEN = 9
+CONDITION_WORLD_STATE = 11
+CONDITION_ACTIVE_EVENT = 12
 CONDITION_QUEST_NONE = 14
 CONDITION_CLASS = 15
 CONDITION_ACHIEVEMENT = 17
@@ -313,6 +315,25 @@ ACORE_RUNTIME_QUEST_AVAILABILITY_CONDITION_TYPES = frozenset({
     CONDITION_DAILY_QUEST_DONE,
     CONDITION_QUESTSTATE,
 })
+
+# These availability predicates are enforced by QuestieEvent rather than the
+# generated AzerothCore condition table.
+QUESTIE_EVENT_AVAILABILITY_CONDITIONS = {
+    8221: 90,  # Rare Fish - Keefer's Angelfish
+    8224: 90,  # Rare Fish - Dezian Queenfish
+    8225: 90,  # Rare Fish - Brownell's Blue Striped Racer
+    8354: 12,  # Chicken Clucking for a Mint
+    8358: 12,  # Incoming Gumdrop
+    8359: 12,  # Flexing for Nougat
+    8360: 12,  # Dancing for Marzipan
+}
+
+# The 3.3.5 addon API cannot query arbitrary server world-state IDs. Keeping
+# this quest blacklisted avoids showing it before the fishing contest has a
+# winner (AzerothCore world state 198).
+INTENTIONALLY_EXCLUDED_QUEST_AVAILABILITY_CONDITIONS = {
+    8194: "Requires unreadable AzerothCore world state 198 (fishing contest winner declared).",
+}
 
 # AzerothCore intentionally offers these initial Runecloth donation quests
 # independently from the Wool, Silk, and Mageweave donations. Questie's TBC
@@ -3390,6 +3411,8 @@ def build_quest_availability_condition_audit(condition_rows, quest_names=None):
         issues = set()
         current_representation = []
         runtime_exact = quest_id in runtime_conditions
+        expected_event_id = QUESTIE_EVENT_AVAILABILITY_CONDITIONS.get(quest_id)
+        exclusion_reason = INTENTIONALLY_EXCLUDED_QUEST_AVAILABILITY_CONDITIONS.get(quest_id)
 
         if runtime_exact:
             current_representation.append("AzerothCoreQuestAvailabilityConditions")
@@ -3457,12 +3480,25 @@ def build_quest_availability_condition_audit(condition_rows, quest_names=None):
             else:
                 issues.add("multipleSpellRequirements")
 
+        event_handled_exact = (
+            expected_event_id is not None
+            and condition_types == [CONDITION_ACTIVE_EVENT]
+            and len(rows) == 1
+            and int(rows[0].get("ConditionValue1") or 0) == expected_event_id
+            and int(rows[0].get("ConditionValue2") or 0) == 0
+            and int(rows[0].get("ConditionValue3") or 0) == 0
+            and int(rows[0].get("NegativeCondition") or 0) == 0
+            and has_default_source_shape(rows[0])
+        )
+        if event_handled_exact:
+            current_representation.append("QuestieEvent")
+
         unsupported_types = [
             condition_type
             for condition_type in condition_types
             if condition_type not in ACORE_RUNTIME_QUEST_AVAILABILITY_CONDITION_TYPES
         ]
-        for condition_type in unsupported_types:
+        for condition_type in (() if event_handled_exact else unsupported_types):
             condition_name = QUEST_AVAILABILITY_CONDITION_NAMES.get(
                 condition_type,
                 f"UNKNOWN_{condition_type}",
@@ -3487,13 +3523,16 @@ def build_quest_availability_condition_audit(condition_rows, quest_names=None):
             and all(has_default_source_shape(row) for row in rows)
         )
 
-        fully_represented = runtime_exact or item_exact or rewarded_exact or spell_exact
+        fully_represented = runtime_exact or item_exact or rewarded_exact or spell_exact or event_handled_exact
         if not fully_represented and len(rows) > 1 and (
             len(else_group_counts) > 1 or any(count > 1 for count in else_group_counts.values())
         ):
             issues.add("groupedAndOrLogicNotPreserved")
 
-        if fully_represented:
+        if exclusion_reason:
+            classification = "intentionallyExcluded"
+            current_representation.append("QuestieQuestBlacklist")
+        elif fully_represented:
             classification = "fullyRepresented"
         elif current_representation:
             classification = "partiallyRepresented"
@@ -3519,26 +3558,27 @@ def build_quest_availability_condition_audit(condition_rows, quest_names=None):
             )
             normalized_rows.append(normalized_row)
 
-        audited_quests.append(
-            {
-                "questId": quest_id,
-                "questName": str(quest_names.get(quest_id) or ""),
-                "classification": classification,
-                "currentRepresentation": sorted(set(current_representation)),
-                "issues": sorted(issues),
-                "conditionTypes": [
-                    {
-                        "id": condition_type,
-                        "name": QUEST_AVAILABILITY_CONDITION_NAMES.get(
-                            condition_type,
-                            f"UNKNOWN_{condition_type}",
-                        ),
-                    }
-                    for condition_type in condition_types
-                ],
-                "conditions": normalized_rows,
-            }
-        )
+        audited_quest = {
+            "questId": quest_id,
+            "questName": str(quest_names.get(quest_id) or ""),
+            "classification": classification,
+            "currentRepresentation": sorted(set(current_representation)),
+            "issues": sorted(issues),
+            "conditionTypes": [
+                {
+                    "id": condition_type,
+                    "name": QUEST_AVAILABILITY_CONDITION_NAMES.get(
+                        condition_type,
+                        f"UNKNOWN_{condition_type}",
+                    ),
+                }
+                for condition_type in condition_types
+            ],
+            "conditions": normalized_rows,
+        }
+        if exclusion_reason:
+            audited_quest["exclusionReason"] = exclusion_reason
+        audited_quests.append(audited_quest)
 
     condition_type_summary = {}
     for condition_type in sorted(type_stats):
@@ -3562,6 +3602,7 @@ def build_quest_availability_condition_audit(condition_rows, quest_names=None):
                 for key in (
                     "fullyRepresented",
                     "partiallyRepresented",
+                    "intentionallyExcluded",
                     "notRepresented",
                 )
             },
@@ -3577,9 +3618,10 @@ def build_quest_availability_condition_audit(condition_rows, quest_names=None):
             "issueCounts": dict(sorted(issue_counts.items())),
         },
         "classificationNotes": {
-            "fullyRepresented": "Questie's generated fields or AzerothCore runtime condition table preserve the complete condition expression.",
+            "fullyRepresented": "Questie's generated fields, runtime condition table, or specialized event handling preserve the complete condition expression.",
             "partiallyRepresented": "Questie imports at least one predicate, but not the complete AzerothCore expression or grouping.",
-            "notRepresented": "Questie intentionally defers this expression to specialized handling or cannot reproduce its server/context state.",
+            "intentionallyExcluded": "Questie deliberately hides this quest because the 3.3.5 client cannot reproduce the required server state safely.",
+            "notRepresented": "Questie has no implementation or explicit exclusion for this AzerothCore condition expression.",
         },
         "quests": audited_quests,
     }
@@ -3646,6 +3688,7 @@ def main():
         print(f"Quests: {condition_summary['totalQuests']}")
         print(f"  fullyRepresented: {classification_counts['fullyRepresented']}")
         print(f"  partiallyRepresented: {classification_counts['partiallyRepresented']}")
+        print(f"  intentionallyExcluded: {classification_counts['intentionallyExcluded']}")
         print(f"  notRepresented: {classification_counts['notRepresented']}")
 
         condition_report_path = Path(args.condition_report)
@@ -3772,6 +3815,7 @@ def main():
         print(f"  quests: {condition_summary['totalQuests']}")
         print(f"  fullyRepresented: {classification_counts['fullyRepresented']}")
         print(f"  partiallyRepresented: {classification_counts['partiallyRepresented']}")
+        print(f"  intentionallyExcluded: {classification_counts['intentionallyExcluded']}")
         print(f"  notRepresented: {classification_counts['notRepresented']}")
 
     if mismatches:

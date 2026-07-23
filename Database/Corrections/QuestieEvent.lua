@@ -57,7 +57,10 @@ _QuestieEvent.eventNamesForQuests = {}
 _QuestieEvent.eventQuestsInCurrentExpansion = {}
 _QuestieEvent.announcedEvents = {}
 _QuestieEvent.announcedUpcomingEvents = {}
-_QuestieEvent.timedEventStartTimers = {}
+_QuestieEvent.timedEventLiveStartTimers = {}
+_QuestieEvent.timedEventQuestStartTimers = {}
+_QuestieEvent.timedEventQuestEndTimers = {}
+_QuestieEvent.timedEventQuestIds = {}
 _QuestieEvent.initializeTimer = nil
 _QuestieEvent.initializeAttempts = 0
 
@@ -83,10 +86,15 @@ local strfind = string.find
 local _WithinDates, _LoadDarkmoonFaire, _GetDarkmoonFaireLocation,
     _GetDarkmoonFaireLocationForDate, _GetDarkmoonFaireEventName,
     _IsEventQuestVisible, _GetCalendarEventName, _GetActiveCalendarEvents,
-    _IsCalendarEventMonthPlausible, _IsCalendarEventActiveNow, _IsCalendarEventLiveNow,
-    _GetTimedEventStartDelay, _AnnounceActiveEvent, _AnnounceUpcomingTimedEvent,
-    _ScheduleTimedEventActiveAnnouncement, _PrimeCalendar, _RefreshAvailableQuests,
-    _ShouldAnnounceWorldEvents, _CancelInitializeTimer
+    _IsCalendarEventMonthPlausible, _IsCalendarEventActiveNow,
+    _IsCalendarEventLiveNow, _IsCalendarEventQuestActiveNow,
+    _GetTimedEventLiveStartDelay, _GetTimedEventQuestStartDelay,
+    _GetTimedEventQuestEndDelay, _AnnounceActiveEvent,
+    _AnnounceUpcomingTimedEvent, _SetTimedEventQuestState,
+    _ScheduleTimedEventActiveAnnouncement, _ScheduleTimedEventQuestStart,
+    _ScheduleTimedEventQuestEnd,
+    _PrimeCalendar, _RefreshAvailableQuests, _ShouldAnnounceWorldEvents,
+    _CancelInitializeTimer
 
 local EVENT_INIT_INITIAL_DELAY = 1
 local EVENT_INIT_RETRY_INTERVAL = 1
@@ -157,9 +165,23 @@ local CALENDAR_EVENT_PLAUSIBLE_MONTHS = {
 }
 
 local CALENDAR_EVENT_TIME_WINDOWS = {
-    -- QuestieEvent initializes once, so timed fishing events preload before the actual contest starts.
-    ["Kalu'ak Fishing Derby"] = {startHour = 2, liveStartHour = 14, endHour = 15},
-    ["Stranglethorn Fishing Extravaganza"] = {startHour = 2, liveStartHour = 14, endHour = 17},
+    -- QuestieEvent initializes once, so timed fishing events preload before their active windows.
+    ["Kalu'ak Fishing Derby"] = {
+        -- AzerothCore's turn-in event spans 13:00-16:00 while the contest runs from
+        -- 14:00-15:00. Questie cannot remotely observe the winner-dependent NPC state.
+        startHour = 2,
+        questStartHour = 13,
+        liveStartHour = 14,
+        liveEndHour = 15,
+        questEndHour = 16,
+    },
+    ["Stranglethorn Fishing Extravaganza"] = {
+        startHour = 2,
+        questStartHour = 14,
+        liveStartHour = 14,
+        liveEndHour = 17,
+        questEndHour = 17,
+    },
 }
 
 local DMF_LOCATIONS = {
@@ -242,7 +264,7 @@ _IsCalendarEventActiveNow = function(eventName, currentDate)
         return true
     end
 
-    return currentDate.hour >= timeWindow.startHour and currentDate.hour < timeWindow.endHour
+    return currentDate.hour >= timeWindow.startHour and currentDate.hour < timeWindow.questEndHour
 end
 
 _IsCalendarEventLiveNow = function(eventName, currentDate)
@@ -255,13 +277,25 @@ _IsCalendarEventLiveNow = function(eventName, currentDate)
         return true
     end
 
-    local liveStartHour = timeWindow.liveStartHour or timeWindow.startHour
-    return currentDate.hour >= liveStartHour and currentDate.hour < timeWindow.endHour
+    return currentDate.hour >= timeWindow.liveStartHour and currentDate.hour < timeWindow.liveEndHour
 end
 
-_GetTimedEventStartDelay = function(eventName, currentDate)
+_IsCalendarEventQuestActiveNow = function(eventName, currentDate)
     local timeWindow = CALENDAR_EVENT_TIME_WINDOWS[eventName]
-    if (not timeWindow) or (not timeWindow.liveStartHour) or (not currentDate) or (not currentDate.hour) then
+    if not timeWindow then
+        return true
+    end
+
+    if not currentDate or not currentDate.hour then
+        return true
+    end
+
+    return currentDate.hour >= timeWindow.questStartHour and currentDate.hour < timeWindow.questEndHour
+end
+
+_GetTimedEventLiveStartDelay = function(eventName, currentDate)
+    local timeWindow = CALENDAR_EVENT_TIME_WINDOWS[eventName]
+    if (not timeWindow) or (not currentDate) or (not currentDate.hour) then
         return nil
     end
 
@@ -271,6 +305,34 @@ _GetTimedEventStartDelay = function(eventName, currentDate)
     end
 
     return minutesUntilStart * 60
+end
+
+_GetTimedEventQuestStartDelay = function(eventName, currentDate)
+    local timeWindow = CALENDAR_EVENT_TIME_WINDOWS[eventName]
+    if (not timeWindow) or (not currentDate) or (not currentDate.hour) then
+        return nil
+    end
+
+    local minutesUntilStart = ((timeWindow.questStartHour - currentDate.hour) * 60) - (currentDate.minute or 0)
+    if minutesUntilStart <= 0 then
+        return nil
+    end
+
+    return minutesUntilStart * 60
+end
+
+_GetTimedEventQuestEndDelay = function(eventName, currentDate)
+    local timeWindow = CALENDAR_EVENT_TIME_WINDOWS[eventName]
+    if (not timeWindow) or (not currentDate) or (not currentDate.hour) then
+        return nil
+    end
+
+    local minutesUntilEnd = ((timeWindow.questEndHour - currentDate.hour) * 60) - (currentDate.minute or 0)
+    if minutesUntilEnd <= 0 then
+        return nil
+    end
+
+    return minutesUntilEnd * 60
 end
 
 _AnnounceActiveEvent = function(eventName)
@@ -288,20 +350,80 @@ _AnnounceActiveEvent = function(eventName)
     print(Questie:Colorize("[Questie]", "yellow"), "|cFF6ce314" .. l10n("The '%s' world event is active!", l10n(eventName)))
 end
 
-_ScheduleTimedEventActiveAnnouncement = function(eventName, currentDate)
-    if _QuestieEvent.timedEventStartTimers[eventName] then
+_SetTimedEventQuestState = function(eventName, isActive)
+    local questIds = _QuestieEvent.timedEventQuestIds[eventName]
+    if not questIds then
         return
     end
 
-    local delay = _GetTimedEventStartDelay(eventName, currentDate)
+    local changed = false
+    for questId in pairs(questIds) do
+        if isActive then
+            if QuestieEvent.activeQuests[questId] ~= true or QuestieCorrections.hiddenQuests[questId] ~= nil then
+                changed = true
+            end
+            QuestieCorrections.hiddenQuests[questId] = nil
+            QuestieEvent.activeQuests[questId] = true
+        else
+            if QuestieEvent.activeQuests[questId] == true or QuestieCorrections.hiddenQuests[questId] ~= true then
+                changed = true
+            end
+            QuestieCorrections.hiddenQuests[questId] = true
+            QuestieEvent.activeQuests[questId] = nil
+        end
+    end
+
+    if changed then
+        _RefreshAvailableQuests()
+    end
+end
+
+_ScheduleTimedEventQuestEnd = function(eventName, currentDate)
+    if _QuestieEvent.timedEventQuestEndTimers[eventName] then
+        return
+    end
+
+    local delay = _GetTimedEventQuestEndDelay(eventName, currentDate)
     if not delay then
         return
     end
 
-    _QuestieEvent.timedEventStartTimers[eventName] = C_Timer.After(delay, function()
-        _QuestieEvent.timedEventStartTimers[eventName] = nil
+    _QuestieEvent.timedEventQuestEndTimers[eventName] = C_Timer.After(delay, function()
+        _QuestieEvent.timedEventQuestEndTimers[eventName] = nil
+        _SetTimedEventQuestState(eventName, false)
+    end)
+end
+
+_ScheduleTimedEventQuestStart = function(eventName, currentDate)
+    if _QuestieEvent.timedEventQuestStartTimers[eventName] then
+        return
+    end
+
+    local delay = _GetTimedEventQuestStartDelay(eventName, currentDate)
+    if not delay then
+        return
+    end
+
+    _QuestieEvent.timedEventQuestStartTimers[eventName] = C_Timer.After(delay, function()
+        _QuestieEvent.timedEventQuestStartTimers[eventName] = nil
+        _SetTimedEventQuestState(eventName, true)
+        _ScheduleTimedEventQuestEnd(eventName, C_DateAndTime.GetCurrentCalendarTime())
+    end)
+end
+
+_ScheduleTimedEventActiveAnnouncement = function(eventName, currentDate)
+    if _QuestieEvent.timedEventLiveStartTimers[eventName] then
+        return
+    end
+
+    local delay = _GetTimedEventLiveStartDelay(eventName, currentDate)
+    if not delay then
+        return
+    end
+
+    _QuestieEvent.timedEventLiveStartTimers[eventName] = C_Timer.After(delay, function()
+        _QuestieEvent.timedEventLiveStartTimers[eventName] = nil
         _AnnounceActiveEvent(eventName)
-        _RefreshAvailableQuests()
     end)
 end
 
@@ -310,7 +432,7 @@ _AnnounceUpcomingTimedEvent = function(eventName, currentDate)
         return
     end
 
-    local delay = _GetTimedEventStartDelay(eventName, currentDate)
+    local delay = _GetTimedEventLiveStartDelay(eventName, currentDate)
     if not delay then
         return
     end
@@ -512,12 +634,31 @@ function QuestieEvent:Load(isFinalPass)
         if _IsEventQuestVisible(questData[5]) then
             _QuestieEvent.eventQuestsInCurrentExpansion[questId] = true
 
-            if activeEvents[eventName] == true and _WithinDates(startDay, startMonth, endDay, endMonth) then
+            if CALENDAR_EVENT_TIME_WINDOWS[eventName] then
+                _QuestieEvent.timedEventQuestIds[eventName] = _QuestieEvent.timedEventQuestIds[eventName] or {}
+                _QuestieEvent.timedEventQuestIds[eventName][questId] = true
+            end
+
+            local isActiveTimedQuest = (not CALENDAR_EVENT_TIME_WINDOWS[eventName])
+                or _IsCalendarEventQuestActiveNow(eventName, currentDate)
+            if activeEvents[eventName] == true
+                and isActiveTimedQuest
+                and _WithinDates(startDay, startMonth, endDay, endMonth) then
                 if not QuestieEvent.activeQuests[questId] then
                     addedActiveQuest = true
                 end
                 QuestieCorrections.hiddenQuests[questId] = nil
                 QuestieEvent.activeQuests[questId] = true
+            end
+        end
+    end
+
+    for eventName, isActive in pairs(activeEvents) do
+        if isActive and CALENDAR_EVENT_TIME_WINDOWS[eventName] then
+            if _IsCalendarEventQuestActiveNow(eventName, currentDate) then
+                _ScheduleTimedEventQuestEnd(eventName, currentDate)
+            else
+                _ScheduleTimedEventQuestStart(eventName, currentDate)
             end
         end
     end
