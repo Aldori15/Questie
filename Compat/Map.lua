@@ -43,6 +43,12 @@ local minimapPlayerWorldPositionCache = {}
 local PLAYER_POSITION_CACHE_TTL = 0.075
 local MIN_ZONE_COORD = -0.25
 local MAX_ZONE_COORD = 1.25
+local outdoorWorldInstanceIDs = {
+    [0] = true,   -- Eastern Kingdoms
+    [1] = true,   -- Kalimdor
+    [530] = true, -- Outland
+    [571] = true, -- Northrend
+}
 
 local function IsValidZoneCoords(x, y)
     if not x or not y then return false end
@@ -231,6 +237,15 @@ end
 local function IsZoneLikeUiMap(uiMapID)
     local uiData = uiMapID and QuestieCompat.UiMapData and QuestieCompat.UiMapData[uiMapID]
     return uiData and uiData.mapType and uiData.mapType >= 3
+end
+
+local function IsUiMapCompatibleWithPlayerInstance(uiMapID)
+    if IsInInstance() then
+        return true
+    end
+
+    local uiData = uiMapID and QuestieCompat.UiMapData and QuestieCompat.UiMapData[uiMapID]
+    return not uiData or uiData.instance == nil or outdoorWorldInstanceIDs[uiData.instance]
 end
 
 local function IsDescendantUiMap(childUiMapID, ancestorUiMapID)
@@ -590,12 +605,14 @@ local function ResolveUiMapIDByZoneTexts()
                 local mapType = uiData and uiData.mapType
                 local isZoneLikeMap = mapType and mapType >= 3
                 local isGenericWaterSubzone = genericWaterSubzones[zoneName] and (candidate.source == "sub" or candidate.source == "minimap")
-                if isZoneLikeMap and (not isGenericWaterSubzone) then
-                    return zoneUiMapID, zoneName
-                end
-                if not fallbackUiMapID then
-                    fallbackUiMapID = zoneUiMapID
-                    fallbackZoneName = zoneName
+                if IsUiMapCompatibleWithPlayerInstance(zoneUiMapID) then
+                    if isZoneLikeMap and (not isGenericWaterSubzone) then
+                        return zoneUiMapID, zoneName
+                    end
+                    if not fallbackUiMapID then
+                        fallbackUiMapID = zoneUiMapID
+                        fallbackZoneName = zoneName
+                    end
                 end
             end
         end
@@ -1033,6 +1050,12 @@ function QuestieCompat.GetCurrentUiMapID()
         uiMapID = ResolveDirectUiMapID(mapID, mapLevel)
     end
     if uiMapID then
+        if (not worldMapVisible) and not IsUiMapCompatibleWithPlayerInstance(uiMapID) then
+            local zoneUiMapID = ResolveUiMapIDByZoneTexts()
+            if zoneUiMapID then
+                uiMapID = zoneUiMapID
+            end
+        end
         if (not worldMapVisible) and IsContinentalOrCosmicUiMap(uiMapID) then
             local zoneUiMapID = ResolveUiMapIDByZoneTexts()
             if zoneUiMapID and IsZoneLikeUiMap(zoneUiMapID) then
@@ -1255,6 +1278,15 @@ function QuestieCompat.GetCurrentPlayerPosition()
         end
     end
 	local uiMapID = rawUiMapID;
+    if uiMapID and (not WorldMapFrame:IsVisible()) and not IsUiMapCompatibleWithPlayerInstance(uiMapID) then
+        if zoneUiMapID and SetLegacyMapToUiMap(zoneUiMapID) then
+            local zoneX, zoneY = GetPlayerMapPosition("player")
+            if zoneX and zoneY and (zoneX > 0 or zoneY > 0) then
+                uiMapID = zoneUiMapID
+                x, y = zoneX, zoneY
+            end
+        end
+    end
     if uiMapID and (not WorldMapFrame:IsVisible()) and IsContinentalOrCosmicUiMap(uiMapID) then
         -- Continental/cosmic map contexts can produce distorted local coordinates for minimap math.
         -- Re-anchor to the player's actual zone map first.
