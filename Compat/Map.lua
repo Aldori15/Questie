@@ -9,7 +9,6 @@ local zoneNameToAreaId = {}
 local areaIdToZoneName = {}
 local mapIdToCZ = {}
 local mapCompatibilityInitialized = false
-local UnitPosition = UnitPosition
 local GetUnitSpeed = GetUnitSpeed
 local lastKnownUiMapID = nil
 local lastKnownZoneLikeUiMapID = nil
@@ -289,37 +288,6 @@ local function CacheMinimapPlayerWorldPosition(worldX, worldY, instanceID, uiMap
     lastMinimapPlayerWorldY = worldY
     lastMinimapPlayerInstanceID = instanceID
     lastMinimapPlayerUiMapID = uiMapID
-end
-
-local function GetPlayerWorldPositionFromUnitPosition(actualUiMapID)
-    if type(UnitPosition) ~= "function" then
-        return nil, nil, nil, nil
-    end
-
-    local rawY, rawX, _z, rawInstanceID = UnitPosition("player")
-
-    if not rawX or not rawY then
-        return nil, nil, rawInstanceID, nil
-    end
-
-    local validationUiMapID = actualUiMapID or lastKnownZoneLikeUiMapID
-
-    if validationUiMapID and QuestieCompat.HBD and QuestieCompat.HBD.GetZoneCoordinatesFromWorld then
-        local zoneX, zoneY = QuestieCompat.HBD:GetZoneCoordinatesFromWorld(rawX, rawY, validationUiMapID, true)
-
-        if IsValidZoneCoords(zoneX, zoneY) then
-            return rawX, rawY, rawInstanceID, validationUiMapID
-        end
-    end
-
-    if lastStablePlayerWorldX and lastStablePlayerWorldY and rawInstanceID and rawInstanceID == lastStablePlayerInstanceID then
-        local delta = math.abs(rawX - lastStablePlayerWorldX) + math.abs(rawY - lastStablePlayerWorldY)
-        if delta < 4000 then
-            return rawX, rawY, rawInstanceID, validationUiMapID
-        end
-    end
-
-    return nil, nil, rawInstanceID, validationUiMapID
 end
 
 local function BeginInternalMapRead(savedSelection)
@@ -1199,20 +1167,6 @@ function QuestieCompat.GetCurrentPlayerPosition()
         return cachedUiMapID, cachedX, cachedY
     end
 
-    -- Try using UnitPosition + HBD to derive player's zone-relative coordinates
-    -- This avoids changing the current map zoom/selection which can cause UI churn.
-    local actualUiMapID = ResolveUiMapIDByZoneTexts()
-    if actualUiMapID and (type(UnitPosition) == "function") and QuestieCompat.HBD and QuestieCompat.HBD.GetZoneCoordinatesFromWorld then
-        local worldX, worldY, instanceID, unitUiMapID = GetPlayerWorldPositionFromUnitPosition(actualUiMapID)
-        if worldX and worldY and unitUiMapID then
-            local zoneX, zoneY = QuestieCompat.HBD:GetZoneCoordinatesFromWorld(worldX, worldY, unitUiMapID, true)
-            if IsValidZoneCoords(zoneX, zoneY) then
-                StoreCachedPlayerPosition(playerPositionCache, contextKey, unitUiMapID, zoneX, zoneY)
-                return unitUiMapID, zoneX, zoneY
-            end
-        end
-    end
-
     local x, y = GetPlayerMapPosition("player");
 	if ( x <= 0 and y <= 0 ) then
 		if ( WorldMapFrame:IsVisible() ) then
@@ -1603,15 +1557,6 @@ function QuestieCompat.GetCurrentPlayerMinimapWorldPosition()
             StoreCachedPlayerPosition(minimapPlayerWorldPositionCache, contextKey, exactWorldX, exactWorldY, exactInstanceID, exactUiMapID)
             return exactWorldX, exactWorldY, exactInstanceID, exactUiMapID
         end
-    end
-
-    local unitWorldX, unitWorldY, unitInstanceID, unitUiMapID = GetPlayerWorldPositionFromUnitPosition(actualUiMapID)
-    if unitWorldX and unitWorldY then
-        ResetAnchoredMinimapWorldPosition()
-        unitUiMapID = unitUiMapID or actualUiMapID
-        CacheMinimapPlayerWorldPosition(unitWorldX, unitWorldY, unitInstanceID, unitUiMapID)
-        StoreCachedPlayerPosition(minimapPlayerWorldPositionCache, contextKey, unitWorldX, unitWorldY, unitInstanceID, unitUiMapID)
-        return unitWorldX, unitWorldY, unitInstanceID, unitUiMapID
     end
 
     local isPlayerMoving = true
