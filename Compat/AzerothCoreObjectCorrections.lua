@@ -250,7 +250,7 @@ QuestieCompat.RegisterCorrection("objectData", function()
         },
 
         [1685] = {
-            [objectKeys.spawns] = {[zoneIDs.GRIZZLY_HILLS] = {{16.08,86.79}}, [zoneIDs.IRONFORGE] = {{67.86,46.83}}, [zoneIDs.ORGRIMMAR] = {{49.03,80.19}}, [zoneIDs.DARNASSUS] = {{59.56,45.66}}, [zoneIDs.EVERSONG_WOODS] = {{46.97,47.58}}, [zoneIDs.DALARAN] = {{40.66,25.7}}, [zoneIDs.ICECROWN_CITADEL] = {{36.5,72.29}}},
+            [objectKeys.spawns] = {[zoneIDs.GRIZZLY_HILLS] = {{16.08,86.79}}, [zoneIDs.IRONFORGE] = {{67.86,46.83}}, [zoneIDs.ORGRIMMAR] = {{49.03,80.19}}, [zoneIDs.DARNASSUS] = {{59.56,45.66}}, [zoneIDs.EVERSONG_WOODS] = {{46.97,47.58}}, [zoneIDs.DALARAN] = {{40.66,25.7}}, [zoneIDs.ICECROWN_CITADEL] = {{36.5,72.29,0,3,631}}},
             [objectKeys.zoneID] = zoneIDs.GRIZZLY_HILLS,
         },
 
@@ -10277,7 +10277,7 @@ QuestieCompat.RegisterCorrection("objectData", function()
         },
 
         [187852] = {
-            [objectKeys.spawns] = {[zoneIDs.BOREAN_TUNDRA] = {{44.94,77.99},{46.47,77.91},{47.07,78.97},{47.78,79.02},{48.66,77.57}}, [zoneIDs.ICECROWN_CITADEL] = {{37.65,73.5}}},
+            [objectKeys.spawns] = {[zoneIDs.BOREAN_TUNDRA] = {{44.94,77.99},{46.47,77.91},{47.07,78.97},{47.78,79.02},{48.66,77.57}}, [zoneIDs.ICECROWN_CITADEL] = {{37.65,73.5,0,3,631}}},
             [objectKeys.factionID] = 35,
         },
 
@@ -11655,7 +11655,7 @@ QuestieCompat.RegisterCorrection("objectData", function()
         },
 
         [190586] = {
-            [objectKeys.spawns] = {[zoneIDs.HALLS_OF_STONE] = {{84.91,80.77}}},
+            [objectKeys.spawns] = {[zoneIDs.HALLS_OF_STONE] = {{84.91,80.77,0,1,599}}},
         },
 
         [190594] = {
@@ -12144,7 +12144,7 @@ QuestieCompat.RegisterCorrection("objectData", function()
         },
 
         [191345] = {
-            [objectKeys.spawns] = {[zoneIDs.GRIZZLY_HILLS] = {{16.06,86.73}}, [zoneIDs.ICECROWN_CITADEL] = {{36.59,72.64}}},
+            [objectKeys.spawns] = {[zoneIDs.GRIZZLY_HILLS] = {{16.06,86.73}}, [zoneIDs.ICECROWN_CITADEL] = {{36.59,72.64,0,3,631}}},
         },
 
         [191347] = {
@@ -12152,7 +12152,7 @@ QuestieCompat.RegisterCorrection("objectData", function()
         },
 
         [191349] = {
-            [objectKeys.spawns] = {[zoneIDs.BAND_OF_ACCELERATION] = {{49.02,80.14}}},
+            [objectKeys.spawns] = {[zoneIDs.BAND_OF_ACCELERATION] = {{49.02,80.14,0,1,578}}},
             [objectKeys.zoneID] = zoneIDs.BAND_OF_ACCELERATION,
         },
 
@@ -15779,7 +15779,7 @@ QuestieCompat.RegisterCorrection("objectData", function()
         },
 
         [193603] = {
-            [objectKeys.spawns] = {[zoneIDs.BAND_OF_ACCELERATION] = {{49.02,80.14}}},
+            [objectKeys.spawns] = {[zoneIDs.BAND_OF_ACCELERATION] = {{49.02,80.14,0,2,578}}},
             [objectKeys.zoneID] = zoneIDs.BAND_OF_ACCELERATION,
         },
 
@@ -16944,11 +16944,11 @@ QuestieCompat.RegisterCorrection("objectData", function()
         },
 
         [193958] = {
-            [objectKeys.spawns] = {[zoneIDs.THE_EYE_OF_ETERNITY] = {{38.38,50.08}}},
+            [objectKeys.spawns] = {[zoneIDs.THE_EYE_OF_ETERNITY] = {{38.38,50.08,0,1,616}}},
         },
 
         [193960] = {
-            [objectKeys.spawns] = {[zoneIDs.THE_EYE_OF_ETERNITY] = {{38.38,50.08}}},
+            [objectKeys.spawns] = {[zoneIDs.THE_EYE_OF_ETERNITY] = {{38.38,50.08,0,2,616}}},
         },
 
         [193967] = {
@@ -16997,7 +16997,7 @@ QuestieCompat.RegisterCorrection("objectData", function()
         },
 
         [193996] = {
-            [objectKeys.spawns] = {[zoneIDs.HALLS_OF_STONE] = {{84.91,80.77}}},
+            [objectKeys.spawns] = {[zoneIDs.HALLS_OF_STONE] = {{84.91,80.77,0,2,599}}},
         },
 
         [193997] = {
@@ -17420,7 +17420,7 @@ QuestieCompat.RegisterCorrection("objectData", function()
         },
 
         [194565] = {
-            [objectKeys.spawns] = {[zoneIDs.ULDUAR] = {{52.23,26.41},{52.26,26.82},{52.3,25.95},{52.3,27.23}}},
+            [objectKeys.spawns] = {[zoneIDs.ULDUAR] = {{52.23,26.41},{52.26,26.82,0,2,603},{52.3,25.95,0,2,603},{52.3,27.23}}},
         },
 
         [194569] = {
@@ -17434,7 +17434,7 @@ QuestieCompat.RegisterCorrection("objectData", function()
         },
 
         [194628] = {
-            [objectKeys.spawns] = {[zoneIDs.THE_DESCENT_OF_MADNESS] = {{84.51,94.37}}},
+            [objectKeys.spawns] = {[zoneIDs.THE_DESCENT_OF_MADNESS] = {{84.51,94.37,0,1,603}}},
             [objectKeys.zoneID] = zoneIDs.THE_DESCENT_OF_MADNESS,
         },
 
@@ -17443,7 +17443,7 @@ QuestieCompat.RegisterCorrection("objectData", function()
         },
 
         [194752] = {
-            [objectKeys.spawns] = {[zoneIDs.THE_DESCENT_OF_MADNESS] = {{84.51,94.37}}},
+            [objectKeys.spawns] = {[zoneIDs.THE_DESCENT_OF_MADNESS] = {{84.51,94.37,0,2,603}}},
             [objectKeys.zoneID] = zoneIDs.THE_DESCENT_OF_MADNESS,
         },
 
@@ -18073,7 +18073,7 @@ QuestieCompat.RegisterCorrection("objectData", function()
         },
 
         [201771] = {
-            [objectKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL] = {{37.53,22},{38.22,22.14},{39.34,22.21},{40.07,21.84}}},
+            [objectKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL] = {{37.53,22,0,3,631},{38.22,22.14,0,3,631},{39.34,22.21,0,3,631},{40.07,21.84,0,3,631}}},
         },
 
         [201772] = {
@@ -18294,22 +18294,22 @@ QuestieCompat.RegisterCorrection("objectData", function()
         },
 
         [202238] = {
-            [objectKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL] = {{41.88,69.55}}},
+            [objectKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL] = {{41.88,69.55,0,4,631}}},
             [objectKeys.zoneID] = zoneIDs.ICECROWN_CITADEL,
         },
 
         [202239] = {
-            [objectKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL] = {{41.88,69.55}}},
+            [objectKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL] = {{41.88,69.55,0,1,631}}},
             [objectKeys.factionID] = 94,
         },
 
         [202240] = {
-            [objectKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL] = {{41.88,69.55}}},
+            [objectKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL] = {{41.88,69.55,0,2,631}}},
             [objectKeys.factionID] = 94,
         },
 
         [202241] = {
-            [objectKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL] = {{41.88,69.55}}},
+            [objectKeys.spawns] = {[zoneIDs.ICECROWN_CITADEL] = {{41.88,69.55,0,8,631}}},
             [objectKeys.zoneID] = zoneIDs.ICECROWN_CITADEL,
         },
 

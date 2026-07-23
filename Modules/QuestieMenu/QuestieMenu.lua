@@ -309,7 +309,7 @@ local function _IsFindNearestNPCAllowed(npcId)
 end
 
 local function _IsFindNearestSpawnVisible(spawn)
-    return Phasing.IsSpawnVisible(spawn and spawn[3])
+    return Phasing.IsSpawnDataVisible(spawn)
 end
 
 local function _GetFindNearestPlayerWorldPosition()

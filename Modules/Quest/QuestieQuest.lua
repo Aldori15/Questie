@@ -71,7 +71,7 @@ local function _HasVisibleSpawnInZone(spawns)
     end
 
     for _, spawn in pairs(spawns) do
-        if Phasing.IsSpawnVisible(spawn[3]) then
+        if Phasing.IsSpawnDataVisible(spawn) then
             return true
         end
     end
@@ -1117,7 +1117,7 @@ function QuestieQuest:AddFinisher(quest)
             for finisherZone, spawns in pairs(finisher.spawns or {}) do
                 if (finisherZone ~= nil and spawns ~= nil) then
                     for _, coords in ipairs(spawns) do
-                        if Phasing.IsSpawnVisible(coords[3]) then
+                        if Phasing.IsSpawnDataVisible(coords) then
                             visibleFinisherZones[finisherZone] = true
 
                             local data = {
@@ -1156,7 +1156,7 @@ function QuestieQuest:AddFinisher(quest)
                                 local y = coords[2];
 
                                 Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest] Adding world icon as finisher:", finisherZone, x, y)
-                                finisherIcons[finisherZone] = QuestieMap:DrawWorldIcon(data, finisherZone, x, y, coords[3])
+                                finisherIcons[finisherZone] = QuestieMap:DrawWorldIcon(data, finisherZone, x, y, coords)
 
                                 if not finisherLocs[finisherZone] then
                                     finisherLocs[finisherZone] = { x, y }
@@ -1378,7 +1378,7 @@ _DetermineIconsToDraw = function(quest, objective, objectiveIndex, objectiveCent
                     Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest] Skipping objective icon with missing UiMapID:", quest.Id, objectiveIndex, id, zone)
                 else
                     for _, spawn in pairs(spawns) do
-                        if spawn[1] and spawn[2] and Phasing.IsSpawnVisible(spawn[3]) then
+                        if spawn[1] and spawn[2] and Phasing.IsSpawnDataVisible(spawn) then
                             local drawIcon = {
                                 AlreadySpawnedId = id,
                                 data = data,
@@ -1387,6 +1387,7 @@ _DetermineIconsToDraw = function(quest, objective, objectiveIndex, objectiveCent
                                 UiMapID = uiMapId,
                                 x = spawn[1],
                                 y = spawn[2],
+                                spawn = spawn,
                                 worldX = 0,
                                 worldY = 0,
                                 distance = 0,
@@ -1514,7 +1515,7 @@ _DrawObjectiveIcons = function(questId, iconsToDraw, objective, maxPerType)
                         coords = {x, y}
                     end
 
-                    local iconMap, iconMini = QuestieMap:DrawWorldIcon(icon.data, icon.zone, x, y)
+                    local iconMap, iconMini = QuestieMap:DrawWorldIcon(icon.data, icon.zone, x, y, icon.spawn)
                     if iconMap and iconMini then
                         iconPerZone[icon.zone] = {iconMap, x, y}
                         spawnsMapRefs[#spawnsMapRefs + 1] = iconMap

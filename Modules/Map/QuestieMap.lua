@@ -73,7 +73,7 @@ local math_sqrt = math.sqrt;
 local string = string;
 
 local function _IsSpawnVisible(spawn)
-    return Phasing.IsSpawnVisible(spawn and spawn[3])
+    return Phasing.IsSpawnDataVisible(spawn)
 end
 
 local function _RememberWaypointDrawData(icon, waypoints, zone, color)
@@ -922,13 +922,13 @@ _MinimapIconFadeLogic = function(self)
     end
 end
 
-function QuestieMap:DrawWorldIcon(data, areaID, x, y, phase, showFlag)
+function QuestieMap:DrawWorldIcon(data, areaID, x, y, spawn, showFlag)
     if type(data) ~= "table" then
         error("Questie" .. ": AddWorldMapIconMap: must have some data")
     end
 
-    if not Phasing.IsSpawnVisible(phase) then
-        Questie:Debug(Questie.DEBUG_SPAM, "Skipping invisible phase", phase)
+    if not Phasing.IsSpawnDataVisible(spawn) then
+        Questie:Debug(Questie.DEBUG_SPAM, "Skipping invisible spawn", spawn and spawn[3], spawn and spawn[4])
         return nil, nil
     end
 

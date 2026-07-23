@@ -1,16 +1,11 @@
 ---@class Phasing
 local Phasing = QuestieLoader:CreateModule("Phasing")
----@type QuestLogCache
-local QuestLogCache = QuestieLoader:ImportModule("QuestLogCache")
 
-local _Phasing = {}
+local bitband = bit.band
+local math_max = math.max
 
 -- Minimal Wrath-era phasing support for 3.3.5a.
 local phases = {
-    UNKNOWN = 169,
-    CUSTOM_EVENT_3 = 177,
-    SCARLET_ENCLAVE_ENTRACE = 1029,
-    SCARLET_ENCLAVE = 1030,
     HAR_KOA_AT_ALTAR = 1034,
     HAR_KOA_AT_ZIM_TORGA = 1035,
 }
@@ -19,7 +14,7 @@ Phasing.phases = phases
 ---@param phase number|nil
 ---@return boolean
 function Phasing.IsSpawnVisible(phase)
-    if (not phase) or phase == phases.UNKNOWN then
+    if (not phase) or phase == 0 then
         return true
     end
 
@@ -28,47 +23,67 @@ function Phasing.IsSpawnVisible(phase)
     end
 
     local complete = Questie.db.char.complete
-    local questLog = QuestLogCache.questLog_DO_NOT_MODIFY or {}
-
-    if phase == phases.CUSTOM_EVENT_3 then
-        return _Phasing.CheckQuestLog(questLog)
-    end
-
-    if phase == phases.SCARLET_ENCLAVE_ENTRACE then
-        return not complete[27460]
-    end
-
-    if phase == phases.SCARLET_ENCLAVE then
-        return complete[27460] or false
-    end
 
     if phase == phases.HAR_KOA_AT_ALTAR then
-        return not complete[12684]
+        return not complete[12685]
     end
 
     if phase == phases.HAR_KOA_AT_ZIM_TORGA then
-        return complete[12684] or false
+        return complete[12685] or false
     end
 
     return false
 end
 
-_Phasing.CheckQuestLog = function(questLog)
-    return (
-        questLog[13847] or
-        questLog[13851] or
-        questLog[13852] or
-        questLog[13854] or
-        questLog[13855] or
-        questLog[13856] or
-        questLog[13857] or
-        questLog[13858] or
-        questLog[13859] or
-        questLog[13860] or
-        questLog[13861] or
-        questLog[13862] or
-        questLog[13863] or
-        questLog[13864] or
-        questLog[25560]
-    ) and true or false
+---Converts the 3.3.5 client difficulty values to AzerothCore's zero-based
+---Map::GetSpawnMode value.
+---@return number spawnMode
+local function GetAzerothCoreSpawnMode()
+    local isInInstance, instanceType = IsInInstance()
+    if not isInInstance then
+        return 0
+    end
+
+    local _, _, difficulty, _, _, playerDifficulty, isDynamicInstance = GetInstanceInfo()
+    difficulty = difficulty or 1
+
+    if instanceType == "raid" and isDynamicInstance and (difficulty == 1 or difficulty == 2) then
+        return difficulty - 1 + ((playerDifficulty or 0) * 2)
+    end
+
+    return math_max(difficulty - 1, 0)
+end
+
+---A spawn tuple may contain Questie's phase ID at index 3 and generated
+---AzerothCore spawnMask/map metadata at indices 4 and 5.
+---Spawn masks are evaluated only while inside the matching instance. Outside,
+---all difficulty variants remain visible for world-map planning.
+---@param spawn number[]|nil
+---@return boolean
+function Phasing.IsSpawnDataVisible(spawn)
+    if not spawn then
+        return true
+    end
+
+    if not Phasing.IsSpawnVisible(spawn[3]) then
+        return false
+    end
+
+    local spawnMask = spawn[4]
+    if not spawnMask then
+        return true
+    end
+
+    local isInInstance = IsInInstance()
+    if not isInInstance then
+        return true
+    end
+
+    local _, _, activeMapId = QuestieCompat.GetCurrentPlayerMinimapWorldPosition()
+    local spawnMapId = spawn[5]
+    if activeMapId and spawnMapId and activeMapId ~= spawnMapId then
+        return true
+    end
+
+    return bitband(spawnMask, 2 ^ GetAzerothCoreSpawnMode()) ~= 0
 end

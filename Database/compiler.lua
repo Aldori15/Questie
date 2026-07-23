@@ -32,7 +32,7 @@ local coYield = coroutine.yield
 local coRunning = coroutine.running
 
 -- Bump when compiler field types/order change to invalidate cached binary DB blobs.
-QuestieDBCompiler.compiledSchemaVersion = 56
+QuestieDBCompiler.compiledSchemaVersion = 57
 
 ---@alias CompilerTypes
 ---| "u8"
@@ -289,12 +289,16 @@ readers["spawnlist"] = function(stream)
         for i = 1, spawnCount do
             local x, y = stream:ReadInt12Pair()
             local phase = stream:ReadShort()
+            local spawnMask = stream:ReadByte()
+            local mapId = stream:ReadShort()
             if x == 0 and y == 0 then
                 list[i] = {-1, -1}
-            elseif phase == 0 then
+            elseif phase == 0 and spawnMask == 0 and mapId == 0 then
                 list[i] = {x / 40.90, y / 40.90}
-            else
+            elseif spawnMask == 0 and mapId == 0 then
                 list[i] = {x / 40.90, y / 40.90, phase}
+            else
+                list[i] = {x / 40.90, y / 40.90, phase, spawnMask, mapId}
             end
         end
         spawnlist[zone] = list
@@ -595,6 +599,8 @@ QuestieDBCompiler.writers = {
                         stream:WriteInt12Pair(floor(spawn[1] * 40.90), floor(spawn[2] * 40.90))
                     end
                     stream:WriteShort(spawn[3] or 0)
+                    stream:WriteByte(spawn[4] or 0)
+                    stream:WriteShort(spawn[5] or 0)
                 end
             end
         else
@@ -775,7 +781,7 @@ skippers["spawnlist"] = function(stream)
     local count = stream:ReadByte()
     for _ = 1, count do
         stream._pointer = stream._pointer + 2
-        stream._pointer = stream:ReadShort() * 5 + stream._pointer
+        stream._pointer = stream:ReadShort() * 8 + stream._pointer
     end
 end
 local spawnlistSkipper = skippers["spawnlist"]

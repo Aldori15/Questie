@@ -112,7 +112,7 @@ local function _HasVisibleSpawnInZone(spawns)
     end
 
     for _, spawn in pairs(spawns) do
-        if Phasing.IsSpawnVisible(spawn[3]) then
+        if Phasing.IsSpawnDataVisible(spawn) then
             return true
         end
     end
@@ -1321,7 +1321,7 @@ _AddStarter = function(starter, quest, tooltipKey, limit)
             local coords
             for spawnIndex = 1, #spawns do
                 coords = spawns[spawnIndex]
-                if Phasing.IsSpawnVisible(coords[3]) and (limit == 0 or added < limit) and (#spawns == 1 or _HasProperDistanceToAlreadyAddedSpawns(coords, alreadyAddedSpawns)) then
+                if Phasing.IsSpawnDataVisible(coords) and (limit == 0 or added < limit) and (#spawns == 1 or _HasProperDistanceToAlreadyAddedSpawns(coords, alreadyAddedSpawns)) then
                     visibleStarterZones[zone] = true
 
                     local data = {
@@ -1350,7 +1350,7 @@ _AddStarter = function(starter, quest, tooltipKey, limit)
                             end
                         end
                     else
-                        local icon = QuestieMap:DrawWorldIcon(data, zone, coords[1], coords[2], coords[3])
+                        local icon = QuestieMap:DrawWorldIcon(data, zone, coords[1], coords[2], coords)
                         if starter.waypoints and icon then
                             -- This is only relevant for waypoint drawing
                             starterIcons[zone] = icon
