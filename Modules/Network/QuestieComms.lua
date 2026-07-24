@@ -6,6 +6,8 @@ local _QuestieComms = QuestieComms.private
 -------------------------
 ---@type QuestieSerializer
 local QuestieSerializer = QuestieLoader:ImportModule("QuestieSerializer");
+---@type QuestieCommsEncoding
+local QuestieCommsEncoding = QuestieLoader:ImportModule("QuestieCommsEncoding")
 ---@type QuestieLib
 local QuestieLib = QuestieLoader:ImportModule("QuestieLib");
 ---@type QuestiePlayer
@@ -41,7 +43,7 @@ QuestieComms.remotePlayerTimes = {}
 -- The idea here is that all messages with the same "base number" are compatible
 -- New message versions increase the number by 0.1, and if the message becomes "incompatible" you increase with 1
 -- Say if the message is 1.5 it is valid as long as it is < 2. If it is 2.5 it is not compatible for example.
-local commMessageVersion = 5.0;
+local commMessageVersion = 6.0;
 
 local warnedUpdate = false;
 local suggestUpdate = true;
@@ -655,7 +657,8 @@ function _QuestieComms:BroadcastQuestLog(eventName, sendMode, targetPlayer) -- b
             local quest = QuestieComms:CreateQuestDataPacket(entry.questId);
             entryCount = entryCount + 1
             rawQuestList[quest.id] = quest;
-            if string.len(QuestieSerializer:Serialize(rawQuestList, "b89")) > 200 then--extra space for packet metadata and CTL stuff
+            local serializedQuestList = QuestieSerializer:Serialize(rawQuestList, "b89")
+            if QuestieCommsEncoding:GetEncodedLength(serializedQuestList) > 200 then--extra space for packet metadata and CTL stuff
                 rawQuestList[quest.id] = nil
                 tinsert(blocks, rawQuestList)
                 rawQuestList = {
@@ -728,7 +731,8 @@ function _QuestieComms:BroadcastQuestLogV2(eventName, sendMode, targetPlayer) --
 
             offset = QuestieComms:PopulateQuestDataPacketV2_noclass_renameme(entry.questId, rawQuestList, offset)
 
-            if string.len(QuestieSerializer:Serialize(rawQuestList, "b89")) > 200 then--extra space for packet metadata and CTL stuff
+            local serializedQuestList = QuestieSerializer:Serialize(rawQuestList, "b89")
+            if QuestieCommsEncoding:GetEncodedLength(serializedQuestList) > 200 then--extra space for packet metadata and CTL stuff
                 rawQuestList[1] = entryCount
                 tinsert(blocks, rawQuestList)
                 rawQuestList = {}
@@ -1035,11 +1039,11 @@ function _QuestieComms:Broadcast(packet)
     packet.target = nil
     packet.writeMode = nil -- we dont need to include these in the packet data
     if packetWriteMode == _QuestieComms.QC_WRITE_WHISPER then
-        local compressedData = QuestieSerializer:Serialize(packet, "b89");
+        local compressedData = QuestieCommsEncoding:Encode(QuestieSerializer:Serialize(packet, "b89"));
         Questie:Debug(Questie.DEBUG_DEVELOP,"send(|cFFFF2222", string.len(compressedData), "|r)")
         Questie:SendCommMessage(_QuestieComms.prefix, compressedData, packetWriteMode, packetTarget, packetPriority)
     elseif packetWriteMode == _QuestieComms.QC_WRITE_CHANNEL then
-        local compressedData = QuestieSerializer:Serialize(packet, "b89");
+        local compressedData = QuestieCommsEncoding:Encode(QuestieSerializer:Serialize(packet, "b89"));
         Questie:Debug(Questie.DEBUG_DEVELOP,"send(|cFFFF2222", string.len(compressedData), "|r)")
         -- Always do channel messages as BULK priority
         Questie:SendCommMessage(_QuestieComms.prefix, compressedData, packetWriteMode, GetChannelName("questiecom"), "BULK")
@@ -1047,11 +1051,11 @@ function _QuestieComms:Broadcast(packet)
     elseif packetWriteMode == _QuestieComms.QC_WRITE_YELL then
         packet.msgVer = nil
         --packet.ver = nil
-        local compressedData = QuestieSerializer:Serialize(packet, "b89");
+        local compressedData = QuestieCommsEncoding:Encode(QuestieSerializer:Serialize(packet, "b89"));
         --print("Yelling progress: " .. compressedData)
         Questie:SendCommMessage(_QuestieComms.prefix, compressedData, packetWriteMode, "BULK")
     else
-        local compressedData = QuestieSerializer:Serialize(packet, "b89");
+        local compressedData = QuestieCommsEncoding:Encode(QuestieSerializer:Serialize(packet, "b89"));
         if _IsDuplicateQuestUpdate(packet, compressedData, packetWriteMode) then
             return
         end
@@ -1062,20 +1066,26 @@ function _QuestieComms:Broadcast(packet)
 end
 
 function _QuestieComms:OnCommReceived(message, distribution, sender)
-    pcall(_QuestieComms.OnCommReceived_unsafe, _QuestieComms, message, distribution, sender)
+    local success, errorMessage = pcall(_QuestieComms.OnCommReceived_unsafe, _QuestieComms, message, distribution, sender)
+    if not success then
+        Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieComms] Failed to process message:", errorMessage)
+    end
 end
 
 function _QuestieComms.OnCommReceived_unsafe(prefix, message, distribution, sender)
     --print("[" .. distribution .."][" .. sender .. "] " .. message)
     Questie:Debug(Questie.DEBUG_DEVELOP, "|cFF22FF22", "sender:", "|r", sender, "distribution:", distribution, "Packet length:", string.len(message))
     if message and sender and sender ~= UnitName("player") then
-        local decompressedData
-        if distribution == "YELL" then
-            --print("Decompressing YELL data")
-            decompressedData = QuestieSerializer:Deserialize(message, "b89")
-        else
-            --print("Decompressing normal data")
-            decompressedData = QuestieSerializer:Deserialize(message, "b89")
+        local serializedData, decodeError = QuestieCommsEncoding:Decode(message)
+        if not serializedData then
+            Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieComms] Failed to decode message from", sender, decodeError)
+            return
+        end
+
+        local deserializeSuccess, decompressedData = pcall(QuestieSerializer.Deserialize, QuestieSerializer, serializedData, "b89")
+        if not deserializeSuccess then
+            Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieComms] Failed to deserialize message from", sender, decompressedData)
+            return
         end
 
         --Check if the message version is the same base value
