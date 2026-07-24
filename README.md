@@ -5,7 +5,7 @@ All 16 open issues from the archived widxwer repo have been resolved, and this f
 
 A fork of the WoW Classic Questie addon aiming to provide compatibility with Wrath of the Lich King client version 3.3.5a (12340).
 # Installation
-- [Download](https://github.com/balintx/Questie/archive/refs/tags/335.zip) the archive.
+- [Download](https://github.com/Aldori15/Questie/archive/refs/heads/335.zip) the archive.
 - Extract it into `Interface/AddOns/` directory, folder name should be `Questie-335`.
 
 ## Questie Information
