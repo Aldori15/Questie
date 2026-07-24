@@ -320,8 +320,8 @@ function Townsfolk.PostBoot() -- post DB boot (use queries here)
         118, 858, 929, 1710, 3928, 13446, 18839, (Questie.IsTBC or Questie.IsWotlk) and 22829 or nil, (Questie.IsTBC or Questie.IsWotlk) and 32947 or nil, (Questie.IsWotlk) and 33447 or nil, -- Healing Potions
         2455, 3385, 3827, 6149, 13443, 13444, 18841, (Questie.IsTBC or Questie.IsWotlk) and 22832 or nil, (Questie.IsTBC or Questie.IsWotlk) and 32948 or nil, (Questie.IsWotlk) and 33448 or nil, -- Mana Potions
     }))
-    Townsfolk:UpdatePlayerVendors()
     Questie.db.char.vendorListInitialized = true
+    Townsfolk:UpdatePlayerVendors()
 end
 
 function Townsfolk:BuildCharacterTownsfolk()
@@ -386,6 +386,9 @@ end
 
 function Townsfolk:EnsureVendorDataInitialized()
     if Questie.db.char.vendorListInitialized then
+        if not Questie.db.char.vendorList["Ammo"] then
+            Townsfolk:UpdatePlayerVendors()
+        end
         return
     end
 

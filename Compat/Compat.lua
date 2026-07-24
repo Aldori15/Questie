@@ -589,7 +589,7 @@ function QuestieCompat:PLAYER_LOGOUT(event)
 end
 
 local townsfolk_texturemap = {
-    ["Ammo"] = "Interface\\Icons\\inv_ammo_arrow_02",
+    ["Ammo"] = "Interface\\Minimap\\tracking\\ammunition",
     ["Bags"] = "Interface\\Icons\\inv_misc_bag_09",
     ["Potions"] = "Interface\\Icons\\inv_potion_51",
     ["Trade Goods"] ="Interface\\Icons\\inv_fabric_wool_02",
