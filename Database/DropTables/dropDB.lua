@@ -13,6 +13,8 @@ function DropDB:Initialize()
     end
 
     DropDB.tableAzerothCore = loadstring(QuestieWotlkAcoreItemDrops.data)()
+    QuestieWotlkAcoreItemDrops.data = nil
+    collectgarbage()
 end
 
 -- To obtain final drop rate data, query QuestieDB.GetItemDroprate(ItemID,NpcID).
