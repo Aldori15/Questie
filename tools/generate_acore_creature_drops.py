@@ -14,6 +14,7 @@ from generate_acore_item_corrections import (  # noqa: E402
     apply_multirow_delete,
     apply_multirow_update,
     apply_variable_set,
+    build_creature_loot_source_map,
     extract_sql_columns,
     load_keyed_table,
     parse_insert_sql_value,
@@ -302,7 +303,13 @@ def build_object_primary_item_ids(gameobject_rows, reference_index):
     return object_primary_items
 
 
-def build_creature_drop_table(creature_rows, reference_index, relevant_item_ids, object_primary_items=None):
+def build_creature_drop_table(
+    creature_rows,
+    reference_index,
+    relevant_item_ids,
+    creature_loot_source_map,
+    object_primary_items=None,
+):
     object_primary_items = object_primary_items or set()
     per_item = defaultdict(dict)
     reference_cache = {}
@@ -311,7 +318,8 @@ def build_creature_drop_table(creature_rows, reference_index, relevant_item_ids,
     for row in creature_rows:
         grouped[row["entry"]].append(row)
 
-    for npc_id, rows in grouped.items():
+    for loot_id, rows in grouped.items():
+        npc_ids = creature_loot_source_map.get(loot_id, ())
         for item_id, chance in resolve_all_loot_modes(
             rows, reference_index, reference_cache=reference_cache
         ).items():
@@ -323,7 +331,12 @@ def build_creature_drop_table(creature_rows, reference_index, relevant_item_ids,
             ):
                 continue
             if chance > 0:
-                per_item[item_id][npc_id] = round(chance, 4)
+                rounded_chance = round(chance, 4)
+                for npc_id in npc_ids:
+                    per_item[item_id][npc_id] = max(
+                        per_item[item_id].get(npc_id, 0),
+                        rounded_chance,
+                    )
 
     return per_item
 
@@ -410,6 +423,10 @@ def main():
         args.include_modules,
     )
     reference_index = build_reference_index(reference_rows)
+    creature_template_rows, creature_template_skips = load_keyed_table(
+        source_root, "creature_template", "entry", args.include_modules
+    )
+    creature_loot_source_map = build_creature_loot_source_map(creature_template_rows)
     relevant_item_ids, quest_template_skips = load_relevant_quest_item_ids(
         source_root, args.include_modules
     )
@@ -421,7 +438,11 @@ def main():
     )
     object_primary_items = build_object_primary_item_ids(gameobject_rows, reference_index)
     per_item = build_creature_drop_table(
-        creature_rows, reference_index, relevant_item_ids, object_primary_items
+        creature_rows,
+        reference_index,
+        relevant_item_ids,
+        creature_loot_source_map,
+        object_primary_items,
     )
     item_names = load_item_names(Path(args.item_db))
     write_output(per_item, item_names, Path(args.output))
@@ -430,6 +451,7 @@ def main():
         "creature_loot_template": creature_skip_stats["potentially_relevant"],
         "reference_loot_template": reference_skip_stats["potentially_relevant"],
         "gameobject_loot_template": gameobject_skip_stats["potentially_relevant"],
+        "creature_template": creature_template_skips,
         "quest_template": quest_template_skips,
     }
     write_coverage_report(

@@ -130,23 +130,26 @@ end
 local function runValidator()
     if type(QuestieDB.questData) == "string" or type(QuestieDB.npcData) == "string" or type(QuestieDB.objectData) == "string" or type(QuestieDB.itemData) == "string" then
         Questie:Error("Cannot run the validator on string data, load database first")
-        return
+        return false
     end
     -- Run validator
     if Questie.db.profile.debugEnabled then
+        local validationPassed = true
         coYield()
         print("Validating NPCs...")
-        QuestieDBCompiler:ValidateNPCs()
+        if not QuestieDBCompiler:ValidateNPCs() then validationPassed = false end
         coYield()
         print("Validating objects...")
-        QuestieDBCompiler:ValidateObjects()
+        if not QuestieDBCompiler:ValidateObjects() then validationPassed = false end
         coYield()
         print("Validating items...")
-        QuestieDBCompiler:ValidateItems()
+        if not QuestieDBCompiler:ValidateItems() then validationPassed = false end
         coYield()
         print("Validating quests...")
-        QuestieDBCompiler:ValidateQuests()
+        if not QuestieDBCompiler:ValidateQuests() then validationPassed = false end
+        return validationPassed
     end
+    return false
 end
 
 -- ********************************************************************************
@@ -254,8 +257,11 @@ QuestieInit.Stages[1] = function() -- run as a coroutine
     if Questie.db.profile.debugEnabled and dbCompiled then
         if Questie.db.profile.skipValidation ~= true then
             Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage1] Validator running.")
-            runValidator()
-            print("\124cFF4DDBFF Load and Validation complete.")
+            if runValidator() then
+                print("\124cFF4DDBFF Load and Validation complete.")
+            else
+                Questie:Error("Load complete, but database validation failed.")
+            end
         else
             print("\124cFF4DDBFF Validation skipped, load complete.")
         end
