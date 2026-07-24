@@ -45,6 +45,8 @@ local commMessageVersion = 5.0;
 
 local warnedUpdate = false;
 local suggestUpdate = true;
+local recentQuestUpdates = {}
+local DUPLICATE_QUEST_UPDATE_WINDOW = 0.25
 
 -- forward declaration
 local _DoYell
@@ -305,6 +307,8 @@ end
 
 -- Removes the quest from everyones external quest-log
 function _QuestieComms:BroadcastQuestRemove(questId) -- broadcast quest update to group or raid
+    recentQuestUpdates[questId] = nil
+
     local partyType = QuestiePlayer:GetGroupType()
     Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieComms:BroadcastQuestRemove] QuestId:", questId, "partyType:", tostring(partyType))
     if partyType then
@@ -988,6 +992,32 @@ _QuestieComms.packets = {
     }
 }
 
+local function _IsDuplicateQuestUpdate(packet, compressedData, writeMode)
+    if packet.msgId ~= _QuestieComms.QC_ID_BROADCAST_QUEST_UPDATE or not packet.quest or not packet.quest.id then
+        return false
+    end
+
+    local questId = packet.quest.id
+    local now = GetTime()
+    local previousUpdate = recentQuestUpdates[questId]
+
+    if previousUpdate
+        and previousUpdate.data == compressedData
+        and previousUpdate.writeMode == writeMode
+        and now - previousUpdate.sentAt < DUPLICATE_QUEST_UPDATE_WINDOW
+    then
+        Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieComms] Skipping duplicate quest update:", questId)
+        return true
+    end
+
+    recentQuestUpdates[questId] = {
+        data = compressedData,
+        writeMode = writeMode,
+        sentAt = now,
+    }
+    return false
+end
+
 -- Renamed Write function
 function _QuestieComms:Broadcast(packet)
     -- If the priority is not set, it must not be very important
@@ -1022,6 +1052,9 @@ function _QuestieComms:Broadcast(packet)
         Questie:SendCommMessage(_QuestieComms.prefix, compressedData, packetWriteMode, "BULK")
     else
         local compressedData = QuestieSerializer:Serialize(packet, "b89");
+        if _IsDuplicateQuestUpdate(packet, compressedData, packetWriteMode) then
+            return
+        end
         Questie:Debug(Questie.DEBUG_DEVELOP, "send(|cFFFF2222", string.len(compressedData), "|r)")
         Questie:SendCommMessage(_QuestieComms.prefix, compressedData, packetWriteMode, nil, packetPriority)
         --OLD: C_ChatInfo.SendAddonMessage("questie", compressedData, packet.writeMode)
