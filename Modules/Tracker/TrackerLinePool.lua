@@ -200,7 +200,7 @@ function TrackerLinePool.Initialize(questFrame)
                         if timeRemaining > 1 then
                             TrackerQuestTimers:UpdateTimerFrame(self, self.Quest.Id, timeRemainingString)
                         else
-                            TrackerQuestTimers:UpdateTimerFrame(self, self.Quest.Id, l10n("Time's up"))
+                            TrackerQuestTimers:UpdateTimerFrame(self, self.Quest.Id, l10n("Time's up!"))
                         end
 
                         timeElapsed = 0

@@ -1045,7 +1045,7 @@ function QuestieTracker:Update(force)
                             timerLabelText = Questie:Colorize(l10n("Blizzard Timer Active") .. "!", "blue")
                         elseif timeRemaining then
                             if timeRemaining <= 1 then
-                                timerLabelText = Questie:Colorize(l10n("Time's up"), "lightBlue")
+                                timerLabelText = Questie:Colorize(l10n("Time's up!"), "lightBlue")
                             else
                                 timerLabelText = Questie:Colorize(timeRemainingString, "lightBlue")
                                 activeTimer = true
