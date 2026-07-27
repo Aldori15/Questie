@@ -1,5 +1,5 @@
---[[ $Id: CallbackHandler-1.0.lua 1284 2022-09-25 09:15:30Z nevcairiel $ ]]
-local MAJOR, MINOR = "CallbackHandler-1.0", 7
+--[[ $Id: CallbackHandler-1.0.lua 895 2009-12-06 16:28:55Z nevcairiel $ ]]
+local MAJOR, MINOR = "CallbackHandler-1.0", 5
 local CallbackHandler = LibStub:NewLibrary(MAJOR, MINOR)
 
 if not CallbackHandler then return end -- No upgrade needed
@@ -7,9 +7,14 @@ if not CallbackHandler then return end -- No upgrade needed
 local meta = {__index = function(tbl, key) tbl[key] = {} return tbl[key] end}
 
 -- Lua APIs
-local error = error
-local setmetatable, rawget = setmetatable, rawget
+local tconcat = table.concat
+local assert, error, loadstring = assert, error, loadstring
+local setmetatable, rawset, rawget = setmetatable, rawset, rawget
 local next, select, pairs, type, tostring = next, select, pairs, type, tostring
+
+-- Global vars/functions that we don't upvalue since they might get hooked, or upgraded
+-- List them here for Mikk's FindGlobals script
+-- GLOBALS: geterrorhandler
 
 local xpcall = xpcall
 
@@ -17,14 +22,40 @@ local function errorhandler(err)
 	return geterrorhandler()(err)
 end
 
-local function Dispatch(handlers, ...)
-	local index, method = next(handlers)
-	if not method then return end
-	repeat
-		xpcall(method, errorhandler, ...)
-		index, method = next(handlers, index)
-	until not method
+local function CreateDispatcher(argCount)
+	local code = [[
+	local next, xpcall, eh = ...
+
+	local method, ARGS
+	local function call() method(ARGS) end
+
+	local function dispatch(handlers, ...)
+		local index
+		index, method = next(handlers)
+		if not method then return end
+		local OLD_ARGS = ARGS
+		ARGS = ...
+		repeat
+			xpcall(call, eh)
+			index, method = next(handlers, index)
+		until not method
+		ARGS = OLD_ARGS
+	end
+
+	return dispatch
+	]]
+
+	local ARGS, OLD_ARGS = {}, {}
+	for i = 1, argCount do ARGS[i], OLD_ARGS[i] = "arg"..i, "old_arg"..i end
+	code = code:gsub("OLD_ARGS", tconcat(OLD_ARGS, ", ")):gsub("ARGS", tconcat(ARGS, ", "))
+	return assert(loadstring(code, "safecall Dispatcher["..argCount.."]"))(next, xpcall, errorhandler)
 end
+
+local Dispatchers = setmetatable({}, {__index=function(self, argCount)
+	local dispatcher = CreateDispatcher(argCount)
+	rawset(self, argCount, dispatcher)
+	return dispatcher
+end})
 
 --------------------------------------------------------------------------
 -- CallbackHandler:New
@@ -34,7 +65,9 @@ end
 --   UnregisterName    - name of the callback unregistration API, default "UnregisterCallback"
 --   UnregisterAllName - name of the API to unregister all callbacks, default "UnregisterAllCallbacks". false == don't publish this API.
 
-function CallbackHandler.New(_self, target, RegisterName, UnregisterName, UnregisterAllName)
+function CallbackHandler:New(target, RegisterName, UnregisterName, UnregisterAllName, OnUsed, OnUnused)
+	-- TODO: Remove this after beta has gone out
+	assert(not OnUsed and not OnUnused, "ACE-80: OnUsed/OnUnused are deprecated. Callbacks are now done to registry.OnUsed and registry.OnUnused")
 
 	RegisterName = RegisterName or "RegisterCallback"
 	UnregisterName = UnregisterName or "UnregisterCallback"
@@ -56,19 +89,19 @@ function CallbackHandler.New(_self, target, RegisterName, UnregisterName, Unregi
 		local oldrecurse = registry.recurse
 		registry.recurse = oldrecurse + 1
 
-		Dispatch(events[eventname], eventname, ...)
+		Dispatchers[select('#', ...) + 1](events[eventname], eventname, ...)
 
 		registry.recurse = oldrecurse
 
 		if registry.insertQueue and oldrecurse==0 then
 			-- Something in one of our callbacks wanted to register more callbacks; they got queued
-			for event,callbacks in pairs(registry.insertQueue) do
-				local first = not rawget(events, event) or not next(events[event])	-- test for empty before. not test for one member after. that one member may have been overwritten.
-				for object,func in pairs(callbacks) do
-					events[event][object] = func
+			for eventname,callbacks in pairs(registry.insertQueue) do
+				local first = not rawget(events, eventname) or not next(events[eventname])	-- test for empty before. not test for one member after. that one member may have been overwritten.
+				for self,func in pairs(callbacks) do
+					events[eventname][self] = func
 					-- fire OnUsed callback?
 					if first and registry.OnUsed then
-						registry.OnUsed(registry, target, event)
+						registry.OnUsed(registry, target, eventname)
 						first = nil
 					end
 				end
@@ -114,9 +147,9 @@ function CallbackHandler.New(_self, target, RegisterName, UnregisterName, Unregi
 				regfunc = function(...) self[method](self,...) end
 			end
 		else
-			-- function ref with self=object or self="addonId" or self=thread
-			if type(self)~="table" and type(self)~="string" and type(self)~="thread" then
-				error("Usage: "..RegisterName.."(self or \"addonId\", eventname, method): 'self or addonId': table or string or thread expected.", 2)
+			-- function ref with self=object or self="addonId"
+			if type(self)~="table" and type(self)~="string" then
+				error("Usage: "..RegisterName.."(self or \"addonId\", eventname, method): 'self or addonId': table or string expected.", 2)
 			end
 
 			if select("#",...)>=1 then	-- this is not the same as testing for arg==nil!
