@@ -99,6 +99,7 @@ local WOW_PROJECT_ID = QuestieCompat.WOW_PROJECT_ID
 local C_Timer = QuestieCompat.C_Timer
 
 local coYield = coroutine.yield
+local databaseCompiledThisInitialization = false
 
 local function loadFullDatabase()
     print("\124cFF4DDBFF [1/9] " .. l10n("Loading database") .. "...")
@@ -217,6 +218,7 @@ QuestieInit.Stages[1] = function() -- run as a coroutine
         loadFullDatabase()
         QuestieDBCompiler:Compile()
         dbCompiled = true
+        databaseCompiledThisInitialization = true
         Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage1] DB compile completed.")
     else
         Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage1] Cached DB loading.")
@@ -516,9 +518,21 @@ function _QuestieInit.StartStageCoroutine()
     end
 end
 
+function _QuestieInit.OnInitializationComplete()
+    if not databaseCompiledThisInitialization then return end
+    databaseCompiledThisInitialization = false
+
+    -- ThreadLib still holds the completed coroutine while invoking its callback.
+    -- Defer one frame so that the coroutine and its temporary compile data can be collected too.
+    C_Timer.After(0, function()
+        collectgarbage("collect")
+    end)
+end
+
 -- called by the PLAYER_LOGIN event handler
 function QuestieInit:Init()
-    ThreadLib.ThreadError(_QuestieInit.StartStageCoroutine, Questie.db.profile.initDelay or 0, l10n("Error during initialization!"))
+    databaseCompiledThisInitialization = false
+    ThreadLib.Thread(_QuestieInit.StartStageCoroutine, Questie.db.profile.initDelay or 0, l10n("Error during initialization!"), _QuestieInit.OnInitializationComplete)
 
     if Questie.db.profile.trackerEnabled then
         -- This needs to be called ASAP otherwise tracked Achievements in the Blizzard WatchFrame shows upon login
