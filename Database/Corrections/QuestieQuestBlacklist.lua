@@ -10,253 +10,224 @@ QuestieQuestBlacklist.HIDE_ON_MAP = HIDE_ON_MAP
 ---@return table<QuestId, boolean|string>
 function QuestieQuestBlacklist:Load()
     local questsToBlacklist = {
-        [7462] = true, -- Duplicate of 7877. See #1583
-        [7487] = true, -- Duplicate of 7848
-        [7908] = true, -- Duplicate of 7810
-        [11072] = true, -- Duplicate of 11885
-        [5663] = true, -- Touch of Weakness of Dark Cleric Beryl - Fixing #730
-        [5658] = true, -- Touch of Weakness of Father Lankester -- See #1603
-        [2358] = QuestieCorrections.CLASSIC_AND_TBC, -- See #921
-        [787] = true, -- The New Horde is not in the game. See #830
-        [6606] = true, -- Quest is not in the game. See #1338
-        [6072] = true, -- Ayanna Everstride doesn't start "Hunter's Path" (this quest is most likely simply not in the game) #700
-        [614] = true, -- Duplicate of 8551
-        [615] = true, -- Duplicate of 8553. See #2215
-        [618] = true, -- Duplicate of 8554
-        [934] = true, -- Duplicate of 7383. See #2386
-        [236] = QuestieCorrections.CLASSIC_AND_TBC,
-        [9378] = true, -- Naxxramas quest which doesn't seem to be in the game
-        [1318] = true, -- Duplicate of 7703 and not in the game
-        [7704] = QuestieCorrections.CLASSIC_AND_TBC, -- Not implemented in Era, added in Wrath
-        [7668] = true, -- Not in the game (yet) Replaced with 8258 in Ph 4-- #1805
-        [636] = true, -- Not in the game - #1900
-        [6066] = true, -- Not in the game - #1957
-        [4603] = true, -- Duplicate of 2953
-        [4604] = true, -- Duplicate of 2953
-        [8856] = true, -- Duplicate of 8497
-        [13053] = true, -- Removed
-        [11402] = true, -- GM Island quest
-        [11189] = true, -- Removed
-        [13417] = true, -- Duplicate of 12973
-        [936] = QuestieCorrections.CLASSIC_ONLY,
-        [535] = QuestieCorrections.WOTLK_ONLY, -- Valik
-        [2000] = true, -- Not in the game - #4487
-        -- Welcome! quests (Collectors Edition)
-        [5101] = true,
-        [5805] = true,
-        [5841] = true,
-        [5842] = true,
-        [5843] = true,
-        [5844] = true,
-        [5847] = true,
-        -- Special quests
+        -- Present in AzerothCore's quest_template but unavailable through a
+        -- creature, gameobject, or item starter in the final SQL state.
+        [615] = true, -- The Captain's Cutlass
+        [934] = true, -- Crown of the Earth
+        [2000] = true, -- Rokar Bladeshadow
+        [7668] = true, -- The Darkreaver Menace
+        [7908] = true, -- Arena Master
+        [8856] = true, -- Desert Survival Kits
+        [10530] = true, -- The Hunter's Path
+        [10694] = true, -- Ten Commendation Signets
+        [10695] = true, -- One Commendation Signet
+        [11072] = true, -- Adversarial Blood
+        [11115] = true, -- The Mark of Vashj (FLAG ONLY)
+        [11402] = true, -- Clayton's Quest: Extreme!
+        [11463] = true, -- Pirates of the North Seas
+        [12405] = true, -- Candy Bucket
+        [12410] = true, -- Candy Bucket
+        [12452] = true, -- zzOLD The Fate of the Ruby Dragonshrine
+        [12625] = true, -- Dominion Over Acherus
+        [13053] = true, -- Looking for Survivors
+        [13417] = true, -- The Brothers Bronzebeard
+        [14436] = true, -- Dwarven Digging
+        [14437] = true, -- Rites of the Earthmother
+        [14438] = true, -- Sharing the Land
+        [14439] = true, -- Journey into Thunder Bluff
+        [14440] = true, -- Rites of the Earthmother
+
+        -- Special visibility overrides
         [3861] = HIDE_ON_MAP, -- CLUCK!
-        -- World event quests
-        -- Fetched from https://classic.wowhead.com/world-event-quests
-        [8744] = true,
-        [8803] = true,
-        [8768] = true,
-        [8788] = true,
-        [8767] = true,
-        [9319] = true,
-        [9386] = true,
-        [7045] = true,
-        [6984] = true,
-        [9365] = true,
-        [9339] = true,
-        [8769] = true,
+
+        -- Classic-era world event quests. These are hidden by default and
+        -- QuestieEvent reveals the applicable quests while their event is active.
         [171] = true,
-        [5502] = true,
-        [8647] = true,
-        [8715] = true,
-        [8719] = true,
-        [8718] = true,
-        [8673] = true,
-        [8726] = true,
-        [8866] = true,
-        [925] = true,
-        [8353] = true,
-        [8354] = true,
         [172] = true,
-        [1468] = true,
-        [8882] = true,
-        [8880] = true,
-        [1658] = true,
-        [8357] = true,
-        [8360] = true,
-        [8648] = true,
-        [8677] = true,
-        [8683] = true,
+        [558] = true,
         [910] = true,
-        [8684] = true,
-        [8868] = true,
-        [8862] = true,
-        [8727] = true,
-        [8863] = true,
-        [8864] = true,
-        [8865] = true,
-        [8878] = true,
-        [8877] = true,
-        [8356] = true,
-        [8359] = true,
-        [9388] = true,
-        [9389] = true,
         [911] = true,
-        [8653] = true,
-        [8652] = true,
+        [915] = true,
+        [925] = true,
+        [1468] = true,
+        [1479] = true,
+        [1558] = true,
+        [1657] = true,
+        [1658] = true,
+        [1687] = true,
+        [1800] = true,
+        [4822] = true,
+        [5502] = true,
         [6961] = true,
+        [6962] = true,
+        [6963] = true,
+        [6964] = true,
+        [6983] = true,
+        [6984] = true,
         [7021] = true,
-        [7024] = true,
         [7022] = true,
         [7023] = true,
-        [8679] = true,
-        [8311] = true,
-        [8312] = true,
-        [8646] = true,
-        [8686] = true,
-        [8643] = true,
+        [7024] = true,
+        [7025] = true,
+        [7042] = true,
+        [7043] = true,
+        [7045] = true,
+        [7061] = true,
+        [7062] = true,
+        [7063] = true,
         [8149] = true,
         [8150] = true,
-        [8355] = true,
-        [8358] = true,
-        [8651] = true,
-        [558] = true,
-        [8881] = true,
-        [8879] = true,
-        [1800] = true,
-        [8867] = true,
-        [8722] = true,
-        [8762] = true,
-        [8746] = true,
-        [8685] = true,
-        [8714] = true,
-        [8717] = true,
-        [8619] = true,
-        [8724] = true,
-        [8861] = true,
-        [8860] = true,
-        [8723] = true,
-        [8645] = true,
-        [8654] = true,
-        [8678] = true,
-        [8671] = true,
-        [8725] = true,
+        [8311] = true,
+        [8312] = true,
         [8322] = true,
-        [8409] = true,
-        [8636] = true,
-        [8670] = true,
-        [8642] = true,
-        [8675] = true,
-        [8720] = true,
-        [8682] = true,
-        [8876] = true,
-        [8650] = true,
-        [8635] = true,
-        [1687] = true,
-        [8716] = true,
-        [8713] = true,
-        [8721] = true,
-        [9332] = true,
-        [9331] = true,
-        [9324] = true,
-        [9330] = true,
-        [9326] = true,
-        [9325] = true,
-        [1657] = true,
-        [7042] = true,
-        [6963] = true,
-        [8644] = true,
-        [8672] = true,
-        [8649] = true,
-        [1479] = true,
-        [7063] = true,
-        [7061] = true,
-        [9368] = true,
-        [9367] = true,
-        [8763] = true,
-        [8799] = true,
-        [8873] = true,
-        [8874] = true,
-        [8875] = true,
-        [8870] = true,
-        [8871] = true,
-        [8872] = true,
+        [8353] = true,
+        [8354] = true,
+        [8355] = true,
+        [8356] = true,
+        [8357] = true,
+        [8358] = true,
+        [8359] = true,
+        [8360] = true,
         [8373] = true,
-        [7062] = true,
-        [6964] = true,
-        [1558] = true,
-        [8681] = true,
-        [6962] = true,
-        [7025] = true,
-        [8883] = true,
-        [9322] = true,
-        [9323] = true,
-        [8676] = true,
-        [8688] = true,
-        [8680] = true,
-        [8828] = true,
-        [8827] = true,
+        [8409] = true,
+        [8619] = true,
+        [8635] = true,
+        [8636] = true,
+        [8642] = true,
+        [8643] = true,
+        [8644] = true,
+        [8645] = true,
+        [8646] = true,
+        [8647] = true,
+        [8648] = true,
+        [8649] = true,
+        [8650] = true,
+        [8651] = true,
+        [8652] = true,
+        [8653] = true,
+        [8654] = true,
+        [8670] = true,
+        [8671] = true,
+        [8672] = true,
+        [8673] = true,
         [8674] = true,
-        [915] = true,
-        [4822] = true,
-        [7043] = true,
-        [6983] = true,
+        [8675] = true,
+        [8676] = true,
+        [8677] = true,
+        [8678] = true,
+        [8679] = true,
+        [8680] = true,
+        [8681] = true,
+        [8682] = true,
+        [8683] = true,
+        [8684] = true,
+        [8685] = true,
+        [8686] = true,
+        [8688] = true,
+        [8713] = true,
+        [8714] = true,
+        [8715] = true,
+        [8716] = true,
+        [8717] = true,
+        [8718] = true,
+        [8719] = true,
+        [8720] = true,
+        [8721] = true,
+        [8722] = true,
+        [8723] = true,
+        [8724] = true,
+        [8725] = true,
+        [8726] = true,
+        [8727] = true,
+        [8744] = true,
+        [8746] = true,
+        [8762] = true,
+        [8763] = true,
+        [8767] = true,
+        [8768] = true,
+        [8769] = true,
+        [8788] = true,
+        [8799] = true,
+        [8803] = true,
+        [8827] = true,
+        [8828] = true,
         [8857] = true,
         [8858] = true,
         [8859] = true,
+        [8860] = true,
+        [8861] = true,
+        [8862] = true,
+        [8863] = true,
+        [8864] = true,
+        [8865] = true,
+        [8866] = true,
+        [8867] = true,
+        [8868] = true,
+        [8870] = true,
+        [8871] = true,
+        [8872] = true,
+        [8873] = true,
+        [8874] = true,
+        [8875] = true,
+        [8876] = true,
+        [8877] = true,
+        [8878] = true,
+        [8879] = true,
+        [8880] = true,
+        [8881] = true,
+        [8882] = true,
+        [8883] = true,
         [9030] = true,
-        --mount exchange/replacement
+        [9324] = true,
+        [9325] = true,
+        [9326] = true,
+        [9330] = true,
+        [9331] = true,
+        [9332] = true,
+        [9339] = true,
+        [9365] = true,
+        -- Retired mount exchange/replacement quests
         [7660] = true,
         [7661] = true,
         [7662] = true,
         [7663] = true,
-        [7678] = true,
-        [7677] = true,
+        [7664] = true,
+        [7665] = true,
+        [7671] = true,
+        [7672] = true,
         [7673] = true,
         [7674] = true,
-        [7671] = true,
-        [7665] = true,
         [7675] = true,
-        [7664] = true,
-        [7672] = true,
         [7676] = true,
-        --fishing tournament
+        [7677] = true,
+        [7678] = true,
+        -- Fishing tournament quests
+        [8193] = true,
         [8194] = true,
         [8221] = true,
         [8224] = true,
         [8225] = true,
-        [8193] = true,
-        [8226] = true,
         [8228] = true,
         [8229] = true,
-        --love is in the air
-        [8903] = true,
-        [8904] = true,
-        [8897] = true,
-        [8898] = true,
-        [8899] = true,
-        [9029] = true,
-        [8981] = true, --removed in wotlk
-        [8993] = true, --removed in wotlk
+        -- Retired Love is in the Air quests
         [8900] = true,
         [8901] = true,
         [8902] = true,
+        [8903] = true,
+        [8904] = true,
+        [8979] = true,
+        [8980] = true,
+        [8981] = true, --removed in wotlk
+        [8982] = true,
+        [8983] = true,
+        [8984] = true,
+        [8993] = true, --removed in wotlk
         [9024] = true,
         [9025] = true,
         [9026] = true,
         [9027] = true,
         [9028] = true,
-        [8971] = true,
-        [8972] = true,
-        [8973] = true,
-        [8974] = true,
-        [8975] = true,
-        [8976] = true,
-        [8979] = true,
-        [8980] = true,
-        [8982] = true,
-        [8983] = true,
-        [8984] = true,
+        [9029] = true,
         -- TBC event quests
         [10942] = true,
         [10943] = true,
@@ -267,7 +238,6 @@ function QuestieQuestBlacklist:Load()
         [10953] = true,
         [10954] = true,
         [10956] = true,
-        [10960] = true,
         [10962] = true,
         [10963] = true,
         [10966] = true,
@@ -275,17 +245,17 @@ function QuestieQuestBlacklist:Load()
         [10968] = true,
         [11116] = true,
         [11117] = true,
-        [11431] = true,
         [11118] = true,
         [11120] = true,
-        [11127] = true,
+        [11122] = true,
         [11131] = true,
         [11135] = true,
         [11219] = true,
         [11220] = true,
         [11242] = true,
+        [11293] = true,
+        [11294] = true,
         [11318] = true,
-        [11320] = true,
         [11356] = true,
         [11357] = true,
         [11360] = true,
@@ -296,9 +266,11 @@ function QuestieQuestBlacklist:Load()
         [11403] = true,
         [11404] = true,
         [11405] = true,
+        [11407] = true,
+        [11408] = true,
         [11409] = true,
-        [11437] = true,
-        [11438] = true,
+        [11412] = true,
+        [11431] = true,
         [11439] = true,
         [11440] = true,
         [11441] = true,
@@ -450,38 +422,31 @@ function QuestieQuestBlacklist:Load()
         [11926] = true,
         [11933] = true,
         [11935] = true,
-        [11937] = true,
         [11947] = true,
         [11948] = true,
         [11952] = true,
         [11953] = true,
         [11954] = true,
         [11955] = true,
-        [11972] = true,
-        [11975] = true,
         [11964] = true,
         [11966] = true,
         [11970] = true,
         [11971] = true,
+        [11972] = true,
+        [11975] = true,
         [12012] = true,
         [12020] = true,
-        [12192] = true,
-        [11293] = true,
-        [11294] = true,
-        [11407] = true,
-        [11408] = true,
-        [11412] = true,
-        [11122] = true,
-        [12318] = true,
         [12022] = true,
         [12062] = true,
         [12133] = true,
         [12135] = true,
         [12139] = true,
-        [12191] = true,
-        [12278] = true,
         [12155] = true,
+        [12191] = true,
+        [12192] = true,
+        [12278] = true,
         [12286] = true,
+        [12318] = true,
         [12331] = true,
         [12332] = true,
         [12333] = true,
@@ -561,9 +526,13 @@ function QuestieQuestBlacklist:Load()
         [12409] = true,
         [12420] = true,
         [12421] = true,
-        ----------------
-        --- Wotlk event quests
-        --- Noblegarden
+        ----------------------
+        -- WotLK event quests
+        -- Winter Veil
+        [13203] = true, -- A Winter Veil Gift
+        [13966] = true, -- A Winter Veil Gift
+
+        -- Noblegarden
         [13479] = true,
         [13480] = true,
         [13483] = true,
@@ -571,8 +540,10 @@ function QuestieQuestBlacklist:Load()
         [13502] = true,
         [13503] = true,
 
-        --- Love is in the Air
+        -- Love is in the Air
+        [14483] = true,
         [14488] = true,
+        [24536] = true,
         [24597] = true,
         [24609] = true,
         [24610] = true,
@@ -584,16 +555,20 @@ function QuestieQuestBlacklist:Load()
         [24629] = true,
         [24635] = true,
         [24636] = true,
-        [24536] = true,
         [24655] = true,
+        [24745] = true,
         [24804] = true,
         [24805] = true,
 
-        --- Children's Week
+        -- Kalu'ak Fishing Derby
+        [24803] = true,
+        [24806] = true,
+
+        -- Children's Week
         [13926] = true,
         [13927] = true,
 
-        --- Hallow's End
+        -- Hallow's End
         [12940] = true,
         [12941] = true,
         [12944] = true,
@@ -630,15 +605,15 @@ function QuestieQuestBlacklist:Load()
         [13501] = true,
         [13548] = true,
 
-        --- Pilgrim's Bounty
+        -- Pilgrim's Bounty
         [14022] = true,
-        [14036] = true,
         [14023] = true,
         [14024] = true,
         [14028] = true,
         [14030] = true,
         [14033] = true,
         [14035] = true,
+        [14036] = true,
         [14037] = true,
         [14040] = true,
         [14041] = true,
@@ -658,13 +633,13 @@ function QuestieQuestBlacklist:Load()
         [14064] = true,
         [14065] = true,
 
-        --- Brewfest
+        -- Brewfest
         [12193] = true,
         [12194] = true,
         [13931] = true,
         [13932] = true,
 
-        --- Darkmoon Faire
+        -- Darkmoon Faire
         [7881] = true,
         [7882] = true,
         [7883] = true,
@@ -685,9 +660,7 @@ function QuestieQuestBlacklist:Load()
         [7901] = true,
         [7902] = true,
         [7903] = true,
-        [7904] = true,
         [7905] = true,
-        [7906] = true,
         [7907] = true,
         [7926] = true,
         [7927] = true,
@@ -713,7 +686,6 @@ function QuestieQuestBlacklist:Load()
         [7981] = true,
         [8222] = true,
         [8223] = true,
-        [8571] = true,
         [9249] = true,
         [10938] = true,
         [10939] = true,
@@ -724,7 +696,7 @@ function QuestieQuestBlacklist:Load()
         [13326] = true,
         [13327] = true,
 
-        --- Day of the Dead
+        -- Day of the Dead
         [13952] = true,
         [14166] = true,
         [14167] = true,
@@ -766,8 +738,8 @@ function QuestieQuestBlacklist:Load()
         [13066] = true,
         [13067] = true,
 
-        -- End of Wotlk event quests
-        -------------------
+        -- End of WotLK event quests
+        ----------------------------
 
         -- PvP Quests which are not in the game anymore
         -----------------------------------------------
@@ -783,10 +755,9 @@ function QuestieQuestBlacklist:Load()
         [7887] = true,
         [7888] = true,
         [7921] = true,
-        [8567] = true,
+        [8001] = true,
         [8289] = true,
         [8292] = true,
-        [8001] = true,
         -- Quell the Silverwing Usurpers
         [7789] = true,
         [7874] = true,
@@ -801,8 +772,6 @@ function QuestieQuestBlacklist:Load()
         [7925] = true,
         [8293] = true,
         [8296] = true,
-        [8568] = true,
-        [8002] = true,
         -- Arathi Basin
         [8081] = true,
         [8124] = true,
@@ -816,75 +785,56 @@ function QuestieQuestBlacklist:Load()
         [8300] = true,
         [8565] = true,
         [8566] = true,
-        [8123] = true,
-        [8160] = true,
-        [8161] = true,
-        [8162] = true,
-        [8299] = true,
-        [8080] = true,
-        [8154] = true,
-        [8155] = true,
-        [8156] = true,
-        [8297] = true,
         -- Alterac Valley
-        [6861] = QuestieCorrections.CLASSIC_ONLY,
-        [6862] = QuestieCorrections.CLASSIC_ONLY,
-        [6901] = QuestieCorrections.CLASSIC_ONLY,
         [7221] = true,
         [7222] = true,
-        [7281] = QuestieCorrections.CLASSIC_ONLY,
-        [7282] = QuestieCorrections.CLASSIC_ONLY,
-        [7301] = QuestieCorrections.CLASSIC_ONLY,
-        [7302] = QuestieCorrections.CLASSIC_ONLY,
         [7367] = true,
         [7368] = true,
         -- Master Ryson's All Seeing Eye
         [6847] = true,
         [6848] = true,
         -- WANTED: Orcs and WANTED: Dwarves
-        [7402] = true,
-        [7428] = true,
         [7401] = true,
+        [7402] = true,
         [7427] = true,
+        [7428] = true,
         -- Ribbons of Sacrifice
         [8266] = true,
         [8267] = true,
         [8268] = true,
         [8269] = true,
-        [8569] = true,
-        [8570] = true,
 
-        -- corrupted windblossom
+        -- Cenarion plant salve quests (keep searchable, but hide their map pins)
+        [996] = HIDE_ON_MAP,
+        [998] = HIDE_ON_MAP,
+        [1514] = HIDE_ON_MAP,
         [2523] = HIDE_ON_MAP,
         [2878] = HIDE_ON_MAP,
         [3363] = HIDE_ON_MAP,
         [4113] = HIDE_ON_MAP,
         [4114] = HIDE_ON_MAP,
-        [4116] = HIDE_ON_MAP,
-        [4118] = HIDE_ON_MAP,
-        [4401] = HIDE_ON_MAP,
-        [4464] = HIDE_ON_MAP,
-        [4465] = HIDE_ON_MAP,
-        [996] = HIDE_ON_MAP,
-        [998] = HIDE_ON_MAP,
-        [1514] = HIDE_ON_MAP,
         [4115] = HIDE_ON_MAP,
+        [4116] = HIDE_ON_MAP,
+        [4117] = HIDE_ON_MAP,
+        [4118] = HIDE_ON_MAP,
+        [4119] = HIDE_ON_MAP,
         [4221] = HIDE_ON_MAP,
         [4222] = HIDE_ON_MAP,
         [4343] = HIDE_ON_MAP,
+        [4401] = HIDE_ON_MAP,
         [4403] = HIDE_ON_MAP,
-        [4466] = HIDE_ON_MAP,
-        [4467] = HIDE_ON_MAP,
-        [4117] = HIDE_ON_MAP,
         [4443] = HIDE_ON_MAP,
         [4444] = HIDE_ON_MAP,
         [4445] = HIDE_ON_MAP,
         [4446] = HIDE_ON_MAP,
-        [4461] = HIDE_ON_MAP,
-        [4119] = HIDE_ON_MAP,
         [4447] = HIDE_ON_MAP,
         [4448] = HIDE_ON_MAP,
+        [4461] = HIDE_ON_MAP,
         [4462] = HIDE_ON_MAP,
+        [4464] = HIDE_ON_MAP,
+        [4465] = HIDE_ON_MAP,
+        [4466] = HIDE_ON_MAP,
+        [4467] = HIDE_ON_MAP,
 
         [8743] = true, -- Bang a Gong! (AQ40 opening quest)
 
@@ -892,22 +842,14 @@ function QuestieQuestBlacklist:Load()
         ----- TBC ------------- starting here -------------- TBC -----
 
         -- [BETA] quests
-        [402] = true, -- Sirra is Busy
-        [785] = true, -- A Strategic Alliance
         [999] = true, -- When Dreams Turn to Nightmares
         [1005] = true, -- What Lurks Beyond
         [1006] = true, -- What Lies Beyond
         [1099] = true, -- Goblins Win!
-        [1263] = true, -- The Burning Inn <CHANGE TO GOSSIP>
-        [1272] = true, -- Finding Reethe <CHANGE INTO GOSSIP>
-        [1281] = true, -- Jim's Song <CHANGE TO GOSSIP>
-        [1289] = true, -- Vimes's Report
         [1500] = true, -- Waking Naralex
-        [7961] = true, -- Waskily Wabbits!
         [8478] = true, -- Choose Your Weapon
         [8489] = true, -- An Intact Converter
         [8896] = true, -- The Dwarven Spy
-        [9168] = true, -- Heart of Deatholme
         [9342] = true, -- Marauding Crust Bursters
         [9344] = true, -- A Hasty Departure
         [9346] = true, -- When Helboars Fly
@@ -923,8 +865,6 @@ function QuestieQuestBlacklist:Load()
         [9942] = true, -- Tracking Down the Culprits
         [9943] = true, -- Return to Thander
         [9947] = true, -- Return to Rokag
-        [9949] = true, -- A Bird's-Eye View
-        [9950] = true, -- A Bird's-Eye View
         [9952] = true, -- Prospector Balmoral
         [9953] = true, -- Lookout Nodak
         [9958] = true, -- Scouting the Defenses
@@ -955,7 +895,6 @@ function QuestieQuestBlacklist:Load()
         [10061] = true, -- The Unyielding
         [10062] = true, -- Looking to the Leadership
         [10084] = true, -- Assault on Mageddon
-        [10088] = true, -- When This Mine's a-Rockin'
         [10089] = true, -- Forge Camps of the Legion
         [10092] = true, -- Assault on Mageddon
         [10100] = true, -- The Mastermind
@@ -971,7 +910,6 @@ function QuestieQuestBlacklist:Load()
         [10137] = true, -- Provoking the Warboss
         [10138] = true, -- Under Whose Orders?
         [10139] = true, -- Dispatching the Commander
-        [10145] = true, -- Mission: Sever the Tie UNUSED
         [10147] = true, -- Mission: Kill the Messenger
         [10148] = true, -- Mission: Be the Messenger
         [10149] = true, -- Mission: End All, Be All
@@ -988,12 +926,9 @@ function QuestieQuestBlacklist:Load()
         [10187] = true, -- A Message for the Archmage
         [10195] = true, -- Mercenary See, Mercenary Do
         [10196] = true, -- More Arakkoa Feathers
-        [10207] = true, -- Forward Base: Reaver's Fall REUSE
-        [10214] = true, -- When This Mine's a-Rockin'
         [10244] = true, -- R.T.F.R.C.M.
         [10260] = true, -- Netherologist Coppernickels
         [10292] = true, -- More Power!
-        [10370] = true, -- Nazgrel's Command <TXT>
         [10375] = true, -- Obsidian Warbeads
         [10386] = true, -- The Fel Reaver Slayer
         [10387] = true, -- The Fel Reaver Slayer
@@ -1001,39 +936,21 @@ function QuestieQuestBlacklist:Load()
         [10401] = true, -- Mission: End All, Be All
         [10404] = true, -- Against the Legion
         [10441] = true, -- Peddling the Goods
-        [10716] = true, -- Test Flight: Raven's Wood <needs reward>
         [10737] = true, -- The Master's Touch
         [10815] = true, -- The Journal of Val'zareq: Portends of War
         [10841] = true, -- The Vengeful Harbringer
         [10844] = true, -- Forge Camp: Anger
-        [10871] = true, -- Ally of the Netherwing
         [10872] = true, -- Zuluhed the Whacked
         [10925] = true, -- Evil Draws Near
-        [11425] = true, -- Test Quest - Craig
 
         -- <NYI> quests
         [3482] = true, -- <NYI> <TXT> The Pocked Black Box
-        [7741] = true, -- Praise from the Emerald Circle <NYI> <TXT>
-        [8339] = true, -- Royalty of the Council <NYI> <TXT> UNUSED
-        [8340] = true, -- Twilight Signet Ring <NYI> <TXT>
 
         -- [Not Used] quests
-        [620] = true, -- UNUSED The Monogrammed Sash
-        [1390] = true, -- BETA Oops, We Killed Them Again.
         [2019] = true, -- Tools of the Trade
-        [5383] = true, -- Krastinov's Bag of Horrors
-        [8530] = true, -- The Alliance Needs Singed Corestones!
-        [8618] = true, -- The Horde Needs More Singed Corestones!
-        [9380] = true, -- BETA Hounded for More
         [9510] = true, -- BETA Bristlehide Clefthoof Hides
-        [9599] = true, -- <UNUSED>
-        [9750] = true, -- UNUSED Urgent Delivery
-        [9767] = true, -- Know Your Enemy
-        [10090] = true, -- BETA The Legion's Plans
         [11027] = true, -- NOT IN GAME: Yous Have Da Darkrune? , "replaced" by 11060 (A Crystalforged Darkrune)
 
-        [1] = true, -- Unavailable quest "The "Chow" Quest (123)aa"
-        [2881] = QuestieCorrections.TBC_ONLY, -- Wildhammer faction removed in TBC. Repeatable to gain rep
         [8329] = true, -- Warrior Training / Not in the game
         [8547] = true, -- Welcome!
         [9065] = true, -- Unavailable quest "The "Chow" Quest (123)aa"
@@ -1044,7 +961,6 @@ function QuestieQuestBlacklist:Load()
         [10169] = true, -- Losing Gracefully (removed with 2.4.0)
         [10259] = true, -- Into the Breach (TBC Pre patch event)
         [10364] = true, -- Caedmos (Unavailable Priest quest)
-        [10379] = true, -- Touch of Weakness (Followup of NOT A QUEST)
         [10531] = true, -- The Battle for Arathi Basin!
         [10532] = true, -- Cut Arathor Supply Lines
         [10533] = true, -- More Resource Crates
@@ -1071,15 +987,10 @@ function QuestieQuestBlacklist:Load()
 
         -- [OLD] quests. Classic quests deprecated in TBC
         [708] = true,
-        [909] = true,
         [1288] = true,
         [1661] = QuestieCorrections.TBC_AND_WOTLK,
         [3366] = true,
         [3381] = true,
-        [5627] = true,
-        [5641] = QuestieCorrections.TBC_AND_WOTLK,
-        [5645] = QuestieCorrections.TBC_AND_WOTLK,
-        [5647] = QuestieCorrections.TBC_AND_WOTLK,
         [6131] = true,
         [6221] = true,
         [6241] = true,
@@ -1094,146 +1005,58 @@ function QuestieQuestBlacklist:Load()
         [7522] = true,
         [8368] = true,
         [8383] = true,
-        [8384] = true,
-        [8386] = true,
         [8387] = true,
-        [8390] = true,
-        [8391] = true,
-        [8392] = true,
-        [8397] = true,
-        [8398] = true,
-        [8404] = true,
-        [8405] = true,
-        [8406] = true,
-        [8407] = true,
-        [8408] = true,
         [8411] = true,
         [8426] = true,
         [8427] = true,
         [8428] = true,
         [8429] = true,
         [8430] = true,
-        [8440] = true,
-        [8441] = true,
-        [8442] = true,
-        [8443] = true,
         [9712] = true,
-        [10377] = true,
         [11052] = true,
-
-        -- Classic only PvP quests
-        [8369] = QuestieCorrections.TBC_ONLY,
-        [8370] = QuestieCorrections.TBC_ONLY,
-        [8372] = QuestieCorrections.TBC_ONLY,
-        [8374] = QuestieCorrections.TBC_ONLY,
-        [8375] = QuestieCorrections.TBC_ONLY,
-        [8389] = QuestieCorrections.TBC_ONLY,
-        [8393] = QuestieCorrections.TBC_ONLY,
-        [8394] = QuestieCorrections.TBC_ONLY,
-        [8395] = QuestieCorrections.TBC_ONLY,
-        [8396] = QuestieCorrections.TBC_ONLY,
-        [8399] = QuestieCorrections.TBC_ONLY,
-        [8400] = QuestieCorrections.TBC_ONLY,
-        [8401] = QuestieCorrections.TBC_ONLY,
-        [8402] = QuestieCorrections.TBC_ONLY,
-        [8403] = QuestieCorrections.TBC_ONLY,
-        [8431] = QuestieCorrections.TBC_ONLY,
-        [8432] = QuestieCorrections.TBC_ONLY,
-        [8433] = QuestieCorrections.TBC_ONLY,
-        [8434] = QuestieCorrections.TBC_ONLY,
-        [8435] = QuestieCorrections.TBC_ONLY,
-        [8436] = QuestieCorrections.TBC_ONLY,
-        [8437] = QuestieCorrections.TBC_ONLY,
-        [8438] = QuestieCorrections.TBC_ONLY,
-        [8439] = QuestieCorrections.TBC_ONLY,
 
         -- Phase 4 Zul'Aman
         [11195] = true, -- Not in the game
         [11196] = true, -- Not in the game
 
-        ----- Wotlk -------------- Wotlk quests --------------- Wotlk -----
-        ----- Wotlk ------------- starting here -------------- Wotlk -----
+        ----- WotLK -------------- WotLK quests --------------- WotLK -----
+        ----- WotLK ------------- starting here -------------- WotLK -----
 
-        [10985] = QuestieCorrections.WOTLK_ONLY, -- Got replaced by 13429
-        [10888] = QuestieCorrections.WOTLK_ONLY, -- Got replaced by 13430
-        [10901] = QuestieCorrections.WOTLK_ONLY, -- Got replaced by 13431
         [10445] = QuestieCorrections.WOTLK_ONLY, -- Got replaced by 13432
-        [6144] = QuestieCorrections.WOTLK_ONLY, -- Got replaced by 14349
-        [6521] = QuestieCorrections.WOTLK_ONLY, -- Got replaced by 14353
-        [6522] = QuestieCorrections.WOTLK_ONLY, -- Got replaced by 14352
-        [6821] = QuestieCorrections.WOTLK_ONLY, -- Not in the game
-        [6822] = QuestieCorrections.WOTLK_ONLY, -- Not in the game
-        [6823] = QuestieCorrections.WOTLK_ONLY, -- Not in the game
-        [6824] = QuestieCorrections.WOTLK_ONLY, -- Not in the game
-        [7486] = QuestieCorrections.WOTLK_ONLY, -- Not in the game
-        [5634] = QuestieCorrections.WOTLK_ONLY, -- removed in wotlk
-        [5635] = QuestieCorrections.WOTLK_ONLY, -- removed in wotlk
-        [5636] = QuestieCorrections.WOTLK_ONLY, -- removed in wotlk
-        [5637] = QuestieCorrections.WOTLK_ONLY, -- removed in wotlk
-        [5638] = QuestieCorrections.WOTLK_ONLY, -- removed in wotlk
-        [5639] = QuestieCorrections.WOTLK_ONLY, -- removed in wotlk
-        [5640] = QuestieCorrections.WOTLK_ONLY, -- removed in wotlk
-        [12881] = true, -- Not in the game
-        [14351] = true, -- Not in the game
+        [10985] = QuestieCorrections.WOTLK_ONLY, -- Got replaced by 13429
         [11621] = true, -- Not in the game
-        [11179] = true, -- Not in the game
         [11622] = true, -- Not in the game
-        [11578] = true, -- Not in the game
-        [11579] = true, -- Not in the game
         [11939] = true, -- Not in the game
-        [11997] = true, -- Not in the game
-        [12087] = true, -- Not in the game
-        [12156] = true, -- Not in the game
-        [12108] = true, -- Not in the game
-        [12233] = true, -- Not in the game
-        [12426] = true, -- Not in the game
+        [12021] = true, -- Duplicate of 12067 and 12085 (not entirely a duplicate but this is the easiest way to hide multiple quests)
+        [12051] = true, -- Not in the game
+        [12162] = true, -- Not in the game
+        [12163] = true, -- Not in the game
         [12479] = true, -- Not in the game
         [12480] = true, -- Not in the game
         [12490] = true, -- Not in the game
-        [12493] = true, -- Not in the game
-        [12780] = true, -- Not in the game
-        [12590] = true, -- Not in the game
-        [11461] = true, -- Not in the game
-        [12911] = true, -- Not in the game
-        [13150] = true, -- Not in the game
-        [13317] = true, -- Not in the game
-        [14160] = true, -- Not in the game
-        [13374] = true, -- Not in the game
-        [13381] = true, -- Not in the game
-        [13908] = true, -- Not in the game
-        [11586] = true, -- Duplicate of 11585 (not entirely a duplicate but this is the easiest way to hide multiple quests)
-        [11595] = true, -- Duplicate of 11596 and 11597 (not entirely a duplicate but this is the easiest way to hide multiple quests)
-        [11597] = true, -- Duplicate of 11595 and 11596 (not entirely a duplicate but this is the easiest way to hide multiple quests)
-        [12021] = true, -- Duplicate of 12067 and 12085 (not entirely a duplicate but this is the easiest way to hide multiple quests)
-        [12015] = true, -- Not in the game
-        [12162] = true, -- Not in the game
-        [12163] = true, -- Not in the game
-        [12051] = true, -- Not in the game
-        [12682] = true, -- Not in the game
         [12586] = true, -- Not in the game
+        [12780] = true, -- Not in the game
+        [12825] = true, -- Not in the game
+        [12834] = true, -- Not in the game
         [12835] = true, -- Not in the game
         [12837] = true, -- Not in the game
-        [12834] = true, -- Not in the game
-        [12825] = true, -- Not in the game
+        [12881] = true, -- Not in the game
         [12890] = true, -- Not in the game
         [12990] = true, -- Not in the game
-        [13184] = true, -- Not in the game
-        [13176] = true, -- Not in the game
+        [13150] = true, -- Not in the game
         [13173] = true, -- Not in the game
         [13175] = true, -- Not in the game
-        [14203] = true, -- Not in the game
-        [14032] = true, -- Not in the game
+        [13176] = true, -- Not in the game
+        [13184] = true, -- Not in the game
+        [13374] = true, -- Not in the game
         [13825] = true, -- EXISTS ingame, but can only be picked up if quest 6610 was completed PRIOR to wrath - impossible for us to discern eligibility, better to hide than misinform everyone
         [13826] = true, -- EXISTS ingame, but can only be picked up if quest 6607 was completed PRIOR to wrath - impossible for us to discern eligibility, better to hide than misinform everyone
+        [13908] = true, -- Not in the game
+        [14032] = true, -- Not in the game
+        [14160] = true, -- Not in the game
+        [14203] = true, -- Not in the game
+        [14351] = true, -- Not in the game
 
-        [8367] = QuestieCorrections.WOTLK_ONLY, -- pvp marks removed in wotlk
-        [8371] = QuestieCorrections.WOTLK_ONLY, -- pvp marks removed in wotlk
-        [8385] = QuestieCorrections.WOTLK_ONLY, -- pvp marks removed in wotlk
-        [8388] = QuestieCorrections.WOTLK_ONLY, -- pvp marks removed in wotlk
-        [13475] = QuestieCorrections.WOTLK_ONLY, -- pvp marks removed in wotlk
-        [13476] = QuestieCorrections.WOTLK_ONLY, -- pvp marks removed in wotlk
-        [13477] = QuestieCorrections.WOTLK_ONLY, -- pvp marks removed in wotlk
-        [13478] = QuestieCorrections.WOTLK_ONLY, -- pvp marks removed in wotlk
 
         [6804] = QuestieCorrections.WOTLK_ONLY,
         [7737] = QuestieCorrections.WOTLK_ONLY, -- replaced by 13662 in wotlk
@@ -1272,12 +1095,6 @@ function QuestieQuestBlacklist:Load()
 
         -- Vanilla Onyxia Alliance attunement
         [4182] = QuestieCorrections.WOTLK_ONLY,
-        [4183] = QuestieCorrections.WOTLK_ONLY,
-        [4184] = QuestieCorrections.WOTLK_ONLY,
-        [4185] = QuestieCorrections.WOTLK_ONLY,
-        [4186] = QuestieCorrections.WOTLK_ONLY,
-        [4223] = QuestieCorrections.WOTLK_ONLY,
-        [4224] = QuestieCorrections.WOTLK_ONLY,
         [4241] = QuestieCorrections.WOTLK_ONLY,
         [4242] = QuestieCorrections.WOTLK_ONLY,
         [4264] = QuestieCorrections.WOTLK_ONLY,
@@ -1287,22 +1104,6 @@ function QuestieQuestBlacklist:Load()
         [6403] = QuestieCorrections.WOTLK_ONLY,
         [6501] = QuestieCorrections.WOTLK_ONLY,
         [6502] = QuestieCorrections.WOTLK_ONLY,
-
-        -- Vanilla Onyxia Horde pre attunement
-        [4903] = QuestieCorrections.WOTLK_ONLY,
-        [4941] = QuestieCorrections.WOTLK_ONLY,
-        [4974] = QuestieCorrections.WOTLK_ONLY,
-        [6566] = QuestieCorrections.WOTLK_ONLY,
-        [6567] = QuestieCorrections.WOTLK_ONLY,
-        [6568] = QuestieCorrections.WOTLK_ONLY,
-        [6569] = QuestieCorrections.WOTLK_ONLY,
-        [6570] = QuestieCorrections.WOTLK_ONLY,
-        [6582] = QuestieCorrections.WOTLK_ONLY,
-        [6583] = QuestieCorrections.WOTLK_ONLY,
-        [6584] = QuestieCorrections.WOTLK_ONLY,
-        [6585] = QuestieCorrections.WOTLK_ONLY,
-        [6601] = QuestieCorrections.WOTLK_ONLY,
-        [6602] = QuestieCorrections.WOTLK_ONLY,
 
         -- "learn to ride" series (unimplemented)
         [14079] = true, -- elwynn (human)
@@ -1316,25 +1117,700 @@ function QuestieQuestBlacklist:Load()
         [14088] = true, -- durotar (troll)
         [14089] = true, -- tirisfal (undead)
 
-        --- Phase 2 Secrets of Ulduar
+        -- Phase 2: Secrets of Ulduar
         [13372] = true, -- 10man EoE keys become unavailable with P2
         [13384] = true, -- 10man EoE keys become unavailable with P2
 
-        --- Automatic Overrides (for when Wowhead data is wrong)
+        -- AzerothCore quests disabled by the final `disables` SQL state.
+        [1] = true,
+        [73] = true,
+        [108] = true,
+        [137] = true,
+        [241] = true,
+        [242] = true,
+        [259] = true,
+        [260] = true,
+        [316] = true,
+        [326] = true,
+        [327] = true,
+        [352] = true,
+        [390] = true,
+        [402] = true,
+        [406] = true,
+        [462] = true,
+        [490] = true,
+        [497] = true,
+        [534] = true,
+        [548] = true,
+        [550] = true,
+        [612] = true,
+        [620] = true,
+        [636] = true,
+        [740] = true,
+        [774] = true,
+        [785] = true,
+        [796] = true,
+        [797] = true,
+        [798] = true,
+        [799] = true,
+        [800] = true,
+        [801] = true,
+        [802] = true,
+        [803] = true,
+        [807] = true,
+        [810] = true,
+        [811] = true,
+        [814] = true,
+        [820] = true,
+        [839] = true,
+        [856] = true,
+        [859] = true,
+        [904] = true,
+        [908] = true,
+        [909] = true,
+        [912] = true,
+        [946] = true,
+        [960] = true,
+        [987] = true,
+        [988] = true,
+        [989] = true,
+        [1128] = true,
+        [1129] = true,
+        [1155] = true,
+        [1156] = true,
+        [1157] = true,
+        [1158] = true,
+        [1161] = true,
+        [1162] = true,
+        [1163] = true,
+        [1165] = true,
+        [1174] = true,
+        [1263] = true,
+        [1272] = true,
+        [1277] = true,
+        [1278] = true,
+        [1279] = true,
+        [1280] = true,
+        [1281] = true,
+        [1283] = true,
+        [1289] = true,
+        [1290] = true,
+        [1291] = true,
+        [1292] = true,
+        [1293] = true,
+        [1294] = true,
+        [1295] = true,
+        [1296] = true,
+        [1297] = true,
+        [1298] = true,
+        [1299] = true,
+        [1300] = true,
+        [1318] = true,
+        [1390] = true,
+        [1397] = true,
+        [1441] = true,
+        [1443] = true,
+        [1460] = true,
+        [1461] = true,
+        [1533] = true,
+        [1537] = true,
+        [1538] = true,
+        [1659] = true,
+        [1660] = true,
+        [1662] = true,
+        [1663] = true,
+        [1664] = true,
+        [2018] = true,
+        [2020] = true,
+        [2058] = true,
+        [2059] = true,
+        [2868] = true,
+        [2971] = true,
+        [3023] = true,
+        [3064] = true,
+        [3111] = true,
+        [3241] = true,
+        [3383] = true,
+        [3384] = true,
+        [3401] = true,
+        [3403] = true,
+        [3404] = true,
+        [3405] = true,
+        [3422] = true,
+        [3423] = true,
+        [3424] = true,
+        [3425] = true,
+        [3515] = true,
+        [3516] = true,
+        [3529] = true,
+        [3530] = true,
+        [3531] = true,
+        [3581] = true,
+        [3622] = true,
+        [3623] = true,
+        [3624] = true,
+        [3631] = true,
+        [3644] = true,
+        [3645] = true,
+        [3646] = true,
+        [3647] = true,
+        [3885] = true,
+        [3910] = true,
+        [4183] = true,
+        [4184] = true,
+        [4185] = true,
+        [4186] = true,
+        [4223] = true,
+        [4224] = true,
+        [4299] = true,
+        [4323] = true,
+        [4487] = true,
+        [4488] = true,
+        [4489] = true,
+        [4490] = true,
+        [4541] = true,
+        [4905] = true,
+        [5053] = true,
+        [5101] = true,
+        [5205] = true,
+        [5207] = true,
+        [5208] = true,
+        [5209] = true,
+        [5303] = true,
+        [5304] = true,
+        [5383] = true,
+        [5506] = true,
+        [5512] = true,
+        [5516] = true,
+        [5520] = true,
+        [5523] = true,
+        [5530] = true,
+        [5532] = true,
+        [5627] = true,
+        [5628] = true,
+        [5629] = true,
+        [5630] = true,
+        [5631] = true,
+        [5632] = true,
+        [5633] = true,
+        [5634] = true,
+        [5635] = true,
+        [5636] = true,
+        [5637] = true,
+        [5638] = true,
+        [5639] = true,
+        [5640] = true,
+        [5641] = true,
+        [5642] = true,
+        [5643] = true,
+        [5644] = true,
+        [5645] = true,
+        [5646] = true,
+        [5647] = true,
+        [5652] = true,
+        [5653] = true,
+        [5654] = true,
+        [5655] = true,
+        [5656] = true,
+        [5657] = true,
+        [5658] = true,
+        [5659] = true,
+        [5660] = true,
+        [5661] = true,
+        [5662] = true,
+        [5663] = true,
+        [5664] = true,
+        [5665] = true,
+        [5666] = true,
+        [5667] = true,
+        [5668] = true,
+        [5669] = true,
+        [5670] = true,
+        [5671] = true,
+        [5672] = true,
+        [5673] = true,
+        [5674] = true,
+        [5675] = true,
+        [5676] = true,
+        [5677] = true,
+        [5678] = true,
+        [5679] = true,
+        [5680] = true,
+        [5681] = true,
+        [5682] = true,
+        [5683] = true,
+        [5684] = true,
+        [5685] = true,
+        [5686] = true,
+        [5687] = true,
+        [5688] = true,
+        [5689] = true,
+        [5690] = true,
+        [5691] = true,
+        [5692] = true,
+        [5693] = true,
+        [5694] = true,
+        [5695] = true,
+        [5696] = true,
+        [5697] = true,
+        [5698] = true,
+        [5699] = true,
+        [5700] = true,
+        [5701] = true,
+        [5702] = true,
+        [5703] = true,
+        [5704] = true,
+        [5705] = true,
+        [5706] = true,
+        [5707] = true,
+        [5708] = true,
+        [5709] = true,
+        [5710] = true,
+        [5711] = true,
+        [5712] = true,
+        [6003] = true,
+        [6144] = true,
+        [6145] = true,
+        [6165] = true,
+        [6201] = true,
+        [6202] = true,
+        [6521] = true,
+        [6522] = true,
+        [6702] = true,
+        [6703] = true,
+        [6704] = true,
+        [6705] = true,
+        [6706] = true,
+        [6707] = true,
+        [6708] = true,
+        [6709] = true,
+        [6710] = true,
+        [6711] = true,
+        [6841] = true,
+        [6842] = true,
+        [7069] = true,
+        [7181] = true,
+        [7202] = true,
+        [7381] = true,
+        [7382] = true,
+        [7384] = true,
+        [7561] = true,
+        [7681] = true,
+        [7682] = true,
+        [7741] = true,
+        [7790] = true,
+        [7797] = true,
+        [7869] = true,
+        [7870] = true,
+        [7904] = true,
+        [7906] = true,
+        [7961] = true,
+        [7962] = true,
+        [8002] = true,
+        [8021] = true,
+        [8022] = true,
+        [8023] = true,
+        [8024] = true,
+        [8025] = true,
+        [8026] = true,
+        [8080] = true,
+        [8123] = true,
+        [8152] = true,
+        [8154] = true,
+        [8155] = true,
+        [8156] = true,
+        [8160] = true,
+        [8161] = true,
+        [8162] = true,
+        [8226] = true,
+        [8230] = true,
+        [8237] = true,
+        [8244] = true,
+        [8245] = true,
+        [8247] = true,
+        [8248] = true,
+        [8270] = true,
+        [8274] = true,
+        [8297] = true,
+        [8299] = true,
+        [8337] = true,
+        [8339] = true,
+        [8340] = true,
+        [8367] = true,
+        [8371] = true,
+        [8384] = true,
+        [8385] = true,
+        [8386] = true,
+        [8388] = true,
+        [8389] = true,
+        [8390] = true,
+        [8391] = true,
+        [8392] = true,
+        [8397] = true,
+        [8398] = true,
+        [8404] = true,
+        [8405] = true,
+        [8406] = true,
+        [8407] = true,
+        [8408] = true,
+        [8431] = true,
+        [8432] = true,
+        [8433] = true,
+        [8434] = true,
+        [8435] = true,
+        [8440] = true,
+        [8441] = true,
+        [8442] = true,
+        [8443] = true,
+        [8444] = true,
+        [8445] = true,
+        [8448] = true,
+        [8449] = true,
+        [8450] = true,
+        [8451] = true,
+        [8452] = true,
+        [8453] = true,
+        [8454] = true,
+        [8458] = true,
+        [8459] = true,
+        [8530] = true,
+        [8531] = true,
+        [8567] = true,
+        [8568] = true,
+        [8569] = true,
+        [8570] = true,
+        [8571] = true,
+        [8617] = true,
+        [8618] = true,
+        [8869] = true,
+        [8897] = true,
+        [8898] = true,
+        [8899] = true,
+        [8971] = true,
+        [8972] = true,
+        [8973] = true,
+        [8974] = true,
+        [8975] = true,
+        [8976] = true,
+        [9031] = true,
+        [9034] = true,
+        [9036] = true,
+        [9037] = true,
+        [9038] = true,
+        [9039] = true,
+        [9040] = true,
+        [9041] = true,
+        [9042] = true,
+        [9043] = true,
+        [9044] = true,
+        [9046] = true,
+        [9047] = true,
+        [9048] = true,
+        [9049] = true,
+        [9050] = true,
+        [9054] = true,
+        [9055] = true,
+        [9056] = true,
+        [9057] = true,
+        [9058] = true,
+        [9059] = true,
+        [9060] = true,
+        [9061] = true,
+        [9068] = true,
+        [9069] = true,
+        [9070] = true,
+        [9071] = true,
+        [9072] = true,
+        [9073] = true,
+        [9074] = true,
+        [9075] = true,
+        [9077] = true,
+        [9078] = true,
+        [9079] = true,
+        [9080] = true,
+        [9081] = true,
+        [9082] = true,
+        [9083] = true,
+        [9084] = true,
+        [9086] = true,
+        [9087] = true,
+        [9088] = true,
+        [9089] = true,
+        [9090] = true,
+        [9091] = true,
+        [9092] = true,
+        [9093] = true,
+        [9095] = true,
+        [9096] = true,
+        [9097] = true,
+        [9098] = true,
+        [9099] = true,
+        [9100] = true,
+        [9101] = true,
+        [9102] = true,
+        [9103] = true,
+        [9104] = true,
+        [9105] = true,
+        [9106] = true,
+        [9107] = true,
+        [9108] = true,
+        [9109] = true,
+        [9110] = true,
+        [9111] = true,
+        [9112] = true,
+        [9113] = true,
+        [9114] = true,
+        [9115] = true,
+        [9116] = true,
+        [9117] = true,
+        [9118] = true,
+        [9168] = true,
+        [9231] = true,
+        [9273] = true,
+        [9284] = true,
+        [9285] = true,
+        [9286] = true,
+        [9296] = true,
+        [9297] = true,
+        [9298] = true,
+        [9306] = true,
+        [9307] = true,
+        [9308] = true,
+        [9316] = true,
+        [9319] = true,
+        [9322] = true,
+        [9323] = true,
+        [9347] = true,
+        [9350] = true,
+        [9353] = true,
+        [9354] = true,
+        [9367] = true,
+        [9368] = true,
+        [9378] = true,
+        [9379] = true,
+        [9380] = true,
+        [9384] = true,
+        [9386] = true,
+        [9388] = true,
+        [9389] = true,
+        [9411] = true,
+        [9412] = true,
+        [9413] = true,
+        [9414] = true,
+        [9445] = true,
+        [9458] = true,
+        [9459] = true,
+        [9477] = true,
+        [9478] = true,
+        [9479] = true,
+        [9480] = true,
+        [9481] = true,
+        [9482] = true,
+        [9497] = true,
+        [9507] = true,
+        [9546] = true,
+        [9577] = true,
+        [9583] = true,
+        [9596] = true,
+        [9597] = true,
+        [9599] = true,
+        [9611] = true,
+        [9613] = true,
+        [9614] = true,
+        [9615] = true,
+        [9650] = true,
+        [9651] = true,
+        [9652] = true,
+        [9653] = true,
+        [9654] = true,
+        [9655] = true,
+        [9656] = true,
+        [9657] = true,
+        [9658] = true,
+        [9659] = true,
+        [9660] = true,
+        [9661] = true,
+        [9662] = true,
+        [9679] = true,
+        [9695] = true,
+        [9745] = true,
+        [9750] = true,
+        [9754] = true,
+        [9755] = true,
+        [9767] = true,
+        [9768] = true,
+        [9880] = true,
+        [9881] = true,
+        [9908] = true,
+        [9909] = true,
+        [9949] = true,
+        [9950] = true,
+        [10083] = true,
+        [10088] = true,
+        [10090] = true,
+        [10145] = true,
+        [10181] = true,
+        [10207] = true,
+        [10214] = true,
+        [10215] = true,
+        [10370] = true,
+        [10376] = true,
+        [10377] = true,
+        [10378] = true,
+        [10379] = true,
+        [10402] = true,
+        [10452] = true,
+        [10453] = true,
+        [10454] = true,
+        [10549] = true,
+        [10616] = true,
+        [10631] = true,
+        [10716] = true,
+        [10743] = true,
+        [10746] = true,
+        [10787] = true,
+        [10871] = true,
+        [10888] = true,
+        [10890] = true,
+        [10901] = true,
+        [10960] = true,
+        [11088] = true,
+        [11121] = true,
+        [11125] = true,
+        [11127] = true,
+        [11179] = true,
+        [11197] = true,
+        [11226] = true,
+        [11320] = true,
+        [11334] = true,
+        [11335] = true,
+        [11336] = true,
+        [11337] = true,
+        [11338] = true,
+        [11339] = true,
+        [11340] = true,
+        [11341] = true,
+        [11342] = true,
+        [11345] = true,
+        [11347] = true,
+        [11425] = true,
+        [11435] = true,
+        [11437] = true,
+        [11438] = true,
+        [11444] = true,
+        [11445] = true,
+        [11461] = true,
+        [11462] = true,
+        [11493] = true,
+        [11522] = true,
+        [11551] = true,
+        [11552] = true,
+        [11553] = true,
+        [11577] = true,
+        [11578] = true,
+        [11579] = true,
+        [11588] = true,
+        [11589] = true,
+        [11874] = true,
+        [11934] = true,
+        [11937] = true,
+        [11974] = true,
+        [11987] = true,
+        [11992] = true,
+        [11994] = true,
+        [11997] = true,
+        [12001] = true,
+        [12015] = true,
+        [12018] = true,
+        [12024] = true,
+        [12025] = true,
+        [12087] = true,
+        [12103] = true,
+        [12108] = true,
+        [12156] = true,
+        [12179] = true,
+        [12228] = true,
+        [12233] = true,
+        [12313] = true,
+        [12426] = true,
+        [12445] = true,
+        [12493] = true,
+        [12590] = true,
+        [12600] = true,
+        [12626] = true,
+        [12682] = true,
+        [12731] = true,
+        [12764] = true,
+        [12765] = true,
+        [12911] = true,
+        [12923] = true,
+        [13123] = true,
+        [13210] = true,
+        [13303] = true,
+        [13317] = true,
+        [13381] = true,
+        [13405] = true,
+        [13407] = true,
+        [13427] = true,
+        [13428] = true,
+        [13475] = true,
+        [13476] = true,
+        [13477] = true,
+        [13478] = true,
+        [13541] = true,
+        [13649] = true,
+        [13827] = true,
+        [13840] = true,
+        [13990] = true,
+        [14106] = true,
+        [14119] = true,
+        [14147] = true,
+        [14148] = true,
+        [14149] = true,
+        [14150] = true,
+        [14163] = true,
+        [14164] = true,
+        [14178] = true,
+        [14179] = true,
+        [14180] = true,
+        [14181] = true,
+        [14182] = true,
+        [14183] = true,
+        [14441] = true,
+        [24216] = true,
+        [24217] = true,
+        [24218] = true,
+        [24219] = true,
+        [24220] = true,
+        [24221] = true,
+        [24222] = true,
+        [24223] = true,
+        [24224] = true,
+        [24225] = true,
+        [24226] = true,
+        [24227] = true,
+        [24426] = true,
+        [24427] = true,
+        [24661] = true,
+        [24746] = true,
+        [24797] = true,
+        [25485] = true,
+
+        -- Automatic overrides (for when Wowhead data is wrong)
         [13134] = false, -- Spill Their Blood
         [13136] = false, -- Jagged Shards
         [13138] = false, -- I'm Smelting... Smelting!
         [13140] = false, -- The Runesmiths of Malykriss
-        [13221] = false, -- I'm Not Dead Yet!
-        [13229] = false, -- I'm Not Dead Yet!
-        [13152] = false, -- A Visit to the Doctor
-        [13211] = false, -- By Fire Be Purged
         [13144] = false, -- Killing Two Scourge With One Skeleton
+        [13152] = false, -- A Visit to the Doctor
         [13161] = false, -- The Rider of the Unholy
         [13162] = false, -- The Rider of the Frost
         [13163] = false, -- The Rider of the Blood
+        [13211] = false, -- By Fire Be Purged
         [13212] = false, -- He's Gone to Pieces
         [13220] = false, -- Putting Olakin Back Together Again
+        [13221] = false, -- I'm Not Dead Yet!
+        [13229] = false, -- I'm Not Dead Yet!
         [13235] = false, -- The Flesh Giant Champion
         [13331] = false, -- Keeping the Alliance Blind
         [13359] = false, -- Where Dragons Fell
@@ -1472,9 +1948,6 @@ QuestieQuestBlacklist.ScourgeInvasionQuests = {
     [9265] = true, -- Investigate the Scourge of the Undercity
     [9292] = true, -- Cracked Necrotic Crystal
     [9295] = true, -- Letter from the Front
-    [9296] = true, -- reuse
-    [9297] = true, -- reuse
-    [9298] = true, -- reuse
     [9299] = true, -- Note from the Front
     [9300] = true, -- Page from the Front
     [9301] = true, -- Envelope from the Front
@@ -1510,10 +1983,6 @@ QuestieQuestBlacklist.SunsReachQuests = {
     [11542] = true, -- Intercept the Reinforcements
     [11545] = true, -- A Charitable Donation
     [11549] = true, -- A Magnanimous Benefactor
-    -- Sunwell Plateau Gates
-    [11551] = true, -- Agamath, the First Gate
-    [11552] = true, -- Rohendor, the Second Gate
-    [11553] = true, -- Archonisus, the Final Gate
 }
 
 function QuestieQuestBlacklist.LoadAutoBlacklistWotlk()
@@ -1526,32 +1995,14 @@ function QuestieQuestBlacklist.LoadAutoBlacklistWotlk()
         [7364] = true, --* Gnomeregan Bounty (https://www.wowhead.com/wotlk/quest=7364) (Retail Data)
         [7365] = true, --* Staghelm's Requiem (https://www.wowhead.com/wotlk/quest=7365) (Retail Data)
         [7366] = true, --* The Archbishop's Mercy (https://www.wowhead.com/wotlk/quest=7366) (Retail Data)
-        [7381] = true, --* The Return of Korrak (https://www.wowhead.com/wotlk/quest=7381) (Retail Data)
-        [7382] = true, --* Korrak the Everliving (https://www.wowhead.com/wotlk/quest=7382) (Retail Data)
         [7401] = true, --* WANTED: Dwarves! (https://www.wowhead.com/wotlk/quest=7401) (Retail Data)
         [7402] = true, --* WANTED: Orcs! (https://www.wowhead.com/wotlk/quest=7402) (Retail Data)
 
-        --! 1.12.1
-        -- Kalimdor -> Dustwallow Marsh (1 -> 15)
-        [1289] = true, --* <nyi> Vimes's Report (https://www.wowhead.com/wotlk/quest=1289) (Retail Data)
-        [1390] = true, --* <nyi> Oops, We Killed Them Again. (https://www.wowhead.com/wotlk/quest=1390) (Retail Data)
-
-        -- Kalimdor -> Felwood (1 -> 361)
-        [7741] = true, --* Praise from the Emerald Circle <NYI> <TXT> (https://www.wowhead.com/wotlk/quest=7741) (Retail Data)
-
-        -- Kalimdor -> Silithus (1 -> 1377)
-        [8340] = true, --* Twilight Signet Ring <NYI> <TXT> (https://www.wowhead.com/wotlk/quest=8340) (Retail Data)
-
         -- Classes -> Rogue (4 -> -162)
-        [2018] = true, --* Rokar's Test (https://www.wowhead.com/wotlk/quest=2018) (Retail Data)
         [2019] = true, --* Tools of the Trade (https://www.wowhead.com/wotlk/quest=2019) (Retail Data)
 
         -- Uncategorized ->  (-2 -> 0)
         [6843] = true, --* Da Foo (https://www.wowhead.com/wotlk/quest=6843) (Retail Data)
-        [8230] = true, --* Collin's Test Quest (https://www.wowhead.com/wotlk/quest=8230) (Retail Data)
-
-        -- World Events -> Darkmoon Faire (9 -> -364)
-        [7906] = true, --* Darkmoon Cards - Beasts (https://www.wowhead.com/wotlk/quest=7906) (Retail Data)
 
         -- Battlegrounds -> Warsong Gulch (6 -> 3277)
         [7886] = true, --* Talismans of Merit (https://www.wowhead.com/wotlk/quest=7886) (Retail Data)
@@ -1563,7 +2014,6 @@ function QuestieQuestBlacklist.LoadAutoBlacklistWotlk()
         [7924] = true, --* Mark of Honor (https://www.wowhead.com/wotlk/quest=7924) (Retail Data)
         [7925] = true, --* Mark of Honor (https://www.wowhead.com/wotlk/quest=7925) (Retail Data)
         [8001] = true, --* Warsong Outriders <NYI> <TXT> (https://www.wowhead.com/wotlk/quest=8001) (Retail Data)
-        [8002] = true, --* Silverwing Sentinels <NYI> <TXT> (https://www.wowhead.com/wotlk/quest=8002) (Retail Data)
         [8267] = true, --* Ribbons of Sacrifice (https://www.wowhead.com/wotlk/quest=8267) (Retail Data)
         [8269] = true, --* Ribbons of Sacrifice (https://www.wowhead.com/wotlk/quest=8269) (Retail Data)
         [8289] = true, --* Talismans of Merit (https://www.wowhead.com/wotlk/quest=8289) (Retail Data)
@@ -1592,9 +2042,6 @@ function QuestieQuestBlacklist.LoadAutoBlacklistWotlk()
         [8165] = true, --* More Resource Crates (https://www.wowhead.com/wotlk/quest=8165) (Retail Data)
         [8298] = true, --* More Resource Crates (https://www.wowhead.com/wotlk/quest=8298) (Retail Data)
         [8300] = true, --* More Resource Crates (https://www.wowhead.com/wotlk/quest=8300) (Retail Data)
-
-        -- Miscellaneous ->  (7 -> 0)
-        [8618] = true, --* The Horde Needs More Singed Corestones! (https://www.wowhead.com/wotlk/quest=8618) (Retail Data)
 
         -- Miscellaneous -> Legendary (7 -> -344)
         [7521] = true, --* Thunderaan the Windseeker (https://www.wowhead.com/wotlk/quest=7521) (Retail Data)
@@ -1627,48 +2074,6 @@ function QuestieQuestBlacklist.LoadAutoBlacklistWotlk()
 
         -- Kalimdor -> Mulgore (1 -> 215)
         [781] = true, --* Attack on Camp Narache (https://www.wowhead.com/wotlk/quest=781)
-        [14436] = true, -- Dwarven Digging (https://www.wowhead.com/wotlk/quest=14436/dwarven-digging)
-        [14437] = true, -- Rites of the Earthmother (https://www.wowhead.com/wotlk/quest=14437/rites-of-the-earthmother)
-        [14438] = true, -- Sharing the Land (https://www.wowhead.com/wotlk/quest=14438/sharing-the-land)
-        [14439] = true, -- Journey into Thunder Bluff (https://www.wowhead.com/wotlk/quest=14439/journey-into-thunder-bluff)
-        [14440] = true, -- Rites of the Earthmother (https://www.wowhead.com/wotlk/quest=14440/rites-of-the-earthmother)
-
-        -- Verified unreachable in AzerothCore 3.3.5 from upstream blacklist hints
-        [3422] = true, -- <UNUSED> (https://www.wowhead.com/wotlk/quest=3422)
-        [5532] = true, -- <NYI> <TXT> Ring of the Dawn (https://www.wowhead.com/wotlk/quest=5532)
-        [6709] = true, -- <TXT> BRD,DM,BRS - Repeatable (https://www.wowhead.com/wotlk/quest=6709)
-        [6711] = true, -- <TXT> UBRS,STRATH,SCHOL - Repeatable (https://www.wowhead.com/wotlk/quest=6711)
-        [7870] = true, -- test quest2 - do not use (https://www.wowhead.com/wotlk/quest=7870)
-        [8237] = true, -- REUSE (https://www.wowhead.com/wotlk/quest=8237)
-        [9047] = true, -- Redemption Boots (https://www.wowhead.com/wotlk/quest=9047)
-        [9048] = true, -- Redemption Handguards (https://www.wowhead.com/wotlk/quest=9048)
-        [9306] = true, -- <DEPRECATED>Speak with Vindicator Aldar (https://www.wowhead.com/wotlk/quest=9306)
-        [9308] = true, -- <DEPRECATED>Blood Elf Remains? (https://www.wowhead.com/wotlk/quest=9308)
-        [10530] = true, -- The Hunter's Path (https://www.wowhead.com/wotlk/quest=10530)
-        [10694] = true, -- Ten Commendation Signets (https://www.wowhead.com/wotlk/quest=10694)
-        [10695] = true, -- One Commendation Signet (https://www.wowhead.com/wotlk/quest=10695)
-        [11115] = true, -- The Mark of Vashj (FLAG ONLY) (https://www.wowhead.com/wotlk/quest=11115)
-        [11125] = true, -- [PH] New Hinterlands Quest (https://www.wowhead.com/wotlk/quest=11125)
-        [11334] = true, -- He Shoots,He Scores! (https://www.wowhead.com/wotlk/quest=11334)
-        [11463] = true, -- Pirates of the North Seas (https://www.wowhead.com/wotlk/quest=11463)
-        [11522] = true, -- Blank title (https://www.wowhead.com/wotlk/quest=11522)
-        [11589] = true, -- REUSE (https://www.wowhead.com/wotlk/quest=11589)
-        [12313] = true, -- UNUSED Save Brewfest! (https://www.wowhead.com/wotlk/quest=12313)
-        [12405] = true, -- Candy Bucket (https://www.wowhead.com/wotlk/quest=12405)
-        [12410] = true, -- Candy Bucket (https://www.wowhead.com/wotlk/quest=12410)
-        [12452] = true, -- zzOLD The Fate of the Ruby Dragonshrine (https://www.wowhead.com/wotlk/quest=12452)
-        [12625] = true, -- Dominion Over Acherus (https://www.wowhead.com/wotlk/quest=12625)
-        [12731] = true, -- Blank title (https://www.wowhead.com/wotlk/quest=12731)
-        [12923] = true, -- Blank title (https://www.wowhead.com/wotlk/quest=12923)
-        [13203] = true, -- A Winter Veil Gift (https://www.wowhead.com/wotlk/quest=13203)
-        [13405] = true, -- Call to Arms: Strand of the Ancients (https://www.wowhead.com/wotlk/quest=13405)
-        [13407] = true, -- Call to Arms: Strand of the Ancients (https://www.wowhead.com/wotlk/quest=13407)
-        [13427] = true, -- Call to Arms: Alterac Valley (https://www.wowhead.com/wotlk/quest=13427)
-        [13428] = true, -- Call to Arms: Alterac Valley (https://www.wowhead.com/wotlk/quest=13428)
-        [13649] = true, -- Justin's Fun Test (https://www.wowhead.com/wotlk/quest=13649)
-        [24223] = true, -- Call to Arms: Arathi Basin (https://www.wowhead.com/wotlk/quest=24223)
-        [24426] = true, -- Call to Arms: Alterac Valley (https://www.wowhead.com/wotlk/quest=24426)
-        [24427] = true, -- Call to Arms: Alterac Valley (https://www.wowhead.com/wotlk/quest=24427)
 
         -- Kalimdor -> Darkshore (1 -> 148)
         [1133] = true, --* Journey to Astranaar (https://www.wowhead.com/wotlk/quest=1133)
@@ -1686,23 +2091,12 @@ function QuestieQuestBlacklist.LoadAutoBlacklistWotlk()
         --! 2.3.0
         [1135] = true, --* Highperch Venom (https://www.wowhead.com/wotlk/quest=1135)
 
-        --! 2.4.2
-        -- Uncategorized ->  (-2 -> 0)
-        [12600] = true, --* Upper Deck Promo - Bear Mount (https://www.wowhead.com/wotlk/quest=12600) (Retail Data)
-
         --! 2.5.1
         -- Classes -> Warlock (4 -> -61)
         [8344] = true, --* Windows to the Source (https://www.wowhead.com/wotlk/quest=8344)
 
-        --! 3.0.1
-        -- World Events ->  (9 -> 0)
-        [11937] = true, --* FLAG - all torch return quests are complete (https://www.wowhead.com/wotlk/quest=11937) (Retail Data)
-
         -- Uncategorized ->  (-2 -> 0)
         [11518] = true, --* Sunwell Daily Portal Flag (https://www.wowhead.com/wotlk/quest=11518) (Retail Data)
-        [11577] = true, --* WoW Collector's Edition: - DEM - E - FLAG (https://www.wowhead.com/wotlk/quest=11577) (Retail Data)
-        [11874] = true, --* Upper Deck Promo - Rocket Mount (https://www.wowhead.com/wotlk/quest=11874) (Retail Data)
-        [11994] = true, --* Juno's Flag Tester (https://www.wowhead.com/wotlk/quest=11994) (Retail Data)
         [12186] = true, --* FLAG: Winner (https://www.wowhead.com/wotlk/quest=12186) (Retail Data)
         [12187] = true, --* FLAG: Participant (https://www.wowhead.com/wotlk/quest=12187) (Retail Data)
         [12693] = true, --* Wolvar Faction Choice Tracker (https://www.wowhead.com/wotlk/quest=12693) (Retail Data)
@@ -1711,11 +2105,6 @@ function QuestieQuestBlacklist.LoadAutoBlacklistWotlk()
         [12845] = true, --* Dalaran Teleport Crystal Flag (https://www.wowhead.com/wotlk/quest=12845) (Retail Data)
 
         --! 3.0.2
-        -- Uncategorized ->  (-2 -> 0)
-        [10454] = true, --* FLAG - OFF THE RAILS (https://www.wowhead.com/wotlk/quest=10454) (Retail Data)
-        [13123] = true, --* WotLK Collector's Edition: - DEM - E - FLAG (https://www.wowhead.com/wotlk/quest=13123) (Retail Data)
-        [13210] = true, --* Blizzard Account: - DEM - E - FLAG (https://www.wowhead.com/wotlk/quest=13210) (Retail Data)
-
         -- Outland ->  (8 -> 0)
         [10610] = true, --* Prospecting Basics (https://www.wowhead.com/wotlk/quest=10610) (Retail Data)
 
@@ -1728,21 +2117,9 @@ function QuestieQuestBlacklist.LoadAutoBlacklistWotlk()
         [13807] = true, --* FLAG: Tournament Invitation (https://www.wowhead.com/wotlk/quest=13807) (Retail Data)
 
         --! 3.3.0
-        -- Professions -> Alchemy (5 -> -181)
-        [14147] = true, --* Blank [PH] (https://www.wowhead.com/wotlk/quest=14147) (Retail Data)
-        [14148] = true, --* Blank [PH] (https://www.wowhead.com/wotlk/quest=14148) (Retail Data)
-        [14149] = true, --* Blank [PH] (https://www.wowhead.com/wotlk/quest=14149) (Retail Data)
-        [14150] = true, --* Blank [PH] (https://www.wowhead.com/wotlk/quest=14150) (Retail Data)
-
-        --  ->  (0 -> 0)
-        [12103] = true, --* Before the Storm (https://www.wowhead.com/wotlk/quest=12103) (Retail Data)
-
         -- Battlegrounds -> Arathi Basin (6 -> 3358)
         [10533] = true, --* More Resource Crates (https://www.wowhead.com/wotlk/quest=10533) (Retail Data)
         [10536] = true, --* More Resource Crates (https://www.wowhead.com/wotlk/quest=10536) (Retail Data)
-
-        -- Classes -> Mage (4 -> -161)
-        [12228] = true, --* Reacquiring the Magic [PH] (https://www.wowhead.com/wotlk/quest=12228) (Retail Data)
 
         -- Northrend -> Tournament (10 -> -241)
         [13820] = true, --* The Blastbolt Brothers (https://www.wowhead.com/wotlk/quest=13820) (Retail Data)
@@ -1753,10 +2130,6 @@ function QuestieQuestBlacklist.LoadAutoBlacklistWotlk()
         [24810] = true, --* Melee Ring Flag (https://www.wowhead.com/wotlk/quest=24810) (Retail Data)
         [24811] = true, --* Caster Ring Flag (https://www.wowhead.com/wotlk/quest=24811) (Retail Data)
         [25238] = true, --* Strength Ring Flag (https://www.wowhead.com/wotlk/quest=25238) (Retail Data)
-
-        -- Northrend -> Sholazar Basin (10 -> 3711)
-        [12764] = true, --* The Secret to Kungaloosh (https://www.wowhead.com/wotlk/quest=12764) (Retail Data)
-        [12765] = true, --* Kungaloosh (https://www.wowhead.com/wotlk/quest=12765) (Retail Data)
 
         -- Northrend -> Dragonblight (10 -> 65)
         [12023] = true, --* Sweeter Revenge (https://www.wowhead.com/wotlk/quest=12023) (Retail Data)
@@ -1777,9 +2150,7 @@ function QuestieQuestBlacklist.LoadAutoBlacklistWotlk()
         [10060] = true, --* Impending Doom (https://www.wowhead.com/wotlk/quest=10060)
         [10062] = true, --* Looking to the Leadership (https://www.wowhead.com/wotlk/quest=10062)
         [10084] = true, --* Assault on Mageddon (https://www.wowhead.com/wotlk/quest=10084)
-        [10088] = true, --* When This Mine's a-Rockin' (https://www.wowhead.com/wotlk/quest=10088)
         [10089] = true, --* Forge Camps of the Legion (https://www.wowhead.com/wotlk/quest=10089)
-        [10090] = true, --* The Legion's Plans (https://www.wowhead.com/wotlk/quest=10090)
         [10092] = true, --* Assault on Mageddon (https://www.wowhead.com/wotlk/quest=10092)
         [10100] = true, --* The Mastermind (https://www.wowhead.com/wotlk/quest=10100)
         [10126] = true, --* Warboss Nekrogg's Orders (https://www.wowhead.com/wotlk/quest=10126)
@@ -1810,8 +2181,6 @@ function QuestieQuestBlacklist.LoadAutoBlacklistWotlk()
         [9942] = true, --* Tracking Down the Culprits (https://www.wowhead.com/wotlk/quest=9942)
         [9943] = true, --* Return to Thander (https://www.wowhead.com/wotlk/quest=9943)
         [9947] = true, --* Return to Rokag (https://www.wowhead.com/wotlk/quest=9947)
-        [9949] = true, --* A Bird's-Eye View (https://www.wowhead.com/wotlk/quest=9949)
-        [9950] = true, --* A Bird's-Eye View (https://www.wowhead.com/wotlk/quest=9950)
         [9952] = true, --* Prospector Balmoral (https://www.wowhead.com/wotlk/quest=9952)
         [9953] = true, --* Lookout Nodak (https://www.wowhead.com/wotlk/quest=9953)
         [9958] = true, --* Scouting the Defenses (https://www.wowhead.com/wotlk/quest=9958)
@@ -1838,7 +2207,6 @@ function QuestieQuestBlacklist.LoadAutoBlacklistWotlk()
         -- Uncategorized ->  (-2 -> 0)
         [10219] = true, --* Walk the Dog (https://www.wowhead.com/wotlk/quest=10219) (Retail Data)
         [12494] = true, --* FLAG: Riding Trainer Advertisement (20) (https://www.wowhead.com/wotlk/quest=12494) (Retail Data)
-        [13990] = true, --* Upper Deck Promo - Chicken Mount (https://www.wowhead.com/wotlk/quest=13990) (Retail Data)
         [14185] = true, --* FLAG: Riding Trainer Advertisement (40) (https://www.wowhead.com/wotlk/quest=14185) (Retail Data)
         [14186] = true, --* FLAG: Riding Trainer Advertisement (60) (https://www.wowhead.com/wotlk/quest=14186) (Retail Data)
         [14187] = true, --* FLAG: Riding Trainer Advertisement (70) (https://www.wowhead.com/wotlk/quest=14187) (Retail Data)
@@ -1851,9 +2219,6 @@ function QuestieQuestBlacklist.LoadAutoBlacklistWotlk()
         -- Eastern Kingdoms -> Isle Of Queldanas (0 -> 4080)
         [11517] = true, --* Report to Nasuun (https://www.wowhead.com/wotlk/quest=11517) (Retail Data)
         [11534] = true, --* Report to Nasuun (https://www.wowhead.com/wotlk/quest=11534) (Retail Data)
-
-        -- Eastern Kingdoms -> Eastern Plaguelands (0 -> 139)
-        [9378] = true, --* DND FLAG The Dread Citadel - Naxxramas (https://www.wowhead.com/wotlk/quest=9378) (Retail Data)
 
         -- World Events -> Childrens Week (9 -> -1002)
         [13929] = true, --* The Biggest Tree Ever! (https://www.wowhead.com/wotlk/quest=13929) (Retail Data)
@@ -1870,7 +2235,6 @@ function QuestieQuestBlacklist.LoadAutoBlacklistWotlk()
         [13957] = true, --* The Mighty Hemet Nesingwary (https://www.wowhead.com/wotlk/quest=13957) (Retail Data)
         [13959] = true, --* Back To The Orphanage (https://www.wowhead.com/wotlk/quest=13959) (Retail Data)
         [13960] = true, --* Back To The Orphanage (https://www.wowhead.com/wotlk/quest=13960) (Retail Data)
-        [14441] = true, --* Garrosh's Autograph (https://www.wowhead.com/wotlk/quest=14441) (Retail Data)
 
         -- World Events -> Brewfest (9 -> -370)
         [11486] = true, --* The Best of Brews (https://www.wowhead.com/wotlk/quest=11486) (Retail Data)
@@ -1978,4 +2342,3 @@ function QuestieQuestBlacklist.LoadAutoBlacklistWotlk()
 
     }
 end
-
