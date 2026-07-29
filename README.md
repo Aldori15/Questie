@@ -4,6 +4,10 @@ This is the actively maintained successor to the [widxwer/Questie:335](https://g
 All 16 open issues from the archived widxwer repo have been resolved, and this fork remains ahead with ongoing backports from the upstream Questie master branch, along with additional features, fixes and refactors.
 
 A fork of the WoW Classic Questie addon aiming to provide compatibility with Wrath of the Lich King client version 3.3.5a (12340).
+
+> [!IMPORTANT]
+> **Warmane users:** Questie **v9.6.5 or newer** is required for party quest progress sharing. Version 9.6.5 includes a [Warmane addon communication compatibility fix](https://github.com/Aldori15/Questie/commit/1735a56). All members on Warmane using Questie should update, because older versions cannot exchange quest progress data correctly on Warmane.  More info in Issues [#101](https://github.com/Aldori15/Questie/issues/101) and [#103](https://github.com/Aldori15/Questie/issues/103).
+
 # Installation
 - [Download](https://github.com/Aldori15/Questie/archive/refs/heads/335.zip) the archive.
 - Extract it into `Interface/AddOns/` directory, folder name should be `Questie-335`.
