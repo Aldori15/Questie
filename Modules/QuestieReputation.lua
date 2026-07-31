@@ -49,6 +49,37 @@ function QuestieReputation:Update(isInit)
         end
     end
 
+    -- The client may omit undiscovered Aldor and Scryer reputations from the
+    -- reputation pane. Initialize their race specific base values so related
+    -- quest conditions still match the server before either faction is shown.
+    if isInit then
+        local aldorFactionId = QuestieDB.factionIDs.THE_ALDOR
+        local scryersFactionId = QuestieDB.factionIDs.THE_SCRYERS
+
+        if not playerReputations[aldorFactionId] or not playerReputations[scryersFactionId] then
+            local raceId = QuestiePlayer:GetRaceId()
+            local aldorReputation = {4, 0}      -- standingID 4, 0 reputation (Neutral)
+            local scryersReputation = {4, 0}    -- standingID 4, 0 reputation (Neutral)
+
+            if raceId == 10 then -- Blood Elf
+                aldorReputation = {2, -3500}    -- standingID 2, -3500 reputation (Hostile)
+                scryersReputation = {5, 3500}   -- standingID 5, 3500 reputation (Friendly)
+            elseif raceId == 11 then -- Draenei
+                aldorReputation = {5, 3500}     -- standingID 5, 3500 reputation (Friendly)
+                scryersReputation = {2, -3500}  -- standingID 2, -3500 reputation (Hostile)
+            end
+
+            if not playerReputations[aldorFactionId] then
+                playerReputations[aldorFactionId] = aldorReputation
+                newFaction = true
+            end
+            if not playerReputations[scryersFactionId] then
+                playerReputations[scryersFactionId] = scryersReputation
+                newFaction = true
+            end
+        end
+    end
+
     if factionChanged or newFaction then
         -- Reset all autoBlacklisted quests, so availability is checked correctly again
         QuestieQuest.ResetAutoblacklistCategory("rep")
