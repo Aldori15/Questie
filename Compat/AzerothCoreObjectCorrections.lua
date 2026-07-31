@@ -17420,7 +17420,7 @@ QuestieCompat.RegisterCorrection("objectData", function()
         },
 
         [194565] = {
-            [objectKeys.spawns] = {[zoneIDs.ULDUAR] = {{52.23,26.41},{52.26,26.82,0,2,603},{52.3,25.95,0,2,603},{52.3,27.23}}},
+            [objectKeys.spawns] = {[zoneIDs.ULDUAR] = {{52.23,26.41},{52.3,27.23}}},
         },
 
         [194569] = {
