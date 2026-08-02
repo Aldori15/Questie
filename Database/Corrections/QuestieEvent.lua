@@ -84,7 +84,7 @@ local type = type
 local strlower = string.lower
 local strfind = string.find
 local _WithinDates, _LoadDarkmoonFaire, _GetDarkmoonFaireLocation,
-    _GetDarkmoonFaireLocationForDate, _GetDarkmoonFaireEventName,
+    _GetDarkmoonFaireLocationForDate, _GetDarkmoonFaireLocationForCalendarEvent, _GetDarkmoonFaireEventName,
     _IsEventQuestVisible, _GetCalendarEventName, _GetActiveCalendarEvents,
     _IsCalendarEventMonthPlausible, _IsCalendarEventActiveNow,
     _IsCalendarEventLiveNow, _IsCalendarEventQuestActiveNow,
@@ -190,6 +190,25 @@ local DMF_LOCATIONS = {
     ELWYNN_FOREST = 2,
     TEROKKAR_FOREST = 3,
 }
+
+---@param texture string?
+---@return number?
+_GetDarkmoonFaireLocationForCalendarEvent = function(texture)
+    if type(texture) ~= "string" then
+        return nil
+    end
+
+    local normalizedTexture = strlower(texture)
+    if strfind(normalizedTexture, "terokkar", 1, true) or strfind(normalizedTexture, "shattrath", 1, true) then
+        return DMF_LOCATIONS.TEROKKAR_FOREST
+    elseif strfind(normalizedTexture, "mulgore", 1, true) or strfind(normalizedTexture, "thunder", 1, true) then
+        return DMF_LOCATIONS.MULGORE
+    elseif strfind(normalizedTexture, "elwynn", 1, true) or strfind(normalizedTexture, "goldshire", 1, true) then
+        return DMF_LOCATIONS.ELWYNN_FOREST
+    end
+
+    return nil
+end
 
 ---@param hideQuest boolean|number|nil
 ---@return boolean
@@ -453,14 +472,15 @@ end
 
 _GetActiveCalendarEvents = function()
     local activeEvents = {}
+    local darkmoonLocation = nil
 
     if not QuestieCompat.Is335 or not CalendarGetNumDayEvents or not CalendarGetHolidayInfo then
-        return activeEvents
+        return activeEvents, darkmoonLocation
     end
 
     local currentDate = C_DateAndTime.GetCurrentCalendarTime()
     if not currentDate or not currentDate.month or not currentDate.monthDay then
-        return activeEvents
+        return activeEvents, darkmoonLocation
     end
 
     local numDayEvents = CalendarGetNumDayEvents(0, currentDate.monthDay) or 0
@@ -470,11 +490,15 @@ _GetActiveCalendarEvents = function()
             local eventName = _GetCalendarEventName(name, texture)
             if eventName and _IsCalendarEventMonthPlausible(eventName, currentDate.month) and _IsCalendarEventActiveNow(eventName, currentDate) then
                 activeEvents[eventName] = true
+                if eventName == "Darkmoon Faire" then
+                    -- Unlike the localized event name, the calendar texture identifies the active faire zone.
+                    darkmoonLocation = _GetDarkmoonFaireLocationForCalendarEvent(texture)
+                end
             end
         end
     end
 
-    return activeEvents
+    return activeEvents, darkmoonLocation
 end
 
 _PrimeCalendar = function()
@@ -571,7 +595,7 @@ function QuestieEvent:Load(isFinalPass)
 
     -- We want to replace the Lunar Festival date with the date that we estimate
     QuestieEvent.eventDates["Lunar Festival"] = QuestieEvent.lunarFestival[year]
-    local activeEvents = _GetActiveCalendarEvents()
+    local activeEvents, darkmoonLocation = _GetActiveCalendarEvents()
     sawCalendarEvent = next(activeEvents) ~= nil
 
     local eventCorrections
@@ -664,7 +688,7 @@ function QuestieEvent:Load(isFinalPass)
     end
 
     if Questie.IsClassic or Questie.IsWotlk then
-        addedActiveQuest = _LoadDarkmoonFaire() or addedActiveQuest
+        addedActiveQuest = _LoadDarkmoonFaire(darkmoonLocation) or addedActiveQuest
     end
 
     if isFinalPass then
@@ -679,6 +703,8 @@ function QuestieEvent:Load(isFinalPass)
     return sawCalendarEvent
 end
 
+--- Date-based fallback for servers without a location-specific Darkmoon calendar texture.
+--- Darkmoon Faire starts its setup the first Friday of the month and begins the following Monday.
 ---@return number
 _GetDarkmoonFaireLocation = function()
     if not CalendarGetMonth then
@@ -764,11 +790,10 @@ _GetDarkmoonFaireEventName = function(eventLocation)
     return l10n("Darkmoon Faire")
 end
 
---- https://classic.wowhead.com/guides/classic-darkmoon-faire#darkmoon-faire-location-and-schedule
---- Darkmoon Faire starts its setup the first Friday of the month and will begin the following Monday.
---- The faire ends the sunday after it has begun.
-_LoadDarkmoonFaire = function()
-    local eventLocation = _GetDarkmoonFaireLocation()
+---@param eventLocation number?
+---@return boolean
+_LoadDarkmoonFaire = function(eventLocation)
+    eventLocation = eventLocation or _GetDarkmoonFaireLocation()
     if (eventLocation == DMF_LOCATIONS.NONE) then
         return false
     end
