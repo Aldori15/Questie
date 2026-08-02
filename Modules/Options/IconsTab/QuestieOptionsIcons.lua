@@ -12,6 +12,8 @@ local QuestieMap = QuestieLoader:ImportModule("QuestieMap");
 local l10n = QuestieLoader:ImportModule("l10n")
 ---@type QuestieQuest
 local QuestieQuest = QuestieLoader:ImportModule("QuestieQuest");
+---@type ThreadLib
+local ThreadLib = QuestieLoader:ImportModule("ThreadLib");
 ---@type QuestiePlayer
 local QuestiePlayer = QuestieLoader:ImportModule("QuestiePlayer");
 ---@type QuestieTooltips
@@ -180,7 +182,13 @@ local function _SetQuestIconSurfaceEnabled(row, isMinimap, value)
 
     if row.refresh == "objectives" then
         if value and not wasEnabledAnywhere then
-            QuestieQuest:GetAllQuestIds()
+            ThreadLib.ThreadCallback(function()
+                QuestieQuest:GetAllQuestIds()
+            end, 0, function()
+                _RefreshQuestIconsOnly()
+                QuestieOptionsUtils.DetermineTheme()
+            end)
+            return
         end
         _RefreshQuestIconsOnly()
         QuestieOptionsUtils.DetermineTheme()

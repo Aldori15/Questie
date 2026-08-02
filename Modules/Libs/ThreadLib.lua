@@ -87,6 +87,23 @@ function ThreadLib.ThreadSimple(threadFunction, delay)
   return ThreadLib.Thread(threadFunction, delay)
 end
 
+---Thread a function and start it on the next timer tick.
+---@param threadFunction function @The function to thread
+---@return Ticker Timer @The WoW timer
+---@return thread Thread @The coroutine thread
+function ThreadLib.ThreadInstant(threadFunction)
+  return ThreadLib.Thread(threadFunction, 0)
+end
+
+---Thread a function and invoke a callback when it completes.
+---@param threadFunction function @The function to thread
+---@param callbackFunction function @Function to call when the thread is done
+---@return Ticker Timer @The WoW timer
+---@return thread Thread @The coroutine thread
+function ThreadLib.ThreadCallbackInstant(threadFunction, callbackFunction)
+  return ThreadLib.Thread(threadFunction, 0, nil, callbackFunction)
+end
+
 
 --? This was kind of a halv baked idea, that i questioned was even good, but i don't really want to delete it yet.
 --[[

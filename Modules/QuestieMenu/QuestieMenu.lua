@@ -21,6 +21,8 @@ local MeetingStones = QuestieLoader:ImportModule("MeetingStones")
 local QuestieProfessions = QuestieLoader:ImportModule("QuestieProfessions")
 ---@type QuestieQuest
 local QuestieQuest = QuestieLoader:ImportModule("QuestieQuest")
+---@type ThreadLib
+local ThreadLib = QuestieLoader:ImportModule("ThreadLib")
 ---@type InstanceLocations
 local InstanceLocations = QuestieLoader:ImportModule("InstanceLocations")
 ---@type l10n
@@ -765,7 +767,12 @@ function QuestieMenu.buildQuestMenu()
                 QuestieIconVisibility:SetBoth("objective", value)
                 if value then
                     -- Rebuild objective notes that were not created while objectives were disabled.
-                    QuestieQuest:GetAllQuestIds()
+                    ThreadLib.ThreadCallback(function()
+                        QuestieQuest:GetAllQuestIds()
+                    end, 0, function()
+                        QuestieQuest:RefreshQuestIconVisibility()
+                    end)
+                    return
                 end
                 QuestieQuest:RefreshQuestIconVisibility()
             end,

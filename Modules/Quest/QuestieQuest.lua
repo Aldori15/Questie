@@ -62,7 +62,8 @@ local tostring = tostring;
 local tinsert = table.insert;
 local pairs = pairs;
 local ipairs = ipairs;
-local yield = coroutine.yield
+local coYield = coroutine.yield
+local coRunning = coroutine.running
 local NewThread = ThreadLib.ThreadSimple
 
 local function _HasVisibleSpawnInZone(spawns)
@@ -113,29 +114,33 @@ end
 
 function QuestieQuest:ToggleNotes(showIcons)
     Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest:ToggleNotes] showIcons:", showIcons)
-    QuestieQuest:GetAllQuestIds() -- add notes that weren't added from previous hidden state
+    ThreadLib.ThreadInstant(function()
+        QuestieQuest:GetAllQuestIds() -- add notes that weren't added from previous hidden state
 
-    if showIcons then
-        _QuestieQuest:ShowQuestIcons()
-        _QuestieQuest:ShowManualIcons()
-        AvailableQuests.CalculateAndDrawAll()
-    else
-        _QuestieQuest:HideQuestIcons()
-        _QuestieQuest:HideManualIcons()
-    end
+        if showIcons then
+            _QuestieQuest:ShowQuestIcons()
+            _QuestieQuest:ShowManualIcons()
+            AvailableQuests.CalculateAndDrawAll()
+        else
+            _QuestieQuest:HideQuestIcons()
+            _QuestieQuest:HideManualIcons()
+        end
+    end)
 end
 
 ---Updates all quest icons to ensure they are correctly shown/hidden
 ---@param showIcons boolean @ Whether to show or hide the icons
 function QuestieQuest.ToggleQuestNotes(showIcons)
     Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest.ToggleQuestNotes] showIcons:", showIcons)
-    QuestieQuest:GetAllQuestIds() -- add notes that weren't added from previous hidden state
+    ThreadLib.ThreadInstant(function()
+        QuestieQuest:GetAllQuestIds() -- add notes that weren't added from previous hidden state
 
-    if showIcons then
-        _QuestieQuest:ShowQuestIcons()
-    else
-        _QuestieQuest:HideQuestIcons()
-    end
+        if showIcons then
+            _QuestieQuest:ShowQuestIcons()
+        else
+            _QuestieQuest:HideQuestIcons()
+        end
+    end)
 end
 
 ---Refreshes visibility for existing quest icons without rebuilding quest notes
@@ -766,11 +771,20 @@ end
 function QuestieQuest:GetAllQuestIds()
     Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest] Getting all quests")
 
+    assert(coRunning(), "GetAllQuestIds must be called from a coroutine")
+
     QuestiePlayer.currentQuestlog = {}
     local trackerHiddenQuests = Questie.db.char.TrackerHiddenQuests or {}
     local trackerHiddenObjectives = Questie.db.char.TrackerHiddenObjectives or {}
 
-    for questId, data in pairs(QuestLogCache.questLog_DO_NOT_MODIFY) do -- DO NOT MODIFY THE RETURNED TABLE
+    -- Snapshot titles before yielding so the live quest-log cache cannot change during traversal.
+    local questTitles = {}
+    for questId, data in pairs(QuestLogCache.questLog_DO_NOT_MODIFY) do
+        questTitles[questId] = data.title
+    end
+
+    local yieldCounter = 0
+    for questId, title in pairs(questTitles) do
         if (not QuestieDB.QuestPointers[questId]) then
             if not Questie._sessionWarnings[questId] then
                 Questie:Error(l10n("The quest %s is missing from Questie's database. Please report this on GitHub or Discord!", tostring(questId)))
@@ -784,7 +798,7 @@ function QuestieQuest:GetAllQuestIds()
                 local complete = quest:IsComplete()
 
                 QuestiePlayer.currentQuestlog[questId] = quest
-                quest.LocalizedName = data.title
+                quest.LocalizedName = title
 
                 if complete == -1 then
                     QuestieQuest:UpdateQuest(questId)
@@ -796,13 +810,14 @@ function QuestieQuest:GetAllQuestIds()
                     if trackerHiddenQuests[questId] then
                         quest.HideIcons = true
                     end
+                    local questIdStr = tostring(questId)
                     for _, objective in pairs(quest.Objectives) do
-                        if trackerHiddenObjectives[tostring(questId) .. " " .. tostring(objective.Index)] then
+                        if trackerHiddenObjectives[questIdStr .. " " .. tostring(objective.Index)] then
                             objective.HideIcons = true
                         end
                     end
                     for _, objective in pairs(quest.SpecialObjectives) do
-                        if trackerHiddenObjectives[tostring(questId) .. " " .. tostring(objective.Index)] then
+                        if trackerHiddenObjectives[questIdStr .. " " .. tostring(objective.Index)] then
                             objective.HideIcons = true
                         end
                     end
@@ -816,6 +831,12 @@ function QuestieQuest:GetAllQuestIds()
             end
 
             Questie:Debug(Questie.DEBUG_INFO, "[QuestieQuest] Adding the quest", questId, QuestiePlayer.currentQuestlog[questId])
+        end
+
+        yieldCounter = yieldCounter + 1
+        if yieldCounter >= 5 then
+            yieldCounter = 0
+            coYield()
         end
     end
 
