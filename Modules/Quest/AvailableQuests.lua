@@ -38,6 +38,17 @@ local time = time
 local date = date
 local tonumber = tonumber
 local NewThread = ThreadLib.ThreadSimple
+local coRunning = coroutine.running
+
+local function _UnloadQuestFrames(questId, iconType, noteType)
+    if coRunning() then
+        QuestieMap:UnloadQuestFrames(questId, iconType, noteType)
+    else
+        ThreadLib.ThreadInstant(function()
+            QuestieMap:UnloadQuestFrames(questId, iconType, noteType)
+        end)
+    end
+end
 
 local QUESTS_PER_YIELD = 24
 local QUESTS_PER_YIELD_FAST = 512
@@ -633,7 +644,7 @@ end
 function AvailableQuests.RemoveAvailableQuest(questId)
     availableQuests[questId] = nil
     _RemoveQuestFromNpcAvailability(questId, QuestieDB.GetQuest(questId))
-    QuestieMap:UnloadQuestFrames(questId, nil, "available")
+    _UnloadQuestFrames(questId, nil, "available")
     QuestieTooltips:RemoveAvailableQuest(questId)
 end
 
@@ -641,7 +652,7 @@ end
 function AvailableQuests.RemoveQuest(questId)
     availableQuests[questId] = nil
     _RemoveQuestFromNpcAvailability(questId, QuestieDB.GetQuest(questId))
-    QuestieMap:UnloadQuestFrames(questId)
+    _UnloadQuestFrames(questId)
     QuestieTooltips:RemoveQuest(questId)
 end
 

@@ -9,6 +9,8 @@ QuestiePartyObjectives.private = QuestiePartyObjectives.private or {}
 local QuestieComms = QuestieLoader:ImportModule("QuestieComms")
 ---@type QuestieQuest
 local QuestieQuest = QuestieLoader:ImportModule("QuestieQuest")
+---@type ThreadLib
+local ThreadLib = QuestieLoader:ImportModule("ThreadLib")
 ---@type QuestieDB
 local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 ---@type QuestieLib
@@ -296,24 +298,20 @@ local function _DrawQuest(questId)
                 registeredItemTooltips = true,
             }
 
-            local ok, err = pcall(QuestieQuest.PopulateObjective, QuestieQuest, quest, objectiveIndex, objective, true)
-            if ok then
-                local objectiveIconCount = _CountIcons(objective)
-                if drawnIconCount + iconCount + objectiveIconCount > MAX_PARTY_ICONS then
-                    _UnloadObjective(objective)
-                    break
-                end
-                if (not cachedSpawnList) and objective.spawnList and next(objective.spawnList) then
-                    if not spawnListCache[questId] then
-                        spawnListCache[questId] = {}
-                    end
-                    spawnListCache[questId][objectiveIndex] = objective.spawnList
-                end
-                objectives[#objectives + 1] = objective
-                iconCount = iconCount + objectiveIconCount
-            else
-                Questie:Debug(Questie.DEBUG_ELEVATED, "[QuestiePartyObjectives] Error populating party objective for quest", questId, "objective", objectiveIndex, err)
+            QuestieQuest:PopulateObjective(quest, objectiveIndex, objective, true)
+            local objectiveIconCount = _CountIcons(objective)
+            if drawnIconCount + iconCount + objectiveIconCount > MAX_PARTY_ICONS then
+                _UnloadObjective(objective)
+                break
             end
+            if (not cachedSpawnList) and objective.spawnList and next(objective.spawnList) then
+                if not spawnListCache[questId] then
+                    spawnListCache[questId] = {}
+                end
+                spawnListCache[questId][objectiveIndex] = objective.spawnList
+            end
+            objectives[#objectives + 1] = objective
+            iconCount = iconCount + objectiveIconCount
         end
     end
 
@@ -346,11 +344,9 @@ local function _DrawQuest(questId)
             registeredItemTooltips = true,
         }
 
-        local ok = pcall(QuestieQuest.PopulateObjective, QuestieQuest, quest, objective.Index, objective, true)
-        if ok then
-            objectives[#objectives + 1] = objective
-            iconCount = iconCount + _CountIcons(objective)
-        end
+        QuestieQuest:PopulateObjective(quest, objective.Index, objective, true)
+        objectives[#objectives + 1] = objective
+        iconCount = iconCount + _CountIcons(objective)
     end
 
     if #objectives > 0 then
@@ -363,29 +359,31 @@ end
 ---@param queue number[]
 ---@param index number
 _ProcessQueue = function(queue, index)
-    local stop = math.min(index + CHUNK_SIZE - 1, #queue)
-    for i = index, stop do
-        local questId = queue[i]
-        _ClearQuest(questId)
-        _DrawQuest(questId)
-    end
-
-    if stop < #queue then
-        C_Timer.After(0, function()
-            local ok = xpcall(function()
-                _ProcessQueue(queue, stop + 1)
-            end, CallErrorHandler)
-            if not ok then
-                processing = false
-            end
-        end)
-    else
-        processing = false
-        -- Work that arrived while we were processing.
-        if fullRefreshPending or next(dirtyQuests) then
-            _ScheduleProcessing()
+    ThreadLib.ThreadInstant(function()
+        local stop = math.min(index + CHUNK_SIZE - 1, #queue)
+        for i = index, stop do
+            local questId = queue[i]
+            _ClearQuest(questId)
+            _DrawQuest(questId)
         end
-    end
+
+        if stop < #queue then
+            C_Timer.After(0, function()
+                local ok = xpcall(function()
+                    _ProcessQueue(queue, stop + 1)
+                end, CallErrorHandler)
+                if not ok then
+                    processing = false
+                end
+            end)
+        else
+            processing = false
+            -- Work that arrived while we were processing.
+            if fullRefreshPending or next(dirtyQuests) then
+                _ScheduleProcessing()
+            end
+        end
+    end)
 end
 
 _ProcessScheduled = function()

@@ -503,23 +503,29 @@ function QuestieOptions.tabs.icons:Initialize()
                 get = function() return Questie.db.profile.hideUntrackedQuestsMapIcons; end,
                 set = function(info, value)
                     Questie.db.profile.hideUntrackedQuestsMapIcons = value
-                    _RefreshQuestIconsOnly()
+                    ThreadLib.ThreadSimple(function()
+                        if value then
+                            QuestieQuest:HideQuestIcons()
+                        else
+                            QuestieQuest:ShowQuestIcons()
+                        end
 
-                    -- Hides tooltips for untracked quests
-                    if value == true then
-                        for questId, quest in pairs(QuestiePlayer.currentQuestlog) do
-                            if not QuestieQuest:ShouldShowQuestNotes(quest.Id) then
-                                QuestieTooltips:RemoveQuest(quest.Id)
+                        -- Hides tooltips for untracked quests
+                        if value == true then
+                            for questId, quest in pairs(QuestiePlayer.currentQuestlog) do
+                                if not QuestieQuest:ShouldShowQuestNotes(quest.Id) then
+                                    QuestieTooltips:RemoveQuest(quest.Id)
+                                end
                             end
                         end
-                    end
 
-                    -- Readds tooltips from all missing quests
-                    if value == false then
-                        for questId, quest in pairs(QuestiePlayer.currentQuestlog) do
-                            QuestieQuest:PopulateObjectiveNotes(quest)
+                        -- Readds tooltips from all missing quests
+                        if value == false then
+                            for questId, quest in pairs(QuestiePlayer.currentQuestlog) do
+                                QuestieQuest:PopulateObjectiveNotes(quest)
+                            end
                         end
-                    end
+                    end, 0)
                 end,
             },
             quest_icon_toggles_group = {

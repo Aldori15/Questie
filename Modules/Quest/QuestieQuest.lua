@@ -55,7 +55,6 @@ local Phasing = QuestieLoader:ImportModule("Phasing")
 --- COMPATIBILITY ---
 local C_Timer = QuestieCompat.C_Timer
 local GetQuestsCompleted = QuestieCompat.GetQuestsCompleted
-local xpcall = QuestieCompat.xpcall
 
 --We should really try and squeeze out all the performance we can, especially in this.
 local tostring = tostring;
@@ -65,6 +64,26 @@ local ipairs = ipairs;
 local coYield = coroutine.yield
 local coRunning = coroutine.running
 local NewThread = ThreadLib.ThreadSimple
+
+local function _UnloadQuestFrames(questId)
+    if coRunning() then
+        QuestieMap:UnloadQuestFrames(questId)
+    else
+        ThreadLib.ThreadInstant(function()
+            QuestieMap:UnloadQuestFrames(questId)
+        end)
+    end
+end
+
+local function _RunPopulateObjective(quest, objectiveIndex, objective, blockItemTooltips)
+    if coRunning() then
+        return QuestieQuest:PopulateObjective(quest, objectiveIndex, objective, blockItemTooltips)
+    end
+
+    return ThreadLib.ThreadInstant(function()
+        QuestieQuest:PopulateObjective(quest, objectiveIndex, objective, blockItemTooltips)
+    end)
+end
 
 local function _HasVisibleSpawnInZone(spawns)
     if not spawns then
@@ -81,10 +100,6 @@ local function _HasVisibleSpawnInZone(spawns)
 end
 
 local NOP_FUNCTION = function()
-end
-local ERR_FUNCTION = function(err)
-    print(err)
-    print(debugstack())
 end
 
 -- forward declaration
@@ -256,16 +271,14 @@ end
 
 --- Shows all quest icons asynchronously.
 function QuestieQuest:ShowQuestIcons()
-    ThreadLib.Thread(function()
-        _QuestieQuest:_ShowQuestIcons()
-    end, 0, "Error in QuestieQuest.ShowQuestIcons")
+    assert(coRunning(), "ShowQuestIcons must be called from a coroutine")
+    _QuestieQuest:_ShowQuestIcons()
 end
 
 --- Hides all quest icons asynchronously.
 function QuestieQuest:HideQuestIcons()
-    ThreadLib.Thread(function()
-        _QuestieQuest:_HideQuestIcons()
-    end, 0, "Error in QuestieQuest.HideQuestIcons")
+    assert(coRunning(), "HideQuestIcons must be called from a coroutine")
+    _QuestieQuest:_HideQuestIcons()
 end
 
 function _QuestieQuest:HideManualIcons()
@@ -374,10 +387,7 @@ local function _UpdateSpecials(questId)
     local quest = QuestieDB.GetQuest(questId)
     if quest and next(quest.SpecialObjectives) then
         for _, objective in pairs(quest.SpecialObjectives) do
-            local result, err = xpcall(QuestieQuest.PopulateObjective, ERR_FUNCTION, QuestieQuest, quest, 0, objective, true)
-            if not result then
-                Questie:Error("[QuestieQuest]: [SpecialObjectives] " .. l10n("There was an error populating objectives for %s %s %s %s", quest.name or "No quest name", quest.Id or "No quest id", 0 or "No objective", err or "No error"));
-            end
+            _RunPopulateObjective(quest, 0, objective, true)
         end
     end
 end
@@ -731,7 +741,7 @@ function QuestieQuest:UpdateQuest(questId)
             Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest:UpdateQuest] Quest is: Complete!")
 
             -- Only remove the map icons, but keep the tooltips
-            QuestieMap:UnloadQuestFrames(questId)
+            _UnloadQuestFrames(questId)
             QuestieQuest:AddFinisher(quest)
             quest.WasComplete = true
         elseif isComplete == -1 then
@@ -788,7 +798,7 @@ function QuestieQuest:UpdateQuest(questId)
                     if numCompleteObjectives == #quest.Objectives then
                         Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest:UpdateQuest] All Quest Objective(s) are Complete! Manually setting quest to Complete!")
                         -- Only remove the map icons, but keep the tooltips
-                        QuestieMap:UnloadQuestFrames(questId)
+                        _UnloadQuestFrames(questId)
                         QuestieQuest:AddFinisher(quest)
                         quest.WasComplete = true
                         quest.isComplete = true
@@ -1044,18 +1054,12 @@ end
 function QuestieQuest:UpdateObjectiveNotes(quest)
     Questie:Debug(Questie.DEBUG_INFO, "[QuestieQuest] UpdateObjectiveNotes:", quest.Id)
     for objectiveIndex, objective in pairs(quest.Objectives) do
-        local result, err = xpcall(QuestieQuest.PopulateObjective, ERR_FUNCTION, QuestieQuest, quest, objectiveIndex, objective, false)
-        if (not result) then
-            Questie:Debug(Questie.DEBUG_ELEVATED, "[QuestieQuest] There was an error populating objectives for", quest.name, quest.Id, objectiveIndex, err)
-        end
+        _RunPopulateObjective(quest, objectiveIndex, objective, false)
     end
 
     if next(quest.SpecialObjectives) then
         for _, objective in pairs(quest.SpecialObjectives) do
-            local result, err = xpcall(QuestieQuest.PopulateObjective, ERR_FUNCTION, QuestieQuest, quest, 0, objective, true)
-            if not result then
-                Questie:Error("[QuestieQuest]: [SpecialObjectives] " .. l10n("There was an error populating objectives for %s %s %s %s", quest.name or "No quest name", quest.Id or "No quest id", 0 or "No objective", err or "No error"));
-            end
+            _RunPopulateObjective(quest, 0, objective, true)
         end
     end
 end
@@ -1278,7 +1282,8 @@ end
 ---@param objectiveIndex ObjectiveIndex
 ---@param objective QuestObjective
 ---@param blockItemTooltips any
-function QuestieQuest:PopulateObjective(quest, objectiveIndex, objective, blockItemTooltips) -- must be p-called
+function QuestieQuest:PopulateObjective(quest, objectiveIndex, objective, blockItemTooltips)
+    assert(coRunning(), "PopulateObjective must be called from a coroutine")
     Questie:Debug(Questie.DEBUG_INFO, "[QuestieQuest:PopulateObjective]", objective.Description)
 
     if (not objective.Update) then

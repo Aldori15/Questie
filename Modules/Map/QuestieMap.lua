@@ -67,6 +67,10 @@ local ipairs = ipairs;
 local tremove = table.remove;
 local tunpack = unpack;
 
+local coYield = coroutine.yield
+local coRunning = coroutine.running
+local TICKS_PER_YIELD = 30
+
 local math_max = math.max;
 local math_min = math.min;
 local math_sqrt = math.sqrt;
@@ -253,9 +257,12 @@ function QuestieMap:ForQuestFrames(questId, callback)
 end
 
 function QuestieMap:UnloadQuestFrames(questId, iconType, noteType)
+    assert(coRunning(), "UnloadQuestFrames must be called from a coroutine")
+
     if QuestieMap.questIdFrames[questId] then
+        local yieldCount = 0
         if (not iconType) and (not noteType) then
-            QuestieMap:ForQuestFrames(questId, function(frame)
+            for _, frame in pairs(QuestieMap:GetFramesForQuest(questId)) do
                 -- Capture this before Unload() because it clears frame.data.
                 local objective = frame.data and frame.data.ObjectiveData
 
@@ -264,17 +271,34 @@ function QuestieMap:UnloadQuestFrames(questId, iconType, noteType)
                 if objective then
                     objective.AlreadySpawned = {}
                 end
-            end)
+
+                yieldCount = yieldCount + 1
+                if yieldCount >= TICKS_PER_YIELD then
+                    yieldCount = 0
+                    coYield()
+                end
+            end
             QuestieMap.questIdFrames[questId] = nil;
         else
-            QuestieMap:ForQuestFrames(questId, function(frame, name)
+            local frameNames = {}
+            for name in pairs(QuestieMap.questIdFrames[questId]) do
+                frameNames[#frameNames + 1] = name
+            end
+
+            for _, name in ipairs(frameNames) do
+                local frame = _G[name]
                 if frame and frame.data
                     and ((not iconType) or frame.data.Icon == iconType)
                     and ((not noteType) or frame.data.Type == noteType) then
                     QuestieFramePool:UnloadFrame(frame)
                     QuestieMap.questIdFrames[questId][name] = nil
+                    yieldCount = yieldCount + 1
+                    if yieldCount >= TICKS_PER_YIELD then
+                        yieldCount = 0
+                        coYield()
+                    end
                 end
-            end)
+            end
         end
         Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieMap] Unloading quest frames for questid:", questId)
     end

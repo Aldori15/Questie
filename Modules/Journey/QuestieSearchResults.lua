@@ -14,6 +14,8 @@ local QuestieJourneyUtils = QuestieLoader:ImportModule("QuestieJourneyUtils")
 local QuestieSearch = QuestieLoader:ImportModule("QuestieSearch")
 ---@type QuestieMap
 local QuestieMap = QuestieLoader:ImportModule("QuestieMap")
+---@type ThreadLib
+local ThreadLib = QuestieLoader:ImportModule("ThreadLib")
 ---@type QuestieDB
 local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 ---@type QuestieCorrections
@@ -32,6 +34,8 @@ local GetItemIcon = GetItemIcon
 local stringrep = string.rep
 local stringsub = string.sub
 local C_Timer = QuestieCompat.C_Timer
+local coYield = coroutine.yield
+local TICKS_PER_YIELD = 30
 
 local AceGUI = LibStub("AceGUI-3.0");
 
@@ -189,9 +193,21 @@ local function CreateShowHideButton(id)
     -- Functions for showing/hiding and switching behaviour afterwards
     button.RemoveFromMap = function(self)
         if self.idsToShow then
+            local idsToRemove = {}
             for _, spawnId in pairs(self.idsToShow) do
-                QuestieMap:UnloadManualFrames(spawnId)
+                idsToRemove[#idsToRemove + 1] = spawnId
             end
+            ThreadLib.ThreadInstant(function()
+                local yieldCount = 0
+                for _, spawnId in ipairs(idsToRemove) do
+                    QuestieMap:UnloadManualFrames(spawnId)
+                    yieldCount = yieldCount + 1
+                    if yieldCount >= TICKS_PER_YIELD then
+                        yieldCount = 0
+                        coYield()
+                    end
+                end
+            end)
         else
             QuestieMap:UnloadManualFrames(self.id)
         end
@@ -200,13 +216,25 @@ local function CreateShowHideButton(id)
     end
     button.ShowOnMap = function(self)
         if self.idsToShow then
+            local idsToShow = {}
             for _, spawnId in pairs(self.idsToShow) do
-                if spawnId > 0 then
-                    QuestieMap:ShowNPC(spawnId)
-                else
-                    QuestieMap:ShowObject(-spawnId)
-                end
+                idsToShow[#idsToShow + 1] = spawnId
             end
+            ThreadLib.ThreadInstant(function()
+                local yieldCount = 0
+                for _, spawnId in ipairs(idsToShow) do
+                    if spawnId > 0 then
+                        QuestieMap:ShowNPC(spawnId)
+                    else
+                        QuestieMap:ShowObject(-spawnId)
+                    end
+                    yieldCount = yieldCount + 1
+                    if yieldCount >= TICKS_PER_YIELD then
+                        yieldCount = 0
+                        coYield()
+                    end
+                end
+            end)
         else
             if self.id > 0 then
                 QuestieMap:ShowNPC(self.id)

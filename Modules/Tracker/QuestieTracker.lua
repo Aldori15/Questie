@@ -22,6 +22,8 @@ local TrackerUtils = QuestieLoader:ImportModule("TrackerUtils")
 -------------------------
 ---@type QuestieQuest
 local QuestieQuest = QuestieLoader:ImportModule("QuestieQuest")
+---@type ThreadLib
+local ThreadLib = QuestieLoader:ImportModule("ThreadLib")
 ---@type QuestieMap
 local QuestieMap = QuestieLoader:ImportModule("QuestieMap")
 ---@type QuestieTooltips
@@ -2195,11 +2197,10 @@ function QuestieTracker:UntrackQuestId(questId)
     end
 
     if Questie.db.profile.hideUntrackedQuestsMapIcons then
-        -- Re-evaluate icon visibility without forcing a full notes rebuild.
-        QuestieQuest:RefreshQuestIconVisibility()
-
-        -- Removes objective tooltips for untracked quests.
-        QuestieTooltips:RemoveQuest(questId)
+        ThreadLib.ThreadInstant(function()
+            QuestieQuest:HideQuestIcons()
+            QuestieTooltips:RemoveQuest(questId)
+        end)
     end
 
     QuestieCombatQueue:Queue(function()
@@ -2273,9 +2274,10 @@ function QuestieTracker:AQW_Insert(index, expire)
 
             -- Unhide quest icons when retracking quests.
             if Questie.db.profile.hideUntrackedQuestsMapIcons then
-                -- Rebuild the tracked quest only, then refresh visibility.
-                QuestieQuest:PopulateObjectiveNotes(quest)
-                QuestieQuest:RefreshQuestIconVisibility()
+                ThreadLib.ThreadInstant(function()
+                    QuestieQuest:ShowQuestIcons()
+                    QuestieQuest:PopulateObjectiveNotes(quest)
+                end)
             end
         else
             Questie:Error("Missing quest " .. tostring(questId) .. "," .. tostring(expire) .. " during tracker update")
