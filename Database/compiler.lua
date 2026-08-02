@@ -1059,6 +1059,25 @@ function QuestieDBCompiler:CompileTableCoroutine(tbl, types, order, lookup, data
     local writers = QuestieDBCompiler.writers
     local supportedTypes = QuestieDBCompiler.supportedTypes
 
+    -- Pre-compute per-field lookups and writers once for the entire compile run.
+    -- This removes repeated string-keyed table lookups from the hot inner loop.
+    local fieldCount = #order
+    local fieldKeys = {}
+    local fieldTypes = {}
+    local fieldNames = {}
+    local fieldWriters = {}
+    for i = 1, fieldCount do
+        local key = order[i]
+        local t = types[key]
+        if not writers[t] then
+            error("Invalid datatype: " .. key .. " " .. tostring(t))
+        end
+        fieldKeys[i] = lookup[key]
+        fieldTypes[i] = t
+        fieldNames[i] = key
+        fieldWriters[i] = writers[t]
+    end
+
     while true do
         coroutine.yield()
 
@@ -1086,27 +1105,21 @@ function QuestieDBCompiler:CompileTableCoroutine(tbl, types, order, lookup, data
             local entry = tbl[id]
 
             pointerMap[id] = stream._pointer--pointerStart
-            for i=1, #order do
+            for i=1, fieldCount do
                 -- If combat starts mid-entry, pause before processing next field
                 while InCombatLockdown() do
                     coroutine.yield()
                 end
                 
-                local key = order[i]
-                local v = entry[lookup[key]]
-                local t = types[key]
+                local v = entry[fieldKeys[i]]
 
-                if v and not supportedTypes[type(v)][t] then
-                    Questie:Error("|cFFFF0000Invalid datatype!|r   " .. kind .. "s[" .. tostring(id) .. "]."..key..": \"" .. type(v) .. "\" is not compatible with type \"" .. t .."\"")
+                if v and not supportedTypes[type(v)][fieldTypes[i]] then
+                    Questie:Error("|cFFFF0000Invalid datatype!|r   " .. kind .. "s[" .. tostring(id) .. "]."..fieldNames[i]..": \"" .. type(v) .. "\" is not compatible with type \"" .. fieldTypes[i] .."\"")
                     return
                 end
-                if not writers[t] then
-                    Questie:Error("Invalid datatype: " .. key .. " " .. tostring(t))
-                end
-                --print(key .. "s[" .. tostring(id) .. "]."..key..": \"" .. type(v) .. "\"")
-                local result, errorMessage = pcall(writers[t], stream, v)
+                local result, errorMessage = pcall(fieldWriters[i], stream, v)
                 if not result then
-                    Questie:Error("There was an error when compiling data for "..kind.." " .. tostring(id) .. " \""..tostring(key).."\":")
+                    Questie:Error("There was an error when compiling data for "..kind.." " .. tostring(id) .. " \""..tostring(fieldNames[i]).."\":")
                     Questie:Error(errorMessage)
                     error(errorMessage)
                 end
