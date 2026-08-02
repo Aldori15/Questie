@@ -94,6 +94,9 @@ local _DrawObjectiveIcons, _DrawObjectiveWaypoints
 
 local HBD = QuestieCompat.HBD or LibStub("HereBeDragonsQuestie-2.0")
 
+-- Number of quest/icon operations to process before yielding when running in a coroutine.
+local TICKS_PER_YIELD = 60
+
 function QuestieQuest:Initialize()
     Questie:Debug(Questie.DEBUG_INFO, "[QuestieQuest]: Getting all completed quests")
     Questie.db.char.complete = GetQuestsCompleted()
@@ -118,11 +121,11 @@ function QuestieQuest:ToggleNotes(showIcons)
         QuestieQuest:GetAllQuestIds() -- add notes that weren't added from previous hidden state
 
         if showIcons then
-            _QuestieQuest:ShowQuestIcons()
+            _QuestieQuest:_ShowQuestIcons()
             _QuestieQuest:ShowManualIcons()
             AvailableQuests.CalculateAndDrawAll()
         else
-            _QuestieQuest:HideQuestIcons()
+            _QuestieQuest:_HideQuestIcons()
             _QuestieQuest:HideManualIcons()
         end
     end)
@@ -136,17 +139,19 @@ function QuestieQuest.ToggleQuestNotes(showIcons)
         QuestieQuest:GetAllQuestIds() -- add notes that weren't added from previous hidden state
 
         if showIcons then
-            _QuestieQuest:ShowQuestIcons()
+            _QuestieQuest:_ShowQuestIcons()
         else
-            _QuestieQuest:HideQuestIcons()
+            _QuestieQuest:_HideQuestIcons()
         end
     end)
 end
 
 ---Refreshes visibility for existing quest icons without rebuilding quest notes
 function QuestieQuest:RefreshQuestIconVisibility()
-    _QuestieQuest:HideQuestIcons()
-    _QuestieQuest:ShowQuestIcons()
+    ThreadLib.Thread(function()
+        _QuestieQuest:_HideQuestIcons()
+        _QuestieQuest:_ShowQuestIcons()
+    end, 0, "Error in QuestieQuest.RefreshQuestIconVisibility")
 end
 
 local function _GetValidQuestFrame(questId, frameList, frameName)
@@ -166,8 +171,9 @@ local function _GetValidQuestFrame(questId, frameList, frameName)
     return nil
 end
 
-function _QuestieQuest:ShowQuestIcons()
+function _QuestieQuest:_ShowQuestIcons()
     local trackerHiddenQuests = Questie.db.char.TrackerHiddenQuests
+    local yieldCount = 0
     for questId, frameList in pairs(QuestieMap.questIdFrames) do
         if (not trackerHiddenQuests) or (not trackerHiddenQuests[questId]) then -- Skip quests which are completely hidden from the Tracker menu
             for _, frameName in pairs(frameList) do -- this may seem a bit expensive, but its actually really fast due to the order things are checked
@@ -194,6 +200,12 @@ function _QuestieQuest:ShowQuestIcons()
                 end
             end
         end
+
+        yieldCount = yieldCount + 1
+        if yieldCount >= TICKS_PER_YIELD and coRunning() then
+            yieldCount = 0
+            coYield()
+        end
     end
 end
 
@@ -210,7 +222,8 @@ function _QuestieQuest:ShowManualIcons()
     end
 end
 
-function _QuestieQuest:HideQuestIcons()
+function _QuestieQuest:_HideQuestIcons()
+    local yieldCount = 0
     for questId, frameList in pairs(QuestieMap.questIdFrames) do
         for _, frameName in pairs(frameList) do -- this may seem a bit expensive, but its actually really fast due to the order things are checked
             local icon = _GetValidQuestFrame(questId, frameList, frameName)
@@ -232,7 +245,27 @@ function _QuestieQuest:HideQuestIcons()
                 end
             end
         end
+
+        yieldCount = yieldCount + 1
+        if yieldCount >= TICKS_PER_YIELD and coRunning() then
+            yieldCount = 0
+            coYield()
+        end
     end
+end
+
+--- Shows all quest icons asynchronously.
+function QuestieQuest:ShowQuestIcons()
+    ThreadLib.Thread(function()
+        _QuestieQuest:_ShowQuestIcons()
+    end, 0, "Error in QuestieQuest.ShowQuestIcons")
+end
+
+--- Hides all quest icons asynchronously.
+function QuestieQuest:HideQuestIcons()
+    ThreadLib.Thread(function()
+        _QuestieQuest:_HideQuestIcons()
+    end, 0, "Error in QuestieQuest.HideQuestIcons")
 end
 
 function _QuestieQuest:HideManualIcons()
@@ -267,11 +300,17 @@ function QuestieQuest:ClearAllNotes()
         end
     end
 
+    local yieldCount = 0
     for _, frameList in pairs(QuestieMap.questIdFrames) do
         for _, frameName in pairs(frameList) do
             local icon = _G[frameName]
             if icon and icon.Unload then
                 QuestieFramePool:UnloadFrame(icon)
+                yieldCount = yieldCount + 1
+                if yieldCount >= (TICKS_PER_YIELD / 6) and coRunning() then
+                    yieldCount = 0
+                    coYield()
+                end
             end
         end
     end
@@ -363,9 +402,17 @@ function QuestieQuest:SmoothReset()
             return #QuestieMap._mapDrawQueue == 0 and #QuestieMap._minimapDrawQueue == 0 -- wait until draw queue is finished
         end,
         function()
-            QuestieQuest:ClearAllNotes()
+            QuestieQuest._clearAllNotesDone = false
+            ThreadLib.ThreadCallbackInstant(function()
+                QuestieQuest:ClearAllNotes()
+            end, function()
+                QuestieQuest._clearAllNotesDone = true
+            end)
             QuestieQuest:ClearAllToolTips()
             return true
+        end,
+        function()
+            return QuestieQuest._clearAllNotesDone == true
         end,
         function()
             QuestieMenu:OnLogin(true) -- remove icons
@@ -1355,6 +1402,7 @@ _DetermineIconsToDraw = function(quest, objective, objectiveIndex, objectiveCent
 
     local iconsToDraw = {}
     local spawnItemId
+    local yieldCount = 0
 
     for id, spawnData in pairs(objective.spawnList) do
         if spawnData.ItemId then
@@ -1431,6 +1479,12 @@ _DetermineIconsToDraw = function(quest, objective, objectiveIndex, objectiveCent
                                 iconList[#iconList + 1] = drawIcon
                             else
                                 iconsToDraw[distance] = {drawIcon}
+                            end
+
+                            yieldCount = yieldCount + 1
+                            if yieldCount >= TICKS_PER_YIELD and coRunning() then
+                                yieldCount = 0
+                                coYield()
                             end
                         end
                     end
@@ -1583,6 +1637,7 @@ _GetIconsSortedByDistance = function(icons)
 end
 
 _DrawObjectiveWaypoints = function(objective, icon, iconPerZone)
+    local yieldCount = 0
     for _, spawnData in pairs(objective.spawnList) do -- spawnData.Name, spawnData.Spawns
         if spawnData.Waypoints and not spawnData.Hostile then
             for zone, waypoints in pairs(spawnData.Waypoints) do
@@ -1603,6 +1658,12 @@ _DrawObjectiveWaypoints = function(objective, icon, iconPerZone)
 
                     if ipz then
                         QuestieMap:DrawWaypoints(ipz[1], waypoints, zone, spawnData.Hostile and {1, 0.2, 0, 0.7} or nil)
+                    end
+
+                    yieldCount = yieldCount + 1
+                    if yieldCount >= TICKS_PER_YIELD and coRunning() then
+                        yieldCount = 0
+                        coYield()
                     end
                 end
             end
