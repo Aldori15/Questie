@@ -1178,6 +1178,10 @@ function QuestieDBCompiler:Compile()
     _MaybeYield()
     print("\124cFFAAEEFF"..l10n("Questie DB update complete!"))
 
+    if Questie.db.profile.debugEnabled then
+        print("\124cFFAAEEFF" .. "Compiling took " .. (GetTime() - QuestieDBCompiler.startTime) .. " seconds")
+    end
+
     Questie.db.global.dbCompiledExpansion = WOW_PROJECT_ID
 
     Questie.db.global.dbCompiledOnVersion = QuestieLib:GetAddonVersionString()
