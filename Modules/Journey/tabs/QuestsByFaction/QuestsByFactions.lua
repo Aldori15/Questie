@@ -47,7 +47,6 @@ for _, expansion in ipairs(expansionDefinitions) do
     expansionOrderByKey[expansion.key] = expansion.order
 end
 
-local expansionFactionCandidates = QuestieJourneyFactions.expansionFactionCandidates
 local factionIntroductionOrder = QuestieJourneyFactions.BuildFactionIntroductionOrder(expansionOrderByKey)
 
 QuestieJourney.availableFactionExpansions = QuestieJourney.availableFactionExpansions or {}
@@ -424,7 +423,6 @@ function _QuestieJourney.questsByFaction:CollectFactionQuests(factionId)
     local breadcrumbCounter = 0
     local hiddenCounter = 0
 
-    local playerlevel = UnitLevel("player")
     local HIDE_ON_MAP = QuestieQuestBlacklist.HIDE_ON_MAP
     local hiddenQuests = QuestieCorrections.hiddenQuests
     local DoableStates = QuestieDB.DoableStates
@@ -432,24 +430,6 @@ function _QuestieJourney.questsByFaction:CollectFactionQuests(factionId)
     for _, levelAndQuest in pairs(sortedQuestByLevel) do
         local questId = levelAndQuest[2]
         if QuestieDB.QuestPointers[questId] then
-            local queryResult = QuestieDB.QueryQuest(
-                questId,
-                {
-                    "exclusiveTo",
-                    "nextQuestInChain",
-                    "parentQuest",
-                    "preQuestSingle",
-                    "preQuestGroup",
-                    "requiredMinRep",
-                    "requiredMaxRep",
-                    "requiredSpell",
-                    "requiredSpecialization",
-                    "requiredMaxLevel",
-                    "requiredSkill",
-                    "requiredLevel",
-                }
-            ) or {}
-
             local questName = QuestieLib:GetColoredQuestName(questId, Questie.db.profile.enableTooltipsQuestLevel, false)
 
             local reputationRewards = QuestieReputation.GetReputationReward(questId)
@@ -477,7 +457,7 @@ function _QuestieJourney.questsByFaction:CollectFactionQuests(factionId)
             end
 
             local breadcrumbForQuestId = QuestieDB.QueryQuest(questId,{"breadcrumbForQuestId"})[1] or {}
-            local eligibilityText, _, returnReason = QuestieDB.IsDoableVerbose(questId, false, true, true)
+            local _, _, returnReason = QuestieDB.IsDoableVerbose(questId, false, true, false)
 
             -- Breadcrumb quests
             if breadcrumbForQuestId and breadcrumbForQuestId ~= 0 then
