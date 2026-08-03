@@ -184,7 +184,10 @@ local function _SetQuestIconSurfaceEnabled(row, isMinimap, value)
         if value and not wasEnabledAnywhere then
             ThreadLib.ThreadCallback(function()
                 QuestieQuest:GetAllQuestIds()
-            end, 0, function()
+            end, 0, function(success)
+                if not success then
+                    return
+                end
                 _RefreshQuestIconsOnly()
                 QuestieOptionsUtils.DetermineTheme()
             end)

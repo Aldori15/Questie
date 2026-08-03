@@ -769,7 +769,10 @@ function QuestieMenu.buildQuestMenu()
                     -- Rebuild objective notes that were not created while objectives were disabled.
                     ThreadLib.ThreadCallback(function()
                         QuestieQuest:GetAllQuestIds()
-                    end, 0, function()
+                    end, 0, function(success)
+                        if not success then
+                            return
+                        end
                         QuestieQuest:RefreshQuestIconVisibility()
                     end)
                     return

@@ -663,7 +663,10 @@ function AvailableQuests.RecreateFailedQuest(quest)
 
     ThreadLib.ThreadCallbackInstant(function()
         QuestieMap:UnloadQuestFrames(questId)
-    end, function()
+    end, function(success)
+        if not success then
+            return
+        end
         QuestieTooltips:RemoveQuest(questId)
         AvailableQuests.DrawAvailableQuest(quest)
     end)

@@ -76,7 +76,11 @@ local function _UnloadQuestFrames(questId, callback)
     else
         ThreadLib.ThreadCallbackInstant(function()
             QuestieMap:UnloadQuestFrames(questId)
-        end, callback)
+        end, function(success)
+            if success and callback then
+                callback()
+            end
+        end)
     end
 end
 
@@ -410,6 +414,7 @@ function QuestieQuest:SmoothReset()
     end
     QuestieQuest._isResetting = true
     QuestieQuest._resetNeedsAvailables = false
+    QuestieQuest._clearAllNotesFailed = false
 
     -- bit of a hack (there has to be a better way to do logic like this
     QuestieDBMIntegration:ClearAll()
@@ -425,14 +430,15 @@ function QuestieQuest:SmoothReset()
             QuestieQuest._clearAllNotesDone = false
             ThreadLib.ThreadCallbackInstant(function()
                 QuestieQuest:ClearAllNotes()
-            end, function()
-                QuestieQuest._clearAllNotesDone = true
+            end, function(success)
+                QuestieQuest._clearAllNotesDone = success == true
+                QuestieQuest._clearAllNotesFailed = not success
             end)
             QuestieQuest:ClearAllToolTips()
             return true
         end,
         function()
-            return QuestieQuest._clearAllNotesDone == true
+            return QuestieQuest._clearAllNotesDone == true or QuestieQuest._clearAllNotesFailed == true
         end,
         function()
             QuestieMenu:OnLogin(true) -- remove icons
