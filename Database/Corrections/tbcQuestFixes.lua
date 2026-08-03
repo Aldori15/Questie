@@ -32,7 +32,7 @@ function QuestieTBCQuestFixes:Load()
 
     return {
         [62] = {
-            [questKeys.triggerEnd] = {"Scout through the Fargodeep Mine", {[zoneIDs.ELWYNN_FOREST]={{40.01,81.42}}}},
+            [questKeys.triggerEnd] = {"Scout through the Fargodeep Mine", {[zoneIDs.ELWYNN_FOREST]={{40.56,82.26}}}},
         },
         [76] = {
             [questKeys.triggerEnd] = {"Scout through the Jasperlode Mine", {[zoneIDs.ELWYNN_FOREST]={{60.53,50.18}}}},
@@ -72,7 +72,7 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.objectivesText] = {"Kill 8 Fen Creepers, then return to Rethiel the Greenwarden in the Wetlands."}, -- override classic correction
         },
         [287] = {
-            [questKeys.triggerEnd] = {"Fully explore Frostmane Hold", {[zoneIDs.DUN_MOROGH]={{21.47,52.2}}}},
+            [questKeys.triggerEnd] = {"Fully explore Frostmane Hold", {[zoneIDs.DUN_MOROGH]={{22.8,52.06}}}},
         },
         [310] = { -- Bitter Rivals
             [questKeys.childQuests] = {308},
@@ -2883,7 +2883,7 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.objectives] = {{{19606,nil,Questie.ICON_TYPE_TALK}}},
         },
         [10204] = {
-            [questKeys.triggerEnd] = {"Siphon Bloodgem Crystal", {[zoneIDs.NETHERSTORM]={{25.42,66.51},{22.37,65.73}}}},
+            [questKeys.triggerEnd] = {"Siphon Bloodgem Crystal", {[zoneIDs.NETHERSTORM]={{25.42,66.51}}}},
             [questKeys.requiredSourceItems] = {28452},
         },
         [10210] = {
@@ -2997,7 +2997,7 @@ function QuestieTBCQuestFixes:Load()
         },
         [10310] = {
             [questKeys.preQuestSingle] = {},
-            [questKeys.triggerEnd] = {"Burning Legion warp-gate sabotaged", {[zoneIDs.NETHERSTORM]={{48.14,63.38}}}},
+            [questKeys.triggerEnd] = {"Burning Legion warp-gate sabotaged", {[zoneIDs.NETHERSTORM]={{50.42,66.95}}}},
         },
         [10321] = {
             [questKeys.objectives] = {nil,{{183956}},{{29396}}},
@@ -3679,7 +3679,7 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_LOOT, l10n("Throw a net at the targeted wyrmcult blackwhelp"), 0, {{"monster", 21387}}}},
         },
         [10750] = {
-            [questKeys.triggerEnd] = {"The Path of Conquest Discovered", {[zoneIDs.SHADOWMOON_VALLEY]={{51.23,62.75},{52.45,59.19}}}},
+            [questKeys.triggerEnd] = {"The Path of Conquest Discovered", {[zoneIDs.SHADOWMOON_VALLEY]={{51.53,64.17}}}},
         },
         [10752] = {
             [questKeys.exclusiveTo] = {},
@@ -3697,7 +3697,7 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.objectives] = {nil,nil,{{31252,nil,Questie.ICON_TYPE_INTERACT}}},
         },
         [10772] = {
-            [questKeys.triggerEnd] = {"The Path of Conquest Discovered", {[zoneIDs.SHADOWMOON_VALLEY]={{51.23,62.75},{52.45,59.19}}}},
+            [questKeys.triggerEnd] = {"The Path of Conquest Discovered", {[zoneIDs.SHADOWMOON_VALLEY]={{51.01,62.25}}}},
         },
         [10781] = {
             [questKeys.triggerEnd] = {"Crimson Sigil Forces Annihilated", {[zoneIDs.SHADOWMOON_VALLEY]={{51.75,72.79}}}},
@@ -4071,7 +4071,7 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.exclusiveTo] = {10983,10989,11057},
         },
         [10985] = {
-            [questKeys.triggerEnd] = {"Help Akama and Maiev enter the Black Temple.", {[zoneIDs.SHADOWMOON_VALLEY]={{71.05,46.11},{66.29,44.06}}}},
+            [questKeys.triggerEnd] = {"Help Akama and Maiev enter the Black Temple.", {[zoneIDs.SHADOWMOON_VALLEY]={{71.07,46.27}}}},
             [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_TALK, l10n("Let Xi'ri know you're ready to battle"), 1, {{"monster", 18528}}}},
         },
         [10987] = {
@@ -4347,7 +4347,7 @@ function QuestieTBCQuestFixes:Load()
         },
         [11085] = {
             [questKeys.preQuestSingle] = {},
-            [questKeys.triggerEnd] = {"Rescue the Skyguard Prisoner.", {[zoneIDs.TEROKKAR_FOREST]={{69.77,75.98},{62.41,73.85},{73.94,88.3}}}},
+            [questKeys.triggerEnd] = {"Rescue the Skyguard Prisoner.", {[zoneIDs.TEROKKAR_FOREST]={{73.86,88.2}}}},
         },
         [11086] = {
             [questKeys.requiredRaces] = raceIDs.NONE,
@@ -4382,7 +4382,7 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.preQuestSingle] = {},
             [questKeys.preQuestGroup] = {10211,11095},
             [questKeys.requiredMaxRep]= {932,0},
-            [questKeys.triggerEnd] = {"Dragonmaw Forces Defeated", {[zoneIDs.SHADOWMOON_VALLEY]={{56.87,58.18},{64.27,31.01}}}},
+            [questKeys.triggerEnd] = {"Dragonmaw Forces Defeated", {[zoneIDs.SHADOWMOON_VALLEY]={{56.87,58.18}}}},
         },
         [11099] = {
             [questKeys.requiredRaces] = raceIDs.NONE,
@@ -4401,7 +4401,7 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.preQuestSingle] = {},
             [questKeys.preQuestGroup] = {10211,11100},
             [questKeys.requiredMaxRep]= {934,0},
-            [questKeys.triggerEnd] = {"Dragonmaw Forces Defeated", {[zoneIDs.SHADOWMOON_VALLEY]={{56.87,58.18},{64.27,31.01}}}},
+            [questKeys.triggerEnd] = {"Dragonmaw Forces Defeated", {[zoneIDs.SHADOWMOON_VALLEY]={{64.27,31.01}}}},
         },
         [11102] = {
             [questKeys.requiredLevel] = 70,

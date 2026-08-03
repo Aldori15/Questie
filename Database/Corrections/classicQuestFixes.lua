@@ -721,7 +721,7 @@ function QuestieQuestFixes:Load()
             [questKeys.nextQuestInChain] = 4901,
         },
         [984] = {
-            [questKeys.triggerEnd] = {"Find a corrupt furbolg camp",{[zoneIDs.DARKSHORE]={{50.91,34.74},{39.86,53.89},{42.68,86.53},{39.95,78.41}}}},
+            [questKeys.triggerEnd] = {"Find a corrupt furbolg camp",{[zoneIDs.DARKSHORE]={{39.34,53.51},{39.86,53.89},{42.68,86.53}}}},
         },
         [985] = {
             [questKeys.nextQuestInChain] = 986,
@@ -1074,7 +1074,7 @@ function QuestieQuestFixes:Load()
             [questKeys.objectives] = {{{4961}}},
         },
         [1448] = {
-            [questKeys.triggerEnd] = {"Search for the Temple of Atal'Hakkar", {[zoneIDs.SWAMP_OF_SORROWS]={{70.2,45.2},{66.6,48.1},{73.6,48.1},{64.9,53.3},{75.4,53.3},{66.6,58.4},{73.6,58.4},{70.2,60.5}}}},
+            [questKeys.triggerEnd] = {"Search for the Temple of Atal'Hakkar", {[zoneIDs.SWAMP_OF_SORROWS]={{70.01,52.88}}}},
         },
         [1452] = { -- Rhapsody's Kalimdor Kocktail
             [questKeys.nextQuestInChain] = 1469,
@@ -1796,7 +1796,7 @@ function QuestieQuestFixes:Load()
             [questKeys.nextQuestInChain] = 2604,
         },
         [2608] = { -- The Touch of Zanzil
-            [questKeys.triggerEnd] = {"Diagnosis Complete", {[zoneIDs.STORMWIND_CITY]={{78.04,59}}}},
+            [questKeys.triggerEnd] = {"Diagnosis Complete", {[zoneIDs.STORMWIND_CITY]={{80.06,69.9}}}},
         },
         [2609] = { -- The Touch of Zanzil
             [questKeys.objectivesText] = {"Bring Doc Mixilpixil one bundle of Simple Wildflowers, one Leaded Vial, one Bronze Tube, and one Spool of Light Chartreuse Silk Thread. The 'itis' doesn't cure itself, young <fella/lady>."},
@@ -2359,7 +2359,7 @@ function QuestieQuestFixes:Load()
             [questKeys.preQuestSingle] = {5891},
         },
         [4121] = {
-            [questKeys.triggerEnd] = {"Prisoner Transport", {[zoneIDs.BURNING_STEPPES]={{25.73,27.1}}}},
+            [questKeys.triggerEnd] = {"Prisoner Transport", {[zoneIDs.SEARING_GORGE]={{33.87,73.34}}}},
         },
         [4122] = {
             [questKeys.preQuestSingle] = {4082}, -- #1349
@@ -2803,7 +2803,7 @@ function QuestieQuestFixes:Load()
             [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_INTERACT, l10n("Open the cage"), 0, {{"object", 176195}}}},
         },
         [5156] = {
-            [questKeys.triggerEnd] = {"Explore the craters in Shatter Scar Vale", {[zoneIDs.FELWOOD]={{41.03,41.96}}}},
+            [questKeys.triggerEnd] = {"Explore the craters in Shatter Scar Vale", {[zoneIDs.FELWOOD]={{40.44,41.25}}}},
         },
         [5203] = {
             [questKeys.triggerEnd] = {"Protect Arko'narin out of Shadow Hold", {[zoneIDs.FELWOOD]={{35.45,59.06}}}},
@@ -5850,10 +5850,10 @@ function QuestieQuestFixes:Load()
             [questKeys.requiredClasses] = classIDs.MAGE + classIDs.PRIEST + classIDs.DRUID + classIDs.WARLOCK,
         },
         [9260] = {
-            [questKeys.triggerEnd] = {"Investigate a circle", {[zoneIDs.ELWYNN_FOREST] = {{34.72,50.95},{34.18,48.47},{32.24,53.77},{35.05,55.22}}}},
+            [questKeys.triggerEnd] = {"Investigate a circle", {[zoneIDs.ELWYNN_FOREST] = {{35.06,55.24},{32.29,53.7},{37.37,56.23},{32.16,56.31}}}},
         },
         [9261] = {
-            [questKeys.triggerEnd] = {"Investigate a circle", {[zoneIDs.DUN_MOROGH] = {{48.53,39.54},{49.70,39.17}}}},
+            [questKeys.triggerEnd] = {"Investigate a circle", {[zoneIDs.DUN_MOROGH] = {{51.52,45.64},{51.61,42.52}}}},
             [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
         },
         [9262] = {
@@ -5861,7 +5861,7 @@ function QuestieQuestFixes:Load()
             [questKeys.requiredRaces] = raceIDs.ALL_ALLIANCE,
         },
         [9263] = {
-            [questKeys.triggerEnd] = {"Investigate a circle", {[zoneIDs.DUROTAR] = {{44.9,16.7},{44.6,18.1}}}},
+            [questKeys.triggerEnd] = {"Investigate a circle", {[zoneIDs.DUROTAR] = {{49.21,17.84}}}},
             [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
         },
         [9264] = {
