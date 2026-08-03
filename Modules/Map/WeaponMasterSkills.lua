@@ -17,7 +17,7 @@ WeaponMasterSkills.data = {
     [11870] = {"Crossbows", "Daggers", "One-Handed Swords", "Polearms", "Two-Handed Swords"},
 }
 
-if Questie.IsTBC or Questie.IsWotlk then
+if Questie.IsTBC or Questie.IsWotlk or QuestieCompat.Is335 then
     -- Blood Elf Starting Area Weapon Trainers
     WeaponMasterSkills.data[16621] = {"Bows", "Daggers", "One-Handed Swords", "Polearms", "Thrown", "Two-Handed Swords"}
     WeaponMasterSkills.data[17005] = {"Bows", "Daggers", "One-Handed Swords", "Polearms", "Thrown", "Two-Handed Swords"}

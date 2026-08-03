@@ -288,7 +288,7 @@ function QuestieCompat.UnitGUID(unit)
 end
 
 function QuestieCompat.GetMaxPlayerLevel()
-    return (Questie.IsWotlk and 80) or (Questie.IsTBC and 70) or (Questie.IsClassic and 60)
+    return ((Questie.IsWotlk or QuestieCompat.Is335) and 80) or (Questie.IsTBC and 70) or (Questie.IsClassic and 60)
 end
 
 -- https://wowpedia.fandom.com/wiki/API_UnitAura?oldid=2681338

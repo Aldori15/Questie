@@ -7,7 +7,7 @@ local QuestieWotlkAcoreItemDrops = QuestieLoader:ImportModule("QuestieWotlkAcore
 DropDB.tableAzerothCore = nil
 
 function DropDB:Initialize()
-    if not Questie.IsWotlk then
+    if not (Questie.IsWotlk or QuestieCompat.Is335) then
         Questie:Error("ItemDrops: AzerothCore drop data requires WotLK")
         return
     end

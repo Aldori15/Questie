@@ -349,7 +349,7 @@ StaticPopupDialogs["QUESTIE_WOWHEAD_URL"] = {
         end
 
         local wowheadLink
-        if Questie.IsWotlk then
+        if Questie.IsWotlk or QuestieCompat.Is335 then
             if langShort then
                 langShort = langShort:gsub("%.", "/") -- The Wotlk WoWHead URL differs to the other Classic URLs
             end

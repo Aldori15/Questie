@@ -2,7 +2,7 @@
 local Townsfolk = QuestieLoader:ImportModule("Townsfolk")
 
 local meetingStones
-if Questie.IsWotlk then
+if Questie.IsWotlk or QuestieCompat.Is335 then
     meetingStones = {
         178824,178825,178826,178827,178828,178829,178831,178832,178833,178834,178844,178845,
         178884,179554,179555,179584,179585,179586,179587,179595,179596,179597,182558,182559,

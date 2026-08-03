@@ -6,7 +6,7 @@ local Townsfolk = QuestieLoader:ImportModule("Townsfolk")
 ---@type table<Classes, NpcId[]>
 local classTrainers
 
-if Questie.IsWotlk then
+if Questie.IsWotlk or QuestieCompat.Is335 then
     classTrainers = {
         ["WARRIOR"] = {911,912,913,914,985,1229,1901,2119,2131,3041,3042,3043,3059,3063,3153,3169,3353,3354,3408,3593,3598,4087,4089,4593,4594,4595,5113,5114,5479,5480,7315,8141,16503,16771,17120,17480,17504},
         ["PALADIN"] = {925,926,927,928,1232,5147,5148,5149,5491,5492,8140,15280,16275,16501,16679,16680,16681,16761,17121,17483,17509,17844,20406,23128,35281},

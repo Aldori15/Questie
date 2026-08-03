@@ -483,7 +483,7 @@ function QuestieCompat:QUEST_QUERY_COMPLETE(event)
         QuestieCompat.ResetDailyQuests()
         QuestieCompat.Merge(Questie.db.char.complete, Questie.db.char.daily)
 
-        if Questie.IsWotlk and QuestiePlayer.GetPlayerLevel() >= 78 then
+        if (Questie.IsWotlk or QuestieCompat.Is335) and QuestiePlayer.GetPlayerLevel() >= 78 then
             if (not QuestieCompat.ResetWeeklyQuests()) and (Questie.db.profile.weeklyResetDay == CalendarGetDate()) then
                 weeklyResetTimer = weeklyResetTimer or QuestieCompat.C_Timer.NewTicker(1800, QuestieCompat.ResetWeeklyQuests)
             end

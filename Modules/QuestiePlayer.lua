@@ -89,7 +89,7 @@ end
 ---@return boolean isMaxLevel
 function QuestiePlayer.IsMaxLevel()
     local level = QuestiePlayer.GetPlayerLevel()
-    return (Questie.IsWotlk and level == 80) or (Questie.IsTBC and level == 70) or (Questie.IsClassic and level == 60)
+    return ((Questie.IsWotlk or QuestieCompat.Is335) and level == 80) or (Questie.IsTBC and level == 70) or (Questie.IsClassic and level == 60)
 end
 
 ---@return number
