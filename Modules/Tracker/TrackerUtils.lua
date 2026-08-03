@@ -40,6 +40,12 @@ local WorldMapFrame = QuestieCompat.WorldMapFrame
 
 local tinsert = table.insert
 
+local function _RefreshWorldMapPins()
+    if QuestieCompat.HBDPins and QuestieCompat.HBDPins.UpdateWorldMap then
+        QuestieCompat.HBDPins.UpdateWorldMap(true)
+    end
+end
+
 local objectiveFlashTicker
 local zoneCache = {}
 local questProximityTimer
@@ -201,6 +207,12 @@ function TrackerUtils:FlashObjective(objective)
                     -- todo: move into frame.session
                     frame._hidden_by_flash = nil
                     frame._size = frame:GetWidth()
+
+                    if Questie.db.profile.showWaypointLines and frame.data.lineFrames then
+                        for _, line in pairs(frame.data.lineFrames) do
+                            line:Show()
+                        end
+                    end
                 end
             end
         end
@@ -243,17 +255,10 @@ function TrackerUtils:FlashObjective(objective)
                                         if icon._hidden_by_flash then
                                             icon._hidden_by_flash = nil
                                             icon:Show()
-                                            if icon.data.lineFrames then
-                                                for _, line in pairs(icon.data.lineFrames) do
-                                                    if line._hidden_by_flash then
-                                                        line._hidden_by_flash = nil
-                                                        line:Show()
-                                                    end
-                                                end
-                                            end
                                         end
                                     end
                                 end
+                                _RefreshWorldMapPins()
                             end)
                         end
                         flashDone = flashDone + 1
@@ -294,6 +299,12 @@ function TrackerUtils:FlashFinisher(quest)
                 if not icon.miniMapIcon then
                     icon._size = icon:GetWidth()
                     tinsert(toFlash, icon)
+
+                    if Questie.db.profile.showWaypointLines and icon.data.lineFrames then
+                        for _, line in pairs(icon.data.lineFrames) do
+                            line:Show()
+                        end
+                    end
                 end
             end
         end
@@ -338,17 +349,10 @@ function TrackerUtils:FlashFinisher(quest)
                                     if icon._hidden_by_flash then
                                         icon._hidden_by_flash = nil
                                         icon:Show()
-                                        if icon.data.lineFrames then
-                                            for _, line in pairs(icon.data.lineFrames) do
-                                                if line._hidden_by_flash then
-                                                    line._hidden_by_flash = nil
-                                                    line:Show()
-                                                end
-                                            end
-                                        end
                                     end
                                 end
                             end
+                            _RefreshWorldMapPins()
                         end)
                     end
                     flashDone = flashDone + 1
