@@ -295,17 +295,15 @@ function QuestieQuest:ClearAllNotes()
     for questId in pairs(QuestiePlayer.currentQuestlog) do
         local quest = QuestieDB.GetQuest(questId)
 
-        if not quest then
-            return
-        end
-
-        for _, s in pairs(quest.Objectives) do
-            s.AlreadySpawned = {}
-        end
-
-        if next(quest.SpecialObjectives) then
-            for _, s in pairs(quest.SpecialObjectives) do
+        if quest then
+            for _, s in pairs(quest.Objectives) do
                 s.AlreadySpawned = {}
+            end
+
+            if next(quest.SpecialObjectives) then
+                for _, s in pairs(quest.SpecialObjectives) do
+                    s.AlreadySpawned = {}
+                end
             end
         end
     end
@@ -349,42 +347,40 @@ function QuestieQuest:ClearAllToolTips()
     for questId in pairs(QuestiePlayer.currentQuestlog) do
         local quest = QuestieDB.GetQuest(questId)
 
-        if not quest then
-            return
-        end
+        if quest then
+            if quest.Objectives then
+                for _, objective in pairs(quest.Objectives) do
+                    if objective.hasRegisteredTooltips then
+                        objective.hasRegisteredTooltips = false
+                    end
 
-        if quest.Objectives then
-            for _, objective in pairs(quest.Objectives) do
-                if objective.hasRegisteredTooltips then
-                    objective.hasRegisteredTooltips = false
-                end
-
-                if objective.registeredItemTooltips then
-                    objective.registeredItemTooltips = false
+                    if objective.registeredItemTooltips then
+                        objective.registeredItemTooltips = false
+                    end
                 end
             end
-        end
 
-        if quest.ObjectiveData then
-            for _, objective in pairs(quest.ObjectiveData) do
-                if objective.hasRegisteredTooltips then
-                    objective.hasRegisteredTooltips = false
-                end
+            if quest.ObjectiveData then
+                for _, objective in pairs(quest.ObjectiveData) do
+                    if objective.hasRegisteredTooltips then
+                        objective.hasRegisteredTooltips = false
+                    end
 
-                if objective.registeredItemTooltips then
-                    objective.registeredItemTooltips = false
+                    if objective.registeredItemTooltips then
+                        objective.registeredItemTooltips = false
+                    end
                 end
             end
-        end
 
-        if next(quest.SpecialObjectives) then
-            for _, objective in pairs(quest.SpecialObjectives) do
-                if objective.hasRegisteredTooltips then
-                    objective.hasRegisteredTooltips = false
-                end
+            if next(quest.SpecialObjectives) then
+                for _, objective in pairs(quest.SpecialObjectives) do
+                    if objective.hasRegisteredTooltips then
+                        objective.hasRegisteredTooltips = false
+                    end
 
-                if objective.registeredItemTooltips then
-                    objective.registeredItemTooltips = false
+                    if objective.registeredItemTooltips then
+                        objective.registeredItemTooltips = false
+                    end
                 end
             end
         end
