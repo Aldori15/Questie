@@ -345,8 +345,13 @@ local function _DrawQuest(questId)
         }
 
         QuestieQuest:PopulateObjective(quest, objective.Index, objective, true)
+        local objectiveIconCount = _CountIcons(objective)
+        if drawnIconCount + iconCount + objectiveIconCount > MAX_PARTY_ICONS then
+            _UnloadObjective(objective)
+            break
+        end
         objectives[#objectives + 1] = objective
-        iconCount = iconCount + _CountIcons(objective)
+        iconCount = iconCount + objectiveIconCount
     end
 
     if #objectives > 0 then
