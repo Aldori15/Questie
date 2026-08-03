@@ -212,7 +212,7 @@ function QuestieCompat.RegisterNameplateCompatibilityEvents()
 
     if Questie.db.profile.nameplateEnabled then
         QuestieNameplate.UpdateNameplate = QuestieCompat.UpdateNameplate
-        hooksecurefunc(QuestieQuest, "GetAllQuestIds", QuestieCompat.UpdateNameplate)
+        -- GetAllQuestIds can yield, so it refreshes nameplates explicitly when it finishes.
         hooksecurefunc(QuestieTooltips, "RegisterObjectiveTooltip", QuestieCompat.QuestieTooltips_RegisterObjectiveTooltip)
 
         local lastNumChildren

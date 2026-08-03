@@ -41,6 +41,8 @@ local QuestieAnnounce = QuestieLoader:ImportModule("QuestieAnnounce")
 local QuestieMenu = QuestieLoader:ImportModule("QuestieMenu")
 ---@type QuestieIconVisibility
 local QuestieIconVisibility = QuestieLoader:ImportModule("QuestieIconVisibility")
+---@type QuestieNameplate
+local QuestieNameplate = QuestieLoader:ImportModule("QuestieNameplate")
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
 ---@type QuestLogCache
@@ -900,6 +902,11 @@ function QuestieQuest:GetAllQuestIds()
     QuestieCombatQueue:Queue(function()
         QuestieTracker:Update()
     end)
+
+    -- This function is yieldable and must not be wrapped with hooksecurefunc on Lua 5.1.
+    if Questie.db.profile.nameplateEnabled then
+        QuestieNameplate:UpdateNameplate()
+    end
 end
 
 -- This checks and manually adds quest item tooltips for sourceItems
