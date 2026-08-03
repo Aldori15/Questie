@@ -18,8 +18,6 @@ QuestieCorrections.killCreditObjectiveFirst[10503] = true -- The Bladespire Thre
 
 
 function QuestieTBCQuestFixes:Load()
-    _QuestieTBCQuestFixes:InsertMissingQuestIds()
-
     local questKeys = QuestieDB.questKeys
     local raceIDs = QuestieDB.raceKeys
     local classIDs = QuestieDB.classKeys
@@ -6403,97 +6401,6 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.requiredRaces] = raceIDs.ALL_HORDE + raceIDs.ALL_ALLIANCE - raceIDs.GNOME - raceIDs.HUMAN - raceIDs.DWARF, -- future proof
         },
     }
-end
-
-function _QuestieTBCQuestFixes:InsertMissingQuestIds()
-    QuestieDB.questData[12192] = {} -- This One Time, When I Was Drunk... (Horde)
-    QuestieDB.questData[12420] = {} -- Brew of the Month Club (Alliance)
-    QuestieDB.questData[12421] = {} -- Brew of the Month Club (Horde)
-
-    -- Halloween Candy quests
-    QuestieDB.questData[12133] = {} -- Smash the Pumpkin
-    QuestieDB.questData[12135] = {} -- Let the Fires Come!
-    QuestieDB.questData[12139] = {} -- Let the Fires Come!
-    QuestieDB.questData[12155] = {} -- Smash the Pumpkin
-
-    QuestieDB.questData[12286] = {} -- Candy Bucket
-    QuestieDB.questData[12331] = {} -- Candy Bucket
-    QuestieDB.questData[12332] = {} -- Candy Bucket
-    QuestieDB.questData[12333] = {} -- Candy Bucket
-    QuestieDB.questData[12334] = {} -- Candy Bucket
-    QuestieDB.questData[12335] = {} -- Candy Bucket
-    QuestieDB.questData[12336] = {} -- Candy Bucket
-    QuestieDB.questData[12337] = {} -- Candy Bucket
-    QuestieDB.questData[12338] = {} -- Candy Bucket
-    QuestieDB.questData[12339] = {} -- Candy Bucket
-    QuestieDB.questData[12340] = {} -- Candy Bucket
-    QuestieDB.questData[12341] = {} -- Candy Bucket
-    QuestieDB.questData[12342] = {} -- Candy Bucket
-    QuestieDB.questData[12343] = {} -- Candy Bucket
-    QuestieDB.questData[12344] = {} -- Candy Bucket
-    QuestieDB.questData[12345] = {} -- Candy Bucket
-    QuestieDB.questData[12346] = {} -- Candy Bucket
-    QuestieDB.questData[12347] = {} -- Candy Bucket
-    QuestieDB.questData[12348] = {} -- Candy Bucket
-    QuestieDB.questData[12349] = {} -- Candy Bucket
-    QuestieDB.questData[12350] = {} -- Candy Bucket
-    QuestieDB.questData[12351] = {} -- Candy Bucket
-    QuestieDB.questData[12352] = {} -- Candy Bucket
-    QuestieDB.questData[12353] = {} -- Candy Bucket
-    QuestieDB.questData[12354] = {} -- Candy Bucket
-    QuestieDB.questData[12355] = {} -- Candy Bucket
-    QuestieDB.questData[12356] = {} -- Candy Bucket
-    QuestieDB.questData[12357] = {} -- Candy Bucket
-    QuestieDB.questData[12358] = {} -- Candy Bucket
-    QuestieDB.questData[12359] = {} -- Candy Bucket
-    QuestieDB.questData[12360] = {} -- Candy Bucket
-    QuestieDB.questData[12361] = {} -- Candy Bucket
-    QuestieDB.questData[12362] = {} -- Candy Bucket
-    QuestieDB.questData[12363] = {} -- Candy Bucket
-    QuestieDB.questData[12364] = {} -- Candy Bucket
-    QuestieDB.questData[12365] = {} -- Candy Bucket
-    QuestieDB.questData[12366] = {} -- Candy Bucket
-    QuestieDB.questData[12367] = {} -- Candy Bucket
-    QuestieDB.questData[12368] = {} -- Candy Bucket
-    QuestieDB.questData[12369] = {} -- Candy Bucket
-    QuestieDB.questData[12370] = {} -- Candy Bucket
-    QuestieDB.questData[12371] = {} -- Candy Bucket
-    QuestieDB.questData[12373] = {} -- Candy Bucket
-    QuestieDB.questData[12374] = {} -- Candy Bucket
-    QuestieDB.questData[12375] = {} -- Candy Bucket
-    QuestieDB.questData[12376] = {} -- Candy Bucket
-    QuestieDB.questData[12377] = {} -- Candy Bucket
-    QuestieDB.questData[12378] = {} -- Candy Bucket
-    QuestieDB.questData[12379] = {} -- Candy Bucket
-    QuestieDB.questData[12380] = {} -- Candy Bucket
-    QuestieDB.questData[12381] = {} -- Candy Bucket
-    QuestieDB.questData[12382] = {} -- Candy Bucket
-    QuestieDB.questData[12383] = {} -- Candy Bucket
-    QuestieDB.questData[12384] = {} -- Candy Bucket
-    QuestieDB.questData[12385] = {} -- Candy Bucket
-    QuestieDB.questData[12386] = {} -- Candy Bucket
-    QuestieDB.questData[12387] = {} -- Candy Bucket
-    QuestieDB.questData[12388] = {} -- Candy Bucket
-    QuestieDB.questData[12389] = {} -- Candy Bucket
-    QuestieDB.questData[12390] = {} -- Candy Bucket
-    QuestieDB.questData[12391] = {} -- Candy Bucket
-    QuestieDB.questData[12392] = {} -- Candy Bucket
-    QuestieDB.questData[12393] = {} -- Candy Bucket
-    QuestieDB.questData[12394] = {} -- Candy Bucket
-    QuestieDB.questData[12395] = {} -- Candy Bucket
-    QuestieDB.questData[12396] = {} -- Candy Bucket
-    QuestieDB.questData[12397] = {} -- Candy Bucket
-    QuestieDB.questData[12398] = {} -- Candy Bucket
-    QuestieDB.questData[12399] = {} -- Candy Bucket
-    QuestieDB.questData[12400] = {} -- Candy Bucket
-    QuestieDB.questData[12401] = {} -- Candy Bucket
-    QuestieDB.questData[12402] = {} -- Candy Bucket
-    QuestieDB.questData[12403] = {} -- Candy Bucket
-    QuestieDB.questData[12404] = {} -- Candy Bucket
-    QuestieDB.questData[12406] = {} -- Candy Bucket
-    QuestieDB.questData[12407] = {} -- Candy Bucket
-    QuestieDB.questData[12408] = {} -- Candy Bucket
-    QuestieDB.questData[12409] = {} -- Candy Bucket
 end
 
 function QuestieTBCQuestFixes:LoadFactionFixes()

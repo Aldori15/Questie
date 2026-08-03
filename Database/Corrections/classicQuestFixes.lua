@@ -20,15 +20,6 @@ QuestieCorrections.itemObjectiveFirst[5088] = true
 -- Further information on how to use this can be found at the wiki
 -- https://github.com/Questie/Questie/wiki/Corrections
 
-function QuestieQuestFixes:LoadMissingQuests()
-    QuestieDB.questData[5640] = {} -- Desperate Prayer
-    QuestieDB.questData[5678] = {} -- Arcane Feedback
-
-    QuestieDB.questData[7668] = {} -- Add missing quest index
-    QuestieDB.questData[7669] = {} -- Add missing quest index
-    QuestieDB.questData[7670] = {} -- Add missing quest index #1432
-end
-
 function QuestieQuestFixes:Load()
     local questKeys = QuestieDB.questKeys
     local zoneIDs = ZoneDB.zoneIDs

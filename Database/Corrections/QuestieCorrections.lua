@@ -233,8 +233,6 @@ end
 
 ---@param validationTables table? Only used by the CI validation scripts to validate the corrections against the original database values and find irrelevant corrections
 function QuestieCorrections:Initialize(validationTables)
-    QuestieQuestFixes:LoadMissingQuests()
-
     -- Older expansion corrections should not create incomplete records on newer clients.
     -- 335 uses the AzerothCore compatibility corrections as its current expansion data.
     local classicNoNewEntries = Questie.IsTBC or Questie.IsWotlk or QuestieCompat.Is335
