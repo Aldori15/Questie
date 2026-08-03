@@ -119,7 +119,7 @@ function ZoneDB:GetAreaIdByUiMapId(uiMapId)
             return areaId
         end
     end
-    error("No AreaId found for UiMapId: " .. uiMapId .. ":" .. C_Map.GetMapInfo(uiMapId).name)
+    error("No AreaId found for UiMapId: " .. tostring(uiMapId) .. ":" .. (mapInfo and mapInfo.name or "unknown map"))
 end
 
 
