@@ -757,8 +757,8 @@ function QuestieOptions.tabs.icons:Initialize()
                         step = 0.01,
                         get = function(info) return QuestieOptions:GetProfileValue(info); end,
                         set = function(info, value)
-                            QuestieMap:RescaleIcons()
                             QuestieOptions:SetProfileValue(info, value)
+                            QuestieMap:RescaleIcons()
                         end,
                     },
                     globalMiniMapScale = {
@@ -775,8 +775,8 @@ function QuestieOptions.tabs.icons:Initialize()
                         step = 0.01,
                         get = function(info) return QuestieOptions:GetProfileValue(info); end,
                         set = function(info, value)
-                            QuestieMap:RescaleIcons()
                             QuestieOptions:SetProfileValue(info, value)
+                            QuestieMap:RescaleIcons()
                         end,
                     },
                     globalTownsfolkScale = {
@@ -857,8 +857,8 @@ function QuestieOptions.tabs.icons:Initialize()
                         step = 0.01,
                         get = function(info) return QuestieOptions:GetProfileValue(info); end,
                         set = function(info, value)
-                            QuestieMap:RescaleIcons()
                             QuestieOptions:SetProfileValue(info, value)
+                            QuestieMap:RescaleIcons()
                         end,
                     },
                     lootScale = {
@@ -872,8 +872,8 @@ function QuestieOptions.tabs.icons:Initialize()
                         step = 0.01,
                         get = function(info) return QuestieOptions:GetProfileValue(info); end,
                         set = function(info, value)
-                            QuestieMap:RescaleIcons()
                             QuestieOptions:SetProfileValue(info, value)
+                            QuestieMap:RescaleIcons()
                         end,
                     },
                     monsterScale = {
@@ -887,8 +887,8 @@ function QuestieOptions.tabs.icons:Initialize()
                         step = 0.01,
                         get = function(info) return QuestieOptions:GetProfileValue(info); end,
                         set = function(info, value)
-                            QuestieMap:RescaleIcons()
                             QuestieOptions:SetProfileValue(info, value)
+                            QuestieMap:RescaleIcons()
                         end,
                     },
                     eventScale = {
@@ -902,8 +902,8 @@ function QuestieOptions.tabs.icons:Initialize()
                         step = 0.01,
                         get = function(info) return QuestieOptions:GetProfileValue(info); end,
                         set = function(info, value)
-                            QuestieMap:RescaleIcons()
                             QuestieOptions:SetProfileValue(info, value)
+                            QuestieMap:RescaleIcons()
                         end,
                     },
                     objectScale = {
@@ -920,8 +920,8 @@ function QuestieOptions.tabs.icons:Initialize()
                         step = 0.01,
                         get = function(info) return QuestieOptions:GetProfileValue(info); end,
                         set = function(info, value)
-                            QuestieMap:RescaleIcons()
                             QuestieOptions:SetProfileValue(info, value)
+                            QuestieMap:RescaleIcons()
                         end,
                     },
                 },
