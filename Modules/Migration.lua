@@ -150,6 +150,18 @@ local migrationFunctions = {
     [26] = function()
         Questie.db.profile.showPartyQuestObjectives = true
     end,
+    [27] = function()
+        local outline = Questie.db.profile.trackerFontOutline
+        if outline == "None" then
+            Questie.db.profile.trackerFontOutline = ""
+        elseif outline == "Outline" then
+            Questie.db.profile.trackerFontOutline = "OUTLINE"
+        elseif outline == "Monochrome" then
+            Questie.db.profile.trackerFontOutline = "MONOCHROME"
+        elseif outline ~= "" and outline ~= "OUTLINE" and outline ~= "MONOCHROME" then
+            Questie.db.profile.trackerFontOutline = ""
+        end
+    end,
 }
 
 function Migration:Migrate()

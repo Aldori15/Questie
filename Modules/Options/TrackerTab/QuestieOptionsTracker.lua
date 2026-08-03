@@ -1054,25 +1054,21 @@ function QuestieOptions.tabs.tracker:Initialize()
                     },
                     fontOutline = {
                         type = "select",
-                        dialogControl = 'LSM30_Font',
                         order = 9,
                         width = 1.5,
                         values = {
-                            ["None"] = "",
-                            ["Outline"] = "OUTLINE",
-                            ["Monochrome"] = "MONOCHROME"
+                            [""] = "None",
+                            ["OUTLINE"] = "Outline",
+                            ["MONOCHROME"] = "Monochrome"
                         },
                         style = 'dropdown',
                         name = function() return l10n('Outline for Zones, Titles, and Objectives') end,
                         desc = function() return l10n('The outline used for Quest Zones, Titles, and Objectives in the Questie Tracker.') end,
                         disabled = function() return not Questie.db.profile.trackerEnabled end,
                         get = function()
-                            return Questie.db.profile.trackerFontOutline == "" and "None" or Questie.db.profile.trackerFontOutline
+                            return Questie.db.profile.trackerFontOutline
                         end,
                         set = function(_, value)
-                            if value == "None" then
-                                value = ""
-                            end
                             Questie.db.profile.trackerFontOutline = value
                             QuestieTracker:Update()
                         end
