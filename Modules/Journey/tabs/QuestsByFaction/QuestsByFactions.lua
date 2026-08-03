@@ -30,6 +30,7 @@ local l10n = QuestieLoader:ImportModule("l10n")
 local AceGUI = LibStub("AceGUI-3.0")
 local IsSpellKnownOrOverridesKnown = QuestieCompat.IsSpellKnownOrOverridesKnown
 local IsPlayerSpell = QuestieCompat.IsPlayerSpell
+local coYield = coroutine.yield
 
 local factionTreeFrame
 local factionQuestMap
@@ -120,8 +121,14 @@ local function _CollectReferencedFactionIds()
     end
 
     local refs = {}
+    local yieldCounter = 0
 
     for questId in pairs(QuestieDB.QuestPointers) do
+        yieldCounter = yieldCounter + 1
+        if yieldCounter >= 1000 then
+            yieldCounter = 0
+            coYield()
+        end
         local result = QuestieDB.QueryQuest(questId, referencedFactionFields)
         if result then
             local requiredMinRep = result[1]
@@ -261,7 +268,13 @@ function _EnsureFactionQuestData()
         "requiredClasses",
     }
 
+    local yieldCounter = 0
     for questId in pairs(QuestieDB.QuestPointers) do
+        yieldCounter = yieldCounter + 1
+        if yieldCounter >= 1000 then
+            yieldCounter = 0
+            coYield()
+        end
         local queryResult = QuestieDB.QueryQuest(questId, queryFields) or {}
         local requiredMinRep = queryResult[1]
         local requiredMaxRep = queryResult[2]
