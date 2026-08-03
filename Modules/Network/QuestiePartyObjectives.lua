@@ -359,12 +359,16 @@ end
 ---@param queue number[]
 ---@param index number
 _ProcessQueue = function(queue, index)
-    ThreadLib.ThreadInstant(function()
+    ThreadLib.ThreadCallbackInstant(function()
         local stop = math.min(index + CHUNK_SIZE - 1, #queue)
         for i = index, stop do
             local questId = queue[i]
-            _ClearQuest(questId)
-            _DrawQuest(questId)
+            -- A malformed or incomplete quest must not abort the entire party queue.
+            -- The next refresh can clear and retry this quest once its data is ready.
+            xpcall(function()
+                _ClearQuest(questId)
+                _DrawQuest(questId)
+            end, CallErrorHandler)
         end
 
         if stop < #queue then
@@ -382,6 +386,14 @@ _ProcessQueue = function(queue, index)
             if fullRefreshPending or next(dirtyQuests) then
                 _ScheduleProcessing()
             end
+        end
+    end, function(success)
+        if not success then
+            -- The worker failed outside the per-quest guard. Release the scheduler and
+            -- retry from the current remote quest log instead of staying stuck in processing.
+            processing = false
+            fullRefreshPending = true
+            _ScheduleProcessing()
         end
     end)
 end
