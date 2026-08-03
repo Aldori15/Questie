@@ -762,7 +762,7 @@ function QuestieMap:DrawManualIcon(data, areaID, x, y, typ)
     if type(areaID) ~= "number" or type(x) ~= "number" or type(y) ~= "number" then
         error("Questie" .. ": AddWorldMapIconMap: 'AreaID', 'x' and 'y' must be numbers " .. areaID .. " " .. x .. " " .. y)
     end
-    if type(data.id) ~= "number" or type(data.id) ~= "number" then
+    if type(data.id) ~= "number" then
         error("Questie" .. "Data.id must be set to the NPC or object ID!")
     end
 
