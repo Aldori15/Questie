@@ -1304,6 +1304,10 @@ QuestieMap.zoneWaypointHoverColorOverrides = {
 }
 
 function QuestieMap:DrawWaypoints(icon, waypoints, zone, color)
+    if not icon then
+        return
+    end
+
     if waypoints and waypoints[1] and waypoints[1][1] and waypoints[1][1][1] then -- check that waypoint data actually exists
         _RememberWaypointDrawData(icon, waypoints, zone, color)
         if not Questie.db.profile.showWaypointLines then return end
