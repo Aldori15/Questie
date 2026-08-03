@@ -208,8 +208,9 @@ end
 local _LoadCorrections = function(databaseTableName, corrections, reversedKeys, validationTables, noOverwrites, noNewEntries)
     for id, data in pairs(corrections) do
         for key, value in pairs(data) do
-            -- Create the id if missing unless noNewEntries is set
-            if not QuestieDB[databaseTableName][id] and not noNewEntries then
+            -- Create missing ids unless new entries are disabled and the correction has no name.
+            -- Named corrections can define genuinely missing records.
+            if not QuestieDB[databaseTableName][id] and (not noNewEntries or data[1] ~= nil) then
                 QuestieDB[databaseTableName][id] = {}
             end
             if validationTables and QuestieDB[databaseTableName][id] then
@@ -234,18 +235,23 @@ end
 function QuestieCorrections:Initialize(validationTables)
     QuestieQuestFixes:LoadMissingQuests()
 
+    -- Older expansion corrections should not create incomplete records on newer clients.
+    -- 335 uses the AzerothCore compatibility corrections as its current expansion data.
+    local classicNoNewEntries = Questie.IsTBC or Questie.IsWotlk or QuestieCompat.Is335
+    local tbcNoNewEntries = Questie.IsWotlk or QuestieCompat.Is335
+
     -- Classic Corrections
-    _LoadCorrections("questData", QuestieClassicQuestReputationFixes:Load(), QuestieDB.questKeysReversed, validationTables)
-    _LoadCorrections("questData", QuestieQuestFixes:Load(), QuestieDB.questKeysReversed, validationTables)
-    _LoadCorrections("npcData", QuestieNPCFixes:Load(), QuestieDB.npcKeysReversed, validationTables)
-    _LoadCorrections("itemData", QuestieItemFixes:Load(), QuestieDB.itemKeysReversed, validationTables)
-    _LoadCorrections("objectData", QuestieObjectFixes:Load(), QuestieDB.objectKeysReversed, validationTables)
+    _LoadCorrections("questData", QuestieClassicQuestReputationFixes:Load(), QuestieDB.questKeysReversed, validationTables, nil, classicNoNewEntries)
+    _LoadCorrections("questData", QuestieQuestFixes:Load(), QuestieDB.questKeysReversed, validationTables, nil, classicNoNewEntries)
+    _LoadCorrections("npcData", QuestieNPCFixes:Load(), QuestieDB.npcKeysReversed, validationTables, nil, classicNoNewEntries)
+    _LoadCorrections("itemData", QuestieItemFixes:Load(), QuestieDB.itemKeysReversed, validationTables, nil, classicNoNewEntries)
+    _LoadCorrections("objectData", QuestieObjectFixes:Load(), QuestieDB.objectKeysReversed, validationTables, nil, classicNoNewEntries)
 
     if Questie.IsTBC or Questie.IsWotlk then
-        _LoadCorrections("questData", QuestieTBCQuestFixes:Load(), QuestieDB.questKeysReversed, validationTables)
-        _LoadCorrections("npcData", QuestieTBCNpcFixes:Load(), QuestieDB.npcKeysReversed, validationTables)
-        _LoadCorrections("itemData", QuestieTBCItemFixes:Load(), QuestieDB.itemKeysReversed, validationTables)
-        _LoadCorrections("objectData", QuestieTBCObjectFixes:Load(), QuestieDB.objectKeysReversed, validationTables)
+        _LoadCorrections("questData", QuestieTBCQuestFixes:Load(), QuestieDB.questKeysReversed, validationTables, nil, tbcNoNewEntries)
+        _LoadCorrections("npcData", QuestieTBCNpcFixes:Load(), QuestieDB.npcKeysReversed, validationTables, nil, tbcNoNewEntries)
+        _LoadCorrections("itemData", QuestieTBCItemFixes:Load(), QuestieDB.itemKeysReversed, validationTables, nil, tbcNoNewEntries)
+        _LoadCorrections("objectData", QuestieTBCObjectFixes:Load(), QuestieDB.objectKeysReversed, validationTables, nil, tbcNoNewEntries)
     end
 
     if Questie.IsWotlk then
