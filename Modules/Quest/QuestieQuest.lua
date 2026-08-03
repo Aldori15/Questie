@@ -306,22 +306,39 @@ function QuestieQuest:ClearAllNotes()
         end
     end
 
-    local yieldCount = 0
-    for _, frameList in pairs(QuestieMap.questIdFrames) do
+    local frameInfos = {}
+    for questId, frameList in pairs(QuestieMap.questIdFrames) do
         for _, frameName in pairs(frameList) do
             local icon = _G[frameName]
-            if icon and icon.Unload then
-                QuestieFramePool:UnloadFrame(icon)
-                yieldCount = yieldCount + 1
-                if yieldCount >= (TICKS_PER_YIELD / 6) and coRunning() then
-                    yieldCount = 0
-                    coYield()
-                end
+            if icon and icon.Unload and icon.data then
+                frameInfos[#frameInfos + 1] = {
+                    questId = questId,
+                    name = frameName,
+                    frame = icon,
+                    data = icon.data,
+                }
             end
         end
     end
 
-    QuestieMap.questIdFrames = {}
+    local yieldCount = 0
+    for _, frameInfo in ipairs(frameInfos) do
+        local frameList = QuestieMap.questIdFrames[frameInfo.questId]
+        if frameList and frameList[frameInfo.name] and frameInfo.frame.data == frameInfo.data then
+            QuestieFramePool:UnloadFrame(frameInfo.frame)
+            yieldCount = yieldCount + 1
+            if yieldCount >= (TICKS_PER_YIELD / 6) and coRunning() then
+                yieldCount = 0
+                coYield()
+            end
+        end
+    end
+
+    for questId, frameList in pairs(QuestieMap.questIdFrames) do
+        if not next(frameList) then
+            QuestieMap.questIdFrames[questId] = nil
+        end
+    end
 end
 
 function QuestieQuest:ClearAllToolTips()

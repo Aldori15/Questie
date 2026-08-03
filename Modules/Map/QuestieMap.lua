@@ -256,17 +256,46 @@ function QuestieMap:ForQuestFrames(questId, callback)
     return false
 end
 
+local function _SnapshotQuestFrames(questId, iconType, noteType)
+    local frameNames = QuestieMap.questIdFrames[questId]
+    local frames = {}
+    if not frameNames then
+        return frames
+    end
+
+    for name in pairs(frameNames) do
+        local frame = _G[name]
+        local data = frame and frame.data
+        if frame and data
+            and ((not iconType) or data.Icon == iconType)
+            and ((not noteType) or data.Type == noteType) then
+            frames[#frames + 1] = {
+                name = name,
+                frame = frame,
+                data = data,
+            }
+        end
+    end
+    return frames
+end
+
+local function _IsCurrentQuestFrame(questId, frameInfo)
+    local frameNames = QuestieMap.questIdFrames[questId]
+    return frameNames
+        and frameNames[frameInfo.name]
+        and frameInfo.frame.data == frameInfo.data
+end
+
 function QuestieMap:UnloadQuestFrames(questId, iconType, noteType)
     assert(coRunning(), "UnloadQuestFrames must be called from a coroutine")
 
     if QuestieMap.questIdFrames[questId] then
         local yieldCount = 0
-        if (not iconType) and (not noteType) then
-            for _, frame in pairs(QuestieMap:GetFramesForQuest(questId)) do
-                -- Capture this before Unload() because it clears frame.data.
-                local objective = frame.data and frame.data.ObjectiveData
-
-                QuestieFramePool:UnloadFrame(frame)
+        for _, frameInfo in ipairs(_SnapshotQuestFrames(questId, iconType, noteType)) do
+            -- A yield may allow the same frame name to be reused for new data.
+            if _IsCurrentQuestFrame(questId, frameInfo) then
+                local objective = frameInfo.data.ObjectiveData
+                QuestieFramePool:UnloadFrame(frameInfo.frame)
 
                 if objective then
                     objective.AlreadySpawned = {}
@@ -276,27 +305,6 @@ function QuestieMap:UnloadQuestFrames(questId, iconType, noteType)
                 if yieldCount >= TICKS_PER_YIELD then
                     yieldCount = 0
                     coYield()
-                end
-            end
-            QuestieMap.questIdFrames[questId] = nil;
-        else
-            local frameNames = {}
-            for name in pairs(QuestieMap.questIdFrames[questId]) do
-                frameNames[#frameNames + 1] = name
-            end
-
-            for _, name in ipairs(frameNames) do
-                local frame = _G[name]
-                if frame and frame.data
-                    and ((not iconType) or frame.data.Icon == iconType)
-                    and ((not noteType) or frame.data.Type == noteType) then
-                    QuestieFramePool:UnloadFrame(frame)
-                    QuestieMap.questIdFrames[questId][name] = nil
-                    yieldCount = yieldCount + 1
-                    if yieldCount >= TICKS_PER_YIELD then
-                        yieldCount = 0
-                        coYield()
-                    end
                 end
             end
         end
