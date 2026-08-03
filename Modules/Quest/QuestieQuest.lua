@@ -67,13 +67,16 @@ local coYield = coroutine.yield
 local coRunning = coroutine.running
 local NewThread = ThreadLib.ThreadSimple
 
-local function _UnloadQuestFrames(questId)
+local function _UnloadQuestFrames(questId, callback)
     if coRunning() then
         QuestieMap:UnloadQuestFrames(questId)
+        if callback then
+            callback()
+        end
     else
-        ThreadLib.ThreadInstant(function()
+        ThreadLib.ThreadCallbackInstant(function()
             QuestieMap:UnloadQuestFrames(questId)
-        end)
+        end, callback)
     end
 end
 
@@ -728,13 +731,15 @@ function QuestieQuest:UpdateQuest(questId)
     if quest and (not Questie.db.char.complete[questId]) then
         QuestieQuest:PopulateQuestLogInfo(quest)
 
-        if QuestieQuest:ShouldShowQuestNotes(questId) then
-            QuestieQuest:UpdateObjectiveNotes(quest)
-        else
-            QuestieTooltips:RemoveQuest(questId)
-        end
-
         local isComplete = quest:IsComplete()
+
+        if isComplete ~= 1 then
+            if QuestieQuest:ShouldShowQuestNotes(questId) then
+                QuestieQuest:UpdateObjectiveNotes(quest)
+            else
+                QuestieTooltips:RemoveQuest(questId)
+            end
+        end
 
         Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest:UpdateQuest] QuestDB:IsComplete() flag is: " .. isComplete)
 
@@ -743,15 +748,15 @@ function QuestieQuest:UpdateQuest(questId)
             Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest:UpdateQuest] Quest is: Complete!")
 
             -- Only remove the map icons, but keep the tooltips
-            _UnloadQuestFrames(questId)
-            QuestieQuest:AddFinisher(quest)
+            _UnloadQuestFrames(questId, function()
+                QuestieQuest:AddFinisher(quest)
+            end)
             quest.WasComplete = true
         elseif isComplete == -1 then
             -- Failed quests should be shown as available again
             Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest:UpdateQuest] Quest has: Failed!")
 
-            AvailableQuests.RemoveQuest(questId)
-            AvailableQuests.DrawAvailableQuest(quest)
+            AvailableQuests.RecreateFailedQuest(quest)
 
             -- Reset any collapsed quest flags
             if Questie.db.char.collapsedQuests then
@@ -800,8 +805,9 @@ function QuestieQuest:UpdateQuest(questId)
                     if numCompleteObjectives == #quest.Objectives then
                         Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest:UpdateQuest] All Quest Objective(s) are Complete! Manually setting quest to Complete!")
                         -- Only remove the map icons, but keep the tooltips
-                        _UnloadQuestFrames(questId)
-                        QuestieQuest:AddFinisher(quest)
+                        _UnloadQuestFrames(questId, function()
+                            QuestieQuest:AddFinisher(quest)
+                        end)
                         quest.WasComplete = true
                         quest.isComplete = true
                     else
