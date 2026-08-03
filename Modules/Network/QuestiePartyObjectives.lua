@@ -54,6 +54,7 @@ local dirtyQuests = {}
 local fullRefreshPending = false
 local updateScheduled = false
 local processing = false
+local processingGeneration = 0
 
 -- Forward declarations (these reference each other).
 local _ScheduleProcessing, _ProcessScheduled, _ProcessQueue
@@ -363,10 +364,31 @@ end
 -- Process a queue of questIds in chunks, one chunk per frame, to avoid a single large hitch.
 ---@param queue number[]
 ---@param index number
-_ProcessQueue = function(queue, index)
+---@param generation number
+_ProcessQueue = function(queue, index, generation)
+    if generation ~= processingGeneration then
+        return
+    end
+
     ThreadLib.ThreadCallbackInstant(function()
+        if generation ~= processingGeneration then
+            return
+        end
+        if not _ShouldDraw() then
+            QuestiePartyObjectives:Clear()
+            return
+        end
+
         local stop = math.min(index + CHUNK_SIZE - 1, #queue)
         for i = index, stop do
+            if generation ~= processingGeneration then
+                return
+            end
+            if not _ShouldDraw() then
+                QuestiePartyObjectives:Clear()
+                return
+            end
+
             local questId = queue[i]
             -- A malformed or incomplete quest must not abort the entire party queue.
             -- The next refresh can clear and retry this quest once its data is ready.
@@ -378,14 +400,25 @@ _ProcessQueue = function(queue, index)
 
         if stop < #queue then
             C_Timer.After(0, function()
+                if generation ~= processingGeneration then
+                    return
+                end
+                if not _ShouldDraw() then
+                    QuestiePartyObjectives:Clear()
+                    return
+                end
+
                 local ok = xpcall(function()
-                    _ProcessQueue(queue, stop + 1)
+                    _ProcessQueue(queue, stop + 1, generation)
                 end, CallErrorHandler)
-                if not ok then
+                if not ok and generation == processingGeneration then
                     processing = false
                 end
             end)
         else
+            if generation ~= processingGeneration then
+                return
+            end
             processing = false
             -- Work that arrived while we were processing.
             if fullRefreshPending or next(dirtyQuests) then
@@ -393,7 +426,7 @@ _ProcessQueue = function(queue, index)
             end
         end
     end, function(success)
-        if not success then
+        if not success and generation == processingGeneration then
             -- The worker failed outside the per-quest guard. Release the scheduler and
             -- retry from the current remote quest log instead of staying stuck in processing.
             processing = false
@@ -435,7 +468,7 @@ _ProcessScheduled = function()
         return
     end
     processing = true
-    _ProcessQueue(queue, 1)
+    _ProcessQueue(queue, 1, processingGeneration)
 end
 
 -- Debounce: coalesce bursts of incoming packets into a single processing pass.
@@ -458,6 +491,10 @@ end
 
 -- Unload all party objective icons and forget them.
 function QuestiePartyObjectives:Clear()
+    -- Invalidate any queued worker chunks and deferred timer callbacks before unloading.
+    processingGeneration = processingGeneration + 1
+    processing = false
+
     for _, entry in pairs(drawnByQuest) do
         for _, objective in pairs(entry.objectives) do
             _UnloadObjective(objective)
