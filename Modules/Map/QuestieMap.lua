@@ -668,7 +668,7 @@ function QuestieMap:ShowNPC(npcID, icon, scale, title, body, disableShiftToRemov
             if (visibleSpawnZones[zone] or (not npc.spawns) or (not npc.spawns[zone])) and
                 (not ZoneDB:GetDungeonLocation(zone)) and waypoints[1] and waypoints[1][1] and waypoints[1][1][1] then
                 if not manualIcons[zone] then
-                    manualIcons[zone] = QuestieMap:DrawManualIcon(data, zone, waypoints[1][1][1], waypoints[1][1][2])
+                    manualIcons[zone] = QuestieMap:DrawManualIcon(data, zone, waypoints[1][1][1], waypoints[1][1][2], typ)
                 end
                 QuestieMap:DrawWaypoints(manualIcons[zone], waypoints, zone)
             end
@@ -742,10 +742,11 @@ end
 
 -- Draw manually added NPC/object notes
 -- TODO: item and custom notes
---@param data table<...> @A table created by the calling function, must contain `id`, `Name`, `GetIconScale()`, and `Type`
---@param AreaID number @The zone ID from the raw data
---@param x float @The X coordinate in 0-100 format
---@param y float @The Y coordinate in 0-100 format
+---@param data table @A table created by the calling function, must contain `id`, `Name`, `GetIconScale()`, and `Type`
+---@param areaID number @The zone ID from the raw data
+---@param x number @The X coordinate in 0-100 format
+---@param y number @The Y coordinate in 0-100 format
+---@param typ string? @The manual icon category
 function QuestieMap:DrawManualIcon(data, areaID, x, y, typ)
     if type(data) ~= "table" then
         error("Questie" .. ": AddWorldMapIconMap: must have some data")
