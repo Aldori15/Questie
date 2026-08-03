@@ -1045,6 +1045,11 @@ OnUpdateHandler = function(frame, elapsed)
         return
     end
 
+    -- skip updates while the minimap is hidden
+    if pins.Minimap and not pins.Minimap:IsVisible() then
+        return
+    end
+
     lastFullUpdate = lastFullUpdate + elapsed
     lastIconUpdate = lastIconUpdate + elapsed
 
