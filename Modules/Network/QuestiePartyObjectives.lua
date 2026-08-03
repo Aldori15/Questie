@@ -196,22 +196,30 @@ local function _UnloadObjective(objective)
     end
 end
 
+---@param objectives table[]
+local function _UnloadObjectives(objectives)
+    for _, objective in pairs(objectives) do
+        _UnloadObjective(objective)
+    end
+end
+
 ---@param questId number
 local function _ClearQuest(questId)
     local entry = drawnByQuest[questId]
     if not entry then
         return
     end
-    for _, objective in pairs(entry.objectives) do
-        _UnloadObjective(objective)
+    _UnloadObjectives(entry.objectives)
+    if entry.counted then
+        drawnIconCount = drawnIconCount - entry.iconCount
     end
-    drawnIconCount = drawnIconCount - entry.iconCount
     drawnByQuest[questId] = nil
 end
 
 -- Draw a single party quest's objectives (assumes it has already been cleared).
 ---@param questId number
-local function _DrawQuest(questId)
+---@param generation number
+local function _DrawQuest(questId, generation)
     -- Quests the local player has are drawn by the normal pipeline; don't double up.
     if _PlayerHasQuest(questId) or drawnIconCount >= MAX_PARTY_ICONS then
         return
@@ -248,6 +256,15 @@ local function _DrawQuest(questId)
 
     local objectives = {}
     local iconCount = 0
+    local entry = { objectives = objectives, iconCount = 0, counted = false }
+    drawnByQuest[questId] = entry
+
+    local function _AbortDraw()
+        _UnloadObjectives(objectives)
+        if drawnByQuest[questId] == entry then
+            drawnByQuest[questId] = nil
+        end
+    end
 
     for objectiveIndex, remoteObjective in pairs(neededIndices) do
         if drawnIconCount + iconCount >= MAX_PARTY_ICONS then
@@ -299,10 +316,16 @@ local function _DrawQuest(questId)
                 registeredItemTooltips = true,
             }
 
+            objectives[#objectives + 1] = objective
             QuestieQuest:PopulateObjective(quest, objectiveIndex, objective, true)
+            if generation ~= processingGeneration then
+                _AbortDraw()
+                return
+            end
             local objectiveIconCount = _CountIcons(objective)
             if drawnIconCount + iconCount + objectiveIconCount > MAX_PARTY_ICONS then
                 _UnloadObjective(objective)
+                objectives[#objectives] = nil
                 break
             end
             if (not cachedSpawnList) and objective.spawnList and next(objective.spawnList) then
@@ -311,8 +334,8 @@ local function _DrawQuest(questId)
                 end
                 spawnListCache[questId][objectiveIndex] = objective.spawnList
             end
-            objectives[#objectives + 1] = objective
             iconCount = iconCount + objectiveIconCount
+            entry.iconCount = iconCount
         end
     end
 
@@ -345,19 +368,31 @@ local function _DrawQuest(questId)
             registeredItemTooltips = true,
         }
 
+        objectives[#objectives + 1] = objective
         QuestieQuest:PopulateObjective(quest, objective.Index, objective, true)
+        if generation ~= processingGeneration then
+            _AbortDraw()
+            return
+        end
         local objectiveIconCount = _CountIcons(objective)
         if drawnIconCount + iconCount + objectiveIconCount > MAX_PARTY_ICONS then
             _UnloadObjective(objective)
+            objectives[#objectives] = nil
             break
         end
-        objectives[#objectives + 1] = objective
         iconCount = iconCount + objectiveIconCount
+        entry.iconCount = iconCount
     end
 
+    if generation ~= processingGeneration then
+        _AbortDraw()
+        return
+    end
     if #objectives > 0 then
-        drawnByQuest[questId] = { objectives = objectives, iconCount = iconCount }
+        entry.counted = true
         drawnIconCount = drawnIconCount + iconCount
+    else
+        drawnByQuest[questId] = nil
     end
 end
 
@@ -392,10 +427,13 @@ _ProcessQueue = function(queue, index, generation)
             local questId = queue[i]
             -- A malformed or incomplete quest must not abort the entire party queue.
             -- The next refresh can clear and retry this quest once its data is ready.
-            xpcall(function()
+            local success = xpcall(function()
                 _ClearQuest(questId)
-                _DrawQuest(questId)
+                _DrawQuest(questId, generation)
             end, CallErrorHandler)
+            if not success then
+                _ClearQuest(questId)
+            end
         end
 
         if stop < #queue then
@@ -496,9 +534,7 @@ function QuestiePartyObjectives:Clear()
     processing = false
 
     for _, entry in pairs(drawnByQuest) do
-        for _, objective in pairs(entry.objectives) do
-            _UnloadObjective(objective)
-        end
+        _UnloadObjectives(entry.objectives)
     end
     drawnByQuest = {}
     drawnIconCount = 0
