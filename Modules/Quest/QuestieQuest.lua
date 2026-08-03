@@ -466,7 +466,12 @@ function QuestieQuest:SmoothReset()
         end,
         function()
             QuestieQuest._resetNeedsAvailables = true
-            AvailableQuests.CalculateAndDrawAll(function() QuestieQuest._resetNeedsAvailables = false end)
+            AvailableQuests.CalculateAndDrawAll(function(success)
+                QuestieQuest._resetNeedsAvailables = false
+                if not success then
+                    Questie:Debug(Questie.DEBUG_CRITICAL, "[QuestieQuest:SmoothReset] Available quest refresh failed")
+                end
+            end)
             return true
         end,
         function()

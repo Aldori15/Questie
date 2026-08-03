@@ -100,9 +100,12 @@ local function _ApplyRefreshSpeed(useFastRefresh)
     end
 end
 
-local function _RunCallbacks(callbacks)
+---@param callbacks function[]
+---@param success boolean
+---@param errorMessage string|nil
+local function _RunCallbacks(callbacks, success, errorMessage)
     for i = 1, #callbacks do
-        callbacks[i]()
+        callbacks[i](success, errorMessage)
         callbacks[i] = nil
     end
 end
@@ -452,13 +455,13 @@ _StartQueuedRefresh = function()
     timer = ThreadLib.Thread(function()
         timerStarted = true
         _CalculateAvailableQuests()
-    end, 0, "Error in AvailableQuests.CalculateAndDrawAll", function()
+    end, 0, "Error in AvailableQuests.CalculateAndDrawAll", function(success, errorMessage)
         local callbacks = currentCallbacks
         currentCallbacks = {}
         timer = nil
         timerStarted = false
         _ApplyRefreshSpeed(false)
-        _RunCallbacks(callbacks)
+        _RunCallbacks(callbacks, success, errorMessage)
         _StartQueuedRefresh()
     end)
 end
