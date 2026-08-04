@@ -91,17 +91,9 @@ local function applyObjectiveProgressToQuestieCache(objectiveName, numFulfilled)
     for questId, questData in pairs(QuestLogCache.questLog_DO_NOT_MODIFY or {}) do
         local objectives = questData and questData.objectives
         if objectives and #objectives > 0 then
-            for _, objective in ipairs(objectives) do
+            for objectiveIndex, objective in ipairs(objectives) do
                 if objective and objective.type == "item" and normalizeObjectiveName(objective.text) == objectiveName then
-                    local oldFulfilled = tonumber(objective.numFulfilled) or 0
-                    if numFulfilled > oldFulfilled then
-                        objective.numFulfilled = numFulfilled
-                        objective.raw_numFulfilled = math_max(tonumber(objective.raw_numFulfilled) or 0, numFulfilled)
-                        if objective.numRequired then
-                            local isFinished = numFulfilled >= objective.numRequired
-                            objective.finished = isFinished
-                            objective.raw_finished = objective.raw_finished or isFinished
-                        end
+                    if QuestLogCache.ApplyObjectiveProgress(questId, objectiveIndex, numFulfilled) then
                         uiInfoChangedQuestIds[questId] = true
                         hasChanges = true
                     end

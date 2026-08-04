@@ -93,6 +93,51 @@ function QuestLogCache.GetQuestCount()
     return questCount
 end
 
+---Applies objective progress reported before the 3.3.5 quest log cache updates.
+---@param questId QuestId
+---@param objectiveIndex number
+---@param numFulfilled number
+---@return boolean changed
+function QuestLogCache.ApplyObjectiveProgress(questId, objectiveIndex, numFulfilled)
+    local questData = cache[questId]
+    local objective = questData and questData.objectives and questData.objectives[objectiveIndex]
+    numFulfilled = tonumber(numFulfilled)
+    if (not objective) or (not numFulfilled) then
+        return false
+    end
+
+    local oldFulfilled = tonumber(objective.numFulfilled) or 0
+    if numFulfilled <= oldFulfilled then
+        return false
+    end
+
+    local numRequired = tonumber(objective.numRequired)
+    local soundType
+    if numRequired and oldFulfilled < numRequired then
+        if numFulfilled >= numRequired then
+            soundType = "objectiveComplete"
+        else
+            soundType = "objectiveProgress"
+        end
+    end
+
+    objective.numFulfilled = numFulfilled
+    objective.raw_numFulfilled = math.max(tonumber(objective.raw_numFulfilled) or 0, numFulfilled)
+    if numRequired then
+        local isFinished = numFulfilled >= numRequired
+        objective.finished = isFinished
+        objective.raw_finished = objective.raw_finished or isFinished
+    end
+
+    if soundType == "objectiveComplete" then
+        Sounds.PlayObjectiveComplete()
+    elseif soundType == "objectiveProgress" then
+        Sounds.PlayObjectiveProgress()
+    end
+
+    return true
+end
+
 
 
 ---@param isCompleteAccordingToBlizzard -1|0|1|nil
