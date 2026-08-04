@@ -557,9 +557,15 @@ function QuestieCompat.PopulateGlobals(self)
     end
 end
 
--- change sound files extension from .ogg to .wav
+-- The 3.3.5 game archive uses .wav names for Questie's built-in sound paths.
+-- LibSharedMedia addon paths must keep their registered extension.
 function QuestieCompat.GetSelectedSoundFile(typeSelected)
-    return QuestieCompat.orig_GetSelectedSoundFile(typeSelected):gsub("[^.]+$", "wav")
+    local soundFile = QuestieCompat.orig_GetSelectedSoundFile(typeSelected)
+    if soundFile:lower():find("^interface[\\/]addons[\\/]") then
+        return soundFile
+    end
+
+    return soundFile:gsub("%.ogg$", ".wav")
 end
 
 QuestieCompat.isReloadingUi = false
