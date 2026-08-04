@@ -326,6 +326,18 @@ local genericsLocales = {
         ["esES"] = "Raza Requerida",
         ["frFR"] = "Race requise",
     },
+    ["Required Faction"] = {
+        ["enUS"] = true,
+        ["deDE"] = "Benötigte Fraktion",
+        ["esES"] = "Facción requerida",
+        ["esMX"] = "Facción requerida",
+        ["frFR"] = "Faction requise",
+        ["koKR"] = "필요 진영",
+        ["ptBR"] = "Facção necessária",
+        ["ruRU"] = "Требуемая фракция",
+        ["zhCN"] = "需要阵营",
+        ["zhTW"] = "需要陣營",
+    },
     ["Required Class"] = {
         ["enUS"] = true,
         ["deDE"] = "Benötigte Klasse",

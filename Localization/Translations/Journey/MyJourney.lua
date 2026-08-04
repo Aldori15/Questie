@@ -410,6 +410,18 @@ local myJourneyLocales = {
         ["zhCN"] = "节日未开启",
         ["zhTW"] = "節慶未開啟",
     },
+    ["Faction requirement"] = {
+        ["enUS"] = true,
+        ["deDE"] = "Fraktionsanforderung",
+        ["esES"] = "Requisito de facción",
+        ["esMX"] = "Requisito de facción",
+        ["frFR"] = "Condition de faction",
+        ["koKR"] = "진영 조건",
+        ["ptBR"] = "Requisito de facção",
+        ["ruRU"] = "Требование фракции",
+        ["zhCN"] = "阵营要求",
+        ["zhTW"] = "陣營要求",
+    },
     ["Reputation too low"] = {
         ["enUS"] = true,
         ["deDE"] = "Ruf zu gering",
