@@ -778,6 +778,7 @@ function QuestieCompat:ADDON_LOADED(event, addon)
         char = {
             daily = {},
             weekly = {},
+            monthly = {},
         }
     })
 

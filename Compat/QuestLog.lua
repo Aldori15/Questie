@@ -265,6 +265,8 @@ end
 
 local MAX_DAILY_RESET_SECONDS = 48 * 60 * 60
 local FALLBACK_DAILY_RESET_HOUR = 6
+local MONTHLY_RESET_HOUR = 6
+local SECONDS_PER_DAY = 24 * 60 * 60
 local warnedInvalidQuestResetTime = false
 
 local function _CalculateFallbackQuestResetTime(currentTime, currentDate)
@@ -294,6 +296,36 @@ local function _CalculateFallbackQuestResetTime(currentTime, currentDate)
     end
 
     return (nextResetTime or currentTime) - currentTime
+end
+
+local function _CalculateNextMonthlyResetTime(currentTime, currentDate)
+    local resetThisMonth = time({
+        year = currentDate.year,
+        month = currentDate.month,
+        day = 1,
+        hour = MONTHLY_RESET_HOUR,
+        min = 0,
+        sec = 0,
+    })
+    if resetThisMonth and currentTime < resetThisMonth then
+        return resetThisMonth
+    end
+
+    local nextMonth = currentDate.month + 1
+    local nextYear = currentDate.year
+    if nextMonth > 12 then
+        nextMonth = 1
+        nextYear = nextYear + 1
+    end
+
+    return time({
+        year = nextYear,
+        month = nextMonth,
+        day = 1,
+        hour = MONTHLY_RESET_HOUR,
+        min = 0,
+        sec = 0,
+    }) or (currentTime + (32 * SECONDS_PER_DAY))
 end
 
 function QuestieCompat.GetQuestResetTime()
@@ -386,6 +418,51 @@ function QuestieCompat.ResetWeeklyQuests()
     end
 end
 
+local monthlyResetTimer
+function QuestieCompat.ResetMonthlyQuests()
+    local currentTime, currentDate = QuestieCompat.GetServerTime()
+    Questie.db.char.monthly = Questie.db.char.monthly or {}
+
+    -- Monthly completion state is character-specific, so its reset marker must
+    -- also be character-specific. Otherwise one character logging in after a
+    -- reset could advance a shared marker before the others clear their state.
+    local monthlyResetTime = Questie.db.char.monthlyResetTime
+
+    if type(monthlyResetTime) ~= "number" then
+        monthlyResetTime = _CalculateNextMonthlyResetTime(currentTime, currentDate)
+        Questie.db.char.monthlyResetTime = monthlyResetTime
+    end
+
+    local didReset = false
+    if currentTime >= monthlyResetTime then
+        for questId in pairs(Questie.db.char.monthly) do
+            Questie.db.char.monthly[questId] = nil
+            Questie.db.char.complete[questId] = nil
+            serverCompletedQuests[questId] = nil
+        end
+
+        Questie.db.char.monthlyResetTime = _CalculateNextMonthlyResetTime(currentTime, currentDate)
+        monthlyResetTime = Questie.db.char.monthlyResetTime
+        didReset = true
+
+        if Questie.started then
+            AvailableQuests.CalculateAndDrawAll()
+        end
+    end
+
+    if monthlyResetTimer then
+        monthlyResetTimer:Cancel()
+    end
+    monthlyResetTimer = QuestieCompat.C_Timer.After(math_max(0.01, monthlyResetTime - currentTime), function()
+        monthlyResetTimer = nil
+        QuestieCompat.ResetMonthlyQuests()
+    end)
+
+    Questie:Debug(Questie.DEBUG_DEVELOP, "[ResetMonthlyQuests] Next monthly reset time: ", date("%m/%d/%y %H:%M:%S", monthlyResetTime))
+
+    return didReset
+end
+
 function QuestieCompat.SetQuestComplete(questId)
     if (not QuestieDB.IsRepeatable(questId)) then
         Questie.db.char.complete[questId] = true
@@ -397,6 +474,10 @@ function QuestieCompat.SetQuestComplete(questId)
             Questie.db.char.complete[questId] = true
         elseif QuestieDB.IsWeeklyQuest(questId) then
             Questie.db.char.weekly[questId] = true
+            Questie.db.char.complete[questId] = true
+        elseif QuestieDB.IsMonthlyQuest(questId) then
+            QuestieCompat.ResetMonthlyQuests()
+            Questie.db.char.monthly[questId] = true
             Questie.db.char.complete[questId] = true
         end
     end
@@ -481,6 +562,9 @@ function QuestieCompat:QUEST_QUERY_COMPLETE(event)
             end
             QuestieCompat.Merge(Questie.db.char.complete, Questie.db.char.weekly)
         end
+
+        QuestieCompat.ResetMonthlyQuests()
+        QuestieCompat.Merge(Questie.db.char.complete, Questie.db.char.monthly)
     end
 
     -- The completed-quest response is authoritative for AzerothCore quest
