@@ -290,6 +290,7 @@ function QuestieMap:UnloadQuestFrames(questId, iconType, noteType)
     assert(coRunning(), "UnloadQuestFrames must be called from a coroutine")
 
     if QuestieMap.questIdFrames[questId] then
+        Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieMap] Unloading quest frames for questid:", questId)
         local yieldCount = 0
         for _, frameInfo in ipairs(_SnapshotQuestFrames(questId, iconType, noteType)) do
             -- A yield may allow the same frame name to be reused for new data.
@@ -308,7 +309,6 @@ function QuestieMap:UnloadQuestFrames(questId, iconType, noteType)
                 end
             end
         end
-        Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieMap] Unloading quest frames for questid:", questId)
     end
 end
 

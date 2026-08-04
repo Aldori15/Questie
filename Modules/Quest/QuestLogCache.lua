@@ -256,6 +256,8 @@ QuestLogCache._GetNewObjectives = GetNewObjectives
 ---@param confirmItemRegressions boolean? @Whether a settled bag scan may accept item-count decreases.
 ---@return boolean cacheMiss, table changes, table questIdsChecked @cacheMiss = couldn't get all required data  ; changes[questId] = list of changed objectiveIndexes (may be an empty list if quest has no objectives)
 function QuestLogCache.CheckForChanges(questIdsToCheck, fullScan, confirmItemRegressions)
+    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestLogCache.CheckForChanges]")
+
     local cacheMiss = false
     local changes = {} -- table key = questid of the changed quest, table value = list of changed objective ids
     local questIdsChecked = {} -- for debug / error detection

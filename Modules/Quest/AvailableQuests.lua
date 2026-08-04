@@ -40,12 +40,20 @@ local tonumber = tonumber
 local NewThread = ThreadLib.ThreadSimple
 local coRunning = coroutine.running
 
-local function _UnloadQuestFrames(questId, iconType, noteType)
+---@param onComplete function?
+local function _UnloadQuestFrames(questId, iconType, noteType, onComplete)
     if coRunning() then
         QuestieMap:UnloadQuestFrames(questId, iconType, noteType)
+        if onComplete then
+            onComplete()
+        end
     else
-        ThreadLib.ThreadInstant(function()
+        ThreadLib.ThreadCallbackInstant(function()
             QuestieMap:UnloadQuestFrames(questId, iconType, noteType)
+        end, function(success)
+            if success and onComplete then
+                onComplete()
+            end
         end)
     end
 end
@@ -652,11 +660,12 @@ function AvailableQuests.RemoveAvailableQuest(questId)
 end
 
 ---@param questId QuestId
-function AvailableQuests.RemoveQuest(questId)
+---@param onComplete function? Optional callback invoked after the starter/finisher frames are unloaded.
+function AvailableQuests.RemoveQuest(questId, onComplete)
     availableQuests[questId] = nil
     _RemoveQuestFromNpcAvailability(questId, QuestieDB.GetQuest(questId))
-    _UnloadQuestFrames(questId)
     QuestieTooltips:RemoveQuest(questId)
+    _UnloadQuestFrames(questId, nil, nil, onComplete)
 end
 
 ---@param quest Quest
@@ -664,14 +673,10 @@ function AvailableQuests.RecreateFailedQuest(quest)
     local questId = quest.Id
     availableQuests[questId] = nil
 
-    ThreadLib.ThreadCallbackInstant(function()
-        QuestieMap:UnloadQuestFrames(questId)
-    end, function(success)
-        if not success then
-            return
-        end
+    _UnloadQuestFrames(questId, nil, nil, function()
         QuestieTooltips:RemoveQuest(questId)
         AvailableQuests.DrawAvailableQuest(quest)
+        Questie:SendMessage("QC_ID_BROADCAST_QUEST_REMOVE", questId)
     end)
 end
 
