@@ -812,17 +812,20 @@ _LoadDarkmoonFaire = function(eventLocation)
     -- The faire is setting up right now or is already up
     local allianceAnnouncingQuestId = 7905 -- Alliance announcement quest
     local hordeAnnouncingQuestId = 7926 -- Horde announcement quest
+
     if isInTerokkar then
-        if not QuestieEvent.activeQuests[allianceAnnouncingQuestId] then
+        -- Neither city announcement quest is available while the Faire is in Terokkar
+        if QuestieCorrections.hiddenQuests[allianceAnnouncingQuestId] ~= true
+            or QuestieCorrections.hiddenQuests[hordeAnnouncingQuestId] ~= true
+            or QuestieEvent.activeQuests[allianceAnnouncingQuestId]
+            or QuestieEvent.activeQuests[hordeAnnouncingQuestId]
+        then
             addedActiveQuest = true
         end
-        if not QuestieEvent.activeQuests[hordeAnnouncingQuestId] then
-            addedActiveQuest = true
-        end
-        QuestieCorrections.hiddenQuests[allianceAnnouncingQuestId] = nil
-        QuestieCorrections.hiddenQuests[hordeAnnouncingQuestId] = nil
-        QuestieEvent.activeQuests[allianceAnnouncingQuestId] = true
-        QuestieEvent.activeQuests[hordeAnnouncingQuestId] = true
+        QuestieCorrections.hiddenQuests[allianceAnnouncingQuestId] = true
+        QuestieCorrections.hiddenQuests[hordeAnnouncingQuestId] = true
+        QuestieEvent.activeQuests[allianceAnnouncingQuestId] = nil
+        QuestieEvent.activeQuests[hordeAnnouncingQuestId] = nil
     elseif isInMulgore then
         if not QuestieEvent.activeQuests[hordeAnnouncingQuestId] then
             addedActiveQuest = true
