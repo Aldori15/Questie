@@ -1564,7 +1564,7 @@ _DetermineIconsToDraw = function(quest, objective, objectiveIndex, objectiveCent
                             end
 
                             yieldCount = yieldCount + 1
-                            if yieldCount >= TICKS_PER_YIELD and coRunning() then
+                            if yieldCount >= TICKS_PER_YIELD and coRunning() and not objective.IsPartyObjective then
                                 yieldCount = 0
                                 coYield()
                             end
@@ -1743,7 +1743,7 @@ _DrawObjectiveWaypoints = function(objective, icon, iconPerZone)
                     end
 
                     yieldCount = yieldCount + 1
-                    if yieldCount >= TICKS_PER_YIELD and coRunning() then
+                    if yieldCount >= TICKS_PER_YIELD and coRunning() and not objective.IsPartyObjective then
                         yieldCount = 0
                         coYield()
                     end
