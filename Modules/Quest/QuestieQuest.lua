@@ -1152,6 +1152,24 @@ function QuestieQuest:CheckQuestSourceItem(questId, makeObjective)
     local quest = QuestieDB.GetQuest(questId)
     local sourceItem = true
     if quest and quest.sourceItemId > 0 then
+        -- Quest starting items can be consumed when the quest is accepted.
+        -- Their absence should only matter if the item is also a real quest objective.
+        local sourceItemStartsQuest = QuestieDB.QueryItemSingle(quest.sourceItemId, "startQuest") == questId
+        local sourceItemIsObjective = false
+
+        if quest.ObjectiveData then
+            for _, objective in pairs(quest.ObjectiveData) do
+                if objective.Type == "item" and objective.Id == quest.sourceItemId then
+                    sourceItemIsObjective = true
+                    break
+                end
+            end
+        end
+
+        if sourceItemStartsQuest and not sourceItemIsObjective then
+            return true
+        end
+
         for bag = -2, 4 do
             for slot = 1, QuestieCompat.GetContainerNumSlots(bag) do
                 local itemId = select(10, QuestieCompat.GetContainerItemInfo(bag, slot))
