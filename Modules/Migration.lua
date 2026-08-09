@@ -162,6 +162,9 @@ local migrationFunctions = {
             Questie.db.profile.trackerFontOutline = ""
         end
     end,
+    [28] = function()
+        Questie.db.profile.enableTooltipsBreadcrumbQuests = false
+    end,
 }
 
 function Migration:Migrate()
