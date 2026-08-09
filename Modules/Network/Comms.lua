@@ -40,6 +40,10 @@ local function _HasUnavailableQuestSyncAudience()
     return IsInGuild() or IsInRaid() or IsInGroup()
 end
 
+local function _IsUnavailableQuestBroadcastDistribution(distribution)
+    return distribution == "GUILD" or distribution == "RAID" or distribution == "PARTY"
+end
+
 local function _StartInitialUnavailableQuestSyncRequest()
     if unavailableQuestSnapshotRequestTicker then
         unavailableQuestSnapshotRequestTicker:Cancel()
@@ -118,12 +122,25 @@ function Comms.OnCommReceived(prefix, message, distribution, sender)
         return
     end
 
+    local isBroadcastDistribution = _IsUnavailableQuestBroadcastDistribution(distribution)
+    if (not isBroadcastDistribution) and distribution ~= "WHISPER" then
+        return
+    end
+
     if sender == playerName or sender == (playerName .. "-" .. realmName) then
         return
     end
 
     local success, event = AceSerializer:Deserialize(message)
     if (not success) or (type(event) ~= "table") then
+        return
+    end
+
+    if event.eventName == "SyncUnavailableQuestState" then
+        if distribution ~= "WHISPER" then
+            return
+        end
+    elseif not isBroadcastDistribution then
         return
     end
 
