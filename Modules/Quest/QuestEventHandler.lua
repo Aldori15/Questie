@@ -447,6 +447,7 @@ function _QuestEventHandler:MarkQuestAsAbandoned(questId)
         QuestieQuest:SetObjectivesDirty(questId) -- is this necessary? should whole quest.Objectives be cleared at some point of quest removal?
 
         QuestieQuest:AbandonedQuest(questId)
+        AvailableQuests.ResetLastNpcGuid()
         QuestieJourney:AbandonQuest(questId)
         QuestieAnnounce:AbandonedQuest(questId)
         -- The local player no longer has this quest; a party member may still need it.

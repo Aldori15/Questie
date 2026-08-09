@@ -78,6 +78,9 @@ local availableQuests = {}
 local nextAvailableQuests = {}
 local availableQuestsByNpc = {}
 local levelRequirementCache = {}
+
+---@type string|nil
+local lastNpcGuid
 local unavailableQuestsDeterminedByTalking -- quests that were hidden after talking to an NPC
 local unavailableQuestSyncState -- reset-aware unavailable daily/weekly quest snapshot by NPC
 local unavailableQuestLookupDirty = true
@@ -668,10 +671,16 @@ function AvailableQuests.RemoveQuest(questId, onComplete)
     _UnloadQuestFrames(questId, nil, nil, onComplete)
 end
 
+--- Clear the NPC validation cache so the next interaction with the same NPC revalidates its quests.
+function AvailableQuests.ResetLastNpcGuid()
+    lastNpcGuid = nil
+end
+
 ---@param quest Quest
 function AvailableQuests.RecreateFailedQuest(quest)
     local questId = quest.Id
     availableQuests[questId] = nil
+    AvailableQuests.ResetLastNpcGuid()
 
     _UnloadQuestFrames(questId, nil, nil, function()
         QuestieTooltips:RemoveQuest(questId)
@@ -769,9 +778,6 @@ function AvailableQuests.MergeUnavailableQuestSnapshot(snapshot)
 
     return mergedAnyQuest
 end
-
----@type string|nil
-local lastNpcGuid
 
 ---@param questId QuestId
 ---@return boolean
