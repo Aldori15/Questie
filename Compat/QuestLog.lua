@@ -22,6 +22,7 @@ local QuestiePlayer = QuestieLoader:ImportModule("QuestiePlayer")
 local QuestXP = QuestieLoader:ImportModule("QuestXP")
 
 local math_max = math.max
+local math_min = math.min
 local bitband = bit.band
 local strfind = string.find
 local questLogCompatibilityInitialized = false
@@ -267,6 +268,7 @@ local MAX_DAILY_RESET_SECONDS = 48 * 60 * 60
 local FALLBACK_DAILY_RESET_HOUR = 6
 local MONTHLY_RESET_HOUR = 6
 local SECONDS_PER_DAY = 24 * 60 * 60
+local MAX_ANIMATION_TIMER_SECONDS = 30 * 60
 local warnedInvalidQuestResetTime = false
 
 local function _CalculateFallbackQuestResetTime(currentTime, currentDate)
@@ -453,7 +455,8 @@ function QuestieCompat.ResetMonthlyQuests()
     if monthlyResetTimer then
         monthlyResetTimer:Cancel()
     end
-    monthlyResetTimer = QuestieCompat.C_Timer.After(math_max(0.01, monthlyResetTime - currentTime), function()
+    local timeUntilReset = math_max(0.01, monthlyResetTime - currentTime)
+    monthlyResetTimer = QuestieCompat.C_Timer.After(math_min(timeUntilReset, MAX_ANIMATION_TIMER_SECONDS), function()
         monthlyResetTimer = nil
         QuestieCompat.ResetMonthlyQuests()
     end)
