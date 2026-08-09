@@ -2340,7 +2340,7 @@ end
 ---@param playerLevel Level? @Pass player level to avoid calling UnitLevel or to use custom level
 ---@return boolean
 function QuestieDB.IsLevelRequirementsFulfilled(questId, minLevel, maxLevel, playerLevel)
-    local level, requiredLevel, requiredMaxLevel = QuestieLib.GetTbcLevel(questId, playerLevel)
+    local level, requiredLevel, requiredMaxLevel = QuestieLib.GetEffectiveQuestLevel(questId, playerLevel)
 
     --* QuestiePlayer.currentQuestlog[parentQuestId] logic is from QuestieDB.IsParentQuestActive, if you edit here, also edit there
     local parentQuestId = QuestieDB.QueryQuestSingle(questId, "parentQuest")
@@ -3730,7 +3730,7 @@ function QuestieDB.GetQuest(questId) -- /dump QuestieDB.GetQuest(867)
         QO[stringKey] = rawdata[intKey]
     end
 
-    local questLevel, requiredLevel = QuestieLib.GetTbcLevel(questId)
+    local questLevel, requiredLevel = QuestieLib.GetEffectiveQuestLevel(questId)
     QO.level = questLevel
     QO.requiredLevel = requiredLevel
 

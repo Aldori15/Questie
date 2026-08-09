@@ -229,7 +229,7 @@ end
 
 function QuestieCompat:GetQuestLinkStringById(questId)
     local questName = QuestieDB.QueryQuestSingle(questId, "name");
-    local questLevel, _ = QuestieLib.GetTbcLevel(questId);
+    local questLevel, _ = QuestieLib.GetEffectiveQuestLevel(questId);
     return QuestieCompat:GetQuestLinkString(questLevel, questName, questId)
 end
 

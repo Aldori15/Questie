@@ -80,7 +80,7 @@ end
 ---@return string
 function QuestieLink:GetQuestLinkStringById(questId)
     local questName = QuestieDB.QueryQuestSingle(questId, "name")
-    local questLevel, _ = QuestieLib.GetTbcLevel(questId)
+    local questLevel, _ = QuestieLib.GetEffectiveQuestLevel(questId)
 
     return QuestieLink:GetQuestLinkString(questLevel, questName, questId)
 end
@@ -131,7 +131,7 @@ end
 ---@return string
 function QuestieLink:GetQuestHyperLink(questId, senderGUID)
     local coloredQuestName = QuestieLib:GetColoredQuestName(questId, Questie.db.profile.trackerShowQuestLevel, true)
-    local questLevel, _ = QuestieLib.GetTbcLevel(questId)
+    local questLevel, _ = QuestieLib.GetEffectiveQuestLevel(questId)
     local isRepeatable = QuestieDB.IsRepeatable(questId)
 
     if (not senderGUID) then
@@ -274,7 +274,7 @@ end
 _AddQuestTitle = function(quest)
     local questId = quest.Id
     local questName = quest.name
-    local questLevel = QuestieLib.GetTbcLevel(questId)
+    local questLevel = QuestieLib.GetEffectiveQuestLevel(questId)
 
     local questLevelString = QuestieLib:GetLevelString(questId, questName, questLevel, false)
     local titleColor = string.sub(QuestieLib:PrintDifficultyColor(questLevel, "", QuestieDB.IsRepeatable(questId), QuestieEvent:IsEventQuest(questId), QuestieDB.IsPvPQuest(questId)), 5, 10)

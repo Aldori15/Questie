@@ -352,7 +352,7 @@ function QuestDetailsFrame:Draw(container, quest)
     local questIdLabel = _CreateLabel(Questie:Colorize(l10n("Quest ID") .. l10n(": "), "yellow") .. quest.Id, true)
     container:AddChild(questIdLabel)
 
-    local displayQuestLevel = QuestieLib.GetTbcLevel(quest.Id)
+    local displayQuestLevel = QuestieLib.GetEffectiveQuestLevel(quest.Id)
     local levelLabel = _CreateLabel(Questie:Colorize(l10n("Quest Level") .. l10n(": "), "yellow") .. displayQuestLevel, true)
     container:AddChild(levelLabel)
 

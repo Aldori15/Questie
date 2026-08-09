@@ -158,7 +158,7 @@ function QuestieLib:GetColoredQuestName(questId, showLevel, showState, blizzLike
     if not name or name == "" then
         name = l10n("Quest") .. " " .. questId
     end
-    local level, _ = QuestieLib.GetTbcLevel(questId);
+    local level, _ = QuestieLib.GetEffectiveQuestLevel(questId);
 
     if showLevel then
         name = QuestieLib:GetLevelString(questId, level, blizzLike) .. name
@@ -245,7 +245,7 @@ end
 ---@return Level questLevel
 ---@return Level requiredLevel
 ---@return Level requiredMaxLevel
-function QuestieLib.GetTbcLevel(questId, playerLevel)
+function QuestieLib.GetEffectiveQuestLevel(questId, playerLevel)
     local questLevel, requiredLevel = QuestieDB.QueryQuestSingle(questId, "questLevel"), QuestieDB.QueryQuestSingle(questId, "requiredLevel")
     if (questLevel == -1) then
         local level = playerLevel or QuestiePlayer.GetPlayerLevel();
@@ -564,7 +564,7 @@ function QuestieLib:SortQuestIDsByLevel(quests)
     local sortedQuestsByLevel = {}
 
     for questId in pairs(quests) do
-        local questLevel, _ = QuestieLib.GetTbcLevel(questId)
+        local questLevel, _ = QuestieLib.GetEffectiveQuestLevel(questId)
         local suffix = QuestieLib:GetQuestTypeSuffix(questId)
         tinsert(sortedQuestsByLevel, {questLevel or 0, questId, suffix})
     end

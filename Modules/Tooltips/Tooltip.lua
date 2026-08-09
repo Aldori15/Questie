@@ -495,7 +495,7 @@ function QuestieTooltips:GetTooltip(key)
                 if Questie.db.profile.showQuestsInNpcTooltip then
                     local questString = QuestieLib:GetColoredQuestName(questId, Questie.db.profile.enableTooltipsQuestLevel, true, true)
                     if tooltip.type then
-                        local level, _ = QuestieLib.GetTbcLevel(questId)
+                        local level, _ = QuestieLib.GetEffectiveQuestLevel(questId)
                         local availableIcon, completeIcon = _GetQuestTooltipIconNames(questId, level)
                         local iconSize = 18
                         if tooltip.type == "NPC" then
