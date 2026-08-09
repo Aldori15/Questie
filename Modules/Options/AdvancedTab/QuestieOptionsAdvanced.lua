@@ -435,7 +435,6 @@ StaticPopupDialogs["QUESTIE_RESET_CONFIRM"] = {
         Questie.db.global.dbIsCompiled = false
 
         Questie.db.char.hidden = nil
-        Questie.db.char.hiddenDailies = optionsDefaults.char.hiddenDailies
         Questie.db.global.unavailableQuestsDeterminedByTalking = {}
 
         ReloadUI()

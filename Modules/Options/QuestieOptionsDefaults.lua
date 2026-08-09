@@ -242,13 +242,6 @@ function QuestieOptionsDefaults:Load()
         char = {
             complete = {},
             hidden = {},
-            hiddenDailies = {
-                nhc = {},
-                hc = {},
-                cooking = {},
-                fishing = {},
-                pvp = {},
-            },
             journey = {},
             isTrackerExpanded = true,
             TrackerHiddenQuests = {},
