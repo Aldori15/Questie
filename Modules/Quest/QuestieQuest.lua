@@ -794,6 +794,9 @@ function QuestieQuest:UpdateQuest(questId)
             -- cannot observe the old incomplete state while the cleanup is running.
             quest.WasComplete = true
 
+            -- Populate objectives to register tooltips
+            QuestieQuest:UpdateObjectiveNotes(quest)
+
             -- Only remove the map icons, but keep the tooltips
             _UnloadQuestFrames(questId, function()
                 QuestieQuest:AddFinisher(quest)
@@ -855,6 +858,9 @@ function QuestieQuest:UpdateQuest(questId)
                         quest.WasComplete = true
                         quest.isComplete = true
                         allObjectivesComplete = true
+
+                        -- Populate objectives to register tooltips
+                        QuestieQuest:UpdateObjectiveNotes(quest)
 
                         -- Only remove the map icons, but keep the tooltips
                         _UnloadQuestFrames(questId, function()
