@@ -95,6 +95,9 @@ function QuestieItemFixes:Load()
             [itemKeys.vendors] = {12794, 2832, 12785, 5140, 5611, 277, 1301, 258, 5570, 1311, 5111, 1305, 1328, 5848, 955, 1697, 465, 1464, 5112},
             [itemKeys.relatedQuests] = {288},
         },
+        [2609] = { -- Disarming Colloid
+            [itemKeys.npcDrops] = {},
+        },
         [2633] = { -- Jungle Remedy
             [itemKeys.npcDrops] = {940, 941, 942}, -- #2433
         },
@@ -714,6 +717,9 @@ function QuestieItemFixes:Load()
             [itemKeys.relatedQuests] = {654},
             [itemKeys.npcDrops] = {},
             [itemKeys.objectDrops] = {},
+        },
+        [9563] = { -- Consecrated Rune
+            [itemKeys.npcDrops] = {},
         },
         [9574] = { -- Glyphic Scroll
             [itemKeys.relatedQuests] = {3098},
