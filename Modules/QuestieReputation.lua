@@ -322,7 +322,7 @@ end
 ---@param factionIDs table
 ---@return ReputationPair[]
 _FilterShaTarRewards = function(reputationReward, factionIDs)
-    local playerIsHonoredWithShaTar = QuestieReputation:HasReputation({ factionIDs.THE_SHA_TAR, 9000 }, nil)
+    local playerIsHonoredWithShaTar = QuestieReputation:HasReputation({ factionIDs.THE_SHATAR, 9000 }, nil)
     if not playerIsHonoredWithShaTar then
         return reputationReward
     end
@@ -342,7 +342,7 @@ _FilterShaTarRewards = function(reputationReward, factionIDs)
 
     local filteredRewards = {}
     for _, rewardPair in pairs(reputationReward) do
-        if rewardPair[1] ~= factionIDs.THE_SHA_TAR then
+        if rewardPair[1] ~= factionIDs.THE_SHATAR then
             filteredRewards[#filteredRewards + 1] = rewardPair
         end
     end

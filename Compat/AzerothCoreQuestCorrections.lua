@@ -12078,11 +12078,11 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [10101] = {
-            [questKeys.reputationReward] = {{factionIDs.THE_SHA_TAR,250},{factionIDs.THE_MAGHAR,500}},
+            [questKeys.reputationReward] = {{factionIDs.THE_SHATAR,250},{factionIDs.THE_MAGHAR,500}},
         },
 
         [10102] = {
-            [questKeys.reputationReward] = {{factionIDs.THE_SHA_TAR,250},{factionIDs.THE_MAGHAR,500}},
+            [questKeys.reputationReward] = {{factionIDs.THE_SHATAR,250},{factionIDs.THE_MAGHAR,500}},
         },
 
         [10104] = {
@@ -12215,12 +12215,12 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [10167] = {
-            [questKeys.reputationReward] = {{factionIDs.THE_SHA_TAR,350},{factionIDs.THE_MAGHAR,700}},
+            [questKeys.reputationReward] = {{factionIDs.THE_SHATAR,350},{factionIDs.THE_MAGHAR,700}},
             [questKeys.questFlags] = 136,
         },
 
         [10168] = {
-            [questKeys.reputationReward] = {{factionIDs.THE_SHA_TAR,350},{factionIDs.THE_MAGHAR,700}},
+            [questKeys.reputationReward] = {{factionIDs.THE_SHATAR,350},{factionIDs.THE_MAGHAR,700}},
         },
 
         [10173] = {
@@ -13588,7 +13588,7 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11026] = {
-            [questKeys.reputationReward] = {{factionIDs.SHA_TARI_SKYGUARD,350},{factionIDs.OGRILA,350}},
+            [questKeys.reputationReward] = {{factionIDs.SHATARI_SKYGUARD,350},{factionIDs.OGRILA,350}},
             [questKeys.preQuestSingle] = {},
         },
 
