@@ -314,15 +314,6 @@ QuestieInit.Stages[3] = function() -- run as a coroutine
     QuestieCoords:Initialize()
     Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage3] Quest timers initializing.")
     TrackerQuestTimers:Initialize()
-    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage3] Communications initializing.")
-    Comms.Initialize()
-    QuestieComms:Initialize()
-
-    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage3] Slash commands registering.")
-    QuestieSlash.RegisterSlashCommands()
-
-    QuestieAnnounce:InitializeLogoFilter()
-
     coYield()
 
     if Questie.db.profile.dbmHUDEnable then
@@ -338,12 +329,6 @@ QuestieInit.Stages[3] = function() -- run as a coroutine
     Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage3] QuestieQuest initializing.")
     QuestieQuest:Initialize()
     coYield()
-    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage3] World map button initializing.")
-    WorldMapButton.Initialize()
-    coYield()
-    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage3] Instance locations initializing.")
-    InstanceLocations.Initialize()
-    coYield()
     -- Seed the quest log baseline before live quest events are registered.
     local cacheMiss, _, questIdsChecked = QuestLogCache.CheckForChanges(nil)
     if cacheMiss then
@@ -357,14 +342,33 @@ QuestieInit.Stages[3] = function() -- run as a coroutine
     coYield()
     QuestieQuest:GetAllQuestIdsNoObjectives()
     coYield()
-    QuestieQuest:GetAllQuestIds()
 
-    -- Initialize the tracker
+    -- Full quest hydration yields and queues tracker work. Initialize the tracker and
+    -- queue first so 335 does not discard or run that work against an uninitialized tracker.
     Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage3] QuestieTracker initializing.")
-    coYield()
     QuestieTracker.Initialize()
     Hooks:HookQuestLogTitle()
     QuestieCombatQueue.Initialize()
+    QuestieQuest:GetAllQuestIds()
+
+    -- Defer optional startup work until the tracker has been hydrated.
+    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage3] Communications initializing.")
+    Comms.Initialize()
+    QuestieComms:Initialize()
+    coYield()
+
+    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage3] Slash commands registering.")
+    QuestieSlash.RegisterSlashCommands()
+
+    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage3] World map button initializing.")
+    WorldMapButton.Initialize()
+    coYield()
+
+    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage3] Instance locations initializing.")
+    InstanceLocations.Initialize()
+    coYield()
+
+    QuestieAnnounce:InitializeLogoFilter()
 
     local dateToday = date("%y-%m-%d")
 
