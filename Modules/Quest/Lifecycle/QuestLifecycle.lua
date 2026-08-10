@@ -15,6 +15,8 @@ local QuestieQuest = QuestieLoader:ImportModule("QuestieQuest")
 local QuestieTracker = QuestieLoader:ImportModule("QuestieTracker")
 ---@type QuestieCombatQueue
 local QuestieCombatQueue = QuestieLoader:ImportModule("QuestieCombatQueue")
+---@type CommsVisibility
+local CommsVisibility = QuestieLoader:ImportModule("CommsVisibility")
 
 --- COMPATIBILITY ---
 local C_Timer = QuestieCompat.C_Timer
@@ -105,6 +107,8 @@ function QuestLifecycle:AcceptQuest(questId)
                 Questie.db.char.AutoUntrackedQuests[questId] = nil
             end
 
+            CommsVisibility:ScheduleSnapshot("ACCEPT_QUEST")
+
             -- Remove the starter/finisher frames first, then draw objective notes once the
             -- unload coroutine has finished. This prevents the draw coroutines from racing
             -- with the unload coroutine and removing the newly created objective icons.
@@ -171,6 +175,7 @@ function QuestLifecycle:CompleteQuest(questId)
     end
 
     QuestieTracker:RemoveQuest(questId)
+    CommsVisibility:ScheduleSnapshot("COMPLETE_QUEST")
 
     -- Turn-in flow can update tracker before quest log header counters settle.
     -- Run a short delayed refresh to keep the header/count in sync.
@@ -191,6 +196,7 @@ end
 function QuestLifecycle:AbandonQuest(questId)
     if (QuestiePlayer.currentQuestlog[questId]) then
         QuestiePlayer.currentQuestlog[questId] = nil
+        CommsVisibility:ScheduleSnapshot("ABANDON_QUEST")
         local questIdsToRemove = {questId}
         local quest = QuestieDB.GetQuest(questId)
 
@@ -236,4 +242,3 @@ function QuestLifecycle:AbandonQuest(questId)
         Questie:Debug(Questie.DEBUG_INFO, "[QuestLifecycle] Abandoned Quest:", questId)
     end
 end
-

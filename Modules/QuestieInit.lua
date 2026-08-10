@@ -65,6 +65,8 @@ local QuestieValidateGameCache = QuestieLoader:ImportModule("QuestieValidateGame
 local MinimapIcon = QuestieLoader:ImportModule("MinimapIcon")
 ---@type QuestieComms
 local QuestieComms = QuestieLoader:ImportModule("QuestieComms");
+---@type CommsVisibility
+local CommsVisibility = QuestieLoader:ImportModule("CommsVisibility")
 ---@type Comms
 local Comms = QuestieLoader:ImportModule("Comms")
 ---@type QuestieOptions
@@ -353,8 +355,10 @@ QuestieInit.Stages[3] = function() -- run as a coroutine
 
     -- Defer optional startup work until the tracker has been hydrated.
     Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage3] Communications initializing.")
+    CommsVisibility:Initialize()
     Comms.Initialize()
     QuestieComms:Initialize()
+    CommsVisibility:ScheduleSnapshot("INITIALIZE")
     coYield()
 
     Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage3] Slash commands registering.")

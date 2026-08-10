@@ -13,6 +13,8 @@ local TrackerBaseFrame = QuestieLoader:ImportModule("TrackerBaseFrame")
 local QuestieValidateGameCache = QuestieLoader:ImportModule("QuestieValidateGameCache")
 ---@type QuestieLib
 local QuestieLib = QuestieLoader:ImportModule("QuestieLib");
+---@type CommsVisibility
+local CommsVisibility = QuestieLoader:ImportModule("CommsVisibility")
 
 BINDING_HEADER_QUESTIE = "Questie"
 BINDING_NAME_QUESTIE_TOGGLE_JOURNEY = "Toggle My Journey"
@@ -52,6 +54,7 @@ function Questie:RefreshConfig(_, db, profileName)
     Questie:SetIcons()
     QuestieQuest:SmoothReset()
     TrackerBaseFrame:OnProfileChange()
+    CommsVisibility:ScheduleSnapshot("PROFILE_CHANGED")
     Questie:Debug(Questie.DEBUG_DEVELOP, "Switched Ace Profile!")
 end
 

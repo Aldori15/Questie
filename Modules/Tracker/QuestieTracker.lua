@@ -43,6 +43,8 @@ local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 local QuestLogCache = QuestieLoader:ImportModule("QuestLogCache")
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
+---@type CommsVisibility
+local CommsVisibility = QuestieLoader:ImportModule("CommsVisibility")
 
 --- COMPATIBILITY ---
 local C_Timer = QuestieCompat.C_Timer
@@ -246,6 +248,7 @@ function QuestieTracker:ResetLocation()
     trackerHeaderFrame.trackedQuests:SetMode(1) -- maximized
     Questie.db.char.isTrackerExpanded = true
     Questie.db.char.AutoUntrackedQuests = {}
+    CommsVisibility:ScheduleSnapshot("RESET_TRACKER_LOCATION")
     Questie.db.profile.TrackerLocation = nil
     Questie.db.char.collapsedQuests = {}
     Questie.db.char.collapsedZones = {}
@@ -2196,6 +2199,8 @@ function QuestieTracker:UntrackQuestId(questId)
         Questie.db.char.AutoUntrackedQuests[questId] = true
     end
 
+    CommsVisibility:ScheduleSnapshot("UNTRACK_QUEST")
+
     if Questie.db.profile.hideUntrackedQuestsMapIcons then
         ThreadLib.ThreadInstant(function()
             QuestieQuest:HideQuestIcons()
@@ -2258,6 +2263,8 @@ function QuestieTracker:AQW_Insert(index, expire)
                 Questie.db.char.AutoUntrackedQuests[questId] = true
             end
         end
+
+        CommsVisibility:ScheduleSnapshot("TRACK_QUEST")
 
         local quest = QuestieDB.GetQuest(questId)
 

@@ -13,6 +13,8 @@ local TrackerBaseFrame = QuestieLoader:ImportModule("TrackerBaseFrame")
 local TrackerLinePool = QuestieLoader:ImportModule("TrackerLinePool")
 ---@type TrackerQuestTimers
 local TrackerQuestTimers = QuestieLoader:ImportModule("TrackerQuestTimers")
+---@type CommsVisibility
+local CommsVisibility = QuestieLoader:ImportModule("CommsVisibility")
 
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
@@ -148,6 +150,8 @@ function QuestieOptions.tabs.tracker:Initialize()
                             else
                                 Questie.db.char.AutoUntrackedQuests = {}
                             end
+
+                            CommsVisibility:ScheduleSnapshot("AUTO_TRACK_QUESTS")
 
                             -- Update Quest Log and mark tracked Quests
                             local questLogFrame = QuestLogExFrame or ClassicQuestLog or QuestLogFrame

@@ -53,6 +53,8 @@ local ThreadLib = QuestieLoader:ImportModule("ThreadLib")
 local AvailableQuests = QuestieLoader:ImportModule("AvailableQuests")
 ---@type Phasing
 local Phasing = QuestieLoader:ImportModule("Phasing")
+---@type CommsVisibility
+local CommsVisibility = QuestieLoader:ImportModule("CommsVisibility")
 
 --- COMPATIBILITY ---
 local C_Timer = QuestieCompat.C_Timer
@@ -551,10 +553,12 @@ end
 function QuestieQuest:HideQuest(id)
     Questie.db.char.hidden[id] = true
     AvailableQuests.RemoveQuest(id)
+    CommsVisibility:ScheduleSnapshot("HIDE_QUEST")
 end
 
 function QuestieQuest:UnhideQuest(id)
     Questie.db.char.hidden[id] = nil
+    CommsVisibility:ScheduleSnapshot("UNHIDE_QUEST")
     AvailableQuests.CalculateAndDrawAll()
 end
 
