@@ -356,7 +356,9 @@ function QuestieComms:PopulateQuestDataPacketV2_noclass_renameme(questId, quest,
 
         offset = offset + 2
         for objectiveIndex, objective in pairs(rawObjectives) do -- DO NOT MODIFY THE RETURNED TABLE
-            quest[offset] = questObject.Objectives[objectiveIndex].Id
+            -- Keep the flat packet dense when an objective has no Id, such as killcredit
+            -- objectives that only carry IdList/RootId.
+            quest[offset] = questObject.Objectives[objectiveIndex].Id or 0
             quest[offset + 1] = string.byte(string.sub(objective.type, 1, 1))
             quest[offset + 2] = objective.numFulfilled
             quest[offset + 3] = objective.numRequired
@@ -421,14 +423,17 @@ function QuestieComms:InsertQuestDataPacketV2_noclass_RenameMe(questPacket, play
             local objectives = {}
             offset = offset + 2
             local objectiveIndex = 0
-            while objectiveIndex < objectiveCount and questPacket[offset] do
+            -- The objective id may be the 0 placeholder used for killcredit objectives;
+            -- use the type byte to detect a complete objective record instead.
+            while objectiveIndex < objectiveCount and questPacket[offset + 1] do
                 objectiveIndex = objectiveIndex + 1
+                local rawId = questPacket[offset]
                 local fulfilled = questPacket[offset+2]
                 local required = questPacket[offset+3]
 
                 objectives[objectiveIndex] = {
                     index = objectiveIndex,
-                    id = questPacket[offset],
+                    id = rawId ~= 0 and rawId or nil,
                     type = string.char(questPacket[offset+1]),
                     fulfilled = fulfilled,
                     required = required,
