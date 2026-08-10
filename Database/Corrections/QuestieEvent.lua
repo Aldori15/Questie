@@ -84,7 +84,8 @@ local type = type
 local strlower = string.lower
 local strfind = string.find
 local _WithinDates, _LoadDarkmoonFaire, _GetDarkmoonFaireLocation,
-    _GetDarkmoonFaireLocationForDate, _GetDarkmoonFaireLocationForCalendarEvent, _GetDarkmoonFaireEventName,
+    _GetDarkmoonFaireLocationForDate, _GetDarkmoonFaireLocationForMonth,
+    _GetDarkmoonFaireLocationForCalendarEvent, _GetDarkmoonFaireEventName,
     _IsEventQuestVisible, _GetCalendarEventName, _GetActiveCalendarEvents,
     _IsCalendarEventMonthPlausible, _IsCalendarEventActiveNow,
     _IsCalendarEventLiveNow, _IsCalendarEventQuestActiveNow,
@@ -475,12 +476,12 @@ _GetActiveCalendarEvents = function()
     local darkmoonLocation = nil
 
     if not QuestieCompat.Is335 or not CalendarGetNumDayEvents or not CalendarGetHolidayInfo then
-        return activeEvents, darkmoonLocation
+        return activeEvents, darkmoonLocation, false
     end
 
     local currentDate = C_DateAndTime.GetCurrentCalendarTime()
     if not currentDate or not currentDate.month or not currentDate.monthDay then
-        return activeEvents, darkmoonLocation
+        return activeEvents, darkmoonLocation, false
     end
 
     local numDayEvents = CalendarGetNumDayEvents(0, currentDate.monthDay) or 0
@@ -498,7 +499,7 @@ _GetActiveCalendarEvents = function()
         end
     end
 
-    return activeEvents, darkmoonLocation
+    return activeEvents, darkmoonLocation, true
 end
 
 _PrimeCalendar = function()
@@ -595,7 +596,7 @@ function QuestieEvent:Load(isFinalPass)
 
     -- We want to replace the Lunar Festival date with the date that we estimate
     QuestieEvent.eventDates["Lunar Festival"] = QuestieEvent.lunarFestival[year]
-    local activeEvents, darkmoonLocation = _GetActiveCalendarEvents()
+    local activeEvents, darkmoonLocation, calendarAvailable = _GetActiveCalendarEvents()
     sawCalendarEvent = next(activeEvents) ~= nil
 
     local eventCorrections
@@ -688,7 +689,14 @@ function QuestieEvent:Load(isFinalPass)
     end
 
     if Questie.IsClassic or Questie.IsWotlk then
-        addedActiveQuest = _LoadDarkmoonFaire(darkmoonLocation) or addedActiveQuest
+        if activeEvents["Darkmoon Faire"] then
+            -- The calendar determines whether the Faire is active. The month rotation is only
+            -- a location fallback when a server omits the zone from the active event texture.
+            darkmoonLocation = darkmoonLocation or _GetDarkmoonFaireLocationForMonth(currentDate)
+            addedActiveQuest = _LoadDarkmoonFaire(darkmoonLocation) or addedActiveQuest
+        elseif not calendarAvailable then
+            addedActiveQuest = _LoadDarkmoonFaire() or addedActiveQuest
+        end
     end
 
     if isFinalPass then
@@ -724,18 +732,7 @@ _GetDarkmoonFaireLocationForDate = function(currentDate)
     local monthOffset = (currentDate.year - baseYear) * 12 + (currentDate.month - baseMonth)
     local _, _, _, firstWeekday = CalendarGetMonth(monthOffset)
 
-    local monthModulo = currentDate.month % 3
-    local eventLocation = DMF_LOCATIONS.ELWYNN_FOREST
-
-    if Questie.IsWotlk then
-        if monthModulo == 1 then
-            eventLocation = DMF_LOCATIONS.MULGORE
-        elseif monthModulo == 2 then
-            eventLocation = DMF_LOCATIONS.TEROKKAR_FOREST
-        end
-    else
-        eventLocation = (currentDate.month % 2) == 0 and DMF_LOCATIONS.MULGORE or DMF_LOCATIONS.ELWYNN_FOREST
-    end
+    local eventLocation = _GetDarkmoonFaireLocationForMonth(currentDate)
 
     local dayOfMonth = currentDate.monthDay
     if firstWeekday == 1 then
@@ -776,6 +773,25 @@ _GetDarkmoonFaireLocationForDate = function(currentDate)
     end
 
     return DMF_LOCATIONS.NONE
+end
+
+---@param currentDate table
+---@return number
+_GetDarkmoonFaireLocationForMonth = function(currentDate)
+    local monthModulo = currentDate.month % 3
+    local eventLocation = DMF_LOCATIONS.ELWYNN_FOREST
+
+    if Questie.IsWotlk then
+        if monthModulo == 1 then
+            eventLocation = DMF_LOCATIONS.MULGORE
+        elseif monthModulo == 2 then
+            eventLocation = DMF_LOCATIONS.TEROKKAR_FOREST
+        end
+    else
+        eventLocation = (currentDate.month % 2) == 0 and DMF_LOCATIONS.MULGORE or DMF_LOCATIONS.ELWYNN_FOREST
+    end
+
+    return eventLocation
 end
 
 _GetDarkmoonFaireEventName = function(eventLocation)
