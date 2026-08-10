@@ -12,6 +12,8 @@ QuestEventHandler.private = QuestEventHandler.private or {}
 local QuestLogCache = QuestieLoader:ImportModule("QuestLogCache")
 ---@type QuestieQuest
 local QuestieQuest = QuestieLoader:ImportModule("QuestieQuest")
+---@type QuestLifecycle
+local QuestLifecycle = QuestieLoader:ImportModule("QuestLifecycle")
 ---@type QuestieJourney
 local QuestieJourney = QuestieLoader:ImportModule("QuestieJourney")
 ---@type QuestieNameplate
@@ -354,7 +356,7 @@ function _QuestEventHandler:HandleQuestAccepted(questId)
     if QuestieCompat.Is335 and (not isLastIslePhase) and IsleOfQuelDanas.CheckForActivePhase(questId) then
         QuestieQuest:SmoothReset()
     else
-        QuestieQuest:AcceptQuest(questId)
+        QuestLifecycle:AcceptQuest(questId)
     end
 
     -- The local player now has this quest, so stop drawing it as a party member's objective.
@@ -389,7 +391,7 @@ function _QuestEventHandler:QuestTurnedIn(questId, xpReward, moneyReward)
     QuestLogCache.RemoveQuest(questId)
     QuestieQuest:SetObjectivesDirty(questId) -- is this necessary? should whole quest.Objectives be cleared at some point of quest removal?
 
-    QuestieQuest:CompleteQuest(questId)
+    QuestLifecycle:CompleteQuest(questId)
     QuestieJourney:CompleteQuest(questId)
     QuestieAnnounce:CompletedQuest(questId)
 
@@ -446,7 +448,7 @@ function _QuestEventHandler:MarkQuestAsAbandoned(questId)
         QuestLogCache.RemoveQuest(questId)
         QuestieQuest:SetObjectivesDirty(questId) -- is this necessary? should whole quest.Objectives be cleared at some point of quest removal?
 
-        QuestieQuest:AbandonedQuest(questId)
+        QuestLifecycle:AbandonQuest(questId)
         AvailableQuests.ResetLastNpcGuid()
         QuestieJourney:AbandonQuest(questId)
         QuestieAnnounce:AbandonedQuest(questId)
