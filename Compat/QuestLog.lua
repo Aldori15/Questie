@@ -270,6 +270,7 @@ local MONTHLY_RESET_HOUR = 6
 local SECONDS_PER_DAY = 24 * 60 * 60
 local MAX_ANIMATION_TIMER_SECONDS = 30 * 60
 local warnedInvalidQuestResetTime = false
+local dailyResetRetryTimer
 
 local function _CalculateFallbackQuestResetTime(currentTime, currentDate)
     local resetHour = Questie.db.profile.weeklyResetHour
@@ -334,8 +335,15 @@ function QuestieCompat.GetQuestResetTime()
     local timeUntilReset = tonumber(GetQuestResetTime())
     local currentTime, currentDate = QuestieCompat.GetServerTime()
 
-    if timeUntilReset and timeUntilReset >= -10 and timeUntilReset <= MAX_DAILY_RESET_SECONDS then
-        return math.max(0, timeUntilReset)
+    -- Some 3.3.5a servers briefly report a small negative value immediately after
+    -- the reset. Treat it as the rollover into the next daily cycle instead of
+    -- turning it into a reset timestamp equal to the current time.
+    if timeUntilReset and timeUntilReset < 0 and timeUntilReset >= -10 then
+        return SECONDS_PER_DAY + timeUntilReset
+    end
+
+    if timeUntilReset and timeUntilReset >= 0 and timeUntilReset <= MAX_DAILY_RESET_SECONDS then
+        return timeUntilReset
     end
 
     -- Some private servers return an invalid value close to -GetServerTime(), which means their reset timestamp is zero.
@@ -352,11 +360,34 @@ function QuestieCompat.GetQuestResetTime()
     return _CalculateFallbackQuestResetTime(currentTime, currentDate)
 end
 
+local function _ScheduleDailyResetRetry()
+    if dailyResetRetryTimer then
+        return
+    end
+
+    dailyResetRetryTimer = QuestieCompat.C_Timer.After(3, function()
+        dailyResetRetryTimer = nil
+        QuestieCompat.CalculateNextResetTime()
+    end)
+end
+
 function QuestieCompat.CalculateNextResetTime()
     local currentTime, currentDate = QuestieCompat.GetServerTime()
     local timeUntilReset = QuestieCompat.GetQuestResetTime()
 
     Questie:Debug(Questie.DEBUG_DEVELOP, "[CalculateNextResetTime] GetQuestResetTime: ", timeUntilReset)
+
+    -- A zero value means the server has not supplied reset data yet. Do not cache
+    -- the current time as the next reset; retry after the server data can arrive.
+    if timeUntilReset <= 0 then
+        _ScheduleDailyResetRetry()
+        return
+    end
+
+    if dailyResetRetryTimer then
+        dailyResetRetryTimer:Cancel()
+        dailyResetRetryTimer = nil
+    end
 
     Questie.db.profile.dailyResetTime = Questie.db.profile.dailyResetTime or (currentTime + timeUntilReset)
     Questie:Debug(Questie.DEBUG_DEVELOP, "[CalculateNextResetTime] Next daily rest time: ", date("%m/%d/%y %H:%M:%S", Questie.db.profile.dailyResetTime))
