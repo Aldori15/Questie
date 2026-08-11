@@ -132,6 +132,9 @@ function QuestieMap.utils:RescaleIcon(frameRef, mapScale)
 
             if scale > 1 then
                 frame:SetSize(scale * ZOOM_MODIFIER, scale * ZOOM_MODIFIER);
+                if frame.GlowUpdate then
+                    frame:GlowUpdate()
+                end
             end
         else
             Questie:Error("A frame is lacking the GetIconScale function for resizing!", frame.data.Id);
