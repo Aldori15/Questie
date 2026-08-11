@@ -15,7 +15,6 @@ local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
 local l10n = QuestieLoader:ImportModule("l10n")
 
 --- COMPATIBILITY ---
-local C_Timer = QuestieCompat.C_Timer
 local WorldMapFrame = QuestieCompat.WorldMapFrame
 
 local math_max, math_min = math.max, math.min
@@ -89,14 +88,14 @@ end
 function QuestieFramePool:UpdateGlowConfig(mini, mode)
     if mode then
         for _, icon in pairs(usedFrames) do
-            if (((mini and icon.miniMapIcon) or not mini) and icon.glow) and icon.IsShown and icon:IsShown() then
+            if (((mini and icon.miniMapIcon) or not mini) and icon.glowTexture) and icon.IsShown and icon:IsShown() then
                 icon:GetScript("OnShow")(icon) -- forces a glow update
             end
         end
     else
         for _, icon in pairs(usedFrames) do
-            if ((mini and icon.miniMapIcon) or (not mini and not icon.miniMapIcon)) and icon.glow then
-                icon.glow:Hide()
+            if ((mini and icon.miniMapIcon) or (not mini and not icon.miniMapIcon)) and icon.glowTexture then
+                icon.glowTexture:Hide()
             end
         end
     end
@@ -193,8 +192,7 @@ local function UpdateLineFrameGeometry(lineFrame)
 
     lineFrame:SetParent(canvas)
     lineFrame:ClearAllPoints()
-    lineFrame:SetHeight(height)
-    lineFrame:SetWidth(width)
+    lineFrame:SetSize(width, height)
     lineFrame:SetPoint("TOPLEFT", canvas, "TOPLEFT", framePosX, framePosY)
 
     local line = lineFrame.line
@@ -423,11 +421,7 @@ _ReinitFrame = function(frame)
         frame:SetScript("OnShow", frame.BaseOnShow)
     end
 
-    if frame.BaseOnUpdate then
-        frame.glowLogicTimer = C_Timer.NewTicker(1, frame.BaseOnUpdate);
-    else
-        frame:SetScript("OnUpdate", nil)
-    end
+    frame:SetScript("OnUpdate", nil)
 
     if frame.BaseOnHide then
         frame:SetScript("OnHide", frame.BaseOnHide)

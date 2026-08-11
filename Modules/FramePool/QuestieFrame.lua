@@ -58,21 +58,18 @@ function QuestieFrame:New(frameId, OnEnter)
     newFrame.isSkinned = true -- prevents ElvUI_Enhanced_MinimapButtonGrabber from hidding our pins
 
     newFrame:SetFrameStrata("FULLSCREEN");
-    newFrame:SetWidth(16)  -- Set these to whatever height/width is needed
-    newFrame:SetHeight(16) -- for your Texture
+    newFrame:SetSize(16, 16)
     newFrame:SetPoint("CENTER", -8, -8)
     newFrame:EnableMouse(true)
 
     local glowt = newFrame:CreateTexture(nil, "ARTWORK", nil, -1)
-    glowt:SetWidth(18)
-    glowt:SetHeight(18)
+    glowt:SetSize(18, 18)
     glowt:SetPoint("CENTER", newFrame, 0, 0)
 
     local newTexture = newFrame:CreateTexture(nil, "OVERLAY", nil, 0)
     --t:SetTexture("Interface\\Icons\\INV_Misc_Eye_02.blp")
     --t:SetTexture("Interface\\Addons\\!Questie\\Icons\\available.blp")
-    newTexture:SetWidth(16)
-    newTexture:SetHeight(16)
+    newTexture:SetSize(16, 16)
     newTexture:SetAllPoints(newFrame)
 
     if not QuestieCompat.Is335 then
@@ -83,42 +80,22 @@ function QuestieFrame:New(frameId, OnEnter)
     ---@class IconTexture : Texture
     newFrame.texture = newTexture;
     newFrame.texture.OLDSetVertexColor = newFrame.texture.SetVertexColor;
-    function newFrame.texture:SetVertexColor(r, g, b, a)
-        self:OLDSetVertexColor(r, g, b, a);
-        --We save the colors to the texture object, this way we don't need to use GetVertexColor
-        self.r = r or 1;
-        self.g = g or 1;
-        self.b = b or 1;
-        self.a = a or 1;
-    end
-
-    --We save the colors to the texture object, this way we don't need to use GetVertexColor
+    newFrame.texture.SetVertexColor = _QuestieFrame.SetVertexColor
     newFrame.texture:SetVertexColor(1, 1, 1, 1);
 
     local overlayTexture = newFrame:CreateTexture(nil, "OVERLAY", nil, 7)
-    overlayTexture:SetWidth(16)
-    overlayTexture:SetHeight(16)
+    overlayTexture:SetSize(16, 16)
     overlayTexture:SetAllPoints(newFrame)
+    overlayTexture:Hide()
     newFrame.overlayTexture = overlayTexture
 
-    newFrame.glow = glowt
     newFrame.glowTexture = glowt
     newFrame.glowTexture.OLDSetVertexColor = newFrame.glowTexture.SetVertexColor;
-    function newFrame.glowTexture:SetVertexColor(r, g, b, a)
-        self:OLDSetVertexColor(r, g, b, a);
-        --We save the colors to the texture object, this way we don't need to use GetVertexColor
-        self.r = r or 1;
-        self.g = g or 1;
-        self.b = b or 1;
-        self.a = a or 1;
-    end
-
-    --We save the colors to the texture object, this way we don't need to use GetVertexColor
+    newFrame.glowTexture.SetVertexColor = _QuestieFrame.SetVertexColor
     newFrame.glowTexture:SetVertexColor(1, 1, 1, 1);
 
     newFrame.glowTexture:SetTexture(Questie.icons["glow"])
-    newFrame.glow:Hide()
-    newFrame.glow:SetPoint("CENTER", newFrame, 0, 0) -- 2 pixels bigger than normal icon
+    newFrame.glowTexture:Hide()
 
     newFrame:SetScript("OnEnter", OnEnter);        --Script Toolip
     newFrame:SetScript("OnLeave", _QuestieFrame.OnLeave) --Script Exit Tooltip
@@ -126,7 +103,6 @@ function QuestieFrame:New(frameId, OnEnter)
     newFrame:SetScript("OnClick", _QuestieFrame.OnClick);
 
     newFrame.GlowUpdate = _QuestieFrame.GlowUpdate
-    newFrame.BaseOnUpdate = _QuestieFrame.BaseOnUpdate
     newFrame.BaseOnShow = _QuestieFrame.BaseOnShow
     newFrame.BaseOnHide = _QuestieFrame.BaseOnHide
 
@@ -146,6 +122,20 @@ function QuestieFrame:New(frameId, OnEnter)
     newFrame:Hide()
 
     return newFrame
+end
+
+---@param self IconTexture
+---@param r number
+---@param g number
+---@param b number
+---@param a number?
+function _QuestieFrame.SetVertexColor(self, r, g, b, a)
+    self:OLDSetVertexColor(r, g, b, a)
+    -- Save colors on the texture so glow updates avoid GetVertexColor calls.
+    self.r = r or 1
+    self.g = g or 1
+    self.b = b or 1
+    self.a = a or 1
 end
 
 function _QuestieFrame:OnLeave()
@@ -245,12 +235,11 @@ function _QuestieFrame:OnClick(button)
 end
 
 function _QuestieFrame:GlowUpdate()
-    if self.glow and self.glow.IsShown and self.glow:IsShown() then
+    if self.glowTexture and self.glowTexture.IsShown and self.glowTexture:IsShown() then
         --Due to this always being 1:1 we can assume that if one isn't correct, the other isn't either
         --We can also assume that both change at the same time so we only check one.
-        if (self.glow:GetWidth() ~= self:GetWidth() * 1.13) then ---self.glow:GetHeight() ~= self:GetHeight() * 1.13
-            self.glow:SetSize(self:GetWidth() * 1.13, self:GetHeight() * 1.13)
-            self.glow:SetPoint("CENTER", self, 0, 0)
+        if (self.glowTexture:GetWidth() ~= self:GetWidth() * 1.13) then
+            self.glowTexture:SetSize(self:GetWidth() * 1.13, self:GetHeight() * 1.13)
         end
         if self.data and self.data.ObjectiveData and self.data.ObjectiveData.Color and self.glowTexture then
             local glowAlpha = GetObjectiveGlowAlpha(self)
@@ -274,17 +263,15 @@ function _QuestieFrame:BaseOnShow()
         data.ObjectiveData.Color and
         (data.Type and (data.Type ~= "available" and data.Type ~= "complete")
         ) then
-        self.glow:SetWidth(self:GetWidth() * 1.13)
-        self.glow:SetHeight(self:GetHeight() * 1.13)
-        self.glow:SetPoint("CENTER", self, 0, 0)
+        self.glowTexture:SetSize(self:GetWidth() * 1.13, self:GetHeight() * 1.13)
         local _, _, _, alpha = self.texture:GetVertexColor()
         self.glowTexture:SetVertexColor(data.ObjectiveData.Color[1], data.ObjectiveData.Color[2], data.ObjectiveData.Color[3], GetObjectiveGlowAlpha(self, alpha))
-        self.glow:Show()
+        self.glowTexture:Show()
     end
 end
 
 function _QuestieFrame:BaseOnHide()
-    self.glow:Hide()
+    self.glowTexture:Hide()
 end
 
 function _QuestieFrame:UpdateTexture(texture)
@@ -327,8 +314,10 @@ function _QuestieFrame:UpdateTexture(texture)
 
     if overlayTexture then
         self.overlayTexture:SetTexture(QuestieLib.AddonPath .. "Icons\\" .. overlayTexture)
+        self.overlayTexture:Show()
     else
-        self.overlayTexture:SetTexture("")
+        self.overlayTexture:Hide()
+        self.overlayTexture:SetTexture(nil)
     end
 
     if self.data.IconColor ~= nil and objectiveColor then
@@ -338,11 +327,9 @@ function _QuestieFrame:UpdateTexture(texture)
 
     if self.data.IconScale then
         local scale = 16 * ((self.data:GetIconScale() or 1) * (globalScale or 0.7));
-        self:SetWidth(scale)
-        self:SetHeight(scale)
+        self:SetSize(scale, scale)
     else
-        self:SetWidth(16)
-        self:SetHeight(16)
+        self:SetSize(16, 16)
     end
 
     -- Party member objectives (quests the local player does not have) are dimmed so they are
@@ -395,16 +382,14 @@ function _QuestieFrame:Unload()
         self.texture:SetTexCoord(0, 1, 0, 1)
     end
     if self.overlayTexture then
-        self.overlayTexture:SetTexture("")
+        self.overlayTexture:Hide()
+        self.overlayTexture:SetTexture(nil)
     end
     self.miniMapIcon = nil;
     self:SetScript("OnUpdate", nil)
 
     if self.fadeLogicTimer then
         self.fadeLogicTimer:Cancel();
-    end
-    if self.glowLogicTimer then
-        self.glowLogicTimer:Cancel();
     end
     --Unload potential waypoint frames that are used for pathing.
     if self.data and self.data.lineFrames then
@@ -415,7 +400,7 @@ function _QuestieFrame:Unload()
 
     if self.OnHide then self:OnHide() end -- the event might trigger after OnHide=nil even if its set after self:Hide()
     self:Hide()
-    self.glow:Hide()
+    self.glowTexture:Hide()
     self.data = nil -- Just to be safe
     self.x = nil
     self.y = nil
