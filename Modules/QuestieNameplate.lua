@@ -103,11 +103,6 @@ local function scheduleNameplateLayoutRefresh(frame)
     end)
 end
 
--- Not used
-function QuestieNameplate:Initialize()
-    -- Nothing to initialize
-end
-
 ---@param token string
 function QuestieNameplate:NameplateCreated(token)
     Questie:Debug(Questie.DEBUG_SPAM, "[QuestieNameplate:NameplateCreated]")

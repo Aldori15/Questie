@@ -90,21 +90,6 @@ _QuestieComms.QC_ID_BROADCAST_FULL_QUESTLISTV2 = 12
 _QuestieComms.QC_ID_YELL_PROGRESS = 13
 _QuestieComms.QC_ID_BROADCAST_QUEST_UPDATEV2 = 14 -- v2 (future use)
 
--- NOT USED
--- stringLookup it built from idLookup!
-_QuestieComms.stringLookup = {}
-_QuestieComms.idLookup = {
-    ["id"] = 1,
-    ["type"] = 2,
-    ["finished"] = 3,
-    ["fulfilled"] = 4,
-    ["required"] = 5,
-}
-for string, int in pairs(_QuestieComms.idLookup) do
-    _QuestieComms.stringLookup[int] = string;
-end
--- !NOT USED
-
 local badYellLocations = {
   -- Alliance
   [1453] = true, -- Stormwind
