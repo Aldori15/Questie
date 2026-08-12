@@ -23,39 +23,18 @@ local mapButton
 local lastWorldMapButtonEffectiveScale
 local lastWorldMapFrameEffectiveScale
 local isRefreshingWorldMapButtonLayout
-local childScanFailed
 local worldMapFrameUpdateHooked
-
-local function _GetChildrenSafely(frame)
-    if childScanFailed or not frame or not frame.GetChildren then
-        return
-    end
-
-    local ok, children = pcall(function()
-        return { frame:GetChildren() }
-    end)
-
-    if ok then
-        return children
-    end
-
-    childScanFailed = true
-end
 
 local function _GetOccupiedCornerOffset(worldMapButtonFrame, corner)
     local occupiedOffset
     local parentEffectiveScale = worldMapButtonFrame.GetEffectiveScale and worldMapButtonFrame:GetEffectiveScale() or worldMapButtonFrame:GetScale() or 1
 
-    local worldMapButtonChildren = _GetChildrenSafely(worldMapButtonFrame)
-    if not worldMapButtonChildren then
-        return
-    end
-
     local isRightSide = (corner == "TOPRIGHT" or corner == "BOTTOMRIGHT")
     local sideAnchor = isRightSide and "RIGHT" or "LEFT"
 
-    for _, child in next, worldMapButtonChildren do
-        if child ~= mapButton and child.IsShown and child:IsShown() then
+    local child = EnumerateFrames()
+    while child do
+        if child ~= mapButton and child:GetParent() == worldMapButtonFrame and child.IsShown and child:IsShown() then
             local point, relativeFrame, relativePoint, xOffset = child:GetPoint(1)
             if relativeFrame == worldMapButtonFrame and xOffset ~= nil and
                 (point == corner or point == sideAnchor) and
@@ -86,6 +65,8 @@ local function _GetOccupiedCornerOffset(worldMapButtonFrame, corner)
                 end
             end
         end
+
+        child = EnumerateFrames(child)
     end
 
     return occupiedOffset
