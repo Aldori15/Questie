@@ -169,6 +169,10 @@ local migrationFunctions = {
         Questie.db.profile.mapCoordinatesEnabled = false
         Questie.db.profile.showManualTooltipCoordinates = false
     end,
+    [30] = function()
+        Questie.db.global.lastDailyRequestDate = nil
+        Questie.db.global.lastDailyRequestResetTime = nil
+    end,
 }
 
 function Migration:Migrate()

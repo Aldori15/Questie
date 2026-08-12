@@ -443,17 +443,6 @@ QuestieInit.Stages[3] = function() -- run as a coroutine
     -- We only update this if Questie fully loads to make sure we don't update it on crashes/fast reloads
     QuestieLib.UpdateLastKnownDailyReset()
 
-    if (Questie.IsWotlk or Questie.IsTBC or QuestieCompat.Is335) and QuestiePlayer.IsMaxLevel() then
-        local lastRequestWasYesterday = Questie.db.global.lastDailyRequestDate ~= date("%d-%m-%y"); -- Yesterday or some day before
-        local questResetTime = QuestieCompat.GetQuestResetTime();
-        local isPastDailyReset = Questie.db.global.lastDailyRequestResetTime < questResetTime;
-
-        if lastRequestWasYesterday or isPastDailyReset then
-            Questie.db.global.lastDailyRequestDate = date("%d-%m-%y");
-            Questie.db.global.lastDailyRequestResetTime = questResetTime;
-        end
-    end
-
     -- We do this last because it will run for a while and we don't want to block the rest of the init
     Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage3] Drawing available quests.")
     coYield()
