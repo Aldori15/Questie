@@ -216,7 +216,7 @@ function MapIconTooltip:Show()
                     local manualKey = title
                     if manualTooltipData.Body then
                         for _, line in ipairs(manualTooltipData.Body) do
-                            if type(line) == "table" and line[1] == "Coordinates:" then
+                            if Questie.db.profile.showManualTooltipCoordinates and type(line) == "table" and line[1] == "Coordinates:" then
                                 manualKey = title .. "|" .. line[2]
                                 break
                             end

@@ -70,7 +70,7 @@ function QuestieOptions.tabs.map:Initialize()
                 type = "toggle",
                 order = 5,
                 name = function() return l10n('Show Map Coordinates'); end,
-                desc = function() return l10n("Place the Player's coordinates and Cursor's coordinates on the Map's title."); end,
+                desc = function() return l10n("Display the Player's and Cursor's coordinates on the world map."); end,
                 width = 1.55,
                 get = function(info) return QuestieOptions:GetProfileValue(info); end,
                 set = function(info, value)

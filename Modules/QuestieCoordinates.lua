@@ -52,63 +52,73 @@ local function GetMiniWorldMapTitleText()
     end
 end
 
-local function GetWorldMapCoordsTitleText()
+local function GetWorldMapCoordsText()
     if not QuestieCompat.Is335 then
         return GetMapTitleText()
     end
 
-    if QuestieCoords._worldMapCoordsTitleText then
-        return QuestieCoords._worldMapCoordsTitleText
+    if QuestieCoords._worldMapCoordsText then
+        return QuestieCoords._worldMapCoordsText
     end
 
-    if not WorldMapFrameTitle then
+    local worldMapFrame = _G.WorldMapFrame
+    local positioningGuide = _G.WorldMapPositioningGuide or _G.WorldMapDetailFrame
+    if not worldMapFrame or not positioningGuide then
         return nil
     end
 
-    local worldMapFrameParent = WorldMapFrameTitle.GetParent and WorldMapFrameTitle:GetParent() or _G.WorldMapFrame or UIParent
-    if not worldMapFrameParent or not worldMapFrameParent.CreateFontString then
-        return nil
-    end
+    local coordsText = worldMapFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    coordsText:SetPoint("BOTTOM", positioningGuide, "BOTTOM", 0, 10)
+    coordsText:SetJustifyH("CENTER")
+    coordsText:Hide()
 
-    local coordsTitleText = worldMapFrameParent:CreateFontString(nil, "OVERLAY")
-    coordsTitleText:SetPoint("CENTER", WorldMapFrameTitle, "CENTER", 0, 0)
-
-    local font, size, flags = WorldMapFrameTitle:GetFont()
-    if font then
-        coordsTitleText:SetFont(font, size, flags)
-    end
-
-    local r, g, b, a = WorldMapFrameTitle:GetTextColor()
-    coordsTitleText:SetTextColor(r, g, b, a)
-
-    local shadowR, shadowG, shadowB, shadowA = WorldMapFrameTitle:GetShadowColor()
-    if shadowR then
-        coordsTitleText:SetShadowColor(shadowR, shadowG, shadowB, shadowA)
-    end
-
-    local shadowX, shadowY = WorldMapFrameTitle:GetShadowOffset()
-    if shadowX and shadowY then
-        coordsTitleText:SetShadowOffset(shadowX, shadowY)
-    end
-
-    coordsTitleText:Hide()
-    QuestieCoords._worldMapCoordsTitleText = coordsTitleText
-    return coordsTitleText
+    QuestieCoords._worldMapCoordsText = coordsText
+    return coordsText
 end
 
-local function HideWorldMapCoordsTitleText()
-    if QuestieCompat.Is335 and WorldMapFrameTitle and not WorldMapFrameTitle:IsShown() then
-        WorldMapFrameTitle:Show()
+local function UpdateWorldMapCoordsLayout(coordsText)
+    if not QuestieCompat.Is335 or not coordsText then
+        return
     end
 
+    local positioningGuide = _G.WorldMapPositioningGuide or _G.WorldMapDetailFrame
+    if not positioningGuide then
+        return
+    end
+
+    local isWindowed = WORLDMAP_SETTINGS and WORLDMAP_WINDOWED_SIZE and WORLDMAP_SETTINGS.size == WORLDMAP_WINDOWED_SIZE
+    local yOffset = 10
+
+    if isWindowed then
+        local objectivesButton = _G.WorldMapQuestShowObjectives
+        local guideBottom = positioningGuide:GetBottom()
+        local _, objectivesCenterY = objectivesButton and objectivesButton:GetCenter()
+        if guideBottom and objectivesCenterY then
+            yOffset = objectivesCenterY - guideBottom
+        else
+            yOffset = 0
+        end
+    end
+
+    if QuestieCoords._worldMapCoordsWindowed == isWindowed and QuestieCoords._worldMapCoordsYOffset == yOffset then
+        return
+    end
+
+    QuestieCoords._worldMapCoordsWindowed = isWindowed
+    QuestieCoords._worldMapCoordsYOffset = yOffset
+    coordsText:ClearAllPoints()
+    coordsText:SetPoint("CENTER", positioningGuide, "BOTTOM", 0, yOffset)
+end
+
+local function HideWorldMapCoordsText()
     QuestieCoords._nextWorldMapCoordsUpdateAt = nil
 
-    if QuestieCoords._worldMapCoordsTitleText then
-        if QuestieCoords._worldMapCoordsTitleText:IsShown() then
-            QuestieCoords._worldMapCoordsTitleText:Hide()
+    if QuestieCoords._worldMapCoordsText then
+        if QuestieCoords._worldMapCoordsText:IsShown() then
+            QuestieCoords._worldMapCoordsText:Hide()
         end
-        if QuestieCoords._worldMapCoordsTitleText:GetText() ~= "" then
-            QuestieCoords._worldMapCoordsTitleText:SetText("")
+        if QuestieCoords._worldMapCoordsText:GetText() ~= "" then
+            QuestieCoords._worldMapCoordsText:SetText("")
         end
     end
 end
@@ -118,7 +128,7 @@ function QuestieCoords:WriteCoords()
     local shouldShowMinimapCoords = Questie.db.profile.minimapCoordinatesEnabled and Minimap:IsVisible()
 
     if not shouldShowWorldMapCoords then
-        HideWorldMapCoordsTitleText()
+        HideWorldMapCoordsText()
     end
 
     if not (shouldShowWorldMapCoords or shouldShowMinimapCoords) then
@@ -127,13 +137,13 @@ function QuestieCoords:WriteCoords()
     local isInInstance, instanceType = IsInInstance()
 
     if isInInstance and "pvp" ~= instanceType then
-        HideWorldMapCoordsTitleText()
+        HideWorldMapCoordsText()
         return -- dont write coords in raids
     end
 
     local position = QuestieCoords.GetPlayerMapPosition()
     if (not position) then
-        HideWorldMapCoordsTitleText()
+        HideWorldMapCoordsText()
         return
     end
 
@@ -150,8 +160,10 @@ function QuestieCoords:WriteCoords()
         end
     end
     -- if main map
-    local mapTitleText = GetWorldMapCoordsTitleText()
-    if shouldShowWorldMapCoords and mapTitleText then
+    local mapCoordsText = GetWorldMapCoordsText()
+    if shouldShowWorldMapCoords and mapCoordsText then
+        UpdateWorldMapCoordsLayout(mapCoordsText)
+
         if QuestieCompat.Is335 then
             local now = GetTime()
             if QuestieCoords._nextWorldMapCoordsUpdateAt and now < QuestieCoords._nextWorldMapCoordsUpdateAt then
@@ -182,22 +194,14 @@ function QuestieCoords:WriteCoords()
             curX, curY = 0, 0
         end
 
-        local worldmapCoordsText = "Cursor: "..format(precision.. " X, ".. precision .." Y  ", curX, curY);
-
-        worldmapCoordsText = worldmapCoordsText.." | Player: "..format(precision.. " X , ".. precision .." Y", posX, posY);
-        worldmapCoordsText = worldmapCoordsText.." | UIMapID: "..position.uiMapID;
-        worldmapCoordsText = worldmapCoordsText.." | MapAreaID: "..GetCurrentMapAreaID();
+        local worldmapCoordsText = "Cursor: "..format(precision..", "..precision, curX, curY)
+        worldmapCoordsText = worldmapCoordsText.." | Player: "..format(precision..", "..precision, posX, posY)
 
         -- Add text to world map
-        if QuestieCompat.Is335 and WorldMapFrameTitle then
-            if WorldMapFrameTitle:IsShown() then
-                WorldMapFrameTitle:Hide()
-            end
-            if not mapTitleText:IsShown() then
-                mapTitleText:Show()
-            end
+        if QuestieCompat.Is335 and not mapCoordsText:IsShown() then
+            mapCoordsText:Show()
         end
-        SetTextIfChanged(mapTitleText, worldmapCoordsText)
+        SetTextIfChanged(mapCoordsText, worldmapCoordsText)
 
         -- Adding text to mini world map
         local miniWorldMapTitleText = GetMiniWorldMapTitleText()
@@ -240,7 +244,7 @@ function QuestieCoords:ResetMinimapText()
 end
 
 function QuestieCoords:ResetMapText()
-    HideWorldMapCoordsTitleText()
+    HideWorldMapCoordsText()
     if not QuestieCompat.Is335 then
         GetMapTitleText():SetText(WORLD_MAP);
     end

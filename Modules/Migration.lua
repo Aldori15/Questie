@@ -165,6 +165,10 @@ local migrationFunctions = {
     [28] = function()
         Questie.db.profile.enableTooltipsBreadcrumbQuests = false
     end,
+    [29] = function()
+        Questie.db.profile.mapCoordinatesEnabled = false
+        Questie.db.profile.showManualTooltipCoordinates = false
+    end,
 }
 
 function Migration:Migrate()
