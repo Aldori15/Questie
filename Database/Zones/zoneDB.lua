@@ -162,8 +162,11 @@ function ZoneDB:GetLocalizedDungeonName(areaId)
 end
 
 ---@param areaId AreaId
+---@return boolean
 function ZoneDB.IsDungeonZone(areaId)
-    return dungeonLocations[areaId] ~= nil
+    local alternativeDungeonAreaId = alternativeDungeonAreaIdToDungeonAreaId[areaId]
+    local parentZoneId = alternativeDungeonAreaId or dungeonParentZones[areaId] or subZoneToParentZone[areaId]
+    return dungeonLocations[areaId] ~= nil or alternativeDungeonAreaId ~= nil or (parentZoneId ~= nil and dungeonLocations[parentZoneId] ~= nil)
 end
 
 ---@param areaId AreaId
@@ -182,8 +185,9 @@ function ZoneDB:GetAlternativeZoneId(areaId)
 end
 
 ---@param areaId AreaId
+---@return AreaId?
 function ZoneDB:GetParentZoneId(areaId)
-    return dungeonParentZones[areaId] or subZoneToParentZone[areaId]
+    return alternativeDungeonAreaIdToDungeonAreaId[areaId] or dungeonParentZones[areaId] or subZoneToParentZone[areaId]
 end
 
 
