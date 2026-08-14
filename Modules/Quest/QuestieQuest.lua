@@ -583,8 +583,8 @@ function QuestieQuest:UpdateQuest(questId)
             -- cannot observe the old incomplete state while the cleanup is running.
             quest.WasComplete = true
 
-            -- Populate objectives to register tooltips
-            QuestieQuest:UpdateObjectiveNotes(quest)
+            -- Register tooltips synchronously so quest removal cannot invalidate QuestLogCache first.
+            QuestieQuest.RegisterObjectiveTooltips(quest)
 
             -- Only remove the map icons, but keep the tooltips
             _UnloadQuestFrames(questId, function()
@@ -648,8 +648,8 @@ function QuestieQuest:UpdateQuest(questId)
                         quest.isComplete = true
                         allObjectivesComplete = true
 
-                        -- Populate objectives to register tooltips
-                        QuestieQuest:UpdateObjectiveNotes(quest)
+                        -- Register tooltips synchronously so quest removal cannot invalidate QuestLogCache first.
+                        QuestieQuest.RegisterObjectiveTooltips(quest)
 
                         -- Only remove the map icons, but keep the tooltips
                         _UnloadQuestFrames(questId, function()
@@ -932,6 +932,33 @@ function QuestieQuest:UpdateObjectiveNotes(quest)
     if next(quest.SpecialObjectives) then
         for _, objective in pairs(quest.SpecialObjectives) do
             _RunPopulateObjective(quest, 0, objective, true, updateTracker)
+        end
+    end
+end
+
+-- Register tooltips for completed quest objectives synchronously without reading QuestLogCache.
+-- Completed objectives are already populated, so only their spawn data and tooltips are needed.
+---@param quest Quest
+function QuestieQuest.RegisterObjectiveTooltips(quest)
+    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest] RegisterObjectiveTooltips:", quest.Id)
+
+    for _, objective in pairs(quest.Objectives) do
+        local objectiveData = quest.ObjectiveData[objective.Index] or objective
+        local spawnListHandler = _QuestieQuest.objectiveSpawnListCallTable[objectiveData.Type]
+        if (not objective.spawnList or not next(objective.spawnList)) and spawnListHandler then
+            objective.spawnList = spawnListHandler(objective.Id, objective, objectiveData)
+        end
+        _RegisterObjectiveTooltips(objective, quest.Id, false)
+    end
+
+    if next(quest.SpecialObjectives) then
+        for _, objective in pairs(quest.SpecialObjectives) do
+            local objectiveData = quest.ObjectiveData[objective.Index] or objective
+            local spawnListHandler = _QuestieQuest.objectiveSpawnListCallTable[objectiveData.Type]
+            if (not objective.spawnList or not next(objective.spawnList)) and spawnListHandler then
+                objective.spawnList = spawnListHandler(objective.Id, objective, objectiveData)
+            end
+            _RegisterObjectiveTooltips(objective, quest.Id, true)
         end
     end
 end
