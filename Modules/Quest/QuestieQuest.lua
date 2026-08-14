@@ -942,7 +942,11 @@ end
 function QuestieQuest.RegisterObjectiveTooltips(quest)
     Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest] RegisterObjectiveTooltips:", quest.Id)
 
-    for _, objective in pairs(quest.Objectives) do
+    for objectiveIndex, objective in pairs(quest.Objectives) do
+        if not objective.Index then
+            objective.Index = objectiveIndex
+        end
+
         local objectiveData = quest.ObjectiveData[objective.Index] or objective
         local spawnListHandler = _QuestieQuest.objectiveSpawnListCallTable[objectiveData.Type]
         if (not objective.spawnList or not next(objective.spawnList)) and spawnListHandler then
@@ -952,7 +956,11 @@ function QuestieQuest.RegisterObjectiveTooltips(quest)
     end
 
     if next(quest.SpecialObjectives) then
-        for _, objective in pairs(quest.SpecialObjectives) do
+        for objectiveIndex, objective in pairs(quest.SpecialObjectives) do
+            if not objective.Index then
+                objective.Index = 64 + objectiveIndex
+            end
+
             local objectiveData = quest.ObjectiveData[objective.Index] or objective
             local spawnListHandler = _QuestieQuest.objectiveSpawnListCallTable[objectiveData.Type]
             if (not objective.spawnList or not next(objective.spawnList)) and spawnListHandler then
