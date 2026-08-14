@@ -68,7 +68,7 @@ local durabilityInitialPosition
 
 local voiceOverInitialPosition
 if VoiceOverFrame then
-    voiceOverInitialPosition = { VoiceOverFrame:GetPoint() }
+    voiceOverInitialPosition = {VoiceOverFrame:GetPoint()}
 end
 
 local questsWatched = GetNumQuestWatches()
@@ -77,7 +77,7 @@ local trackedAchievements
 local trackedAchievementIds
 
 if Questie.IsWotlk or QuestieCompat.Is335 then
-    trackedAchievements = { GetTrackedAchievements() }
+    trackedAchievements = {GetTrackedAchievements()}
     trackedAchievementIds = {}
 end
 
@@ -87,6 +87,8 @@ local trackerBaseFrame, trackerHeaderFrame, trackerQuestFrame
 local QuestLogFrame = QuestLogExFrame or ClassicQuestLog or QuestLogFrame
 
 function QuestieTracker.Initialize()
+    assert(coroutine.running(), "QuestieTracker.Initialize must be called from a coroutine")
+
     if QuestieTracker.started then
         -- The Tracker was already initialized, so we don't need to do it again.
         return
@@ -97,7 +99,7 @@ function QuestieTracker.Initialize()
         return
     end
 
-    durabilityInitialPosition = { DurabilityFrame:GetPoint() }
+    durabilityInitialPosition = {DurabilityFrame:GetPoint()}
 
     -- Initialize tracker frames
     trackerBaseFrame = TrackerBaseFrame.Initialize()
@@ -222,7 +224,7 @@ function QuestieTracker.Initialize()
                     end
                 end
 
-                trackedAchievements = { GetTrackedAchievements() }
+                trackedAchievements = {GetTrackedAchievements()}
                 WatchFrame_Update()
 
                 -- Sync and populate QuestieTrackers achievement cache
@@ -264,7 +266,7 @@ end
 function QuestieTracker:ResetDurabilityFrame()
     if durabilityInitialPosition then
         -- Only reset if it's been moved from it's default position set by Blizzard
-        if durabilityInitialPosition ~= { DurabilityFrame:GetPoint() } then
+        if durabilityInitialPosition ~= {DurabilityFrame:GetPoint()} then
             Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieTracker:ResetDurabilityFrame]")
 
             -- Resets Durability Frame back to it's default position
@@ -339,7 +341,7 @@ end
 
 function QuestieTracker:ResetVoiceOverFrame()
     if voiceOverInitialPosition then
-        if voiceOverInitialPosition ~= { VoiceOverFrame:GetPoint() } then
+        if voiceOverInitialPosition ~= {VoiceOverFrame:GetPoint()} then
             Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieTracker:ResetVoiceOverFrame]")
 
             VoiceOverFrame:ClearAllPoints()
@@ -461,8 +463,9 @@ function QuestieTracker:Enable()
 
     Questie.db.profile.trackerEnabled = true
     QuestieTracker.started = false
-    QuestieTracker.Initialize()
-    ReloadUI()
+    ThreadLib.ThreadCallbackInstant(function()
+        QuestieTracker.Initialize()
+    end, ReloadUI)
 end
 
 function QuestieTracker:Disable()
@@ -649,7 +652,8 @@ function QuestieTracker:Update(force)
         for _, questId in pairs(sortedQuestIds) do
             if not questId then break end
 
-            objectiveMarginLeft = questMarginLeft + trackerFontSizeQuest -- reset objectiveMarginLeft for each quest, it can be increased if there are quest items
+            -- reset objectiveMarginLeft for each quest, it can be increased if there are quest items
+            objectiveMarginLeft = questMarginLeft + trackerFontSizeQuest
 
             local quest = questDetails[questId].quest
             local cachedObjectives = QuestLogCache.questLog_DO_NOT_MODIFY[questId] and QuestLogCache.questLog_DO_NOT_MODIFY[questId].objectives
@@ -1526,7 +1530,7 @@ function QuestieTracker:Update(force)
                                     local white = FloatRGBToHex(0.937, 0.937, 0.937)
                                     line.label:SetText(white .. prefix .. objDesc .. "|r")
                                 else
-                                    line.label:SetText(QuestieLib:GetRGBForObjective({ Collected = 0, Needed = 1 }) .. prefix .. objDesc)
+                                    line.label:SetText(QuestieLib:GetRGBForObjective({Collected = 0, Needed = 1}) .. prefix .. objDesc)
                                 end
                                 _UpdateLineWidth(line, objectiveMarginLeft)
 
@@ -1592,7 +1596,7 @@ function QuestieTracker:Update(force)
                                             local white = FloatRGBToHex(0.937, 0.937, 0.937)
                                             line.label:SetText(white .. prefix .. objDesc .. ": " .. "|r" .. GetPercentColorHex(quantityProgress / (quantityNeeded > 0 and quantityNeeded or 1)) .. lineEnding .. "|r")
                                         else
-                                            line.label:SetText(QuestieLib:GetRGBForObjective({ Collected = quantityProgress, Needed = quantityNeeded }) .. prefix .. objDesc .. ": " .. lineEnding)
+                                            line.label:SetText(QuestieLib:GetRGBForObjective({Collected = quantityProgress, Needed = quantityNeeded}) .. prefix .. objDesc .. ": " .. lineEnding)
                                         end
 
                                         -- Check and measure Objective text width and update tracker width
@@ -1609,7 +1613,7 @@ function QuestieTracker:Update(force)
                                                 local white = FloatRGBToHex(0.937, 0.937, 0.937)
                                                 line.label:SetText(white .. prefix .. objDesc .. ": " .. "|r")
                                             else
-                                                line.label:SetText(QuestieLib:GetRGBForObjective({ Collected = quantityProgress, Needed = quantityNeeded }) .. prefix .. objDesc .. ": ")
+                                                line.label:SetText(QuestieLib:GetRGBForObjective({Collected = quantityProgress, Needed = quantityNeeded}) .. prefix .. objDesc .. ": ")
                                             end
 
                                             -- Check and measure Objective text width and update tracker width
@@ -1654,7 +1658,7 @@ function QuestieTracker:Update(force)
                                                 local white = FloatRGBToHex(0.937, 0.937, 0.937)
                                                 line.label:SetText(white .. "    > " .. "|r" .. GetPercentColorHex(quantityProgress / (quantityNeeded > 0 and quantityNeeded or 1)) .. lineEnding .. "|r")
                                             else
-                                                line.label:SetText(QuestieLib:GetRGBForObjective({ Collected = quantityProgress, Needed = quantityNeeded }) .. "    > " .. lineEnding)
+                                                line.label:SetText(QuestieLib:GetRGBForObjective({Collected = quantityProgress, Needed = quantityNeeded}) .. "    > " .. lineEnding)
                                             end
 
                                             -- Check and measure Objective text width and update tracker width
@@ -1680,7 +1684,7 @@ function QuestieTracker:Update(force)
                                                 local white = FloatRGBToHex(0.937, 0.937, 0.937)
                                                 line.label:SetText(white .. prefix .. objDesc .. "|r")
                                             else
-                                                line.label:SetText(QuestieLib:GetRGBForObjective({ Collected = 1, Needed = 1 }) .. prefix .. objDesc)
+                                                line.label:SetText(QuestieLib:GetRGBForObjective({Collected = 1, Needed = 1}) .. prefix .. objDesc)
                                             end
                                         else
                                             local prefix = "- "
@@ -1688,7 +1692,7 @@ function QuestieTracker:Update(force)
                                                 local white = FloatRGBToHex(0.937, 0.937, 0.937)
                                                 line.label:SetText(white .. prefix .. objDesc .. "|r")
                                             else
-                                                line.label:SetText(QuestieLib:GetRGBForObjective({ Collected = 0, Needed = 1 }) .. prefix .. objDesc)
+                                                line.label:SetText(QuestieLib:GetRGBForObjective({Collected = 0, Needed = 1}) .. prefix .. objDesc)
                                             end
                                         end
 
@@ -1867,7 +1871,7 @@ function QuestieTracker:UpdateWidth(trackerVarsCombined)
     local trackerWidthCheck
 
     if (not Questie.db.char.isTrackerExpanded) and headerShown then
-        trackerWidthCheck =  trackerHeaderFrameWidth
+        trackerWidthCheck = trackerHeaderFrameWidth
     elseif TrackerBaseFrame.isSizing and Questie.db.profile.TrackerWidth == 0 then
         -- In auto mode, show live width-ratio preview while dragging the options slider.
         if headerShown and trackerWidthByRatio < trackerHeaderFrameWidth then

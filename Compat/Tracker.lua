@@ -23,5 +23,9 @@ function QuestieCompat.QuestieTracker_Initialize(trackerQuestFrame)
 end
 
 function QuestieCompat.RegisterTrackerCompatibilityHooks()
-    hooksecurefunc(TrackerLinePool, "Initialize", QuestieCompat.QuestieTracker_Initialize)
+    local initialize = TrackerLinePool.Initialize
+    TrackerLinePool.Initialize = function(trackerQuestFrame)
+        initialize(trackerQuestFrame)
+        QuestieCompat.QuestieTracker_Initialize(trackerQuestFrame)
+    end
 end

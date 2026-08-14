@@ -29,7 +29,7 @@ local QuestieCombatQueue = QuestieLoader:ImportModule("QuestieCombatQueue")
 ---@type QuestieDB
 local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 ---@type QuestieLib
-local QuestieLib = QuestieLoader:ImportModule("QuestieLib");
+local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
 
@@ -40,6 +40,9 @@ local GetQuestLogIndexByID = QuestieCompat.GetQuestLogIndexByID
 
 local LibDropDown = QuestieCompat.LibUIDropDownMenu or LibStub:GetLibrary("LibUIDropDownMenuQuestie-4.0")
 local LSM30 = LibStub("LibSharedMedia-3.0")
+
+local coYield = coroutine.yield
+local TICKS_PER_YIELD = 50
 
 local linePoolSize = 250
 local lineIndex = 0
@@ -114,6 +117,7 @@ function TrackerLinePool.Initialize(questFrame)
 
     -- create linePool for quests/achievements
     local nextFrame
+    local yieldCount = 0
     for i = 1, linePoolSize do
         local timeElapsed = 0
         local line = CreateFrame("Button", "linePool" .. i, trackerQuestFrame.ScrollChildFrame)
@@ -519,6 +523,12 @@ function TrackerLinePool.Initialize(questFrame)
 
         linePool[i] = line
         nextFrame = line
+
+        yieldCount = yieldCount + 1
+        if yieldCount >= TICKS_PER_YIELD then
+            yieldCount = 0
+            coYield()
+        end
     end
 
     -- create buttonPool for quest items
@@ -1023,7 +1033,7 @@ function TrackerLinePool.SetAllPlayButtonAlpha(alpha)
             local line = linePool[i]
             local questId = line.playButton.mode or 0
             local button = VoiceOver.QuestOverlayUI.questPlayButtons[questId]
-            local sound = VoiceOver.DataModules:PrepareSound({ event = 1, questID = questId })
+            local sound = VoiceOver.DataModules:PrepareSound({event = 1, questID = questId})
 
             if button then
                 local isPlaying = button.soundData and VoiceOver.SoundQueue:Contains(button.soundData)
