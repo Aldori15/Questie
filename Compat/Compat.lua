@@ -113,10 +113,15 @@ QuestieCompat.ChrClasses = {
 local activeTimers = {}
 local inactiveTimers = {}
 
+local math_ceil = math.ceil
 local math_max = math.max
 local strfind = string.find
 
 local MIN_TIMER_DURATION = 0.01
+-- WoW 3.3.5 stores animation progress as a single-precision float. Long
+-- animation durations can stop advancing once their elapsed time reaches 2048
+-- seconds, so longer timer intervals are divided into safe animation chunks.
+local MAX_ANIMATION_TIMER_SECONDS = 30 * 60
 
 local function timerCancel(id)
     local timer = activeTimers[id]
@@ -130,6 +135,10 @@ local function timerCancel(id)
 end
 
 local function timerOnFinished(self)
+    self.pendingChunks = self.pendingChunks - 1
+    if self.pendingChunks > 0 then return end
+
+    self.pendingChunks = self.chunksPerIteration
     local id = self.id
     self.callback(id)
 
@@ -157,9 +166,12 @@ QuestieCompat.C_Timer = {
         end
 
         if duration < MIN_TIMER_DURATION then duration = MIN_TIMER_DURATION end
-        timer:SetDuration(duration)
+        local chunksPerIteration = math_ceil(duration / MAX_ANIMATION_TIMER_SECONDS)
+        timer:SetDuration(duration / chunksPerIteration)
 
         timer.callback = callback
+        timer.chunksPerIteration = chunksPerIteration
+        timer.pendingChunks = chunksPerIteration
         timer.iterations = iterations or -1
         timer.id = {Cancel = timerCancel}
         activeTimers[timer.id] = timer
