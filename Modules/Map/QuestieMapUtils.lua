@@ -11,53 +11,67 @@ local ZOOM_MODIFIER = 1;
 local tinsert = table.insert
 local pairs = pairs
 
+-- Frame-level offset for every icon type defined by Questie 335.
+local DRAW_ORDER_BY_ICON_TYPE_LOOKUP = {
+    [Questie.ICON_TYPE_SLAY] = 0,
+    [Questie.ICON_TYPE_LOOT] = 0,
+    [Questie.ICON_TYPE_EVENT] = 0,
+    [Questie.ICON_TYPE_OBJECT] = 0,
+    [Questie.ICON_TYPE_TALK] = 0,
+    [Questie.ICON_TYPE_AVAILABLE] = 1,
+    [Questie.ICON_TYPE_AVAILABLE_GRAY] = 0,
+    [Questie.ICON_TYPE_COMPLETE] = 3,
+    [Questie.ICON_TYPE_GLOW] = 0,
+    [Questie.ICON_TYPE_REPEATABLE] = 2,
+    [Questie.ICON_TYPE_REPEATABLE_COMPLETE] = 3,
+    [Questie.ICON_TYPE_INCOMPLETE] = 0,
+    [Questie.ICON_TYPE_EVENTQUEST] = 2,
+    [Questie.ICON_TYPE_EVENTQUEST_COMPLETE] = 3,
+    [Questie.ICON_TYPE_PVPQUEST] = 2,
+    [Questie.ICON_TYPE_PVPQUEST_COMPLETE] = 3,
+    [Questie.ICON_TYPE_INTERACT] = 0,
+    [Questie.ICON_TYPE_MOUNT_UP] = 0,
+    [Questie.ICON_TYPE_NODE_FISH] = 0,
+    [Questie.ICON_TYPE_NODE_HERB] = 0,
+    [Questie.ICON_TYPE_NODE_ORE] = 0,
+    [Questie.ICON_TYPE_CHEST] = 0,
+}
+
+local MAX_DRAW_ORDER_BY_ICON_TYPE = 0
+for _, drawOrder in pairs(DRAW_ORDER_BY_ICON_TYPE_LOOKUP) do
+    if drawOrder > MAX_DRAW_ORDER_BY_ICON_TYPE then
+        MAX_DRAW_ORDER_BY_ICON_TYPE = drawOrder
+    end
+end
+-- Leave one complete priority range between manual and regular quest icons.
+MAX_DRAW_ORDER_BY_ICON_TYPE = MAX_DRAW_ORDER_BY_ICON_TYPE + 1
+
+-- Quest finishers render above every manual and regular icon priority.
+local DRAW_ORDER_QUEST_COMPLETE = 2 * MAX_DRAW_ORDER_BY_ICON_TYPE
+
 function QuestieMap.utils:SetDrawOrder(frame)
-    -- We need to add 2015, because of the regular WorldMapFrame.ScrollContainer which seems to start at 2000
+    -- Keep icons above the map canvas and waypoint lines while preserving
+    -- the explicit parent and strata handling required by the 3.3.5 client.
+    local frameLevel
     if frame.miniMapIcon then
-        local frameLevel = Minimap:GetFrameLevel() + 2015
-        if frame.isManualIcon then
-            frameLevel = frameLevel - 1 -- This is to make sure that manual icons are always below other icons
-        end
-        local frameStrata = Minimap:GetFrameStrata()
         frame:SetParent(Minimap)
-        frame:SetFrameStrata(frameStrata)
-        frame:SetFrameLevel(frameLevel)
+        frame:SetFrameStrata(Minimap:GetFrameStrata())
+        frameLevel = Minimap:GetFrameLevel() + 2016
     else
-        local frameLevel = WorldMapFrame:GetFrameLevel() + 2015
-        if frame.isManualIcon then
-            frameLevel = frameLevel - 1 -- This is to make sure that manual icons are always below other icons
-        end
-        local frameStrata = WorldMapFrame:GetFrameStrata()
         frame:SetParent(WorldMapButton)
-        frame:SetFrameStrata(frameStrata)
-        frame:SetFrameLevel(frameLevel)
+        frame:SetFrameStrata(WorldMapFrame:GetFrameStrata())
+        frameLevel = WorldMapFrame:GetFrameLevel() + 2016
     end
 
-    -- Draw layer is between -8 and 7, please leave some number above so we don't paint ourselves into a corner...
-    -- These are sorted by order of most common occurrence to reduce if checks; it's less readable but more performant with so many icons
-    if frame.data then
-        if frame.data.Icon == Questie.ICON_TYPE_AVAILABLE then
-            frame.texture:SetDrawLayer("OVERLAY", 5)
-        elseif frame.data.Icon == Questie.ICON_TYPE_REPEATABLE then
-            frame.texture:SetDrawLayer("OVERLAY", 4)
-        elseif frame.data.Icon == Questie.ICON_TYPE_EVENTQUEST then
-            frame.texture:SetDrawLayer("OVERLAY", 4)
-        elseif frame.data.Icon == Questie.ICON_TYPE_PVPQUEST then
-            frame.texture:SetDrawLayer("OVERLAY", 4)
-        elseif frame.data.Icon == Questie.ICON_TYPE_COMPLETE then
-            frame.texture:SetDrawLayer("OVERLAY", 6)
-        elseif frame.data.Icon == Questie.ICON_TYPE_REPEATABLE_COMPLETE then
-            frame.texture:SetDrawLayer("OVERLAY", 6)
-        elseif frame.data.Icon == Questie.ICON_TYPE_EVENTQUEST_COMPLETE then
-            frame.texture:SetDrawLayer("OVERLAY", 6)
-        elseif frame.data.Icon == Questie.ICON_TYPE_PVPQUEST_COMPLETE then
-            frame.texture:SetDrawLayer("OVERLAY", 6)
-        else
-            frame.texture:SetDrawLayer("OVERLAY", 0)
-        end
+    if frame.data and frame.data.Type == "complete" then
+        frameLevel = frameLevel + DRAW_ORDER_QUEST_COMPLETE
     else
-        frame.texture:SetDrawLayer("OVERLAY", 0)
+        frameLevel = frameLevel
+            + ((frame.data and DRAW_ORDER_BY_ICON_TYPE_LOOKUP[frame.data.Icon]) or 0)
+            + (frame.isManualIcon and 0 or MAX_DRAW_ORDER_BY_ICON_TYPE)
     end
+
+    frame:SetFrameLevel(frameLevel)
 end
 
 function QuestieMap.utils:IsExplored(uiMapId, x, y)

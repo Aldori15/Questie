@@ -57,19 +57,12 @@ function QuestieFrame:New(frameId, OnEnter)
     end
     newFrame.isSkinned = true -- prevents ElvUI_Enhanced_MinimapButtonGrabber from hidding our pins
 
-    newFrame:SetFrameStrata("FULLSCREEN");
     newFrame:SetSize(16, 16)
-    newFrame:SetPoint("CENTER", -8, -8)
     newFrame:EnableMouse(true)
 
-    local glowt = newFrame:CreateTexture(nil, "ARTWORK", nil, -1)
-    glowt:SetSize(18, 18)
-    glowt:SetPoint("CENTER", newFrame, 0, 0)
-
+    -- Textures remain within one frame and use sublayers only for their
+    -- internal ordering. Icon-to-icon ordering is handled by frame levels.
     local newTexture = newFrame:CreateTexture(nil, "OVERLAY", nil, 0)
-    --t:SetTexture("Interface\\Icons\\INV_Misc_Eye_02.blp")
-    --t:SetTexture("Interface\\Addons\\!Questie\\Icons\\available.blp")
-    newTexture:SetSize(16, 16)
     newTexture:SetAllPoints(newFrame)
 
     if not QuestieCompat.Is335 then
@@ -77,25 +70,36 @@ function QuestieFrame:New(frameId, OnEnter)
         newTexture:SetSnapToPixelGrid(false)
     end
 
+    local overlayTexture = newFrame:CreateTexture(nil, "OVERLAY", nil, 1)
+    overlayTexture:SetAllPoints(newFrame)
+    if not QuestieCompat.Is335 then
+        overlayTexture:SetTexelSnappingBias(0)
+        overlayTexture:SetSnapToPixelGrid(false)
+    end
+    overlayTexture:Hide()
+
+    local glowTexture = newFrame:CreateTexture(nil, "OVERLAY", nil, -1)
+    glowTexture:SetPoint("CENTER", newFrame, 0, 0)
+    glowTexture:SetSize(18, 18)
+    glowTexture:SetTexture(Questie.icons["glow"])
+    if not QuestieCompat.Is335 then
+        glowTexture:SetTexelSnappingBias(0)
+        glowTexture:SetSnapToPixelGrid(false)
+    end
+    glowTexture:Hide()
+
     ---@class IconTexture : Texture
     newFrame.texture = newTexture;
     newFrame.texture.OLDSetVertexColor = newFrame.texture.SetVertexColor;
     newFrame.texture.SetVertexColor = _QuestieFrame.SetVertexColor
     newFrame.texture:SetVertexColor(1, 1, 1, 1);
 
-    local overlayTexture = newFrame:CreateTexture(nil, "OVERLAY", nil, 7)
-    overlayTexture:SetSize(16, 16)
-    overlayTexture:SetAllPoints(newFrame)
-    overlayTexture:Hide()
     newFrame.overlayTexture = overlayTexture
 
-    newFrame.glowTexture = glowt
+    newFrame.glowTexture = glowTexture
     newFrame.glowTexture.OLDSetVertexColor = newFrame.glowTexture.SetVertexColor;
     newFrame.glowTexture.SetVertexColor = _QuestieFrame.SetVertexColor
     newFrame.glowTexture:SetVertexColor(1, 1, 1, 1);
-
-    newFrame.glowTexture:SetTexture(Questie.icons["glow"])
-    newFrame.glowTexture:Hide()
 
     newFrame:SetScript("OnEnter", OnEnter);        --Script Toolip
     newFrame:SetScript("OnLeave", _QuestieFrame.OnLeave) --Script Exit Tooltip
@@ -255,9 +259,6 @@ end
 function _QuestieFrame:BaseOnShow()
     local data = self.data
 
-    if data and data.Type and data.Type == "complete" then
-        self:SetFrameLevel(self:GetFrameLevel() + 1)
-    end
     if ((self.miniMapIcon and Questie.db.profile.alwaysGlowMinimap) or ((not self.miniMapIcon) and Questie.db.profile.alwaysGlowMap)) and
         data and data.ObjectiveData and
         data.ObjectiveData.Color and
@@ -353,8 +354,6 @@ function _QuestieFrame:Unload()
     self:SetScript("OnUpdate", nil)
     self:SetScript("OnShow", nil)
     self:SetScript("OnHide", nil)
-    self:SetFrameStrata("FULLSCREEN");
-    self:SetFrameLevel(0);
     self.isManualIcon = false
 
     -- Reset questIdFrames so they won't be toggled again
