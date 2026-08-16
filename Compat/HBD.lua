@@ -980,7 +980,7 @@ local function UpdateWorldMap(force)
                 icon:UpdateLineGeometry()
             end
         elseif shouldRescale then
-            QuestieMap.utils:RescaleIcon(icon, mapScale)
+            QuestieMap.utils.RescaleIcon(icon, mapScale)
         end
         HandleWorldMapPin(icon, data, uiMapID)
     end

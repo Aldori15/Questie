@@ -31,7 +31,7 @@ local reducedObjectiveGlowIconTypes = {
 }
 
 local function GetObjectiveGlowAlpha(frame, alpha)
-    alpha = alpha or (frame.texture and frame.texture.a) or 1
+    alpha = alpha or frame.texture.a or 1
 
     if frame.data and reducedObjectiveGlowIconTypes[frame.data.Icon] then
         return alpha * NON_MONO_OBJECTIVE_GLOW_ALPHA
@@ -40,12 +40,20 @@ local function GetObjectiveGlowAlpha(frame, alpha)
     return alpha
 end
 
+---@class IconTexture : Texture
+---@field r number
+---@field g number
+---@field b number
+---@field a number
+---@field OLDSetVertexColor function
+
 ---@param frameId number
 ---@param OnEnter function
 ---@return IconFrame
-function QuestieFrame:New(frameId, OnEnter)
+function QuestieFrame.CreateIconFrame(frameId, OnEnter)
     ---@class IconFrame : Button
     ---@field isManualIcon boolean
+    ---@field data table
     local newFrame = CreateFrame("Button", "QuestieFrame" .. frameId)
     newFrame.frameId = frameId;
 
@@ -62,6 +70,7 @@ function QuestieFrame:New(frameId, OnEnter)
 
     -- Textures remain within one frame and use sublayers only for their
     -- internal ordering. Icon-to-icon ordering is handled by frame levels.
+    ---@type IconTexture
     local newTexture = newFrame:CreateTexture(nil, "OVERLAY", nil, 0)
     newTexture:SetAllPoints(newFrame)
 
@@ -78,6 +87,7 @@ function QuestieFrame:New(frameId, OnEnter)
     end
     overlayTexture:Hide()
 
+    ---@type IconTexture
     local glowTexture = newFrame:CreateTexture(nil, "OVERLAY", nil, -1)
     glowTexture:SetPoint("CENTER", newFrame, 0, 0)
     glowTexture:SetSize(18, 18)
@@ -88,7 +98,6 @@ function QuestieFrame:New(frameId, OnEnter)
     end
     glowTexture:Hide()
 
-    ---@class IconTexture : Texture
     newFrame.texture = newTexture;
     newFrame.texture.OLDSetVertexColor = newFrame.texture.SetVertexColor;
     newFrame.texture.SetVertexColor = _QuestieFrame.SetVertexColor
@@ -239,13 +248,13 @@ function _QuestieFrame:OnClick(button)
 end
 
 function _QuestieFrame:GlowUpdate()
-    if self.glowTexture and self.glowTexture.IsShown and self.glowTexture:IsShown() then
+    if self.glowTexture:IsShown() then
         --Due to this always being 1:1 we can assume that if one isn't correct, the other isn't either
         --We can also assume that both change at the same time so we only check one.
         if (self.glowTexture:GetWidth() ~= self:GetWidth() * 1.13) then
             self.glowTexture:SetSize(self:GetWidth() * 1.13, self:GetHeight() * 1.13)
         end
-        if self.data and self.data.ObjectiveData and self.data.ObjectiveData.Color and self.glowTexture then
+        if self.data and self.data.ObjectiveData and self.data.ObjectiveData.Color then
             local glowAlpha = GetObjectiveGlowAlpha(self)
             --Due to us now saving the alpha inside of the texture we don't need to check the main texture anymore.
             --The question is is it faster to get and compare or just set straight up?
@@ -286,7 +295,7 @@ function _QuestieFrame:UpdateTexture(texture)
         objectiveColor = Questie.db.profile.questMinimapObjectiveColors;
         -- Keep the current minimap alpha when only swapping icon texture.
         -- This avoids waiting for movement/fade ticks after level-threshold icon updates.
-        alpha = (self.texture and self.texture.a) or 1;
+        alpha = self.texture.a or 1;
     else
         globalScale = Questie.db.profile.globalScale;
         objectiveColor = Questie.db.profile.questObjectiveColors;
@@ -351,7 +360,6 @@ function _QuestieFrame:Unload()
     self._needsUnload = nil
     self._loaded = nil
     --Questie.Debug(Questie.DEBUG_SPAM, "[_QuestieFrame:Unload]")
-    self:SetScript("OnUpdate", nil)
     self:SetScript("OnShow", nil)
     self:SetScript("OnHide", nil)
     self.isManualIcon = false
@@ -376,20 +384,13 @@ function _QuestieFrame:Unload()
     HBDPins:RemoveWorldMapIcon(Questie, self)
     QuestieDBMIntegration:UnregisterHudQuestIcon(tostring(self))
 
-    if (self.texture) then
-        self.texture:SetVertexColor(1, 1, 1, 1)
-        self.texture:SetTexCoord(0, 1, 0, 1)
-    end
+    self.texture:SetVertexColor(1, 1, 1, 1)
+    self.texture:SetTexCoord(0, 1, 0, 1)
     if self.overlayTexture then
         self.overlayTexture:Hide()
         self.overlayTexture:SetTexture(nil)
     end
     self.miniMapIcon = nil;
-    self:SetScript("OnUpdate", nil)
-
-    if self.fadeLogicTimer then
-        self.fadeLogicTimer:Cancel();
-    end
     --Unload potential waypoint frames that are used for pathing.
     if self.data and self.data.lineFrames then
         for _, lineFrame in pairs(self.data.lineFrames) do
@@ -413,14 +414,10 @@ end
 function _QuestieFrame:FadeOut()
     if not self.faded then
         self.faded = true
-        if self.texture then
-            local r, g, b = self.texture:GetVertexColor()
-            self.texture:SetVertexColor(r, g, b, Questie.db.profile.iconFadeLevel)
-        end
-        if self.glowTexture then
-            local r, g, b = self.glowTexture:GetVertexColor()
-            self.glowTexture:SetVertexColor(r, g, b, GetObjectiveGlowAlpha(self, Questie.db.profile.iconFadeLevel))
-        end
+        local r, g, b = self.texture:GetVertexColor()
+        self.texture:SetVertexColor(r, g, b, Questie.db.profile.iconFadeLevel)
+        r, g, b = self.glowTexture:GetVertexColor()
+        self.glowTexture:SetVertexColor(r, g, b, GetObjectiveGlowAlpha(self, Questie.db.profile.iconFadeLevel))
         if self.data and self.data.lineFrames then
             for _, lineFrame in pairs(self.data.lineFrames) do
                 local line = lineFrame.line
@@ -435,14 +432,10 @@ end
 function _QuestieFrame:FadeIn()
     if self.faded then
         self.faded = nil
-        if self.texture then
-            local r, g, b = self.texture:GetVertexColor()
-            self.texture:SetVertexColor(r, g, b, 1)
-        end
-        if self.glowTexture then
-            local r, g, b = self.glowTexture:GetVertexColor()
-            self.glowTexture:SetVertexColor(r, g, b, GetObjectiveGlowAlpha(self, 1))
-        end
+        local r, g, b = self.texture:GetVertexColor()
+        self.texture:SetVertexColor(r, g, b, 1)
+        r, g, b = self.glowTexture:GetVertexColor()
+        self.glowTexture:SetVertexColor(r, g, b, GetObjectiveGlowAlpha(self, 1))
         if self.data and self.data.lineFrames then
             for _, lineFrame in pairs(self.data.lineFrames) do
                 local line = lineFrame.line
@@ -530,7 +523,7 @@ function _QuestieFrame:ShouldBeHidden()
         or ((not profile.enableMiniMapIcons) and isMinimap)
         or ((not QuestieIconVisibility:IsEnabled("turnin", isMinimap)) and iconType == "complete")
         or ((not QuestieIconVisibility:IsEnabled("objective", isMinimap)) and (iconType == "monster" or iconType == "object" or iconType == "event" or iconType == "item"))
-        or (profile.hideUnexploredMapIcons and not QuestieMap.utils:IsExplored(self.UiMapID, self.x, self.y)) -- Hides unexplored map icons
+        or (profile.hideUnexploredMapIcons and not QuestieMap.utils.IsExplored(self.UiMapID, self.x, self.y)) -- Hides unexplored map icons
         or (profile.hideUntrackedQuestsMapIcons and not QuestieQuest:ShouldShowQuestNotes(questId))           -- Hides untracked map icons
         or (data.ObjectiveData and data.ObjectiveData.HideIcons)
         or (data.QuestData and data.QuestData.HideIcons and iconType ~= "complete")

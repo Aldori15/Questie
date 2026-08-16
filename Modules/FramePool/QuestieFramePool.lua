@@ -72,7 +72,7 @@ function QuestieFramePool:GetFrame()
     if (not frame) then
         numberOfFrames = numberOfFrames + 1
 
-        frame = QuestieFrame:New(numberOfFrames, MapIconTooltip.Show)
+        frame = QuestieFrame.CreateIconFrame(numberOfFrames, MapIconTooltip.Show)
 
         if numberOfFrames > 5000 then
             Questie.Debug(Questie.DEBUG_CRITICAL, "[QuestieFramePool] Over 5000 frames... maybe there is a leak?", numberOfFrames)
@@ -88,13 +88,13 @@ end
 function QuestieFramePool:UpdateGlowConfig(mini, mode)
     if mode then
         for _, icon in pairs(usedFrames) do
-            if (((mini and icon.miniMapIcon) or not mini) and icon.glowTexture) and icon.IsShown and icon:IsShown() then
+            if ((mini and icon.miniMapIcon) or (not mini and not icon.miniMapIcon)) and icon:IsShown() then
                 icon:GetScript("OnShow")(icon) -- forces a glow update
             end
         end
     else
         for _, icon in pairs(usedFrames) do
-            if ((mini and icon.miniMapIcon) or (not mini and not icon.miniMapIcon)) and icon.glowTexture then
+            if (mini and icon.miniMapIcon) or (not mini and not icon.miniMapIcon) then
                 icon.glowTexture:Hide()
             end
         end
@@ -409,9 +409,7 @@ _ReinitFrame = function(frame)
     frame.AreaID = nil;
     frame.UiMapID = nil
 
-    if frame.texture then
-        frame.texture:SetVertexColor(1, 1, 1, 1)
-    end
+    frame.texture:SetVertexColor(1, 1, 1, 1)
     frame:SetAlpha(1) -- party objective icons dim the frame to 0.5; reset so recycled frames (e.g. townsfolk) don't inherit it
     frame.shouldBeShowing = nil
     frame.hidden = nil
@@ -419,8 +417,6 @@ _ReinitFrame = function(frame)
     if frame.BaseOnShow then
         frame:SetScript("OnShow", frame.BaseOnShow)
     end
-
-    frame:SetScript("OnUpdate", nil)
 
     if frame.BaseOnHide then
         frame:SetScript("OnHide", frame.BaseOnHide)

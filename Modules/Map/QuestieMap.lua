@@ -348,13 +348,13 @@ function QuestieMap:RescaleIcons()
     local mapScale = QuestieMap.GetScaleValue()
     for _, framelist in pairs(QuestieMap.questIdFrames) do
         for _, frameName in pairs(framelist) do
-            QuestieMap.utils:RescaleIcon(frameName, mapScale)
+            QuestieMap.utils.RescaleIcon(frameName, mapScale)
         end
     end
     for _, frameTypeList in pairs(QuestieMap.manualFrames) do
         for _, framelist in pairs(frameTypeList) do
             for _, frameName in ipairs(framelist) do
-                QuestieMap.utils:RescaleIcon(frameName, mapScale)
+                QuestieMap.utils.RescaleIcon(frameName, mapScale)
             end
         end
     end
@@ -365,7 +365,7 @@ function QuestieMap:RescaleManualIcons()
     for _, frameTypeList in pairs(QuestieMap.manualFrames) do
         for _, framelist in pairs(frameTypeList) do
             for _, frameName in ipairs(framelist) do
-                QuestieMap.utils:RescaleIcon(frameName, mapScale)
+                QuestieMap.utils.RescaleIcon(frameName, mapScale)
             end
         end
     end
@@ -576,12 +576,12 @@ function QuestieMap.ProcessQueue()
             local frame = mapDrawCall[2];
             HBDPins:AddWorldMapIconMap(tunpack(mapDrawCall));
 
-            --? If you ever chanage this logic, make sure you change the logic in QuestieMap.utils:RescaleIcon function too!
+            --? If you ever chanage this logic, make sure you change the logic in QuestieMap.utils.RescaleIcon function too!
             local scaleProfile = _GetManualScaleProfile(frame)
             local size = (16 * (frame.data.IconScale or 1) * (scaleProfile or 0.7)) * scaleValue;
             frame:SetSize(size, size)
 
-            QuestieMap.utils:SetDrawOrder(frame);
+            QuestieMap.utils.SetDrawOrder(frame)
 
             mapDrawCall[2]._loaded = true
             if mapDrawCall[2]._needsUnload then
@@ -594,7 +594,7 @@ function QuestieMap.ProcessQueue()
             local frame = minimapDrawCall[2];
             HBDPins:AddMinimapIconMap(tunpack(minimapDrawCall));
 
-            QuestieMap.utils:SetDrawOrder(frame);
+            QuestieMap.utils.SetDrawOrder(frame)
 
             minimapDrawCall[2]._loaded = true
             if minimapDrawCall[2]._needsUnload then
@@ -806,10 +806,6 @@ function QuestieMap:DrawManualIcon(data, areaID, x, y, typ)
     else
         icon.texture:SetTexCoord(0, 1, 0, 1)
     end
-    if not QuestieCompat.Is335 then
-        icon.texture:SetSnapToPixelGrid(false)
-        icon.texture:SetTexelSnappingBias(0)
-    end
     icon:SetWidth(16 * (data:GetIconScale() or 0.7))
     icon:SetHeight(16 * (data:GetIconScale() or 0.7))
 
@@ -837,10 +833,6 @@ function QuestieMap:DrawManualIcon(data, areaID, x, y, typ)
         iconMinimap.texture:SetTexCoord(unpack(data.TexCoords))
     else
         iconMinimap.texture:SetTexCoord(0, 1, 0, 1)
-    end
-    if not QuestieCompat.Is335 then
-        icon.texture:SetSnapToPixelGrid(false)
-        icon.texture:SetTexelSnappingBias(0)
     end
     iconMinimap.texture:SetVertexColor(colorsMinimap[1], colorsMinimap[2], colorsMinimap[3], 1);
     iconMinimap.texture.r = colorsMinimap[1]
@@ -871,7 +863,7 @@ function QuestieMap:DrawManualIcon(data, areaID, x, y, typ)
         end
     end
 
-    QuestieMap.utils:RescaleIcon(icon)
+    QuestieMap.utils.RescaleIcon(icon)
 
     -- return the frames in case they need to be stored seperately from QuestieMap.manualFrames
     return icon, iconMinimap;
@@ -884,32 +876,14 @@ end
 _MinimapIconSetFade = function(self, value)
     if self.lastGlowFade ~= value then
         self.lastGlowFade = value
-        if self.glowTexture then
-            local r, g, b = self.glowTexture:GetVertexColor()
-            self.glowTexture:SetVertexColor(r, g, b, value)
-        end
-
-        local r = self.texture.r
-        local g = self.texture.g
-        local b = self.texture.b
-        if r == nil or g == nil or b == nil then
-            r, g, b = self.texture:GetVertexColor()
-            r = r or 1
-            g = g or 1
-            b = b or 1
-            self.texture.r = r
-            self.texture.g = g
-            self.texture.b = b
-        end
-
-        self.texture.a = value
-        self.texture:SetVertexColor(r, g, b, value)
+        self.glowTexture:SetVertexColor(self.glowTexture.r, self.glowTexture.g, self.glowTexture.b, value)
+        self.texture:SetVertexColor(self.texture.r, self.texture.g, self.texture.b, value)
     end
 end
 
 _MinimapIconFadeLogic = function(self)
     local profile = Questie.db.profile
-    if self.miniMapIcon and self.x and self.y and self.texture and self.UiMapID and self.texture.SetVertexColor and HBD then
+    if self.miniMapIcon and self.x and self.y and self.UiMapID and HBD then
         if (QuestieMap.playerX and QuestieMap.playerY) then
             local x, y
             if self.worldX == nil then

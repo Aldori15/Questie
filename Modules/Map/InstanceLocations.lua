@@ -340,8 +340,8 @@ local function _DrawEntry(entry)
     iconMinimap:SetWidth(16 * data:GetIconScale() * _GetProfileScale(true))
     iconMinimap:SetHeight(16 * data:GetIconScale() * _GetProfileScale(true))
 
-    QuestieMap.utils:RescaleIcon(icon)
-    QuestieMap.utils:RescaleIcon(iconMinimap)
+    QuestieMap.utils.RescaleIcon(icon)
+    QuestieMap.utils.RescaleIcon(iconMinimap)
 end
 
 local function _GetLookupNames(...)

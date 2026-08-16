@@ -3,12 +3,7 @@ local QuestieMap = QuestieLoader:ImportModule("QuestieMap");
 ---@class QuestieMapUtils
 QuestieMap.utils = QuestieMap.utils or {}
 
-local HBD = QuestieCompat.HBD or LibStub("HereBeDragonsQuestie-2.0")
-
-local ZOOM_MODIFIER = 1;
-
 -- All the speed we can get is worth it.
-local tinsert = table.insert
 local pairs = pairs
 
 -- Frame-level offset for every icon type defined by Questie 335.
@@ -49,7 +44,7 @@ MAX_DRAW_ORDER_BY_ICON_TYPE = MAX_DRAW_ORDER_BY_ICON_TYPE + 1
 -- Quest finishers render above every manual and regular icon priority.
 local DRAW_ORDER_QUEST_COMPLETE = 2 * MAX_DRAW_ORDER_BY_ICON_TYPE
 
-function QuestieMap.utils:SetDrawOrder(frame)
+function QuestieMap.utils.SetDrawOrder(frame)
     -- Keep icons above the map canvas and waypoint lines while preserving
     -- the explicit parent and strata handling required by the 3.3.5 client.
     local frameLevel
@@ -74,7 +69,7 @@ function QuestieMap.utils:SetDrawOrder(frame)
     frame:SetFrameLevel(frameLevel)
 end
 
-function QuestieMap.utils:IsExplored(uiMapId, x, y)
+function QuestieMap.utils.IsExplored(uiMapId, x, y)
     local IsExplored = false
     if uiMapId then
         local exploredAreaIDs = C_MapExplorationInfo.GetExploredAreaIDsAtPosition(uiMapId, CreateVector2D(x / 100, y / 100))
@@ -97,12 +92,12 @@ function QuestieMap.utils:IsExplored(uiMapId, x, y)
     return IsExplored
 end
 
-function QuestieMap.utils:MapExplorationUpdate()
+function QuestieMap.utils.MapExplorationUpdate()
     for _, frameList in pairs(QuestieMap.questIdFrames) do
         for _, frameName in pairs(frameList) do
             local frame = _G[frameName]
             if (frame and frame.x and frame.y and frame.UiMapID and frame.hidden) then
-                if (QuestieMap.utils:IsExplored(frame.UiMapID, frame.x, frame.y)) then
+                if QuestieMap.utils.IsExplored(frame.UiMapID, frame.x, frame.y) then
                     frame:FakeShow()
                 end
             end
@@ -125,7 +120,7 @@ end
 --- Rescale a single icon
 ---@param frameRef string|IconFrame @The global name/iconRef of the icon frame, e.g. "QuestieFrame1"
 ---@param mapScale number? @Scale value for the final size of the Icon
-function QuestieMap.utils:RescaleIcon(frameRef, mapScale)
+function QuestieMap.utils.RescaleIcon(frameRef, mapScale)
     local frame = frameRef;
     local iconScale = mapScale or 1
     if type(frameRef) == "string" then
@@ -145,7 +140,7 @@ function QuestieMap.utils:RescaleIcon(frameRef, mapScale)
             end
 
             if scale > 1 then
-                frame:SetSize(scale * ZOOM_MODIFIER, scale * ZOOM_MODIFIER);
+                frame:SetSize(scale, scale)
                 frame:GlowUpdate()
             end
         else
