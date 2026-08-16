@@ -393,7 +393,8 @@ function QuestieCompat.CalculateNextResetTime()
     Questie:Debug(Questie.DEBUG_DEVELOP, "[CalculateNextResetTime] Next daily rest time: ", date("%m/%d/%y %H:%M:%S", Questie.db.profile.dailyResetTime))
 
     Questie.db.profile.weeklyResetHour = Questie.db.profile.weeklyResetHour or tonumber(date("%H", Questie.db.profile.dailyResetTime+300))
-    local dayOffset = (Questie.db.profile.weeklyResetDay - currentDate.weekday + 7) % 7
+    local weeklyResetDay = Questie.db.profile.weeklyResetDay or 4
+    local dayOffset = (weeklyResetDay - currentDate.weekday + 7) % 7
     if dayOffset == 0 and currentDate.hour >= Questie.db.profile.weeklyResetHour then
         dayOffset = 7
     end

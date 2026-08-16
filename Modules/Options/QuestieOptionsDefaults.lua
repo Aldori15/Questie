@@ -4,6 +4,8 @@ local QuestieOptionsDefaults = QuestieLoader:CreateModule("QuestieOptionsDefault
 function QuestieOptionsDefaults:Load()
     return {
         profile = {
+            resetDailyQuests = true,
+            weeklyResetDay = 4,
             objectiveFilterDistance = 2,
             spawnFilterDistance = 28,
             availableIconLimit = 30,
