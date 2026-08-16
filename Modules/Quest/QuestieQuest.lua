@@ -1145,6 +1145,7 @@ function QuestieQuest:AddFinisher(quest)
                                         local x = value[2];
                                         local y = value[3];
 
+                                        Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest] Adding world icon as finisher:", zone, x, y)
                                         QuestieMap:DrawWorldIcon(data, zone, x, y)
                                     end
                                 end
