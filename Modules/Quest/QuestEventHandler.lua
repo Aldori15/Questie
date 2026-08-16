@@ -103,7 +103,7 @@ end
 
 --- Registers all events that are required for questing (accepting, removing, objective updates, ...)
 function QuestEventHandler:RegisterEvents()
-    Questie:Debug(Questie.DEBUG_DEVELOP, "[Quest Event] RegisterEvents")
+    Questie.Debug(Questie.DEBUG_DEVELOP, "[Quest Event] RegisterEvents")
     eventFrame:RegisterEvent("QUEST_ACCEPTED")
     eventFrame:RegisterEvent("QUEST_TURNED_IN")
     eventFrame:RegisterEvent("QUEST_REMOVED")
@@ -136,7 +136,7 @@ function QuestEventHandler:RegisterEvents()
             local questName
             local foundQuestItem = false
 
-            Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest] StaticPopup_Show: Item Name: ", text_arg1)
+            Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest] StaticPopup_Show: Item Name: ", text_arg1)
 
             if deletedQuestItem == true then
                 deletedQuestItem = false
@@ -215,7 +215,7 @@ function QuestEventHandler:RegisterEvents()
                     StaticPopup_Resize(frame, which)
                     deletedQuestItem = true
 
-                    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest] StaticPopup_Show: Quest Item Detected. Updating Static Popup.")
+                    Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest] StaticPopup_Show: Quest Item Detected. Updating Static Popup.")
                 end
             end
         end
@@ -224,7 +224,7 @@ function QuestEventHandler:RegisterEvents()
     hooksecurefunc("DeleteCursorItem", function()
         -- Hook DeleteCursorItem so we know when the player clicks the Accept button
         if deletedQuestItem then
-            Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest] DeleteCursorItem: Quest Item deleted. Update all quests.")
+            Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest] DeleteCursorItem: Quest Item deleted. Update all quests.")
 
             C_Timer.After(0.25, function()
 				_QuestEventHandler:UpdateAllQuests()
@@ -268,7 +268,7 @@ end
 ---@param questId number
 function _QuestEventHandler:QuestAccepted(questLogIndex, questId)
     questId = questId or select(8, GetQuestLogTitle(questLogIndex))
-    Questie:Debug(Questie.DEBUG_DEVELOP, "[Quest Event] QUEST_ACCEPTED", questLogIndex, questId)
+    Questie.Debug(Questie.DEBUG_DEVELOP, "[Quest Event] QUEST_ACCEPTED", questLogIndex, questId)
 
     if questLog[questId] and questLog[questId].timer then
         -- We had a QUEST_REMOVED event which started this timer and now it was accepted again.
@@ -329,7 +329,7 @@ end
 ---@return boolean true @if the function was successful, false otherwise
 function _QuestEventHandler:HandleQuestAccepted(questId)
     if (not questLog[questId]) or (not GetQuestLogIndexByID(questId)) then
-        Questie:Debug(Questie.DEBUG_INFO, "Quest was removed before accept handling completed. Skipping accept logic. quest:", questId)
+        Questie.Debug(Questie.DEBUG_INFO, "Quest was removed before accept handling completed. Skipping accept logic. quest:", questId)
         return true
     end
 
@@ -337,7 +337,7 @@ function _QuestEventHandler:HandleQuestAccepted(questId)
     local cacheMiss, _ = QuestLogCache.CheckForChanges({[questId] = true}, false)
     if cacheMiss then
         -- if cacheMiss, no need to check changes as only 1 questId
-        Questie:Debug(Questie.DEBUG_INFO, "Objectives are not cached yet")
+        Questie.Debug(Questie.DEBUG_INFO, "Objectives are not cached yet")
         _QuestLogUpdateQueue:Insert(function()
             return _QuestEventHandler:HandleQuestAccepted(questId)
         end)
@@ -345,7 +345,7 @@ function _QuestEventHandler:HandleQuestAccepted(questId)
         return false
     end
 
-    Questie:Debug(Questie.DEBUG_INFO, "Objectives are correct. Calling accept logic. quest:", questId)
+    Questie.Debug(Questie.DEBUG_INFO, "Objectives are correct. Calling accept logic. quest:", questId)
     questLog[questId].state = QUEST_LOG_STATES.QUEST_ACCEPTED
     QuestieQuest:SetObjectivesDirty(questId)
 
@@ -370,7 +370,7 @@ end
 ---@param xpReward number
 ---@param moneyReward number
 function _QuestEventHandler:QuestTurnedIn(questId, xpReward, moneyReward)
-    Questie:Debug(Questie.DEBUG_DEVELOP, "[Quest Event] QUEST_TURNED_IN", xpReward, moneyReward, questId)
+    Questie.Debug(Questie.DEBUG_DEVELOP, "[Quest Event] QUEST_TURNED_IN", xpReward, moneyReward, questId)
 
     if questLog[questId] and questLog[questId].timer then
         -- Cancel the timer so the quest is not marked as abandoned
@@ -378,7 +378,7 @@ function _QuestEventHandler:QuestTurnedIn(questId, xpReward, moneyReward)
         questLog[questId].timer = nil
     end
 
-    Questie:Debug(Questie.DEBUG_INFO, "Quest:", questId, "was turned in and is completed")
+    Questie.Debug(Questie.DEBUG_INFO, "Quest:", questId, "was turned in and is completed")
 
     if questLog[questId] then
         -- There are quests which you just turn in so there is no preceding QUEST_ACCEPTED event and questLog[questId]
@@ -403,7 +403,7 @@ end
 ---@param questId number
 ---@param isImmediateAbandon boolean|nil
 function _QuestEventHandler:QuestRemoved(questId, isImmediateAbandon)
-    Questie:Debug(Questie.DEBUG_DEVELOP, "[Quest Event] QUEST_REMOVED", questId)
+    Questie.Debug(Questie.DEBUG_DEVELOP, "[Quest Event] QUEST_REMOVED", questId)
 
     if (not questLog[questId]) then
         questLog[questId] = {}
@@ -414,7 +414,7 @@ function _QuestEventHandler:QuestRemoved(questId, isImmediateAbandon)
 
     -- QUEST_TURNED_IN was called before QUEST_REMOVED --> quest was turned in
     if questLog[questId].state == QUEST_LOG_STATES.QUEST_TURNED_IN then
-        Questie:Debug(Questie.DEBUG_INFO, "Quest:", questId, "was turned in before. Nothing do to.")
+        Questie.Debug(Questie.DEBUG_INFO, "Quest:", questId, "was turned in before. Nothing do to.")
         questLog[questId] = nil
         return
     end
@@ -441,9 +441,9 @@ end
 
 ---@param questId number
 function _QuestEventHandler:MarkQuestAsAbandoned(questId)
-    Questie:Debug(Questie.DEBUG_DEVELOP, "QuestEventHandler:MarkQuestAsAbandoned")
+    Questie.Debug(Questie.DEBUG_DEVELOP, "QuestEventHandler:MarkQuestAsAbandoned")
     if questLog[questId].state == QUEST_LOG_STATES.QUEST_REMOVED then
-        Questie:Debug(Questie.DEBUG_INFO, "Quest:", questId, "was abandoned")
+        Questie.Debug(Questie.DEBUG_INFO, "Quest:", questId, "was abandoned")
 
         QuestLogCache.RemoveQuest(questId)
         QuestieQuest:SetObjectivesDirty(questId) -- is this necessary? should whole quest.Objectives be cleared at some point of quest removal?
@@ -460,7 +460,7 @@ end
 
 ---Fires when the quest log changed in any way. This event fires very often!
 function _QuestEventHandler:QuestLogUpdate()
-    Questie:Debug(Questie.DEBUG_DEVELOP, "[Quest Event] QUEST_LOG_UPDATE")
+    Questie.Debug(Questie.DEBUG_DEVELOP, "[Quest Event] QUEST_LOG_UPDATE")
 
     local continueQueuing = true
     -- Some of the other quest event didn't have the required information and ordered to wait for the next QLU.
@@ -479,14 +479,14 @@ end
 --- Fires whenever a quest objective progressed
 ---@param questId number
 function _QuestEventHandler:QuestWatchUpdate(questId)
-    Questie:Debug(Questie.DEBUG_DEVELOP, "[Quest Event] QUEST_WATCH_UPDATE", questId)
+    Questie.Debug(Questie.DEBUG_DEVELOP, "[Quest Event] QUEST_WATCH_UPDATE", questId)
     -- QUEST_WATCH_UPDATE fires before QUEST_LOG_UPDATE which will always call UpdateAllQuests; nothing to do here.
 end
 
 --- Fires when an objective changed in the quest log of the unitTarget. The required data is not available yet though
 ---@param unitTarget string
 function _QuestEventHandler:UnitQuestLogChanged(unitTarget)
-    Questie:Debug(Questie.DEBUG_DEVELOP, "[Quest Event] UNIT_QUEST_LOG_CHANGED", unitTarget)
+    Questie.Debug(Questie.DEBUG_DEVELOP, "[Quest Event] UNIT_QUEST_LOG_CHANGED", unitTarget)
     -- QUEST_LOG_UPDATE always follows and will unconditionally call UpdateAllQuests; nothing to do here.
 end
 
@@ -494,7 +494,7 @@ end
 --- since the last check
 ---@param confirmItemRegressions boolean? @Whether a settled bag scan may accept item-count decreases.
 function _QuestEventHandler:UpdateAllQuests(confirmItemRegressions)
-    Questie:Debug(Questie.DEBUG_INFO, "Running full questlog check")
+    Questie.Debug(Questie.DEBUG_INFO, "Running full questlog check")
     local questIdsToCheck = {}
 
     -- TODO replace with a ready table so no need to generate at each call
@@ -513,15 +513,15 @@ function _QuestEventHandler:UpdateAllQuests(confirmItemRegressions)
                 -- Add them to Questie's quest log state so they can be updated.
                 local quest = QuestieDB.GetQuest(questId)
                 if quest then
-                    Questie:Debug(Questie.DEBUG_INFO, "Quest:", questId, "is not in the player's quest log, but is in the QuestEventHandler quest log")
+                    Questie.Debug(Questie.DEBUG_INFO, "Quest:", questId, "is not in the player's quest log, but is in the QuestEventHandler quest log")
                     QuestiePlayer.currentQuestlog[questId] = quest
                 else
-                    Questie:Error("Quest:", questId, "is not in the player's quest log and not in the QuestDB. Please report this on Github or Discord!")
+                    Questie.Error("Quest:", questId, "is not in the player's quest log and not in the QuestDB. Please report this on Github or Discord!")
                 end
             end
 
-            --Questie:Debug(Questie.DEBUG_INFO, "Quest:", questId, "objectives:", table.concat(objIds, ","), "will be updated")
-            Questie:Debug(Questie.DEBUG_INFO, "Quest:", questId, "will be updated")
+            --Questie.Debug(Questie.DEBUG_INFO, "Quest:", questId, "objectives:", table.concat(objIds, ","), "will be updated")
+            Questie.Debug(Questie.DEBUG_INFO, "Quest:", questId, "will be updated")
             QuestieQuest:SetObjectivesDirty(questId)
 
             QuestieNameplate:UpdateNameplate()
@@ -537,7 +537,7 @@ function _QuestEventHandler:UpdateAllQuests(confirmItemRegressions)
             end
         end)
     else
-        Questie:Debug(Questie.DEBUG_INFO, "Nothing to update")
+        Questie.Debug(Questie.DEBUG_INFO, "Nothing to update")
     end
 
     if (not confirmItemRegressions) and QuestLogCache.HasPendingItemRegression() then
@@ -552,7 +552,7 @@ function _QuestEventHandler:QuestRelatedFrameClosed(event)
     local now = math.floor(GetTime())
     -- Don't do update if event fired twice
     if lastTimeQuestRelatedFrameClosedEvent ~= now then
-        Questie:Debug(Questie.DEBUG_DEVELOP, "[Quest Event]", event)
+        Questie.Debug(Questie.DEBUG_DEVELOP, "[Quest Event]", event)
 
         lastTimeQuestRelatedFrameClosedEvent = now
         _QuestEventHandler:UpdateAllQuests()
@@ -561,12 +561,12 @@ function _QuestEventHandler:QuestRelatedFrameClosed(event)
 end
 
 function _QuestEventHandler:ReputationChange()
-    Questie:Debug(Questie.DEBUG_DEVELOP, "[Quest Event] CHAT_MSG_COMBAT_FACTION_CHANGE")
+    Questie.Debug(Questie.DEBUG_DEVELOP, "[Quest Event] CHAT_MSG_COMBAT_FACTION_CHANGE")
     -- Reputational quest progression fires QUEST_LOG_UPDATE which always calls UpdateAllQuests; nothing to do here.
 end
 
 function _QuestEventHandler:CurrencyDisplayUpdate()
-    Questie:Debug(Questie.DEBUG_DEVELOP, "[Quest Event] CURRENCY_DISPLAY_UPDATE")
+    Questie.Debug(Questie.DEBUG_DEVELOP, "[Quest Event] CURRENCY_DISPLAY_UPDATE")
     -- Currency changes fire QUEST_LOG_UPDATE which always calls UpdateAllQuests; nothing to do here.
 end
 
@@ -586,7 +586,7 @@ end
 local trackerMinimizedByDungeon = false
 local trackerHiddenByDungeon = false
 function _QuestEventHandler:ZoneChangedNewArea()
-    Questie:Debug(Questie.DEBUG_DEVELOP, "[EVENT] ZONE_CHANGED_NEW_AREA")
+    Questie.Debug(Questie.DEBUG_DEVELOP, "[EVENT] ZONE_CHANGED_NEW_AREA")
     -- By my tests it takes a full 6-7 seconds for the world to load. There are a lot of
     -- backend Questie updates that occur when a player zones in/out of an instance. This
     -- is necessary to get everything back into it's "normal" state after all the updates.
@@ -594,7 +594,7 @@ function _QuestEventHandler:ZoneChangedNewArea()
 
     if isInInstance then
         C_Timer.After(8, function()
-            Questie:Debug(Questie.DEBUG_DEVELOP, "[EVENT] ZONE_CHANGED_NEW_AREA: Entering Instance")
+            Questie.Debug(Questie.DEBUG_DEVELOP, "[EVENT] ZONE_CHANGED_NEW_AREA: Entering Instance")
             if Questie.db.profile.minimizeTrackerInDungeons then
                 trackerMinimizedByDungeon = true
 
@@ -605,7 +605,7 @@ function _QuestEventHandler:ZoneChangedNewArea()
 
             -- Handle complete hiding in dungeons
             if Questie.db.profile.hideTrackerInDungeons then
-                Questie:Debug(Questie.DEBUG_DEVELOP, "[EVENT] ZONE_CHANGED_NEW_AREA: Hiding tracker completely in dungeon")
+                Questie.Debug(Questie.DEBUG_DEVELOP, "[EVENT] ZONE_CHANGED_NEW_AREA: Hiding tracker completely in dungeon")
                 trackerHiddenByDungeon = true
                 QuestieTracker:Hide()
             end
@@ -614,7 +614,7 @@ function _QuestEventHandler:ZoneChangedNewArea()
         -- Handle exiting instances for both minimize and hide
         if trackerMinimizedByDungeon == true then
             C_Timer.After(8, function()
-                Questie:Debug(Questie.DEBUG_DEVELOP, "[EVENT] ZONE_CHANGED_NEW_AREA: Exiting Instance - Minimize")
+                Questie.Debug(Questie.DEBUG_DEVELOP, "[EVENT] ZONE_CHANGED_NEW_AREA: Exiting Instance - Minimize")
                 if Questie.db.profile.minimizeTrackerInDungeons and (not Questie.db.char.isTrackerExpanded and not UnitIsGhost("player")) then
                     trackerMinimizedByDungeon = false
 
@@ -628,7 +628,7 @@ function _QuestEventHandler:ZoneChangedNewArea()
         -- Handle complete hiding when exiting dungeons
         if trackerHiddenByDungeon == true then
             C_Timer.After(8, function()
-                Questie:Debug(Questie.DEBUG_DEVELOP, "[EVENT] ZONE_CHANGED_NEW_AREA: Exiting Instance - Complete Hide")
+                Questie.Debug(Questie.DEBUG_DEVELOP, "[EVENT] ZONE_CHANGED_NEW_AREA: Exiting Instance - Complete Hide")
                 if Questie.db.profile.hideTrackerInDungeons then
                     trackerHiddenByDungeon = false
                     QuestieTracker:Show()
@@ -742,7 +742,7 @@ function _QuestEventHandler:OnEvent(event, ...)
         end
         _QuestEventHandler:LocationUpdate()
     elseif event == "SPELLS_CHANGED" then
-        Questie:Debug(Questie.DEBUG_DEVELOP, "[EVENT] SPELLS_CHANGED (QuestEventHandler)")
+        Questie.Debug(Questie.DEBUG_DEVELOP, "[EVENT] SPELLS_CHANGED (QuestEventHandler)")
         -- AzerothCore can also use learned spells as quest availability
         -- conditions (for example, Cold Weather Flying).
         AvailableQuests.CalculateAndDrawAll()

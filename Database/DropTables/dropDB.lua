@@ -8,7 +8,7 @@ DropDB.tableAzerothCore = nil
 
 function DropDB:Initialize()
     if not (Questie.IsWotlk or QuestieCompat.Is335) then
-        Questie:Error("ItemDrops: AzerothCore drop data requires WotLK")
+        Questie.Error("ItemDrops: AzerothCore drop data requires WotLK")
         return
     end
 

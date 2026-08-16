@@ -41,7 +41,7 @@ function ThreadLib.Thread(threadFunction, delay, errorMessage, callbackFunction)
         -- Something in the coroutine went wrong, print the error and stop the timer
         if not success then
             local stack = debugstack(thread)
-            Questie:Error(errorMessage or "Error in thread", ret, "\n", stack)
+            Questie.Error(errorMessage or "Error in thread", ret, "\n", stack)
             timer:Cancel();
             if(callbackFunction) then
               callbackFunction(false, ret)
@@ -143,7 +143,7 @@ end
         local success, ret = coResume(newThread._thread)
         -- Something in the coroutine went wrong, print the error and stop the timer
         if not success then
-            Questie:Error(errorMessage or "Error in thread", ret)
+            Questie.Error(errorMessage or "Error in thread", ret)
             newThread._timer:Cancel();
         end
       elseif (coStatus(newThread._thread) == "dead") then --It's faster not to lookup the value but instead have it here

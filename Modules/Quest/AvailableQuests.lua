@@ -480,7 +480,7 @@ end
 ---@param callback function | nil
 ---@param fastRefresh boolean|nil
 function AvailableQuests.CalculateAndDrawAll(callback, fastRefresh)
-    Questie:Debug(Questie.DEBUG_INFO, "[AvailableQuests.CalculateAndDrawAll]")
+    Questie.Debug(Questie.DEBUG_INFO, "[AvailableQuests.CalculateAndDrawAll]")
 
     if timer then
         if not timerStarted then

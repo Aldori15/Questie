@@ -89,7 +89,7 @@ end
 function ZoneDB:GetUiMapIdByAreaId(areaId)
     local uiMapId = areaIdToUiMapId[areaId] or specialZoneIdToUiMapId[areaId]
     if (not uiMapId) then
-        Questie:Debug(Questie.DEBUG_CRITICAL, "No UiMapId found for AreaId: " .. tostring(areaId))
+        Questie.Debug(Questie.DEBUG_CRITICAL, "No UiMapId found for AreaId: " .. tostring(areaId))
     end
 
     return uiMapId
@@ -115,7 +115,7 @@ function ZoneDB:GetAreaIdByUiMapId(uiMapId)
     for areaId in pairs(areaIdToUiMapId) do
         local areaName = C_Map.GetAreaInfo(areaId)
         if mapInfo and mapInfo.name == areaName then
-            Questie:Debug(Questie.DEBUG_DEVELOP, "[ZoneDB:GetAreaIdByUiMapId] : ", "Found AreaId", areaName, ":", areaId, "for UiMapId", mapInfo.name, ":", uiMapId, "by name")
+            Questie.Debug(Questie.DEBUG_DEVELOP, "[ZoneDB:GetAreaIdByUiMapId] : ", "Found AreaId", areaName, ":", areaId, "for UiMapId", mapInfo.name, ":", uiMapId, "by name")
             return areaId
         end
     end
@@ -433,16 +433,16 @@ end
 function _ZoneDB:RunTests()
     -- Fetch all UiMapIds (WOTLK/TBC, ERA)
     local maps = C_Map.GetMapChildrenInfo(946, nil, true) or C_Map.GetMapChildrenInfo(947, nil, true)
-    Questie:Debug(Questie.DEBUG_CRITICAL, "[" .. Questie:Colorize("ZoneDBTests", "yellow") .. "] Testing ZoneDB")
+    Questie.Debug(Questie.DEBUG_CRITICAL, "[" .. Questie:Colorize("ZoneDBTests", "yellow") .. "] Testing ZoneDB")
     for _, map in pairs(maps) do
         --- We don't care about World, Continent or Cosmic
         if map.mapType ~= UI_MAP_TYPE_WORLD and map.mapType ~= UI_MAP_TYPE_CONTINENT and map.mapType ~= UI_MAP_TYPE_COSMIC then
             local success, result = pcall(ZoneDB.GetAreaIdByUiMapId, ZoneDB, map.mapID)
             if not success then
-                Questie:Error("[ZoneDBTests] ZoneDB.GetAreaIdByUiMapId fails for " .. map.name .. " (" .. map.mapID .. "). Result: " .. result)
+                Questie.Error("[ZoneDBTests] ZoneDB.GetAreaIdByUiMapId fails for " .. map.name .. " (" .. map.mapID .. "). Result: " .. result)
             end
 
         end
     end
-    Questie:Debug(Questie.DEBUG_CRITICAL, "[" .. Questie:Colorize("ZoneDBTests", "yellow") .. "] Testing ZoneDB done")
+    Questie.Debug(Questie.DEBUG_CRITICAL, "[" .. Questie:Colorize("ZoneDBTests", "yellow") .. "] Testing ZoneDB done")
 end

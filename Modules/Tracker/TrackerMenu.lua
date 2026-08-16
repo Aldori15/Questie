@@ -236,7 +236,7 @@ TrackerMenu.addAbandonedQuest = function(menu, quest)
             local lastQuest = GetQuestLogSelection()
             local questLogIndex = GetQuestLogIndexByID(quest.Id)
             if (not questLogIndex) then
-                Questie:Debug(Questie.DEBUG_DEVELOP, "[TrackerMenu:addAbandonedQuest] Missing quest log index for tracked quest:", quest.Id)
+                Questie.Debug(Questie.DEBUG_DEVELOP, "[TrackerMenu:addAbandonedQuest] Missing quest log index for tracked quest:", quest.Id)
                 QuestieTracker:UntrackQuestId(quest.Id)
                 return
             end

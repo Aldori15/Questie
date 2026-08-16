@@ -182,7 +182,7 @@ local function _GetDistanceToNearestResolvedSpawn(zone, spawn, playerX, playerY,
         end
         if (not dungeonLocation) and (not alreadyErroredDungeonZones[zone]) then
             alreadyErroredDungeonZones[zone] = true
-            Questie:Error("No dungeon location found for zoneId:", zone, "Please report this on Github or Discord!")
+            Questie.Error("No dungeon location found for zoneId:", zone, "Please report this on Github or Discord!")
         end
 
         resolvedSpawns = {}
@@ -288,7 +288,7 @@ function QuestieMap:UnloadQuestFrames(questId, iconType, noteType)
     assert(coRunning(), "UnloadQuestFrames must be called from a coroutine")
 
     if QuestieMap.questIdFrames[questId] then
-        Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieMap] Unloading quest frames for questid:", questId)
+        Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieMap] Unloading quest frames for questid:", questId)
         local yieldCount = 0
         for _, frameInfo in ipairs(_SnapshotQuestFrames(questId, iconType, noteType)) do
             -- A yield may allow the same frame name to be reused for new data.
@@ -395,7 +395,7 @@ local function _GetManualScaleProfile(frame)
 end
 
 function QuestieMap:InitializeQueue() -- now called on every loading screen
-    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieMap] Starting draw queue timer!")
+    Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieMap] Starting draw queue timer!")
     local isInInstance, instanceType = IsInInstance()
 
     local desiredTickRate
@@ -422,7 +422,7 @@ function QuestieMap:InitializeQueue() -- now called on every loading screen
             if fadeLogicCoroutine and coroutine.status(fadeLogicCoroutine) == "suspended" then
                 local success, errorMsg = coroutine.resume(fadeLogicCoroutine)
                 if (not success) then
-                    Questie:Error("Please report on Github or Discord. Minimap pins fade logic coroutine stopped:", errorMsg)
+                    Questie.Error("Please report on Github or Discord. Minimap pins fade logic coroutine stopped:", errorMsg)
                     fadeLogicCoroutine = nil
                 end
             end
@@ -442,7 +442,7 @@ function QuestieMap.GetScaleValue()
     if C_Map and C_Map.GetMapInfo and mapId then
         local mapInfo = C_Map.GetMapInfo(mapId)
         if not mapInfo then
-            Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieMap:GetScaleValue] No map info for uiMapID:", tostring(mapId))
+            Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieMap:GetScaleValue] No map info for uiMapID:", tostring(mapId))
         elseif (mapInfo.mapType == 0) then     --? Cosmic, This is probably not needed but for the sake of completion...
             scaling = 0.85
         elseif (mapInfo.mapType == 1) then -- World
@@ -528,7 +528,7 @@ function QuestieMap:ProcessShownMinimapIcons()
                     cYield()
                     if (not HBDPins.activeMinimapPins[minimapFrame]) then
                         -- table has been edited during traversal at critical key. we can't continue iterating over it. stop iteration and start again.
-                        Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieMap:ProcessShownMinimapIcons] FadeLogic loop coroutine: HBDPins.activeMinimapPins doesn't have the key anymore.")
+                        Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieMap:ProcessShownMinimapIcons] FadeLogic loop coroutine: HBDPins.activeMinimapPins doesn't have the key anymore.")
                         -- force reupdate imeadiately
                         totalDistance = 9000
                         break
@@ -610,7 +610,7 @@ end
 ---@param npcID number @The ID of the NPC
 function QuestieMap:ShowNPC(npcID, icon, scale, title, body, disableShiftToRemove, typ, excludeDungeon)
     if type(npcID) ~= "number" then
-        Questie:Debug(Questie.DEBUG_CRITICAL, "[QuestieMap:ShowNPC] Got <" .. type(npcID) .. "> instead of <number>")
+        Questie.Debug(Questie.DEBUG_CRITICAL, "[QuestieMap:ShowNPC] Got <" .. type(npcID) .. "> instead of <number>")
         return
     end
     -- get the NPC data
@@ -769,7 +769,7 @@ function QuestieMap:DrawManualIcon(data, areaID, x, y, typ)
 
     local uiMapId = ZoneDB:GetUiMapIdByAreaId(areaID)
     if (not uiMapId) then
-        Questie:Debug(Questie.DEBUG_CRITICAL, "[QuestieMap:DrawManualIcon] No UiMapID for areaId:", areaID, tostring(data.Name))
+        Questie.Debug(Questie.DEBUG_CRITICAL, "[QuestieMap:DrawManualIcon] No UiMapID for areaId:", areaID, tostring(data.Name))
         return nil, nil
     end
     -- set the icon
@@ -959,7 +959,7 @@ function QuestieMap:DrawWorldIcon(data, areaID, x, y, spawn, showFlag)
     end
 
     if not Phasing.IsSpawnDataVisible(spawn) then
-        Questie:Debug(Questie.DEBUG_SPAM, "Skipping invisible spawn", spawn and spawn[3], spawn and spawn[4])
+        Questie.Debug(Questie.DEBUG_SPAM, "Skipping invisible spawn", spawn and spawn[3], spawn and spawn[4])
         return nil, nil
     end
 

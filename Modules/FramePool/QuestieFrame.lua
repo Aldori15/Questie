@@ -349,7 +349,7 @@ function _QuestieFrame:Unload()
     end
     self._needsUnload = nil
     self._loaded = nil
-    --Questie:Debug(Questie.DEBUG_SPAM, "[_QuestieFrame:Unload]")
+    --Questie.Debug(Questie.DEBUG_SPAM, "[_QuestieFrame:Unload]")
     self:SetScript("OnUpdate", nil)
     self:SetScript("OnShow", nil)
     self:SetScript("OnHide", nil)

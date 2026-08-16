@@ -268,7 +268,7 @@ function QuestieTooltips:RemoveQuest(questId)
         end
     end
 
-    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieTooltips:RemoveQuest]", questId)
+    Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieTooltips:RemoveQuest]", questId)
 
     for key in pairs(QuestieTooltips.lookupKeysByQuestId[questId] or {}) do
         --Count to see if we should remove the main object
@@ -299,7 +299,7 @@ function QuestieTooltips:RemoveAvailableQuest(questId)
         return
     end
 
-    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieTooltips:RemoveAvailableQuest]", questId)
+    Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieTooltips:RemoveAvailableQuest]", questId)
 
     local removedAnyKey
     for key in pairs(QuestieTooltips.lookupKeysByQuestId[questId] or {}) do
@@ -429,7 +429,7 @@ end
 
 ---@param key string
 function QuestieTooltips:GetTooltip(key)
-    Questie:Debug(Questie.DEBUG_SPAM, "[QuestieTooltips:GetTooltip]", key)
+    Questie.Debug(Questie.DEBUG_SPAM, "[QuestieTooltips:GetTooltip]", key)
     if (not key) then
         return nil
     end

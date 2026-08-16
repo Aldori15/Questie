@@ -2068,22 +2068,22 @@ function QuestieDB:Initialize()
     itemBin = Questie.db.global.itemBin
     itemPtrs = Questie.db.global.itemPtrs
 
-    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieDB:Init] Begin GetDBHandles.")
+    Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieDB:Init] Begin GetDBHandles.")
     local npcSkipMap = QuestieDBCompiler:BuildSkipMap(QuestieDB.npcCompilerTypes, QuestieDB.npcCompilerOrder)
     QuestieDB.QueryNPC = QuestieDBCompiler:GetDBHandle(npcBin, npcPtrs, npcSkipMap, QuestieDB.npcKeys, QuestieDB.npcDataOverrides)
-    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieDB:Init] NPC GetDBHandle complete.")
+    Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieDB:Init] NPC GetDBHandle complete.")
 
     local questSkipMap = QuestieDBCompiler:BuildSkipMap(QuestieDB.questCompilerTypes, QuestieDB.questCompilerOrder)
     QuestieDB.QueryQuest = QuestieDBCompiler:GetDBHandle(questBin, questPtrs, questSkipMap, QuestieDB.questKeys, QuestieDB.questDataOverrides)
-    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieDB:Init] Quest GetDBHandle complete.")
+    Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieDB:Init] Quest GetDBHandle complete.")
 
     local objectSkipMap = QuestieDBCompiler:BuildSkipMap(QuestieDB.objectCompilerTypes, QuestieDB.objectCompilerOrder)
     QuestieDB.QueryObject = QuestieDBCompiler:GetDBHandle(objBin, objPtrs, objectSkipMap, QuestieDB.objectKeys, QuestieDB.objectDataOverrides)
-    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieDB:Init] Object GetDBHandle complete.")
+    Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieDB:Init] Object GetDBHandle complete.")
 
     local itemSkipMap = QuestieDBCompiler:BuildSkipMap(QuestieDB.itemCompilerTypes, QuestieDB.itemCompilerOrder)
     QuestieDB.QueryItem = QuestieDBCompiler:GetDBHandle(itemBin, itemPtrs, itemSkipMap, QuestieDB.itemKeys, QuestieDB.itemDataOverrides)
-    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieDB:Init] Item GetDBHandle complete.")
+    Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieDB:Init] Item GetDBHandle complete.")
 
     QuestieDB.NPCPointers = QuestieDB.QueryNPC.pointers
     QuestieDB.QuestPointers = QuestieDB.QueryQuest.pointers
@@ -2121,7 +2121,7 @@ function QuestieDB:GetObject(objectId)
     local rawdata = QuestieDB.QueryObject(objectId, QuestieDB._objectAdapterQueryOrder)
 
     if not rawdata then
-        Questie:Debug(Questie.DEBUG_CRITICAL, "[QuestieDB:GetObject] rawdata is nil for objectID:", objectId)
+        Questie.Debug(Questie.DEBUG_CRITICAL, "[QuestieDB:GetObject] rawdata is nil for objectID:", objectId)
         return nil
     end
 
@@ -2144,7 +2144,7 @@ function QuestieDB:GetItem(itemId)
     local rawdata = QuestieDB.QueryItem(itemId, QuestieDB._itemAdapterQueryOrder)
 
     if not rawdata then
-        Questie:Debug(Questie.DEBUG_CRITICAL, "[QuestieDB:GetItem] rawdata is nil for itemID:", itemId)
+        Questie.Debug(Questie.DEBUG_CRITICAL, "[QuestieDB:GetItem] rawdata is nil for itemID:", itemId)
         return nil
     end
 
@@ -2200,7 +2200,7 @@ end
 ---@return table<number, string>?
 function QuestieDB.GetItemDroprate(itemId, npcId)
      if not DropDB or not DropDB.GetItemDroprate then
-         Questie:Debug(Questie.DEBUG_CRITICAL, "ItemDrops: DropDB not available")
+         Questie.Debug(Questie.DEBUG_CRITICAL, "ItemDrops: DropDB not available")
          return nil
      end
      return DropDB.GetItemDroprate(itemId, npcId)
@@ -2803,34 +2803,34 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions)
 
     -- These are localized in the init function
     if completedQuests[questId] then
-        if debugPrint then Questie:Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Quest " .. questId .. " is already finished!") end
+        if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Quest " .. questId .. " is already finished!") end
         return false
     end
 
     -- Blacklisted quests
     if QuestieCorrectionshiddenQuests[questId] then
-        if debugPrint then Questie:Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Quest " .. questId .. " is hidden automatically!") end
+        if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Quest " .. questId .. " is hidden automatically!") end
         return false
     end
 
     -- Only present in IsDoable, not IsDoableVerbose
     if Questiedbcharhidden[questId] then
-        if debugPrint then Questie:Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Quest " .. questId .. " is hidden manually!") end
+        if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Quest " .. questId .. " is hidden manually!") end
         return false
     end
 
     if C_QuestLog.IsOnQuest(questId) == true then
-        if debugPrint then Questie:Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Quest " .. questId .. " is eligible because Player is on the quest!") end
+        if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Quest " .. questId .. " is eligible because Player is on the quest!") end
         return true
     end
 
     if QuestieEvent:IsEventQuestInCurrentExpansion(questId) and not QuestieEvent:IsEventActiveForQuest(questId) then
-        if debugPrint then Questie:Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Event quest " .. questId .. " is not active") end
+        if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Event quest " .. questId .. " is not active") end
         return false
     end
 
     if QuestieDB.activeChildQuests[questId] then -- The parent quest is active, so this quest is doable
-        if debugPrint then Questie:Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Quest " .. questId .. " is eligible because it's a child quest and the parent is active!") end
+        if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Quest " .. questId .. " is eligible because it's a child quest and the parent is active!") end
         return true
         -- this scenario actually returns true, so it skips the rest of the later checks, because
         -- if we're on the parent quest then we implicitly know all other requirements are met
@@ -2839,7 +2839,7 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions)
     local requiredRaces = QuestieDB.QueryQuestSingle(questId, "requiredRaces")
     if (requiredRaces and not checkRace[requiredRaces]) then
         QuestieDB.autoBlacklist[questId] = "race"
-        if debugPrint then Questie:Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Race requirement not fulfilled for quest " .. questId) end
+        if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Race requirement not fulfilled for quest " .. questId) end
         return false
     end
 
@@ -2848,7 +2848,7 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions)
     if preQuestSingle then
         local isPreQuestSingleFulfilled = QuestieDB:IsPreQuestSingleFulfilled(preQuestSingle)
         if not isPreQuestSingleFulfilled then
-            if debugPrint then Questie:Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Pre-quest requirement not fulfilled for quest " .. questId) end
+            if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Pre-quest requirement not fulfilled for quest " .. questId) end
             return false
         end
     end
@@ -2856,7 +2856,7 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions)
     local requiredClasses = QuestieDB.QueryQuestSingle(questId, "requiredClasses")
     if (requiredClasses and not checkClass[requiredClasses]) then
         QuestieDB.autoBlacklist[questId] = "class"
-        if debugPrint then Questie:Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Class requirement not fulfilled for quest " .. questId) end
+        if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Class requirement not fulfilled for quest " .. questId) end
         return false
     end
 
@@ -2870,7 +2870,7 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions)
                 QuestieDB.autoBlacklist[questId] = "rep"
             end
 
-            if debugPrint then Questie:Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Player does not meet reputation requirements for quest " .. questId) end
+            if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Player does not meet reputation requirements for quest " .. questId) end
             return false
         end
     end
@@ -2884,7 +2884,7 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions)
                 QuestieDB.autoBlacklist[questId] = "skill"
             end
 
-            if debugPrint then Questie:Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Player does not meet profession requirements for quest " .. questId) end
+            if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Player does not meet profession requirements for quest " .. questId) end
             return false
         end
     end
@@ -2898,7 +2898,7 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions)
                 QuestieDB.autoBlacklist[questId] = "rank"
             end
 
-            if debugPrint then Questie:Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Player does not have profession rank for quest " .. questId) end
+            if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Player does not have profession rank for quest " .. questId) end
             return false
         end
     end
@@ -2911,7 +2911,7 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions)
         if preQuestGroup then
             local isPreQuestGroupFulfilled = QuestieDB:IsPreQuestGroupFulfilled(preQuestGroup)
             if not isPreQuestGroupFulfilled then
-                if debugPrint then Questie:Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Group pre-quest requirement not fulfilled for quest " .. questId) end
+                if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Group pre-quest requirement not fulfilled for quest " .. questId) end
                 return false
             end
         end
@@ -2920,7 +2920,7 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions)
     local parentQuest = QuestieDB.QueryQuestSingle(questId, "parentQuest")
     if parentQuest and parentQuest ~= 0 then
         if not currentQuestlog[parentQuest] then
-            if debugPrint then Questie:Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Quest " .. questId .. " has an inactive parent quest") end
+            if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Quest " .. questId .. " has an inactive parent quest") end
             return false
         end
     end
@@ -2928,7 +2928,7 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions)
     local nextQuestInChain = QuestieDB.QueryQuestSingle(questId, "nextQuestInChain")
     if nextQuestInChain and nextQuestInChain ~= 0 then
         if completedQuests[nextQuestInChain] or currentQuestlog[nextQuestInChain] then
-            if debugPrint then Questie:Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Follow up quests already completed or in the quest log for quest " .. questId) end
+            if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Follow up quests already completed or in the quest log for quest " .. questId) end
             return false
         end
     end
@@ -2939,7 +2939,7 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions)
     if ExclusiveQuestGroup then -- fix (DO NOT REVERT, tested thoroughly)
         for _, v in pairs(ExclusiveQuestGroup) do
             if completedQuests[v] or currentQuestlog[v] then
-                if debugPrint then Questie:Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Player has completed a quest exclusive with quest " .. questId) end
+                if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Player has completed a quest exclusive with quest " .. questId) end
                 return false
             end
         end
@@ -2949,7 +2949,7 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions)
     if (requiredSpecialization) and (requiredSpecialization > 0) then
         local hasSpecialization = QuestieProfessions:HasSpecialization(requiredSpecialization)
         if (not hasSpecialization) then
-            if debugPrint then Questie:Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Player does not meet profession specialization requirements for quest " .. questId) end
+            if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Player does not meet profession specialization requirements for quest " .. questId) end
             return false
         end
     end
@@ -2959,10 +2959,10 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions)
         local hasSpell = IsSpellKnownOrOverridesKnown(math.abs(requiredSpell))
         local hasProfSpell = IsPlayerSpell(math.abs(requiredSpell))
         if (requiredSpell > 0) and (not hasSpell) and (not hasProfSpell) then --if requiredSpell is positive, we make the quest unavailable if the player does NOT have the spell
-            if debugPrint then Questie:Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Player does not meet learned spell requirements for quest " .. questId) end
+            if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Player does not meet learned spell requirements for quest " .. questId) end
             return false
         elseif (requiredSpell < 0) and (hasSpell or hasProfSpell) then --if requiredSpell is negative, we make the quest unavailable if the player DOES  have the spell
-            if debugPrint then Questie:Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Player does not meet unlearned spell requirements for quest " .. questId) end
+            if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Player does not meet unlearned spell requirements for quest " .. questId) end
             return false
         end
     end
@@ -2972,20 +2972,20 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions)
         QuestieDB.requiredItemConditionQuestIds[questId] = true
         local itemConditionsFulfilled = QuestieDB:IsRequiredItemConditionsFulfilled(requiredItemConditions)
         if not itemConditionsFulfilled then
-            if debugPrint then Questie:Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Player does not meet item requirements for quest " .. questId) end
+            if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Player does not meet item requirements for quest " .. questId) end
             return false
         end
     end
 
     local acoreConditionsFulfilled = QuestieDB:IsAzerothCoreAvailabilityConditionFulfilled(questId, ignoreAcoreLocationConditions)
     if not acoreConditionsFulfilled then
-        if debugPrint then Questie:Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Player does not meet AzerothCore availability conditions for quest " .. questId) end
+        if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Player does not meet AzerothCore availability conditions for quest " .. questId) end
         return false
     end
 
     -- Check and see if the Quest requires an achievement before showing as available
     if _QuestieDB:CheckAchievementRequirements(questId) == false then
-        if debugPrint then Questie:Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Player does not meet achievement requirements for quest " .. questId) end
+        if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Player does not meet achievement requirements for quest " .. questId) end
         return false
     end
 
@@ -2994,7 +2994,7 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions)
     if breadcrumbForQuestId and breadcrumbForQuestId ~= 0 then
         -- Check the target quest of this breadcrumb
         if completedQuests[breadcrumbForQuestId] or currentQuestlog[breadcrumbForQuestId] then
-            if debugPrint then Questie:Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Target of breadcrumb quest already completed or in the quest log for quest " .. questId) end
+            if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Target of breadcrumb quest already completed or in the quest log for quest " .. questId) end
             return false
         end
         -- The next case is commented out since it's not a valid check to have. Breadcrumbs to the same quest are not always exclusive to each other
@@ -3002,7 +3002,7 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions)
         local otherBreadcrumbs = QuestieDB.QueryQuestSingle(breadcrumbForQuestId, "breadcrumbs")
         for _, breadcrumbId in ipairs(otherBreadcrumbs or {}) do -- TODO: Remove `or {}` when we have a validation for the breadcrumb data
             if breadcrumbId ~= questId and currentQuestlog[breadcrumbId] then
-                if debugPrint then Questie:Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Alternative breadcrumb quest in the quest log for quest " .. questId) end
+                if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Alternative breadcrumb quest in the quest log for quest " .. questId) end
                 return false
             end
         end]]
@@ -3013,7 +3013,7 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions)
     if breadcrumbs then
         for _, breadcrumbId in ipairs(breadcrumbs) do
             if currentQuestlog[breadcrumbId] then
-                if debugPrint then Questie:Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Breadcrumb quest " .. breadcrumbId .. " in the quest log for quest " .. questId) end
+                if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Breadcrumb quest " .. breadcrumbId .. " in the quest log for quest " .. questId) end
                 return false
             end
         end
@@ -3023,19 +3023,19 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions)
     local disabledByQuest = QuestieDB.QueryQuestSingle(questId, "disabledByQuest")
     if disabledByQuest and disabledByQuest ~= 0 then
         if QuestiePlayer.currentQuestlog[disabledByQuest] then
-            if debugPrint then Questie:Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Disabling quest " .. disabledByQuest .. " in the quest log for quest " .. questId) end
+            if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Disabling quest " .. disabledByQuest .. " in the quest log for quest " .. questId) end
             return false
         end
     end
 
     -- Check if this quest is not detected as active from the NPC/object itself
     if DailyQuests.ShouldBeHidden(questId, completedQuests, currentQuestlog) then
-        if debugPrint then Questie:Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Daily quest " .. questId .. " is not active") end
+        if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Daily quest " .. questId .. " is not active") end
         return false
     end
 
     if QuestieDB.IsDailyQuest(questId) and DailyQuests:IsAtDailyQuestLimit() then
-        if debugPrint then Questie:Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Daily quest " .. questId .. " is unavailable because daily quest limit is reached") end
+        if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Daily quest " .. questId .. " is unavailable because daily quest limit is reached") end
         return false
     end
 
@@ -3043,7 +3043,7 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions)
     local availableUntilCompleted = QuestieDB.QueryQuestSingle(questId, "availableUntilCompleted")
     if availableUntilCompleted and availableUntilCompleted ~= 0 then
         if completedQuests[availableUntilCompleted] then
-            if debugPrint then Questie:Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Quest " .. questId .. " is not available because " .. availableUntilCompleted .. " has been turned in!") end
+            if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Quest " .. questId .. " is not available because " .. availableUntilCompleted .. " has been turned in!") end
             return false
         end
     end
@@ -3053,7 +3053,7 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions)
     local availableStartingWith = QuestieDB.QueryQuestSingle(questId, "availableStartingWith")
     if availableStartingWith and availableStartingWith ~= 0 then
         if not completedQuests[availableStartingWith] and not currentQuestlog[availableStartingWith] then
-            if debugPrint then Questie:Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Quest " .. questId .. " is not available because " .. availableStartingWith .. " is not active/turned in!") end
+            if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Quest " .. questId .. " is not available because " .. availableStartingWith .. " is not active/turned in!") end
             return false
         end
     end
@@ -3676,7 +3676,7 @@ end
 ---@return Quest|nil @The quest object or nil if the quest is missing
 function QuestieDB.GetQuest(questId) -- /dump QuestieDB.GetQuest(867)
     if not questId then
-        Questie:Debug(Questie.DEBUG_CRITICAL, "[QuestieDB.GetQuest] No questId.")
+        Questie.Debug(Questie.DEBUG_CRITICAL, "[QuestieDB.GetQuest] No questId.")
         return nil
     end
     if _QuestieDB.questCache[questId] then
@@ -3686,7 +3686,7 @@ function QuestieDB.GetQuest(questId) -- /dump QuestieDB.GetQuest(867)
     local rawdata = QuestieDB.QueryQuest(questId, QuestieDB._questAdapterQueryOrder)
 
     if (not rawdata) then
-        Questie:Debug(Questie.DEBUG_CRITICAL, "[QuestieDB.GetQuest] rawdata is nil for questID:", questId)
+        Questie.Debug(Questie.DEBUG_CRITICAL, "[QuestieDB.GetQuest] rawdata is nil for questID:", questId)
         return nil
     end
 
@@ -3873,7 +3873,7 @@ function QuestieDB.GetQuest(questId) -- /dump QuestieDB.GetQuest(867)
     local preQuestGroup = QO.preQuestGroup
     local preQuestSingle = QO.preQuestSingle
     if preQuestGroup and preQuestSingle and next(preQuestGroup) and next(preQuestSingle) then
-        Questie:Debug(Questie.DEBUG_CRITICAL, "ERRRRORRRRRRR not mutually exclusive for questID:", questId)
+        Questie.Debug(Questie.DEBUG_CRITICAL, "ERRRRORRRRRRR not mutually exclusive for questID:", questId)
     end
 
     --- Quest objectives generated from quest log in QuestieQuest.lua -> QuestieQuest:PopulateQuestLogInfo(quest)
@@ -3941,7 +3941,7 @@ function QuestieDB.GetQuest(questId) -- /dump QuestieDB.GetQuest(867)
                     local sourceHandler = _QuestieQuest.objectiveSpawnListCallTable[ref[1]]
                     local sourceList = sourceHandler and sourceHandler(ref[2], specialObjective)
                     if not sourceList then
-                        Questie:Error("Missing extra objective data for", tostring(ref[1]), "'", specialObjective.Description, "'", tostring(ref[2]))
+                        Questie.Error("Missing extra objective data for", tostring(ref[1]), "'", specialObjective.Description, "'", tostring(ref[2]))
                     else
                         for k, v in pairs(sourceList) do
                             -- we want to be able to override the icon in the corrections (e.g. Questie.ICON_TYPE_OBJECT on objects instead of Questie.ICON_TYPE_LOOT)
@@ -4092,7 +4092,7 @@ function QuestieDB:GetNPC(npcId)
 
     local rawdata = QuestieDB.QueryNPC(npcId, QuestieDB._npcAdapterQueryOrder)
     if (not rawdata) then
-        Questie:Debug(Questie.DEBUG_CRITICAL, "[QuestieDB:GetNPC] rawdata is nil for npcID:", npcId)
+        Questie.Debug(Questie.DEBUG_CRITICAL, "[QuestieDB:GetNPC] rawdata is nil for npcID:", npcId)
         return nil
     end
 
@@ -4232,7 +4232,7 @@ function _QuestieDB:HideClassAndRaceQuests()
             end
         end
     end
-    Questie:Debug(Questie.DEBUG_DEVELOP, "Other class and race quests hidden");
+    Questie.Debug(Questie.DEBUG_DEVELOP, "Other class and race quests hidden");
 end
 
 -- This function is intended for usage with Gossip and Greeting frames, where there's a list of quests but no QuestIDs are
@@ -4269,7 +4269,7 @@ function QuestieDB.GetQuestIDFromName(name, questgiverGUID, questStarter)
                     end
                 end
             else
-                Questie:Debug(Questie.DEBUG_ELEVATED, "Database mismatch! No entries found that match quest name. Queststarter is: " .. unit_type .. " " .. questgiverID .. ", quest name is: " .. name)
+                Questie.Debug(Questie.DEBUG_ELEVATED, "Database mismatch! No entries found that match quest name. Queststarter is: " .. unit_type .. " " .. questgiverID .. ", quest name is: " .. name)
             end
         else
             if questsEnded then
@@ -4279,7 +4279,7 @@ function QuestieDB.GetQuestIDFromName(name, questgiverGUID, questStarter)
                     end
                 end
             else
-                Questie:Debug(Questie.DEBUG_ELEVATED, "Database mismatch! No entries found that match quest name. Questender is: " .. unit_type .. " " .. questgiverID .. ", quest name is: " .. name)
+                Questie.Debug(Questie.DEBUG_ELEVATED, "Database mismatch! No entries found that match quest name. Questender is: " .. unit_type .. " " .. questgiverID .. ", quest name is: " .. name)
             end
         end
     end

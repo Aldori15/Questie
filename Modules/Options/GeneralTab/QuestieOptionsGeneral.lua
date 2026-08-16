@@ -85,7 +85,7 @@ function QuestieOptions.tabs.general:Initialize()
                         get = function() return Questie.db.profile.questAnnounceChannel; end,
                         set = function(_, key)
                             Questie.db.profile.questAnnounceChannel = key
-                            Questie:Debug(Questie.DEBUG_DEVELOP, "Channels to announce changed to:", key)
+                            Questie.Debug(Questie.DEBUG_DEVELOP, "Channels to announce changed to:", key)
                         end,
                     },
                     printLocalMessages = {
@@ -98,7 +98,7 @@ function QuestieOptions.tabs.general:Initialize()
                         get = function () return Questie.db.profile.questAnnounceLocally end,
                         set = function (_, value)
                             Questie.db.profile.questAnnounceLocally = value
-                            Questie:Debug(Questie.DEBUG_DEVELOP, "Quest announce locally changed to:", value)
+                            Questie.Debug(Questie.DEBUG_DEVELOP, "Quest announce locally changed to:", value)
                         end,
                     },
                     showPartyQuestObjectives = {
@@ -145,7 +145,7 @@ function QuestieOptions.tabs.general:Initialize()
                                 get = function () return Questie.db.profile.questAnnounceItems; end,
                                 set = function (_, value)
                                     Questie.db.profile.questAnnounceItems = value
-                                    Questie:Debug(Questie.DEBUG_DEVELOP, "Items starting a quest changed to:", value)
+                                    Questie.Debug(Questie.DEBUG_DEVELOP, "Items starting a quest changed to:", value)
                                 end,
                             },
                             questAnnounceAccepted = {
@@ -157,7 +157,7 @@ function QuestieOptions.tabs.general:Initialize()
                                 get = function () return Questie.db.profile.questAnnounceAccepted; end,
                                 set = function (_, value)
                                     Questie.db.profile.questAnnounceAccepted = value
-                                    Questie:Debug(Questie.DEBUG_DEVELOP, "Quest accepted announce changed to:", value)
+                                    Questie.Debug(Questie.DEBUG_DEVELOP, "Quest accepted announce changed to:", value)
                                 end,
                             },
                             questAnnounceAbandoned = {
@@ -169,7 +169,7 @@ function QuestieOptions.tabs.general:Initialize()
                                 get = function () return Questie.db.profile.questAnnounceAbandoned; end,
                                 set = function (_, value)
                                     Questie.db.profile.questAnnounceAbandoned = value
-                                    Questie:Debug(Questie.DEBUG_DEVELOP, "Quest abandoned announce changed to:", value)
+                                    Questie.Debug(Questie.DEBUG_DEVELOP, "Quest abandoned announce changed to:", value)
                                 end,
                             },
                             questAnnounceCompleted = {
@@ -181,7 +181,7 @@ function QuestieOptions.tabs.general:Initialize()
                                 get = function () return Questie.db.profile.questAnnounceCompleted; end,
                                 set = function (_, value)
                                     Questie.db.profile.questAnnounceCompleted = value
-                                    Questie:Debug(Questie.DEBUG_DEVELOP, "Quest completed announce changed to:", value)
+                                    Questie.Debug(Questie.DEBUG_DEVELOP, "Quest completed announce changed to:", value)
                                 end,
                             },
                             questAnnounceObjectives = {
@@ -193,7 +193,7 @@ function QuestieOptions.tabs.general:Initialize()
                                 get = function () return Questie.db.profile.questAnnounceObjectives; end,
                                 set = function (_, value)
                                     Questie.db.profile.questAnnounceObjectives = value
-                                    Questie:Debug(Questie.DEBUG_DEVELOP, "Objective completed announce changed to:", value)
+                                    Questie.Debug(Questie.DEBUG_DEVELOP, "Objective completed announce changed to:", value)
                                 end,
                             },
                             questAnnounceObjectiveProgress = {
@@ -205,7 +205,7 @@ function QuestieOptions.tabs.general:Initialize()
                                 get = function () return Questie.db.profile.questAnnounceObjectiveProgress; end,
                                 set = function (_, value)
                                     Questie.db.profile.questAnnounceObjectiveProgress = value
-                                    Questie:Debug(Questie.DEBUG_DEVELOP, "Objective progress announce changed to:", value)
+                                    Questie.Debug(Questie.DEBUG_DEVELOP, "Objective progress announce changed to:", value)
                                 end,
                             },
                             questAnnounceIncompleteBreadcrumb = {
@@ -217,7 +217,7 @@ function QuestieOptions.tabs.general:Initialize()
                                 get = function () return Questie.db.profile.questAnnounceIncompleteBreadcrumb; end,
                                 set = function (_, value)
                                     Questie.db.profile.questAnnounceIncompleteBreadcrumb = value
-                                    Questie:Debug(Questie.DEBUG_DEVELOP, "Quest announce incomplete breadcrumb changed to:", value)
+                                    Questie.Debug(Questie.DEBUG_DEVELOP, "Quest announce incomplete breadcrumb changed to:", value)
                                 end,
                             },
                         },
@@ -339,7 +339,7 @@ function QuestieOptions.tabs.general:Initialize()
                             Questie.db.profile.lowLevelStyle = value
                             AvailableQuests.ResetLevelRequirementCache()
                             AvailableQuests.CalculateAndDrawAll()
-                            Questie:Debug(Questie.DEBUG_DEVELOP, "Lowlevel Quests set to:", value)
+                            Questie.Debug(Questie.DEBUG_DEVELOP, "Lowlevel Quests set to:", value)
                         end,
                     },
                     manualOffset = {

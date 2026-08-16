@@ -453,7 +453,7 @@ function QuestieLib:CacheItemNames(questId)
         for _, objectiveDB in pairs(quest.ObjectiveData) do
             if objectiveDB.Type == "item" then
                 if not ((QuestieDB.ItemPointers or QuestieDB.itemData)[objectiveDB.Id]) then
-                    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieLib:CacheItemNames] Requesting item information for missing itemId:", objectiveDB.Id)
+                    Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieLib:CacheItemNames] Requesting item information for missing itemId:", objectiveDB.Id)
                     local itemId = objectiveDB.Id
                     local function cacheItemName(itemName)
                         if not itemName then
@@ -465,7 +465,7 @@ function QuestieLib:CacheItemNames(questId)
                         else
                             QuestieDB.itemDataOverrides[itemId][1] = itemName
                         end
-                        Questie:Debug(Questie.DEBUG_DEVELOP,
+                        Questie.Debug(Questie.DEBUG_DEVELOP,
                             "[QuestieLib:CacheItemNames] Created item information for item:", itemName, ":", itemId)
                     end
 
@@ -659,7 +659,7 @@ function QuestieLib.TrimObjectiveText(text, objectiveType)
     end
 
     text = strim(text)
-    --Questie:Debug(Questie.DEBUG_DEVELOP, "[TrimObjectiveText] \""..originalText.."\" --> \""..text.."\"") -- Comment out this debug for speed when not used.
+    --Questie.Debug(Questie.DEBUG_DEVELOP, "[TrimObjectiveText] \""..originalText.."\" --> \""..text.."\"") -- Comment out this debug for speed when not used.
     return text
 end
 

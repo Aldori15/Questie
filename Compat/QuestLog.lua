@@ -349,7 +349,7 @@ function QuestieCompat.GetQuestResetTime()
     -- Some private servers return an invalid value close to -GetServerTime(), which means their reset timestamp is zero.
     if (not warnedInvalidQuestResetTime) then
         warnedInvalidQuestResetTime = true
-        Questie:Debug(Questie.DEBUG_DEVELOP, "[GetQuestResetTime] Invalid native value, using fallback: ", timeUntilReset)
+        Questie.Debug(Questie.DEBUG_DEVELOP, "[GetQuestResetTime] Invalid native value, using fallback: ", timeUntilReset)
     end
 
     local storedResetTime = Questie.db.profile.dailyResetTime
@@ -375,7 +375,7 @@ function QuestieCompat.CalculateNextResetTime()
     local currentTime, currentDate = QuestieCompat.GetServerTime()
     local timeUntilReset = QuestieCompat.GetQuestResetTime()
 
-    Questie:Debug(Questie.DEBUG_DEVELOP, "[CalculateNextResetTime] GetQuestResetTime: ", timeUntilReset)
+    Questie.Debug(Questie.DEBUG_DEVELOP, "[CalculateNextResetTime] GetQuestResetTime: ", timeUntilReset)
 
     -- A zero value means the server has not supplied reset data yet. Do not cache
     -- the current time as the next reset; retry after the server data can arrive.
@@ -390,7 +390,7 @@ function QuestieCompat.CalculateNextResetTime()
     end
 
     Questie.db.profile.dailyResetTime = Questie.db.profile.dailyResetTime or (currentTime + timeUntilReset)
-    Questie:Debug(Questie.DEBUG_DEVELOP, "[CalculateNextResetTime] Next daily rest time: ", date("%m/%d/%y %H:%M:%S", Questie.db.profile.dailyResetTime))
+    Questie.Debug(Questie.DEBUG_DEVELOP, "[CalculateNextResetTime] Next daily rest time: ", date("%m/%d/%y %H:%M:%S", Questie.db.profile.dailyResetTime))
 
     Questie.db.profile.weeklyResetHour = Questie.db.profile.weeklyResetHour or tonumber(date("%H", Questie.db.profile.dailyResetTime+300))
     local weeklyResetDay = Questie.db.profile.weeklyResetDay or 4
@@ -405,7 +405,7 @@ function QuestieCompat.CalculateNextResetTime()
         day = currentDate.day + dayOffset,
         hour = Questie.db.profile.weeklyResetHour,
     })
-    Questie:Debug(Questie.DEBUG_DEVELOP, "[CalculateNextResetTime] Next weekly rest time: ", date("%m/%d/%y %H:%M:%S", Questie.db.profile.weeklyResetTime))
+    Questie.Debug(Questie.DEBUG_DEVELOP, "[CalculateNextResetTime] Next weekly rest time: ", date("%m/%d/%y %H:%M:%S", Questie.db.profile.weeklyResetTime))
 end
 
 function QuestieCompat.ResetDailyQuests(reset)
@@ -493,7 +493,7 @@ function QuestieCompat.ResetMonthlyQuests()
         QuestieCompat.ResetMonthlyQuests()
     end)
 
-    Questie:Debug(Questie.DEBUG_DEVELOP, "[ResetMonthlyQuests] Next monthly reset time: ", date("%m/%d/%y %H:%M:%S", monthlyResetTime))
+    Questie.Debug(Questie.DEBUG_DEVELOP, "[ResetMonthlyQuests] Next monthly reset time: ", date("%m/%d/%y %H:%M:%S", monthlyResetTime))
 
     return didReset
 end

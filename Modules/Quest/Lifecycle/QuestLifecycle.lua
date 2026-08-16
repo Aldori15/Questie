@@ -61,7 +61,7 @@ function QuestLifecycle:AcceptQuest(questId)
         local complete = quest:IsComplete()
         -- If any of these flags exist then this quest has already once been accepted and is probably in a failed state
         if (quest.WasComplete or quest.isComplete or complete == 0 or complete == -1) and (QuestiePlayer.currentQuestlog[questId]) then
-            Questie:Debug(Questie.DEBUG_INFO, "[QuestLifecycle] Accepted Quest:", questId, " Warning: This quest was once accepted and needs to be reset.")
+            Questie.Debug(Questie.DEBUG_INFO, "[QuestLifecycle] Accepted Quest:", questId, " Warning: This quest was once accepted and needs to be reset.")
 
             -- Reset quest log
             QuestiePlayer.currentQuestlog[questId] = nil
@@ -88,7 +88,7 @@ function QuestLifecycle:AcceptQuest(questId)
         end
 
         if not QuestiePlayer.currentQuestlog[questId] then
-            Questie:Debug(Questie.DEBUG_INFO, "[QuestLifecycle] Accepted Quest:", questId)
+            Questie.Debug(Questie.DEBUG_INFO, "[QuestLifecycle] Accepted Quest:", questId)
 
             QuestiePlayer.currentQuestlog[questId] = quest
 
@@ -129,7 +129,7 @@ function QuestLifecycle:AcceptQuest(questId)
                 AvailableQuests.CalculateAndDrawAll(nil, true)
             end)
         else
-            Questie:Debug(Questie.DEBUG_INFO, "[QuestLifecycle] Accepted Quest:", questId, " Warning: Quest already exists, not adding")
+            Questie.Debug(Questie.DEBUG_INFO, "[QuestLifecycle] Accepted Quest:", questId, " Warning: Quest already exists, not adding")
         end
     end
 end
@@ -189,7 +189,7 @@ function QuestLifecycle:CompleteQuest(questId)
         AvailableQuests.CalculateAndDrawAll(nil, true)
     end)
 
-    Questie:Debug(Questie.DEBUG_INFO, "[QuestLifecycle] Completed Quest:", questId)
+    Questie.Debug(Questie.DEBUG_INFO, "[QuestLifecycle] Completed Quest:", questId)
 end
 
 ---@param questId number
@@ -239,6 +239,6 @@ function QuestLifecycle:AbandonQuest(questId)
             AvailableQuests.CalculateAndDrawAll(nil, true)
         end)
 
-        Questie:Debug(Questie.DEBUG_INFO, "[QuestLifecycle] Abandoned Quest:", questId)
+        Questie.Debug(Questie.DEBUG_INFO, "[QuestLifecycle] Abandoned Quest:", questId)
     end
 end

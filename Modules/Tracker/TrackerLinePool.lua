@@ -91,14 +91,14 @@ local function ToggleAllQuestsInZone(expandZone)
     end
 
     if Questie.db.char.minAllQuestsInZone[zoneId] and not Questie.db.char.minAllQuestsInZone[zoneId].isTrue then
-        Questie:Debug(Questie.DEBUG_DEVELOP, "[TrackerLinePool:minAllQuestsInZone] - Maximize")
+        Questie.Debug(Questie.DEBUG_DEVELOP, "[TrackerLinePool:minAllQuestsInZone] - Maximize")
         for questId, _ in pairs(questIds) do
             Questie.db.char.collapsedQuests[questId] = nil
         end
 
         Questie.db.char.minAllQuestsInZone[zoneId] = nil
     else
-        Questie:Debug(Questie.DEBUG_DEVELOP, "[TrackerLinePool:minAllQuestsInZone] - Minimize")
+        Questie.Debug(Questie.DEBUG_DEVELOP, "[TrackerLinePool:minAllQuestsInZone] - Minimize")
         Questie.db.char.minAllQuestsInZone[zoneId] = questIds
         for questId, _ in pairs(questIds) do
             Questie.db.char.collapsedQuests[questId] = true
@@ -323,10 +323,10 @@ function TrackerLinePool.Initialize(questFrame)
                 else
                     if self.mode == 1 then
                         self:SetMode(0)
-                        Questie:Debug(Questie.DEBUG_DEVELOP, "[TrackerLinePool:expandZone] - Minimize")
+                        Questie.Debug(Questie.DEBUG_DEVELOP, "[TrackerLinePool:expandZone] - Minimize")
                     else
                         self:SetMode(1)
-                        Questie:Debug(Questie.DEBUG_DEVELOP, "[TrackerLinePool:expandZone] - Maximize")
+                        Questie.Debug(Questie.DEBUG_DEVELOP, "[TrackerLinePool:expandZone] - Maximize")
                     end
 
                     if Questie.db.char.collapsedZones[self.zoneId] == true then
@@ -465,10 +465,10 @@ function TrackerLinePool.Initialize(questFrame)
         expandQuest:SetScript("OnClick", function(self)
             if self.mode == 1 then
                 self:SetMode(0)
-                Questie:Debug(Questie.DEBUG_DEVELOP, "[TrackerLinePool:expandQuest] - Minimize")
+                Questie.Debug(Questie.DEBUG_DEVELOP, "[TrackerLinePool:expandQuest] - Minimize")
             else
                 self:SetMode(1)
-                Questie:Debug(Questie.DEBUG_DEVELOP, "[TrackerLinePool:expandQuest] - Maximize")
+                Questie.Debug(Questie.DEBUG_DEVELOP, "[TrackerLinePool:expandQuest] - Maximize")
             end
             if Questie.db.char.collapsedQuests[self.questId] then
                 Questie.db.char.collapsedQuests[self.questId] = nil
@@ -672,7 +672,7 @@ function TrackerLinePool.Initialize(questFrame)
                 end
 
                 if self.charges == 0 then
-                    Questie:Debug(Questie.DEBUG_DEVELOP, "[TrackerLinePool: Button.OnUpdate]")
+                    Questie.Debug(Questie.DEBUG_DEVELOP, "[TrackerLinePool: Button.OnUpdate]")
                     QuestieCombatQueue:Queue(function()
                         C_Timer.After(0.2, function()
                             QuestieTracker:Update()
@@ -796,9 +796,9 @@ end
 
 function TrackerLinePool.ResetLinesForChange()
     if TrackerBaseFrame.isSizing == true or TrackerBaseFrame.isMoving == true then
-        Questie:Debug(Questie.DEBUG_SPAM, "[TrackerLinePool:ResetLinesForChange]")
+        Questie.Debug(Questie.DEBUG_SPAM, "[TrackerLinePool:ResetLinesForChange]")
     else
-        Questie:Debug(Questie.DEBUG_INFO, "[TrackerLinePool:ResetLinesForChange]")
+        Questie.Debug(Questie.DEBUG_INFO, "[TrackerLinePool:ResetLinesForChange]")
     end
 
     if InCombatLockdown() or not Questie.db.profile.trackerEnabled then
@@ -837,9 +837,9 @@ end
 
 function TrackerLinePool.ResetButtonsForChange()
     if TrackerBaseFrame.isSizing == true or TrackerBaseFrame.isMoving == true then
-        Questie:Debug(Questie.DEBUG_SPAM, "[TrackerLinePool:ResetButtonsForChange]")
+        Questie.Debug(Questie.DEBUG_SPAM, "[TrackerLinePool:ResetButtonsForChange]")
     else
-        Questie:Debug(Questie.DEBUG_INFO, "[TrackerLinePool:ResetButtonsForChange]")
+        Questie.Debug(Questie.DEBUG_INFO, "[TrackerLinePool:ResetButtonsForChange]")
     end
 
     if InCombatLockdown() or not Questie.db.profile.trackerEnabled then
@@ -948,9 +948,9 @@ end
 
 function TrackerLinePool.HideUnusedLines()
     if TrackerBaseFrame.isSizing == true or TrackerBaseFrame.isMoving == true then
-        Questie:Debug(Questie.DEBUG_SPAM, "[TrackerLinePool:HideUnusedLines]")
+        Questie.Debug(Questie.DEBUG_SPAM, "[TrackerLinePool:HideUnusedLines]")
     else
-        Questie:Debug(Questie.DEBUG_INFO, "[TrackerLinePool:HideUnusedLines]")
+        Questie.Debug(Questie.DEBUG_INFO, "[TrackerLinePool:HideUnusedLines]")
     end
     local startUnusedLines = 0
 
@@ -989,9 +989,9 @@ end
 
 function TrackerLinePool.HideUnusedButtons()
     if TrackerBaseFrame.isSizing == true or TrackerBaseFrame.isMoving == true then
-        Questie:Debug(Questie.DEBUG_SPAM, "[TrackerLinePool:HideUnusedButtons]")
+        Questie.Debug(Questie.DEBUG_SPAM, "[TrackerLinePool:HideUnusedButtons]")
     else
-        Questie:Debug(Questie.DEBUG_INFO, "[TrackerLinePool:HideUnusedButtons]")
+        Questie.Debug(Questie.DEBUG_INFO, "[TrackerLinePool:HideUnusedButtons]")
     end
     local startUnusedButtons = 0
 
@@ -1120,7 +1120,7 @@ end
 
 ---@param button string
 TrackerLinePool.OnClickQuest = function(self, button)
-    Questie:Debug(Questie.DEBUG_DEVELOP, "[TrackerLinePool:_OnClickQuest]")
+    Questie.Debug(Questie.DEBUG_DEVELOP, "[TrackerLinePool:_OnClickQuest]")
     if (not self.Quest) then
         return
     end
@@ -1156,7 +1156,7 @@ end
 
 ---@param button string
 TrackerLinePool.OnClickAchieve = function(self, button)
-    Questie:Debug(Questie.DEBUG_DEVELOP, "[TrackerLinePool:_OnClickAchieve]")
+    Questie.Debug(Questie.DEBUG_DEVELOP, "[TrackerLinePool:_OnClickAchieve]")
     if (not self.Quest) then
         return
     end

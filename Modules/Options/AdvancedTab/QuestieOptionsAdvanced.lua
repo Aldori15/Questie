@@ -393,14 +393,14 @@ function QuestieOptions.tabs.advanced:Initialize()
                 width = "normal",
                 disabled = function() return not (Questie.db.profile.debugEnabledPrint and Questie.db.profile.debugEnabled); end,
                 get = function(_, key)
-                    --Questie:Debug(Questie.DEBUG_SPAM, "Debug Key:", key, math.pow(2, key), state.option.values[key])
-                    --Questie:Debug(Questie.DEBUG_SPAM, "Debug Level:", Questie.db.profile.debugLevel, bit.band(Questie.db.profile.debugLevel, math.pow(2, key)))
+                    --Questie.Debug(Questie.DEBUG_SPAM, "Debug Key:", key, math.pow(2, key), state.option.values[key])
+                    --Questie.Debug(Questie.DEBUG_SPAM, "Debug Level:", Questie.db.profile.debugLevel, bit.band(Questie.db.profile.debugLevel, math.pow(2, key)))
                     return bit.band(Questie.db.profile.debugLevel, math.pow(2, key)) > 0
                 end,
                 set = function (_, value)
                     local currentValue = Questie.db.profile.debugLevel
                     local flag = math.pow(2, value)
-                    --Questie:Debug(Questie.DEBUG_SPAM, "Setting Debug:", currentValue, flag, bit.band(currentValue, flag)>0)
+                    --Questie.Debug(Questie.DEBUG_SPAM, "Setting Debug:", currentValue, flag, bit.band(currentValue, flag)>0)
                     -- When current debug level is active, remove it
                     if (bit.band(currentValue, flag) > 0) then
                         Questie.db.profile.debugLevel = bit.bxor(flag, currentValue)

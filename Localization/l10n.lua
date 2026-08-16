@@ -155,7 +155,7 @@ end
 function l10n:BuildObjectNameCache()
     if l10n._objectCacheBuilt then return end
     l10n._objectCacheBuilt = true
-    Questie:Debug(Questie.DEBUG_INFO, "[l10n:BuildObjectNameCache] Building object name reverse-lookup cache...")
+    Questie.Debug(Questie.DEBUG_INFO, "[l10n:BuildObjectNameCache] Building object name reverse-lookup cache...")
     for id in pairs(QuestieDB.ObjectPointers) do
         local objName = QuestieDB.QueryObjectSingle(id, "name")
         if objName then
@@ -205,13 +205,13 @@ function _l10n:translate(key, ...)
 
     local translationEntry = l10n.translations[key]
     if not translationEntry then
-        if (Questie.db.profile.debugEnabled) then Questie:Debug(Questie.DEBUG_ELEVATED, "ERROR: Translations for '" .. tostring(key) .. "' are missing completely!") end
+        if (Questie.db.profile.debugEnabled) then Questie.Debug(Questie.DEBUG_ELEVATED, "ERROR: Translations for '" .. tostring(key) .. "' are missing completely!") end
         return format(key, unpack(args))
     end
 
     local translationValue = translationEntry[locale]
     if (not translationValue) then
-        if (Questie.db.profile.debugEnabled) then Questie:Debug(Questie.DEBUG_ELEVATED, "ERROR: Translations for '" .. tostring(key) .. "' are missing the entry for language" , locale, "!") end
+        if (Questie.db.profile.debugEnabled) then Questie.Debug(Questie.DEBUG_ELEVATED, "ERROR: Translations for '" .. tostring(key) .. "' are missing the entry for language" , locale, "!") end
         return format(key, unpack(args))
     end
 

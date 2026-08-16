@@ -36,7 +36,7 @@ local function _ApplyTimerText(frame, timeRemainingString)
 end
 
 function TrackerQuestTimers:Initialize()
-    Questie:Debug(Questie.DEBUG_DEVELOP, "[TrackerQuestTimers:Initialize]")
+    Questie.Debug(Questie.DEBUG_DEVELOP, "[TrackerQuestTimers:Initialize]")
 
     if QuestieTracker.started or (not Questie.db.profile.trackerEnabled) then
         return
@@ -155,11 +155,11 @@ function TrackerQuestTimers:UpdateTimerFrame(frame, questId, timeRemainingString
     if timerFrame and timerQuestId then
         timeRemainingString = timeRemainingString or TrackerQuestTimers:GetRemainingTimeByQuestId(timerQuestId)
         if timeRemainingString ~= nil then
-            Questie:Debug(Questie.DEBUG_SPAM, "[TrackerQuestTimers:UpdateTimerFrame] - ", timeRemainingString)
+            Questie.Debug(Questie.DEBUG_SPAM, "[TrackerQuestTimers:UpdateTimerFrame] - ", timeRemainingString)
 
             _ApplyTimerText(timerFrame, timeRemainingString)
         else
-            Questie:Debug(Questie.DEBUG_SPAM, "[TrackerQuestTimers] Quest Timer Expired!")
+            Questie.Debug(Questie.DEBUG_SPAM, "[TrackerQuestTimers] Quest Timer Expired!")
             if timer and timer.frame == timerFrame and timer.questId == timerQuestId then
                 timer = nil
             end

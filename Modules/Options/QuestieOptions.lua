@@ -42,7 +42,7 @@ end
 
 ---Initializes the frames for the options menu
 function QuestieOptions:Initialize()
-    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieOptions]: Initializing...")
+    Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieOptions]: Initializing...")
 
     local optionsTable = _CreateOptionsTable()
 
@@ -95,7 +95,7 @@ function QuestieOptions:Initialize()
     QuestieConfigFrame = configFrame
     table.insert(UISpecialFrames, "QuestieConfigFrame")
 
-    Questie:Debug(Questie.DEBUG_DEVELOP, "[QuestieOptions]: Initialization done")
+    Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieOptions]: Initialization done")
 end
 
 -- Generic function to hide the config frame.
@@ -124,7 +124,7 @@ end
 -- set option value
 function QuestieOptions:SetProfileValue(info, value)
     if debug and Questie.db.profile[info[#info]] ~= value then
-        Questie:Debug(Questie.DEBUG_SPAM, "DEBUG: global option", info[#info], "changed from '" .. tostring(Questie.db.profile[info[#info]]) .. "' to '" .. tostring(value) .. "'")
+        Questie.Debug(Questie.DEBUG_SPAM, "DEBUG: global option", info[#info], "changed from '" .. tostring(Questie.db.profile[info[#info]]) .. "' to '" .. tostring(value) .. "'")
     end
     Questie.db.profile[info[#info]] = value
 end
