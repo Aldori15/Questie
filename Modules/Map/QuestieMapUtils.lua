@@ -6,45 +6,57 @@ QuestieMap.utils = QuestieMap.utils or {}
 -- All the speed we can get is worth it.
 local pairs = pairs
 
--- Frame-level offset for every icon type defined by Questie 335.
-local DRAW_ORDER_BY_ICON_TYPE_LOOKUP = {
-    [Questie.ICON_TYPE_SLAY] = 0,
-    [Questie.ICON_TYPE_LOOT] = 0,
-    [Questie.ICON_TYPE_EVENT] = 0,
-    [Questie.ICON_TYPE_OBJECT] = 0,
-    [Questie.ICON_TYPE_TALK] = 0,
-    [Questie.ICON_TYPE_AVAILABLE] = 1,
-    [Questie.ICON_TYPE_AVAILABLE_GRAY] = 0,
-    [Questie.ICON_TYPE_COMPLETE] = 3,
-    [Questie.ICON_TYPE_GLOW] = 0,
-    [Questie.ICON_TYPE_REPEATABLE] = 2,
-    [Questie.ICON_TYPE_REPEATABLE_COMPLETE] = 3,
-    [Questie.ICON_TYPE_INCOMPLETE] = 0,
-    [Questie.ICON_TYPE_EVENTQUEST] = 2,
-    [Questie.ICON_TYPE_EVENTQUEST_COMPLETE] = 3,
-    [Questie.ICON_TYPE_PVPQUEST] = 2,
-    [Questie.ICON_TYPE_PVPQUEST_COMPLETE] = 3,
-    [Questie.ICON_TYPE_INTERACT] = 0,
-    [Questie.ICON_TYPE_MOUNT_UP] = 0,
-    [Questie.ICON_TYPE_NODE_FISH] = 0,
-    [Questie.ICON_TYPE_NODE_HERB] = 0,
-    [Questie.ICON_TYPE_NODE_ORE] = 0,
-    [Questie.ICON_TYPE_CHEST] = 0,
-}
+local DRAW_ORDER_BY_ICON_TYPE_LOOKUP
+local MAX_DRAW_ORDER_BY_ICON_TYPE
+local DRAW_ORDER_QUEST_COMPLETE
 
-local MAX_DRAW_ORDER_BY_ICON_TYPE = 0
-for _, drawOrder in pairs(DRAW_ORDER_BY_ICON_TYPE_LOOKUP) do
-    if drawOrder > MAX_DRAW_ORDER_BY_ICON_TYPE then
-        MAX_DRAW_ORDER_BY_ICON_TYPE = drawOrder
+local function EnsureDrawOrderLookup()
+    if DRAW_ORDER_BY_ICON_TYPE_LOOKUP then return end
+
+    -- Questie.lua is loaded last in the 3.3.5 TOC, so its icon constants are
+    -- not available while QuestieMapUtils.lua itself is being loaded.
+    DRAW_ORDER_BY_ICON_TYPE_LOOKUP = {
+        [Questie.ICON_TYPE_SLAY] = 0,
+        [Questie.ICON_TYPE_LOOT] = 0,
+        [Questie.ICON_TYPE_EVENT] = 0,
+        [Questie.ICON_TYPE_OBJECT] = 0,
+        [Questie.ICON_TYPE_TALK] = 0,
+        [Questie.ICON_TYPE_AVAILABLE] = 1,
+        [Questie.ICON_TYPE_AVAILABLE_GRAY] = 0,
+        [Questie.ICON_TYPE_COMPLETE] = 3,
+        [Questie.ICON_TYPE_GLOW] = 0,
+        [Questie.ICON_TYPE_REPEATABLE] = 2,
+        [Questie.ICON_TYPE_REPEATABLE_COMPLETE] = 3,
+        [Questie.ICON_TYPE_INCOMPLETE] = 0,
+        [Questie.ICON_TYPE_EVENTQUEST] = 2,
+        [Questie.ICON_TYPE_EVENTQUEST_COMPLETE] = 3,
+        [Questie.ICON_TYPE_PVPQUEST] = 2,
+        [Questie.ICON_TYPE_PVPQUEST_COMPLETE] = 3,
+        [Questie.ICON_TYPE_INTERACT] = 0,
+        [Questie.ICON_TYPE_MOUNT_UP] = 0,
+        [Questie.ICON_TYPE_NODE_FISH] = 0,
+        [Questie.ICON_TYPE_NODE_HERB] = 0,
+        [Questie.ICON_TYPE_NODE_ORE] = 0,
+        [Questie.ICON_TYPE_CHEST] = 0,
+    }
+
+    MAX_DRAW_ORDER_BY_ICON_TYPE = 0
+    for _, drawOrder in pairs(DRAW_ORDER_BY_ICON_TYPE_LOOKUP) do
+        if drawOrder > MAX_DRAW_ORDER_BY_ICON_TYPE then
+            MAX_DRAW_ORDER_BY_ICON_TYPE = drawOrder
+        end
     end
-end
--- Leave one complete priority range between manual and regular quest icons.
-MAX_DRAW_ORDER_BY_ICON_TYPE = MAX_DRAW_ORDER_BY_ICON_TYPE + 1
 
--- Quest finishers render above every manual and regular icon priority.
-local DRAW_ORDER_QUEST_COMPLETE = 2 * MAX_DRAW_ORDER_BY_ICON_TYPE
+    -- Leave one complete priority range between manual and regular quest icons.
+    MAX_DRAW_ORDER_BY_ICON_TYPE = MAX_DRAW_ORDER_BY_ICON_TYPE + 1
+
+    -- Quest finishers render above every manual and regular icon priority.
+    DRAW_ORDER_QUEST_COMPLETE = 2 * MAX_DRAW_ORDER_BY_ICON_TYPE
+end
 
 function QuestieMap.utils.SetDrawOrder(frame)
+    EnsureDrawOrderLookup()
+
     -- Keep icons above the map canvas and waypoint lines while preserving
     -- the explicit parent and strata handling required by the 3.3.5 client.
     local frameLevel
