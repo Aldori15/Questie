@@ -436,6 +436,7 @@ StaticPopupDialogs["QUESTIE_RESET_CONFIRM"] = {
 
         Questie.db.char.hidden = nil
         Questie.db.global.unavailableQuestsDeterminedByTalking = {}
+        Questie.db.global.unavailableQuestSyncState = {}
 
         ReloadUI()
     end,
