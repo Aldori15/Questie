@@ -570,12 +570,13 @@ local function GetParentUiMapIdForAreaId(areaId)
 end
 
 local localizedZoneMappingsLocale = nil
+
 local function EnsureLocalizedZoneNameMappings()
-    local activeLocale = l10n.GetUILocale and l10n:GetUILocale() or "enUS"
-    if localizedZoneMappingsLocale == activeLocale then
+    if localizedZoneMappingsLocale then
         return
     end
 
+    local activeLocale = l10n.GetUILocale and l10n:GetUILocale() or "enUS"
     localizedZoneMappingsLocale = activeLocale
     for _, lookupTable in pairs(l10n.zoneLookup or {}) do
         if type(lookupTable) == "table" then
@@ -2069,6 +2070,12 @@ QuestieCompat.WorldMapFrame = {
 function QuestieCompat.InitializeMapCompatibility()
     if mapCompatibilityInitialized then return end
     mapCompatibilityInitialized = true
+
+    -- SetUILocale is defined only after all addon files have loaded. Install
+    -- the cache invalidation hook here instead of while Compat/Map.lua loads.
+    hooksecurefunc(l10n, "SetUILocale", function()
+        localizedZoneMappingsLocale = nil
+    end)
 
     for uiMapId, data in pairs(QuestieCompat.UiMapData) do
         mapIdToUiMapId[data.mapID] = uiMapId
