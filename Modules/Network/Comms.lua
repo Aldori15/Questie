@@ -14,6 +14,7 @@ local C_Timer = QuestieCompat.C_Timer
 local COMM_PREFIX = "Questie"
 local UNAVAILABLE_QUEST_SYNC_REQUEST_ATTEMPTS = 60
 local UNAVAILABLE_QUEST_SYNC_REQUEST_INTERVAL = 0.5
+local UNAVAILABLE_QUEST_RESPONSE_WINDOW = 8
 local MAX_UNAVAILABLE_QUEST_MESSAGE_BYTES = 64 * 1024
 local MAX_UNAVAILABLE_QUEST_NPCS = 256
 local MAX_UNAVAILABLE_QUESTS_PER_NPC = 128
@@ -24,6 +25,7 @@ local realmName
 local requestedUnavailableQuestSnapshot
 local unavailableQuestSnapshotRequestTicker
 local commsAudienceFrame
+local pendingUnavailableQuestResponses = {}
 
 ---@type AvailableQuests
 local AvailableQuests = QuestieLoader:ImportModule("AvailableQuests")
@@ -121,16 +123,132 @@ local function _LogRejectedUnavailableQuestPayload(sender, reason)
         "[Comms.OnCommReceived] Rejected unavailable quest payload from", sender or "unknown", reason)
 end
 
-local function _SendSerializedEventToAvailableChannels(serializedEvent)
-    if IsInGuild() then
+local function _CreateEmptyUnavailableQuestSnapshot()
+    return {daily = {}, weekly = {}}
+end
+
+local function _GetOrCreateSnapshotEntry(snapshot, bucketName, npcId)
+    for _, entry in pairs(snapshot[bucketName]) do
+        if entry.npcId == npcId then
+            return entry
+        end
+    end
+
+    local entry = {npcId = npcId, questIds = {}}
+    snapshot[bucketName][#snapshot[bucketName] + 1] = entry
+    return entry
+end
+
+local function _AddUnavailableQuestsToSnapshot(snapshot, npcId, questIds)
+    for _, questId in pairs(questIds) do
+        local bucketName = QuestieDB.IsDailyQuest(questId) and "daily" or "weekly"
+        local entry = _GetOrCreateSnapshotEntry(snapshot, bucketName, npcId)
+        local alreadyKnown = false
+        for _, knownQuestId in pairs(entry.questIds) do
+            if knownQuestId == questId then
+                alreadyKnown = true
+                break
+            end
+        end
+        if not alreadyKnown then
+            entry.questIds[#entry.questIds + 1] = questId
+        end
+    end
+end
+
+local function _CanSendToDistribution(distribution)
+    if distribution == "GUILD" then
+        return IsInGuild()
+    elseif distribution == "RAID" then
+        return IsInRaid()
+    elseif distribution == "PARTY" then
+        return IsInGroup() and not IsInRaid()
+    end
+    return false
+end
+
+local function _CancelPendingUnavailableQuestResponse(distribution)
+    local pendingResponse = pendingUnavailableQuestResponses[distribution]
+    if pendingResponse then
+        if pendingResponse.timer then
+            pendingResponse.timer:Cancel()
+        end
+        pendingUnavailableQuestResponses[distribution] = nil
+    end
+end
+
+local function _SendUnavailableQuestSnapshot(snapshot, distribution)
+    for _, bucketName in pairs({"daily", "weekly"}) do
+        for _, entry in pairs(snapshot[bucketName] or {}) do
+            local event = {
+                eventName = "HideDailyQuests",
+                data = {
+                    npcId = entry.npcId,
+                    questIds = entry.questIds,
+                },
+            }
+            local serializedEvent = AceSerializer:Serialize(event)
+            Questie:SendCommMessage(COMM_PREFIX, serializedEvent, distribution)
+        end
+    end
+end
+
+local function _ScheduleUnavailableQuestResponse(distribution, requesterSnapshot)
+    _CancelPendingUnavailableQuestResponse(distribution)
+
+    if not AvailableQuests.GetUnavailableQuestSnapshotDelta(requesterSnapshot) then
+        return
+    end
+
+    local pendingResponse = {knownSnapshot = requesterSnapshot}
+    pendingUnavailableQuestResponses[distribution] = pendingResponse
+    pendingResponse.timer = C_Timer.NewTimer(math.random() * UNAVAILABLE_QUEST_RESPONSE_WINDOW, function()
+        if pendingUnavailableQuestResponses[distribution] ~= pendingResponse then
+            return
+        end
+        pendingUnavailableQuestResponses[distribution] = nil
+
+        if not _CanSendToDistribution(distribution) then
+            return
+        end
+
+        local delta = AvailableQuests.GetUnavailableQuestSnapshotDelta(pendingResponse.knownSnapshot)
+        if delta then
+            Questie.Debug(Questie.DEBUG_DEVELOP, "[Comms] Answering unavailable quest request on", distribution)
+            _SendUnavailableQuestSnapshot(delta, distribution)
+        end
+    end)
+end
+
+local function _RecordPendingUnavailableQuestBroadcast(distribution, npcId, questIds)
+    local pendingResponse = pendingUnavailableQuestResponses[distribution]
+    if not pendingResponse then
+        return
+    end
+
+    _AddUnavailableQuestsToSnapshot(pendingResponse.knownSnapshot, npcId, questIds)
+    if not AvailableQuests.GetUnavailableQuestSnapshotDelta(pendingResponse.knownSnapshot) then
+        Questie.Debug(Questie.DEBUG_DEVELOP, "[Comms] Cancelling covered unavailable quest response on", distribution)
+        _CancelPendingUnavailableQuestResponse(distribution)
+    end
+end
+
+local function _SendSerializedEventToAvailableChannels(serializedEvent, askGuild)
+    local sent = false
+    if askGuild ~= false and IsInGuild() then
         Questie:SendCommMessage(COMM_PREFIX, serializedEvent, "GUILD")
+        sent = true
     end
 
     if IsInRaid() then
         Questie:SendCommMessage(COMM_PREFIX, serializedEvent, "RAID")
+        sent = true
     elseif IsInGroup() then
         Questie:SendCommMessage(COMM_PREFIX, serializedEvent, "PARTY")
+        sent = true
     end
+
+    return sent
 end
 
 local function _HasUnavailableQuestSyncAudience()
@@ -210,6 +328,11 @@ function Comms.Initialize()
     _RefreshUnavailableQuestSyncRequest()
 end
 
+function Comms.CancelPendingUnavailableQuestGroupResponses()
+    _CancelPendingUnavailableQuestResponse("PARTY")
+    _CancelPendingUnavailableQuestResponse("RAID")
+end
+
 ---@param prefix string
 ---@param message string
 ---@param distribution string
@@ -238,6 +361,8 @@ function Comms.OnCommReceived(prefix, message, distribution, sender)
         return
     end
 
+    Questie.Debug(Questie.DEBUG_DEVELOP, "[Comms.OnCommReceived] Received", event.eventName, "from", sender, "on", distribution)
+
     if event.eventName == "SyncUnavailableQuestState" then
         if distribution ~= "WHISPER" then
             return
@@ -264,12 +389,24 @@ function Comms.OnCommReceived(prefix, message, distribution, sender)
             return
         end
 
+        _RecordPendingUnavailableQuestBroadcast(distribution, npcId, questIds)
         AvailableQuests.RemoveQuestsForToday(npcId, questIds)
         return
     end
 
     if event.eventName == "RequestUnavailableQuestState" then
-        Comms.SendUnavailableQuestState(sender)
+        local requesterSnapshot = _CreateEmptyUnavailableQuestSnapshot()
+        if event.data ~= nil then
+            local validationError
+            requesterSnapshot, validationError = _ValidateUnavailableQuestSnapshot(event.data)
+            if not requesterSnapshot then
+                _LogRejectedUnavailableQuestPayload(sender, validationError)
+                return
+            end
+        end
+
+        AvailableQuests.MergeUnavailableQuestSnapshot(requesterSnapshot)
+        _ScheduleUnavailableQuestResponse(distribution, requesterSnapshot)
         return
     end
 
@@ -300,21 +437,27 @@ function Comms.BroadcastUnavailableDailyQuests(npcId, questIds)
     _SendSerializedEventToAvailableChannels(serializedEvent)
 end
 
-function Comms.RequestUnavailableQuestState()
-    if requestedUnavailableQuestSnapshot or (not _HasUnavailableQuestSyncAudience()) then
+---@param askGuild boolean|nil Include the guild channel; defaults to true.
+---@param force boolean|nil Send even if the initial login request already succeeded.
+function Comms.RequestUnavailableQuestState(askGuild, force)
+    if requestedUnavailableQuestSnapshot and not force then
         return false
     end
-
-    requestedUnavailableQuestSnapshot = true
-    _StopInitialUnavailableQuestSyncRequest()
 
     ---@type CommEvent
     local event = {
         eventName = "RequestUnavailableQuestState",
+        data = AvailableQuests.GetUnavailableQuestSnapshot() or _CreateEmptyUnavailableQuestSnapshot(),
     }
 
     local serializedEvent = AceSerializer:Serialize(event)
-    _SendSerializedEventToAvailableChannels(serializedEvent)
+    if not _SendSerializedEventToAvailableChannels(serializedEvent, askGuild) then
+        return false
+    end
+
+    Questie.Debug(Questie.DEBUG_DEVELOP, "[Comms.RequestUnavailableQuestState] Requested unavailable quests; askGuild:", askGuild ~= false)
+    requestedUnavailableQuestSnapshot = true
+    _StopInitialUnavailableQuestSyncRequest()
     return true
 end
 

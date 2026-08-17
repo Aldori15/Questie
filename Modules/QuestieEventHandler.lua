@@ -47,6 +47,8 @@ local AvailableQuests = QuestieLoader:ImportModule("AvailableQuests")
 local QuestiePartyObjectives = QuestieLoader:ImportModule("QuestiePartyObjectives")
 ---@type CommsVisibility
 local CommsVisibility = QuestieLoader:ImportModule("CommsVisibility")
+---@type Comms
+local Comms = QuestieLoader:ImportModule("Comms")
 
 --- COMPATIBILITY ---
 local C_Timer = QuestieCompat.C_Timer
@@ -628,6 +630,8 @@ function _EventHandler:GroupJoined()
                 --Request other players log.
                 Questie:SendMessage("QC_ID_REQUEST_FULL_QUESTLIST")
                 CommsVisibility:ScheduleSnapshot("GROUP_JOINED")
+                -- Ask only the newly joined party/raid for unavailable daily and weekly quests.
+                Comms.RequestUnavailableQuestState(false, true)
                 checkTimer:Cancel()
             end
         else
@@ -641,6 +645,7 @@ function _EventHandler:GroupLeft()
     --Resets both QuestieComms.remoteQuestLog and QuestieComms.data
     QuestieComms:ResetAll()
     CommsVisibility:ResetAll()
+    Comms.CancelPendingUnavailableQuestGroupResponses()
     QuestiePartyObjectives:Clear()
     previousOnlineStatus = {}
 end

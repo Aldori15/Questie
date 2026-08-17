@@ -744,6 +744,51 @@ function AvailableQuests.GetUnavailableQuestSnapshot()
     return snapshot
 end
 
+local function _BuildUnavailableQuestSnapshotLookup(snapshot, bucketName)
+    local lookup = {}
+    for _, entry in pairs((snapshot and snapshot[bucketName]) or {}) do
+        lookup[entry.npcId] = lookup[entry.npcId] or {}
+        for _, questId in pairs(entry.questIds or {}) do
+            lookup[entry.npcId][questId] = true
+        end
+    end
+    return lookup
+end
+
+--- Returns unavailable daily/weekly quests that are missing from the supplied snapshot.
+---@param knownSnapshot UnavailableQuestSnapshot|nil
+---@return UnavailableQuestSnapshot|nil
+function AvailableQuests.GetUnavailableQuestSnapshotDelta(knownSnapshot)
+    local syncState = _GetUnavailableQuestSyncState()
+    local delta = {daily = {}, weekly = {}}
+    local hasDelta = false
+
+    for _, bucketName in pairs({"daily", "weekly"}) do
+        local knownByNpc = _BuildUnavailableQuestSnapshotLookup(knownSnapshot, bucketName)
+        local bucket = _EnsureUnavailableQuestSyncBucket(syncState, bucketName)
+
+        for npcId, questIdsByNpc in pairs(bucket.byNpc) do
+            local missingQuestIds = {}
+            local knownQuestIds = knownByNpc[npcId] or {}
+            for questId in pairs(questIdsByNpc) do
+                if not knownQuestIds[questId] then
+                    tinsert(missingQuestIds, questId)
+                end
+            end
+
+            if next(missingQuestIds) then
+                tinsert(delta[bucketName], {
+                    npcId = npcId,
+                    questIds = missingQuestIds,
+                })
+                hasDelta = true
+            end
+        end
+    end
+
+    return hasDelta and delta or nil
+end
+
 function AvailableQuests.MergeUnavailableQuestSnapshot(snapshot)
     if type(snapshot) ~= "table" then
         return false
