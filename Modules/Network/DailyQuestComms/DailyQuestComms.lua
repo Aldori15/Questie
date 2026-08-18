@@ -1,5 +1,5 @@
----@class Comms
-local Comms = QuestieLoader:CreateModule("Comms")
+---@class DailyQuestComms
+local DailyQuestComms = QuestieLoader:CreateModule("DailyQuestComms")
 
 ---@class CommEvent
 ---@field eventName "HideDailyQuests"|"RequestUnavailableQuestState"|"SyncUnavailableQuestState"
@@ -120,7 +120,7 @@ end
 
 local function _LogRejectedUnavailableQuestPayload(sender, reason)
     Questie.Debug(Questie.DEBUG_DEVELOP,
-        "[Comms.OnCommReceived] Rejected unavailable quest payload from", sender or "unknown", reason)
+        "[DailyQuestComms.OnCommReceived] Rejected unavailable quest payload from", sender or "unknown", reason)
 end
 
 local function _CreateEmptyUnavailableQuestSnapshot()
@@ -214,7 +214,7 @@ local function _ScheduleUnavailableQuestResponse(distribution, requesterSnapshot
 
         local delta = AvailableQuests.GetUnavailableQuestSnapshotDelta(pendingResponse.knownSnapshot)
         if delta then
-            Questie.Debug(Questie.DEBUG_DEVELOP, "[Comms] Answering unavailable quest request on", distribution)
+            Questie.Debug(Questie.DEBUG_DEVELOP, "[DailyQuestComms] Answering unavailable quest request on", distribution)
             _SendUnavailableQuestSnapshot(delta, distribution)
         end
     end)
@@ -228,7 +228,7 @@ local function _RecordPendingUnavailableQuestBroadcast(distribution, npcId, ques
 
     _AddUnavailableQuestsToSnapshot(pendingResponse.knownSnapshot, npcId, questIds)
     if not AvailableQuests.GetUnavailableQuestSnapshotDelta(pendingResponse.knownSnapshot) then
-        Questie.Debug(Questie.DEBUG_DEVELOP, "[Comms] Cancelling covered unavailable quest response on", distribution)
+        Questie.Debug(Questie.DEBUG_DEVELOP, "[DailyQuestComms] Cancelling covered unavailable quest response on", distribution)
         _CancelPendingUnavailableQuestResponse(distribution)
     end
 end
@@ -269,7 +269,7 @@ local function _StartInitialUnavailableQuestSyncRequest()
     local ticker
     ticker = C_Timer.NewTicker(UNAVAILABLE_QUEST_SYNC_REQUEST_INTERVAL, function()
         attempts = attempts + 1
-        if Comms.RequestUnavailableQuestState() or attempts >= UNAVAILABLE_QUEST_SYNC_REQUEST_ATTEMPTS then
+        if DailyQuestComms.RequestUnavailableQuestState() or attempts >= UNAVAILABLE_QUEST_SYNC_REQUEST_ATTEMPTS then
             local finishedTicker = ticker
             if ticker then
                 ticker:Cancel()
@@ -305,8 +305,8 @@ local function _RefreshUnavailableQuestSyncRequest()
     end
 end
 
-function Comms.Initialize()
-    Questie:RegisterComm(COMM_PREFIX, Comms.OnCommReceived)
+function DailyQuestComms.Initialize()
+    Questie:RegisterComm(COMM_PREFIX, DailyQuestComms.OnCommReceived)
 
     playerName = UnitName("player")
     realmName = GetRealmName()
@@ -328,7 +328,7 @@ function Comms.Initialize()
     _RefreshUnavailableQuestSyncRequest()
 end
 
-function Comms.CancelPendingUnavailableQuestGroupResponses()
+function DailyQuestComms.CancelPendingUnavailableQuestGroupResponses()
     _CancelPendingUnavailableQuestResponse("PARTY")
     _CancelPendingUnavailableQuestResponse("RAID")
 end
@@ -337,7 +337,7 @@ end
 ---@param message string
 ---@param distribution string
 ---@param sender string
-function Comms.OnCommReceived(prefix, message, distribution, sender)
+function DailyQuestComms.OnCommReceived(prefix, message, distribution, sender)
     if prefix ~= COMM_PREFIX then
         return
     end
@@ -361,7 +361,7 @@ function Comms.OnCommReceived(prefix, message, distribution, sender)
         return
     end
 
-    Questie.Debug(Questie.DEBUG_DEVELOP, "[Comms.OnCommReceived] Received", event.eventName, "from", sender, "on", distribution)
+    Questie.Debug(Questie.DEBUG_DEVELOP, "[DailyQuestComms.OnCommReceived] Received", event.eventName, "from", sender, "on", distribution)
 
     if event.eventName == "SyncUnavailableQuestState" then
         if distribution ~= "WHISPER" then
@@ -423,7 +423,7 @@ end
 
 ---@param npcId NpcId
 ---@param questIds QuestId[]
-function Comms.BroadcastUnavailableDailyQuests(npcId, questIds)
+function DailyQuestComms.BroadcastUnavailableDailyQuests(npcId, questIds)
     ---@type CommEvent
     local event = {
         eventName = "HideDailyQuests",
@@ -439,7 +439,7 @@ end
 
 ---@param askGuild boolean|nil Include the guild channel; defaults to true.
 ---@param force boolean|nil Send even if the initial login request already succeeded.
-function Comms.RequestUnavailableQuestState(askGuild, force)
+function DailyQuestComms.RequestUnavailableQuestState(askGuild, force)
     if requestedUnavailableQuestSnapshot and not force then
         return false
     end
@@ -455,14 +455,14 @@ function Comms.RequestUnavailableQuestState(askGuild, force)
         return false
     end
 
-    Questie.Debug(Questie.DEBUG_DEVELOP, "[Comms.RequestUnavailableQuestState] Requested unavailable quests; askGuild:", askGuild ~= false)
+    Questie.Debug(Questie.DEBUG_DEVELOP, "[DailyQuestComms.RequestUnavailableQuestState] Requested unavailable quests; askGuild:", askGuild ~= false)
     requestedUnavailableQuestSnapshot = true
     _StopInitialUnavailableQuestSyncRequest()
     return true
 end
 
 ---@param target string
-function Comms.SendUnavailableQuestState(target)
+function DailyQuestComms.SendUnavailableQuestState(target)
     local snapshot = AvailableQuests.GetUnavailableQuestSnapshot()
     if (not snapshot) then
         return

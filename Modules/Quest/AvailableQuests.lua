@@ -21,8 +21,8 @@ local QuestieQuestBlacklist = QuestieLoader:ImportModule("QuestieQuestBlacklist"
 local IsleOfQuelDanas = QuestieLoader:ImportModule("IsleOfQuelDanas")
 ---@type QuestieLib
 local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
----@type Comms
-local Comms = QuestieLoader:ImportModule("Comms")
+---@type DailyQuestComms
+local DailyQuestComms = QuestieLoader:ImportModule("DailyQuestComms")
 ---@type Phasing
 local Phasing = QuestieLoader:ImportModule("Phasing")
 ---@type QuestieIconVisibility
@@ -897,7 +897,7 @@ function AvailableQuests.ValidateAvailableQuestsFromGossipShow()
 
     if next(unavailableQuestsToBroadcast) then
         AvailableQuests.RemoveQuestsForToday(npcId, unavailableQuestsToBroadcast)
-        Comms.BroadcastUnavailableDailyQuests(npcId, unavailableQuestsToBroadcast)
+        DailyQuestComms.BroadcastUnavailableDailyQuests(npcId, unavailableQuestsToBroadcast)
     end
 end
 
@@ -949,7 +949,7 @@ function AvailableQuests.ValidateAvailableQuestsFromQuestDetail()
 
     if next(unavailableQuestsToBroadcast) then
         AvailableQuests.RemoveQuestsForToday(npcId, unavailableQuestsToBroadcast)
-        Comms.BroadcastUnavailableDailyQuests(npcId, unavailableQuestsToBroadcast)
+        DailyQuestComms.BroadcastUnavailableDailyQuests(npcId, unavailableQuestsToBroadcast)
     end
 end
 
@@ -1018,7 +1018,7 @@ function AvailableQuests.ValidateAvailableQuestsFromQuestGreeting()
 
     if next(unavailableQuestsToBroadcast) then
         AvailableQuests.RemoveQuestsForToday(npcId, unavailableQuestsToBroadcast)
-        Comms.BroadcastUnavailableDailyQuests(npcId, unavailableQuestsToBroadcast)
+        DailyQuestComms.BroadcastUnavailableDailyQuests(npcId, unavailableQuestsToBroadcast)
     end
 end
 

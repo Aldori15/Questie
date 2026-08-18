@@ -67,8 +67,8 @@ local MinimapIcon = QuestieLoader:ImportModule("MinimapIcon")
 local QuestieComms = QuestieLoader:ImportModule("QuestieComms");
 ---@type CommsVisibility
 local CommsVisibility = QuestieLoader:ImportModule("CommsVisibility")
----@type Comms
-local Comms = QuestieLoader:ImportModule("Comms")
+---@type DailyQuestComms
+local DailyQuestComms = QuestieLoader:ImportModule("DailyQuestComms")
 ---@type QuestieOptions
 local QuestieOptions = QuestieLoader:ImportModule("QuestieOptions");
 ---@type QuestieCoords
@@ -358,7 +358,7 @@ QuestieInit.Stages[3] = function() -- run as a coroutine
     -- Defer optional startup work until the tracker has been hydrated.
     Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage3] Communications initializing.")
     CommsVisibility:Initialize()
-    Comms.Initialize()
+    DailyQuestComms.Initialize()
     QuestieComms:Initialize()
     CommsVisibility:ScheduleSnapshot("INITIALIZE")
     coYield()
