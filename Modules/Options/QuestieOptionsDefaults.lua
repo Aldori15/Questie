@@ -1,8 +1,22 @@
 ---@class QuestieOptionsDefaults
 local QuestieOptionsDefaults = QuestieLoader:CreateModule("QuestieOptionsDefaults");
 
+local function ApplyOverrides(target, overrides)
+    if type(overrides) ~= "table" then
+        return
+    end
+
+    for key, value in pairs(overrides) do
+        if type(value) == "table" and type(target[key]) == "table" then
+            ApplyOverrides(target[key], value)
+        else
+            target[key] = value
+        end
+    end
+end
+
 function QuestieOptionsDefaults:Load()
-    return {
+    local defaults = {
         profile = {
             resetDailyQuests = true,
             weeklyResetDay = 4,
@@ -262,4 +276,10 @@ function QuestieOptionsDefaults:Load()
             journeyKeybindDefaultApplied = false,
         }
     }
+
+    if QuestieOptionsDefaultsOverride then
+        ApplyOverrides(defaults, QuestieOptionsDefaultsOverride)
+    end
+
+    return defaults
 end
