@@ -6,8 +6,18 @@ local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 ---@type QuestieProfessions
 local QuestieProfessions = QuestieLoader:ImportModule("QuestieProfessions")
 
-local _, playerClass = UnitClassBase("player")
-local playerFaction = UnitFactionGroup("player")
+local playerClass
+local playerFaction
+
+local function _UpdatePlayerIdentity()
+    local _, currentPlayerClass = QuestieCompat.UnitClass("player")
+    local currentPlayerFaction = UnitFactionGroup("player")
+
+    playerClass = currentPlayerClass or playerClass
+    playerFaction = currentPlayerFaction or playerFaction
+
+    return playerClass, playerFaction
+end
 
 local tinsert = tinsert
 local sub, bitband, strlen = string.sub, bit.band, string.len
@@ -325,18 +335,35 @@ function Townsfolk.PostBoot() -- post DB boot (use queries here)
 end
 
 function Townsfolk:BuildCharacterTownsfolk()
-    Questie.db.char.townsfolk = {}
+    local currentPlayerClass, currentPlayerFaction = _UpdatePlayerIdentity()
+    local factionSpecificTownsfolk = Questie.db.global.factionSpecificTownsfolk
+    local classSpecificTownsfolk = Questie.db.global.classSpecificTownsfolk
+    local factionTownsfolk = factionSpecificTownsfolk and factionSpecificTownsfolk[currentPlayerFaction]
+    local classTownsfolk = classSpecificTownsfolk and classSpecificTownsfolk[currentPlayerClass]
+
+    if not factionTownsfolk or not classTownsfolk then
+        Questie.Error("Unable to build townsfolk: player class or faction is unavailable")
+        return false
+    end
+
+    playerClass = currentPlayerClass
+    playerFaction = currentPlayerFaction
+
+    local townsfolk = {}
     Questie.db.char.vendorList = {}
     Questie.db.char.vendorListInitialized = nil
-    Questie.db.char.townsfolkClass = select(2, UnitClassBase("player"))
 
-    for key, npcs in pairs(Questie.db.global.factionSpecificTownsfolk[playerFaction]) do
-        Questie.db.char.townsfolk[key] = npcs
+    for key, npcs in pairs(factionTownsfolk) do
+        townsfolk[key] = npcs
     end
 
-    for key, npcs in pairs(Questie.db.global.classSpecificTownsfolk[playerClass]) do
-        Questie.db.char.townsfolk[key] = npcs
+    for key, npcs in pairs(classTownsfolk) do
+        townsfolk[key] = npcs
     end
+
+    Questie.db.char.townsfolk = townsfolk
+    Questie.db.char.townsfolkClass = playerClass
+    return true
 end
 
 local function _UpdatePetFood() -- call on change pet
@@ -372,6 +399,7 @@ function Townsfolk:UpdatePlayerVendors() -- call on levelup
         return
     end
 
+    _UpdatePlayerIdentity()
     _UpdateFoodDrink()
     _UpdateAmmoVendors()
 
@@ -396,6 +424,7 @@ function Townsfolk:EnsureVendorDataInitialized()
 end
 
 function Townsfolk:PopulateVendors(itemList, existingTable, restrictLevel)
+    _UpdatePlayerIdentity()
     local factionKey = playerFaction == "Alliance" and "A" or "H"
     local tbl = existingTable or {}
     -- Create a cache to minimize db calls

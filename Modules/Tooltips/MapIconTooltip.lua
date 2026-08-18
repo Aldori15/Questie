@@ -729,7 +729,7 @@ function _MapIconTooltip:GetObjectiveTooltip(icon)
             -- party member and the local player doesn't have the quest themselves.
             if anotherPlayer and (not iconData.ObjectiveData.IsPartyObjective) then
                 local name = UnitName("player");
-                local _, playerClass = UnitClassBase("player")
+                local _, playerClass = QuestieCompat.UnitClass("player")
                 local _, _, _, argbHex = GetClassColor(playerClass)
                 name = " (|c" .. argbHex .. name .. "|r" .. color .. ")|r";
                 text = text .. name;

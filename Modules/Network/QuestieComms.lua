@@ -373,7 +373,7 @@ function QuestieComms:PopulateQuestDataPacketV2(questId, quest, offset)
     if questObject and next(questObject.Objectives) then
         quest[offset] = questId
         local countOffset = offset+1
-        local _, playerClass = UnitClassBase("player")
+        local _, playerClass = QuestieCompat.UnitClass("player")
         quest[offset+2] = _classToIndex[playerClass]
 
         offset = offset + 3

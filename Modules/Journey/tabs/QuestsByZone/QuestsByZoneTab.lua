@@ -20,7 +20,15 @@ local l10n = QuestieLoader:ImportModule("l10n")
 local AceGUI = LibStub("AceGUI-3.0")
 
 local RESET = -1000
-local _, playerClass = UnitClassBase("player")
+local playerClass
+
+local function _GetPlayerClass()
+    if not playerClass then
+        local _, currentPlayerClass = QuestieCompat.UnitClass("player")
+        playerClass = currentPlayerClass
+    end
+    return playerClass
+end
 
 local _CreateContinentDropdown, _CreateZoneDropdown
 local _HandleAllZonesSelection, _HandleContinentSelection, _HandleZoneSelection
@@ -66,7 +74,7 @@ function _QuestieJourney.questsByZone:DrawTab(container)
         contDropdown:SetValue("ALL_QUESTS")
         _HandleAllZonesSelection()
     elseif selectedContinentId == QuestieJourney.questCategoryKeys.CLASS then
-        local classKey = QuestieDB:GetZoneOrSortForClass(playerClass)
+        local classKey = QuestieDB:GetZoneOrSortForClass(_GetPlayerClass())
         local zoneTree = _QuestieJourney.questsByZone:CollectZoneQuests(classKey)
         _QuestieJourney.questsByZone:ManageTree(treegroup, zoneTree)
         zoneDropdown.frame:Hide()
@@ -211,7 +219,7 @@ _HandleAllZonesSelection = function()
         end
     end
     -- add all quest IDs from class quests
-    local classKey = QuestieDB:GetZoneOrSortForClass(playerClass)
+    local classKey = QuestieDB:GetZoneOrSortForClass(_GetPlayerClass())
     local classQuests = zoneMap[classKey]
     if classQuests then
         for questId in pairs(classQuests) do
@@ -273,7 +281,7 @@ _HandleContinentSelection = function(key, _)
         return
     end
     if (key.value == QuestieJourney.questCategoryKeys.CLASS) then
-        local classKey = QuestieDB:GetZoneOrSortForClass(playerClass)
+        local classKey = QuestieDB:GetZoneOrSortForClass(_GetPlayerClass())
         local zoneTree = _QuestieJourney.questsByZone:CollectZoneQuests(classKey)
         _QuestieJourney.questsByZone:ManageTree(treegroup, zoneTree)
         zoneDropdown.frame:Hide()
