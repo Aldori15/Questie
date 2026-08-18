@@ -116,7 +116,10 @@ end
 ---@param errorMessage string|nil
 local function _RunCallbacks(callbacks, success, errorMessage)
     for i = 1, #callbacks do
-        callbacks[i](success, errorMessage)
+        local callbackSuccess, callbackError = pcall(callbacks[i], success, errorMessage)
+        if not callbackSuccess then
+            Questie.Error("Error in AvailableQuests.CalculateAndDrawAll callback", callbackError)
+        end
         callbacks[i] = nil
     end
 end
