@@ -154,7 +154,8 @@ end
 function _QuestieFrame:OnLeave()
     if WorldMapTooltip then
         WorldMapTooltip:Hide()
-        WorldMapTooltip._rebuild = nil
+        WorldMapTooltip._Rebuild = nil
+        WorldMapTooltip.ShownAsMapIcon = false
     end
     if GameTooltip then
         GameTooltip:Hide()

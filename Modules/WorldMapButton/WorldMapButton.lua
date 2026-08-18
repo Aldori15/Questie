@@ -180,9 +180,18 @@ function WorldMapButton.Toggle(shouldShow)
 end
 
 ---@param self Frame
+---@return GameTooltip
+local function GetTooltip(self)
+    return QuestieCompat.Is335 and QuestieCompat.SetupTooltip(self) or GameTooltip
+end
+
+---@param self Frame
 ---@return nil
 local function UpdateTooltip(self)
-    local tooltip = GameTooltip
+    local tooltip = GetTooltip(self)
+    tooltip._owner = self
+    tooltip._Rebuild = nil
+    tooltip.ShownAsMapIcon = false
     tooltip:SetOwner(self, "ANCHOR_NONE");
     tooltip:ClearLines()
     tooltip:SetPoint("TOPRIGHT", self, "BOTTOMRIGHT", 0, 0);
@@ -204,7 +213,8 @@ QuestieWorldMapButtonMixin = {
             if IsControlKeyDown() and IsShiftKeyDown() then
                 Questie.db.profile.enabled = (not Questie.db.profile.enabled)
                 QuestieQuest:ToggleNotes(Questie.db.profile.enabled)
-                if GameTooltip:IsShown() and GameTooltip:GetOwner() == mapButton then
+                local tooltip = GetTooltip(mapButton)
+                if tooltip:IsShown() and tooltip:GetOwner() == mapButton then
                     UpdateTooltip(mapButton)
                 end
 
