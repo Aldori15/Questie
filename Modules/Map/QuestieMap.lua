@@ -745,10 +745,7 @@ function QuestieMap:DrawLineIcon(lineFrame, areaID, x, y)
 
     HBDPins:AddWorldMapIconMap(Questie, lineFrame, uiMapId, x, y, HBD_PINS_WORLDMAP_SHOW_CURRENT)
     if QuestieCompat.Is335 then
-        -- The 3.3.5 line compatibility path bypasses the modern frame-level
-        -- setup, so place waypoint lines one level below every Questie icon.
-        lineFrame:SetFrameStrata(WorldMapFrame:GetFrameStrata())
-        lineFrame:SetFrameLevel(WorldMapFrame:GetFrameLevel() + 2015)
+        QuestieMap.utils.SetLineDrawOrder(lineFrame)
     end
 end
 

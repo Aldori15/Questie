@@ -190,7 +190,7 @@ local function UpdateLineFrameGeometry(lineFrame)
     local framePosX = math_max(startX, endX) - lineWidth * 2 - width / 2
     local framePosY = math_min(startY, endY) + lineWidth * 2 + height / 2
 
-    lineFrame:SetParent(canvas)
+    lineFrame:SetParent(lineFrame.questieDrawLayerParent or canvas)
     lineFrame:ClearAllPoints()
     lineFrame:SetSize(width, height)
     lineFrame:SetPoint("TOPLEFT", canvas, "TOPLEFT", framePosX, framePosY)

@@ -7,8 +7,70 @@ QuestieMap.utils = QuestieMap.utils or {}
 local pairs = pairs
 
 local DRAW_ORDER_BY_ICON_TYPE_LOOKUP
-local MAX_DRAW_ORDER_BY_ICON_TYPE
-local DRAW_ORDER_QUEST_COMPLETE
+
+local DRAW_LAYER_KEYS = {
+    "line",
+    "manual",
+    "objective",
+    "available",
+    "repeatable",
+    "complete",
+}
+
+local worldMapDrawLayers
+local minimapDrawLayers
+
+local function CreateDrawLayers(root, strata)
+    local drawLayers = {
+        root = root,
+        frames = {},
+    }
+
+    -- On the 3.3.5 client, reparenting sibling frames can affect their render
+    -- order even when explicit frame levels differ. These persistent category
+    -- parents are created once from lowest to highest priority, so recreating
+    -- an icon cannot move it above an icon from a higher priority category.
+    for index, key in ipairs(DRAW_LAYER_KEYS) do
+        local layer = CreateFrame("Frame", nil, root)
+        layer:SetAllPoints(root)
+        layer:SetFrameStrata(strata)
+        layer:SetFrameLevel(root:GetFrameLevel() + index)
+        layer:EnableMouse(false)
+        drawLayers.frames[index] = layer
+        drawLayers[key] = layer
+    end
+
+    return drawLayers
+end
+
+local function GetDrawLayers(isMinimap)
+    local root = isMinimap and Minimap or WorldMapButton
+    local strata = isMinimap and Minimap:GetFrameStrata() or WorldMapFrame:GetFrameStrata()
+    local drawLayers = isMinimap and minimapDrawLayers or worldMapDrawLayers
+
+    if (not drawLayers) or drawLayers.root ~= root then
+        drawLayers = CreateDrawLayers(root, strata)
+        if isMinimap then
+            minimapDrawLayers = drawLayers
+        else
+            worldMapDrawLayers = drawLayers
+        end
+    end
+
+    -- Map replacements can adjust the root frame after Questie initializes.
+    -- Refresh the compact levels without changing the containers' order.
+    for index, layer in ipairs(drawLayers.frames) do
+        if layer:GetFrameStrata() ~= strata then
+            layer:SetFrameStrata(strata)
+        end
+        local frameLevel = root:GetFrameLevel() + index
+        if layer:GetFrameLevel() ~= frameLevel then
+            layer:SetFrameLevel(frameLevel)
+        end
+    end
+
+    return drawLayers, strata
+end
 
 local function EnsureDrawOrderLookup()
     if DRAW_ORDER_BY_ICON_TYPE_LOOKUP then return end
@@ -39,46 +101,50 @@ local function EnsureDrawOrderLookup()
         [Questie.ICON_TYPE_NODE_ORE] = 0,
         [Questie.ICON_TYPE_CHEST] = 0,
     }
-
-    MAX_DRAW_ORDER_BY_ICON_TYPE = 0
-    for _, drawOrder in pairs(DRAW_ORDER_BY_ICON_TYPE_LOOKUP) do
-        if drawOrder > MAX_DRAW_ORDER_BY_ICON_TYPE then
-            MAX_DRAW_ORDER_BY_ICON_TYPE = drawOrder
-        end
-    end
-
-    -- Leave one complete priority range between manual and regular quest icons.
-    MAX_DRAW_ORDER_BY_ICON_TYPE = MAX_DRAW_ORDER_BY_ICON_TYPE + 1
-
-    -- Quest finishers render above every manual and regular icon priority.
-    DRAW_ORDER_QUEST_COMPLETE = 2 * MAX_DRAW_ORDER_BY_ICON_TYPE
 end
 
 function QuestieMap.utils.SetDrawOrder(frame)
     EnsureDrawOrderLookup()
 
-    -- Keep icons above the map canvas and waypoint lines while preserving
-    -- the explicit parent and strata handling required by the 3.3.5 client.
-    local frameLevel
-    if frame.miniMapIcon then
-        frame:SetParent(Minimap)
-        frame:SetFrameStrata(Minimap:GetFrameStrata())
-        frameLevel = Minimap:GetFrameLevel() + 2016
+    local drawLayers, strata = GetDrawLayers(frame.miniMapIcon)
+    local layer
+    if frame.isManualIcon then
+        layer = drawLayers.manual
     else
-        frame:SetParent(WorldMapButton)
-        frame:SetFrameStrata(WorldMapFrame:GetFrameStrata())
-        frameLevel = WorldMapFrame:GetFrameLevel() + 2016
+        local priority
+        if frame.data and frame.data.Type == "complete" then
+            priority = 3
+        else
+            priority = (frame.data and DRAW_ORDER_BY_ICON_TYPE_LOOKUP[frame.data.Icon]) or 0
+        end
+
+        if priority == 3 then
+            layer = drawLayers.complete
+        elseif priority == 2 then
+            layer = drawLayers.repeatable
+        elseif priority == 1 then
+            layer = drawLayers.available
+        else
+            layer = drawLayers.objective
+        end
     end
 
-    if frame.data and frame.data.Type == "complete" then
-        frameLevel = frameLevel + DRAW_ORDER_QUEST_COMPLETE
-    else
-        frameLevel = frameLevel
-            + ((frame.data and DRAW_ORDER_BY_ICON_TYPE_LOOKUP[frame.data.Icon]) or 0)
-            + (frame.isManualIcon and 0 or MAX_DRAW_ORDER_BY_ICON_TYPE)
-    end
+    frame:SetParent(layer)
+    frame:SetFrameStrata(strata)
+    frame:SetFrameLevel(layer:GetFrameLevel() + 1)
 
-    frame:SetFrameLevel(frameLevel)
+    -- These sublayers only control the regions within this individual icon.
+    frame.glowTexture:SetDrawLayer("OVERLAY", -1)
+    frame.texture:SetDrawLayer("OVERLAY", 0)
+    frame.overlayTexture:SetDrawLayer("OVERLAY", 1)
+end
+
+function QuestieMap.utils.SetLineDrawOrder(frame)
+    local drawLayers, strata = GetDrawLayers(false)
+    frame.questieDrawLayerParent = drawLayers.line
+    frame:SetParent(drawLayers.line)
+    frame:SetFrameStrata(strata)
+    frame:SetFrameLevel(drawLayers.line:GetFrameLevel() + 1)
 end
 
 function QuestieMap.utils.IsExplored(uiMapId, x, y)
