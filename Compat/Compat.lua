@@ -154,7 +154,7 @@ local function timerOnFinished(self)
 end
 
 QuestieCompat.C_Timer = {
-    -- Schedules a (repeating) timer that can be canceled. (https://wowpedia.fandom.com/wiki/API_C_Timer.NewTimer)
+    -- Schedules a repeating timer that can be canceled. (https://wowpedia.fandom.com/wiki/API_C_Timer.NewTicker)
     NewTicker = function(duration, callback, iterations)
         local timer = next(inactiveTimers)
         if timer then
@@ -182,9 +182,13 @@ QuestieCompat.C_Timer = {
 
         return timer.id
     end,
+    -- Schedules a one-shot timer that can be canceled. (https://wowpedia.fandom.com/wiki/API_C_Timer.NewTimer)
+    NewTimer = function(duration, callback)
+        return QuestieCompat.C_Timer.NewTicker(duration, callback, 1)
+    end,
     -- Schedules a timer. (https://wowpedia.fandom.com/wiki/API_C_Timer.After)
     After = function(duration, callback)
-        return QuestieCompat.C_Timer.NewTicker(duration, callback, 1)
+        return QuestieCompat.C_Timer.NewTimer(duration, callback)
     end
 }
 
