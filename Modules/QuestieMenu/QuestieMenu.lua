@@ -262,11 +262,11 @@ local function build(key)
     return {
         text = l10n(tostring(key)),
         func = function() Questie.db.profile.townsfolkConfig[key] = not Questie.db.profile.townsfolkConfig[key] toggle(key) end,
-        icon=icon,
-        notCheckable=false,
-        checked=Questie.db.profile.townsfolkConfig[key],
-        isNotRadio=true,
-        keepShownOnClick=true
+        icon = icon,
+        notCheckable = false,
+        checked = function() return Questie.db.profile.townsfolkConfig[key] end,
+        isNotRadio = true,
+        keepShownOnClick = true
     }
 end
 
@@ -276,11 +276,11 @@ local function buildLocalized(key, localizedText)
     return {
         text = localizedText,
         func = function() Questie.db.profile.townsfolkConfig[key] = not Questie.db.profile.townsfolkConfig[key] toggle(key) end,
-        icon=icon,
-        notCheckable=false,
-        checked=Questie.db.profile.townsfolkConfig[key],
-        isNotRadio=true,
-        keepShownOnClick=true
+        icon = icon,
+        notCheckable = false,
+        checked = function() return Questie.db.profile.townsfolkConfig[key] end,
+        isNotRadio = true,
+        keepShownOnClick = true
     }
 end
 
@@ -469,7 +469,7 @@ function QuestieMenu.buildInstancesMenu()
             tCoordTop = _instanceIconTexCoords.dungeon[3],
             tCoordBottom = _instanceIconTexCoords.dungeon[4],
             notCheckable = false,
-            checked = Questie.db.profile.showDungeonLocations,
+            checked = function() return Questie.db.profile.showDungeonLocations end,
             isNotRadio = true,
             keepShownOnClick = true
         },
@@ -484,7 +484,7 @@ function QuestieMenu.buildInstancesMenu()
             tCoordTop = _instanceIconTexCoords.raid[3],
             tCoordBottom = _instanceIconTexCoords.raid[4],
             notCheckable = false,
-            checked = Questie.db.profile.showRaidLocations,
+            checked = function() return Questie.db.profile.showRaidLocations end,
             isNotRadio = true,
             keepShownOnClick = true
         }
@@ -562,7 +562,7 @@ function QuestieMenu.buildTailoringSubmenu()
             end,
             icon = _townsfolk_texturemap[professionKeys.TAILORING],
             notCheckable = false,
-            checked = Questie.db.profile.townsfolkConfig[professionKeys.TAILORING],
+            checked = function() return Questie.db.profile.townsfolkConfig[professionKeys.TAILORING] end,
             isNotRadio = true,
             keepShownOnClick = true
         },
@@ -574,7 +574,7 @@ function QuestieMenu.buildTailoringSubmenu()
             end,
             icon = "Interface\\Icons\\inv_fabric_moonrag_01",
             notCheckable = false,
-            checked = Questie.db.profile.townsfolkConfig["Moonwell"],
+            checked = function() return Questie.db.profile.townsfolkConfig["Moonwell"] end,
             isNotRadio = true,
             keepShownOnClick = true
         }
@@ -756,7 +756,7 @@ function QuestieMenu.buildQuestMenu()
             end,
             icon = QuestieLib.AddonPath.."Icons\\available.blp",
             notCheckable = false,
-            checked = QuestieIconVisibility:IsEnabledAnywhere("available"),
+            checked = function() return QuestieIconVisibility:IsEnabledAnywhere("available") end,
             isNotRadio = true,
             keepShownOnClick = true
         },
@@ -781,7 +781,7 @@ function QuestieMenu.buildQuestMenu()
             end,
             icon = QuestieLib.AddonPath.."Icons\\event.blp",
             notCheckable = false,
-            checked = QuestieIconVisibility:IsEnabledAnywhere("objective"),
+            checked = function() return QuestieIconVisibility:IsEnabledAnywhere("objective") end,
             isNotRadio = true,
             keepShownOnClick = true
         },
@@ -794,7 +794,7 @@ function QuestieMenu.buildQuestMenu()
             end,
             icon = QuestieLib.AddonPath.."Icons\\repeatable.blp",
             notCheckable = false,
-            checked = QuestieIconVisibility:IsEnabledAnywhere("repeatable"),
+            checked = function() return QuestieIconVisibility:IsEnabledAnywhere("repeatable") end,
             isNotRadio = true,
             keepShownOnClick = true
         },
@@ -813,7 +813,7 @@ function QuestieMenu.buildQuestMenu()
             end,
             icon = QuestieLib.AddonPath.."Icons\\available_gray.blp",
             notCheckable = false,
-            checked = Questie.db.profile.lowLevelStyle==Questie.LOWLEVEL_ALL,
+            checked = function() return Questie.db.profile.lowLevelStyle == Questie.LOWLEVEL_ALL end,
             isNotRadio = true,
             keepShownOnClick = true
         }
