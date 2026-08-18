@@ -12,6 +12,20 @@ A fork of the WoW Classic Questie addon aiming to provide compatibility with Wra
 - [Download](https://github.com/Aldori15/Questie/archive/refs/heads/335.zip) the archive.
 - Extract it into `Interface/AddOns/` directory, folder name should be `Questie-335`.
 
+## Optional default settings override
+
+Questie-335 supports an optional addon named `QuestieOptionsDefaultsOverride` that can override Questie's default settings without modifying the main addon files. To use it, create an `Interface/AddOns/QuestieOptionsDefaultsOverride/` directory containing `QuestieOptionsDefaultsOverride.toc` and `QuestieOptionsDefaultsOverride.lua`. The Lua file only needs to define the settings that should differ from Questie's defaults, for example:
+
+```lua
+QuestieOptionsDefaultsOverride = {
+    profile = {
+        questieShutUp = true,
+    },
+}
+```
+
+If `QuestieOptionsDefaultsOverride` is not installed, Questie-335 loads normally and uses its standard default settings.
+
 ## Questie Information
 - [Frequently Asked Questions](https://github.com/Questie/Questie/wiki/FAQ)
 - Come chat with us on [our Discord server](https://discord.gg/s33MAYKeZd).
