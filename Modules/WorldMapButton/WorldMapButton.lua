@@ -205,6 +205,15 @@ local function UpdateTooltip(self)
     tooltip:Show()
 end
 
+local function CloseFullscreenWorldMap()
+    local worldMapFrame = _G.WorldMapFrame
+    local worldMapSize = WORLDMAP_SETTINGS and WORLDMAP_SETTINGS.size
+    if worldMapFrame and worldMapFrame:IsShown() and type(worldMapSize) == "number" and
+        WORLDMAP_WINDOWED_SIZE and worldMapSize ~= WORLDMAP_WINDOWED_SIZE then
+        HideUIPanel(worldMapFrame)
+    end
+end
+
 QuestieWorldMapButtonMixin = {
     OnLoad = function() end,
     OnHide = function() end,
@@ -222,10 +231,12 @@ QuestieWorldMapButtonMixin = {
                 return
             elseif IsShiftKeyDown() then
                 QuestieOptions:HideFrame()
+                QuestieJourney:HideJourneyWindow()
                 if InCombatLockdown() then
                     Questie:Print(l10n("Questie will open after combat ends."))
                 end
                 QuestieCombatQueue:Queue(function()
+                    CloseFullscreenWorldMap()
                     QuestieOptions:OpenConfigWindow()
                 end)
                 return
@@ -234,6 +245,7 @@ QuestieWorldMapButtonMixin = {
             end
 
             QuestieOptions:HideFrame()
+            CloseFullscreenWorldMap()
             QuestieJourney:ToggleJourneyWindow()
         elseif button == "RightButton" then
             if IsModifierKeyDown() then

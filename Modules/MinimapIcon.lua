@@ -73,6 +73,7 @@ function _MinimapIcon:CreateDataBrokerObject()
                     return;
                 elseif IsShiftKeyDown() then
                     QuestieOptions:HideFrame();
+                    QuestieJourney:HideJourneyWindow()
                     if InCombatLockdown() then
                         Questie:Print(l10n("Questie will open after combat ends."))
                     end

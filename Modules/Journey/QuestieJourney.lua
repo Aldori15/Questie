@@ -137,6 +137,12 @@ function QuestieJourney:IsShown()
     return isWindowShown
 end
 
+function QuestieJourney:HideJourneyWindow()
+    if QuestieJourneyFrame and isWindowShown then
+        QuestieJourneyFrame:Hide()
+    end
+end
+
 -- There are ways to toggle this function before the frame has been created
 function QuestieJourney:ToggleJourneyWindow()
     if (not Questie.started) then
