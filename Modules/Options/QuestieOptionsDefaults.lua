@@ -212,6 +212,7 @@ function QuestieOptionsDefaults:Load()
             minimap = {
                 hide = false,
 				minimapPos = 60,
+                detached = false,
             },
 
             TrackerWidth = 0,

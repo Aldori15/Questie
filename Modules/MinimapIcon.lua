@@ -41,6 +41,53 @@ local minimapShapes = {
 }
 
 ---@param button Frame
+local function SaveDetachedButtonPosition(button)
+    if not button.questieDetached or button:GetParent() ~= UIParent then
+        return
+    end
+
+    local buttonX, buttonY = button:GetCenter()
+    local parentX, parentY = UIParent:GetCenter()
+    if not buttonX or not buttonY or not parentX or not parentY then
+        return
+    end
+
+    Questie.db.profile.minimap.detachedX = buttonX - parentX
+    Questie.db.profile.minimap.detachedY = buttonY - parentY
+end
+
+---@param button Frame
+local function PositionDetachedButton(button)
+    if button:GetParent() ~= UIParent then
+        return
+    end
+
+    local minimapSettings = Questie.db.profile.minimap
+    local x = minimapSettings.detachedX
+    local y = minimapSettings.detachedY
+
+    -- Preserve the button's current screen position the first time it is detached.
+    if x == nil or y == nil then
+        local buttonX, buttonY = button:GetCenter()
+        local parentX, parentY = UIParent:GetCenter()
+
+        if buttonX and buttonY and parentX and parentY then
+            x = buttonX - parentX
+            y = buttonY - parentY
+        else
+            x = 0
+            y = 0
+        end
+
+        minimapSettings.detachedX = x
+        minimapSettings.detachedY = y
+    end
+
+    button:ClearAllPoints()
+    button:SetPoint("CENTER", UIParent, "CENTER", x, y)
+end
+
+---@param button Frame
 local function UpdateMinimapButtonPosition(button)
     if button:GetParent() ~= Minimap then
         return
@@ -112,12 +159,37 @@ local function ConfigureMinimapButtonPositioning()
     local originalOnDragStop = minimapButton:GetScript("OnDragStop")
 
     minimapButton:SetScript("OnDragStart", function(self, ...)
+        if self.questieDetached and self:GetParent() == UIParent then
+            if originalOnDragStart then
+                originalOnDragStart(self, ...)
+            end
+
+            -- LibDBIcon normally moves the button around the minimap with OnUpdate.
+            -- Detached mode uses WoW's normal movable frame behavior instead.
+            self:SetScript("OnUpdate", nil)
+            self:SetMovable(true)
+            self:StartMoving()
+            return
+        end
+
         if originalOnDragStart then
             originalOnDragStart(self, ...)
         end
         self:SetScript("OnUpdate", DragMinimapButton)
     end)
+
     minimapButton:SetScript("OnDragStop", function(self, ...)
+        if self.questieDetached and self:GetParent() == UIParent then
+            self:StopMovingOrSizing()
+
+            if originalOnDragStop then
+                originalOnDragStop(self, ...)
+            end
+
+            SaveDetachedButtonPosition(self)
+            return
+        end
+
         if originalOnDragStop then
             originalOnDragStop(self, ...)
         end
@@ -135,6 +207,122 @@ local function ConfigureMinimapButtonPositioning()
     UpdateMinimapButtonPosition(minimapButton)
 end
 
+local function NormalizeMinimapButtonAppearance()
+    if minimapButton and minimapButton.icon then
+        minimapButton.icon:SetWidth(18)
+        minimapButton.icon:SetHeight(18)
+        minimapButton.icon:ClearAllPoints()
+        minimapButton.icon:SetPoint("CENTER", minimapButton, "CENTER", 0, 1)
+    end
+end
+
+local function ReleaseFromDragonUICollector(button)
+    if not button or not button.DragonUI_CollectorManaged then
+        return
+    end
+
+    -- DragonUI enforces collector placement from a SetParent hook while this
+    -- flag is set. Clear its ownership state before moving the button.
+    button.DragonUI_CollectorManaged = nil
+    button.DragonUI_ForceCollectorAlpha = nil
+    button.DragonUI_CollectorIndex = nil
+    button.DragonUI_CollectorStyleKey = nil
+    button.DragonUI_CollectorRepositioning = nil
+    button.DragonUI_CollectorOrigin = nil
+end
+
+function MinimapIcon:ApplyButtonMode()
+    if not minimapButton then
+        return
+    end
+
+    local minimapSettings = Questie.db.profile.minimap
+    minimapButton.db = minimapSettings
+
+    if minimapSettings.detached then
+        minimapButton.questieDetached = true
+
+        ReleaseFromDragonUICollector(minimapButton)
+
+        if minimapButton:GetParent() ~= UIParent then
+            minimapButton:SetParent(UIParent)
+        end
+
+        -- Another addon may have taken ownership of the button and immediately
+        -- reparented it again. Don't fight external button collectors.
+        if minimapButton:GetParent() ~= UIParent then
+            return
+        end
+
+        minimapButton:SetMovable(true)
+        minimapButton:SetClampedToScreen(true)
+        PositionDetachedButton(minimapButton)
+        return
+    end
+
+    -- Only return the button to the Minimap when Questie itself detached it.
+    -- Otherwise leave external button collectors alone.
+    if minimapButton.questieDetached then
+        minimapButton.questieDetached = nil
+
+        if minimapButton:GetParent() == UIParent then
+            minimapButton:SetParent(Minimap)
+        end
+    end
+
+    if minimapButton:GetParent() ~= Minimap then
+        return
+    end
+
+    minimapButton:SetMovable(false)
+    minimapButton:SetClampedToScreen(false)
+    UpdateMinimapButtonPosition(minimapButton)
+end
+
+function MinimapIcon:SetShown(shown)
+    Questie.db.profile.minimap.hide = not shown
+
+    if not shown then
+        if minimapButton then
+            minimapButton.db = Questie.db.profile.minimap
+            minimapButton:Hide()
+        else
+            _LibDBIcon:Hide("Questie")
+        end
+        return
+    end
+
+    -- LibDBIcon may not have created the button at startup if it was hidden.
+    if not minimapButton then
+        _LibDBIcon:Show("Questie")
+        minimapButton = _LibDBIcon:GetMinimapButton("Questie")
+
+        if not minimapButton then
+            return
+        end
+
+        ConfigureMinimapButtonPositioning()
+        NormalizeMinimapButtonAppearance()
+    else
+        -- Avoid LibDBIcon:Show() here because it always repositions the button
+        -- back onto the Minimap. This matters for detached buttons and external
+        -- button collectors.
+        minimapButton.db = Questie.db.profile.minimap
+        minimapButton:Show()
+    end
+
+    minimapButton.db = Questie.db.profile.minimap
+    self:ApplyButtonMode()
+end
+
+function MinimapIcon:Refresh()
+    if not Questie.minimapConfigIcon then
+        return
+    end
+
+    self:SetShown(not Questie.db.profile.minimap.hide)
+end
+
 function MinimapIcon:Init()
     _LibDBIcon:Register("Questie", _MinimapIcon:CreateDataBrokerObject(), Questie.db.profile.minimap);
     Questie.minimapConfigIcon = _LibDBIcon
@@ -146,14 +334,12 @@ function MinimapIcon:Init()
         end
     end
     minimapButton = _LibDBIcon:GetMinimapButton("Questie")
-    ConfigureMinimapButtonPositioning()
 
-    -- Normalize icon appearance regardless of which LibDBIcon version was loaded.
-    if minimapButton and minimapButton.icon then
-        minimapButton.icon:SetWidth(18)
-        minimapButton.icon:SetHeight(18)
-        minimapButton.icon:ClearAllPoints()
-        minimapButton.icon:SetPoint("CENTER", minimapButton, "CENTER", 0, 1)
+    if minimapButton then
+        minimapButton.db = Questie.db.profile.minimap
+        ConfigureMinimapButtonPositioning()
+        NormalizeMinimapButtonAppearance()
+        MinimapIcon:ApplyButtonMode()
     end
 end
 
@@ -204,8 +390,7 @@ function _MinimapIcon:CreateDataBrokerObject()
                 return;
             elseif button == "RightButton" then
                 if IsControlKeyDown() then
-                    Questie.db.profile.minimap.hide = true;
-                    Questie.minimapConfigIcon:Hide("Questie");
+                    MinimapIcon:SetShown(false)
                     return;
                 elseif IsModifierKeyDown() then
                     return;

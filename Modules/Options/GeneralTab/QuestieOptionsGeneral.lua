@@ -29,6 +29,8 @@ local Sounds = QuestieLoader:ImportModule("Sounds")
 local AvailableQuests = QuestieLoader:ImportModule("AvailableQuests")
 ---@type QuestiePartyObjectives
 local QuestiePartyObjectives = QuestieLoader:ImportModule("QuestiePartyObjectives")
+---@type MinimapIcon
+local MinimapIcon = QuestieLoader:ImportModule("MinimapIcon")
 
 QuestieOptions.tabs.general = { ... }
 local optionsDefaults = QuestieOptionsDefaults:Load()
@@ -271,18 +273,25 @@ function QuestieOptions.tabs.general:Initialize()
                         width = 1.55,
                         get = function() return not Questie.db.profile.minimap.hide; end,
                         set = function(info, value)
-                            Questie.db.profile.minimap.hide = not value;
-
-                            if value then
-                                Questie.minimapConfigIcon:Show("Questie");
-                            else
-                                Questie.minimapConfigIcon:Hide("Questie");
-                            end
+                            MinimapIcon:SetShown(value)
+                        end,
+                    },
+                    detachMinimapButton = {
+                        type = "toggle",
+                        order = 5.4,
+                        name = function() return l10n('Detach Minimap Button'); end,
+                        desc = function() return l10n('Detach the Questie minimap button from the minimap and allow it to be moved anywhere on the screen.'); end,
+                        width = 1.55,
+                        disabled = function() return Questie.db.profile.minimap.hide end,
+                        get = function() return Questie.db.profile.minimap.detached end,
+                        set = function(_, value)
+                            Questie.db.profile.minimap.detached = value
+                            MinimapIcon:ApplyButtonMode()
                         end,
                     },
                     minimapCoordinatesEnabled = {
                         type = "toggle",
-                        order = 5.4,
+                        order = 5.5,
                         name = function() return l10n('Show Minimap Coordinates'); end,
                         desc = function() return l10n("Place the Player's coordinates on the Minimap title."); end,
                         width = 1.55,
@@ -297,7 +306,7 @@ function QuestieOptions.tabs.general:Initialize()
                     },
                     announceWorldEvents = {
                         type = "toggle",
-                        order = 5.5,
+                        order = 5.6,
                         name = function() return l10n('Show active world event notifications'); end,
                         desc = function() return l10n('Print a chat message when a world event is active or about to start.'); end,
                         width = 1.55,

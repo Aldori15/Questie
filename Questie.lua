@@ -7,6 +7,8 @@ local QuestieOptionsDefaults = QuestieLoader:ImportModule("QuestieOptionsDefault
 local QuestieEventHandler = QuestieLoader:ImportModule("QuestieEventHandler")
 ---@type QuestieQuest
 local QuestieQuest = QuestieLoader:ImportModule("QuestieQuest")
+---@type MinimapIcon
+local MinimapIcon = QuestieLoader:ImportModule("MinimapIcon")
 ---@type TrackerBaseFrame
 local TrackerBaseFrame = QuestieLoader:ImportModule("TrackerBaseFrame")
 ---@type QuestieValidateGameCache
@@ -52,6 +54,7 @@ end
 
 function Questie:RefreshConfig(_, db, profileName)
     Questie:SetIcons()
+    MinimapIcon:Refresh()
     QuestieQuest:SmoothReset()
     TrackerBaseFrame:OnProfileChange()
     CommsVisibility:ScheduleSnapshot("PROFILE_CHANGED")
