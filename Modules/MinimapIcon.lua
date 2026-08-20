@@ -42,6 +42,10 @@ local minimapShapes = {
 
 ---@param button Frame
 local function UpdateMinimapButtonPosition(button)
+    if button:GetParent() ~= Minimap then
+        return
+    end
+
     local angle = math.rad(button.db and button.db.minimapPos or button.minimapPos or 225)
     local x, y, quadrant = math.cos(angle), math.sin(angle), 1
     if x < 0 then quadrant = quadrant + 1 end
@@ -74,6 +78,10 @@ end
 
 ---@param button Frame
 local function DragMinimapButton(button)
+    if button:GetParent() ~= Minimap then
+        return
+    end
+
     local minimapX, minimapY = Minimap:GetCenter()
     if not minimapX or not minimapY then
         return
