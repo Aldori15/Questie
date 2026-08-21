@@ -127,6 +127,7 @@ function _QuestieTooltips:AddObjectDataToTooltip(name)
     end
     if name then
         local titleAdded = false
+        local tooltipModified = false
         local lookup = l10n:GetObjectNameLookup(name)
         local count = type(lookup) == "table" and table.getn(lookup) or (lookup and 1 or 0)
 
@@ -136,6 +137,7 @@ function _QuestieTooltips:AddObjectDataToTooltip(name)
             else
                 GameTooltip:AddDoubleLine("Object ID", "|cFFFFFFFF" .. lookup[1] .. " (" .. count .. ")|r")
             end
+            tooltipModified = true
         end
 
         local alreadyAddedObjectiveLines = {}
@@ -146,6 +148,7 @@ function _QuestieTooltips:AddObjectDataToTooltip(name)
                 if (not titleAdded) then
                     GameTooltip:AddLine(tooltipData[1])
                     titleAdded = true
+                    tooltipModified = true
                 end
 
                 if tooltipData[2] then
@@ -160,6 +163,7 @@ function _QuestieTooltips:AddObjectDataToTooltip(name)
                             end
                             alreadyAddedObjectiveLines[line] = true
                             GameTooltip:AddLine(line)
+                            tooltipModified = true
                         end
                     end
                 end
@@ -173,7 +177,10 @@ function _QuestieTooltips:AddObjectDataToTooltip(name)
         elseif lookup then
             _AddTooltipData(lookup)
         end
-        GameTooltip:Show()
+        
+        if tooltipModified then
+            GameTooltip:Show()
+        end
     end
     QuestieTooltips.lastGametooltipType = "object";
 end
