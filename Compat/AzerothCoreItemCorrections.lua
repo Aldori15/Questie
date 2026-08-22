@@ -25034,6 +25034,22 @@ QuestieCompat.RegisterCorrection("itemData", function()
             [itemKeys.relatedQuests] = {6601},
         },
 
+        [16967] = {
+            [itemKeys.objectDrops] = {},
+        },
+
+        [16968] = {
+            [itemKeys.objectDrops] = {},
+        },
+
+        [16969] = {
+            [itemKeys.objectDrops] = {},
+        },
+
+        [16970] = {
+            [itemKeys.objectDrops] = {},
+        },
+
         [16971] = {
             [itemKeys.foodType] = 2,
         },
@@ -27093,7 +27109,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
         },
 
         [19034] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.relatedQuests] = {7840},
         },
 
@@ -32175,7 +32190,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
         },
 
         [23614] = {
-            [itemKeys.objectDrops] = {},
             [itemKeys.flags] = 2147483648,
             [itemKeys.relatedQuests] = {9452},
         },

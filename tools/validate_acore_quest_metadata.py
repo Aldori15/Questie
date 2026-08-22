@@ -103,8 +103,15 @@ CONDITION_QUESTSTATE = 47
 CONDITION_OBJECT_ENTRY_GUID = 31
 CONDITION_OBJECT_TYPE_UNIT = 3
 SMART_SOURCE_TYPE_CREATURE = 0
+SMART_SOURCE_TYPE_TIMED_ACTIONLIST = 9
 SMART_EVENT_GOSSIP_SELECT = 62
 SMART_ACTION_KILL_UNIT = 33
+SMART_ACTION_CALL_TIMED_ACTIONLIST = 80
+SMART_ACTION_CALL_RANDOM_TIMED_ACTIONLIST = 87
+SMART_TARGET_GAMEOBJECT_RANGE = 13
+SMART_TARGET_GAMEOBJECT_GUID = 14
+SMART_TARGET_GAMEOBJECT_DISTANCE = 15
+SMART_TARGET_CLOSEST_GAMEOBJECT = 20
 SMART_SCRIPT_KEY_COLUMNS = ("entryorguid", "source_type", "id", "link")
 
 CONDITION_KEY_COLUMNS = (
@@ -1362,6 +1369,107 @@ def load_acore_sql_rows(source_root, table_name, key_columns):
     return list(rows.values())
 
 
+def build_acore_spawned_gameobject_ids(source_root):
+    return {
+        normalize_int(row.get("id") or row.get("entry"))
+        for row in load_acore_sql_rows(source_root, "gameobject", ("guid",))
+        if normalize_int(row.get("id") or row.get("entry")) > 0
+    }
+
+
+def smartai_target_gameobject_id(row):
+    target_type = normalize_int(row.get("target_type"))
+    if target_type == SMART_TARGET_GAMEOBJECT_GUID:
+        return normalize_int(row.get("target_param2"))
+    if target_type in {
+        SMART_TARGET_GAMEOBJECT_RANGE,
+        SMART_TARGET_GAMEOBJECT_DISTANCE,
+        SMART_TARGET_CLOSEST_GAMEOBJECT,
+    }:
+        return normalize_int(row.get("target_param1"))
+    return 0
+
+
+def smartai_called_action_list_ids(row):
+    action_type = normalize_int(row.get("action_type"))
+    if action_type == SMART_ACTION_CALL_TIMED_ACTIONLIST:
+        action_list_id = normalize_int(row.get("action_param1"))
+        return (action_list_id,) if action_list_id > 0 else ()
+    if action_type == SMART_ACTION_CALL_RANDOM_TIMED_ACTIONLIST:
+        return tuple(
+            action_list_id
+            for index in range(1, 7)
+            if (action_list_id := normalize_int(row.get(f"action_param{index}"))) > 0
+        )
+    return ()
+
+
+def build_smartai_object_display_target_map(source_root):
+    rows = load_acore_sql_rows(source_root, "smart_scripts", SMART_SCRIPT_KEY_COLUMNS)
+    action_list_rows = defaultdict(list)
+    creature_rows = defaultdict(list)
+
+    for row in rows:
+        source_type = normalize_int(row.get("source_type"))
+        source_entry = normalize_int(row.get("entryorguid"))
+        if source_type == SMART_SOURCE_TYPE_TIMED_ACTIONLIST and source_entry > 0:
+            action_list_rows[source_entry].append(row)
+        elif source_type == SMART_SOURCE_TYPE_CREATURE and source_entry > 0:
+            creature_rows[source_entry].append(row)
+
+    action_list_cache = {}
+
+    def collect_action_list(action_list_id, active_ids=None):
+        if action_list_id in action_list_cache:
+            return action_list_cache[action_list_id]
+
+        active_ids = set(active_ids or ())
+        if action_list_id in active_ids:
+            return set(), set()
+        active_ids.add(action_list_id)
+
+        object_ids = set()
+        credit_ids = set()
+        for row in action_list_rows.get(action_list_id, ()):
+            object_id = smartai_target_gameobject_id(row)
+            if object_id > 0:
+                object_ids.add(object_id)
+            if normalize_int(row.get("action_type")) == SMART_ACTION_KILL_UNIT:
+                credit_id = normalize_int(row.get("action_param1"))
+                if credit_id > 0:
+                    credit_ids.add(credit_id)
+            for nested_id in smartai_called_action_list_ids(row):
+                nested_objects, nested_credits = collect_action_list(nested_id, active_ids)
+                object_ids.update(nested_objects)
+                credit_ids.update(nested_credits)
+
+        action_list_cache[action_list_id] = object_ids, credit_ids
+        return action_list_cache[action_list_id]
+
+    display_targets = defaultdict(set)
+    for source_entry, source_rows in creature_rows.items():
+        object_ids = set()
+        credit_ids = {source_entry}
+        for row in source_rows:
+            object_id = smartai_target_gameobject_id(row)
+            if object_id > 0:
+                object_ids.add(object_id)
+            if normalize_int(row.get("action_type")) == SMART_ACTION_KILL_UNIT:
+                credit_id = normalize_int(row.get("action_param1"))
+                if credit_id > 0:
+                    credit_ids.add(credit_id)
+            for action_list_id in smartai_called_action_list_ids(row):
+                action_list_objects, action_list_credits = collect_action_list(action_list_id)
+                object_ids.update(action_list_objects)
+                credit_ids.update(action_list_credits)
+
+        if object_ids:
+            for credit_id in credit_ids:
+                display_targets[credit_id].update(object_ids)
+
+    return display_targets
+
+
 def build_smartai_gossip_kill_credit_source_map(source_root):
     credit_sources = defaultdict(set)
 
@@ -1523,6 +1631,32 @@ def objective_values_have_smartai_gossip_display_replacement(
     return True
 
 
+def objective_values_have_smartai_object_display_replacement(
+    acore_objectives,
+    questie_objectives,
+    smartai_object_display_targets,
+    spawned_gameobject_ids,
+):
+    if acore_objectives == questie_objectives:
+        return False
+
+    acore_creatures, acore_objects, acore_items = acore_objectives
+    questie_creatures, questie_objects, questie_items = questie_objectives
+    if not acore_creatures or acore_objects or questie_creatures or not questie_objects:
+        return False
+    if acore_items != questie_items:
+        return False
+
+    questie_object_ids = set(flatten_objective_records(questie_objects))
+    if not questie_object_ids or not questie_object_ids.issubset(spawned_gameobject_ids):
+        return False
+
+    supported_object_ids = set()
+    for creature_id in flatten_objective_records(acore_creatures):
+        supported_object_ids.update(smartai_object_display_targets.get(creature_id, set()))
+    return questie_object_ids.issubset(supported_object_ids)
+
+
 def raw_objectives_from_normalized(objectives):
     raw_categories = []
     for category in objectives[:3]:
@@ -1554,8 +1688,18 @@ def merge_objectives_with_questie_creature_display(acore_objectives, questie_raw
 
 
 def raw_objectives_have_display_helpers(raw_objectives):
-    if not isinstance(raw_objectives, (list, tuple)) or len(raw_objectives) <= 3:
+    if not isinstance(raw_objectives, (list, tuple)):
         return False
+
+    for category in raw_objectives[:3]:
+        if not isinstance(category, (list, tuple, set)):
+            continue
+        for record in category:
+            if not isinstance(record, (list, tuple)) or len(record) <= 1:
+                continue
+            if any(value not in (None, False, "") for value in record[1:]):
+                return True
+
     return any(bool(category) for category in raw_objectives[3:])
 
 
@@ -2915,6 +3059,8 @@ def compare_metadata(
     protected_required_race_quest_ids=None,
     questie_prequest_groups=None,
     smartai_gossip_kill_credit_sources=None,
+    smartai_object_display_targets=None,
+    spawned_gameobject_ids=None,
     active_acore_quest_ids=None,
 ):
     mismatches = []
@@ -2930,6 +3076,8 @@ def compare_metadata(
     protected_required_race_quest_ids = protected_required_race_quest_ids or set()
     questie_prequest_groups = questie_prequest_groups or {}
     smartai_gossip_kill_credit_sources = smartai_gossip_kill_credit_sources or {}
+    smartai_object_display_targets = smartai_object_display_targets or {}
+    spawned_gameobject_ids = spawned_gameobject_ids or set()
     active_acore_quest_ids = active_acore_quest_ids or set()
 
     empty_entry = {field: default_field_value(field) for field in FIELD_ORDER}
@@ -2969,6 +3117,25 @@ def compare_metadata(
                             "acore": acore[field],
                             "questie": questie[field],
                             "reason": "questieObjectObjectiveSuperset",
+                        }
+                    )
+                    continue
+
+                if (
+                    acore[field] != questie[field]
+                    and objective_values_have_smartai_object_display_replacement(
+                        acore[field],
+                        questie[field],
+                        smartai_object_display_targets,
+                        spawned_gameobject_ids,
+                    )
+                ):
+                    preserved_display_objectives.append(
+                        {
+                            "questId": quest_id,
+                            "acore": acore[field],
+                            "questie": questie[field],
+                            "reason": "smartAiGameObjectDisplayReplacement",
                         }
                     )
                     continue
@@ -3753,7 +3920,9 @@ def main():
     }
     creature_kill_credits = build_creature_kill_credit_map(creature_template_rows)
     spawned_creature_ids = build_acore_spawned_creature_ids(source_root)
+    spawned_gameobject_ids = build_acore_spawned_gameobject_ids(source_root)
     smartai_gossip_kill_credit_sources = build_smartai_gossip_kill_credit_source_map(source_root)
+    smartai_object_display_targets = build_smartai_object_display_target_map(source_root)
     (
         mismatches,
         field_counts,
@@ -3772,6 +3941,8 @@ def main():
         protected_required_race_quest_ids,
         questie_prequest_groups,
         smartai_gossip_kill_credit_sources,
+        smartai_object_display_targets,
+        spawned_gameobject_ids,
         active_acore_quest_ids,
     )
     objective_display_risks = build_objective_display_risks(
