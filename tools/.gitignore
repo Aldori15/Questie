@@ -8,3 +8,4 @@ __pycache__/
 !generate_acore_npc_corrections.py
 !generate_acore_object_corrections.py
 !test_acore_correction_regressions.py
+!validate_wdm_map_data.py

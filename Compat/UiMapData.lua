@@ -1734,9 +1734,14 @@ local wdmWorldMapData = {
     [79] = { 382.5, 255.0, -983.75, -7930.0, mapType = 3, parentMapID = 1414, mapID = 1033, instance = 1, name = "The Slithering Scar" },
     [82] = { 252.509903, 168.339844, 161.255005, -6183.330078, mapType = 3, parentMapID = 1414, mapID = 1032, instance = 1, name = "Twilight's Run" },
     [86] = { 362.089844, 241.390015, -4163.970215, 1932.27002, mapType = 3, parentMapID = 1414, mapID = 1021, instance = 1, name = "Orgrimmar" },
-    [96] = { 300.0, 200.0, -7180.0, 7710.0, mapType = 3, parentMapID = 1415, mapID = 1042, instance = 0, name = "Amani Catacombs" },
-    [98] = { 375.0, 250.0, -11369.0, -4640.0, mapType = 3, parentMapID = 1414, mapID = 1043, instance = 1, name = "Tides' Hollow" },
-    [99] = { 474.990234, 316.660156, -12247.554688, -3009.169922, mapType = 3, parentMapID = 1414, mapID = 1044, instance = 1, name = "Stillpine Hold" },
+    
+    -- These map-530 micro maps need the same Outland-to-client world transform
+    -- as their Ghostlands/Azuremyst parents. Raw WorldMapArea bounds are not in
+    -- the instance 0/1 coordinate space used by Questie's HBD projection.
+    [96] = { 300.0, 200.0, -4517.181277, 5310.017941, mapType = 3, parentMapID = 1942, mapID = 1042, instance = 0, name = "Amani Catacombs" },
+    [98] = { 375.0, 250.0, 6231.085571, 5699.651416, mapType = 3, parentMapID = 1943, mapID = 1043, instance = 1, name = "Tides' Hollow" },
+    [99] = { 474.990234, 316.660156, 5352.530883, 7330.481495, mapType = 3, parentMapID = 1943, mapID = 1044, instance = 1, name = "Stillpine Hold" },
+    
     [198] = { 3195.891113, 2129.073486, -1138.978027, 6085.896484, mapType = 3, parentMapID = 1414, mapID = 607, instance = 1, name = "Hyjal" },
     [425] = { 968.75, 645.833984, 187.5, -8570.832031, mapType = 3, parentMapID = 1415, mapID = 865, instance = 0, name = "Northshire Valley" },
     [426] = { 279.0, 186.0, -27.0, -8500.0, mapType = 3, parentMapID = 1415, mapID = 1004, instance = 0, name = "Echo Ridge Mine" },
