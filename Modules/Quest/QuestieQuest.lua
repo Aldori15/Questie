@@ -1271,7 +1271,7 @@ function QuestieQuest:PopulateObjective(quest, objectiveIndex, objective, blockI
 
         local iconsToDraw, _ = _DetermineIconsToDraw(quest, objective, objectiveIndex, objectiveCenter)
         local icon, iconPerZone = _DrawObjectiveIcons(quest.Id, iconsToDraw, objective, maxPerType)
-        _DrawObjectiveWaypoints(objective, icon, iconPerZone)
+        _DrawObjectiveWaypoints(quest, objective, icon, iconPerZone)
     end
 end
 
@@ -1565,12 +1565,67 @@ _GetIconsSortedByDistance = function(icons)
     return iconCount, orderedList
 end
 
-_DrawObjectiveWaypoints = function(objective, icon, iconPerZone)
+local function _ObjectiveDataReferencesNPC(objectiveData, npcId)
+    if objectiveData.Type == "monster" and objectiveData.Id == npcId then
+        return true
+    elseif objectiveData.Type == "killcredit" then
+        for _, killCreditNpcId in pairs(objectiveData.IdList or {}) do
+            if killCreditNpcId == npcId then
+                return true
+            end
+        end
+    end
+
+    return false
+end
+
+local function _HasEarlierObjectiveForNPC(quest, objective, npcId)
+    if not objective.Index then
+        return false
+    end
+
+    for objectiveIndex, objectiveData in pairs(quest.ObjectiveData or {}) do
+        local earlierObjective = quest.Objectives and quest.Objectives[objectiveIndex]
+        if objectiveIndex < objective.Index
+            and earlierObjective
+            and not earlierObjective.Completed
+            and _ObjectiveDataReferencesNPC(objectiveData, npcId) then
+            return true
+        end
+    end
+
+    for _, specialObjective in pairs(quest.SpecialObjectives or {}) do
+        if specialObjective.Index and specialObjective.Index < objective.Index and not specialObjective.Completed then
+            for _, spawnData in pairs(specialObjective.spawnList or {}) do
+                if spawnData.Id == npcId and spawnData.Waypoints then
+                    return true
+                end
+            end
+        end
+    end
+
+    return false
+end
+
+_DrawObjectiveWaypoints = function(quest, objective, icon, iconPerZone)
     local yieldCount = 0
-    for _, spawnData in pairs(objective.spawnList) do -- spawnData.Name, spawnData.Spawns
-        if spawnData.Waypoints and not spawnData.Hostile then
+    local hostileRouteCountPerZone = {}
+
+    -- A single moving target has one useful patrol line. Multiple independent
+    -- hostile routes describe a population and are better represented by icons.
+    for _, spawnData in pairs(objective.spawnList) do
+        if spawnData.Hostile and spawnData.Waypoints then
             for zone, waypoints in pairs(spawnData.Waypoints) do
-                if _HasVisibleSpawnInZone(spawnData.Spawns[zone]) then
+                hostileRouteCountPerZone[zone] = (hostileRouteCountPerZone[zone] or 0) + #waypoints
+            end
+        end
+    end
+
+    for _, spawnData in pairs(objective.spawnList) do -- spawnData.Name, spawnData.Spawns
+        if spawnData.Waypoints and not _HasEarlierObjectiveForNPC(quest, objective, spawnData.Id) then
+            for zone, waypoints in pairs(spawnData.Waypoints) do
+                local showWaypoints = (not spawnData.Hostile) or hostileRouteCountPerZone[zone] == 1
+                if showWaypoints and _HasVisibleSpawnInZone(spawnData.Spawns[zone]) then
                     local firstWaypoint = waypoints[1][1]
 
                     if (not iconPerZone[zone]) and icon and firstWaypoint[1] ~= -1 and firstWaypoint[2] ~= -1 then -- spawn an icon in this zone for the mob
