@@ -31,7 +31,6 @@ local GetSpellName = QuestieCompat.GetSpellName
 local strfind = string.find
 
 QuestieLink.lastItemRefTooltip = ""
-local activeTooltip = ItemRefTooltip
 
 -- Forward declaration
 local _AddQuestTitle, _AddQuestStatus, _AddQuestDescription, _AddQuestRequirements, _AddDungeonInfo, _GetQuestStarter, _GetQuestFinisher, _AddPlayerQuestProgress
@@ -59,7 +58,7 @@ function ItemRefTooltip:SetHyperlink(link, ...)
         Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieTooltips:ItemRefTooltip] SetHyperlink:", link)
         ShowUIPanel(ItemRefTooltip)
         ItemRefTooltip:SetOwner(UIParent, "ANCHOR_PRESERVE");
-        QuestieLink:CreateQuestTooltip(link)
+        QuestieLink:CreateQuestTooltip(link, self)
         ItemRefTooltip:Show()
 
         local tooltipText = ItemRefTooltipTextLeft1:GetText()
@@ -238,40 +237,43 @@ function QuestieLink:CreateQuestTooltip(link, tooltip)
         return false
     end
 
-    activeTooltip = tooltip or ItemRefTooltip
-    activeTooltip:ClearLines()
+    tooltip = tooltip or ItemRefTooltip
+    tooltip:ClearLines()
 
-    _AddQuestTitle(quest)
-    _AddQuestStatus(quest)
+    _AddQuestTitle(tooltip, quest)
+    _AddQuestStatus(tooltip, quest)
 
-    _AddTooltipLine(" ")
+    _AddTooltipLine(tooltip, " ")
 
-    _AddQuestDescription(quest)
-    _AddDungeonInfo(quest)
-    _AddQuestRequirements(quest)
+    _AddQuestDescription(tooltip, quest)
+    _AddDungeonInfo(tooltip, quest)
+    _AddQuestRequirements(tooltip, quest)
     local starterName, starterZoneName = _GetQuestStarter(quest)
     local finisherName, finisherZoneName = _GetQuestFinisher(quest)
-    _AddPlayerQuestProgress(quest, starterName, starterZoneName, finisherName, finisherZoneName)
+    _AddPlayerQuestProgress(tooltip, quest, starterName, starterZoneName, finisherName, finisherZoneName)
 
     return true
 end
 
+---@param tooltip GameTooltip
 ---@param text string
 ---@param wrapText boolean?
-_AddTooltipLine = function(text, wrapText)
-    activeTooltip:AddLine(text, 1, 1, 1, wrapText)
+_AddTooltipLine = function(tooltip, text, wrapText)
+    tooltip:AddLine(text, 1, 1, 1, wrapText)
 end
 
+---@param tooltip GameTooltip
 ---@param text string
 ---@param color string
 ---@param wrapText boolean?
-_AddColoredTooltipLine = function(text, color, wrapText)
+_AddColoredTooltipLine = function(tooltip, text, color, wrapText)
     text = Questie:Colorize(text, color)
-    activeTooltip:AddLine(text, 1, 1, 1, wrapText)
+    tooltip:AddLine(text, 1, 1, 1, wrapText)
 end
 
+---@param tooltip GameTooltip
 ---@param quest Quest
-_AddQuestTitle = function(quest)
+_AddQuestTitle = function(tooltip, quest)
     local questId = quest.Id
     local questName = quest.name
     local questLevel = QuestieLib.GetEffectiveQuestLevel(questId)
@@ -280,17 +282,19 @@ _AddQuestTitle = function(quest)
     local titleColor = string.sub(QuestieLib:PrintDifficultyColor(questLevel, "", QuestieDB.IsRepeatable(questId), QuestieEvent:IsEventQuest(questId), QuestieDB.IsPvPQuest(questId)), 5, 10)
 
     if Questie.db.profile.trackerShowQuestLevel and Questie.db.profile.enableTooltipsQuestID then
-        _AddColoredTooltipLine(questLevelString .. questName .. " (" .. questId .. ")", titleColor)
+        _AddColoredTooltipLine(tooltip, questLevelString .. questName .. " (" .. questId .. ")", titleColor)
     elseif Questie.db.profile.trackerShowQuestLevel and (not Questie.db.profile.enableTooltipsQuestID) then
-        _AddColoredTooltipLine(questLevelString .. questName, titleColor)
+        _AddColoredTooltipLine(tooltip, questLevelString .. questName, titleColor)
     elseif Questie.db.profile.enableTooltipsQuestID and (not Questie.db.profile.trackerShowQuestLevel) then
-        _AddColoredTooltipLine(questName .. " (" .. questId .. ")", titleColor)
+        _AddColoredTooltipLine(tooltip, questName .. " (" .. questId .. ")", titleColor)
     else
-        _AddColoredTooltipLine(questName, titleColor)
+        _AddColoredTooltipLine(tooltip, questName, titleColor)
     end
 end
 
-_AddQuestStatus = function(quest)
+---@param tooltip GameTooltip
+---@param quest Quest
+_AddQuestStatus = function(tooltip, quest)
     local DoableStates = QuestieDB.DoableStates
     local eligibilityText, _, returnReason = QuestieDB.IsDoableVerbose(quest.Id, false, true, true)
     if QuestiePlayer.currentQuestlog[quest.Id] then
@@ -304,43 +308,46 @@ _AddQuestStatus = function(quest)
         end
 
         if stateText then
-            _AddTooltipLine(onQuestText .. " (" .. stateText .. ")")
+            _AddTooltipLine(tooltip, onQuestText .. " (" .. stateText .. ")")
         else
-            _AddColoredTooltipLine(onQuestText, "green")
+            _AddColoredTooltipLine(tooltip, onQuestText, "green")
         end
     elseif Questie.db.char.complete[quest.Id] then
-        _AddColoredTooltipLine(l10n("You have completed this quest"), "green")
+        _AddColoredTooltipLine(tooltip, l10n("You have completed this quest"), "green")
     elseif returnReason ~= DoableStates.AVAILABLE then
-        _AddColoredTooltipLine(eligibilityText, "red")
+        _AddColoredTooltipLine(tooltip, eligibilityText, "red")
     elseif QuestieDB.IsRepeatable(quest.Id) then
-        _AddColoredTooltipLine(l10n("This quest is repeatable"), "yellow")
+        _AddColoredTooltipLine(tooltip, l10n("This quest is repeatable"), "yellow")
     else
-        _AddColoredTooltipLine(l10n("You have not done this quest"), "yellow")
+        _AddColoredTooltipLine(tooltip, l10n("You have not done this quest"), "yellow")
     end
 end
 
-_AddQuestDescription = function(quest)
+---@param tooltip GameTooltip
+---@param quest Quest
+_AddQuestDescription = function(tooltip, quest)
     if quest and quest.Description and quest.Description[1] then
-        _AddColoredTooltipLine(quest.Description[1], "white", true)
+        _AddColoredTooltipLine(tooltip, quest.Description[1], "white", true)
         if #quest.Description > 2 then
             for i = 2, #quest.Description do
-                --_AddTooltipLine(" ") -- this is just adding extra lines between text definitions in DB files
-                _AddColoredTooltipLine(quest.Description[i], "white", true)
+                --_AddTooltipLine(tooltip, " ") -- this is just adding extra lines between text definitions in DB files
+                _AddColoredTooltipLine(tooltip, quest.Description[i], "white", true)
             end
         end
     else
-        _AddColoredTooltipLine(l10n("This quest is an automatic completion quest and does not contain an objective."), "white", true)
+        _AddColoredTooltipLine(tooltip, l10n("This quest is an automatic completion quest and does not contain an objective."), "white", true)
     end
 end
 
+---@param tooltip GameTooltip
 ---@param quest Quest
-_AddDungeonInfo = function(quest)
+_AddDungeonInfo = function(tooltip, quest)
     local zoneOrSort = quest.zoneOrSort
     if zoneOrSort and zoneOrSort > 0 then
         local localizedDungeonName = ZoneDB:GetLocalizedDungeonName(zoneOrSort)
         if localizedDungeonName then
-            _AddTooltipLine(" ")
-            _AddColoredTooltipLine(l10n("Instance") .. l10n(": ") .. localizedDungeonName, "gray")
+            _AddTooltipLine(tooltip, " ")
+            _AddColoredTooltipLine(tooltip, l10n("Instance") .. l10n(": ") .. localizedDungeonName, "gray")
         end
     end
 end
@@ -363,8 +370,9 @@ _GetObjectiveText = function(objectiveId, objectiveType)
     return ""
 end
 
+---@param tooltip GameTooltip
 ---@param quest Quest
-_AddQuestRequirements = function(quest)
+_AddQuestRequirements = function(tooltip, quest)
     local questId = quest.Id
     if QuestiePlayer.currentQuestlog[questId] or Questie.db.char.complete[questId] then
         return
@@ -374,8 +382,8 @@ _AddQuestRequirements = function(quest)
     if HaveQuestData(questId) and questLogIndex then
         local blizzardObjectives = GetQuestObjectives(questId, questLogIndex)
         if #quest.ObjectiveData > 0 then
-            _AddTooltipLine(" ")
-            _AddColoredTooltipLine(l10n("Objectives"), "gold")
+            _AddTooltipLine(tooltip, " ")
+            _AddColoredTooltipLine(tooltip, l10n("Objectives"), "gold")
         end
         for i = 1, #blizzardObjectives do
             local objective = blizzardObjectives[i]
@@ -393,7 +401,7 @@ _AddQuestRequirements = function(quest)
                     local objectiveText = _GetObjectiveText(quest.ObjectiveData[i].Id, quest.ObjectiveData[i].Type)
                     objective.text = string.gsub(objective.text, "^%s", objectiveText)
                 end
-                _AddColoredTooltipLine(" - " .. objective.text, "white")
+                _AddColoredTooltipLine(tooltip, " - " .. objective.text, "white")
             end
         end
         return
@@ -406,18 +414,18 @@ _AddQuestRequirements = function(quest)
             if currentObjective then
                 if currentObjective.Text then
                     if currentObjective == quest.ObjectiveData[1] then
-                        _AddTooltipLine(" ")
-                        _AddColoredTooltipLine(l10n("Objectives"), "gold")
+                        _AddTooltipLine(tooltip, " ")
+                        _AddColoredTooltipLine(tooltip, l10n("Objectives"), "gold")
                     end
-                    _AddColoredTooltipLine(" - " .. currentObjective.Text, "white")
+                    _AddColoredTooltipLine(tooltip, " - " .. currentObjective.Text, "white")
                 else
                     local objectiveText = _GetObjectiveText(currentObjective.Id, currentObjective.Type)
 
                     if currentObjective == quest.ObjectiveData[1] then
-                        _AddTooltipLine(" ")
-                        _AddColoredTooltipLine(l10n("Objectives"), "gold")
+                        _AddTooltipLine(tooltip, " ")
+                        _AddColoredTooltipLine(tooltip, l10n("Objectives"), "gold")
                     end
-                    _AddColoredTooltipLine(" - " .. objectiveText, "white")
+                    _AddColoredTooltipLine(tooltip, " - " .. objectiveText, "white")
                 end
             end
         end
@@ -505,30 +513,32 @@ _GetQuestFinisher = function(quest)
     return nil, nil
 end
 
-_AddPlayerQuestProgress = function(quest, starterName, starterZoneName, finisherName, finisherZoneName)
+---@param tooltip GameTooltip
+---@param quest Quest
+_AddPlayerQuestProgress = function(tooltip, quest, starterName, starterZoneName, finisherName, finisherZoneName)
     if QuestiePlayer.currentQuestlog[quest.Id] then
         -- On Quest: display quest progress
         if (QuestieDB.IsComplete(quest.Id) == 0) then
-            _AddTooltipLine(" ")
-            _AddColoredTooltipLine(l10n("Your progress")..l10n(": "), "gold")
+            _AddTooltipLine(tooltip, " ")
+            _AddColoredTooltipLine(tooltip, l10n("Your progress")..l10n(": "), "gold")
             for _, objective in pairs(quest.Objectives) do
                 local objDesc = QuestieLib:GetObjectiveDescription(objective)
 
                 if objective.Needed > 0 then
                     local lineEnding = tostring(objective.Collected) .. "/" .. tostring(objective.Needed)
-                    _AddTooltipLine(" - " .. QuestieLib:GetRGBForObjective(objective) .. objDesc .. ": " .. lineEnding.."|r")
+                    _AddTooltipLine(tooltip, " - " .. QuestieLib:GetRGBForObjective(objective) .. objDesc .. ": " .. lineEnding.."|r")
                 end
             end
         -- Completed Quest (not turned in): display quest ended by npc and zone
         else
             if finisherName or finisherZoneName then
-                _AddTooltipLine(" ")
+                _AddTooltipLine(tooltip, " ")
             end
             if finisherName then
-                _AddTooltipLine((l10n("Ended by")..": " .. Questie:Colorize(finisherName, "gray")))
+                _AddTooltipLine(tooltip, (l10n("Ended by")..": " .. Questie:Colorize(finisherName, "gray")))
             end
             if finisherZoneName then
-                _AddTooltipLine((l10n("Found in")..": " .. Questie:Colorize(finisherZoneName, "gray")))
+                _AddTooltipLine(tooltip, (l10n("Found in")..": " .. Questie:Colorize(finisherZoneName, "gray")))
             end
         end
     else
@@ -545,19 +555,19 @@ _AddPlayerQuestProgress = function(quest, starterName, starterZoneName, finisher
                     end
                 end
                 if timestamp then
-                    _AddTooltipLine(" ")
-                    _AddTooltipLine(l10n("Completed on:"))
-                    _AddTooltipLine(timestamp)
+                    _AddTooltipLine(tooltip, " ")
+                    _AddTooltipLine(tooltip, l10n("Completed on:"))
+                    _AddTooltipLine(tooltip, timestamp)
                 end
             end
         -- Not on Quest: display quest started by npc and zone
         else
             if starterName then
-                _AddTooltipLine(" ")
-                _AddTooltipLine((l10n("Started by")..": " .. Questie:Colorize(starterName, "gray")))
+                _AddTooltipLine(tooltip, " ")
+                _AddTooltipLine(tooltip, (l10n("Started by")..": " .. Questie:Colorize(starterName, "gray")))
             end
             if starterZoneName then
-                _AddTooltipLine((l10n("Found in")..": " .. Questie:Colorize(starterZoneName, "gray")))
+                _AddTooltipLine(tooltip, (l10n("Found in")..": " .. Questie:Colorize(starterZoneName, "gray")))
             end
         end
     end
