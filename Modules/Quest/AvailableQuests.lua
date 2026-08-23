@@ -829,10 +829,27 @@ end
 
 ---@param questId QuestId
 ---@return boolean
+local function _CanNpcOfferQuestToPlayer(questId)
+    local playerLevel = QuestiePlayer.GetPlayerLevel()
+    local _, requiredLevel, requiredMaxLevel = QuestieLib.GetEffectiveQuestLevel(questId, playerLevel)
+
+    if requiredLevel and requiredLevel > playerLevel then
+        return false
+    end
+    if requiredMaxLevel and requiredMaxLevel ~= 0 and playerLevel > requiredMaxLevel then
+        return false
+    end
+
+    return true
+end
+
+---@param questId QuestId
+---@return boolean
 local function _ShouldCacheUnavailableQuest(questId)
     return (QuestieDB.IsDailyQuest(questId) or QuestieDB.IsWeeklyQuest(questId))
         and QuestieDB:IsAzerothCoreAvailabilityConditionFulfilled(questId)
         and QuestieDB.IsDoable(questId)
+        and _CanNpcOfferQuestToPlayer(questId)
 end
 
 --- Called on GOSSIP_SHOW to hide all quests that are not available from the NPC.
@@ -976,6 +993,7 @@ function AvailableQuests.ValidateAvailableQuestsFromQuestGreeting()
     lastNpcGuid = npcGuid
 
     local availableQuestsInGreeting = {}
+    local unresolvedQuestInGreeting = false
     for i = 1, MAX_NUM_QUESTS do
         local titleLine = _G["QuestTitleButton" .. i]
         if (not titleLine) then
@@ -993,6 +1011,11 @@ function AvailableQuests.ValidateAvailableQuestsFromQuestGreeting()
             local questId = QuestieDB.GetQuestIDFromName(title, npcGuid, (not isActive))
             if questId and questId > 0 then
                 availableQuestsInGreeting[questId] = true
+            else
+                -- If a visible title cannot be resolved, its absence from this lookup is not proof
+                -- that the corresponding quest is unavailable today. This can also happen when the
+                -- WoW client and Questie use different locales.
+                unresolvedQuestInGreeting = true
             end
         end
     end
@@ -1007,6 +1030,10 @@ function AvailableQuests.ValidateAvailableQuestsFromQuestGreeting()
                 AvailableQuests.DrawAvailableQuest(quest)
             end
         end
+    end
+
+    if unresolvedQuestInGreeting then
+        return
     end
 
     local unavailableQuestsToBroadcast = {}

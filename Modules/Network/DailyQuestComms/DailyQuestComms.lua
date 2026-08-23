@@ -11,7 +11,8 @@ local IsInGroup = QuestieCompat.IsInGroup
 local IsInRaid = QuestieCompat.IsInRaid
 local C_Timer = QuestieCompat.C_Timer
 
-local COMM_PREFIX = "Questie"
+-- Keep the 3.3.5 unavailable quest protocol isolated from older clients that can broadcast incorrectly hidden quests.
+local COMM_PREFIX = "Questie335DlyV2"
 local UNAVAILABLE_QUEST_SYNC_REQUEST_ATTEMPTS = 60
 local UNAVAILABLE_QUEST_SYNC_REQUEST_INTERVAL = 0.5
 local UNAVAILABLE_QUEST_RESPONSE_WINDOW = 8
