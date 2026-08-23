@@ -47,6 +47,8 @@ local warnedUpdate = false;
 local suggestUpdate = true;
 local recentQuestUpdates = {}
 local DUPLICATE_QUEST_UPDATE_WINDOW = 0.25
+local lastCommReceiveErrorLog
+local COMM_RECEIVE_ERROR_LOG_INTERVAL = 60
 
 -- forward declaration
 local _DoYell
@@ -1055,7 +1057,16 @@ function _QuestieComms:Broadcast(packet)
 end
 
 function _QuestieComms:OnCommReceived(message, distribution, sender)
-    pcall(_QuestieComms.OnCommReceived_unsafe, _QuestieComms, message, distribution, sender)
+    local success, errorMessage = pcall(_QuestieComms.OnCommReceived_unsafe, _QuestieComms, message, distribution, sender)
+    if success then
+        return
+    end
+
+    local now = GetTime()
+    if not lastCommReceiveErrorLog or now - lastCommReceiveErrorLog >= COMM_RECEIVE_ERROR_LOG_INTERVAL then
+        lastCommReceiveErrorLog = now
+        Questie.Debug(Questie.DEBUG_CRITICAL, "[QuestieComms:OnCommReceived] Failed to process packet from", sender or "unknown", "on", distribution or "unknown", ":", tostring(errorMessage))
+    end
 end
 
 function _QuestieComms.OnCommReceived_unsafe(prefix, message, distribution, sender)
