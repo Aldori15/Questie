@@ -4004,6 +4004,18 @@ function QuestieDB:GetCreatureLevels(quest)
             end
         end
     end
+    if quest.extraObjectives then
+        for _, extraObjective in pairs(quest.extraObjectives) do
+            if extraObjective[5] then
+                for _, extraObjectiveTarget in pairs(extraObjective[5]) do
+                    if extraObjectiveTarget[1] == "monster" then
+                        local npcId = extraObjectiveTarget[2]
+                        _CollectCreatureLevels({npcId})
+                    end
+                end
+            end
+        end
+    end
     if quest.Id then
         QuestieDB._CreatureLevelCache[quest.Id] = creatureLevels
     end
