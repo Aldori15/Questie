@@ -3995,6 +3995,17 @@ function QuestieDB:GetCreatureLevels(quest)
                 end
             end
         end
+        if quest.objectives[5] then -- Kill credit creatures
+            for _, killCreditObjective in pairs(quest.objectives[5]) do
+                local npcIds = killCreditObjective[1]
+                if npcIds then
+                    for i = 1, #npcIds do
+                        local npcId = npcIds[i]
+                        _CollectCreatureLevels({npcId})
+                    end
+                end
+            end
+        end
     end
     if quest.requiredSourceItems then
         for _, itemId in pairs(quest.requiredSourceItems) do
