@@ -88,7 +88,7 @@ function QuestieFrame.CreateIconFrame(frameId, OnEnter)
     overlayTexture:Hide()
 
     ---@type IconTexture
-    local glowTexture = newFrame:CreateTexture(nil, "OVERLAY", nil, -1)
+    local glowTexture = newFrame:CreateTexture(nil, "ARTWORK", nil, -1)
     glowTexture:SetPoint("CENTER", newFrame, 0, 0)
     glowTexture:SetSize(18, 18)
     glowTexture:SetTexture(Questie.icons["glow"])

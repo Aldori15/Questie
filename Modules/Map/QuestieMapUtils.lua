@@ -134,7 +134,7 @@ function QuestieMap.utils.SetDrawOrder(frame)
     frame:SetFrameLevel(layer:GetFrameLevel() + 1)
 
     -- These sublayers only control the regions within this individual icon.
-    frame.glowTexture:SetDrawLayer("OVERLAY", -1)
+    frame.glowTexture:SetDrawLayer("ARTWORK", -1)
     frame.texture:SetDrawLayer("OVERLAY", 0)
     frame.overlayTexture:SetDrawLayer("OVERLAY", 1)
 end
