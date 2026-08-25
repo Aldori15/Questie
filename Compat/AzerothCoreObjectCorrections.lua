@@ -3433,6 +3433,10 @@ QuestieCompat.RegisterCorrection("objectData", function()
             [objectKeys.factionID] = 94,
         },
 
+        [175544] = {
+            [objectKeys.spawns] = {[zoneIDs.REDRIDGE_MOUNTAINS] = {{74.49,79.56}}, [zoneIDs.DRAGONBLIGHT] = {{76.88,47.51}}, [zoneIDs.HOWLING_FJORD] = {{28.25,42.42},{28.28,42.39}}, [zoneIDs.BOREAN_TUNDRA] = {{55.56,12.59}}},
+        },
+
         [175565] = {
             [objectKeys.spawns] = {[zoneIDs.THOUSAND_NEEDLES] = {{52.34,55.25},{56.36,50.39}}},
             [objectKeys.factionID] = 94,
@@ -17007,6 +17011,16 @@ QuestieCompat.RegisterCorrection("objectData", function()
             [objectKeys.zoneID] = 0,
         },
 
+        [194200] = {
+            [objectKeys.spawns] = {[zoneIDs.THE_INNER_SANCTUM_OF_ULDUAR] = {{64.42,59.7,0,1,603}}},
+            [objectKeys.zoneID] = zoneIDs.THE_INNER_SANCTUM_OF_ULDUAR,
+        },
+
+        [194201] = {
+            [objectKeys.spawns] = {[zoneIDs.THE_INNER_SANCTUM_OF_ULDUAR] = {{64.42,59.7,0,2,603}}},
+            [objectKeys.zoneID] = zoneIDs.THE_INNER_SANCTUM_OF_ULDUAR,
+        },
+
         [194213] = {
             [objectKeys.spawns] = {[zoneIDs.ICECROWN] = {{71.27,75.18},{71.75,74.4},{71.79,72.45},{71.87,73.04},{72.28,72.96},{72.61,72.25},{73.09,73.78},{73.14,73.13}}, [zoneIDs.CRYSTALSONG_FOREST] = {{16.44,13.35},{18.31,15.71},{19.33,12.03},{20.68,10.59}}},
         },
@@ -17028,6 +17042,16 @@ QuestieCompat.RegisterCorrection("objectData", function()
         [194291] = {
             [objectKeys.spawns] = {[zoneIDs.ICECROWN] = {{48.8,71.31},{48.83,71.82},{48.84,71.4},{48.87,71.64},{71.61,22.4},{71.77,22.59},{71.87,20.03},{71.88,19.83},{71.89,22.49},{72.07,22.63},{72.14,22.44},{72.4,22.61},{72.46,22.62},{72.74,22.4},{75.52,24.33},{75.53,24.05},{75.61,23.8},{75.95,19.8},{76,20.36},{76.04,19.97},{76.12,20.51},{76.3,20.5}}},
             [objectKeys.zoneID] = zoneIDs.ICECROWN,
+        },
+
+        [194307] = {
+            [objectKeys.spawns] = {[zoneIDs.THE_INNER_SANCTUM_OF_ULDUAR] = {{64.58,67.47,0,1,603}}},
+            [objectKeys.zoneID] = zoneIDs.THE_INNER_SANCTUM_OF_ULDUAR,
+        },
+
+        [194308] = {
+            [objectKeys.spawns] = {[zoneIDs.THE_INNER_SANCTUM_OF_ULDUAR] = {{64.58,67.47,0,2,603}}},
+            [objectKeys.zoneID] = zoneIDs.THE_INNER_SANCTUM_OF_ULDUAR,
         },
 
         [194325] = {

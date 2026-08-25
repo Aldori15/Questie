@@ -13828,10 +13828,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredSourceItems] = {33129},
         },
 
-        [11157] = {
-            [questKeys.preQuestSingle] = {11501},
-        },
-
         [11159] = {
             [questKeys.preQuestGroup] = {11160,11161},
             [questKeys.preQuestSingle] = {},
@@ -14996,8 +14992,12 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.exclusiveTo] = {12440},
         },
 
+        [11996] = {
+            [questKeys.breadcrumbForQuestId] = 11999,
+        },
+
         [11999] = {
-            [questKeys.preQuestSingle] = {11996},
+            [questKeys.breadcrumbs] = {11996},
         },
 
         [12007] = {
@@ -17223,10 +17223,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [13093] = {
             [questKeys.questFlags] = 8584,
-        },
-
-        [13098] = {
-            [questKeys.preQuestSingle] = {13099},
         },
 
         [13104] = {

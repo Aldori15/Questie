@@ -17952,7 +17952,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
         },
 
         [11309] = {
-            [itemKeys.objectDrops] = {161495,165554},
             [itemKeys.relatedQuests] = {4123},
         },
 
@@ -56333,10 +56332,6 @@ QuestieCompat.RegisterCorrection("itemData", function()
 
         [48677] = {
             [itemKeys.vendors] = {34885,35507,35508},
-        },
-
-        [48679] = {
-            [itemKeys.itemDrops] = {},
         },
 
         [48681] = {
