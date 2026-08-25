@@ -90,7 +90,9 @@ local ACORE_QUEST_STATUS_IN_PROGRESS = 8
 local ACORE_QUEST_STATUS_FAILED = 32
 local ACORE_QUEST_STATUS_REWARDED = 64
 local playerFaction = UnitFactionGroup("Player")
-local serverName = GetRealmName()
+
+---@type fun(questId: QuestId): boolean|nil
+local unavailableQuestChecker
 
 ---@enum QuestTagIds
 QuestieDB.questTagIds = {
@@ -143,6 +145,12 @@ QuestieDB.DoableStates = {
     MISSING_START_ITEM = 32,
     ACORE_CONDITION = 33,
 }
+
+---@param checker fun(questId: QuestId): boolean
+function QuestieDB.SetUnavailableQuestChecker(checker)
+    unavailableQuestChecker = checker
+end
+
 --- COMPATIBILITY ---
 local WOW_PROJECT_ID = QuestieCompat.WOW_PROJECT_ID
 local WOW_PROJECT_CLASSIC = QuestieCompat.WOW_PROJECT_CLASSIC
@@ -3572,18 +3580,12 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
         end
     end
 
-    -- Check if daily quests not available via npcInteraction and/or comms
-    if (not Questie.db.global.unavailableQuestsDeterminedByTalking[serverName]) or QuestieLib.DidDailyResetHappenSinceLastLogin() then
-        Questie.db.global.unavailableQuestsDeterminedByTalking[serverName] = {}
-    end
-    local unavailableQuestsDeterminedByTalking = Questie.db.global.unavailableQuestsDeterminedByTalking[serverName]
-    for i, _ in pairs(unavailableQuestsDeterminedByTalking) do
-        if i == questId then
-            if returnText and returnBrief then
-                return l10n("Unavailable")..l10n(": ")..l10n("Daily quest not active"), true, DoableStates.MISSING_DAILY
-            elseif returnText then
-                return "Daily quest " .. questId .. " is not active", true, DoableStates.MISSING_DAILY
-            end
+    -- Check if daily quests are unavailable via NPC interaction and/or comms.
+    if unavailableQuestChecker and unavailableQuestChecker(questId) then
+        if returnText and returnBrief then
+            return l10n("Unavailable")..l10n(": ")..l10n("Daily quest not active"), true, DoableStates.MISSING_DAILY
+        elseif returnText then
+            return "Daily quest " .. questId .. " is not active", true, DoableStates.MISSING_DAILY
         end
     end
 

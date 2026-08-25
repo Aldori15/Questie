@@ -272,6 +272,14 @@ local function _GetUnavailableQuestsDeterminedByTalking()
     return unavailableQuestsDeterminedByTalking
 end
 
+---@param questId QuestId
+---@return boolean
+function AvailableQuests.IsUnavailableForCurrentReset(questId)
+    return _GetUnavailableQuestsDeterminedByTalking()[questId] == true
+end
+
+QuestieDB.SetUnavailableQuestChecker(AvailableQuests.IsUnavailableForCurrentReset)
+
 local function _GetUnavailableQuestBucketForQuest(syncState, questId)
     if QuestieDB.IsDailyQuest(questId) then
         return _EnsureUnavailableQuestSyncBucket(syncState, "daily")
