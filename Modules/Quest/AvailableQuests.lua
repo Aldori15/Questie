@@ -485,7 +485,7 @@ _StartQueuedRefresh = function()
         _ApplyRefreshSpeed(false)
         _RunCallbacks(callbacks, success, errorMessage)
         _StartQueuedRefresh()
-    end)
+    end, "AvailableQuests.CalculateAndDrawAll")
 end
 
 ---@param callback function | nil
@@ -1371,7 +1371,9 @@ _DrawAvailableQuest = function(questId)
         return
     end
 
-    NewThread(_DrawNow, 0)
+    -- TODO(profiler): Verify whether these jobs ever yield. Upstream profiling found one resume per job,
+    -- which would make the coroutine scheduling removable overhead; review after the profiler port settles.
+    NewThread(_DrawNow, 0, "AvailableQuests.DrawAvailableQuest")
 end
 
 ---@param quest Quest

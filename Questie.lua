@@ -17,6 +17,8 @@ local QuestieValidateGameCache = QuestieLoader:ImportModule("QuestieValidateGame
 local QuestieLib = QuestieLoader:ImportModule("QuestieLib");
 ---@type CommsVisibility
 local CommsVisibility = QuestieLoader:ImportModule("CommsVisibility")
+---@type QuestieProfilerPreHook
+local QuestieProfilerPreHook = QuestieLoader:ImportModule("ProfilerPreHook")
 
 BINDING_HEADER_QUESTIE = "Questie"
 BINDING_NAME_QUESTIE_TOGGLE_JOURNEY = "Toggle My Journey"
@@ -25,6 +27,10 @@ local band = bit.band
 local strlower = string.lower
 
 function Questie:OnInitialize()
+    -- SavedVariables are now restored. This is an ordering-safe fallback if AceAddon receives ADDON_LOADED
+    -- before the profiler's early event frame; it is idempotent when that frame already armed the session.
+    QuestieProfilerPreHook.StartIfEnabled()
+
     -- This has to happen OnInitialize to be available asap
     Questie.db = LibStub("AceDB-3.0"):New("QuestieConfig", QuestieOptionsDefaults:Load(), true)
 
@@ -330,3 +336,11 @@ Questie.LOWLEVEL_RANGE = 4
 
 -- Start checking the game's cache.
 QuestieValidateGameCache.StartCheck()
+
+-- Questie.lua is the final TOC entry. Close load timing before ADDON_LOADED work begins.
+-- 3.3.5 cannot read the persisted startup flag until ADDON_LOADED, so the loader always captures this
+-- one-time diagnostic. ProfilerPreHook imports it only when that event arms a session.
+local loadTimingClosed, loadTimingCloseError = pcall(QuestieLoader.FinishLoadTimings, QuestieLoader)
+if not loadTimingClosed then
+    Questie.Error("QuestieProfiler failed to close load timing", loadTimingCloseError)
+end

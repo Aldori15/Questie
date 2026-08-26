@@ -4,6 +4,8 @@ local _QuestieInit = QuestieInit.private
 
 ---@type ThreadLib
 local ThreadLib = QuestieLoader:ImportModule("ThreadLib")
+---@type QuestieProfiler
+local QuestieProfiler = QuestieLoader:ImportModule("Profiler")
 
 ---@type QuestEventHandler
 local QuestEventHandler = QuestieLoader:ImportModule("QuestEventHandler")
@@ -166,7 +168,7 @@ QuestieInit.Stages[1] = function() -- run as a coroutine
 
     --? This was moved here because the lag that it creates is much less noticable here, while still initalizing correctly.
     Questie.Debug(Questie.DEBUG_CRITICAL, "[QuestieInit:Stage1] Starting QuestieOptions.Initialize Thread.")
-    ThreadLib.ThreadSimple(QuestieOptions.Initialize, 0)
+    ThreadLib.ThreadSimple(QuestieOptions.Initialize, 0, "QuestieOptions.Initialize")
 
     MinimapIcon:Init()
 
@@ -518,6 +520,15 @@ function _QuestieInit.StartStageCoroutine()
 end
 
 function _QuestieInit.OnInitializationComplete()
+    -- Compat.HBD installs its minimap OnUpdate script only after pins exist. A startup session begins before
+    -- that, so refresh once after initialization to include the late frame script and any late module methods.
+    if QuestieProfiler.active then
+        local refreshed, refreshResult = pcall(QuestieProfiler.RefreshHooks, QuestieProfiler)
+        if not refreshed or refreshResult ~= true then
+            Questie.Error("QuestieProfiler failed to refresh hooks after initialization", refreshResult)
+        end
+    end
+
     if not databaseCompiledThisInitialization then return end
     databaseCompiledThisInitialization = false
 
@@ -531,7 +542,7 @@ end
 -- called by the PLAYER_LOGIN event handler
 function QuestieInit:Init()
     databaseCompiledThisInitialization = false
-    ThreadLib.Thread(_QuestieInit.StartStageCoroutine, Questie.db.profile.initDelay or 0, l10n("Error during initialization!"), _QuestieInit.OnInitializationComplete)
+    ThreadLib.Thread(_QuestieInit.StartStageCoroutine, Questie.db.profile.initDelay or 0, l10n("Error during initialization!"), _QuestieInit.OnInitializationComplete, "QuestieInit.StartStageCoroutine")
 
     if Questie.db.profile.trackerEnabled then
         -- This needs to be called ASAP otherwise tracked Achievements in the Blizzard WatchFrame shows upon login
@@ -551,10 +562,6 @@ function QuestieInit:Init()
             hooksecurefunc("ScrollFrame_OnScrollRangeChanged", function()
                 if TrackedQuestsScrollFrame then
                     TrackedQuestsScrollFrame.ScrollBar:Hide()
-                end
-
-                if QuestieProfilerScrollFrame then
-                    QuestieProfilerScrollFrame.ScrollBar:Hide()
                 end
             end)
         end

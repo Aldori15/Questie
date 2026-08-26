@@ -1,3 +1,5 @@
+QuestieLoader:StampLoadBoundary("Modules/VersionCheck.lua")
+
 local addonName, _ = ...
 
 --- COMPATIBILITY ---

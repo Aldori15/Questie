@@ -1,4 +1,6 @@
 <Ui xsi:schemaLocation="http://www.blizzard.com/wow/ui/ ..\FrameXML\UI.xsd">
+    <Script>QuestieLoader:StampLoadBoundary("Localization/Translations/Translations.xml")</Script>
+
     <Script file="ExtraObjectives\ClassicObjectives.lua"/>
     <Script file="ExtraObjectives\TbcObjectives.lua"/>
     <Script file="ExtraObjectives\WotlkObjectives.lua"/>
