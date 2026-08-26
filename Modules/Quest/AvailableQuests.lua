@@ -37,7 +37,6 @@ local next = next
 local time = time
 local date = date
 local tonumber = tonumber
-local NewThread = ThreadLib.ThreadSimple
 local coRunning = coroutine.running
 
 ---@param onComplete function?
@@ -60,6 +59,8 @@ end
 
 local QUESTS_PER_YIELD = 24
 local QUESTS_PER_YIELD_FAST = 512
+-- Drawing is substantially more expensive than checking availability, so use a smaller normal batch.
+local AVAILABLE_QUEST_DRAWS_PER_YIELD = 4
 local questsPerYield = QUESTS_PER_YIELD
 local isFastRefreshActive = false
 
@@ -1192,17 +1193,21 @@ _SyncAvailableQuestDisplay = function(previousAvailableQuests, nextAvailableQues
 
     local shouldRestoreStartTooltips = availableQuestStartTooltipsDirty
     questCount = 0
+    local drawCount = 0
     for questId in pairs(nextAvailableQuests) do
         local hasLiveFrames = _HasLiveAvailableQuestFrames(questId)
         if (not previousAvailableQuests[questId]) or (not hasLiveFrames) then
             _DrawAvailableQuest(questId)
+            drawCount = drawCount + 1
         elseif shouldRestoreStartTooltips then
             _RegisterQuestStartTooltips(QuestieDB.GetQuest(questId))
         end
 
         questCount = questCount + 1
-        if questCount > maxQuestsPerYield then
+        if questCount > maxQuestsPerYield or ((not isFastRefreshActive) and drawCount >= AVAILABLE_QUEST_DRAWS_PER_YIELD)
+        then
             questCount = 0
+            drawCount = 0
             yield()
         end
     end
@@ -1355,25 +1360,14 @@ end
 
 ---@param questId number
 _DrawAvailableQuest = function(questId)
-    local function _DrawNow()
-        local quest = QuestieDB.GetQuest(questId)
-        if (not quest.tagInfoWasCached) then
-            QuestieDB.GetQuestTagInfo(questId) -- cache to load in the tooltip
+    local quest = QuestieDB.GetQuest(questId)
+    if (not quest.tagInfoWasCached) then
+        QuestieDB.GetQuestTagInfo(questId) -- cache to load in the tooltip
 
-            quest.tagInfoWasCached = true
-        end
-
-        AvailableQuests.DrawAvailableQuest(quest)
+        quest.tagInfoWasCached = true
     end
 
-    if isFastRefreshActive then
-        _DrawNow()
-        return
-    end
-
-    -- TODO(profiler): Verify whether these jobs ever yield. Upstream profiling found one resume per job,
-    -- which would make the coroutine scheduling removable overhead; review after the profiler port settles.
-    NewThread(_DrawNow, 0, "AvailableQuests.DrawAvailableQuest")
+    AvailableQuests.DrawAvailableQuest(quest)
 end
 
 ---@param quest Quest
