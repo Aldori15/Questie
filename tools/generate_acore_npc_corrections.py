@@ -593,6 +593,18 @@ def extract_lua_assigned_tables(text, assignment_pattern):
     return tables
 
 
+def parse_ui_map_tables(text, assignment_pattern):
+    rows = {}
+    for table_text in extract_lua_assigned_tables(text, assignment_pattern):
+        parsed = LuaParser(table_text).parse()
+        if not isinstance(parsed, dict):
+            continue
+        for ui_id, row in parsed.items():
+            if isinstance(ui_id, int) and isinstance(row, dict):
+                rows[int(ui_id)] = row
+    return rows
+
+
 def parse_zone_maps(repo_root):
     text = strip_lua_comments((repo_root / "Database/Zones/zoneTables.lua").read_text(encoding="utf-8"))
     constants = parse_zone_id_constants(repo_root)
@@ -612,7 +624,7 @@ def parse_zone_maps(repo_root):
         special_to_ui.update({int(k): int(v) for k, v in parsed.items() if isinstance(k, int) and isinstance(v, int)})
 
     instance_to_zone = {}
-    start = text.find("ZoneDB.instanceIdToUiMapId")
+    start = text.find("ZoneDB.instanceIdToAreaId")
     if start != -1:
         table_text = extract_balanced_braces(text, text.find("{", start))
         for instance, value in re.findall(r"\[(\d+)\]\s*=\s*([^,\n]+)", table_text):
@@ -622,14 +634,27 @@ def parse_zone_maps(repo_root):
             elif re.fullmatch(r"\d+", value):
                 instance_to_zone[int(instance)] = int(value)
 
+    dungeon_parent_by_area = {}
+    start = text.find("ZoneDB.private.dungeons")
+    if start != -1:
+        parsed = LuaParser(extract_balanced_braces(text, text.find("{", start)), constants).parse()
+        for area_id, row in parsed.items():
+            if isinstance(area_id, int) and isinstance(row, list) and len(row) >= 3 and isinstance(row[2], int):
+                dungeon_parent_by_area[int(area_id)] = int(row[2])
+
     ui_text = strip_lua_comments((repo_root / "Compat/UiMapData.lua").read_text(encoding="utf-8"))
-    ui_map_data = {}
-    for table_text in extract_lua_assigned_tables(ui_text, r"(?:QuestieCompat\.)?UiMapData\s*=\s*\{"):
-        parsed = LuaParser(table_text).parse()
-        if isinstance(parsed, dict):
-            for ui_id, row in parsed.items():
-                if isinstance(ui_id, int) and isinstance(row, dict):
-                    ui_map_data[int(ui_id)] = row
+    base_ui_map_data = parse_ui_map_tables(ui_text, r"(?:QuestieCompat\.)?UiMapData\s*=\s*\{")
+    wdm_world_map_data = parse_ui_map_tables(ui_text, r"local\s+wdmWorldMapData\s*=\s*\{")
+    wdm_instance_map_data = parse_ui_map_tables(ui_text, r"local\s+wdmInstanceMapData\s*=\s*\{")
+
+    # Match Compat/UiMapData.lua's runtime load order while retaining each
+    # source table so callers can distinguish optional WDM geometry.
+    ui_map_data = dict(base_ui_map_data)
+    ui_map_data.update(wdm_world_map_data)
+    ui_map_data.update(wdm_instance_map_data)
+    ui_map_sources = {ui_id: "base" for ui_id in base_ui_map_data}
+    ui_map_sources.update({ui_id: "wdmWorld" for ui_id in wdm_world_map_data})
+    ui_map_sources.update({ui_id: "wdmInstance" for ui_id in wdm_instance_map_data})
 
     ui_to_zone = {}
     for zone_id, ui_id in area_to_ui.items():
@@ -647,8 +672,13 @@ def parse_zone_maps(repo_root):
         "area_to_ui": area_to_ui,
         "special_to_ui": special_to_ui,
         "instance_to_zone": instance_to_zone,
+        "dungeon_parent_by_area": dungeon_parent_by_area,
         "ui_to_zone": ui_to_zone,
         "ui_map_data": ui_map_data,
+        "base_ui_map_data": base_ui_map_data,
+        "wdm_world_map_data": wdm_world_map_data,
+        "wdm_instance_map_data": wdm_instance_map_data,
+        "ui_map_sources": ui_map_sources,
         "ui_by_instance": ui_by_instance,
         "world_rect_overrides": ACORE_WORLD_RECT_OVERRIDES,
     }
@@ -1215,6 +1245,40 @@ def sort_coordinate_table(zone_points, map_difficulty_masks=None):
     }
 
 
+def wdm_instance_zone_ids(zone_maps):
+    return {
+        zone_maps["ui_to_zone"][ui_id]
+        for ui_id in zone_maps["wdm_instance_map_data"]
+        if ui_id in zone_maps["ui_to_zone"]
+    }
+
+
+def merge_entrance_spawn_placeholders(acore_spawns, questie_spawns, eligible_zone_ids):
+    """Keep Questie's dungeon-entrance marker beside generated interior coordinates."""
+    if not isinstance(acore_spawns, dict) or not isinstance(questie_spawns, dict):
+        return acore_spawns
+
+    eligible_zone_ids = set(eligible_zone_ids or ())
+    merged = {
+        int(zone_id): [list(point) for point in points]
+        for zone_id, points in acore_spawns.items()
+    }
+    for zone_id, questie_points in questie_spawns.items():
+        zone_id = int(zone_id)
+        if zone_id not in eligible_zone_ids or zone_id not in merged:
+            continue
+        for point in questie_points or ():
+            if (
+                isinstance(point, list)
+                and len(point) >= 2
+                and float(point[0]) == -1
+                and float(point[1]) == -1
+            ):
+                merged[zone_id].append([-1, -1])
+
+    return sort_coordinate_table(merged)
+
+
 def sort_waypoint_table(zone_paths):
     return {
         int(zone_id): sorted(
@@ -1383,6 +1447,7 @@ def find_differences(
     fields,
     include_missing_npcs=False,
     preserve_spawn_ids=None,
+    entrance_marker_zone_ids=None,
 ):
     corrections = {}
     preserve_spawn_ids = preserve_spawn_ids or set()
@@ -1398,7 +1463,14 @@ def find_differences(
         for field in fields:
             if field not in acore:
                 continue
-            expected = normalize_value(field, acore.get(field))
+            acore_value = acore.get(field)
+            if field == "spawns":
+                acore_value = merge_entrance_spawn_placeholders(
+                    acore_value,
+                    questie.get(field),
+                    entrance_marker_zone_ids,
+                )
+            expected = normalize_value(field, acore_value)
             actual = normalize_value(field, questie.get(field))
             if (
                 npc_id in preserve_spawn_ids
@@ -1410,7 +1482,7 @@ def find_differences(
             ):
                 continue
             if expected != actual:
-                corrections.setdefault(npc_id, {})[field] = correction_value(field, acore.get(field))
+                corrections.setdefault(npc_id, {})[field] = correction_value(field, acore_value)
     return corrections
 
 
@@ -1597,12 +1669,14 @@ def main():
         and normalize_value("spawns", acore_npcs.get(npc_id, {}).get("spawns")) == ()
     }
     preserve_spawn_ids = collect_quest_referenced_ids(repo_root, candidate_spawn_ids)
+    zone_maps = parse_zone_maps(repo_root)
     corrections = find_differences(
         questie_npcs,
         acore_npcs,
         args.fields,
         args.include_missing_npcs,
         preserve_spawn_ids,
+        wdm_instance_zone_ids(zone_maps),
     )
     zone_names = parse_zone_id_names(repo_root)
 

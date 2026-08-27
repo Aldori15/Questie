@@ -36,11 +36,13 @@ from generate_acore_npc_corrections import (  # noqa: E402
     format_zone_ref,
     load_map_difficulty_masks,
     load_rows_from_sql_file,
+    merge_entrance_spawn_placeholders,
     parse_zone_id_constants,
     parse_zone_id_names,
     parse_zone_maps,
     resolve_coordinate_zone,
     sort_coordinate_table,
+    wdm_instance_zone_ids,
 )
 
 
@@ -464,6 +466,7 @@ def find_differences(
     include_missing_objects=False,
     preserve_spawn_ids=None,
     force_include_ids=None,
+    entrance_marker_zone_ids=None,
 ):
     corrections = {}
     preserve_spawn_ids = preserve_spawn_ids or set()
@@ -479,7 +482,14 @@ def find_differences(
         for field in fields:
             if field not in acore:
                 continue
-            expected = normalize_value(field, acore.get(field))
+            acore_value = acore.get(field)
+            if field == "spawns":
+                acore_value = merge_entrance_spawn_placeholders(
+                    acore_value,
+                    questie.get(field),
+                    entrance_marker_zone_ids,
+                )
+            expected = normalize_value(field, acore_value)
             actual = normalize_value(field, questie.get(field))
             if (
                 object_id in preserve_spawn_ids
@@ -490,7 +500,7 @@ def find_differences(
             ):
                 continue
             if expected != actual:
-                corrections.setdefault(object_id, {})[field] = correction_value(field, acore.get(field))
+                corrections.setdefault(object_id, {})[field] = correction_value(field, acore_value)
     return corrections
 
 
@@ -688,6 +698,7 @@ def main():
             candidate_spawn_ids,
         )
     )
+    zone_maps = parse_zone_maps(repo_root)
     corrections = find_differences(
         questie_objects,
         acore_objects,
@@ -695,6 +706,7 @@ def main():
         args.include_missing_objects,
         preserve_spawn_ids,
         None,
+        wdm_instance_zone_ids(zone_maps),
     )
     add_missing_object_identity_corrections(corrections, questie_objects, acore_objects, item_object_source_ids)
     zone_names = parse_zone_id_names(repo_root)
