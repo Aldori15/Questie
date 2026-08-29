@@ -32,6 +32,125 @@ class AcoreCorrectionRegressionTests(unittest.TestCase):
 
         self.assertEqual((1176, [23.55, 18.33]), npc_generator.resolve_coordinate_zone(row, zone_maps))
 
+    def test_wdm_floor_zone_ids_resolve_to_exact_ui_maps(self):
+        addon_root = Path(__file__).resolve().parents[1]
+        zone_maps = npc_generator.parse_zone_maps(addon_root)
+
+        self.assertEqual(11292, zone_maps["ui_to_zone"][292])
+        self.assertEqual(292, zone_maps["wdm_floor_zone_to_ui"][11292])
+        self.assertEqual(52, len(zone_maps["wdm_floor_zone_to_ui"]))
+        self.assertEqual(292, npc_generator.zone_to_ui(11292, zone_maps))
+        self.assertEqual(291, npc_generator.zone_to_ui(1581, zone_maps))
+        self.assertTrue(all(zone_id <= 65535 for zone_id in zone_maps["wdm_floor_zone_to_ui"]))
+        self.assertTrue(all(
+            zone_maps["wdm_instance_map_data"][ui_id]["instance"] in zone_maps["instance_to_zone"]
+            for ui_id in zone_maps["floor_threshold_by_ui"]
+        ))
+
+        zone_names = npc_generator.parse_zone_id_names(addon_root, zone_maps)
+        self.assertEqual("WDM_THE_DEADMINES_FLOOR_2", zone_names[11292])
+        self.assertEqual("zoneIDs.WDM_BLACKROCK_SPIRE_FLOOR_7", npc_generator.format_zone_ref(22003, zone_names))
+
+    def test_world_spawn_does_not_enter_wdm_instance_floor_fallback(self):
+        addon_root = Path(__file__).resolve().parents[1]
+        zone_maps = npc_generator.parse_zone_maps(addon_root)
+        row = {
+            "map": 0,
+            "areaId": 12,
+            "zoneId": 12,
+            "position_x": -9465.58,
+            "position_y": 16.8472,
+            "position_z": 65.921,
+        }
+
+        self.assertEqual(12, npc_generator.resolve_coordinate_zone(row, zone_maps)[0])
+
+    def test_resolves_deadmines_spawn_below_cutoff_to_floor_two(self):
+        addon_root = Path(__file__).resolve().parents[1]
+        zone_maps = npc_generator.parse_zone_maps(addon_root)
+        zone_maps["floor_threshold_by_ui"].update({291: 27.0, 292: None})
+        row = {
+            "guid": 79210,
+            "map": 36,
+            "position_x": -139.828,
+            "position_y": -569.442,
+            "position_z": 19.79,
+        }
+
+        self.assertEqual((11292, [10.43, 61.64]), npc_generator.resolve_coordinate_zone(row, zone_maps))
+
+    def test_resolves_overlapping_boss_floors(self):
+        addon_root = Path(__file__).resolve().parents[1]
+        zone_maps = npc_generator.parse_zone_maps(addon_root)
+        zone_maps["floor_threshold_by_ui"].update({
+            250: None,
+            251: 20.0,
+            252: 44.0,
+            253: None,
+            254: 77.0,
+            255: None,
+            11003: 98.0,
+            256: None,
+            257: 12.0,
+            348: None,
+            349: -3.0,
+        })
+
+        cases = (
+            ({"map": 229, "position_x": -40.8713, "position_y": -433.589, "position_z": 111.918}, 22003),
+            ({"map": 558, "position_x": 68.131, "position_y": -387.821, "position_z": 26}, 11257),
+            ({"map": 585, "position_x": 148.549, "position_y": 186.981, "position_z": -16}, 4131),
+        )
+        for row, expected_zone_id in cases:
+            with self.subTest(map_id=row["map"]):
+                self.assertEqual(expected_zone_id, npc_generator.resolve_coordinate_zone(row, zone_maps)[0])
+
+    def test_resolves_missing_classic_boss_icons(self):
+        addon_root = Path(__file__).resolve().parents[1]
+        zone_maps = npc_generator.parse_zone_maps(addon_root)
+
+        cases = (
+            ({"guid": 247103, "map": 33, "position_x": -218.958, "position_y": 2152.83, "position_z": 81.1}, 11316),
+            ({"guid": 27424, "map": 48, "position_x": -818.832, "position_y": -155.576, "position_z": -25.7923}, 11222),
+            ({"guid": 30139, "map": 90, "position_x": -531.324, "position_y": 670.159, "position_z": -325.185}, 11229),
+            ({"map": 429, "position_x": 132.626, "position_y": 625.913, "position_z": -48.38}, 11237),
+        )
+        for row, expected_zone_id in cases:
+            with self.subTest(map_id=row["map"]):
+                self.assertEqual(expected_zone_id, npc_generator.resolve_coordinate_zone(row, zone_maps)[0])
+
+    def test_generated_corrections_use_wdm_floor_constants(self):
+        addon_root = Path(__file__).resolve().parents[1]
+        zone_maps = npc_generator.parse_zone_maps(addon_root)
+        zone_names = npc_generator.parse_zone_id_names(addon_root, zone_maps)
+
+        self.assertEqual(
+            "{[zoneIDs.WDM_THE_DEADMINES_FLOOR_2] = {{10,20}}}",
+            npc_generator.format_lua_field_value("spawns", {11292: [[10.0, 20.0]]}, zone_names),
+        )
+        self.assertEqual(
+            "zoneIDs.WDM_THE_DEADMINES_FLOOR_2",
+            npc_generator.format_lua_field_value("zoneID", 11292, zone_names),
+        )
+
+    def test_reported_boss_floor_coordinates_round_trip(self):
+        addon_root = Path(__file__).resolve().parents[1]
+        zone_maps = npc_generator.parse_zone_maps(addon_root)
+        cases = (
+            (22003, 11003, [33.44, 45.32]),
+            (11237, 237, [59.88, 23.47]),
+            (11237, 237, [35.01, 57.62]),
+            (11257, 257, [73.74, 48.96]),
+        )
+
+        for zone_id, ui_map_id, point in cases:
+            with self.subTest(zone_id=zone_id, point=point):
+                self.assertEqual(ui_map_id, npc_generator.zone_to_ui(zone_id, zone_maps))
+                data = zone_maps["ui_map_data"][ui_map_id]
+                world_x = data[3] - data[1] * point[0] / 100
+                world_y = data[4] - data[2] * point[1] / 100
+                self.assertEqual(point, npc_generator.convert_world_to_zone(world_x, world_y, zone_id, zone_maps))
+
     def test_preserves_dungeon_entrance_beside_npc_interior_spawn(self):
         corrections = npc_generator.find_differences(
             {7604: {"spawns": {1176: [[-1, -1]]}}},

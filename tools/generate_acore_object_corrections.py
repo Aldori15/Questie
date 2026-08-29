@@ -250,6 +250,7 @@ def build_acore_objects(
     repo_root=None,
     gameobject_sql=None,
     map_difficulty_dbc=None,
+    wdm_root=None,
 ):
     source_root = Path(source_root)
     map_difficulty_dbc = find_map_difficulty_dbc(source_root, map_difficulty_dbc)
@@ -296,7 +297,7 @@ def build_acore_objects(
     seen_spawn_entries = set()
     unmapped_spawn_entries = set()
     map_stats = defaultdict(int)
-    zone_maps = parse_zone_maps(Path(repo_root or ".").resolve())
+    zone_maps = parse_zone_maps(Path(repo_root or ".").resolve(), wdm_root)
 
     for row in gameobject_rows:
         entry = int(row.get("id") or row.get("entry") or 0)
@@ -645,6 +646,12 @@ def main():
     parser.add_argument("--repo-root", default=Path("."), type=Path)
     parser.add_argument("--output", default=Path("Compat/AzerothCoreObjectCorrections.lua"), type=Path)
     parser.add_argument("--report", default=Path("tools/reports/acore_object_corrections.md"), type=Path)
+    parser.add_argument(
+        "--wdm-root",
+        default=Path(r"E:\downloads\WDM stuff"),
+        type=Path,
+        help="WDM export root containing DungeonMap.csv and DungeonMapChunk.csv.",
+    )
     parser.add_argument("--include-modules", action="store_true", help="Also scan SQL under AzerothCore modules/. This can be slow.")
     parser.add_argument("--gameobject-sql", type=Path, help="Optional final gameobject table SQL export to use instead of AzerothCore source gameobject.sql.")
     parser.add_argument(
@@ -677,6 +684,7 @@ def main():
         repo_root,
         args.gameobject_sql,
         args.map_difficulty_dbc,
+        args.wdm_root,
     )
     required_quest_item_ids, skipped_quest_template = collect_acore_required_quest_item_ids(
         args.acore_source,
@@ -698,7 +706,7 @@ def main():
             candidate_spawn_ids,
         )
     )
-    zone_maps = parse_zone_maps(repo_root)
+    zone_maps = parse_zone_maps(repo_root, args.wdm_root)
     corrections = find_differences(
         questie_objects,
         acore_objects,
@@ -709,7 +717,7 @@ def main():
         wdm_instance_zone_ids(zone_maps),
     )
     add_missing_object_identity_corrections(corrections, questie_objects, acore_objects, item_object_source_ids)
-    zone_names = parse_zone_id_names(repo_root)
+    zone_names = parse_zone_id_names(repo_root, zone_maps)
 
     write_corrections_module(corrections, repo_root / args.output, zone_names)
     write_report(corrections, skipped_mutations, set(args.fields), repo_root / args.report)

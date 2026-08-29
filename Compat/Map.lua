@@ -544,9 +544,11 @@ local function GetUiMapIdForAreaId(areaId)
 
     local areaIdToUiMapId = ZoneDB.private and ZoneDB.private.areaIdToUiMapId
     local specialZoneIdToUiMapId = ZoneDB.private and ZoneDB.private.specialZoneIdToUiMapId
+    local wdmInstanceFloorZoneIdToUiMapId = ZoneDB.private and ZoneDB.private.wdmInstanceFloorZoneIdToUiMapId
     local uiMapID = starterAreaIdToUiMapId[areaId]
         or (areaIdToUiMapId and areaIdToUiMapId[areaId])
         or (specialZoneIdToUiMapId and specialZoneIdToUiMapId[areaId])
+        or (wdmInstanceFloorZoneIdToUiMapId and wdmInstanceFloorZoneIdToUiMapId[areaId])
 
     if uiMapID and QuestieCompat.UiMapData and QuestieCompat.UiMapData[uiMapID] then
         return uiMapID

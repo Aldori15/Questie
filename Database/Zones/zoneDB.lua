@@ -29,6 +29,11 @@ local UI_MAP_TYPE_CONTINENT = 2
 
 local areaIdToUiMapId = ZoneDB.private.areaIdToUiMapId or {}
 local specialZoneIdToUiMapId = ZoneDB.private.specialZoneIdToUiMapId or {}
+local wdmInstanceFloorZoneIdToUiMapId = ZoneDB.private.wdmInstanceFloorZoneIdToUiMapId or {}
+local wdmInstanceFloorUiMapIdToZoneId = {}
+for zoneId, uiMapId in pairs(wdmInstanceFloorZoneIdToUiMapId) do
+    wdmInstanceFloorUiMapIdToZoneId[uiMapId] = zoneId
+end
 local uiMapIdToAreaId = ZoneDB.private.uiMapIdToAreaId or {}
 local dungeons = ZoneDB.private.dungeons or {}
 local dungeonLocations = ZoneDB.private.dungeonLocations or {}
@@ -87,7 +92,7 @@ end
 ---@param areaId AreaId
 ---@return UiMapId
 function ZoneDB:GetUiMapIdByAreaId(areaId)
-    local uiMapId = areaIdToUiMapId[areaId] or specialZoneIdToUiMapId[areaId]
+    local uiMapId = areaIdToUiMapId[areaId] or specialZoneIdToUiMapId[areaId] or wdmInstanceFloorZoneIdToUiMapId[areaId]
     if (not uiMapId) then
         Questie.Debug(Questie.DEBUG_CRITICAL, "No UiMapId found for AreaId: " .. tostring(areaId))
     end
@@ -101,6 +106,10 @@ function ZoneDB:GetAreaIdByUiMapId(uiMapId)
     --? Some areas have multiple areaIds, so we return the correct AreaId
     if UiMapIdOverrides[uiMapId] then
         return UiMapIdOverrides[uiMapId]
+    end
+
+    if wdmInstanceFloorUiMapIdToZoneId[uiMapId] then
+        return wdmInstanceFloorUiMapIdToZoneId[uiMapId]
     end
 
     local foundId = uiMapIdToAreaId[uiMapId]

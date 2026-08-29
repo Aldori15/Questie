@@ -1,5 +1,6 @@
 import argparse
 import ast
+import csv
 import re
 import struct
 import sys
@@ -73,7 +74,11 @@ ACORE_AREA_ID_OVERRIDES = {
 # world Z position instead of collapsing them onto the parent instance map.
 ACORE_CREATURE_SPAWN_ZONE_OVERRIDES = {
     208778: 4835,  # Kor'kron Lieutenant - ICC Rampart of Skulls
+    247103: 11316,  # Arugal - Shadowfang Keep floor 7
 }
+
+DEFAULT_WDM_ROOT = Path(r"E:\downloads\WDM stuff")
+WDM_INSTANCE_FLOOR_ZONE_ID_OFFSET = 11000
 
 # Some AC creature spawns sit just outside the client zone rectangle while still
 # belonging to that zone, usually near cave or map-edge locations. Keep those
@@ -432,12 +437,25 @@ def parse_zone_id_constants(repo_root):
     return constants
 
 
-def parse_zone_id_names(repo_root):
+def wdm_floor_zone_constant_name(data):
+    source_map_id = float(data.get("mapID") or 0)
+    floor = int(round((source_map_id - int(source_map_id)) * 10))
+    instance_name = re.sub(r"([a-z])([A-Z])", r"\1_\2", str(data.get("name") or "INSTANCE"))
+    instance_name = re.sub(r"[^A-Za-z0-9_]", "_", instance_name).upper()
+    return f"WDM_{instance_name}_FLOOR_{floor}"
+
+
+def parse_zone_id_names(repo_root, zone_maps=None):
     parsed = parse_zone_ids(repo_root)
     zone_names = {}
     for name, value in parsed.items():
         if isinstance(value, int) and value not in zone_names:
             zone_names[value] = name
+    if zone_maps:
+        for ui_id in zone_maps["floor_threshold_by_ui"]:
+            zone_id = zone_maps["ui_to_zone"].get(ui_id)
+            if zone_id and zone_id >= zone_maps["wdm_floor_zone_id_offset"]:
+                zone_names[zone_id] = wdm_floor_zone_constant_name(zone_maps["wdm_instance_map_data"][ui_id])
     return zone_names
 
 
@@ -605,7 +623,40 @@ def parse_ui_map_tables(text, assignment_pattern):
     return rows
 
 
-def parse_zone_maps(repo_root):
+def load_wdm_floor_thresholds(wdm_root):
+    if not wdm_root:
+        return {}
+
+    db2_root = Path(wdm_root) / "patch-enUS-M extracted/DBFilesClient"
+    dungeon_map_path = db2_root / "DungeonMap.csv"
+    chunk_path = db2_root / "DungeonMapChunk.csv"
+    if not dungeon_map_path.exists() or not chunk_path.exists():
+        return {}
+
+    dungeon_maps = {}
+    with dungeon_map_path.open(newline="", encoding="utf-8-sig") as handle:
+        for row in csv.DictReader(handle):
+            dungeon_maps[int(row["ID"])] = (int(row["MapID"]), int(row["FloorIndex"]))
+
+    thresholds_by_dungeon_map = {}
+    with chunk_path.open(newline="", encoding="utf-8-sig") as handle:
+        for row in csv.DictReader(handle):
+            minimum_z = float(row["MinZ"])
+            if minimum_z <= -9999:
+                continue
+            dungeon_map_id = int(row["DungeonMapID"])
+            thresholds_by_dungeon_map[dungeon_map_id] = max(
+                minimum_z,
+                thresholds_by_dungeon_map.get(dungeon_map_id, minimum_z),
+            )
+
+    return {
+        instance_floor: thresholds_by_dungeon_map.get(dungeon_map_id)
+        for dungeon_map_id, instance_floor in dungeon_maps.items()
+    }
+
+
+def parse_zone_maps(repo_root, wdm_root=None):
     text = strip_lua_comments((repo_root / "Database/Zones/zoneTables.lua").read_text(encoding="utf-8"))
     constants = parse_zone_id_constants(repo_root)
     constants.setdefault("ZoneDB.private.zoneIDs.BLACKROCK_SPIRE", constants.get("ZoneDB.private.zoneIDs.LOWER_BLACKROCK_SPIRE", 1583))
@@ -622,6 +673,12 @@ def parse_zone_maps(repo_root):
     if start != -1:
         parsed = LuaParser(extract_balanced_braces(text, text.find("{", start)), constants).parse()
         special_to_ui.update({int(k): int(v) for k, v in parsed.items() if isinstance(k, int) and isinstance(v, int)})
+
+    wdm_floor_zone_to_ui = {}
+    start = text.find("ZoneDB.private.wdmInstanceFloorZoneIdToUiMapId")
+    if start != -1:
+        parsed = LuaParser(extract_balanced_braces(text, text.find("{", start)), constants).parse()
+        wdm_floor_zone_to_ui.update({int(k): int(v) for k, v in parsed.items() if isinstance(k, int) and isinstance(v, int)})
 
     instance_to_zone = {}
     start = text.find("ZoneDB.instanceIdToAreaId")
@@ -647,6 +704,9 @@ def parse_zone_maps(repo_root):
     wdm_world_map_data = parse_ui_map_tables(ui_text, r"local\s+wdmWorldMapData\s*=\s*\{")
     wdm_instance_map_data = parse_ui_map_tables(ui_text, r"local\s+wdmInstanceMapData\s*=\s*\{")
 
+    offset_match = re.search(r"wdmInstanceFloorZoneIdOffset\s*=\s*(\d+)", text)
+    wdm_floor_zone_id_offset = int(offset_match.group(1)) if offset_match else WDM_INSTANCE_FLOOR_ZONE_ID_OFFSET
+
     # Match Compat/UiMapData.lua's runtime load order while retaining each
     # source table so callers can distinguish optional WDM geometry.
     ui_map_data = dict(base_ui_map_data)
@@ -661,6 +721,19 @@ def parse_zone_maps(repo_root):
         ui_to_zone.setdefault(ui_id, zone_id)
     for zone_id, ui_id in special_to_ui.items():
         ui_to_zone.setdefault(ui_id, zone_id)
+    for zone_id, ui_id in wdm_floor_zone_to_ui.items():
+        ui_to_zone.setdefault(ui_id, zone_id)
+
+    source_floor_thresholds = load_wdm_floor_thresholds(wdm_root)
+    floor_threshold_by_ui = {}
+    for ui_id, data in wdm_instance_map_data.items():
+        source_map_id = data.get("mapID")
+        instance = data.get("instance")
+        if not isinstance(source_map_id, (int, float)) or not isinstance(instance, int):
+            continue
+        floor = int(round((float(source_map_id) - int(float(source_map_id))) * 10))
+        if floor and instance in instance_to_zone and ui_id in ui_to_zone:
+            floor_threshold_by_ui[ui_id] = source_floor_thresholds.get((instance, floor))
 
     ui_by_instance = defaultdict(list)
     for ui_id, data in ui_map_data.items():
@@ -671,6 +744,7 @@ def parse_zone_maps(repo_root):
     return {
         "area_to_ui": area_to_ui,
         "special_to_ui": special_to_ui,
+        "wdm_floor_zone_to_ui": wdm_floor_zone_to_ui,
         "instance_to_zone": instance_to_zone,
         "dungeon_parent_by_area": dungeon_parent_by_area,
         "ui_to_zone": ui_to_zone,
@@ -680,6 +754,8 @@ def parse_zone_maps(repo_root):
         "wdm_instance_map_data": wdm_instance_map_data,
         "ui_map_sources": ui_map_sources,
         "ui_by_instance": ui_by_instance,
+        "wdm_floor_zone_id_offset": wdm_floor_zone_id_offset,
+        "floor_threshold_by_ui": floor_threshold_by_ui,
         "world_rect_overrides": ACORE_WORLD_RECT_OVERRIDES,
     }
 
@@ -687,7 +763,14 @@ def parse_zone_maps(repo_root):
 def zone_to_ui(zone_id, zone_maps):
     if not zone_id:
         return None
-    return zone_maps["special_to_ui"].get(zone_id) or zone_maps["area_to_ui"].get(zone_id)
+    ui_id = (
+        zone_maps["special_to_ui"].get(zone_id)
+        or zone_maps["area_to_ui"].get(zone_id)
+        or zone_maps["wdm_floor_zone_to_ui"].get(zone_id)
+    )
+    if ui_id:
+        return ui_id
+    return None
 
 
 def convert_world_to_zone(x, y, zone_id, zone_maps, allow_out_of_bounds=False, map_id=None):
@@ -729,6 +812,36 @@ def convert_near_world_to_zone(x, y, zone_id, zone_maps, map_id=None):
     return clamp_zone_edge_point(point)
 
 
+def resolve_wdm_instance_floor(x, y, z, map_id, zone_maps):
+    if map_id not in zone_maps["instance_to_zone"]:
+        return None, None
+
+    matches = []
+    for ui_id in zone_maps["ui_by_instance"].get(map_id, []):
+        data = zone_maps["wdm_instance_map_data"].get(ui_id)
+        if not data:
+            continue
+        zone_id = zone_maps["ui_to_zone"].get(ui_id)
+        point = convert_world_to_zone(x, y, zone_id, zone_maps, map_id=map_id)
+        if not point:
+            continue
+        area = abs(float(data.get(1) or 0) * float(data.get(2) or 0))
+        threshold = zone_maps.get("floor_threshold_by_ui", {}).get(ui_id)
+        matches.append((threshold, area, zone_id, point))
+
+    if not matches:
+        return None, None
+
+    eligible = [match for match in matches if match[0] is not None and match[0] <= z]
+    if eligible:
+        _, _, zone_id, point = max(eligible, key=lambda match: (match[0], match[1], -match[2]))
+        return zone_id, point
+
+    baseline = [match for match in matches if match[0] is None]
+    _, _, zone_id, point = max(baseline or matches, key=lambda match: (match[1], -match[2]))
+    return zone_id, point
+
+
 def resolve_coordinate_zone(row, zone_maps):
     candidates = []
     guid = int(row.get("guid") or 0)
@@ -738,6 +851,7 @@ def resolve_coordinate_zone(row, zone_maps):
     map_id = int(row.get("map") or 0)
     position_x = float(row.get("position_x") or 0)
     position_y = float(row.get("position_y") or 0)
+    position_z = float(row.get("position_z") or 0)
     axis_pairs = (
         # Classic continent coordinates need this client-world axis order.
         (position_y, position_x),
@@ -750,7 +864,10 @@ def resolve_coordinate_zone(row, zone_maps):
     # areaId 4570 (Circle of Wills) in the AC creature export.
     spawn_zone_override = ACORE_CREATURE_SPAWN_ZONE_OVERRIDES.get(guid)
     if spawn_zone_override:
-        candidates.append(spawn_zone_override)
+        for x, y in axis_pairs:
+            point = convert_world_to_zone(x, y, spawn_zone_override, zone_maps, map_id=map_id)
+            if point:
+                return spawn_zone_override, point
     if area_id:
         candidates.append(area_id)
     if zone_id and zone_id not in candidates:
@@ -760,6 +877,16 @@ def resolve_coordinate_zone(row, zone_maps):
         candidates.append(instance_zone)
 
     for x, y in axis_pairs:
+        floor_zone_id, floor_point = resolve_wdm_instance_floor(
+            x,
+            y,
+            position_z,
+            map_id,
+            zone_maps,
+        )
+        if floor_zone_id:
+            return floor_zone_id, floor_point
+
         for zone_id in candidates:
             point = convert_world_to_zone(x, y, zone_id, zone_maps, map_id=map_id)
             if point:
@@ -977,6 +1104,7 @@ def build_acore_npcs(
     creature_sql=None,
     creature_multispawn_sql=None,
     map_difficulty_dbc=None,
+    wdm_root=None,
 ):
     source_root = Path(source_root)
     map_difficulty_dbc = find_map_difficulty_dbc(source_root, map_difficulty_dbc)
@@ -1028,7 +1156,7 @@ def build_acore_npcs(
     guid_to_creature = {}
     creatures_by_entry = defaultdict(list)
     map_stats = defaultdict(int)
-    zone_maps = parse_zone_maps(Path(repo_root or ".").resolve())
+    zone_maps = parse_zone_maps(Path(repo_root or ".").resolve(), wdm_root)
     multispawns_by_guid = defaultdict(set)
 
     for row in creature_multispawn_rows:
@@ -1625,6 +1753,12 @@ def main():
     parser.add_argument("--repo-root", default=Path("."), type=Path)
     parser.add_argument("--output", default=Path("Compat/AzerothCoreNPCCorrections.lua"), type=Path)
     parser.add_argument("--report", default=Path("tools/reports/acore_npc_corrections.md"), type=Path)
+    parser.add_argument(
+        "--wdm-root",
+        default=DEFAULT_WDM_ROOT,
+        type=Path,
+        help="WDM export root containing DungeonMap.csv and DungeonMapChunk.csv.",
+    )
     parser.add_argument("--include-modules", action="store_true", help="Also scan SQL under AzerothCore modules/. This can be slow.")
     parser.add_argument("--creature-sql", type=Path, help="Optional final creature table SQL export to use instead of AzerothCore source creature.sql.")
     parser.add_argument(
@@ -1661,6 +1795,7 @@ def main():
         args.creature_sql,
         args.creature_multispawn_sql,
         args.map_difficulty_dbc,
+        args.wdm_root,
     )
     candidate_spawn_ids = {
         npc_id
@@ -1669,7 +1804,7 @@ def main():
         and normalize_value("spawns", acore_npcs.get(npc_id, {}).get("spawns")) == ()
     }
     preserve_spawn_ids = collect_quest_referenced_ids(repo_root, candidate_spawn_ids)
-    zone_maps = parse_zone_maps(repo_root)
+    zone_maps = parse_zone_maps(repo_root, args.wdm_root)
     corrections = find_differences(
         questie_npcs,
         acore_npcs,
@@ -1678,7 +1813,7 @@ def main():
         preserve_spawn_ids,
         wdm_instance_zone_ids(zone_maps),
     )
-    zone_names = parse_zone_id_names(repo_root)
+    zone_names = parse_zone_id_names(repo_root, zone_maps)
 
     write_corrections_module(corrections, repo_root / args.output, zone_names)
     write_report(corrections, skipped_mutations, set(args.fields), repo_root / args.report)
