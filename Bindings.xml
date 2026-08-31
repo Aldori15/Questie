@@ -2,4 +2,7 @@
     <Binding name="QUESTIE_TOGGLE_JOURNEY" header="QUESTIE">
         QuestieLoader:ImportModule("QuestieJourney"):ToggleJourneyWindow()
     </Binding>
+    <Binding name="QUESTIE_TOGGLE_TRACKER" header="QUESTIE">
+        QuestieLoader:ImportModule("QuestieTracker").ToggleTracker()
+    </Binding>
 </Bindings>

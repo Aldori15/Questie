@@ -177,6 +177,18 @@ local trackerUILocales = {
         ["esES"] = "Ctrl + clic izquierdo o clic derecho en el título de una misión",
         ["frFR"] = "Ctrl + Clic gauche ou clic droit sur un titre de quête",
     },
+    ["Toggle Questie Tracker"] = {
+        ["enUS"] = true,
+        ["deDE"] = "Questie-Tracker zeigen/verstecken",
+        ["esES"] = "Mostrar/ocultar el rastreador de Questie",
+        ["esMX"] = "Mostrar/ocultar el rastreador de Questie",
+        ["frFR"] = "Afficher/cacher le suivi de quêtes de Questie",
+        ["koKR"] = "Questie 추적기 표시",
+        ["ptBR"] = "Mostrar/ocultar o rastreador do Questie",
+        ["ruRU"] = "Включить трекер Questie",
+        ["zhCN"] = "切换Questie追踪器",
+        ["zhTW"] = "切換Questie追蹤器",
+    },
     ---------------------------------------------------------
     -- Quest/Achievement Right Click Menu
     ["Focus Quest"] = {
