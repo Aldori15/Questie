@@ -84,7 +84,7 @@ end
 _GetCategorySelectText = function(categoryId)
     local questCategoryKeys = QuestieJourney.questCategoryKeys
     if categoryId == questCategoryKeys.DUNGEONS then
-        return l10n('Select Dungeon')
+        return l10n('Select Instance')
     elseif categoryId == questCategoryKeys.BATTLEGROUNDS then
         return l10n('Select Battleground')
     elseif categoryId == questCategoryKeys.EVENTS then
@@ -286,7 +286,7 @@ _HandleContinentSelection = function(key, _)
         _QuestieJourney.questsByZone:ManageTree(treegroup, zoneTree)
         zoneDropdown.frame:Hide()
     elseif (key.value == QuestieJourney.questCategoryKeys.DUNGEONS) then
-        local text = l10n('Select Dungeon')
+        local text = l10n('Select Instance')
         local dungeonZones = QuestieJourney.zones[QuestieJourney.questCategoryKeys.DUNGEONS] or {}
         local sortedDungeons = QuestieJourneyUtils:GetSortedZoneKeys(dungeonZones)
         zoneDropdown:SetList(dungeonZones, sortedDungeons)
