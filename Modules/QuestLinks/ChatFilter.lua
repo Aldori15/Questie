@@ -5,7 +5,11 @@ local QuestieLink = QuestieLoader:ImportModule("QuestieLink")
 ---@type QuestieDB
 local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 
+local GetQuestLogIndexByID = QuestieCompat.GetQuestLogIndexByID
+local GetQuestObjectives = QuestieCompat.C_QuestLog.GetQuestObjectives
+local HaveQuestData = QuestieCompat.HaveQuestData
 local strfind = string.find
+local prefetchedQuestIds = {}
 
 -- Compatibility: 2.5.5+ uses ChatFrameUtil.AddMessageEventFilter instead of ChatFrame_AddMessageEventFilter
 local ChatFrameAddMessageEventFilter = ChatFrameUtil and ChatFrameUtil.AddMessageEventFilter or ChatFrame_AddMessageEventFilter
@@ -15,71 +19,120 @@ local ChatFrameAddMessageEventFilter = ChatFrameUtil and ChatFrameUtil.AddMessag
 -- The Hyperlink hook is located in Link.lua
 ---------------------------------------------------------------------------------------------------
 
+local function escapeMagic(toEscape)
+    return (toEscape
+        :gsub("%%", "%%%%")
+        :gsub("^%^", "%%^")
+        :gsub("%$$", "%%$")
+        :gsub("%(", "%%(")
+        :gsub("%)", "%%)")
+        :gsub("%.", "%%.")
+        :gsub("%[", "%%[")
+        :gsub("%]", "%%]")
+        :gsub("%*", "%%*")
+        :gsub("%+", "%%+")
+        :gsub("%-", "%%-")
+        :gsub("%?", "%%?")
+        :gsub("%|", "%%|")
+    )
+end
+
+-- 3.3.5 native quest links use quest:questId:level. The level can be -1 for scaling quests.
+local nativeQuestPattern = "(|c%x%x%x%x%x%x%x%x|Hquest:(%d+):%-?%d+|h%[(.-)%]|h|r)"
+
+local function getQuestHyperLink(questId, sender)
+    if not (questId and QuestieDB.QuestPointers[questId]) then
+        return nil
+    end
+
+    if (not prefetchedQuestIds[questId]) and (not HaveQuestData(questId)) then
+        local questLogIndex = GetQuestLogIndexByID(questId)
+        if questLogIndex then
+            prefetchedQuestIds[questId] = true
+            GetQuestObjectives(questId, questLogIndex)
+        end
+    end
+
+    return QuestieLink:GetQuestHyperLink(questId, sender)
+end
+
+local function processQuestLink(message, questId, sender, searchPattern)
+    local questLink = getQuestHyperLink(questId, sender)
+    if not questLink then
+        return message
+    end
+
+    return string.gsub(message, searchPattern, function()
+        return questLink
+    end)
+end
+
+-- Protect native links while the legacy bracketed-link pass runs. Otherwise a converted native
+-- link whose display text includes a quest ID could be matched again and become a nested hyperlink.
+local function protectNativeQuestLinks(message, sender)
+    local replacements = {}
+    local protectedMessage = string.gsub(message, nativeQuestPattern, function(nativeLink, questIdString)
+        local questLink = getQuestHyperLink(tonumber(questIdString), sender) or nativeLink
+        replacements[#replacements + 1] = questLink
+        return "\001QuestieNative" .. #replacements .. "\002"
+    end)
+    return protectedMessage, replacements
+end
+
+local function restoreNativeQuestLinks(message, replacements)
+    return string.gsub(message, "\001QuestieNative(%d+)\002", function(index)
+        return replacements[tonumber(index)]
+    end)
+end
+
 --- Message Event Filter which intercepts incoming linked quests and replaces them with Hyperlinks
 ChatFilter.Filter = function(chatFrame, _, msg, playerName, languageName, channelName, playerName2, specialFlags, zoneChannelID, channelIndex, channelBaseName, unused, lineID, senderGUID, bnSenderID, ...)
     if (not Questie.started) then
         return
     end
 
+    if not (chatFrame and ((chatFrame.historyBuffer and #(chatFrame.historyBuffer.elements) > 0) or QuestieCompat.Is335) and chatFrame ~= _G.ChatFrame2) then
+        return
+    end
+
+    local originalMessage = msg
+    local sender = senderGUID or bnSenderID or "0"
+    local nativeLinkReplacements
+    msg, nativeLinkReplacements = protectNativeQuestLinks(msg, sender)
+
     if strfind(msg, "%[(..-) %((%d+)%)%]") then
-        if chatFrame and ((chatFrame.historyBuffer and #(chatFrame.historyBuffer.elements) > 0) or QuestieCompat.Is335) and chatFrame ~= _G.ChatFrame2 then
-            for k in string.gmatch(msg, "%[%[?%d?..?%]?..-%]") do
-                local sqid, questId, questLevel, questName
+        for bracketedLink in string.gmatch(msg, "%[%[?%d?..?%]?..-%]") do
+            local sqid, questId, questLevel, questName
 
-                questName, sqid = string.match(k, "%[(..-) %((%d+)%)%]")
+            questName, sqid = string.match(bracketedLink, "%[(..-) %((%d+)%)%]")
 
-                if questName and sqid then
-                    questId = tonumber(sqid)
+            if questName and sqid then
+                questId = tonumber(sqid)
 
-                    if strfind(questName, "(%[%d+.-%]) ") ~= nil then
-                        questLevel, questName = string.match(questName, "%[(..-)%] (.+)")
-                    end
-                end
-
-                if questId and QuestieDB.QuestPointers[questId] then
-                    if (not senderGUID) then
-                        playerName = BNGetFriendInfoByID(bnSenderID)
-                        senderGUID = bnSenderID
-                    end
-
-                    local questLink = QuestieLink:GetQuestHyperLink(questId, senderGUID)
-
-                    -- Escape the magic characters
-                    local function escapeMagic(toEsc)
-                        return (toEsc
-                                :gsub("%%", "%%%%")
-                                :gsub("^%^", "%%^")
-                                :gsub("%$$", "%%$")
-                                :gsub("%(", "%%(")
-                                :gsub("%)", "%%)")
-                                :gsub("%.", "%%.")
-                                :gsub("%[", "%%[")
-                                :gsub("%]", "%%]")
-                                :gsub("%*", "%%*")
-                                :gsub("%+", "%%+")
-                                :gsub("%-", "%%-")
-                                :gsub("%?", "%%?")
-                                :gsub("%|", "%%|")
-                        )
-                    end
-
-                    if questName then
-                        questName = escapeMagic(questName)
-                    end
-
-                    if questLevel then
-                        questLevel = escapeMagic(questLevel)
-                    end
-
-                    if questLevel then
-                        msg = string.gsub(msg, "%[%["..questLevel.."%] "..questName.." %("..sqid.."%)%]", questLink)
-                    else
-                        msg = string.gsub(msg, "%["..questName.." %("..sqid.."%)%]", questLink)
-                    end
+                if strfind(questName, "(%[%d+.-%]) ") ~= nil then
+                    questLevel, questName = string.match(questName, "%[(..-)%] (.+)")
                 end
             end
-            return false, msg, playerName, languageName, channelName, playerName2, specialFlags, zoneChannelID, channelIndex, channelBaseName, unused, lineID, senderGUID, bnSenderID, ...
+
+            if questId and QuestieDB.QuestPointers[questId] then
+                questName = questName and escapeMagic(questName)
+                questLevel = questLevel and escapeMagic(questLevel)
+
+                local searchPattern
+                if questLevel then
+                    searchPattern = "%[%[" .. questLevel .. "%] " .. questName .. " %(" .. sqid .. "%)%]"
+                else
+                    searchPattern = "%[" .. questName .. " %(" .. sqid .. "%)%]"
+                end
+
+                msg = processQuestLink(msg, questId, sender, searchPattern)
+            end
         end
+    end
+
+    msg = restoreNativeQuestLinks(msg, nativeLinkReplacements)
+    if msg ~= originalMessage then
+        return false, msg, playerName, languageName, channelName, playerName2, specialFlags, zoneChannelID, channelIndex, channelBaseName, unused, lineID, senderGUID, bnSenderID, ...
     end
 end
 

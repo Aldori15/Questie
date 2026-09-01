@@ -233,6 +233,32 @@ function QuestieCompat:GetQuestLinkStringById(questId)
     return QuestieCompat:GetQuestLinkString(questLevel, questName, questId)
 end
 
+local function shouldInsertQuestIdForChatCommand()
+    local activeWindow = ChatEdit_GetActiveWindow()
+    if not activeWindow then
+        return false
+    end
+
+    local text = activeWindow:GetText()
+    return type(text) == "string" and string.match(text, "^%s*[./!]") ~= nil
+end
+
+function QuestieCompat:GetQuestInsertString(questLevel, questName, questId)
+    if shouldInsertQuestIdForChatCommand() then
+        return QuestieCompat.GetQuestLink(questId) or tostring(questId)
+    end
+
+    return QuestieCompat:GetQuestLinkString(questLevel, questName, questId)
+end
+
+function QuestieCompat:GetQuestInsertStringById(questId)
+    if shouldInsertQuestIdForChatCommand() then
+        return QuestieCompat.GetQuestLink(questId) or tostring(questId)
+    end
+
+    return QuestieCompat:GetQuestLinkStringById(questId)
+end
+
 -- https://wowpedia.fandom.com/wiki/API_GetQuestLogRewardMoney
 -- Returns the amount of money rewarded for a quest.
 function QuestieCompat.GetQuestLogRewardMoney(questID)

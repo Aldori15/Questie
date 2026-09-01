@@ -833,6 +833,8 @@ function QuestieCompat:ADDON_LOADED(event, addon)
     Sounds.GetSelectedSoundFile = QuestieCompat.GetSelectedSoundFile
 	QuestieLink.GetQuestLinkString = rawget(QuestieLink, "GetQuestLinkString") or QuestieCompat.GetQuestLinkString
 	QuestieLink.GetQuestLinkStringById = rawget(QuestieLink, "GetQuestLinkStringById") or QuestieCompat.GetQuestLinkStringById
+	QuestieLink.GetQuestInsertString = rawget(QuestieLink, "GetQuestInsertString") or QuestieCompat.GetQuestInsertString
+	QuestieLink.GetQuestInsertStringById = rawget(QuestieLink, "GetQuestInsertStringById") or QuestieCompat.GetQuestInsertStringById
 	QuestieLink.GetQuestHyperLink = rawget(QuestieLink, "GetQuestHyperLink") or QuestieCompat.GetQuestLinkStringById
 
     QuestieCompat.RegisterEventCompatibilityHooks()

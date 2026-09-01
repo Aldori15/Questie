@@ -21,7 +21,6 @@ local ZoneDB = QuestieLoader:ImportModule("ZoneDB")
 local QuestieReputation = QuestieLoader:ImportModule("QuestieReputation")
 
 --- COMPATIBILITY ---
-local GetQuestLink = QuestieCompat.GetQuestLink
 local CALENDAR_WEEKDAY_NAMES = QuestieCompat.CALENDAR_WEEKDAY_NAMES
 local CALENDAR_FULLDATE_MONTH_NAMES = QuestieCompat.CALENDAR_FULLDATE_MONTH_NAMES
 local HaveQuestData = QuestieCompat.HaveQuestData
@@ -37,7 +36,6 @@ local _AddQuestTitle, _AddQuestStatus, _AddQuestDescription, _AddQuestRequiremen
 local _AddTooltipLine, _AddColoredTooltipLine, _GetObjectiveText
 local _GetQuestIdFromLink
 local _ExtractQuestieLink, _ShowQuestieChatTooltip, _HideQuestieChatTooltip, _HookChatFrameHyperlinkScripts
-local _ShouldInsertQuestIdForChatCommand
 
 
 local oldItemSetHyperlink = ItemRefTooltip.SetHyperlink
@@ -45,8 +43,15 @@ local oldGameTooltipSetHyperlink = GameTooltip.SetHyperlink
 --- Override of the default SetHyperlink function to filter Questie links
 ---@param link string
 function ItemRefTooltip:SetHyperlink(link, ...)
-    local questiePrefix, questId = string.match(link, "(questie):(%d+):")
-    local isQuestieLink = questiePrefix == "questie"
+    local questieQuestId = string.match(link, "questie:(%d+):")
+    local nativeQuestId = string.match(link, "quest:(%d+):")
+    local questId = tonumber(questieQuestId or nativeQuestId)
+
+    if (not questId) or (not QuestieDB.GetQuest(questId)) then
+        QuestieLink.lastItemRefTooltip = ""
+        oldItemSetHyperlink(self, link, ...)
+        return
+    end
 
     if (not ItemRefTooltip:IsShown()) then
         QuestieLink.lastItemRefTooltip = ""
@@ -54,26 +59,27 @@ function ItemRefTooltip:SetHyperlink(link, ...)
         QuestieLink.lastItemRefTooltip = QuestieLink.lastItemRefTooltip or link
     end
 
-    if isQuestieLink and questId then
-        Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieTooltips:ItemRefTooltip] SetHyperlink:", link)
-        ShowUIPanel(ItemRefTooltip)
-        ItemRefTooltip:SetOwner(UIParent, "ANCHOR_PRESERVE");
-        QuestieLink:CreateQuestTooltip(link, self)
-        ItemRefTooltip:Show()
-
-        local tooltipText = ItemRefTooltipTextLeft1:GetText()
-        if QuestieLink.lastItemRefTooltip == tooltipText then
-            ItemRefTooltip:Hide()
-            QuestieLink.lastItemRefTooltip = ""
-            return
+    Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieTooltips:ItemRefTooltip] SetHyperlink:", link)
+    ItemRefTooltip:SetOwner(UIParent, "ANCHOR_PRESERVE")
+    if not QuestieLink:CreateQuestTooltip(link, self) then
+        QuestieLink.lastItemRefTooltip = ""
+        if nativeQuestId then
+            oldItemSetHyperlink(self, link, ...)
         end
-
-        QuestieLink.lastItemRefTooltip = tooltipText
         return
-    else
-        -- Make sure to call the default function so everything that is not Questie can be handled (item links e.g.)
-        oldItemSetHyperlink(self, link, ...)
     end
+
+    ShowUIPanel(ItemRefTooltip)
+    ItemRefTooltip:Show()
+
+    local tooltipText = ItemRefTooltipTextLeft1:GetText()
+    if QuestieLink.lastItemRefTooltip == tooltipText then
+        ItemRefTooltip:Hide()
+        QuestieLink.lastItemRefTooltip = ""
+        return
+    end
+
+    QuestieLink.lastItemRefTooltip = tooltipText
 end
 
 ---@return string
@@ -86,45 +92,17 @@ end
 
 ---@return string
 function QuestieLink:GetQuestLinkString(questLevel, questName, questId)
-    return "[["..tostring(questLevel).."] "..questName.." ("..tostring(questId)..")]"
-end
-
-_ShouldInsertQuestIdForChatCommand = function()
-    local activeWindow = ChatEdit_GetActiveWindow()
-    if (not activeWindow) then
-        return false
-    end
-
-    local text = activeWindow:GetText()
-    return type(text) == "string" and string.match(text, "^%s*[./!]") ~= nil
+    return QuestieCompat:GetQuestLinkString(questLevel, questName, questId)
 end
 
 ---@return string
 function QuestieLink:GetQuestInsertString(questLevel, questName, questId)
-    if _ShouldInsertQuestIdForChatCommand() then
-        local nativeQuestLink = GetQuestLink(questId)
-        if nativeQuestLink then
-            return nativeQuestLink
-        end
-
-        return tostring(questId)
-    end
-
-    return QuestieLink:GetQuestLinkString(questLevel, questName, questId)
+    return QuestieCompat:GetQuestInsertString(questLevel, questName, questId)
 end
 
 ---@return string
 function QuestieLink:GetQuestInsertStringById(questId)
-    if _ShouldInsertQuestIdForChatCommand() then
-        local nativeQuestLink = GetQuestLink(questId)
-        if nativeQuestLink then
-            return nativeQuestLink
-        end
-
-        return tostring(questId)
-    end
-
-    return QuestieLink:GetQuestLinkStringById(questId)
+    return QuestieCompat:GetQuestInsertStringById(questId)
 end
 
 ---@return string
@@ -145,7 +123,7 @@ _GetQuestIdFromLink = function(link)
         return nil
     end
 
-    local questIdStr = string.match(link, "questie:(%d+)")
+    local questIdStr = string.match(link, "questie:(%d+)") or string.match(link, "quest:(%d+):")
     if questIdStr then
         return tonumber(questIdStr)
     end
