@@ -71,6 +71,8 @@ local QuestieComms = QuestieLoader:ImportModule("QuestieComms");
 local CommsVisibility = QuestieLoader:ImportModule("CommsVisibility")
 ---@type DailyQuestComms
 local DailyQuestComms = QuestieLoader:ImportModule("DailyQuestComms")
+---@type QuestiePlayerbots
+local QuestiePlayerbots = QuestieLoader:ImportModule("QuestiePlayerbots")
 ---@type QuestieOptions
 local QuestieOptions = QuestieLoader:ImportModule("QuestieOptions");
 ---@type QuestieCoords
@@ -362,6 +364,7 @@ QuestieInit.Stages[3] = function() -- run as a coroutine
     CommsVisibility:Initialize()
     DailyQuestComms.Initialize()
     QuestieComms:Initialize()
+    QuestiePlayerbots:Initialize()
     CommsVisibility:ScheduleSnapshot("INITIALIZE")
     coYield()
 
