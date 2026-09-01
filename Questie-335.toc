@@ -1,12 +1,12 @@
 ## Interface: 30300
-## Title: Questie-335|cFF00FF00 v9.8.4-335|r
+## Title: Questie-335|cFF00FF00 v9.8.5-335|r
 ## Author: Aldori + Original Questie Team
 ## Notes: A standalone Classic QuestHelper backported to 335 and sourced using AzerothCore data.
 ## Notes-esMX: Ayundante de misión
 ## Notes-esES: Ayundante de misión
 ## Notes-ptBR: Ajudante de missão
 ## Notes-frFR: Assistant de quête
-## Version: 9.8.4-335
+## Version: 9.8.5-335
 ## RequiredDeps:
 ## OptionalDeps: Ace3, CallbackHandler-1.0, HereBeDragons, LibDataBroker-1.1, LibDBIcon-1.0, LibSharedMedia-3.0, LibStub, LibUIDropDownMenu
 ## SavedVariables: QuestieConfig, QuestieProfilerEnabled
