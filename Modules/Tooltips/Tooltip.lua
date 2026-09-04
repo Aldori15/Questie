@@ -620,7 +620,7 @@ function QuestieTooltips:GetTooltip(key)
                 end
 
                 if objectiveInfo.status == "F" then
-                    objectiveInfo.text = objectiveInfo.text .. " |cFFFF4444[FAILED]|r"
+                    objectiveInfo.text = objectiveInfo.text .. " |cFFFF4444[" .. l10n("Failed") .. "]|r"
                 end
 
                 -- We want the player to be on top.
