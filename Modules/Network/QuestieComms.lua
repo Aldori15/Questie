@@ -835,6 +835,12 @@ function QuestieComms:InsertQuestDataPacket(questPacket, playerName)
             if not QuestieComms.remoteQuestLogs[questPacket.id][playerName] then
                 QuestieComms.remoteQuestLogs[questPacket.id][playerName] = {}
             end
+
+            local questStatus = questPacket.status
+            if questStatus ~= "I" and questStatus ~= "C" and questStatus ~= "F" then
+                questStatus = nil
+            end
+
             local objectives = {}
             for objectiveIndex, objectiveData in pairs(questPacket.objectives) do
                 --This is to check that all the data we require exist.
@@ -845,6 +851,7 @@ function QuestieComms:InsertQuestDataPacket(questPacket, playerName)
                     finished = objectiveData.fin,
                     fulfilled = objectiveData.ful,
                     required = objectiveData.req,
+                    status = questStatus,
                 }
             end
             QuestieComms.remoteQuestLogs[questPacket.id][playerName] = objectives;

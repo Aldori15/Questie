@@ -279,6 +279,7 @@ end
 local function BuildQuestieQuestPacket(questId, questState)
     local questPacket = {
         id = questId,
+        status = questState.status,
         objectives = {},
     }
 

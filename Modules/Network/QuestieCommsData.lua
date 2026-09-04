@@ -69,6 +69,7 @@ function QuestieComms.data:GetTooltip(tooltipKey)
                 tooltipData[questId][playerName][objectiveIndex].text = oName
                 tooltipData[questId][playerName][objectiveIndex].fulfilled = objective.fulfilled;
                 tooltipData[questId][playerName][objectiveIndex].required = objective.required;
+                tooltipData[questId][playerName][objectiveIndex].status = objective.status;
             end
         end
     end

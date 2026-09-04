@@ -233,12 +233,12 @@ local function _DrawQuest(questId, generation)
     end
 
     -- An objective index is drawn if at least one online party member still needs it. Offline
-    -- members are ignored so their icons disappear until they reconnect.
+    -- members and failed quests are ignored so their objective icons are not actionable.
     local neededIndices = {}
     for playerName, objectives in pairs(players) do
         if _IsPlayerOnline(playerName) and CommsVisibility:ShouldShowPartyObjective(playerName, questId) then
             for objectiveIndex, objective in pairs(objectives) do
-                if not objective.finished then
+                if objective.status ~= "F" and not objective.finished then
                     neededIndices[objectiveIndex] = objective
                 end
             end

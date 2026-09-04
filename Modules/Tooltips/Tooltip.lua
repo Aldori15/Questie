@@ -418,7 +418,7 @@ local function _FetchTooltipsForGroupMembers(key, tooltipData)
                             text = "   " .. color .. objective.text;
                         end
 
-                        tooltipData[questId].objectivesText[objectiveIndex][playerName] = { ["color"] = color, ["text"] = text };
+                        tooltipData[questId].objectivesText[objectiveIndex][playerName] = { ["color"] = color, ["text"] = text, ["status"] = objective.status };
                     end
                 end
             end
@@ -618,6 +618,11 @@ function QuestieTooltips:GetTooltip(key)
                 elseif playerColor and objectivePlayerName ~= playerName then -- Add other player name to their objective
                     objectiveInfo.text = objectiveInfo.text .. " (" .. playerColor .. objectivePlayerName .. "|r" .. objectiveInfo.color .. ")|r" .. playerType
                 end
+
+                if objectiveInfo.status == "F" then
+                    objectiveInfo.text = objectiveInfo.text .. " |cFFFF4444[FAILED]|r"
+                end
+
                 -- We want the player to be on top.
                 if objectivePlayerName == playerName then
                     tinsert(tempObjectives, 1, objectiveInfo.text);
