@@ -289,7 +289,7 @@ function _QuestieComms:BroadcastQuestUpdate(questId) -- broadcast quest update t
 end
 
 -- Removes the quest from everyones external quest-log
-function _QuestieComms:BroadcastQuestRemove(questId) -- broadcast quest update to group or raid
+function _QuestieComms:BroadcastQuestRemove(questId, failed) -- broadcast quest update to group or raid
     recentQuestUpdates[questId] = nil
 
     local partyType = QuestiePlayer:GetGroupType()
@@ -299,6 +299,7 @@ function _QuestieComms:BroadcastQuestRemove(questId) -- broadcast quest update t
         local questPacket = _QuestieComms:CreatePacket(_QuestieComms.QC_ID_BROADCAST_QUEST_REMOVE);
 
         questPacket.data.id = questId;
+        questPacket.data.failed = failed == true and true or nil;
 
         --This is important!
         questPacket.data.priority = "ALERT";
@@ -399,7 +400,7 @@ end
 
 
 -- temporary function: refactor in 6.0.1
-function QuestieComms:InsertQuestDataPacketV2_noclass_RenameMe(questPacket, playerName, offset, disableCompleteQuests)
+function QuestieComms:InsertQuestDataPacketV2_noclass_RenameMe(questPacket, playerName, offset, disableCompleteQuests, status)
     --We don't want to insert our own quest data.
     local allDone = true
     if questPacket then
@@ -427,6 +428,7 @@ function QuestieComms:InsertQuestDataPacketV2_noclass_RenameMe(questPacket, play
                     fulfilled = fulfilled,
                     required = required,
                     finished = fulfilled == required,
+                    status = status,
                 }
 
                 allDone = allDone and objectives[objectiveIndex].finished
@@ -712,6 +714,18 @@ function _QuestieComms:BroadcastQuestLogV2(eventName, sendMode, targetPlayer) --
     if partyType then
         local sorted = _BuildSortedFullSyncEntries(partyType)
 
+        local failedQuestIds = {}
+        for _, entry in pairs(sorted) do
+            local questData = QuestLogCache.questLog_DO_NOT_MODIFY[entry.questId]
+            if questData and questData.isComplete == -1 then
+                tinsert(failedQuestIds, entry.questId)
+            end
+        end
+
+        if not next(failedQuestIds) then
+            failedQuestIds = nil
+        end
+
         local rawQuestList = {}
         local blocks = {}
         local entryCount = 0
@@ -722,7 +736,8 @@ function _QuestieComms:BroadcastQuestLogV2(eventName, sendMode, targetPlayer) --
 
             offset = QuestieComms:PopulateQuestDataPacketV2_noclass_renameme(entry.questId, rawQuestList, offset)
 
-            if string.len(QuestieSerializer:Serialize(rawQuestList, "b89")) > 200 then--extra space for packet metadata and CTL stuff
+            local sizeProbe = failedQuestIds and {rawQuestList, failedQuestIds} or rawQuestList
+            if string.len(QuestieSerializer:Serialize(sizeProbe, "b89")) > 200 then--extra space for packet metadata and CTL stuff
                 rawQuestList[1] = entryCount
                 tinsert(blocks, rawQuestList)
                 rawQuestList = {}
@@ -739,6 +754,11 @@ function _QuestieComms:BroadcastQuestLogV2(eventName, sendMode, targetPlayer) --
                 -- send the block
                 local questPacket = _QuestieComms:CreatePacket(_QuestieComms.QC_ID_BROADCAST_FULL_QUESTLISTV2);
                 questPacket.data[1] = block;
+
+                if failedQuestIds then
+                    questPacket.data[2] = failedQuestIds;
+                end
+
                 if "WHISPER" == sendMode then
                     questPacket.data.writeMode = _QuestieComms.QC_WRITE_WHISPER
                     questPacket.data.target = targetPlayer
@@ -791,10 +811,12 @@ end
 ---@return QuestPacket
 function QuestieComms:CreateQuestDataPacket(questId)
     local questObject = QuestieDB.GetQuest(questId);
+    local questData = QuestLogCache.questLog_DO_NOT_MODIFY[questId]
 
     ---@class QuestPacket
     local quest = {
         id = questId,
+        status = questData and questData.isComplete == -1 and "F" or nil,
         objectives = {},
     }
 
@@ -897,6 +919,11 @@ _QuestieComms.packets = {
         local playerName = remoteQuestPacket.playerName;
         local questId = remoteQuestPacket.id;
 
+        if remoteQuestPacket.failed then
+            Questie.Debug(Questie.DEBUG_INFO, "[QuestieComms] Preserving failed quest:", questId, "for player:", playerName);
+            return
+        end
+
         if(QuestieComms.remoteQuestLogs[questId] and QuestieComms.remoteQuestLogs[questId][playerName]) then
             Questie.Debug(Questie.DEBUG_INFO, "[QuestieComms] Removed quest:", questId, "for player:", playerName);
             QuestieComms.remoteQuestLogs[questId][playerName] = nil;
@@ -959,10 +986,21 @@ _QuestieComms.packets = {
         end,
         read = function(self)
             Questie.Debug(Questie.DEBUG_INFO, "[QuestieComms] Received: QC_ID_REQUEST_FULL_QUESTLISTV2")
+
+            local failedQuests = {}
+            if self[2] then
+                for _, questId in pairs(self[2]) do
+                    failedQuests[questId] = true
+                end
+            end
+
             local offset = 2
             local count = self[1][1]
             for _= 1, count do
-                offset = QuestieComms:InsertQuestDataPacketV2_noclass_RenameMe(self[1], self.playerName, offset, false)
+                local questId = self[1][offset]
+                local status = questId and failedQuests[questId] and "F" or nil
+
+                offset = QuestieComms:InsertQuestDataPacketV2_noclass_RenameMe(self[1], self.playerName, offset, false, status)
             end
         end
     },

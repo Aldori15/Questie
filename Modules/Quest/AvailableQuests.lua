@@ -697,7 +697,7 @@ function AvailableQuests.RecreateFailedQuest(quest)
     _UnloadQuestFrames(questId, nil, nil, function()
         QuestieTooltips:RemoveQuest(questId)
         AvailableQuests.DrawAvailableQuest(quest)
-        Questie:SendMessage("QC_ID_BROADCAST_QUEST_REMOVE", questId)
+        Questie:SendMessage("QC_ID_BROADCAST_QUEST_REMOVE", questId, true)
     end)
 end
 

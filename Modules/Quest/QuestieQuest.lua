@@ -601,6 +601,8 @@ function QuestieQuest:UpdateQuest(questId)
             if Questie.db.char.collapsedQuests then
                 Questie.db.char.collapsedQuests[questId] = nil
             end
+
+            Questie:SendMessage("QC_ID_BROADCAST_QUEST_UPDATE", questId)
         elseif isComplete == 0 then
             -- Quest was somehow reset back to incomplete after being completed (quest.WasComplete == true).
             -- The "or" check looks for a sourceItemId then checks to see if it's NOT in the players bag.
