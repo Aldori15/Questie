@@ -153,7 +153,7 @@ local function BuildRelatedPlayerAreaIds(playerZone)
 end
 
 local function IsObjectSpawnInCurrentZone(spawns, playerZone)
-    if not spawns or playerZone == 0 then
+    if not spawns or not next(spawns) or playerZone == 0 then
         return true
     end
 
@@ -428,7 +428,8 @@ local function _FetchTooltipsForGroupMembers(key, tooltipData)
 end
 
 ---@param key string
-function QuestieTooltips:GetTooltip(key)
+---@param playerZone number? @Only used for object tooltips. 0 disables the zone filter.
+function QuestieTooltips:GetTooltip(key, playerZone)
     Questie.Debug(Questie.DEBUG_SPAM, "[QuestieTooltips:GetTooltip]", key)
     if (not key) then
         return nil
@@ -446,7 +447,11 @@ function QuestieTooltips:GetTooltip(key)
     if isObjectTooltip then
         local objectId = tonumber(key:sub(3))
         local spawns = QuestieDB.QueryObjectSingle(objectId, "spawns")
-        local playerZone = QuestiePlayer:GetCurrentZoneId()
+
+        if playerZone == nil then
+            playerZone = QuestiePlayer:GetCurrentZoneId()
+        end
+
         local objectIsInCurrentZone = IsObjectSpawnInCurrentZone(spawns, playerZone)
 
         if (not objectIsInCurrentZone) then

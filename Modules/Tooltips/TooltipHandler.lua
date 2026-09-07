@@ -130,6 +130,7 @@ function _QuestieTooltips:AddObjectDataToTooltip(name)
         local tooltipModified = false
         local lookup = l10n:GetObjectNameLookup(name)
         local count = type(lookup) == "table" and table.getn(lookup) or (lookup and 1 or 0)
+        local zoneFilter = count == 1 and 0 or nil
 
         if Questie.db.profile.enableTooltipsObjectID == true and count ~= 0 then
             if count == 1 then
@@ -142,7 +143,7 @@ function _QuestieTooltips:AddObjectDataToTooltip(name)
 
         local alreadyAddedObjectiveLines = {}
         local function _AddTooltipData(gameObjectId)
-            local tooltipData = QuestieTooltips:GetTooltip("o_" .. gameObjectId);
+            local tooltipData = QuestieTooltips:GetTooltip("o_" .. gameObjectId, zoneFilter)
 
             if type(gameObjectId) == "number" and tooltipData then
                 if (not titleAdded) then
