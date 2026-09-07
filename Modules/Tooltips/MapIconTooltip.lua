@@ -403,7 +403,9 @@ function MapIconTooltip:Show()
                             if (not nextNextQuestId) or nextNextQuestId <= 0 then
                                 break
                             end
+
                             nextQuestId = nextNextQuestId
+                            _, _, returnReason = QuestieDB.IsDoableVerbose(nextQuestId, false, true, true)
                         end
                     end
                 end
