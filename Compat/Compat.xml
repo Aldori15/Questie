@@ -11,6 +11,7 @@
     <Script file="Nameplate.lua"/>
     <Script file="Events.lua"/>
     <Script file="UiMapData.lua"/>
+    <Script file="ExplorationMasks.lua"/>
     <Script file="Map.lua"/>
     <Script file="HBD.lua"/>
     <Script file="UI.lua"/>

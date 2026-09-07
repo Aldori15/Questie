@@ -5,6 +5,19 @@ local QuestEventHandler = QuestieLoader:ImportModule("QuestEventHandler")
 
 local _EventHandler = QuestieEventHandler.private
 
+local explorationRefreshPending = false
+local function QueueExplorationRefresh()
+    if explorationRefreshPending or not Questie.db.profile.hideUnexploredMapIcons then return end
+    explorationRefreshPending = true
+    -- Zone text can change before the server's exploration update reaches the client.
+    QuestieCompat.C_Timer.After(0.5, function()
+        explorationRefreshPending = false
+        if Questie.db.profile.hideUnexploredMapIcons then
+            _EventHandler:MapExplorationUpdated()
+        end
+    end)
+end
+
 function QuestieCompat.QuestieEventHandler_RegisterLateEvents()
     -- In fullscreen mode, WorldMap intercepts keyboard input,
     -- preventing the MODIFIER_STATE_CHANGED event
@@ -25,6 +38,9 @@ function QuestieCompat.QuestieEventHandler_RegisterLateEvents()
     end
 
     Questie:UnregisterEvent("MAP_EXPLORATION_UPDATED") -- https://wowpedia.fandom.com/wiki/MAP_EXPLORATION_UPDATED
+    Questie:RegisterEvent("ZONE_CHANGED", QueueExplorationRefresh)
+    Questie:RegisterEvent("ZONE_CHANGED_INDOORS", QueueExplorationRefresh)
+    Questie:RegisterEvent("ZONE_CHANGED_NEW_AREA", QueueExplorationRefresh)
 
     -- Party join event for QuestieComms, Use bucket to hinder this from spamming (Ex someone using a raid invite addon etc)
     Questie:UnregisterEvent("GROUP_ROSTER_UPDATE") -- https://wowpedia.fandom.com/wiki/GROUP_ROSTER_UPDATE
@@ -41,6 +57,15 @@ function QuestieCompat.QuestieEventHandler_RegisterLateEvents()
 end
 
 function QuestieCompat.RegisterEventCompatibilityHooks()
+    local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
+    local exploredPattern = QuestieLib:SanitizePattern(ERR_ZONE_EXPLORED)
+    local exploredXPPattern = QuestieLib:SanitizePattern(ERR_ZONE_EXPLORED_XP)
+    -- Also refresh on the actual discovery message (including discoveries without XP).
+    hooksecurefunc(QuestieCompat, "UiInfoMessage", function(event, message)
+        if type(message) == "string" and (message:match(exploredPattern) or message:match(exploredXPPattern)) then
+            QueueExplorationRefresh()
+        end
+    end)
     QuestieEventHandler.private.UiInfoMessage = QuestieCompat.UiInfoMessage
     hooksecurefunc(QuestieEventHandler, "RegisterLateEvents", QuestieCompat.QuestieEventHandler_RegisterLateEvents)
     hooksecurefunc(QuestEventHandler, "RegisterEvents", QuestieCompat.QuestEventHandler_RegisterEvents)

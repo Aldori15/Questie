@@ -657,9 +657,11 @@ function QuestieCompat.QuestieOptions_Initialize()
         StaticPopup_Show("QUESTIE_RELOAD")
     end
 
-    -- disable settings for not implemented functionality
-    Questie.db.profile.hideUnexploredMapIcons = false
-    optionsTable.args.icons_tab.args.map_settings_group.args.hideUnexploredMapIconsToggle.disabled = true
+    optionsTable.args.icons_tab.args.map_settings_group.args.hideUnexploredMapIconsToggle.set = function(info, value)
+        Questie.db.profile.hideUnexploredMapIcons = value
+        QuestieCompat.ClearExplorationCache()
+        QuestieQuest:RefreshQuestIconVisibility()
+    end
 
     -- 3.3.5 section
     optionsTable.args.advanced_tab.args.compat_header = {
