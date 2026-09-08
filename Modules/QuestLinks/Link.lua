@@ -43,6 +43,12 @@ local oldGameTooltipSetHyperlink = GameTooltip.SetHyperlink
 --- Override of the default SetHyperlink function to filter Questie links
 ---@param link string
 function ItemRefTooltip:SetHyperlink(link, ...)
+    if (not Questie.started) then
+        QuestieLink.lastItemRefTooltip = ""
+        oldItemSetHyperlink(self, link, ...)
+        return
+    end
+
     local questieQuestId = string.match(link, "questie:(%d+):")
     local nativeQuestId = string.match(link, "quest:(%d+):")
     local questId = tonumber(questieQuestId or nativeQuestId)
@@ -552,6 +558,10 @@ _AddPlayerQuestProgress = function(tooltip, quest, starterName, starterZoneName,
 end
 
 hooksecurefunc("ChatFrame_OnHyperlinkShow", function(...)
+    if (not Questie.started) then
+        return
+    end
+
     local _, link, _, button = ...
     if (IsShiftKeyDown() and ChatEdit_GetActiveWindow() and button == "LeftButton") then
         local linkType, questId, _ = string.split(":", link)
