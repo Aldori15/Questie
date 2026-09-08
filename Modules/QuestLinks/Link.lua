@@ -29,7 +29,8 @@ local GetQuestLogIndexByID = QuestieCompat.GetQuestLogIndexByID
 local GetSpellName = QuestieCompat.GetSpellName
 local strfind = string.find
 
-QuestieLink.lastItemRefTooltip = ""
+---@type QuestId?
+local lastItemRefQuestId
 
 -- Forward declaration
 local _AddQuestTitle, _AddQuestStatus, _AddQuestDescription, _AddQuestRequirements, _AddDungeonInfo, _GetQuestStarter, _GetQuestFinisher, _AddPlayerQuestProgress
@@ -44,7 +45,7 @@ local oldGameTooltipSetHyperlink = GameTooltip.SetHyperlink
 ---@param link string
 function ItemRefTooltip:SetHyperlink(link, ...)
     if (not Questie.started) then
-        QuestieLink.lastItemRefTooltip = ""
+        lastItemRefQuestId = nil
         oldItemSetHyperlink(self, link, ...)
         return
     end
@@ -54,21 +55,19 @@ function ItemRefTooltip:SetHyperlink(link, ...)
     local questId = tonumber(questieQuestId or nativeQuestId)
 
     if (not questId) or (not QuestieDB.GetQuest(questId)) then
-        QuestieLink.lastItemRefTooltip = ""
+        lastItemRefQuestId = nil
         oldItemSetHyperlink(self, link, ...)
         return
     end
 
     if (not ItemRefTooltip:IsShown()) then
-        QuestieLink.lastItemRefTooltip = ""
-    else
-        QuestieLink.lastItemRefTooltip = QuestieLink.lastItemRefTooltip or link
+        lastItemRefQuestId = nil
     end
 
     Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieTooltips:ItemRefTooltip] SetHyperlink:", link)
     ItemRefTooltip:SetOwner(UIParent, "ANCHOR_PRESERVE")
     if not QuestieLink:CreateQuestTooltip(link, self) then
-        QuestieLink.lastItemRefTooltip = ""
+        lastItemRefQuestId = nil
         if nativeQuestId then
             oldItemSetHyperlink(self, link, ...)
         end
@@ -78,14 +77,13 @@ function ItemRefTooltip:SetHyperlink(link, ...)
     ShowUIPanel(ItemRefTooltip)
     ItemRefTooltip:Show()
 
-    local tooltipText = ItemRefTooltipTextLeft1:GetText()
-    if QuestieLink.lastItemRefTooltip == tooltipText then
+    if lastItemRefQuestId == questId then
         ItemRefTooltip:Hide()
-        QuestieLink.lastItemRefTooltip = ""
+        lastItemRefQuestId = nil
         return
     end
 
-    QuestieLink.lastItemRefTooltip = tooltipText
+    lastItemRefQuestId = questId
 end
 
 ---@return string
