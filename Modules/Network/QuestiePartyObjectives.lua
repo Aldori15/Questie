@@ -32,13 +32,11 @@ local C_Timer = QuestieCompat.C_Timer
 local GetGroupUnitByName = QuestieCompat.GetGroupUnitByName
 local GetNumGroupMembers = QuestieCompat.GetNumGroupMembers
 local GetQuestLogIndexByID = QuestieCompat.GetQuestLogIndexByID
-local HaveQuestData = QuestieCompat.HaveQuestData
 local CallErrorHandler = CallErrorHandler or geterrorhandler()
 
 local MAX_GROUP_SIZE = 5
 local MAX_PARTY_ICONS = 500
 local CHUNK_SIZE = 50
-local MAX_PREFETCH_RETRIES = 5
 
 local typeCharToFull = {
     ["m"] = "monster",
@@ -49,7 +47,6 @@ local typeCharToFull = {
 local drawnByQuest = {}
 local spawnListCache = {}
 local drawnIconCount = 0
-local prefetchedQuests = {}
 
 -- Scheduling state.
 local dirtyQuests = {}
@@ -98,27 +95,6 @@ local function _GetApiObjectiveText(questId, objectiveIndex)
         return nil
     end
 
-    if not HaveQuestData(questId) then
-        C_QuestLog.GetQuestObjectives(questId, questLogIndex) -- prime the client cache
-        -- The data arrives asynchronously and QUEST_DATA_LOAD_RESULT isn't available on Classic
-        -- clients, so poll with a bounded number of delayed redraws until it's cached (a server
-        -- round-trip can take a few seconds on login). One timer in flight per quest so multiple
-        -- objectives don't multiply retries; gives up after MAX_PREFETCH_RETRIES so it can't loop.
-        local state = prefetchedQuests[questId]
-        if not state then
-            state = { attempts = 0, pending = false }
-            prefetchedQuests[questId] = state
-        end
-        if (not state.pending) and state.attempts < MAX_PREFETCH_RETRIES then
-            state.pending = true
-            C_Timer.After(1.5, function()
-                state.pending = false
-                state.attempts = state.attempts + 1
-                QuestiePartyObjectives:ScheduleUpdate(questId)
-            end)
-        end
-        return nil
-    end
     local objectives = C_QuestLog.GetQuestObjectives(questId, questLogIndex)
     local objective = objectives and objectives[objectiveIndex]
     local text = objective and objective.text
@@ -540,7 +516,6 @@ function QuestiePartyObjectives:Clear()
     end
     drawnByQuest = {}
     drawnIconCount = 0
-    prefetchedQuests = {}
 end
 
 -- Immediate full refresh, used by the options toggle.
