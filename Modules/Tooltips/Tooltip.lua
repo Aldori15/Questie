@@ -55,7 +55,6 @@ end
 
 local function _ResetTooltipTracking(tooltip)
     QuestieTooltips.lastGametooltip = ""
-    QuestieTooltips.lastItemRefTooltip = ""
     QuestieTooltips.lastGametooltipItem = nil
     QuestieTooltips.lastGametooltipUnit = nil
     QuestieTooltips.lastGametooltipCount = 0
