@@ -1441,25 +1441,20 @@ function QuestieCompat.GetCurrentPlayerPosition()
 
     if worldMapVisible and zoneUiMapID and minimapChildToParentRebaseUiMapId[zoneUiMapID] and uiMapID and (x > 0 or y > 0) then
         local parentUiMapID = QuestieCompat.UiMapData[zoneUiMapID] and QuestieCompat.UiMapData[zoneUiMapID].parentMapID
-        local sourceUiMapID = nil
-        if rawUiMapID == zoneUiMapID then
-            sourceUiMapID = zoneUiMapID
-        elseif rawUiMapID and rawUiMapID ~= parentUiMapID then
-            local rawUiData = QuestieCompat.UiMapData and QuestieCompat.UiMapData[rawUiMapID]
-            local parentUiData = parentUiMapID and QuestieCompat.UiMapData and QuestieCompat.UiMapData[parentUiMapID]
-            if rawUiData and parentUiData and rawUiData.instance == parentUiData.instance then
-                sourceUiMapID = rawUiMapID
-            end
-        end
+        if parentUiMapID then
+            if rawUiMapID == zoneUiMapID then
+                -- The coordinates are in the starter child map's coordinate space.
+                -- Rebase them into the parent zone used by minimap world position math.
+                local translatedX, translatedY = TranslateZoneCoordinatesBetweenUiMaps(x, y, zoneUiMapID, parentUiMapID)
 
-        if parentUiMapID and sourceUiMapID then
-            local translatedX, translatedY = TranslateZoneCoordinatesBetweenUiMaps(x, y, sourceUiMapID, parentUiMapID)
-            if translatedX and translatedY then
+                if translatedX and translatedY then
+                    uiMapID = parentUiMapID
+                    x, y = translatedX, translatedY
+                end
+            elseif rawUiMapID == parentUiMapID then
+                -- The coordinates are already in the parent zone's coordinate space.
                 uiMapID = parentUiMapID
-                x, y = translatedX, translatedY
             end
-        elseif parentUiMapID then
-            uiMapID = parentUiMapID
         end
     end
 
