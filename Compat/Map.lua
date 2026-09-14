@@ -1664,11 +1664,23 @@ function QuestieCompat.GetCurrentPlayerMinimapWorldPosition()
         and (not shouldSuppressExactRead)
         and AreUiMapsRelated(displayedUiMapID, starterChildUiMapID) then
         local exactWorldX, exactWorldY, exactInstanceID, exactUiMapID = GetPlayerWorldPositionFromActualZoneUiMap(starterChildUiMapID)
+
         if exactWorldX and exactWorldY then
+            -- Starter child maps use their parent zone as the canonical minimap
+            -- coordinate context. Keep that context stable while the world map is open.
+            local minimapUiMapID = exactUiMapID
+            local starterChildData = QuestieCompat.UiMapData[starterChildUiMapID]
+            local parentUiMapID = starterChildData and starterChildData.parentMapID
+
+            if exactUiMapID == starterChildUiMapID and parentUiMapID then
+                minimapUiMapID = parentUiMapID
+            end
+
             ResetAnchoredMinimapWorldPosition()
-            CacheMinimapPlayerWorldPosition(exactWorldX, exactWorldY, exactInstanceID, exactUiMapID)
-            StoreCachedPlayerPosition(minimapPlayerWorldPositionCache, contextKey, exactWorldX, exactWorldY, exactInstanceID, exactUiMapID)
-            return exactWorldX, exactWorldY, exactInstanceID, exactUiMapID
+            CacheMinimapPlayerWorldPosition(exactWorldX, exactWorldY, exactInstanceID, minimapUiMapID)
+            StoreCachedPlayerPosition(minimapPlayerWorldPositionCache, contextKey, exactWorldX, exactWorldY, exactInstanceID, minimapUiMapID)
+
+            return exactWorldX, exactWorldY, exactInstanceID, minimapUiMapID
         end
     end
 
