@@ -265,6 +265,48 @@ class AcoreCorrectionRegressionTests(unittest.TestCase):
         raw_objectives = [[[17701], [17701, None, "Questie.ICON_TYPE_INTERACT"]]]
         self.assertTrue(quest_validator.raw_objectives_have_display_helpers(raw_objectives))
 
+    def test_preserves_objective_that_supplies_an_acore_event_slot(self):
+        acore = {
+            field: quest_validator.default_field_value(field)
+            for field in quest_validator.FIELD_ORDER
+        }
+        questie = {
+            field: quest_validator.default_field_value(field)
+            for field in quest_validator.FIELD_ORDER
+        }
+        acore.update({
+            "_areaDescription": "Unkor Submits",
+            "objectives": (((18260,),), (), ()),
+            "specialFlags": quest_validator.QUEST_SPECIAL_FLAGS_EXPLORATION_OR_EVENT,
+        })
+        questie.update({
+            "_hasTriggerEnd": False,
+            "objectives": (((18260,), (18262,)), (), ()),
+            "specialFlags": quest_validator.QUEST_SPECIAL_FLAGS_EXPLORATION_OR_EVENT,
+        })
+
+        result = quest_validator.compare_metadata(
+            {9889: acore},
+            {9889: questie},
+            {},
+            set(),
+        )
+
+        self.assertEqual([], result[0])
+        self.assertEqual("preserveQuestieEventObjectiveSlot", result[3][0]["reason"])
+
+    def test_tbc_trigger_end_corrections_are_loaded_as_event_slots(self):
+        addon_root = Path(__file__).resolve().parents[1]
+        constants = quest_validator.load_constants(addon_root)
+        corrections = quest_validator.load_questie_correction_file(
+            addon_root / "Database/Corrections/tbcQuestFixes.lua",
+            constants,
+        )
+
+        self.assertTrue(corrections[9889]["_hasTriggerEnd"])
+        self.assertNotIn("objectives", corrections[9889])
+        self.assertTrue(corrections[10887]["_hasTriggerEnd"])
+
     def test_does_not_preserve_waypoints_without_ac_path_evidence(self):
         questie = {17528: {"waypoints": {3525: [[[38.43, 82.02], [36.51, 71.61]]]}}}
         acore = {17528: {"waypoints": {}}}

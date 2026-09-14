@@ -102,6 +102,7 @@ CONDITION_DAILY_QUEST_DONE = 43
 CONDITION_QUESTSTATE = 47
 CONDITION_OBJECT_ENTRY_GUID = 31
 CONDITION_OBJECT_TYPE_UNIT = 3
+QUEST_SPECIAL_FLAGS_EXPLORATION_OR_EVENT = 2
 SMART_SOURCE_TYPE_CREATURE = 0
 SMART_SOURCE_TYPE_TIMED_ACTIONLIST = 9
 SMART_EVENT_GOSSIP_SELECT = 62
@@ -1022,6 +1023,31 @@ def normalize_objectives(value):
         normalized_categories.append(tuple(records))
 
     return tuple(normalized_categories)
+
+
+def objective_record_count(value):
+    return sum(len(category) for category in normalize_objectives(value))
+
+
+def objective_override_would_remove_event_slot(acore, questie):
+    if not (
+        normalize_int(acore.get("specialFlags", 0))
+        & QUEST_SPECIAL_FLAGS_EXPLORATION_OR_EVENT
+    ):
+        return False
+    if not str(acore.get("_areaDescription") or "").strip():
+        return False
+
+    has_trigger_end = bool(questie.get("_hasTriggerEnd"))
+    expected_count = objective_record_count(acore.get("objectives")) + 1
+    current_count = objective_record_count(questie.get("objectives")) + int(has_trigger_end)
+    generated_count = objective_record_count(acore.get("objectives")) + int(has_trigger_end)
+
+    return current_count >= expected_count and generated_count < expected_count
+
+
+def lua_expression_is_truthy(value):
+    return str(value).strip() not in {"nil", "false"}
 
 
 def extract_kill_credit_objectives(value):
@@ -2002,6 +2028,12 @@ def load_questie_base_metadata(quest_db_path, quest_keys, constants):
                 quest_entry["_rawObjectives"] = value
             quest_entry[field] = normalize_field(field, value)
 
+        trigger_end_index = quest_keys.get("triggerEnd")
+        if trigger_end_index and trigger_end_index <= len(row_values):
+            quest_entry["_hasTriggerEnd"] = lua_expression_is_truthy(row_values[trigger_end_index - 1])
+        else:
+            quest_entry["_hasTriggerEnd"] = False
+
         data[quest_id] = quest_entry
 
     return data
@@ -2053,6 +2085,9 @@ def load_questie_correction_file(path, constants):
                 continue
 
             field_name = field_match.group(1)
+            if field_name == "triggerEnd":
+                quest_override["_hasTriggerEnd"] = lua_expression_is_truthy(field_match.group(2))
+                continue
             if field_name not in FIELD_KIND:
                 continue
 
@@ -2982,6 +3017,7 @@ def derive_acore_metadata(source_root, quest_template_sql=None, quest_template_a
         metadata = {field: default_field_value(field) for field in FIELD_ORDER}
 
         metadata["name"] = str(row.get("LogTitle") or "")
+        metadata["_areaDescription"] = str(row.get("AreaDescription") or "")
         metadata["questLevel"] = normalize_int(row.get("QuestLevel"))
         metadata["requiredLevel"] = normalize_int(row.get("MinLevel"))
         metadata["requiredRaces"] = normalize_int(row.get("AllowableRaces"))
@@ -3234,6 +3270,21 @@ def compare_metadata(
                                 "expansions": expansions,
                             }
                         )
+                    continue
+
+                if objective_override_would_remove_event_slot(acore, questie):
+                    has_trigger_end = bool(questie.get("_hasTriggerEnd"))
+                    preserved_display_objectives.append(
+                        {
+                            "questId": quest_id,
+                            "acore": acore[field],
+                            "questie": questie[field],
+                            "reason": "preserveQuestieEventObjectiveSlot",
+                            "expectedObjectiveCount": objective_record_count(acore[field]) + 1,
+                            "currentObjectiveCount": objective_record_count(questie[field]) + int(has_trigger_end),
+                            "generatedObjectiveCount": objective_record_count(acore[field]) + int(has_trigger_end),
+                        }
+                    )
                     continue
 
             if (

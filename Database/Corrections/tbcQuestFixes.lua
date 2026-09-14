@@ -2501,7 +2501,7 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.triggerEnd] = {"Free the Kurenai Captive", {[zoneIDs.NAGRAND]={{31.57,38.78}}}},
         },
         [9889] = {
-            [questKeys.objectives] = {{{18260},{18262}}},
+            [questKeys.triggerEnd] = {"Unkor Submits", {[zoneIDs.TEROKKAR_FOREST]={{20.06,63.24}}}},
         },
         [9898] = {
             [questKeys.name] = "The Respect of Another",
@@ -3873,7 +3873,7 @@ function QuestieTBCQuestFixes:Load()
             [questKeys.triggerEnd] = {"Millhouse Manastorm Rescued", {[zoneIDs.THE_ARCATRAZ]={{-1,-1}}}},
         },
         [10887] = {
-            [questKeys.extraObjectives] = {{{[zoneIDs.TEROKKAR_FOREST]={{33.77,51.61}}}, Questie.ICON_TYPE_EVENT, l10n("Help Akuno find his way to the Refugee Caravan in Terokkar Forest.")}},
+            [questKeys.triggerEnd] = {"Escort Akuno", {[zoneIDs.TEROKKAR_FOREST] = {{33.77,51.61}}}},
         },
         [10891] = {
             [questKeys.requiredSpell] = -16663,

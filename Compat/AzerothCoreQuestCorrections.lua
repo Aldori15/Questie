@@ -5656,7 +5656,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [3761] = {
-            [questKeys.preQuestSingle] = {936},
             [questKeys.nextQuestInChain] = 0,
         },
 
@@ -11605,7 +11604,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9889] = {
-            [questKeys.objectives] = {{{18260}}},
             [questKeys.reputationReward] = {{factionIDs.THE_MAGHAR,1000}},
         },
 
@@ -15440,10 +15438,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [12223] = {
             [questKeys.nextQuestInChain] = 12255,
-        },
-
-        [12225] = {
-            [questKeys.preQuestGroup] = {12222,12223},
         },
 
         [12232] = {
