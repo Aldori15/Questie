@@ -3868,7 +3868,8 @@ function QuestieDB.GetQuest(questId) -- /dump QuestieDB.GetQuest(867)
         QO.ObjectiveData[#QO.ObjectiveData+1] = {
             Type = "event",
             Text = triggerEnd[1],
-            Coordinates = triggerEnd[2]
+            Coordinates = triggerEnd[2],
+            TooltipTargets = QuestieCorrections.triggerEndTooltipTargets[questId],
         }
     end
 

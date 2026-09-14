@@ -31,6 +31,26 @@ QuestieCorrections.killCreditObjectiveFirst[13406] = true
 QuestieCorrections.killCreditObjectiveFirst[24498] = true
 QuestieCorrections.killCreditObjectiveFirst[24507] = true
 
+-- Hoverable entities that directly drive coordinate-only triggerEnd objectives
+QuestieCorrections.triggerEndTooltipTargets[11241] = {{"monster",23784}} -- Apothecary Hanes
+QuestieCorrections.triggerEndTooltipTargets[11436] = {{"monster",27924}} -- Dragonflayer Harpoon
+QuestieCorrections.triggerEndTooltipTargets[11570] = {{"monster",25208}} -- Lurgglbr
+QuestieCorrections.triggerEndTooltipTargets[11592] = {{"monster",25335}} -- Longrunner Proudhoof
+QuestieCorrections.triggerEndTooltipTargets[11664] = {{"monster",25504}} -- Mootoo the Younger
+QuestieCorrections.triggerEndTooltipTargets[11673] = {{"monster",25589}} -- Bonker Togglevolt
+QuestieCorrections.triggerEndTooltipTargets[11891] = {{"monster",25949}} -- Ice Caller Briatha
+QuestieCorrections.triggerEndTooltipTargets[12027] = {{"monster",26588}} -- Emily
+QuestieCorrections.triggerEndTooltipTargets[12082] = {{"monster",26814}} -- Harrison Jones
+QuestieCorrections.triggerEndTooltipTargets[12308] = {{"monster",27409}} -- Ducal's Horse
+QuestieCorrections.triggerEndTooltipTargets[12330] = {{"monster",27626}} -- Tatjana's Horse
+QuestieCorrections.triggerEndTooltipTargets[12570] = {{"monster",28217}} -- Injured Rainspeaker Oracle
+QuestieCorrections.triggerEndTooltipTargets[12688] = {{"monster",28787}} -- Engineer Helice
+QuestieCorrections.triggerEndTooltipTargets[12832] = {{"monster",29434}} -- Injured Goblin Miner
+QuestieCorrections.triggerEndTooltipTargets[13168] = {{"object",193058}} -- Eye of Dominion
+QuestieCorrections.triggerEndTooltipTargets[13221] = {{"monster",31279}} -- Father Kamaros
+QuestieCorrections.triggerEndTooltipTargets[13229] = {{"monster",31279}} -- Father Kamaros
+QuestieCorrections.triggerEndTooltipTargets[13429] = {{"monster",22990}} -- Akama
+
 QuestieCorrections.questTooltipHints[6681] = "Speak to the npc and select \"<Take the letter>\", then read the letter to start the quest."
 QuestieCorrections.questTooltipHints[9212] = "Inside the Amani Catacombs.  Entrances to the NW and NE."
 

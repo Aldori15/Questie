@@ -1,6 +1,7 @@
 import unittest
 from pathlib import Path
 
+import audit_acore_trigger_end_tooltip_targets as trigger_end_audit
 import generate_acore_item_corrections as item_generator
 import generate_acore_npc_corrections as npc_generator
 import generate_acore_object_corrections as object_generator
@@ -306,6 +307,17 @@ class AcoreCorrectionRegressionTests(unittest.TestCase):
         self.assertTrue(corrections[9889]["_hasTriggerEnd"])
         self.assertNotIn("objectives", corrections[9889])
         self.assertTrue(corrections[10887]["_hasTriggerEnd"])
+
+    def test_direct_trigger_end_tooltip_targets_are_complete_and_classified(self):
+        addon_root = Path(__file__).resolve().parents[1]
+        trigger_ends = trigger_end_audit.load_trigger_ends(addon_root)
+        targets = trigger_end_audit.load_configured_targets(addon_root)
+
+        self.assertEqual(109, len(targets))
+        self.assertEqual([("monster", 18262)], targets[9889]["targets"])
+        self.assertEqual([("monster", 22377)], targets[10887]["targets"])
+        self.assertLessEqual(set(targets), set(trigger_ends))
+        self.assertTrue(set(targets).isdisjoint(trigger_end_audit.REVIEW_REASONS))
 
     def test_does_not_preserve_waypoints_without_ac_path_evidence(self):
         questie = {17528: {"waypoints": {3525: [[[38.43, 82.02], [36.51, 71.61]]]}}}

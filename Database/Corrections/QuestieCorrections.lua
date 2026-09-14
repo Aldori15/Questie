@@ -78,6 +78,8 @@ QuestieCorrections.killCreditObjectiveFirst = {} -- Only used for TBC quests
 QuestieCorrections.itemObjectiveFirst = {}
 QuestieCorrections.questTooltipHints = {}
 QuestieCorrections.objectiveTooltipHints = {}
+---@type table<QuestId, table<integer, { [1]: "monster"|"object"|"item", [2]: number }>>
+QuestieCorrections.triggerEndTooltipTargets = {}
 
 -- this function filters a table of values, if the value is TBC_ONLY or CLASSIC_ONLY, set it to true or nil if that case is met
 ---@generic T

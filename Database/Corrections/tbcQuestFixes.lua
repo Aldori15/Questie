@@ -16,6 +16,34 @@ local l10n = QuestieLoader:ImportModule("l10n")
 
 QuestieCorrections.killCreditObjectiveFirst[10503] = true -- The Bladespire Threat
 
+-- Hoverable entities that directly drive coordinate-only triggerEnd objectives
+QuestieCorrections.triggerEndTooltipTargets[9212] = {{"monster",16295}} -- Ranger Lilatha
+QuestieCorrections.triggerEndTooltipTargets[9375] = {{"monster",16993}} -- Wounded Blood Elf Pilgrim
+QuestieCorrections.triggerEndTooltipTargets[9446] = {{"monster",17238}} -- Anchorite Truuen
+QuestieCorrections.triggerEndTooltipTargets[9528] = {{"monster",17312}} -- Magwin
+QuestieCorrections.triggerEndTooltipTargets[9729] = {{"monster",17877}} -- Fhwoor
+QuestieCorrections.triggerEndTooltipTargets[9752] = {{"monster",17969}} -- Kayra Longmane
+QuestieCorrections.triggerEndTooltipTargets[9868] = {{"monster",18210}} -- Mag'har Captive
+QuestieCorrections.triggerEndTooltipTargets[9879] = {{"monster",18209}} -- Kurenai Captive
+QuestieCorrections.triggerEndTooltipTargets[9889] = {{"monster",18262}} -- Unkor the Ruthless
+QuestieCorrections.triggerEndTooltipTargets[10051] = {{"monster",18760}} -- Isla Starmane
+QuestieCorrections.triggerEndTooltipTargets[10052] = {{"monster",18760}} -- Isla Starmane
+QuestieCorrections.triggerEndTooltipTargets[10191] = {{"monster",19589}} -- Maxx A. Million Mk. V
+QuestieCorrections.triggerEndTooltipTargets[10198] = {{"monster",19831}} -- Commander Dawnforge
+QuestieCorrections.triggerEndTooltipTargets[10218] = {{"monster",19671}} -- Cryo-Engineer Sha'heen
+QuestieCorrections.triggerEndTooltipTargets[10310] = {{"monster",20281}} -- Drijya
+QuestieCorrections.triggerEndTooltipTargets[10337] = {{"monster",20415}} -- Bessy
+QuestieCorrections.triggerEndTooltipTargets[10406] = {{"monster",20802}} -- Protectorate Demolitionist
+QuestieCorrections.triggerEndTooltipTargets[10425] = {{"monster",20763}} -- Captured Protectorate Vanguard
+QuestieCorrections.triggerEndTooltipTargets[10451] = {{"monster",21027}} -- Earthmender Wilda
+QuestieCorrections.triggerEndTooltipTargets[10879] = {{"monster",22375}} -- Avatar of Terokk
+QuestieCorrections.triggerEndTooltipTargets[10887] = {{"monster",22377}} -- Akuno
+QuestieCorrections.triggerEndTooltipTargets[10898] = {{"monster",22424}} -- Skywing
+QuestieCorrections.triggerEndTooltipTargets[10922] = {{"monster",22458}} -- Chief Archaeologist Letoll
+QuestieCorrections.triggerEndTooltipTargets[10985] = {{"monster",22990}} -- Akama
+QuestieCorrections.triggerEndTooltipTargets[11082] = {{"monster",23309}} -- Murkblood Overseer
+QuestieCorrections.triggerEndTooltipTargets[11085] = {{"monster",23383}} -- Skyguard Prisoner
+
 
 function QuestieTBCQuestFixes:Load()
     local questKeys = QuestieDB.questKeys
