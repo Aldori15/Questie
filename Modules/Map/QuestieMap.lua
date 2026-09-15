@@ -64,7 +64,6 @@ local tostring = tostring;
 local tinsert = table.insert;
 local pairs = pairs;
 local ipairs = ipairs;
-local tremove = table.remove;
 local tunpack = unpack;
 
 local coYield = coroutine.yield
@@ -376,11 +375,38 @@ function QuestieMap:RescaleTownsfolkIcons()
     QuestieMap:RescaleManualIcons()
 end
 
-local mapDrawQueue = {};
-local minimapDrawQueue = {};
+local mapDrawQueue = {}
+local minimapDrawQueue = {}
+local mapDrawQueueHead, mapDrawQueueTail = 1, 0
+local minimapDrawQueueHead, minimapDrawQueueTail = 1, 0
 
 QuestieMap._mapDrawQueue = mapDrawQueue
 QuestieMap._minimapDrawQueue = minimapDrawQueue
+
+local function _GetDrawQueueSize(head, tail)
+    if tail < head then
+        return 0
+    end
+
+    return tail - head + 1
+end
+
+local function _PopDrawQueue(queue, head, tail)
+    if head > tail then
+        return nil, head, tail
+    end
+
+    local value = queue[head]
+    queue[head] = nil
+    head = head + 1
+
+    if head > tail then
+        head = 1
+        tail = 0
+    end
+
+    return value, head, tail
+end
 
 local function _GetManualScaleProfile(frame)
     if not frame.isManualIcon then
@@ -545,21 +571,26 @@ function QuestieMap:ProcessShownMinimapIcons()
 end
 
 function QuestieMap:QueueDraw(drawType, ...)
-    if (drawType == QuestieMap.ICON_MAP_TYPE) then
-        tinsert(mapDrawQueue, { ... });
-    elseif (drawType == QuestieMap.ICON_MINIMAP_TYPE) then
-        tinsert(minimapDrawQueue, { ... });
+    if drawType == QuestieMap.ICON_MAP_TYPE then
+        mapDrawQueueTail = mapDrawQueueTail + 1
+        mapDrawQueue[mapDrawQueueTail] = { ... }
+    elseif drawType == QuestieMap.ICON_MINIMAP_TYPE then
+        minimapDrawQueueTail = minimapDrawQueueTail + 1
+        minimapDrawQueue[minimapDrawQueueTail] = { ... }
     end
 end
 
 function QuestieMap.ProcessQueue()
-    if (not next(mapDrawQueue) and (not next(minimapDrawQueue))) then
+    local mapQueueSize = _GetDrawQueueSize(mapDrawQueueHead, mapDrawQueueTail)
+    local minimapQueueSize = _GetDrawQueueSize(minimapDrawQueueHead, minimapDrawQueueTail)
+
+    if mapQueueSize == 0 and minimapQueueSize == 0 then
         -- Nothing to process
         return
     end
 
     local scaleValue = QuestieMap.GetScaleValue()
-    local queueSize = math_max(#mapDrawQueue, #minimapDrawQueue)
+    local queueSize = math_max(mapQueueSize, minimapQueueSize)
     local maxPerTick = 24
 
     if queueSize > 600 then
@@ -571,7 +602,8 @@ function QuestieMap.ProcessQueue()
     end
 
     for _ = 1, math_min(maxPerTick, queueSize) do
-        local mapDrawCall = tremove(mapDrawQueue, 1);
+        local mapDrawCall
+        mapDrawCall, mapDrawQueueHead, mapDrawQueueTail = _PopDrawQueue(mapDrawQueue, mapDrawQueueHead, mapDrawQueueTail)
         if mapDrawCall then
             local frame = mapDrawCall[2];
             HBDPins:AddWorldMapIconMap(tunpack(mapDrawCall));
@@ -589,7 +621,8 @@ function QuestieMap.ProcessQueue()
             end
         end
 
-        local minimapDrawCall = tremove(minimapDrawQueue, 1);
+        local minimapDrawCall
+        minimapDrawCall, minimapDrawQueueHead, minimapDrawQueueTail = _PopDrawQueue(minimapDrawQueue, minimapDrawQueueHead, minimapDrawQueueTail)
         if minimapDrawCall then
             local frame = minimapDrawCall[2];
             HBDPins:AddMinimapIconMap(tunpack(minimapDrawCall));
