@@ -211,11 +211,15 @@ local function _DrawQuest(questId, generation)
     -- An objective index is drawn if at least one online party member still needs it. Offline
     -- members and failed quests are ignored so their objective icons are not actionable.
     local neededIndices = {}
+    local reportedIndices = {}
     for playerName, objectives in pairs(players) do
         if _IsPlayerOnline(playerName) and CommsVisibility:ShouldShowPartyObjective(playerName, questId) then
             for objectiveIndex, objective in pairs(objectives) do
-                if objective.status ~= "F" and not objective.finished then
-                    neededIndices[objectiveIndex] = objective
+                if objective.status ~= "F" then
+                    reportedIndices[objectiveIndex] = true
+                    if not objective.finished then
+                        neededIndices[objectiveIndex] = objective
+                    end
                 end
             end
         end
@@ -319,15 +323,24 @@ local function _DrawQuest(questId, generation)
 
     -- Also draw the quest's extra/special objectives (DB-defined, e.g. "use item" custom spawns
     -- and required source items). These come from QuestieDB.GetQuest, independent of comms data.
-    local specialCounter = 0
+    local visibleSpecialObjectives = {}
     for _, special in pairs(quest.SpecialObjectives or {}) do
+        local linkedObjectiveIndex = special.RealObjectiveIndex
+        local hasValidLink = linkedObjectiveIndex and linkedObjectiveIndex > 0 and reportedIndices[linkedObjectiveIndex]
+
+        -- Match the local quest pipeline: linked extras disappear when every visible party member
+        -- has completed that objective. Unlinked (0/nil) and invalid links remain visible.
+        if not hasValidLink or neededIndices[linkedObjectiveIndex] then
+            visibleSpecialObjectives[#visibleSpecialObjectives + 1] = special
+        end
+    end
+
+    local specialCounter = 0
+    for _, special in ipairs(visibleSpecialObjectives) do
         if drawnIconCount + iconCount >= MAX_PARTY_ICONS then
             break
         end
 
-        -- Always draw extras. RealObjectiveIndex is used loosely in the DB (it can be 0 or point
-        -- past the real objectives), so we can't reliably tie an extra to a standard objective's
-        -- completion for party members; matching Questie's own pipeline, we just draw them.
         specialCounter = specialCounter + 1
         local objective = {
             Id = special.Id,
