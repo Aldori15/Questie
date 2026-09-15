@@ -827,7 +827,10 @@ local function ResolveChooserPlayerUiMapID(actualUiMapID)
         return resolvedWorldUiMapID
     end
 
-    local instanceID = normalizedUiMapID and QuestieCompat.UiMapData and QuestieCompat.UiMapData[normalizedUiMapID] and QuestieCompat.UiMapData[normalizedUiMapID].instance
+    local uiData = actualUiMapID and QuestieCompat.UiMapData and QuestieCompat.UiMapData[actualUiMapID]
+    local instanceID = uiData and uiData.instance
+    -- Map.dbc instance 530 is Outland. UiMapID 1945 is the Outland world map.
+    -- UiMapID 947 is the Azeroth world map.
     if instanceID == 530 then
         return 1945
     end
