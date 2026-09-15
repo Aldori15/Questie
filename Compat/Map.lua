@@ -41,6 +41,13 @@ local unitPositionMinimapTransforms = {}
 local playerPositionCache = {}
 local stablePlayerWorldPositionCache = {}
 local minimapPlayerWorldPositionCache = {}
+local playerPositionContextRevision = 0
+local lastContextWorldMapVisible = nil
+local lastContextRawMapID = nil
+local lastContextRawMapLevel = nil
+local lastContextZoneText = nil
+local lastContextSubZoneText = nil
+local lastContextDisplayedMapName = nil
 local PLAYER_POSITION_CACHE_TTL = 0.075
 local MIN_ZONE_COORD = -0.25
 local MAX_ZONE_COORD = 1.25
@@ -109,26 +116,40 @@ local function GetRawMapContext()
     return mapID, mapLevel
 end
 
-local function GetPlayerPositionCacheContextKey()
+local function GetPlayerPositionCacheContextRevision()
     local worldMapVisible = WorldMapFrame and WorldMapFrame:IsVisible() or false
     local rawMapID, rawMapLevel = GetRawMapContext()
     local zoneText = GetRealZoneText and GetRealZoneText() or ""
     local subZoneText = GetSubZoneText and GetSubZoneText() or ""
     local displayedMapName = ""
 
+    rawMapID = rawMapID or 0
+    rawMapLevel = rawMapLevel or 0
+
     if worldMapVisible then
         displayedMapName = GetDisplayedWorldMapName() or ""
     end
 
-    return (worldMapVisible and "1" or "0")
-        .. "|" .. tostring(rawMapID or 0)
-        .. "|" .. tostring(rawMapLevel or 0)
-        .. "|" .. zoneText
-        .. "|" .. subZoneText
-        .. "|" .. displayedMapName
+    if worldMapVisible ~= lastContextWorldMapVisible
+        or rawMapID ~= lastContextRawMapID
+        or rawMapLevel ~= lastContextRawMapLevel
+        or zoneText ~= lastContextZoneText
+        or subZoneText ~= lastContextSubZoneText
+        or displayedMapName ~= lastContextDisplayedMapName then
+
+        playerPositionContextRevision = playerPositionContextRevision + 1
+        lastContextWorldMapVisible = worldMapVisible
+        lastContextRawMapID = rawMapID
+        lastContextRawMapLevel = rawMapLevel
+        lastContextZoneText = zoneText
+        lastContextSubZoneText = subZoneText
+        lastContextDisplayedMapName = displayedMapName
+    end
+
+    return playerPositionContextRevision
 end
 
-local function TryGetCachedPlayerPosition(cache, maxAge, contextKey)
+local function TryGetCachedPlayerPosition(cache, maxAge, contextRevision)
     if internalMapReadDepth > 0 then
         return nil
     end
@@ -138,16 +159,16 @@ local function TryGetCachedPlayerPosition(cache, maxAge, contextKey)
         return nil
     end
 
-    if cache.contextKey ~= contextKey then
+    if cache.contextRevision ~= contextRevision then
         return nil
     end
 
     return cache.r1, cache.r2, cache.r3, cache.r4
 end
 
-local function StoreCachedPlayerPosition(cache, contextKey, r1, r2, r3, r4)
+local function StoreCachedPlayerPosition(cache, contextRevision, r1, r2, r3, r4)
     cache.cachedAt = GetTime()
-    cache.contextKey = contextKey
+    cache.contextRevision = contextRevision
     cache.r1 = r1
     cache.r2 = r2
     cache.r3 = r3
@@ -156,11 +177,11 @@ end
 
 local function ClearCachedPlayerPositions()
     playerPositionCache.cachedAt = nil
-    playerPositionCache.contextKey = nil
+    playerPositionCache.contextRevision = nil
     stablePlayerWorldPositionCache.cachedAt = nil
-    stablePlayerWorldPositionCache.contextKey = nil
+    stablePlayerWorldPositionCache.contextRevision = nil
     minimapPlayerWorldPositionCache.cachedAt = nil
-    minimapPlayerWorldPositionCache.contextKey = nil
+    minimapPlayerWorldPositionCache.contextRevision = nil
 end
 
 QuestieCompat.ClearCachedPlayerPositions = ClearCachedPlayerPositions
@@ -1340,8 +1361,8 @@ end
 -- for the player, including changing the current map zoom (if needed)
 -- https://wowpedia.fandom.com/wiki/API_C_Map.GetPlayerMapPosition?oldid=2167175
 function QuestieCompat.GetCurrentPlayerPosition()
-    local contextKey = GetPlayerPositionCacheContextKey()
-    local cachedUiMapID, cachedX, cachedY = TryGetCachedPlayerPosition(playerPositionCache, PLAYER_POSITION_CACHE_TTL, contextKey)
+    local contextRevision = GetPlayerPositionCacheContextRevision()
+    local cachedUiMapID, cachedX, cachedY = TryGetCachedPlayerPosition(playerPositionCache, PLAYER_POSITION_CACHE_TTL, contextRevision)
     if cachedUiMapID ~= nil then
         return cachedUiMapID, cachedX, cachedY
     end
@@ -1352,7 +1373,7 @@ function QuestieCompat.GetCurrentPlayerPosition()
 			-- we know there is a visible world map, so don't cause
 			-- WORLD_MAP_UPDATE events by changing map zoom
             local fallbackUiMapID = QuestieCompat.GetCurrentUiMapID()
-            StoreCachedPlayerPosition(playerPositionCache, contextKey, fallbackUiMapID, x, y)
+            StoreCachedPlayerPosition(playerPositionCache, contextRevision, fallbackUiMapID, x, y)
 			return fallbackUiMapID, x, y;
 		end
 		SetMapToCurrentZone();
@@ -1370,7 +1391,7 @@ function QuestieCompat.GetCurrentPlayerPosition()
 			if ( x <= 0 and y <= 0 ) then
 				-- we are in an instance without a map or otherwise off map
                 local fallbackUiMapID = QuestieCompat.GetCurrentUiMapID()
-                StoreCachedPlayerPosition(playerPositionCache, contextKey, fallbackUiMapID, x, y)
+                StoreCachedPlayerPosition(playerPositionCache, contextRevision, fallbackUiMapID, x, y)
 				return fallbackUiMapID, x, y;
 			end
 		end
@@ -1382,14 +1403,14 @@ function QuestieCompat.GetCurrentPlayerPosition()
         local parentUiMapID = QuestieCompat.UiMapData[zoneUiMapID] and QuestieCompat.UiMapData[zoneUiMapID].parentMapID
         if parentUiMapID then
             if rawUiMapID == parentUiMapID then
-                StoreCachedPlayerPosition(playerPositionCache, contextKey, parentUiMapID, x, y)
+                StoreCachedPlayerPosition(playerPositionCache, contextRevision, parentUiMapID, x, y)
                 return parentUiMapID, x, y
             end
 
             if rawUiMapID == zoneUiMapID then
                 local translatedX, translatedY = TranslateZoneCoordinatesBetweenUiMaps(x, y, zoneUiMapID, parentUiMapID)
                 if translatedX and translatedY then
-                    StoreCachedPlayerPosition(playerPositionCache, contextKey, parentUiMapID, translatedX, translatedY)
+                    StoreCachedPlayerPosition(playerPositionCache, contextRevision, parentUiMapID, translatedX, translatedY)
                     return parentUiMapID, translatedX, translatedY
                 end
             end
@@ -1397,7 +1418,7 @@ function QuestieCompat.GetCurrentPlayerPosition()
             if SetLegacyMapToUiMap(parentUiMapID) then
                 local parentX, parentY = GetPlayerMapPosition("player")
                 if (parentX > 0 or parentY > 0) then
-                    StoreCachedPlayerPosition(playerPositionCache, contextKey, parentUiMapID, parentX, parentY)
+                    StoreCachedPlayerPosition(playerPositionCache, contextRevision, parentUiMapID, parentX, parentY)
                     return parentUiMapID, parentX, parentY
                 end
             end
@@ -1405,7 +1426,7 @@ function QuestieCompat.GetCurrentPlayerPosition()
             local coordinateUiMapID = rawUiMapID or zoneUiMapID
             local translatedX, translatedY = TranslateZoneCoordinatesBetweenUiMaps(x, y, coordinateUiMapID, parentUiMapID)
             if translatedX and translatedY then
-                StoreCachedPlayerPosition(playerPositionCache, contextKey, parentUiMapID, translatedX, translatedY)
+                StoreCachedPlayerPosition(playerPositionCache, contextRevision, parentUiMapID, translatedX, translatedY)
                 return parentUiMapID, translatedX, translatedY
             end
         end
@@ -1417,7 +1438,7 @@ function QuestieCompat.GetCurrentPlayerPosition()
             if parentUiMapID then
                 local translatedX, translatedY = TranslateZoneCoordinatesBetweenUiMaps(x, y, selectedUiMapID, parentUiMapID)
                 if translatedX and translatedY then
-                    StoreCachedPlayerPosition(playerPositionCache, contextKey, parentUiMapID, translatedX, translatedY)
+                    StoreCachedPlayerPosition(playerPositionCache, contextRevision, parentUiMapID, translatedX, translatedY)
                     return parentUiMapID, translatedX, translatedY
                 end
             end
@@ -1428,7 +1449,7 @@ function QuestieCompat.GetCurrentPlayerPosition()
         if parentUiMapID then
             local translatedX, translatedY = TranslateZoneCoordinatesBetweenUiMaps(x, y, rawUiMapID, parentUiMapID)
             if translatedX and translatedY then
-                StoreCachedPlayerPosition(playerPositionCache, contextKey, parentUiMapID, translatedX, translatedY)
+                StoreCachedPlayerPosition(playerPositionCache, contextRevision, parentUiMapID, translatedX, translatedY)
                 return parentUiMapID, translatedX, translatedY
             end
         end
@@ -1551,7 +1572,7 @@ function QuestieCompat.GetCurrentPlayerPosition()
 		end
 	end
 
-    StoreCachedPlayerPosition(playerPositionCache, contextKey, uiMapID, x, y)
+    StoreCachedPlayerPosition(playerPositionCache, contextRevision, uiMapID, x, y)
 	return uiMapID, x, y;
 end
 
@@ -1587,8 +1608,8 @@ function QuestieCompat.GetCurrentPlayerRawPosition()
 end
 
 function QuestieCompat.GetCurrentPlayerStableWorldPosition()
-    local contextKey = GetPlayerPositionCacheContextKey()
-    local cachedWorldX, cachedWorldY, cachedInstanceID, cachedUiMapID = TryGetCachedPlayerPosition(stablePlayerWorldPositionCache, PLAYER_POSITION_CACHE_TTL, contextKey)
+    local contextRevision = GetPlayerPositionCacheContextRevision()
+    local cachedWorldX, cachedWorldY, cachedInstanceID, cachedUiMapID = TryGetCachedPlayerPosition(stablePlayerWorldPositionCache, PLAYER_POSITION_CACHE_TTL, contextRevision)
     if cachedWorldX ~= nil then
         return cachedWorldX, cachedWorldY, cachedInstanceID, cachedUiMapID
     end
@@ -1600,7 +1621,7 @@ function QuestieCompat.GetCurrentPlayerStableWorldPosition()
             local worldX, worldY, instanceID = GetWorldCoordinatesFromUiMapPosition(x, y, uiMapID)
             if worldX and worldY then
                 CacheStablePlayerWorldPosition(worldX, worldY, instanceID, uiMapID)
-                StoreCachedPlayerPosition(stablePlayerWorldPositionCache, contextKey, worldX, worldY, instanceID, uiMapID)
+                StoreCachedPlayerPosition(stablePlayerWorldPositionCache, contextRevision, worldX, worldY, instanceID, uiMapID)
                 return worldX, worldY, instanceID, uiMapID
             end
         end
@@ -1623,7 +1644,7 @@ function QuestieCompat.GetCurrentPlayerStableWorldPosition()
             if displayedUiMapID and not IsZoneLikeUiMap(displayedUiMapID) then
                 local anchoredWorldX, anchoredWorldY, anchoredInstanceID, anchoredUiMapID = GetAnchoredDisplayedWorldPosition(displayedUiMapID, x, y)
                 if anchoredWorldX and anchoredWorldY then
-                    StoreCachedPlayerPosition(stablePlayerWorldPositionCache, contextKey, anchoredWorldX, anchoredWorldY, anchoredInstanceID, anchoredUiMapID)
+                    StoreCachedPlayerPosition(stablePlayerWorldPositionCache, contextRevision, anchoredWorldX, anchoredWorldY, anchoredInstanceID, anchoredUiMapID)
                     return anchoredWorldX, anchoredWorldY, anchoredInstanceID, anchoredUiMapID
                 end
             else
@@ -1631,7 +1652,7 @@ function QuestieCompat.GetCurrentPlayerStableWorldPosition()
             end
 
             if lastStablePlayerWorldX and lastStablePlayerWorldY then
-                StoreCachedPlayerPosition(stablePlayerWorldPositionCache, contextKey, lastStablePlayerWorldX, lastStablePlayerWorldY, lastStablePlayerInstanceID, lastStablePlayerUiMapID)
+                StoreCachedPlayerPosition(stablePlayerWorldPositionCache, contextRevision, lastStablePlayerWorldX, lastStablePlayerWorldY, lastStablePlayerInstanceID, lastStablePlayerUiMapID)
                 return lastStablePlayerWorldX, lastStablePlayerWorldY, lastStablePlayerInstanceID, lastStablePlayerUiMapID
             end
 
@@ -1651,7 +1672,7 @@ function QuestieCompat.GetCurrentPlayerStableWorldPosition()
                 local worldX, worldY, instanceID = GetWorldCoordinatesFromUiMapPosition(zoneX, zoneY, actualUiMapID)
                 if worldX and worldY then
                     CacheStablePlayerWorldPosition(worldX, worldY, instanceID, actualUiMapID)
-                    StoreCachedPlayerPosition(stablePlayerWorldPositionCache, contextKey, worldX, worldY, instanceID, actualUiMapID)
+                    StoreCachedPlayerPosition(stablePlayerWorldPositionCache, contextRevision, worldX, worldY, instanceID, actualUiMapID)
                     return worldX, worldY, instanceID, actualUiMapID
                 end
             end
@@ -1661,14 +1682,14 @@ function QuestieCompat.GetCurrentPlayerStableWorldPosition()
             local exactWorldX, exactWorldY, exactInstanceID, exactUiMapID = GetPlayerWorldPositionFromActualZoneUiMap(actualUiMapID)
             if exactWorldX and exactWorldY then
                 CacheStablePlayerWorldPosition(exactWorldX, exactWorldY, exactInstanceID, exactUiMapID)
-                StoreCachedPlayerPosition(stablePlayerWorldPositionCache, contextKey, exactWorldX, exactWorldY, exactInstanceID, exactUiMapID)
+                StoreCachedPlayerPosition(stablePlayerWorldPositionCache, contextRevision, exactWorldX, exactWorldY, exactInstanceID, exactUiMapID)
                 return exactWorldX, exactWorldY, exactInstanceID, exactUiMapID
             end
         end
     end
 
     if lastStablePlayerWorldX and lastStablePlayerWorldY then
-        StoreCachedPlayerPosition(stablePlayerWorldPositionCache, contextKey, lastStablePlayerWorldX, lastStablePlayerWorldY, lastStablePlayerInstanceID, lastStablePlayerUiMapID)
+        StoreCachedPlayerPosition(stablePlayerWorldPositionCache, contextRevision, lastStablePlayerWorldX, lastStablePlayerWorldY, lastStablePlayerInstanceID, lastStablePlayerUiMapID)
         return lastStablePlayerWorldX, lastStablePlayerWorldY, lastStablePlayerInstanceID, lastStablePlayerUiMapID
     end
 
@@ -1676,8 +1697,8 @@ function QuestieCompat.GetCurrentPlayerStableWorldPosition()
 end
 
 function QuestieCompat.GetCurrentPlayerMinimapWorldPosition()
-    local contextKey = GetPlayerPositionCacheContextKey()
-    local cachedWorldX, cachedWorldY, cachedInstanceID, cachedUiMapID = TryGetCachedPlayerPosition(minimapPlayerWorldPositionCache, PLAYER_POSITION_CACHE_TTL, contextKey)
+    local contextRevision = GetPlayerPositionCacheContextRevision()
+    local cachedWorldX, cachedWorldY, cachedInstanceID, cachedUiMapID = TryGetCachedPlayerPosition(minimapPlayerWorldPositionCache, PLAYER_POSITION_CACHE_TTL, contextRevision)
     if cachedWorldX ~= nil then
         return cachedWorldX, cachedWorldY, cachedInstanceID, cachedUiMapID
     end
@@ -1747,7 +1768,7 @@ function QuestieCompat.GetCurrentPlayerMinimapWorldPosition()
 
             ResetAnchoredMinimapWorldPosition()
             CacheMinimapPlayerWorldPosition(exactWorldX, exactWorldY, exactInstanceID, minimapUiMapID)
-            StoreCachedPlayerPosition(minimapPlayerWorldPositionCache, contextKey, exactWorldX, exactWorldY, exactInstanceID, minimapUiMapID)
+            StoreCachedPlayerPosition(minimapPlayerWorldPositionCache, contextRevision, exactWorldX, exactWorldY, exactInstanceID, minimapUiMapID)
 
             return exactWorldX, exactWorldY, exactInstanceID, minimapUiMapID
         end
@@ -1759,7 +1780,7 @@ function QuestieCompat.GetCurrentPlayerMinimapWorldPosition()
         if worldX and worldY then
             ResetAnchoredMinimapWorldPosition()
             CacheMinimapPlayerWorldPosition(worldX, worldY, instanceID, uiMapID)
-            StoreCachedPlayerPosition(minimapPlayerWorldPositionCache, contextKey, worldX, worldY, instanceID, uiMapID)
+            StoreCachedPlayerPosition(minimapPlayerWorldPositionCache, contextRevision, worldX, worldY, instanceID, uiMapID)
             return worldX, worldY, instanceID, uiMapID
         end
     end
@@ -1781,12 +1802,12 @@ function QuestieCompat.GetCurrentPlayerMinimapWorldPosition()
         ResetAnchoredMinimapWorldPosition()
 
         if lastMinimapPlayerWorldX and lastMinimapPlayerWorldY and IsCachedWorldPositionUsableForUiMap(lastMinimapPlayerUiMapID, actualUiMapID) then
-            StoreCachedPlayerPosition(minimapPlayerWorldPositionCache, contextKey, lastMinimapPlayerWorldX, lastMinimapPlayerWorldY, lastMinimapPlayerInstanceID, lastMinimapPlayerUiMapID)
+            StoreCachedPlayerPosition(minimapPlayerWorldPositionCache, contextRevision, lastMinimapPlayerWorldX, lastMinimapPlayerWorldY, lastMinimapPlayerInstanceID, lastMinimapPlayerUiMapID)
             return lastMinimapPlayerWorldX, lastMinimapPlayerWorldY, lastMinimapPlayerInstanceID, lastMinimapPlayerUiMapID
         end
 
         if lastStablePlayerWorldX and lastStablePlayerWorldY and IsCachedWorldPositionUsableForUiMap(lastStablePlayerUiMapID, actualUiMapID) then
-            StoreCachedPlayerPosition(minimapPlayerWorldPositionCache, contextKey, lastStablePlayerWorldX, lastStablePlayerWorldY, lastStablePlayerInstanceID, lastStablePlayerUiMapID)
+            StoreCachedPlayerPosition(minimapPlayerWorldPositionCache, contextRevision, lastStablePlayerWorldX, lastStablePlayerWorldY, lastStablePlayerInstanceID, lastStablePlayerUiMapID)
             return lastStablePlayerWorldX, lastStablePlayerWorldY, lastStablePlayerInstanceID, lastStablePlayerUiMapID
         end
     end
@@ -1805,7 +1826,7 @@ function QuestieCompat.GetCurrentPlayerMinimapWorldPosition()
             if worldX and worldY then
                 ResetAnchoredMinimapWorldPosition()
                 CacheMinimapPlayerWorldPosition(worldX, worldY, instanceID, uiMapID)
-                StoreCachedPlayerPosition(minimapPlayerWorldPositionCache, contextKey, worldX, worldY, instanceID, uiMapID)
+                StoreCachedPlayerPosition(minimapPlayerWorldPositionCache, contextRevision, worldX, worldY, instanceID, uiMapID)
                 return worldX, worldY, instanceID, uiMapID
             end
         end
@@ -1818,18 +1839,18 @@ function QuestieCompat.GetCurrentPlayerMinimapWorldPosition()
             if anchorUiMapID and x and y and (x > 0 or y > 0) then
                 local anchoredWorldX, anchoredWorldY, anchoredInstanceID, anchoredUiMapID = GetAnchoredMinimapWorldPosition(anchorUiMapID, x, y)
                 if anchoredWorldX and anchoredWorldY then
-                    StoreCachedPlayerPosition(minimapPlayerWorldPositionCache, contextKey, anchoredWorldX, anchoredWorldY, anchoredInstanceID, anchoredUiMapID)
+                    StoreCachedPlayerPosition(minimapPlayerWorldPositionCache, contextRevision, anchoredWorldX, anchoredWorldY, anchoredInstanceID, anchoredUiMapID)
                     return anchoredWorldX, anchoredWorldY, anchoredInstanceID, anchoredUiMapID
                 end
             end
 
             ResetAnchoredMinimapWorldPosition()
             if lastMinimapPlayerWorldX and lastMinimapPlayerWorldY and IsCachedWorldPositionUsableForUiMap(lastMinimapPlayerUiMapID, actualUiMapID) then
-                StoreCachedPlayerPosition(minimapPlayerWorldPositionCache, contextKey, lastMinimapPlayerWorldX, lastMinimapPlayerWorldY, lastMinimapPlayerInstanceID, lastMinimapPlayerUiMapID)
+                StoreCachedPlayerPosition(minimapPlayerWorldPositionCache, contextRevision, lastMinimapPlayerWorldX, lastMinimapPlayerWorldY, lastMinimapPlayerInstanceID, lastMinimapPlayerUiMapID)
                 return lastMinimapPlayerWorldX, lastMinimapPlayerWorldY, lastMinimapPlayerInstanceID, lastMinimapPlayerUiMapID
             end
             if lastStablePlayerWorldX and lastStablePlayerWorldY and IsCachedWorldPositionUsableForUiMap(lastStablePlayerUiMapID, actualUiMapID) then
-                StoreCachedPlayerPosition(minimapPlayerWorldPositionCache, contextKey, lastStablePlayerWorldX, lastStablePlayerWorldY, lastStablePlayerInstanceID, lastStablePlayerUiMapID)
+                StoreCachedPlayerPosition(minimapPlayerWorldPositionCache, contextRevision, lastStablePlayerWorldX, lastStablePlayerWorldY, lastStablePlayerInstanceID, lastStablePlayerUiMapID)
                 return lastStablePlayerWorldX, lastStablePlayerWorldY, lastStablePlayerInstanceID, lastStablePlayerUiMapID
             end
         else
@@ -1839,7 +1860,7 @@ function QuestieCompat.GetCurrentPlayerMinimapWorldPosition()
 
             local anchoredWorldX, anchoredWorldY, anchoredInstanceID, anchoredUiMapID = GetAnchoredMinimapWorldPosition(displayedUiMapID, x, y)
             if anchoredWorldX and anchoredWorldY then
-                StoreCachedPlayerPosition(minimapPlayerWorldPositionCache, contextKey, anchoredWorldX, anchoredWorldY, anchoredInstanceID, anchoredUiMapID)
+                StoreCachedPlayerPosition(minimapPlayerWorldPositionCache, contextRevision, anchoredWorldX, anchoredWorldY, anchoredInstanceID, anchoredUiMapID)
                 return anchoredWorldX, anchoredWorldY, anchoredInstanceID, anchoredUiMapID
             end
         end
@@ -1849,12 +1870,12 @@ function QuestieCompat.GetCurrentPlayerMinimapWorldPosition()
 
     if worldMapVisible and visibleMapIsUnrelated and not shouldSuppressExactRead and not isPlayerMoving then
         if lastMinimapPlayerWorldX and lastMinimapPlayerWorldY and IsCachedWorldPositionUsableForUiMap(lastMinimapPlayerUiMapID, actualUiMapID) then
-            StoreCachedPlayerPosition(minimapPlayerWorldPositionCache, contextKey, lastMinimapPlayerWorldX, lastMinimapPlayerWorldY, lastMinimapPlayerInstanceID, lastMinimapPlayerUiMapID)
+            StoreCachedPlayerPosition(minimapPlayerWorldPositionCache, contextRevision, lastMinimapPlayerWorldX, lastMinimapPlayerWorldY, lastMinimapPlayerInstanceID, lastMinimapPlayerUiMapID)
             return lastMinimapPlayerWorldX, lastMinimapPlayerWorldY, lastMinimapPlayerInstanceID, lastMinimapPlayerUiMapID
         end
 
         if lastStablePlayerWorldX and lastStablePlayerWorldY and IsCachedWorldPositionUsableForUiMap(lastStablePlayerUiMapID, actualUiMapID) then
-            StoreCachedPlayerPosition(minimapPlayerWorldPositionCache, contextKey, lastStablePlayerWorldX, lastStablePlayerWorldY, lastStablePlayerInstanceID, lastStablePlayerUiMapID)
+            StoreCachedPlayerPosition(minimapPlayerWorldPositionCache, contextRevision, lastStablePlayerWorldX, lastStablePlayerWorldY, lastStablePlayerInstanceID, lastStablePlayerUiMapID)
             return lastStablePlayerWorldX, lastStablePlayerWorldY, lastStablePlayerInstanceID, lastStablePlayerUiMapID
         end
     end
@@ -1863,18 +1884,18 @@ function QuestieCompat.GetCurrentPlayerMinimapWorldPosition()
         local exactWorldX, exactWorldY, exactInstanceID, exactUiMapID = GetPlayerWorldPositionFromActualZoneUiMap(normalizedActualUiMapID)
         if exactWorldX and exactWorldY then
             CacheMinimapPlayerWorldPosition(exactWorldX, exactWorldY, exactInstanceID, exactUiMapID)
-            StoreCachedPlayerPosition(minimapPlayerWorldPositionCache, contextKey, exactWorldX, exactWorldY, exactInstanceID, exactUiMapID)
+            StoreCachedPlayerPosition(minimapPlayerWorldPositionCache, contextRevision, exactWorldX, exactWorldY, exactInstanceID, exactUiMapID)
             return exactWorldX, exactWorldY, exactInstanceID, exactUiMapID
         end
     end
 
     if lastMinimapPlayerWorldX and lastMinimapPlayerWorldY and IsCachedWorldPositionUsableForUiMap(lastMinimapPlayerUiMapID, actualUiMapID) then
-        StoreCachedPlayerPosition(minimapPlayerWorldPositionCache, contextKey, lastMinimapPlayerWorldX, lastMinimapPlayerWorldY, lastMinimapPlayerInstanceID, lastMinimapPlayerUiMapID)
+        StoreCachedPlayerPosition(minimapPlayerWorldPositionCache, contextRevision, lastMinimapPlayerWorldX, lastMinimapPlayerWorldY, lastMinimapPlayerInstanceID, lastMinimapPlayerUiMapID)
         return lastMinimapPlayerWorldX, lastMinimapPlayerWorldY, lastMinimapPlayerInstanceID, lastMinimapPlayerUiMapID
     end
 
     if lastStablePlayerWorldX and lastStablePlayerWorldY and IsCachedWorldPositionUsableForUiMap(lastStablePlayerUiMapID, actualUiMapID) then
-        StoreCachedPlayerPosition(minimapPlayerWorldPositionCache, contextKey, lastStablePlayerWorldX, lastStablePlayerWorldY, lastStablePlayerInstanceID, lastStablePlayerUiMapID)
+        StoreCachedPlayerPosition(minimapPlayerWorldPositionCache, contextRevision, lastStablePlayerWorldX, lastStablePlayerWorldY, lastStablePlayerInstanceID, lastStablePlayerUiMapID)
         return lastStablePlayerWorldX, lastStablePlayerWorldY, lastStablePlayerInstanceID, lastStablePlayerUiMapID
     end
 
