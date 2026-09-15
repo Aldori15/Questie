@@ -1064,8 +1064,8 @@ end
 ---@type table<QuestId, {x:X, y:Y}>
 local closestStarter = {}
 function QuestieMap:FindClosestStarter()
-    local playerX, playerY, _ = HBD:GetPlayerWorldPosition();
-    local playerZone = HBD:GetPlayerWorldPosition();
+    local playerX, playerY = HBD:GetPlayerWorldPosition()
+    local playerZone = HBD:GetPlayerZone()
     for questId in pairs(QuestiePlayer.currentQuestlog) do
         if (not closestStarter[questId]) then
             local quest = QuestieDB.GetQuest(questId);
