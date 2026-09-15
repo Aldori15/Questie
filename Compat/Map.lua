@@ -1888,25 +1888,19 @@ end
 
 local function ResolveActualUiMapIDForMapContext(actualUiMapID)
     if actualUiMapID and not IsZoneLikeUiMap(actualUiMapID) then
-        actualUiMapID = nil
+        return nil
     end
 
-    return actualUiMapID, actualUiMapID
+    return actualUiMapID
 end
 
 local function ResolveActualPlayerUiMapID()
-    local actualUiMapID, normalizedActualUiMapID = ResolveActualUiMapIDForMapContext(ResolveUiMapIDByZoneTexts())
-    if not actualUiMapID then
-        actualUiMapID = lastKnownZoneLikeUiMapID
-        normalizedActualUiMapID = actualUiMapID
-    end
-
-    return actualUiMapID, normalizedActualUiMapID
+    return ResolveActualUiMapIDForMapContext(ResolveUiMapIDByZoneTexts()) or lastKnownZoneLikeUiMapID
 end
 
 local function GetCurrentActualPlayerZonePosition()
-    local actualUiMapID, normalizedActualUiMapID = ResolveActualPlayerUiMapID()
-    if not actualUiMapID and not normalizedActualUiMapID then
+    local actualUiMapID = ResolveActualPlayerUiMapID()
+    if not actualUiMapID then
         return nil, nil, nil
     end
 
@@ -1917,28 +1911,23 @@ local function GetCurrentActualPlayerZonePosition()
     end
 
     local resolvedUiMapID, resolvedX, resolvedY = QuestieCompat.GetCurrentPlayerPosition()
-    local targetUiMapIDs = {actualUiMapID}
-    if normalizedActualUiMapID and normalizedActualUiMapID ~= actualUiMapID then
-        targetUiMapIDs[#targetUiMapIDs + 1] = normalizedActualUiMapID
+    local targetUiMapID = actualUiMapID
+
+    if worldX and worldY and QuestieCompat.HBD and QuestieCompat.HBD.GetZoneCoordinatesFromWorld then
+        local zoneX, zoneY = QuestieCompat.HBD:GetZoneCoordinatesFromWorld(worldX, worldY, targetUiMapID, true)
+        if IsValidZoneCoords(zoneX, zoneY) then
+            return targetUiMapID, zoneX, zoneY
+        end
     end
 
-    for _, targetUiMapID in ipairs(targetUiMapIDs) do
-        if targetUiMapID and worldX and worldY and QuestieCompat.HBD and QuestieCompat.HBD.GetZoneCoordinatesFromWorld then
-            local zoneX, zoneY = QuestieCompat.HBD:GetZoneCoordinatesFromWorld(worldX, worldY, targetUiMapID, true)
-            if IsValidZoneCoords(zoneX, zoneY) then
-                return targetUiMapID, zoneX, zoneY
-            end
+    if resolvedUiMapID and resolvedX and resolvedY and (resolvedX > 0 or resolvedY > 0) then
+        if resolvedUiMapID == targetUiMapID then
+            return targetUiMapID, resolvedX, resolvedY
         end
 
-        if resolvedUiMapID and resolvedX and resolvedY and (resolvedX > 0 or resolvedY > 0) then
-            if resolvedUiMapID == targetUiMapID then
-                return targetUiMapID, resolvedX, resolvedY
-            end
-
-            local translatedX, translatedY = TranslateZoneCoordinatesBetweenUiMaps(resolvedX, resolvedY, resolvedUiMapID, targetUiMapID)
-            if translatedX and translatedY then
-                return targetUiMapID, translatedX, translatedY
-            end
+        local translatedX, translatedY = TranslateZoneCoordinatesBetweenUiMaps(resolvedX, resolvedY, resolvedUiMapID, targetUiMapID)
+        if translatedX and translatedY then
+            return targetUiMapID, translatedX, translatedY
         end
     end
 
@@ -1989,14 +1978,13 @@ local function ShouldUseCompatTomTomWorldCoords()
     local rawMapID, rawMapLevel = GetRawMapContext()
     local displayedMapName = GetDisplayedWorldMapName()
     local displayedUiMapID = ResolveDisplayedWorldMapUiMapID(rawMapID, rawMapLevel, displayedMapName)
-    local _, normalizedActualUiMapID = ResolveActualUiMapIDForMapContext(ResolveUiMapIDByZoneTexts())
-    normalizedActualUiMapID = normalizedActualUiMapID or lastKnownZoneLikeUiMapID
+    local actualUiMapID = ResolveActualPlayerUiMapID()
 
-    if not displayedUiMapID or not normalizedActualUiMapID then
+    if not displayedUiMapID or not actualUiMapID then
         return false
     end
 
-    return displayedUiMapID ~= normalizedActualUiMapID
+    return displayedUiMapID ~= actualUiMapID
 end
 
 function QuestieCompat.UpdateTomTomWorldCoords(frame, elapsed)
@@ -2089,8 +2077,8 @@ QuestieCompat.C_Map = {
     -- https://wowpedia.fandom.com/wiki/API_C_Map.GetBestMapForUnit
 	GetBestMapForUnit = function(unit)
         if unit == "player" then
-            local actualUiMapID, normalizedActualUiMapID = ResolveActualPlayerUiMapID()
-            return actualUiMapID or normalizedActualUiMapID or QuestieCompat.GetCurrentPlayerPosition()
+            local actualUiMapID = ResolveActualPlayerUiMapID()
+            return actualUiMapID or QuestieCompat.GetCurrentPlayerPosition()
         end
 	end,
     -- Returns the player's position on a map.
