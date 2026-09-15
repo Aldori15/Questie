@@ -37,6 +37,7 @@ local anchoredMinimapUiMapID = nil
 local internalMapReadDepth = 0
 local internalMapReadSelection = nil
 local worldMapInteractionSuppressUntil = 0
+local unitPositionMinimapTransforms = {}
 local playerPositionCache = {}
 local stablePlayerWorldPositionCache = {}
 local minimapPlayerWorldPositionCache = {}
@@ -298,11 +299,52 @@ local function CacheStablePlayerWorldPosition(worldX, worldY, instanceID, uiMapI
     lastStablePlayerUiMapID = uiMapID
 end
 
+local function GetUnitPositionMinimapTransformKey(rawMapID, instanceID)
+    if rawMapID == nil or instanceID == nil then
+        return nil
+    end
+
+    return tostring(rawMapID) .. ":" .. tostring(instanceID)
+end
+
+local function GetUnitPositionMinimapWorldPosition(uiMapID)
+    if type(UnitPosition) ~= "function" or not uiMapID then
+        return nil, nil, nil, nil
+    end
+
+    local uiData = QuestieCompat.UiMapData and QuestieCompat.UiMapData[uiMapID]
+    local instanceID = uiData and uiData.instance
+    if instanceID == nil then
+        return nil, nil, nil, nil
+    end
+
+    local positionX, positionY, _, rawMapID = UnitPosition("player")
+    local key = GetUnitPositionMinimapTransformKey(rawMapID, instanceID)
+    local transform = key and unitPositionMinimapTransforms[key]
+    if not positionX or not positionY or not transform then
+        return nil, nil, nil, nil
+    end
+
+    return positionY + transform.offsetX, positionX + transform.offsetY, instanceID, uiMapID
+end
+
 local function CacheMinimapPlayerWorldPosition(worldX, worldY, instanceID, uiMapID)
     lastMinimapPlayerWorldX = worldX
     lastMinimapPlayerWorldY = worldY
     lastMinimapPlayerInstanceID = instanceID
     lastMinimapPlayerUiMapID = uiMapID
+
+    if type(UnitPosition) == "function" and (not WorldMapFrame or not WorldMapFrame:IsVisible()) then
+        local positionX, positionY, _, rawMapID = UnitPosition("player")
+        local key = GetUnitPositionMinimapTransformKey(rawMapID, instanceID)
+
+        if positionX and positionY and key and not unitPositionMinimapTransforms[key] then
+            unitPositionMinimapTransforms[key] = {
+                offsetX = worldX - positionY,
+                offsetY = worldY - positionX,
+            }
+        end
+    end
 end
 
 local function BeginInternalMapRead(savedSelection)
@@ -985,6 +1027,31 @@ local function GetPlayerWorldPositionFromActualZoneUiMap(actualUiMapID)
     return worldX, worldY, instanceID, targetUiMapID
 end
 
+local function NormalizeCanonicalMinimapUiMapID(uiMapID)
+    if not uiMapID then
+        return nil
+    end
+
+    if minimapChildToParentRebaseUiMapId[uiMapID] then
+        local uiData = QuestieCompat.UiMapData and QuestieCompat.UiMapData[uiMapID]
+        if uiData and uiData.parentMapID then
+            return uiData.parentMapID
+        end
+    end
+
+    return uiMapID
+end
+
+local function GetCanonicalMinimapUiMapID(actualUiMapID)
+    local uiMapID = lastMinimapPlayerUiMapID or lastStablePlayerUiMapID or lastKnownZoneLikeUiMapID
+
+    if not uiMapID then
+        uiMapID = ResolveUiMapIDByMapName(GetRealZoneText and GetRealZoneText() or nil)
+    end
+
+    return NormalizeCanonicalMinimapUiMapID(uiMapID or actualUiMapID)
+end
+
 local function ShouldCacheZoneLikeUiMap(uiMapID)
     if not uiMapID or not IsZoneLikeUiMap(uiMapID) then
         return false
@@ -1627,7 +1694,7 @@ function QuestieCompat.GetCurrentPlayerMinimapWorldPosition()
         actualUiMapID = lastKnownZoneLikeUiMapID
     end
 
-    local normalizedActualUiMapID = actualUiMapID
+    local normalizedActualUiMapID = GetCanonicalMinimapUiMapID(actualUiMapID) or actualUiMapID
     local displayedUiMapID = nil
     local isAzerothOutlandChooser = false
     local chooserPlayerUiMapID = nil
@@ -1643,13 +1710,12 @@ function QuestieCompat.GetCurrentPlayerMinimapWorldPosition()
         end
     end
 
+    local canonicalMinimapUiMapID = normalizedActualUiMapID
     local dropdownMenuOpen = IsWorldMapDropdownMenuOpen()
-    local shouldFreezeVisibleRead = worldMapVisible and ShouldFreezeVisibleWorldMapPlayerRead(rawMapID, displayedUiMapID, normalizedActualUiMapID)
+    local shouldFreezeVisibleRead = worldMapVisible and ShouldFreezeVisibleWorldMapPlayerRead(rawMapID, displayedUiMapID, canonicalMinimapUiMapID)
     local shouldSuppressExactRead = dropdownMenuOpen or isAzerothOutlandChooser or shouldFreezeVisibleRead
-    local visibleMapIsUnrelated = worldMapVisible
-        and displayedUiMapID
-        and normalizedActualUiMapID
-        and (not AreUiMapsRelated(displayedUiMapID, normalizedActualUiMapID))
+    local visibleMapIsUnrelated = worldMapVisible and displayedUiMapID and canonicalMinimapUiMapID and (not AreUiMapsRelated(displayedUiMapID, canonicalMinimapUiMapID))
+
     local starterChildUiMapID = actualUiMapID
     if not (starterChildUiMapID and minimapChildToParentRebaseUiMapId[starterChildUiMapID]) then
         local subZoneUiMapID = ResolveUiMapIDByMapName(GetSubZoneText and GetSubZoneText() or nil)
@@ -1681,6 +1747,17 @@ function QuestieCompat.GetCurrentPlayerMinimapWorldPosition()
             StoreCachedPlayerPosition(minimapPlayerWorldPositionCache, contextKey, exactWorldX, exactWorldY, exactInstanceID, minimapUiMapID)
 
             return exactWorldX, exactWorldY, exactInstanceID, minimapUiMapID
+        end
+    end
+
+    if worldMapVisible and (visibleMapIsUnrelated or isAzerothOutlandChooser) then
+        local worldX, worldY, instanceID, uiMapID = GetUnitPositionMinimapWorldPosition(canonicalMinimapUiMapID)
+
+        if worldX and worldY then
+            ResetAnchoredMinimapWorldPosition()
+            CacheMinimapPlayerWorldPosition(worldX, worldY, instanceID, uiMapID)
+            StoreCachedPlayerPosition(minimapPlayerWorldPositionCache, contextKey, worldX, worldY, instanceID, uiMapID)
+            return worldX, worldY, instanceID, uiMapID
         end
     end
 
@@ -1721,7 +1798,7 @@ function QuestieCompat.GetCurrentPlayerMinimapWorldPosition()
             normalizedActualUiMapID = uiMapID
         end
         do
-            local worldX, worldY, instanceID = GetValidatedResolvedMinimapWorldPosition(uiMapID, x, y, actualUiMapID)
+            local worldX, worldY, instanceID = GetValidatedResolvedMinimapWorldPosition(uiMapID, x, y, normalizedActualUiMapID)
             if worldX and worldY then
                 ResetAnchoredMinimapWorldPosition()
                 CacheMinimapPlayerWorldPosition(worldX, worldY, instanceID, uiMapID)
@@ -1779,8 +1856,8 @@ function QuestieCompat.GetCurrentPlayerMinimapWorldPosition()
         end
     end
 
-    if actualUiMapID and not shouldSuppressExactRead then
-        local exactWorldX, exactWorldY, exactInstanceID, exactUiMapID = GetPlayerWorldPositionFromActualZoneUiMap(actualUiMapID)
+    if normalizedActualUiMapID and not shouldSuppressExactRead then
+        local exactWorldX, exactWorldY, exactInstanceID, exactUiMapID = GetPlayerWorldPositionFromActualZoneUiMap(normalizedActualUiMapID)
         if exactWorldX and exactWorldY then
             CacheMinimapPlayerWorldPosition(exactWorldX, exactWorldY, exactInstanceID, exactUiMapID)
             StoreCachedPlayerPosition(minimapPlayerWorldPositionCache, contextKey, exactWorldX, exactWorldY, exactInstanceID, exactUiMapID)
