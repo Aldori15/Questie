@@ -173,6 +173,15 @@ local migrationFunctions = {
         Questie.db.global.lastDailyRequestDate = nil
         Questie.db.global.lastDailyRequestResetTime = nil
     end,
+    [31] = function()
+        local previousMinimizeInInstances = Questie.db.profile.minimizeTrackerInDungeons
+        local previousHideInInstances = Questie.db.profile.hideTrackerInDungeons
+
+        Questie.db.profile.minimizeTrackerInInstances = previousMinimizeInInstances
+        Questie.db.profile.hideTrackerInInstances = previousHideInInstances
+        Questie.db.profile.minimizeTrackerInDungeons = nil
+        Questie.db.profile.hideTrackerInDungeons = nil
+    end,
 }
 
 function Migration:Migrate()

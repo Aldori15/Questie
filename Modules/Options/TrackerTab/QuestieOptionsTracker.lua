@@ -29,20 +29,6 @@ local trackerOptions = {}
 
 local SharedMedia = LibStub("LibSharedMedia-3.0")
 
----Toggle tracker visibility based on a condition
----@param shouldHide boolean Whether to hide (true) or show (false) the tracker
----@param conditionFn fun(): boolean Function that returns true if the condition is met
-local function toggleTrackerVisibility(shouldHide, conditionFn)
-    local baseFrame = TrackerBaseFrame.baseFrame
-    if baseFrame and conditionFn() then
-        if shouldHide then
-            QuestieTracker:Hide()
-        else
-            QuestieTracker:Show()
-        end
-    end
-end
-
 local function startFadeTicker()
     local fadeTicker
     local fadeTickerValue = 1
@@ -459,41 +445,33 @@ function QuestieOptions.tabs.tracker:Initialize()
                         order = 1,
                         width = 1.5,
                         name = function() return l10n('Minimize In Combat') end,
-                        desc = function() return l10n('When this is checked, the Questie Tracker will automatically be minimized while entering combat.') end,
+                        desc = function() return l10n('If checked, the Questie Tracker will automatically be minimized while entering combat.') end,
                         disabled = function() return not Questie.db.profile.trackerEnabled end,
                         get = function() return Questie.db.profile.minimizeTrackerInCombat end,
                         set = function(_, value)
                             Questie.db.profile.minimizeTrackerInCombat = value
-                            -- Disable the hide option when minimize is enabled
                             if value then
                                 Questie.db.profile.hideTrackerInCombat = false
+                                QuestieTracker.OnHideInCombatChanged(false)
                             end
-                            if value and InCombatLockdown() then
-                                QuestieTracker:Collapse()
-                            else
-                                QuestieTracker:Expand()
-                            end
+                            QuestieTracker.OnMinimizeInCombatChanged(value)
                         end
                     },
-                    minimizeInDungeons = {
+                    minimizeInInstances = {
                         type = "toggle",
                         order = 2,
                         width = 1.5,
-                        name = function() return l10n('Minimize In Dungeons') end,
-                        desc = function() return l10n('When this is checked, the Questie Tracker will automatically be minimized when entering a dungeon.') end,
+                        name = function() return l10n('Minimize In Instances') end,
+                        desc = function() return l10n('If checked, the Questie Tracker will automatically be minimized when entering a dungeon, raid, or battleground.') end,
                         disabled = function() return not Questie.db.profile.trackerEnabled end,
-                        get = function() return Questie.db.profile.minimizeTrackerInDungeons end,
+                        get = function() return Questie.db.profile.minimizeTrackerInInstances end,
                         set = function(_, value)
-                            Questie.db.profile.minimizeTrackerInDungeons = value
-                            -- Disable the hide option when minimize is enabled
+                            Questie.db.profile.minimizeTrackerInInstances = value
                             if value then
-                                Questie.db.profile.hideTrackerInDungeons = false
+                                Questie.db.profile.hideTrackerInInstances = false
+                                QuestieTracker.OnHideInInstancesChanged(false)
                             end
-                            if value and IsInInstance() then
-                                QuestieTracker:Collapse()
-                            else
-                                QuestieTracker:Expand()
-                            end
+                            QuestieTracker.OnMinimizeInInstancesChanged(value)
                         end
                     },
                     hideInCombat = {
@@ -508,24 +486,26 @@ function QuestieOptions.tabs.tracker:Initialize()
                             Questie.db.profile.hideTrackerInCombat = value
                             if value then
                                 Questie.db.profile.minimizeTrackerInCombat = false
+                                QuestieTracker.OnMinimizeInCombatChanged(false)
                             end
-                            toggleTrackerVisibility(value, InCombatLockdown)
+                            QuestieTracker.OnHideInCombatChanged(value)
                         end
                     },
-                    hideInDungeons = {
+                    hideInInstances = {
                         type = "toggle",
                         order = 4,
                         width = 1.5,
-                        name = function() return l10n("Hide In Dungeons") end,
-                        desc = function() return l10n("If checked, the Questie Tracker will automatically be hidden when entering a dungeon.") end,
+                        name = function() return l10n("Hide In Instances") end,
+                        desc = function() return l10n("If checked, the Questie Tracker will automatically be hidden when entering a dungeon, raid, or battleground.") end,
                         disabled = function() return not Questie.db.profile.trackerEnabled end,
-                        get = function() return Questie.db.profile.hideTrackerInDungeons end,
+                        get = function() return Questie.db.profile.hideTrackerInInstances end,
                         set = function(_, value)
-                            Questie.db.profile.hideTrackerInDungeons = value
+                            Questie.db.profile.hideTrackerInInstances = value
                             if value then
-                                Questie.db.profile.minimizeTrackerInDungeons = false
+                                Questie.db.profile.minimizeTrackerInInstances = false
+                                QuestieTracker.OnMinimizeInInstancesChanged(false)
                             end
-                            toggleTrackerVisibility(value, IsInInstance)
+                            QuestieTracker.OnHideInInstancesChanged(value)
                         end
                     },
                     fadeMinMaxButtons = {
