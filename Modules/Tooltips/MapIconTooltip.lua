@@ -369,14 +369,13 @@ function MapIconTooltip:Show()
                                 and (not exclusiveQuestCompleted)
                                 and (not unavailableBecauseCompleted) then
                                 if firstBreadcrumb then
-                                    local breadcrumbLevel = QuestieLib.GetEffectiveQuestLevel(breadcrumbId)
-                                    local breadcrumbTitle, breadcrumbReward = _MapIconTooltip.GetNextQuestInChainLines(
-                                        breadcrumbId, breadcrumbLevel, breadcrumbTitleIndent)
-                                    tooltipRows:AddLine(breadcrumbLabelPrefix .. FormatLabelWithColon(l10n("Breadcrumb Quests")) .. " ",
-                                        0.86, 0.86, 0.86)
-                                    tooltipRows:AddDoubleLine(breadcrumbTitle, breadcrumbReward, 1, 1, 1)
+                                    tooltipRows:AddLine(breadcrumbLabelPrefix .. FormatLabelWithColon(l10n("Breadcrumb Quests")) .. " ", 0.86, 0.86, 0.86)
                                     firstBreadcrumb = false
                                 end
+
+                                local breadcrumbLevel = QuestieLib.GetEffectiveQuestLevel(breadcrumbId)
+                                local breadcrumbTitle, breadcrumbReward = _MapIconTooltip.GetNextQuestInChainLines(breadcrumbId, breadcrumbLevel, breadcrumbTitleIndent)
+                                tooltipRows:AddDoubleLine(breadcrumbTitle, breadcrumbReward, 1, 1, 1)
                             end
                         end
                     end

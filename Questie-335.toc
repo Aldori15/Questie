@@ -167,6 +167,7 @@ Modules\Quest\QuestLogCache.lua
 Modules\Quest\DailyQuests.lua
 Modules\Quest\DailyQuestHubs.lua
 Modules\Quest\IsleOfQuelDanas.lua
+Modules\Quest\BreadcrumbQuests.lua
 Modules\Quest\QuestEventHandler.lua
 Modules\Quest\QuestgiverFrame.lua
 Modules\Quest\QuestieQuest.lua

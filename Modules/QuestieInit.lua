@@ -41,6 +41,8 @@ local QuestieMenu = QuestieLoader:ImportModule("QuestieMenu")
 local Townsfolk = QuestieLoader:ImportModule("Townsfolk")
 ---@type QuestieQuest
 local QuestieQuest = QuestieLoader:ImportModule("QuestieQuest")
+---@type BreadcrumbQuests
+local BreadcrumbQuests = QuestieLoader:ImportModule("BreadcrumbQuests")
 ---@type IsleOfQuelDanas
 local IsleOfQuelDanas = QuestieLoader:ImportModule("IsleOfQuelDanas")
 ---@type DailyQuests
@@ -358,6 +360,9 @@ QuestieInit.Stages[3] = function() -- run as a coroutine
     Hooks:HookQuestLogTitle()
     QuestieCombatQueue.Initialize()
     QuestieQuest:GetAllQuestIds()
+
+    -- QUEST_ACCEPTED does not fire for quests already in the log, so check breadcrumbs after hydration.
+    BreadcrumbQuests.CheckAllQuestBreadcrumbs()
 
     -- Defer optional startup work until the tracker has been hydrated.
     Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage3] Communications initializing.")
