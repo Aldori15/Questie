@@ -605,9 +605,13 @@ function QuestieQuest:UpdateQuest(questId)
             Questie:SendMessage("QC_ID_BROADCAST_QUEST_UPDATE", questId)
         elseif isComplete == 0 then
             -- Quest was somehow reset back to incomplete after being completed (quest.WasComplete == true).
-            -- The "or" check looks for a sourceItemId then checks to see if it's NOT in the players bag.
-            -- Player destroyed quest items? Or some other quest mechanic removed the needed quest item.
-            if quest and (quest.WasComplete or (quest.sourceItemId > 0 and QuestieQuest:CheckQuestSourceItem(questId) == false)) then
+            -- Only treat a missing source item as a reset for quests without regular quest log objectives.
+            -- Some quests legitimately replace their source item while progressing an objective.
+            local questLogObjectives = QuestLogCache.GetQuestObjectives(questId)
+            local hasQuestLogObjectives = questLogObjectives and next(questLogObjectives) ~= nil
+            local sourceItemMissing = quest and not hasQuestLogObjectives and quest.sourceItemId > 0 and QuestieQuest:CheckQuestSourceItem(questId) == false
+
+            if quest and (quest.WasComplete or sourceItemMissing) then
                 Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest:UpdateQuest] Quest was once complete or Quest Item(s) were removed. Resetting quest.")
 
                 -- Reset quest objectives and quest flags before asynchronous cleanup.
@@ -1758,7 +1762,10 @@ function QuestieQuest:PopulateQuestLogInfo(quest)
                 -- This specialObjective is an extraObjective and has a RealObjectiveIndex set
                 specialObjective.Completed = quest.Objectives[specialObjective.RealObjectiveIndex].Completed
                 specialObjective.Update = function(self)
-                    self.Completed = quest.Objectives[self.RealObjectiveIndex].Completed
+                    local realObjective = quest.Objectives[self.RealObjectiveIndex]
+                    if realObjective then
+                        self.Completed = realObjective.Completed
+                    end
                 end
             else
                 specialObjective.Update = NOP_FUNCTION
