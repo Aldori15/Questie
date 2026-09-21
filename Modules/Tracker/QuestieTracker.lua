@@ -17,6 +17,8 @@ local TrackerFadeTicker = QuestieLoader:ImportModule("TrackerFadeTicker")
 local TrackerQuestTimers = QuestieLoader:ImportModule("TrackerQuestTimers")
 ---@type TrackerUtils
 local TrackerUtils = QuestieLoader:ImportModule("TrackerUtils")
+---@type AutoRoute
+local AutoRoute = QuestieLoader:ImportModule("AutoRoute")
 -------------------------
 --Import Questie modules.
 -------------------------
@@ -500,6 +502,7 @@ function QuestieTracker:Toggle()
         Questie.db.profile.trackerEnabled = true
     end
     QuestieTracker:Update()
+    AutoRoute.ScheduleUpdate()
 end
 
 -- Minimizes the QuestieTracker
@@ -2374,6 +2377,7 @@ function QuestieTracker:UntrackQuestId(questId)
     else
         Questie.db.char.AutoUntrackedQuests[questId] = true
     end
+    AutoRoute.ScheduleUpdate()
 
     CommsVisibility:ScheduleSnapshot("UNTRACK_QUEST")
 
@@ -2441,6 +2445,7 @@ function QuestieTracker:AQW_Insert(index, expire)
         end
 
         CommsVisibility:ScheduleSnapshot("TRACK_QUEST")
+        AutoRoute.ScheduleUpdate()
 
         local quest = QuestieDB.GetQuest(questId)
 

@@ -38,6 +38,8 @@ local QuestieTracker = QuestieLoader:ImportModule("QuestieTracker")
 local QuestgiverFrame = QuestieLoader:ImportModule("QuestgiverFrame")
 ---@type TrackerUtils
 local TrackerUtils = QuestieLoader:ImportModule("TrackerUtils")
+---@type AutoRoute
+local AutoRoute = QuestieLoader:ImportModule("AutoRoute")
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
 ---@type QuestiePartyObjectives
@@ -348,6 +350,7 @@ function _QuestEventHandler:QuestTurnedIn(questId, xpReward, moneyReward)
     QuestieQuest:SetObjectivesDirty(questId) -- is this necessary? should whole quest.Objectives be cleared at some point of quest removal?
 
     QuestLifecycle:CompleteQuest(questId)
+    AutoRoute.RemoveFromRoute(questId)
     QuestieJourney:CompleteQuest(questId)
     QuestieAnnounce:CompletedQuest(questId)
 
@@ -407,6 +410,7 @@ function _QuestEventHandler:MarkQuestAsAbandoned(questId)
         QuestieQuest:SetObjectivesDirty(questId) -- is this necessary? should whole quest.Objectives be cleared at some point of quest removal?
 
         QuestLifecycle:AbandonQuest(questId)
+        AutoRoute.RemoveFromRoute(questId)
         AvailableQuests.ResetLastNpcGuid()
         QuestieJourney:AbandonQuest(questId)
         QuestieAnnounce:AbandonedQuest(questId)
@@ -544,6 +548,9 @@ end
 function _QuestEventHandler:ZoneChangedNewArea()
     Questie.Debug(Questie.DEBUG_DEVELOP, "[EVENT] ZONE_CHANGED_NEW_AREA")
     QuestieTracker.HandleZoneChanged()
+    -- Location APIs can still report the old zone during the event.
+    -- Keep this retry even if another quest event schedules an earlier update.
+    C_Timer.After(2, AutoRoute.Update)
 end
 
 function _QuestEventHandler:BagUpdate()

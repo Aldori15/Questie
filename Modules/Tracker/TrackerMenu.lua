@@ -9,6 +9,8 @@ local QuestieTracker = QuestieLoader:ImportModule("QuestieTracker")
 local TrackerBaseFrame = QuestieLoader:ImportModule("TrackerBaseFrame")
 ---@type TrackerUtils
 local TrackerUtils = QuestieLoader:ImportModule("TrackerUtils")
+---@type AutoRoute
+local AutoRoute = QuestieLoader:ImportModule("AutoRoute")
 -------------------------
 --Import Questie modules.
 -------------------------
@@ -280,6 +282,58 @@ TrackerMenu.addUntrackOption = function(menu, quest)
     })
 end
 
+TrackerMenu.addRouteOption = function(menu, quest)
+    local position = AutoRoute.GetRoutePosition(quest.Id)
+    if not position then
+        tinsert(menu, {
+            text = l10n("Add to |cFF54e33bTomTom|r Route"),
+            func = function()
+                LibDropDown:CloseDropDownMenus()
+                AutoRoute.AddToRoute(quest.Id)
+            end,
+        })
+        return
+    end
+
+    local routeMenu = {
+        {
+            text = l10n("Move Up"),
+            disabled = position == 1,
+            func = function()
+                LibDropDown:CloseDropDownMenus()
+                AutoRoute.MoveInRoute(quest.Id, -1)
+            end,
+        },
+        {
+            text = l10n("Move Down"),
+            disabled = position == #(Questie.db.char.autoRouteOrder or {}),
+            func = function()
+                LibDropDown:CloseDropDownMenus()
+                AutoRoute.MoveInRoute(quest.Id, 1)
+            end,
+        },
+        {
+            text = l10n("Remove from Route"),
+            func = function()
+                LibDropDown:CloseDropDownMenus()
+                AutoRoute.RemoveFromRoute(quest.Id)
+            end,
+        },
+        {
+            text = l10n("Clear Route"),
+            func = function()
+                LibDropDown:CloseDropDownMenus()
+                AutoRoute.ClearRoute()
+            end,
+        },
+    }
+    tinsert(menu, {
+        text = l10n("|cFF54e33bTomTom|r Route") .. " |cFFAAAAAA(#" .. position .. ")|r",
+        hasArrow = true,
+        menuList = routeMenu,
+    })
+end
+
 TrackerMenu.addFocusUnfocusOption = function(menu, quest)
     if Questie.db.char.TrackerFocus and type(Questie.db.char.TrackerFocus) == "number" and Questie.db.char.TrackerFocus == quest.Id then
         tinsert(menu, {
@@ -417,6 +471,9 @@ function TrackerMenu:GetMenuForQuest(quest)
     TrackerMenu.addObjectiveOption(menu, subMenu, quest)
     TrackerMenu.addFocusUnfocusOption(menu, quest)
     TrackerMenu.addTomTomOption(menu, quest, nil)
+    if IsAddOnLoaded("TomTom") then
+        TrackerMenu.addRouteOption(menu, quest)
+    end
     TrackerMenu.minMaxQuestOption(menu, quest)
     TrackerMenu.addShowHideQuestsOption(menu, quest)
     TrackerMenu.addShowFinisherOnMapOption(menu, quest)

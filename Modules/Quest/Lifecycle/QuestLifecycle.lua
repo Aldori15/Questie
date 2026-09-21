@@ -17,6 +17,8 @@ local QuestieTracker = QuestieLoader:ImportModule("QuestieTracker")
 local QuestieCombatQueue = QuestieLoader:ImportModule("QuestieCombatQueue")
 ---@type CommsVisibility
 local CommsVisibility = QuestieLoader:ImportModule("CommsVisibility")
+---@type AutoRoute
+local AutoRoute = QuestieLoader:ImportModule("AutoRoute")
 
 --- COMPATIBILITY ---
 local C_Timer = QuestieCompat.C_Timer
@@ -117,6 +119,7 @@ function QuestLifecycle:AcceptQuest(questId)
                 -- This needs to happen after QuestieQuest:PopulateQuestLogInfo because that is the place where quest.Objectives is generated
                 Questie:SendMessage("QC_ID_BROADCAST_QUEST_UPDATE", questId)
                 QuestieQuest:PopulateObjectiveNotes(quest)
+                AutoRoute.ScheduleUpdate(0.25)
 
                 -- Run a delayed refresh so newly accepted quests are
                 -- guaranteed visible without manual collapse/expand.

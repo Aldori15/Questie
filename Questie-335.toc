@@ -212,6 +212,7 @@ Modules\Tracker\Sorter\byComplete.lua
 Modules\Tracker\Sorter\byLevel.lua
 Modules\Tracker\Sorter\byZone.lua
 Modules\Tracker\TrackerUtils.lua
+Modules\Tracker\AutoRoute.lua
 Modules\Tracker\TrackerMenu.lua
 Modules\Tracker\TrackerFadeTicker.lua
 Modules\Tracker\TrackerBaseFrame.lua

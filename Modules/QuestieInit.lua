@@ -19,6 +19,8 @@ local Migration = QuestieLoader:ImportModule("Migration")
 local QuestieProfessions = QuestieLoader:ImportModule("QuestieProfessions")
 ---@type QuestieTracker
 local QuestieTracker = QuestieLoader:ImportModule("QuestieTracker")
+---@type AutoRoute
+local AutoRoute = QuestieLoader:ImportModule("AutoRoute")
 ---@type QuestieMap
 local QuestieMap = QuestieLoader:ImportModule("QuestieMap")
 ---@type InstanceLocations
@@ -426,6 +428,9 @@ QuestieInit.Stages[3] = function() -- run as a coroutine
     end
 
     Questie.started = true
+    AutoRoute.ClearSavedAutomaticHandle()
+    AutoRoute.PruneRoute()
+    AutoRoute.ScheduleUpdate(0.5)
 
     if QuestieIconVisibility:IsEnabledAnywhere("event") then
         Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage3] QuestieEvent initializing.")

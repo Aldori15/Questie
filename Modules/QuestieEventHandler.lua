@@ -21,6 +21,8 @@ local TrackerBaseFrame = QuestieLoader:ImportModule("TrackerBaseFrame")
 local TrackerQuestFrame = QuestieLoader:ImportModule("TrackerQuestFrame")
 ---@type TrackerUtils
 local TrackerUtils = QuestieLoader:ImportModule("TrackerUtils")
+---@type AutoRoute
+local AutoRoute = QuestieLoader:ImportModule("AutoRoute")
 ---@type QuestieReputation
 local QuestieReputation = QuestieLoader:ImportModule("QuestieReputation")
 ---@type QuestieNameplate
@@ -437,6 +439,7 @@ function _EventHandler:PlayerLevelUp(level)
 
     _RefreshAvailableAfterLevelChange(level)
     QuestieJourney:PlayerLevelUp(level)
+    AutoRoute.ScheduleUpdate()
 
     -- Quest difficulty colors might have changed with the new level
     QuestieCombatQueue:Queue(function()

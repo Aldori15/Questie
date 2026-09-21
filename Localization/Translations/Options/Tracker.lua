@@ -1016,6 +1016,31 @@ local trackerOptionsLocales = {
         ["frFR"] = "Par proximité de zone (inverté)",
     },
     ---------------------------------------------------------
+    ["Automatic |cFF54e33bTomTom|r Route"] = {
+        ["enUS"] = true,
+        ["esMX"] = "Ruta automática de |cFF54e33bTomTom|r",
+        ["esES"] = "Ruta automática de |cFF54e33bTomTom|r",
+        ["ptBR"] = "Rota automática do |cFF54e33bTomTom|r",
+        ["deDE"] = "Automatische |cFF54e33bTomTom|r-Route",
+        ["frFR"] = "Itinéraire automatique |cFF54e33bTomTom|r",
+        ["ruRU"] = "Автоматический маршрут |cFF54e33bTomTom|r",
+        ["koKR"] = "자동 |cFF54e33bTomTom|r 경로",
+        ["zhCN"] = "|cFF54e33bTomTom|r 自动路线",
+        ["zhTW"] = "|cFF54e33bTomTom|r 自動路線",
+    },
+    ["Automatically point TomTom at the next tracked quest. Quests added to an ordered route from the Tracker are visited first; otherwise Questie uses distance and quest level. Manually set Questie waypoints take priority."] = {
+        ["enUS"] = true,
+        ["esMX"] = "Dirige automáticamente TomTom a la siguiente misión rastreada. Las misiones añadidas a una ruta ordenada desde el rastreador tienen prioridad; de lo contrario, Questie usa la distancia y el nivel de la misión. Los puntos de ruta de Questie establecidos manualmente tienen prioridad.",
+        ["esES"] = "Dirige automáticamente TomTom a la siguiente misión rastreada. Las misiones añadidas a una ruta ordenada desde el rastreador tienen prioridad; de lo contrario, Questie usa la distancia y el nivel de la misión. Los puntos de ruta de Questie establecidos manualmente tienen prioridad.",
+        ["ptBR"] = "Aponta automaticamente o TomTom para a próxima missão rastreada. Missões adicionadas a uma rota ordenada no rastreador têm prioridade; caso contrário, o Questie usa a distância e o nível da missão. Pontos definidos manualmente pelo Questie têm prioridade.",
+        ["deDE"] = "Richtet TomTom automatisch auf die nächste verfolgte Quest. Quests in einer geordneten Route im Tracker haben Vorrang; andernfalls verwendet Questie Entfernung und Queststufe. Manuell gesetzte Questie-Wegpunkte haben Vorrang.",
+        ["frFR"] = "Oriente automatiquement TomTom vers la prochaine quête suivie. Les quêtes ajoutées à un itinéraire ordonné depuis le suivi sont prioritaires ; sinon, Questie utilise la distance et le niveau de la quête. Les points Questie définis manuellement sont prioritaires.",
+        ["ruRU"] = "Автоматически направляет TomTom к следующему отслеживаемому заданию. Задания в упорядоченном маршруте трекера имеют приоритет; иначе Questie учитывает расстояние и уровень задания. Путевые точки Questie, заданные вручную, имеют приоритет.",
+        ["koKR"] = "TomTom이 다음 추적 중인 퀘스트를 자동으로 가리킵니다. 추적기에서 순서가 지정된 경로에 추가한 퀘스트가 우선하며, 그렇지 않으면 Questie가 거리와 퀘스트 레벨을 고려합니다. 수동으로 설정한 Questie 경유지가 우선합니다.",
+        ["zhCN"] = "自动将 TomTom 指向下一个已追踪任务。追踪器中加入有序路线的任务优先；否则 Questie 会根据距离和任务等级选择。手动设置的 Questie 路点优先。",
+        ["zhTW"] = "自動將 TomTom 指向下一個已追蹤任務。追蹤器中加入有序路線的任務優先；否則 Questie 會依距離和任務等級選擇。手動設定的 Questie 路點優先。",
+    },
+    ---------------------------------------------------------
     ["Set |cFF54e33bTomTom|r Target"] = {
         ["ptBR"] = "Defina o alvo de |cFF54e33bTomTom|r",
         ["ruRU"] = "Установить точку |cFF54e33bTomTom|r",

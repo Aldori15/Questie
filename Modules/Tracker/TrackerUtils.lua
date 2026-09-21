@@ -121,6 +121,7 @@ function TrackerUtils:ClearTomTomTarget()
     end
     Questie.db.char._tom_waypoint = nil
     Questie.db.char._tom_waypoint_quest = nil
+    Questie.db.char._tom_waypoint_source = nil
 end
 
 ---Removes the tracked TomTom waypoint only if it belongs to the given quest (and, if given, objective).
@@ -143,7 +144,8 @@ end
 ---@param y number Y coordinate
 ---@param questId number? The quest this waypoint belongs to
 ---@param objectiveIndex ObjectiveIndex? The objective this waypoint belongs to
-function TrackerUtils:SetTomTomTarget(title, zone, x, y, questId, objectiveIndex)
+---@param source string? "autoRoute" for automatic targets; all other callers are manual
+function TrackerUtils:SetTomTomTarget(title, zone, x, y, questId, objectiveIndex, source)
     if TomTom and TomTom.AddWaypoint then
         if Questie.db.char._tom_waypoint and TomTom.RemoveWaypoint then -- remove old waypoint
             TomTom:RemoveWaypoint(Questie.db.char._tom_waypoint)
@@ -151,7 +153,11 @@ function TrackerUtils:SetTomTomTarget(title, zone, x, y, questId, objectiveIndex
         local uiMapId = ZoneDB:GetUiMapIdByAreaId(zone)
 
         if QuestieCompat.Is335 then
-            Questie.db.char._tom_waypoint = QuestieCompat.TomTom_AddWaypoint(title, uiMapId, x, y)
+            local persistent
+            if source == "autoRoute" then
+                persistent = false
+            end
+            Questie.db.char._tom_waypoint = QuestieCompat.TomTom_AddWaypoint(title, uiMapId, x, y, persistent)
         else
             Questie.db.char._tom_waypoint = TomTom:AddWaypoint(uiMapId, x / 100, y / 100, { title = title, crazy = true, from = "Questie" })
         end
@@ -161,6 +167,7 @@ function TrackerUtils:SetTomTomTarget(title, zone, x, y, questId, objectiveIndex
         else
             Questie.db.char._tom_waypoint_quest = nil
         end
+        Questie.db.char._tom_waypoint_source = Questie.db.char._tom_waypoint and (source or "manual") or nil
     end
 end
 

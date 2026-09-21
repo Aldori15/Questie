@@ -1341,7 +1341,7 @@ local function GetTomTomDungeonEntranceWaypoint(uiMapID)
     return entranceCZ, entrance[2], entrance[3]
 end
 
-function QuestieCompat.TomTom_AddWaypoint(title, zone, x, y)
+function QuestieCompat.TomTom_AddWaypoint(title, zone, x, y, persistent)
     local CZ = GetTomTomCZForUiMapID(zone)
     if (zone == 125) or (zone == 126) then CZ = 3.4 end
     if not CZ then
@@ -1354,7 +1354,7 @@ function QuestieCompat.TomTom_AddWaypoint(title, zone, x, y)
     end
     if not CZ then return nil end
     -- Force the crazy arrow on 3.3.5 so Questie behaves like newer TomTom integrations.
-    return TomTom:AddZWaypoint(QuestieCompat.Round(CZ%1 * 10), math.floor(CZ), x, y, title, nil, nil, nil, nil, nil, true)
+    return TomTom:AddZWaypoint(QuestieCompat.Round(CZ%1 * 10), math.floor(CZ), x, y, title, persistent, nil, nil, nil, true)
 end
 
 -- This function will do its utmost to retrieve some sort of valid position

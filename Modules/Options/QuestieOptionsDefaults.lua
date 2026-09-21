@@ -122,6 +122,7 @@ function QuestieOptionsDefaults:Load()
             trackerColorObjectives = 'minimal',
             trackerSortObjectives = 'byZone',
             trackerbindSetTomTom = 'ctrlleft',
+            autoRouteEnabled = false,
             trackerbindOpenQuestLog = 'left',
             trackerbindUntrack = "shiftleft",
             trackerSetpoint = "TOPLEFT",
@@ -256,6 +257,7 @@ function QuestieOptionsDefaults:Load()
             minAllQuestsInZone = {},
             collapsedQuests = {},
             trackedAchievementIds = {},
+            autoRouteOrder = {},
         },
         global = {
             questieLocale = 'enUS',

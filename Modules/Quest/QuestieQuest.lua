@@ -44,6 +44,8 @@ local QuestieIconVisibility = QuestieLoader:ImportModule("QuestieIconVisibility"
 ---@type QuestieNameplate
 local QuestieNameplate = QuestieLoader:ImportModule("QuestieNameplate")
 local TrackerUtils = QuestieLoader:ImportModule("TrackerUtils")
+---@type AutoRoute
+local AutoRoute = QuestieLoader:ImportModule("AutoRoute")
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
 ---@type QuestLogCache
@@ -72,6 +74,7 @@ local NewThread = ThreadLib.ThreadSimple
 
 local function _UnloadQuestFrames(questId, callback)
     TrackerUtils:ClearTomTomTargetForQuest(questId)
+    AutoRoute.ScheduleUpdate()
 
     if coRunning() then
         QuestieMap:UnloadQuestFrames(questId)
@@ -1224,8 +1227,12 @@ function QuestieQuest:PopulateObjective(quest, objectiveIndex, objective, blockI
         return
     end
 
+    local wasCompleted = objective.Completed
     objective:Update()
     local completed = objective.Completed
+    if wasCompleted and not completed then
+        AutoRoute.ScheduleUpdate()
+    end
     local objectiveData = quest.ObjectiveData[objective.Index] or objective -- the reason for "or objective" is to handle "SpecialObjectives" aka non-listed objectives (demonic runestones for closing the portal)
 
     if (not objective.spawnList or (not next(objective.spawnList))) and _QuestieQuest.objectiveSpawnListCallTable[objectiveData.Type] then
@@ -1238,7 +1245,10 @@ function QuestieQuest:PopulateObjective(quest, objectiveIndex, objective, blockI
 
     if completed then
         _UnloadAlreadySpawnedIcons(objective)
-        TrackerUtils:ClearTomTomTargetForQuest(quest.Id, objective.Index)
+        if not wasCompleted then
+            TrackerUtils:ClearTomTomTargetForQuest(quest.Id, objective.Index)
+            AutoRoute.ScheduleUpdate()
+        end
         return
     end
 
