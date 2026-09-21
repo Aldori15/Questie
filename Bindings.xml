@@ -5,4 +5,5 @@
     <Binding name="QUESTIE_TOGGLE_TRACKER" header="QUESTIE">
         QuestieLoader:ImportModule("QuestieTracker").ToggleTracker()
     </Binding>
+    <Binding name="CLICK Questie_NearestQuestItemButton:LeftButton" header="QUESTIE" />
 </Bindings>

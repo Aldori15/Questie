@@ -92,6 +92,100 @@ local hiddenByInstance = false
 local minimizedByCombat = false
 local hiddenByCombat = false
 
+local nearestQuestItemButton
+
+---@param quest Quest
+---@return ItemId|nil
+local function _GetUsableClickQuestItemId(quest)
+    if not quest or quest:IsComplete() == 1 then
+        return nil
+    end
+
+    for _, itemId in ipairs(TrackerUtils:GetUsableQuestItemIds(quest)) do
+        -- The keybind is specifically for USING an item.
+        if GetItemSpell(itemId) then
+            return itemId
+        end
+    end
+
+    return nil
+end
+
+---@return ItemId|nil
+local function _GetNearestQuestItemId()
+    -- Prefer the quest Questie is currently routing to.
+    -- This covers both manually selected Questie/TomTom targets and AutoRoute,
+    -- because both store quest ownership in _tom_waypoint_quest.
+    local waypointQuest = Questie.db.char._tom_waypoint and Questie.db.char._tom_waypoint_quest
+
+    if waypointQuest and waypointQuest.questId then
+        local quest = QuestiePlayer.currentQuestlog[waypointQuest.questId]
+        local itemId = _GetUsableClickQuestItemId(quest)
+
+        if itemId then
+            return itemId
+        end
+    end
+
+    -- Otherwise fall back to the nearest tracked quest that has a usable item.
+    local bestItemId
+    local bestDistance
+    local bestQuestId
+
+    for questId, quest in pairs(QuestiePlayer.currentQuestlog or {}) do
+        if quest and QuestieQuest:IsQuestTracked(questId) then
+            local itemId = _GetUsableClickQuestItemId(quest)
+
+            if itemId then
+                local _, _, _, _, _, distance = QuestieMap:GetNearestQuestSpawn(quest)
+
+                if type(distance) == "number" and ((not bestDistance) or distance < bestDistance or (distance == bestDistance and questId < bestQuestId)) then
+                    bestItemId = itemId
+                    bestDistance = distance
+                    bestQuestId = questId
+                end
+            end
+        end
+    end
+
+    return bestItemId
+end
+
+local function _UpdateNearestQuestItemButton()
+    if not nearestQuestItemButton or InCombatLockdown() then
+        return
+    end
+
+    local itemId = _GetNearestQuestItemId()
+
+    -- Secure attributes cannot be changed in combat, so only update them here.
+    -- Also avoid rewriting the same secure attribute unnecessarily.
+    if nearestQuestItemButton.questieItemId == itemId then
+        return
+    end
+
+    nearestQuestItemButton.questieItemId = itemId
+    nearestQuestItemButton:SetAttribute("item", itemId and ("item:" .. itemId) or nil)
+end
+
+local function _InitializeNearestQuestItemButton()
+    if nearestQuestItemButton then
+        return
+    end
+
+    nearestQuestItemButton = CreateFrame("Button", "Questie_NearestQuestItemButton", UIParent, "SecureActionButtonTemplate")
+
+    nearestQuestItemButton:SetAttribute("type", "item")
+    nearestQuestItemButton:RegisterForClicks("AnyDown")
+    nearestQuestItemButton:Hide()
+
+    _UpdateNearestQuestItemButton()
+
+    -- Re-evaluate periodically because proximity can change simply by moving.
+    -- During combat the existing secure selection remains untouched.
+    C_Timer.NewTicker(5, _UpdateNearestQuestItemButton)
+end
+
 function QuestieTracker.Initialize()
     assert(coroutine.running(), "QuestieTracker.Initialize must be called from a coroutine")
 
@@ -102,6 +196,7 @@ function QuestieTracker.Initialize()
 
     -- Register the keybinding label even when the tracker starts disabled.
     QuestieTracker.SetupKeybinding()
+    _InitializeNearestQuestItemButton()
 
     if (not Questie.db.profile.trackerEnabled) then
         -- The Tracker is disabled, no need to continue
@@ -706,6 +801,7 @@ end
 
 function QuestieTracker.SetupKeybinding()
     _G.BINDING_NAME_QUESTIE_TOGGLE_TRACKER = l10n("Toggle Questie Tracker")
+    _G["BINDING_NAME_CLICK Questie_NearestQuestItemButton:LeftButton"] = l10n("Use Nearest Quest Item")
 end
 
 local function _UpdateLineWidth(line, objectiveMarginLeft)
