@@ -2533,10 +2533,15 @@ function QuestieTracker:TrackAchieve(achieveId)
         return
     end
 
-    -- If an achievement is already tracked in the Achievement UI then untrack it (Mimicks a Toggle effect).
+    -- Questie removes achievements from Blizzard's tracker, so another click in the
+    -- Achievement UI comes back through AddTrackedAchievement and needs to toggle off.
     if Questie.db.char.trackedAchievementIds[achieveId] then
-        QuestieTracker:UntrackAchieveId(achieveId)
         RemoveTrackedAchievement(achieveId, true)
+
+        if AchievementFrame and AchievementFrame:IsShown() then
+            QuestieTracker:UntrackAchieveId(achieveId)
+        end
+
         return
     end
 
@@ -2567,8 +2572,12 @@ function QuestieTracker:TrackAchieve(achieveId)
 
         -- Krowi isn't using this check box for their Achievement frame
         if not IsAddOnLoaded("Krowi_AchievementFilter") then
-            mouseFocus = GetMouseFocus():GetName()
-            frameMatch = strmatch(mouseFocus, "(AchievementFrameAchievementsContainerButton%dTracked.*)")
+            local mouseFocusFrame = GetMouseFocus()
+            mouseFocus = mouseFocusFrame and mouseFocusFrame:GetName()
+
+            if mouseFocus then
+                frameMatch = strmatch(mouseFocus, "(AchievementFrameAchievementsContainerButton%dTracked.*)")
+            end
         end
 
         -- Upon first login or reloadui, this frame isn't loaded
@@ -2576,9 +2585,12 @@ function QuestieTracker:TrackAchieve(achieveId)
             AchievementFrame_LoadUI()
         end
 
-        -- This check makes sure the only way to track an achieve is through the Blizzard Achievement UI
+        -- Allow achievements to be tracked through the Blizzard Achievement UI
+        -- or programmatically through AddTrackedAchievement.
         if Questie.db.char.trackedAchievementIds[achieveId] then
             Questie.db.char.trackedAchievementIds[achieveId] = nil
+        elseif not AchievementFrame:IsShown() then
+            Questie.db.char.trackedAchievementIds[achieveId] = true
         elseif IsShiftKeyDown() and AchievementFrame:IsShown() then
             Questie.db.char.trackedAchievementIds[achieveId] = true
         elseif AchievementFrame:IsShown() and (mouseFocus == frameMatch) then
