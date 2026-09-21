@@ -1188,6 +1188,33 @@ function QuestieMap:FindClosestStarter()
     return closestStarter;
 end
 
+---Returns true if this exact object spawn was already looted during the current quest cycle.
+---@param objective QuestObjective
+---@param zone number
+---@param x number
+---@param y number
+---@return boolean
+function QuestieMap:IsLootedObjectSpawn(objective, zone, x, y)
+    if not objective or objective.Type ~= "object" or not objective.questId or not objective.Index or not Questie.db.char.lootedObjectSpawns then
+        return false
+    end
+
+    local questSpawns = Questie.db.char.lootedObjectSpawns[objective.questId]
+    local objectiveSpawns = questSpawns and questSpawns[objective.Index]
+
+    if not objectiveSpawns then
+        return false
+    end
+
+    for _, spawn in ipairs(objectiveSpawns) do
+        if spawn.zone == zone and math.abs(spawn.x - x) <= 0.0001 and math.abs(spawn.y - y) <= 0.0001 then
+            return true
+        end
+    end
+
+    return false
+end
+
 function QuestieMap:GetNearestSpawn(objective)
     if not objective then
         return nil
@@ -1203,7 +1230,7 @@ function QuestieMap:GetNearestSpawn(objective)
         for id, spawnData in pairs(objective.spawnList) do
             for zone, spawns in pairs(spawnData.Spawns) do
                 for _, spawn in pairs(spawns) do
-                    if _IsSpawnVisible(spawn) then
+                    if _IsSpawnVisible(spawn) and not QuestieMap:IsLootedObjectSpawn(objective, zone, spawn[1], spawn[2]) then
                         local dist, resolvedSpawn, resolvedZone = _GetDistanceToNearestResolvedSpawn(zone, spawn, playerX, playerY, playerI)
                         if dist and dist < bestDistance then
                             bestDistance = dist

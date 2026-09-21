@@ -1214,6 +1214,21 @@ function QuestieQuest:AddFinisher(quest)
     end
 end
 
+local objectObjectiveProgress = {}
+
+---@param questId number
+---@param objectiveIndex ObjectiveIndex
+---@param collected number
+---@return boolean
+local function _DidObjectObjectiveAdvance(questId, objectiveIndex, collected)
+    objectObjectiveProgress[questId] = objectObjectiveProgress[questId] or {}
+
+    local previous = objectObjectiveProgress[questId][objectiveIndex]
+    objectObjectiveProgress[questId][objectiveIndex] = collected
+
+    return previous ~= nil and collected > previous
+end
+
 ---@param quest Quest
 ---@param objectiveIndex ObjectiveIndex
 ---@param objective QuestObjective
@@ -1230,6 +1245,16 @@ function QuestieQuest:PopulateObjective(quest, objectiveIndex, objective, blockI
     local wasCompleted = objective.Completed
     objective:Update()
     local completed = objective.Completed
+    local objectObjectiveAdvanced = false
+
+    if objective.Type == "object" then
+        objectObjectiveAdvanced = _DidObjectObjectiveAdvance(
+            quest.Id,
+            objectiveIndex,
+            objective.Collected or 0
+        )
+    end
+
     if wasCompleted and not completed then
         AutoRoute.ScheduleUpdate()
     end
@@ -1237,6 +1262,10 @@ function QuestieQuest:PopulateObjective(quest, objectiveIndex, objective, blockI
 
     if (not objective.spawnList or (not next(objective.spawnList))) and _QuestieQuest.objectiveSpawnListCallTable[objectiveData.Type] then
         objective.spawnList = _QuestieQuest.objectiveSpawnListCallTable[objectiveData.Type](objective.Id, objective, objectiveData);
+    end
+
+    if objectObjectiveAdvanced and not completed then
+        QuestieQuest:MarkNearestObjectSpawnLooted(quest, objectiveIndex, objective)
     end
 
     -- Tooltips should always show.
@@ -1342,6 +1371,115 @@ _UnloadAlreadySpawnedIcons = function(objective)
     objective.AlreadySpawned = {}
 end
 
+local function _GetLootedObjectStore(create)
+    if not Questie.db or not Questie.db.char then
+        return nil
+    end
+
+    local store = Questie.db.char.lootedObjectSpawns
+
+    if not store and create then
+        store = {}
+        Questie.db.char.lootedObjectSpawns = store
+    end
+
+    return store
+end
+
+---@param questId number
+---@param objectiveIndex ObjectiveIndex
+---@param zone number
+---@param x number
+---@param y number
+function QuestieQuest:MarkObjectSpawnLooted(questId, objectiveIndex, zone, x, y)
+    local store = _GetLootedObjectStore(true)
+    if not store then
+        return
+    end
+
+    store[questId] = store[questId] or {}
+    store[questId][objectiveIndex] = store[questId][objectiveIndex] or {}
+
+    table.insert(store[questId][objectiveIndex], {
+        zone = zone,
+        x = x,
+        y = y,
+    })
+end
+
+---@param questId number
+function QuestieQuest:ClearLootedSpawns(questId)
+    local store = _GetLootedObjectStore(false)
+
+    if store then
+        store[questId] = nil
+    end
+
+    objectObjectiveProgress[questId] = nil
+end
+
+---@param quest Quest
+---@param objectiveIndex ObjectiveIndex
+---@param objective QuestObjective
+---@return boolean
+function QuestieQuest:MarkNearestObjectSpawnLooted(quest, objectiveIndex, objective)
+    if not quest or not objective or objective.Type ~= "object" or not objective.spawnList or not HBD or not HBD.GetPlayerWorldPosition then
+        return false
+    end
+
+    local playerX, playerY, playerInstance = HBD:GetPlayerWorldPosition()
+
+    if not playerX or not playerY then
+        return false
+    end
+
+    local maxDistanceSquared = 12 * 12
+    local bestDistanceSquared
+    local bestZone
+    local bestX
+    local bestY
+
+    for _, spawnData in pairs(objective.spawnList) do
+        for zone, spawns in pairs(spawnData.Spawns or {}) do
+            local uiMapId = ZoneDB:GetUiMapIdByAreaId(zone)
+
+            if uiMapId then
+                for _, spawn in pairs(spawns) do
+                    if spawn[1] and spawn[2] and not QuestieMap:IsLootedObjectSpawn(objective, zone, spawn[1], spawn[2]) then
+                        local worldX, worldY, worldInstance = HBD:GetWorldCoordinatesFromZone(spawn[1] / 100, spawn[2] / 100, uiMapId)
+
+                        if worldX and worldY and (not worldInstance or not playerInstance or worldInstance == playerInstance) then
+                            local dx = playerX - worldX
+                            local dy = playerY - worldY
+                            local distanceSquared = dx * dx + dy * dy
+
+                            if distanceSquared <= maxDistanceSquared and (not bestDistanceSquared or distanceSquared < bestDistanceSquared) then
+                                bestDistanceSquared = distanceSquared
+                                bestZone = zone
+                                bestX = spawn[1]
+                                bestY = spawn[2]
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    if not bestZone then
+        return false
+    end
+
+    QuestieQuest:MarkObjectSpawnLooted(quest.Id, objectiveIndex, bestZone, bestX, bestY)
+
+    Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest:MarkNearestObjectSpawnLooted] Removed looted object spawn:", quest.Id, objectiveIndex, bestZone, bestX, bestY)
+
+    _UnloadAlreadySpawnedIcons(objective)
+    AutoRoute.ScheduleUpdate()
+
+    return true
+end
+
 ---@param quest Quest
 ---@param objective QuestObjective
 ---@param objectiveIndex ObjectiveIndex
@@ -1396,7 +1534,7 @@ _DetermineIconsToDraw = function(quest, objective, objectiveIndex, objectiveCent
                     Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest] Skipping objective icon with missing UiMapID:", quest.Id, objectiveIndex, id, zone)
                 else
                     for _, spawn in pairs(spawns) do
-                        if spawn[1] and spawn[2] and Phasing.IsSpawnDataVisible(spawn) then
+                        if spawn[1] and spawn[2] and Phasing.IsSpawnDataVisible(spawn) and not QuestieMap:IsLootedObjectSpawn(objective, zone, spawn[1], spawn[2]) then
                             local drawIcon = {
                                 AlreadySpawnedId = id,
                                 data = data,
