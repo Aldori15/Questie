@@ -68,12 +68,15 @@ TrackerMenu.addTomTomOption = function(menu, quest, objective)
             LibDropDown:CloseDropDownMenus()
 
             local spawn, zone, name = QuestieMap:GetNearestQuestSpawn(quest)
+            local targetObjectiveIndex
             if (not spawn) and objective ~= nil then
                 spawn, zone, name = QuestieMap:GetNearestSpawn(objective)
+                targetObjectiveIndex = objective.Index
             end
 
             if spawn then
-                TrackerUtils:SetTomTomTarget(name, zone, spawn[1], spawn[2])
+                local questId = quest and quest.Id or objective and objective.questId
+                TrackerUtils:SetTomTomTarget(name, zone, spawn[1], spawn[2], questId, targetObjectiveIndex)
             elseif quest then
                 TrackerUtils:SetTomTomTargetToDungeonEntrance(quest)
             end

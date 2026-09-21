@@ -36,6 +36,8 @@ local QuestieCombatQueue = QuestieLoader:ImportModule("QuestieCombatQueue")
 local QuestieTracker = QuestieLoader:ImportModule("QuestieTracker")
 ---@type QuestgiverFrame
 local QuestgiverFrame = QuestieLoader:ImportModule("QuestgiverFrame")
+---@type TrackerUtils
+local TrackerUtils = QuestieLoader:ImportModule("TrackerUtils")
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
 ---@type QuestiePartyObjectives
@@ -330,6 +332,8 @@ function _QuestEventHandler:QuestTurnedIn(questId, xpReward, moneyReward)
 
     Questie.Debug(Questie.DEBUG_INFO, "Quest:", questId, "was turned in and is completed")
 
+    TrackerUtils:ClearTomTomTargetForQuest(questId)
+
     if questLog[questId] then
         -- There are quests which you just turn in so there is no preceding QUEST_ACCEPTED event and questLog[questId]
         -- is empty
@@ -394,6 +398,8 @@ function _QuestEventHandler:MarkQuestAsAbandoned(questId)
     Questie.Debug(Questie.DEBUG_DEVELOP, "QuestEventHandler:MarkQuestAsAbandoned")
     if questLog[questId].state == QUEST_LOG_STATES.QUEST_REMOVED then
         Questie.Debug(Questie.DEBUG_INFO, "Quest:", questId, "was abandoned")
+
+        TrackerUtils:ClearTomTomTargetForQuest(questId)
 
         QuestLogCache.RemoveQuest(questId)
         QuestieQuest:SetObjectivesDirty(questId) -- is this necessary? should whole quest.Objectives be cleared at some point of quest removal?

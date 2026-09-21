@@ -1132,7 +1132,7 @@ TrackerLinePool.OnClickQuest = function(self, button)
     if TrackerUtils:IsBindTrue(Questie.db.profile.trackerbindSetTomTom, button) then
         local spawn, zone, name = QuestieMap:GetNearestQuestSpawn(self.Quest)
         if spawn then
-            TrackerUtils:SetTomTomTarget(name, zone, spawn[1], spawn[2])
+            TrackerUtils:SetTomTomTarget(name, zone, spawn[1], spawn[2], self.Quest.Id)
         else
             TrackerUtils:SetTomTomTargetToDungeonEntrance(self.Quest)
         end

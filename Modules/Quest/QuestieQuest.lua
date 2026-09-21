@@ -43,6 +43,7 @@ local QuestieMenu = QuestieLoader:ImportModule("QuestieMenu")
 local QuestieIconVisibility = QuestieLoader:ImportModule("QuestieIconVisibility")
 ---@type QuestieNameplate
 local QuestieNameplate = QuestieLoader:ImportModule("QuestieNameplate")
+local TrackerUtils = QuestieLoader:ImportModule("TrackerUtils")
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
 ---@type QuestLogCache
@@ -70,6 +71,8 @@ local coRunning = coroutine.running
 local NewThread = ThreadLib.ThreadSimple
 
 local function _UnloadQuestFrames(questId, callback)
+    TrackerUtils:ClearTomTomTargetForQuest(questId)
+
     if coRunning() then
         QuestieMap:UnloadQuestFrames(questId)
         if callback then
@@ -1235,6 +1238,7 @@ function QuestieQuest:PopulateObjective(quest, objectiveIndex, objective, blockI
 
     if completed then
         _UnloadAlreadySpawnedIcons(objective)
+        TrackerUtils:ClearTomTomTargetForQuest(quest.Id, objective.Index)
         return
     end
 
@@ -1315,22 +1319,17 @@ _RegisterObjectiveTooltips = function(objective, questId, blockItemTooltips)
 end
 
 _UnloadAlreadySpawnedIcons = function(objective)
-    if next(objective.spawnList) then
-        for id, _ in pairs(objective.spawnList) do
-            local spawn = objective.AlreadySpawned[id]
-            if spawn then
-                for _, mapIcon in pairs(spawn.mapRefs) do
-                    QuestieFramePool:UnloadFrame(mapIcon)
-                end
-                for _, minimapIcon in pairs(spawn.minimapRefs) do
-                    QuestieFramePool:UnloadFrame(minimapIcon)
-                end
-                spawn.mapRefs = {}
-                spawn.minimapRefs = {}
-            end
+    for _, spawn in pairs(objective.AlreadySpawned) do
+        for _, mapIcon in pairs(spawn.mapRefs) do
+            QuestieFramePool:UnloadFrame(mapIcon)
         end
-        objective.AlreadySpawned = {}
+        for _, minimapIcon in pairs(spawn.minimapRefs) do
+            QuestieFramePool:UnloadFrame(minimapIcon)
+        end
+        spawn.mapRefs = {}
+        spawn.minimapRefs = {}
     end
+    objective.AlreadySpawned = {}
 end
 
 ---@param quest Quest
