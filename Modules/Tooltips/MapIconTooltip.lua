@@ -198,6 +198,7 @@ function MapIconTooltip:Show()
                     end
 
                     local orderedTooltips = {}
+                    iconData.ObjectiveData.isUpdated = false
                     iconData.ObjectiveData:Update()
                     local tooltips = _MapIconTooltip:GetObjectiveTooltip(icon)
                     for _, tip in ipairs(tooltips) do
