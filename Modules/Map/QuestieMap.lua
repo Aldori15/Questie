@@ -1253,7 +1253,7 @@ local function _GetNearestQuestFinisherSpawn(quest)
                 end
             end
         end
-        return bestSpawn, bestSpawnZone, bestSpawnName, bestSpawnType, bestDistance
+        return bestSpawn, bestSpawnZone, bestSpawnName, nil, bestSpawnType, bestDistance
     end
     return nil
 end
