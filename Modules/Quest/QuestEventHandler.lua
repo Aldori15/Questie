@@ -256,6 +256,8 @@ function _QuestEventHandler:QuestAccepted(questLogIndex, questId)
     questId = questId or select(8, GetQuestLogTitle(questLogIndex))
     Questie.Debug(Questie.DEBUG_DEVELOP, "[Quest Event] QUEST_ACCEPTED", questLogIndex, questId)
 
+    TrackerUtils:ClearTomTomTargetForQuest(questId)
+
     if questLog[questId] and questLog[questId].timer then
         -- We had a QUEST_REMOVED event which started this timer and now it was accepted again.
         -- So the quest was abandoned before, because QUEST_TURNED_IN would have run before QUEST_ACCEPTED.
