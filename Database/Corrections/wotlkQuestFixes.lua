@@ -53,6 +53,8 @@ QuestieCorrections.triggerEndTooltipTargets[13429] = {{"monster",22990}} -- Akam
 
 QuestieCorrections.questTooltipHints[6681] = "Speak to the npc and select \"<Take the letter>\", then read the letter to start the quest."
 QuestieCorrections.questTooltipHints[9212] = "Inside the Amani Catacombs.  Entrances to the NW and NE."
+QuestieCorrections.questTooltipHints[12020] = "The wreckage appears for 15 minutes after a successful Dark Iron attack. Attacks begin at :00 and :30 during Brewfest."
+QuestieCorrections.questTooltipHints[12192] = "The wreckage appears for 15 minutes after a successful Dark Iron attack. Attacks begin at :00 and :30 during Brewfest."
 
 QuestieCorrections.objectiveTooltipHints[8306] = {
     [15215] = "Inside Hive'Regal. Enter the hive cave to the NE to reach Mistress Natalia.",
