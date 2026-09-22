@@ -350,7 +350,7 @@ local debugMessagesLocales = {
         ["esES"] = "¡Recogiste %s que inicia %s!",
         ["esMX"] = "¡Recogiste %s que inicia %s!",
     },
-    ["The '%s' world event is active!"] = {
+    ["The \"%s\" world event is active!"] = {
         ["ptBR"] = "O evento mundial '%s' está ativo!",
         ["ruRU"] = "Игровое событие '%s' активно!",
         ["koKR"] = "월드 이벤트 '%s' 활성화",
@@ -362,7 +362,7 @@ local debugMessagesLocales = {
         ["esES"] = "¡El evento mundial '%s' está activo!",
         ["esMX"] = "¡El evento mundial '%s' está activo!",
     },
-    ["The '%s' world event starts in about %d hours."] = {
+    ["The \"%s\" world event starts in about %d hours."] = {
         ["ptBR"] = "O evento mundial '%s' começa em cerca de %d horas.",
         ["ruRU"] = "Игровое событие '%s' начнется примерно через %d ч.",
         ["koKR"] = "월드 이벤트 '%s'|1이;가; 약 %d시간 후 시작됩니다.",
@@ -374,7 +374,7 @@ local debugMessagesLocales = {
         ["esES"] = "¡El evento mundial '%s' empieza en unas %d horas!",
         ["esMX"] = "¡El evento mundial '%s' empieza en unas %d horas!",
     },
-    ["The '%s' world event starts in less than an hour."] = {
+    ["The \"%s\" world event starts in less than an hour."] = {
         ["ptBR"] = "O evento mundial '%s' começa em menos de uma hora.",
         ["ruRU"] = "Игровое событие '%s' начнется менее чем через час.",
         ["koKR"] = "월드 이벤트 '%s'|1이;가; 1시간 이내에 시작됩니다.",

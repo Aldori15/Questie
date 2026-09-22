@@ -369,7 +369,7 @@ _AnnounceActiveEvent = function(eventName)
     _QuestieEvent.announcedEvents[eventName] = true
     if not _ShouldAnnounceWorldEvents() then return end
 
-    print(Questie:Colorize("[Questie]", "yellow"), "|cFF6ce314" .. l10n("The '%s' world event is active!", l10n(eventName)))
+    print(Questie:Colorize("[Questie]", "yellow"), "|cFF6ce314" .. l10n("The \"%s\" world event is active!", l10n(eventName)))
 end
 
 _SetTimedEventQuestState = function(eventName, isActive)
@@ -464,9 +464,9 @@ _AnnounceUpcomingTimedEvent = function(eventName, currentDate)
     if _ShouldAnnounceWorldEvents() then
         local hoursUntilStart = math.ceil(delay / 3600)
         if hoursUntilStart > 1 then
-            print(Questie:Colorize("[Questie]", "yellow"), "|cFF6ce314" .. l10n("The '%s' world event starts in about %d hours.", l10n(eventName), hoursUntilStart))
+            print(Questie:Colorize("[Questie]", "yellow"), "|cFF6ce314" .. l10n("The \"%s\" world event starts in about %d hours.", l10n(eventName), hoursUntilStart))
         else
-            print(Questie:Colorize("[Questie]", "yellow"), "|cFF6ce314" .. l10n("The '%s' world event starts in less than an hour.", l10n(eventName)))
+            print(Questie:Colorize("[Questie]", "yellow"), "|cFF6ce314" .. l10n("The \"%s\" world event starts in less than an hour.", l10n(eventName)))
         end
     end
 
@@ -883,7 +883,7 @@ _LoadDarkmoonFaire = function(eventLocation)
         _QuestieEvent.announcedEvents["Darkmoon Faire"] = true
 
         if _ShouldAnnounceWorldEvents() then
-            print(Questie:Colorize("[Questie]", "yellow"), "|cFF6ce314" .. l10n("The '%s' world event is active!", _GetDarkmoonFaireEventName(eventLocation)))
+            print(Questie:Colorize("[Questie]", "yellow"), "|cFF6ce314" .. l10n("The \"%s\" world event is active!", _GetDarkmoonFaireEventName(eventLocation)))
         end
     end
 
