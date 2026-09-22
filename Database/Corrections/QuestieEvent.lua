@@ -118,6 +118,7 @@ local CALENDAR_EVENT_NAME_ALIASES = {
     ["Darkmoon Faire"] = "Darkmoon Faire",
     ["Day of the Dead"] = "Day of the Dead",
     ["Feast of Winter Veil"] = "Winter Veil",
+    ["Fireworks Spectacular"] = "Fireworks Spectacular",
     ["Harvest Festival"] = "Harvest Festival",
     ["Hallow's End"] = "Hallow's End",
     ["Kalu'ak Fishing Derby"] = "Kalu'ak Fishing Derby",
