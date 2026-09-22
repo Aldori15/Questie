@@ -127,6 +127,7 @@ local CALENDAR_EVENT_NAME_ALIASES = {
     ["Midsummer Fire Festival"] = "Midsummer",
     ["Noblegarden"] = "Noblegarden",
     ["Pilgrim's Bounty"] = "Pilgrim's Bounty",
+    ["Pirates' Day"] = "Pirates' Day",
     ["Stranglethorn Fishing Extravaganza"] = "Stranglethorn Fishing Extravaganza",
     ["Winter Veil"] = "Winter Veil",
 }

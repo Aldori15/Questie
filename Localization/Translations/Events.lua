@@ -218,6 +218,18 @@ local eventsLocales = {
         ["zhTW"] = "梦魇进犯",
         ["zhCN"] = "梦魇进犯",
     },
+    ["Pirates' Day"] = {
+        ["enUS"] = true,
+        ["deDE"] = "Piratentag",
+        ["esES"] = "Día de los Piratas",
+        ["esMX"] = "Día de los Piratas",
+        ["frFR"] = "Jour des pirates",
+        ["koKR"] = "해적의 날",
+        ["ptBR"] = "Dia dos Piratas",
+        ["ruRU"] = "День пирата",
+        ["zhCN"] = "海盗日",
+        ["zhTW"] = "海盜節",
+    },
 }
 
 for k, v in pairs(eventsLocales) do
