@@ -635,6 +635,7 @@ function QuestieQuest:UpdateQuest(questId)
                 AvailableQuests.RemoveQuest(questId, function()
                     QuestieQuest:PopulateQuestLogInfo(quest)
                     QuestieQuest:PopulateObjectiveNotes(quest)
+                    AutoRoute.ScheduleUpdate()
                     Questie:SendMessage("QC_ID_BROADCAST_QUEST_UPDATE", questId)
                     AvailableQuests.CalculateAndDrawAll(nil, true)
                 end)
@@ -1242,9 +1243,10 @@ function QuestieQuest:PopulateObjective(quest, objectiveIndex, objective, blockI
         return
     end
 
-    local wasCompleted = objective.Completed
+    local wasCompleted = objective._lastPopulatedCompleted
     objective:Update()
     local completed = objective.Completed
+    objective._lastPopulatedCompleted = completed
     local objectObjectiveAdvanced = false
 
     if objective.Type == "object" then
@@ -1274,7 +1276,7 @@ function QuestieQuest:PopulateObjective(quest, objectiveIndex, objective, blockI
 
     if completed then
         _UnloadAlreadySpawnedIcons(objective)
-        if not wasCompleted then
+        if wasCompleted == false then
             TrackerUtils:ClearTomTomTargetForQuest(quest.Id, objective.Index)
             AutoRoute.ScheduleUpdate()
         end
