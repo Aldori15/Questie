@@ -97,11 +97,34 @@ local nearestQuestItemButton
 ---@param quest Quest
 ---@return ItemId|nil
 local function _GetUsableClickQuestItemId(quest)
-    if not quest or quest:IsComplete() == 1 then
+    if not quest then
         return nil
     end
 
-    for _, itemId in ipairs(TrackerUtils:GetUsableQuestItemIds(quest)) do
+    local items = TrackerUtils:GetUsableQuestItemIds(quest)
+    if quest:IsComplete() == 1 then
+        local isComplete = (quest.isComplete ~= true and #quest.Objectives == 0) or quest.isComplete == true
+        local primaryItem = items[1]
+        if not isComplete or not primaryItem or not GetItemSpell(primaryItem) then
+            return nil
+        end
+
+        local sourceItemId = quest.sourceItemId
+        if sourceItemId == nil then
+            sourceItemId = QuestieDB.QueryQuestSingle(quest.Id, "sourceItemId")
+        end
+        if primaryItem == sourceItemId then
+            return primaryItem
+        end
+        for _, itemId in pairs(quest.requiredSourceItems or {}) do
+            if itemId == primaryItem then
+                return primaryItem
+            end
+        end
+        return nil
+    end
+
+    for _, itemId in ipairs(items) do
         -- The keybind is specifically for USING an item.
         if GetItemSpell(itemId) then
             return itemId
@@ -116,7 +139,7 @@ local function _GetNearestQuestItemId()
     -- Prefer the quest Questie is currently routing to.
     -- This covers both manually selected Questie/TomTom targets and AutoRoute,
     -- because both store quest ownership in _tom_waypoint_quest.
-    local waypointQuest = Questie.db.char._tom_waypoint and Questie.db.char._tom_waypoint_quest
+    local waypointQuest = TrackerUtils:GetTomTomTarget() and Questie.db.char._tom_waypoint_quest
 
     if waypointQuest and waypointQuest.questId then
         local quest = QuestiePlayer.currentQuestlog[waypointQuest.questId]
