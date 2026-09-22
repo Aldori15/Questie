@@ -1207,7 +1207,7 @@ function QuestieMap:IsLootedObjectSpawn(objective, zone, x, y)
     end
 
     for _, spawn in ipairs(objectiveSpawns) do
-        if spawn.zone == zone and math.abs(spawn.x - x) <= 0.0001 and math.abs(spawn.y - y) <= 0.0001 then
+        if spawn.expiresAt and spawn.expiresAt > time() and spawn.zone == zone and math.abs(spawn.x - x) <= 0.0001 and math.abs(spawn.y - y) <= 0.0001 then
             return true
         end
     end

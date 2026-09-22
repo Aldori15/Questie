@@ -71,6 +71,7 @@ local ipairs = ipairs;
 local coYield = coroutine.yield
 local coRunning = coroutine.running
 local NewThread = ThreadLib.ThreadSimple
+local OBJECT_SPAWN_HIDE_SECONDS = 120
 
 local function _UnloadQuestFrames(questId, callback)
     TrackerUtils:ClearTomTomTargetForQuest(questId)
@@ -1227,7 +1228,7 @@ local function _DidObjectObjectiveAdvance(questId, objectiveIndex, collected)
     local previous = objectObjectiveProgress[questId][objectiveIndex]
     objectObjectiveProgress[questId][objectiveIndex] = collected
 
-    return previous ~= nil and collected > previous
+    return previous ~= nil and collected == previous + 1, previous ~= nil and collected < previous
 end
 
 ---@param quest Quest
@@ -1247,14 +1248,20 @@ function QuestieQuest:PopulateObjective(quest, objectiveIndex, objective, blockI
     objective:Update()
     local completed = objective.Completed
     objective._lastPopulatedCompleted = completed
-    local objectObjectiveAdvanced = false
+    local objectObjectiveAdvanced, objectObjectiveRegressed = false, false
 
     if objective.Type == "object" then
-        objectObjectiveAdvanced = _DidObjectObjectiveAdvance(
+        objectObjectiveAdvanced, objectObjectiveRegressed = _DidObjectObjectiveAdvance(
             quest.Id,
             objectiveIndex,
             objective.Collected or 0
         )
+    end
+
+    if objectObjectiveRegressed then
+        QuestieQuest:ClearLootedSpawnsForObjective(quest.Id, objectiveIndex)
+        _UnloadAlreadySpawnedIcons(objective)
+        AutoRoute.ScheduleUpdate()
     end
 
     if wasCompleted and not completed then
@@ -1388,6 +1395,66 @@ local function _GetLootedObjectStore(create)
     return store
 end
 
+local function _RefreshObjectObjective(questId, objectiveIndex)
+    local quest = QuestiePlayer.currentQuestlog and QuestiePlayer.currentQuestlog[questId]
+    if not quest then
+        return
+    end
+
+    local objective = quest.Objectives and quest.Objectives[objectiveIndex]
+    if not objective then
+        for _, specialObjective in pairs(quest.SpecialObjectives or {}) do
+            if specialObjective.Index == objectiveIndex then
+                objective = specialObjective
+                break
+            end
+        end
+    end
+    if objective and objective.Type == "object" and not objective.Completed then
+        _UnloadAlreadySpawnedIcons(objective)
+        _RunPopulateObjective(quest, objectiveIndex, objective, false)
+        AutoRoute.ScheduleUpdate()
+    end
+end
+
+local function _ScheduleObjectSpawnExpiry(questId, objectiveIndex, spawn)
+    C_Timer.After(math.max(0, (spawn.expiresAt or 0) - time()), function()
+        local store = _GetLootedObjectStore(false)
+        local questSpawns = store and store[questId]
+        local objectiveSpawns = questSpawns and questSpawns[objectiveIndex]
+        if not objectiveSpawns then
+            return
+        end
+        for index, savedSpawn in ipairs(objectiveSpawns) do
+            if savedSpawn == spawn then
+                if spawn.expiresAt and spawn.expiresAt > time() then
+                    _ScheduleObjectSpawnExpiry(questId, objectiveIndex, spawn)
+                    return
+                end
+                table.remove(objectiveSpawns, index)
+                if not next(objectiveSpawns) then
+                    questSpawns[objectiveIndex] = nil
+                    if not next(questSpawns) then
+                        store[questId] = nil
+                    end
+                end
+                _RefreshObjectObjective(questId, objectiveIndex)
+                return
+            end
+        end
+    end)
+end
+
+function QuestieQuest:ResumeLootedSpawns()
+    for questId, questSpawns in pairs(_GetLootedObjectStore(false) or {}) do
+        for objectiveIndex, spawns in pairs(questSpawns) do
+            for _, spawn in ipairs(spawns) do
+                _ScheduleObjectSpawnExpiry(questId, objectiveIndex, spawn)
+            end
+        end
+    end
+end
+
 ---@param questId number
 ---@param objectiveIndex ObjectiveIndex
 ---@param zone number
@@ -1402,11 +1469,24 @@ function QuestieQuest:MarkObjectSpawnLooted(questId, objectiveIndex, zone, x, y)
     store[questId] = store[questId] or {}
     store[questId][objectiveIndex] = store[questId][objectiveIndex] or {}
 
-    table.insert(store[questId][objectiveIndex], {
+    local spawn = {
         zone = zone,
         x = x,
         y = y,
-    })
+        expiresAt = time() + OBJECT_SPAWN_HIDE_SECONDS,
+    }
+    table.insert(store[questId][objectiveIndex], spawn)
+    _ScheduleObjectSpawnExpiry(questId, objectiveIndex, spawn)
+end
+
+function QuestieQuest:ClearLootedSpawnsForObjective(questId, objectiveIndex)
+    local store = _GetLootedObjectStore(false)
+    if store and store[questId] then
+        store[questId][objectiveIndex] = nil
+        if not next(store[questId]) then
+            store[questId] = nil
+        end
+    end
 end
 
 ---@param questId number
@@ -1425,18 +1505,16 @@ end
 ---@param objective QuestObjective
 ---@return boolean
 function QuestieQuest:MarkNearestObjectSpawnLooted(quest, objectiveIndex, objective)
-    if not quest or not objective or objective.Type ~= "object" or not objective.spawnList or not HBD or not HBD.GetPlayerWorldPosition then
+    if QuestieCompat.IsInGroup() or QuestieCompat.IsInRaid() or not quest or not objective or objective.Type ~= "object" or not objective.spawnList then
         return false
     end
 
     local playerX, playerY, playerInstance = HBD:GetPlayerWorldPosition()
-
     if not playerX or not playerY then
         return false
     end
 
-    local maxDistanceSquared = 12 * 12
-    local bestDistanceSquared
+    local maxDistanceSquared = 5 * 5
     local bestZone
     local bestX
     local bestY
@@ -1447,7 +1525,7 @@ function QuestieQuest:MarkNearestObjectSpawnLooted(quest, objectiveIndex, object
 
             if uiMapId then
                 for _, spawn in pairs(spawns) do
-                    if spawn[1] and spawn[2] and not QuestieMap:IsLootedObjectSpawn(objective, zone, spawn[1], spawn[2]) then
+                    if spawn[1] and spawn[2] then
                         local worldX, worldY, worldInstance = HBD:GetWorldCoordinatesFromZone(spawn[1] / 100, spawn[2] / 100, uiMapId)
 
                         if worldX and worldY and (not worldInstance or not playerInstance or worldInstance == playerInstance) then
@@ -1455,11 +1533,11 @@ function QuestieQuest:MarkNearestObjectSpawnLooted(quest, objectiveIndex, object
                             local dy = playerY - worldY
                             local distanceSquared = dx * dx + dy * dy
 
-                            if distanceSquared <= maxDistanceSquared and (not bestDistanceSquared or distanceSquared < bestDistanceSquared) then
-                                bestDistanceSquared = distanceSquared
-                                bestZone = zone
-                                bestX = spawn[1]
-                                bestY = spawn[2]
+                            if distanceSquared <= maxDistanceSquared then
+                                if bestZone and (bestZone ~= zone or math.abs(bestX - spawn[1]) > 0.0001 or math.abs(bestY - spawn[2]) > 0.0001) then
+                                    return false
+                                end
+                                bestZone, bestX, bestY = zone, spawn[1], spawn[2]
                             end
                         end
                     end
@@ -1468,7 +1546,7 @@ function QuestieQuest:MarkNearestObjectSpawnLooted(quest, objectiveIndex, object
         end
     end
 
-    if not bestZone then
+    if not bestZone or QuestieMap:IsLootedObjectSpawn(objective, bestZone, bestX, bestY) then
         return false
     end
 
