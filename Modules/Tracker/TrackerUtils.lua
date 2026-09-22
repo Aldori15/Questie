@@ -114,14 +114,48 @@ function TrackerUtils:ShowQuestLog(quest)
     QuestLog_Update()
 end
 
----Removes the currently tracked TomTom waypoint, if any.
-function TrackerUtils:ClearTomTomTarget()
-    if TomTom and TomTom.RemoveWaypoint and Questie.db.char._tom_waypoint then
-        TomTom:RemoveWaypoint(Questie.db.char._tom_waypoint)
-    end
+function TrackerUtils:ForgetTomTomTarget()
     Questie.db.char._tom_waypoint = nil
     Questie.db.char._tom_waypoint_quest = nil
     Questie.db.char._tom_waypoint_source = nil
+    Questie.db.char._tom_waypoint_identity = nil
+end
+
+function TrackerUtils:GetTomTomTarget()
+    local waypoint = Questie.db.char._tom_waypoint
+    if not waypoint or not QuestieCompat.Is335 then
+        return waypoint
+    end
+
+    local identity = Questie.db.char._tom_waypoint_identity
+    if not identity or not identity.zone or not identity.coord or not TomTom or not TomTom.waypoints then
+        return nil
+    end
+
+    local function matches(uid)
+        local data = TomTom.waypoints[uid]
+        return data and data.zone == identity.zone and data.coord == identity.coord and data.title == identity.title
+            and (not TomTom.IsValidWaypoint or TomTom:IsValidWaypoint(uid))
+    end
+
+    if matches(waypoint) then
+        return waypoint
+    end
+    for uid in pairs(TomTom.waypoints) do
+        if type(uid) == "number" and matches(uid) then
+            Questie.db.char._tom_waypoint = uid
+            return uid
+        end
+    end
+end
+
+---Removes the currently tracked TomTom waypoint, if any.
+function TrackerUtils:ClearTomTomTarget()
+    local waypoint = TrackerUtils:GetTomTomTarget()
+    if TomTom and TomTom.RemoveWaypoint and waypoint then
+        TomTom:RemoveWaypoint(waypoint)
+    end
+    TrackerUtils:ForgetTomTomTarget()
 end
 
 ---Removes the tracked TomTom waypoint only if it belongs to the given quest (and, if given, objective).
@@ -147,9 +181,7 @@ end
 ---@param source string? "autoRoute" for automatic targets; all other callers are manual
 function TrackerUtils:SetTomTomTarget(title, zone, x, y, questId, objectiveIndex, source)
     if TomTom and TomTom.AddWaypoint then
-        if Questie.db.char._tom_waypoint and TomTom.RemoveWaypoint then -- remove old waypoint
-            TomTom:RemoveWaypoint(Questie.db.char._tom_waypoint)
-        end
+        TrackerUtils:ClearTomTomTarget()
         local uiMapId = ZoneDB:GetUiMapIdByAreaId(zone)
 
         if QuestieCompat.Is335 then
@@ -160,6 +192,13 @@ function TrackerUtils:SetTomTomTarget(title, zone, x, y, questId, objectiveIndex
             Questie.db.char._tom_waypoint = QuestieCompat.TomTom_AddWaypoint(title, uiMapId, x, y, persistent)
         else
             Questie.db.char._tom_waypoint = TomTom:AddWaypoint(uiMapId, x / 100, y / 100, { title = title, crazy = true, from = "Questie" })
+        end
+
+        if QuestieCompat.Is335 and Questie.db.char._tom_waypoint and TomTom.waypoints then
+            local data = TomTom.waypoints[Questie.db.char._tom_waypoint]
+            if data then
+                Questie.db.char._tom_waypoint_identity = { zone = data.zone, coord = data.coord, title = data.title }
+            end
         end
 
         if questId and Questie.db.char._tom_waypoint then

@@ -179,13 +179,12 @@ function AutoRoute.PruneRoute()
     end
 end
 
-function AutoRoute.ClearSavedAutomaticHandle()
-    -- Automatic waypoints are not persisted by TomTom. A saved numeric UID may
-    -- refer to a different waypoint after login, so never try to remove it.
+function AutoRoute.RestoreSavedWaypoint()
+    -- TomTom reassigns numeric waypoint IDs on login.
     if Questie.db.char._tom_waypoint_source == "autoRoute" then
-        Questie.db.char._tom_waypoint = nil
-        Questie.db.char._tom_waypoint_quest = nil
-        Questie.db.char._tom_waypoint_source = nil
+        TrackerUtils:ForgetTomTomTarget()
+    elseif Questie.db.char._tom_waypoint and not TrackerUtils:GetTomTomTarget() then
+        TrackerUtils:ForgetTomTomTarget()
     end
     lastAutoTarget = nil
 end
@@ -207,9 +206,9 @@ function AutoRoute.Update()
     end
 
     -- A waypoint set by a player, including one without a quest ID, takes priority.
-    local waypoint = Questie.db.char._tom_waypoint
-    if waypoint and TomTom.IsValidWaypoint and not TomTom:IsValidWaypoint(waypoint) then
-        TrackerUtils:ClearTomTomTarget()
+    local waypoint = TrackerUtils:GetTomTomTarget()
+    if Questie.db.char._tom_waypoint and not waypoint then
+        TrackerUtils:ForgetTomTomTarget()
         lastAutoTarget = nil
         waypoint = nil
     end
