@@ -555,13 +555,7 @@ function QuestieEvent.Initialize()
         end
 
         local isFinalAttempt = _QuestieEvent.initializeAttempts >= EVENT_INIT_MAX_ATTEMPTS
-        local sawCalendarEvent = QuestieEvent:Load(isFinalAttempt)
-
-        if sawCalendarEvent then
-            QuestieEvent.eventQuests = nil
-            _CancelInitializeTimer()
-            return true
-        end
+        QuestieEvent:Load(isFinalAttempt)
 
         if isFinalAttempt then
             _CancelInitializeTimer()
@@ -589,17 +583,15 @@ end
 
 function QuestieEvent:Load(isFinalPass)
     if not QuestieEvent.eventQuests then
-        return false
+        return
     end
 
     local year = date("%y")
-    local sawCalendarEvent = false
     local addedActiveQuest = false
 
     -- We want to replace the Lunar Festival date with the date that we estimate
     QuestieEvent.eventDates["Lunar Festival"] = QuestieEvent.lunarFestival[year]
     local activeEvents, darkmoonLocation, calendarAvailable = _GetActiveCalendarEvents()
-    sawCalendarEvent = next(activeEvents) ~= nil
 
     local eventCorrections
     if Questie.IsTBC then
@@ -709,8 +701,6 @@ function QuestieEvent:Load(isFinalPass)
     if addedActiveQuest then
         _RefreshAvailableQuests()
     end
-
-    return sawCalendarEvent
 end
 
 --- Date-based fallback for servers without a location-specific Darkmoon calendar texture.
