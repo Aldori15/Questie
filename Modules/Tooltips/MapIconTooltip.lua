@@ -323,10 +323,10 @@ function MapIconTooltip:Show()
                     local dataType = type(questData.subData)
                     if dataType == "table" then
                         for _, rawLine in pairs(questData.subData) do
-                            tooltipRows:AddDescription(rawLine, "  ", 0.86, 0.86, 0.86);
+                            tooltipRows:AddDescription(QuestieLib:FormatQuestText(rawLine), "  ", 0.86, 0.86, 0.86);
                         end
                     elseif dataType == "string" then
-                        tooltipRows:AddDescription(questData.subData, "  ", 0.86, 0.86, 0.86);
+                        tooltipRows:AddDescription(QuestieLib:FormatQuestText(questData.subData), "  ", 0.86, 0.86, 0.86);
                     end
                 end
 

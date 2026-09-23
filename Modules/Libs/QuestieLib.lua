@@ -132,6 +132,30 @@ function QuestieLib:GetRGBForObjective(objective)
     end
 end
 
+---@param text string
+---@return string
+function QuestieLib:FormatQuestText(text)
+    if type(text) ~= "string" then
+        return text
+    end
+
+    -- Blizzard quest text line breaks
+    text = text:gsub("%$[bB]", "\n")
+
+    -- Replace the player name placeholder
+    text = text:gsub("%$[nN]", function()
+        return UnitName("player") or ""
+    end)
+
+    -- Replace gender dependent wording
+    text = text:gsub("%$[gG]%s*([^:;]+):([^;]+);", function(male, female)
+        local selected = UnitSex("player") == 3 and female or male
+        return selected:gsub("^%s+", ""):gsub("%s+$", "")
+    end)
+
+    return text
+end
+
 ---@param objective QuestObjective
 ---@return string
 function QuestieLib:GetObjectiveDescription(objective)
