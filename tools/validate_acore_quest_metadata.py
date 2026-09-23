@@ -986,7 +986,7 @@ def normalize_text_list(value):
                 flattened.append("")
             return
 
-        text = text.replace("$B$B", "\n\n").replace("$B", "\n")
+        text = re.sub(r"\$[bB]", "\n", text)
         flattened.extend(text.splitlines())
 
     collect(value)

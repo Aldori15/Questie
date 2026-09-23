@@ -3005,10 +3005,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.exclusiveTo] = {},
         },
 
-        [529] = {
-            [questKeys.objectivesText] = {"Kill Blacksmith Verringtan and 4 Hillsbrad Apprentice Blacksmiths.$b$bRetrieve a shipment of iron and report back to Darthalia in Tarren Mill."},
-        },
-
         [530] = {
             [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
         },
@@ -3040,7 +3036,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [553] = {
-            [questKeys.objectivesText] = {"Charge the Rod of Helcular with the powers of the Flame of Azel, Flame of Veraz and the Flame of Uzel.$b$bDrive the charged rod into Helcular's grave in Southshore."},
             [questKeys.specialFlags] = specialFlags.SPELL_CAST,
         },
 
@@ -3166,7 +3161,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [717] = {
-            [questKeys.objectivesText] = {"Use the Sign of the Earth to activate the Pillars of Amethyst, Opal, and Diamond and obtain the Runestones.$b$bPlace the runestones in the Seal of the Earth to free Blacklash and Hematus.$b$bSlay them and return Blacklash's Bindings, the Chains of Hematus, and the Sign of the Earth to Garek."},
             [questKeys.requiredSourceItems] = {},
         },
 
@@ -3249,7 +3243,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [753] = {
             [questKeys.requiredRaces] = raceIDs.ALL_HORDE,
-            [questKeys.objectivesText] = {"Take a Water Pitcher from the water well.$b$bReturn the pitcher to Chief Hawkwind in Camp Narache which is northwest from the water well."},
             [questKeys.preQuestSingle] = {752},
             [questKeys.breadcrumbs] = {},
             [questKeys.questFlags] = 0,
@@ -3378,7 +3371,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [793] = {
-            [questKeys.objectivesText] = {"Use the Sign of the Earth to activate the Pillars of Diamond, Opal, and Amethyst and obtain the Runestones.$b$bPlace the runestones in the Seal of the Earth to free Blacklash and Hematus.$b$bSlay them and return Blacklash's Bindings, the Chains of Hematus, and the Sign of the Earth to Gorn."},
             [questKeys.requiredSourceItems] = {},
         },
 
@@ -3407,10 +3399,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         [841] = {
             [questKeys.exclusiveTo] = {},
             [questKeys.specialFlags] = specialFlags.NONE,
-        },
-
-        [843] = {
-            [questKeys.objectivesText] = {"Gann Stonespire wants you to kill 15 Bael'dun Excavators and 5 Bael'dun Foremen.$b$bBring Khazgorm's Journal to Gann Stonespire."},
         },
 
         [844] = {
@@ -12899,10 +12887,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredSourceItems] = {30712},
         },
 
-        [10617] = {
-            [questKeys.objectivesText] = {"Collect 8 Silkwing Cocoons from Silkwing Larva.$b$bKill the Larva quickly or they will turn into Silkwings, ruining their cocoons."},
-        },
-
         [10629] = {
             [questKeys.objectivesText] = {"Use the Felhound Whistle to summon a Fel Guard Hound.  Take the Fel Guard Hound for a walk and kill some Deranged Helboars.  Search for the Shredder Keys in the Fel Guard Hound's \"leavings.\"  Return the Shredder Keys to Foreman Razelcraz by the mine northwest of Thrallmar."},
         },
@@ -13025,10 +13009,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         [10722] = {
             [questKeys.objectivesText] = {"Collect enough Costume Scraps from wyrmcultists to create an Overseer Disguise.  Use the disguise to attend the meeting with Kolphis Darkscale."},
             [questKeys.requiredSourceItems] = {},
-        },
-
-        [10723] = {
-            [questKeys.objectivesText] = {"Collect 3 Grisly Totems from the Boulder'mok ogres. Then, use Sablemane's Trap at Gorgrom's Altar to set the trap and summon and kill Gorgrom the Dragon-Eater.$b$bWhen Gorgrom is dead, place the 3 Grisly Totems near his corpse."},
         },
 
         [10725] = {
@@ -13156,7 +13136,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [10802] = {
-            [questKeys.objectivesText] = {"Collect 3 Grisly Totems from Boulder'mok ogres. Then, use Sablemane's Trap at Gorgrom's Altar to summon and kill Gorgrom the Dragon-Eater.$b$bWhen Gorgrom is dead, place the 3 Grisly Totems near his corpse."},
             [questKeys.specialFlags] = specialFlags.SPELL_CAST,
         },
 
@@ -13999,7 +13978,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11252] = {
-            [questKeys.objectivesText] = {"Defender Mordun has tasked you with the execution of Ingvar the Plunderer who resides deep in Utgarde.$b$bYou are then to bring his head to Vice Admiral Keller."},
             [questKeys.preQuestSingle] = {11244},
         },
 
@@ -14892,7 +14870,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11946] = {
-            [questKeys.objectivesText] = {"Keristrasza wants you to speak to her when you are ready to prepare for a confrontation with Malygos.$b$bIf you lose your Augmented Arcane Prison, speak to Raelorasz at the Transitus Shield."},
             [questKeys.sourceItemId] = 0,
         },
 
@@ -14907,7 +14884,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [11951] = {
-            [questKeys.objectivesText] = {"Keristrasza has asked you to collect 10 Crystalized Mana Shards from around Coldarra.$b$bIf you lose your Augmented Arcane Prison, speak to Raelorasz at the Transitus Shield."},
             [questKeys.requiredSourceItems] = {},
         },
 
@@ -14997,10 +14973,6 @@ QuestieCompat.RegisterCorrection("questData", function()
 
         [11999] = {
             [questKeys.breadcrumbs] = {11996},
-        },
-
-        [12007] = {
-            [questKeys.objectivesText] = {"Drakuru wants you to bring the Eye of the Prophets to him at Drakuru's Brazier in Zeb'Halak.$b$bYou will need to collect Zim'bo's Mojo to use Drakuru's Elixir there."},
         },
 
         [12008] = {
@@ -15245,7 +15217,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12137] = {
-            [questKeys.objectivesText] = {"Gan'jo wants you to collect the Snow of Eternal Slumber from his chest in the Drakil'jin Ruins.$b$bYou are to use the Snow on the Ancient Drakkari Spirits there and take their Drakkari Spirit Particles back to Kraz at Harkor's Camp."},
             [questKeys.sourceItemId] = 0,
         },
 
@@ -15985,7 +15956,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12432] = {
-            [questKeys.objectivesText] = {"General Gorlok at the lighthouse in Venture Bay wants you to destroy the Alliance Lumber Boat.$b$bGeneral Gorlok will only be present at the lighthouse when the Horde has it in their possession."},
             [questKeys.requiredSourceItems] = {},
         },
 
@@ -15998,7 +15968,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12437] = {
-            [questKeys.objectivesText] = {"Commander Howser at the lighthouse in Venture Bay wants you to destroy the Horde lumber shipment.$b$bCommander Howser will only be present at the lighthouse when the Alliance has it in their possession."},
             [questKeys.requiredSourceItems] = {},
         },
 
@@ -16082,7 +16051,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12501] = {
-            [questKeys.objectivesText] = {"Commander Kunz at the Argent Stand wants you to visit the four Argent Crusade posts, follow their captain's orders, and then return and report to him.$b$bCaptain Brandon and Captain Rupert are posted at Drak'Sotra, Captain Grondel is posted in Drak'Agal, and Alchemist Finklestein is posted in Heb'Valok."},
             [questKeys.preQuestSingle] = {12596},
             [questKeys.exclusiveTo] = {},
         },
@@ -16189,7 +16157,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12541] = {
-            [questKeys.objectivesText] = {"Alchemist Finklestein at Heb'Valok wants you to assist him in the creation of a truth serum.$b$bWhen you are ready to begin, you are to speak to him and follow his instructions."},
             [questKeys.preQuestSingle] = {12596},
             [questKeys.parentQuest] = 0,
         },
@@ -16225,7 +16192,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12563] = {
-            [questKeys.objectivesText] = {"Commander Kunz at the Argent Stand wants you to visit the four Argent Crusade posts, follow their captain's orders, and then return and report to him.$b$bCaptain Brandon and Captain Rupert are posted at Drak'Sotra, Captain Grondel is posted in Drak'Agal, and Alchemist Finklestein is posted in Heb'Valok."},
             [questKeys.preQuestSingle] = {12596},
             [questKeys.exclusiveTo] = {},
         },
@@ -16297,7 +16263,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12587] = {
-            [questKeys.objectivesText] = {"Commander Kunz at the Argent Stand wants you to visit the four Argent Crusade posts, follow their captain's orders, and then return and report to him.$b$bCaptain Brandon and Captain Rupert are posted at Drak'Sotra, Captain Grondel is posted in Drak'Agal, and Alchemist Finklestein is posted in Heb'valok."},
             [questKeys.exclusiveTo] = {},
         },
 
@@ -16325,7 +16290,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12596] = {
-            [questKeys.objectivesText] = {"Commander Kunz at The Argent Stand wants you to visit the four Argent Crusade posts, follow their leaders' orders, and then return and report to him.$b$bCaptain Brandon and Captain Rupert are posted at Drak'Sotra, Southeast of here.$b$bCaptain Grondel is posted in Drak'Agal, due east.$b$bAlchemist Finklestein is posted in Heb'Valok, to the north."},
             [questKeys.preQuestGroup] = {12503,12740},
             [questKeys.preQuestSingle] = {},
         },
@@ -16334,14 +16298,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.objectives] = {{{28352}}},
             [questKeys.requiredSourceItems] = {38574},
             [questKeys.nextQuestInChain] = 12555,
-        },
-
-        [12601] = {
-            [questKeys.objectivesText] = {"Alchemist Finklestein at Heb'valok wants you to assist him in the creation of a truth serum.$b$bWhen you are ready to begin, you are to speak to him and follow his instructions."},
-        },
-
-        [12602] = {
-            [questKeys.objectivesText] = {"Alchemist Finklestein at Heb'valok wants you to assist him in the creation of a truth serum.$b$bWhen you are ready to begin, you are to speak to him and follow his instructions."},
         },
 
         [12603] = {
@@ -16379,7 +16335,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12630] = {
-            [questKeys.objectivesText] = {"Stefan in Ebon Watch wants you to use Nass to collect 10 hair samples from Withered Trolls.$b$bIf you lose Nass, return to Stefan to recover him."},
             [questKeys.requiredSourceItems] = {38659},
         },
 
@@ -16421,12 +16376,7 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredSourceItems] = {38697},
         },
 
-        [12648] = {
-            [questKeys.objectivesText] = {"Stefan at Ebon Watch wants you to use the Ensorceled Choker to apply the Scourge disguise.$b$bWhile in Scourge form, you are to purchase Bitter Plasma from Gristlegut.$b$bIf you lose your Ensorcelled Choker, return to Stefan at Ebon Watch to get another."},
-        },
-
         [12649] = {
-            [questKeys.objectivesText] = {"Stefan at Ebon Watch wants you to use the Ensorcelled Choker to apply the Scourge disguise.$b$bWhile in Scourge form, you are to purchase Bitter Plasma from Gristlegut.$b$bIf you lose your Ensorcelled Choker, return to Stefan at Ebon Watch to get another."},
             [questKeys.preQuestSingle] = {12643},
         },
 
@@ -16453,7 +16403,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12661] = {
-            [questKeys.objectivesText] = {"Stefan wants you to use your Ensorcelled Choker to get into Voltarus and do whatever the Scourge leader there asks of you.$b$bIf you lose your Ensorcelled Choker, return to Stefan at Ebon Watch to get another."},
             [questKeys.requiredSourceItems] = {},
         },
 
@@ -16473,7 +16422,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12669] = {
-            [questKeys.objectivesText] = {"Stefan at Ebon Watch wants you to return to Drakuru and complete any tasks he has for you.$b$bWhile at the Reliquary of Pain, you are to use the Diluting Additive on 5 Blight Cauldrons.$b$bIf you lose your Ensorcelled Choker, return to Stefan at Ebon Watch to get another."},
             [questKeys.requiredSourceItems] = {39154},
             [questKeys.specialFlags] = specialFlags.SPELL_CAST,
         },
@@ -16487,12 +16435,11 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12676] = {
-            [questKeys.objectivesText] = {"Stefan at Ebon Watch wants you to perform another task for Drakuru.$b$bAdditionally, you are to use the Explosive Charges on 5 Scourgewagons at the  Reliquary of Pain.$b$bIf you lose your Ensorcelled Choker, return to Stefan at Ebon Watch to get another."},
+            [questKeys.objectivesText] = {"Stefan at Ebon Watch wants you to perform another task for Drakuru.","","Additionally, you are to use the Explosive Charges on 5 Scourgewagons at the  Reliquary of Pain.","","If you lose your Ensorcelled Choker, return to Stefan at Ebon Watch to get another."},
             [questKeys.requiredSourceItems] = {39165,39319},
         },
 
         [12677] = {
-            [questKeys.objectivesText] = {"Stefan at Ebon Watch wants you to go to Voltarus and complete any tasks Drakuru has for you. While there, you are to steal 5 Harvested Blight Crystals.$b$bIf you lose your Ensorcelled Choker, return to Stefan at Ebon Watch to get another."},
             [questKeys.requiredSourceItems] = {},
         },
 
@@ -16510,7 +16457,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12690] = {
-            [questKeys.objectivesText] = {"Drakuru in Voltarus wants you to use the Scepter of Command on Bloated Abominations and then use their abilities at the Frigid Breach to kill 60 Drakkari Skullcrushers and lure out 3 Drakkari Chieftains.$b$bChieftains will appear when enough Skullcrushers have been slain."},
             [questKeys.requiredSourceItems] = {},
             [questKeys.exclusiveTo] = {},
         },
@@ -16565,7 +16511,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12713] = {
-            [questKeys.objectivesText] = {"Stefan in Ebon Watch wants you to defeat Drakuru.$b$bIf you lose your Ensorcelled Choker, return to Stefan at Ebon Watch to get another."},
             [questKeys.requiredSourceItems] = {38699,39664,41390,43059},
         },
 
@@ -16671,14 +16616,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredMinRep] = false,
         },
 
-        [12763] = {
-            [questKeys.objectivesText] = {"Scout Vor'takh wants you to travel to Zul'Drak and report to Sergeant Riannah at Light's Breach.$b$bMakki Wintergale in Camp Onequah will provide you transportation."},
-        },
-
-        [12770] = {
-            [questKeys.objectivesText] = {"Gryan Stoutmantle wants you to report to Sergeant Riannah at Light's Breach in Zul'Drak.$b$bYou may speak to Samuel Clearbook for transportation to Light's Breach."},
-        },
-
         [12771] = {
             [questKeys.preQuestSingle] = {},
         },
@@ -16715,16 +16652,11 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.preQuestSingle] = {},
         },
 
-        [12793] = {
-            [questKeys.objectivesText] = {"Khufu in Zim'Torga wants you to travel to Light's Breach and report to Sergeant Riannah there.$b$bMaaka will provide you with transportation there."},
-        },
-
         [12795] = {
             [questKeys.breadcrumbForQuestId] = 12503,
         },
 
         [12802] = {
-            [questKeys.objectivesText] = {"Drakuru wants you to bring the Heart of the Ancients to him at Drak'atal Passage.$b$bYou will need to collect 5 Desperate Mojo to use the elixir there."},
             [questKeys.specialFlags] = specialFlags.EXPLORATION_OR_EVENT,
         },
 
@@ -16881,7 +16813,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12915] = {
-            [questKeys.objectivesText] = {"Thorim at the Temple of Storms wants you to Kill Fjorn and 5 Stormforged Iron Giants at Fjorn's Anvil, east of Dun Niffelem.$b$bUsing Thorim's Charm of Earth will summon his Earthen to fight by your side. The charm requires a Granite Boulder from nearby Fjorn's Anvil."},
             [questKeys.requiredSourceItems] = {41505,41506},
         },
 
@@ -17073,7 +17004,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12994] = {
-            [questKeys.objectivesText] = {"You must defeat 3 Stormforged Spies in the Valley of Ancient Winters.$b$bUsing the Ethereal Worg's Fang at the Corpse of the Fallen Worg will summon an Ethereal Frostworg, which will expose hidden enemies. You are to return to the Frostworg Denmother in Dun Niffelem when the valley has been cleansed of spies."},
             [questKeys.requiredSourceItems] = {42479},
         },
 
@@ -17101,7 +17031,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13006] = {
-            [questKeys.objectivesText] = {"You are to enter Hibernal Cavern west of Dun Niffelem and collect 5 units of Viscous Oil from the Viscous Oils there.$b$bYou are then to return to Dun Niffelem and apply the oil to Hodir's Helm."},
             [questKeys.reputationReward] = {{factionIDs.THE_SONS_OF_HODIR,455}},
         },
 
@@ -17139,7 +17068,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13046] = {
-            [questKeys.objectivesText] = {"You are to feed Arngrim 5 Disembodied Jormungar, then return to Arngrim's frozen image in Dun Niffelem.$b$bYou must go to the Valley of Ancient Winters and use Arngrim's Tooth on the Roaming Jormungar there. Once they have become disembodied, you must fight them until they are weakened."},
             [questKeys.requiredSourceItems] = {42774},
         },
 
@@ -17331,7 +17259,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13190] = {
-            [questKeys.objectivesText] = {"Kilix the Unraveler in the Pit of Narjun wants you to obtain an Ahn'kahar Watcher's Corpse and place it upon the Ahn'kahet Brazier in Ahn'kahet.$b$bThis quest can only be completed on Heroic Difficulty."},
             [questKeys.objectives] = {{{31105}}},
             [questKeys.requiredSourceItems] = {},
         },
@@ -17428,7 +17355,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13239] = {
-            [questKeys.objectivesText] = {"Chief Engineer Copperclaw wants you to use Copperclaw's Volatile Oil at the Broken Front to attract 3 Frostbrood Skytalons.$b$bTo use the oil, you must collect a Pile of Bones, an Abandoned Helm, and Abandoned Armor from the battlefield there."},
             [questKeys.requiredSourceItems] = {43608,43609,43610,43616},
         },
 
@@ -17501,7 +17427,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13261] = {
-            [questKeys.objectivesText] = {"Chief Engineer Copperclaw wants you to use Copperclaw's Volatile Oil at the Broken Front to attract 3 Frostbrood Skytalons.$b$bTo use the oil, you must collect a Pile of Bones, an Abandoned Helm, and Abandoned Armor from the battlefield there."},
             [questKeys.requiredSourceItems] = {43608,43609,43610,43616},
             [questKeys.preQuestSingle] = {13329},
         },
@@ -17554,10 +17479,6 @@ QuestieCompat.RegisterCorrection("questData", function()
             [questKeys.requiredSourceItems] = {44010},
         },
 
-        [13281] = {
-            [questKeys.objectivesText] = {"Koltira Deathweaver aboard Orgrim's Hammer wants you use Pustulant Spinal Fluid on a blight cauldron at Mord'rethar.$b$bYou can create Pustulant Spinal Fluid by using a Giant Spine collected from a Pustulant Horror."},
-        },
-
         [13285] = {
             [questKeys.sourceItemId] = 0,
             [questKeys.requiredSourceItems] = {40971},
@@ -17572,21 +17493,15 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [13291] = {
-            [questKeys.objectivesText] = {"Chief Engineer Boltwrench aboard the Skybreaker wants you to use the Smuggled Solution at the Broken Front.$b$bUsing the solution will require an Abandoned Helm, Abandoned Armor, and Pile of Bones, all found at the Broken Front."},
             [questKeys.requiredSourceItems] = {43609,43610,43616,44048},
         },
 
         [13292] = {
-            [questKeys.objectivesText] = {"Chief Engineer Boltwrench aboard the Skybreaker wants you to use the Smuggled Solution at the Broken Front.$b$bUsing the solution will require an Abandoned Helm, Abandoned Armor, and Pile of Bones, all found at the Broken Front."},
             [questKeys.requiredSourceItems] = {43609,43610,43616,44048},
         },
 
         [13295] = {
             [questKeys.requiredSourceItems] = {44010},
-        },
-
-        [13297] = {
-            [questKeys.objectivesText] = {"Thassarian aboard the Skybreaker wants you use Pustulant Spinal Fluid on a plague cauldron at Mord'rethar.$b$bYou can create Pustulant Spinal Fluid by using a Giant Spine collected from a Pustulant Horror."},
         },
 
         [13305] = {
