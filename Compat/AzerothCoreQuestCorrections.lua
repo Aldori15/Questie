@@ -7161,10 +7161,12 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [6541] = {
+            [questKeys.exclusiveTo] = {},
             [questKeys.breadcrumbForQuestId] = 0,
         },
 
         [6542] = {
+            [questKeys.exclusiveTo] = {},
             [questKeys.breadcrumbForQuestId] = 0,
         },
 
@@ -8783,7 +8785,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8476] = {
-            [questKeys.preQuestSingle] = {9359},
             [questKeys.breadcrumbs] = {},
         },
 
@@ -16141,7 +16142,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [12527] = {
-            [questKeys.preQuestSingle] = {},
             [questKeys.questFlags] = 136,
         },
 
@@ -16222,10 +16222,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         [12561] = {
             [questKeys.preQuestSingle] = {12803},
             [questKeys.requiredSpell] = 0,
-        },
-
-        [12562] = {
-            [questKeys.preQuestSingle] = {},
         },
 
         [12563] = {
@@ -16399,10 +16395,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         [12633] = {
             [questKeys.requiredSourceItems] = {38673},
             [questKeys.exclusiveTo] = {},
-        },
-
-        [12635] = {
-            [questKeys.preQuestSingle] = {},
         },
 
         [12637] = {
