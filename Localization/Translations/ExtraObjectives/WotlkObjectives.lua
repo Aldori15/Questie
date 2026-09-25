@@ -2,6 +2,97 @@
 local l10n = QuestieLoader:ImportModule("l10n")
 
 local wotlkObjectiveLocales = {
+    -- Quest 6681
+    ["Speak to the npc and select \"<Take the letter>\", then read the letter to start the quest."] = {
+        ["enUS"] = true,
+        ["deDE"] = "Sprecht mit dem NSC und wählt „<Nehmt den Brief>“. Lest anschließend den Brief, um die Quest zu starten.",
+        ["esES"] = "Habla con el PNJ y selecciona «<Coger la carta>». Después, lee la carta para iniciar la misión.",
+        ["esMX"] = "Habla con el PNJ y selecciona «<Tomar la carta>». Después, lee la carta para iniciar la misión.",
+        ["frFR"] = "Parlez au PNJ et sélectionnez « <Prendre la lettre> », puis lisez la lettre pour commencer la quête.",
+        ["koKR"] = "NPC와 대화하여 “<편지를 받겠습니다>”를 선택한 다음, 편지를 읽어 퀘스트를 시작하세요.",
+        ["ptBR"] = "Fale com o PNJ e selecione “<Pegar a carta>”. Depois, leia a carta para iniciar a missão.",
+        ["ruRU"] = "Поговорите с НИП и выберите «<Взять письмо>», затем прочитайте письмо, чтобы начать задание.",
+        ["zhCN"] = "与NPC交谈并选择“<拿信。>”，然后阅读信件以开始任务。",
+        ["zhTW"] = "與NPC交談並選擇「<拿取信件>」，然後閱讀信件以開始任務。",
+    },
+    -- Quest 8306
+    ["Inside Hive'Regal. Enter the hive cave to the NE to reach Mistress Natalia."] = {
+        ["enUS"] = true,
+        ["deDE"] = "Im Regalschwarm. Betretet die Schwarmhöhle im Nordosten, um Herrin Natalia zu erreichen.",
+        ["esES"] = "Dentro de Colmen'Regal. Entra en la cueva de la colmena situada al noreste para llegar hasta la maestra Natalia.",
+        ["esMX"] = "Dentro de Colmen'Regal. Entra en la cueva de la colmena situada al noreste para llegar hasta la maestra Natalia.",
+        ["frFR"] = "Dans la Ruche'Regal. Entrez dans la grotte de la ruche au nord-est pour atteindre dame Natalia.",
+        ["koKR"] = "하이브레갈 안에 있습니다. 북동쪽 동굴로 들어가 여군주 나탈리아에게 가세요.",
+        ["ptBR"] = "Dentro da Colme'Régia. Entre na caverna da colme a nordeste para chegar à Senhora Natalia.",
+        ["ruRU"] = "Внутри Улья Регал. Войдите в пещеру улья на северо-востоке, чтобы добраться до госпожи Наталии.",
+        ["zhCN"] = "位于雷戈虫巢内。从东北侧的虫巢洞穴进入即可找到纳塔莉亚·玛尔利斯。",
+        ["zhTW"] = "位於雷戈蟲巢內。從東北側的蟲巢洞穴進入即可找到納塔莉亞·瑪爾利斯。",
+    },
+    -- Quest 8309
+    ["Inside Hive'Ashi. Enter the hive cave to the west to reach the crystal."] = {
+        ["enUS"] = true,
+        ["deDE"] = "Im Ashischwarm. Betretet die Schwarmhöhle im Westen, um den Kristall zu erreichen.",
+        ["esES"] = "Dentro de Colmen'Ashi. Entra en la cueva de la colmena situada al oeste para llegar hasta el cristal.",
+        ["esMX"] = "Dentro de Colmen'Ashi. Entra en la cueva de la colmena situada al oeste para llegar hasta el cristal.",
+        ["frFR"] = "Dans la Ruche'Ashi. Entrez dans la grotte de la ruche à l'ouest pour atteindre le cristal.",
+        ["koKR"] = "하이브아쉬 안에 있습니다. 서쪽 동굴로 들어가 수정으로 가세요.",
+        ["ptBR"] = "Dentro da Colme'Ashi. Entre na caverna da colme a oeste para chegar ao cristal.",
+        ["ruRU"] = "Внутри Улья Аши. Войдите в пещеру улья на западе, чтобы добраться до кристалла.",
+        ["zhCN"] = "位于亚什虫巢内。从西侧的虫巢洞穴进入即可到达水晶处。",
+        ["zhTW"] = "位於亞辛蟲巢內。從西側的蟲巢洞穴進入即可到達水晶處。",
+    },
+    -- Quest 8309
+    ["Inside Hive'Zora. Enter the hive cave to the west to reach the crystal."] = {
+        ["enUS"] = true,
+        ["deDE"] = "Im Zoraschwarm. Betretet die Schwarmhöhle im Westen, um den Kristall zu erreichen.",
+        ["esES"] = "Dentro de Colmen'Zora. Entra en la cueva de la colmena situada al oeste para llegar hasta el cristal.",
+        ["esMX"] = "Dentro de Colmen'Zora. Entra en la cueva de la colmena situada al oeste para llegar hasta el cristal.",
+        ["frFR"] = "Dans la Ruche'Zora. Entrez dans la grotte de la ruche à l'ouest pour atteindre le cristal.",
+        ["koKR"] = "하이브조라 안에 있습니다. 서쪽 동굴로 들어가 수정으로 가세요.",
+        ["ptBR"] = "Dentro da Colme'Zora. Entre na caverna da colme a oeste para chegar ao cristal.",
+        ["ruRU"] = "Внутри Улья Зора. Войдите в пещеру улья на западе, чтобы добраться до кристалла.",
+        ["zhCN"] = "位于佐拉虫巢内。从西侧的虫巢洞穴进入即可到达水晶处。",
+        ["zhTW"] = "位於佐拉蟲巢內。從西側的蟲巢洞穴進入即可到達水晶處。",
+    },
+    -- Quest 8309
+    ["Inside Hive'Regal. Enter the hive cave to the NE to reach the crystal."] = {
+        ["enUS"] = true,
+        ["deDE"] = "Im Regalschwarm. Betretet die Schwarmhöhle im Nordosten, um den Kristall zu erreichen.",
+        ["esES"] = "Dentro de Colmen'Regal. Entra en la cueva de la colmena situada al noreste para llegar hasta el cristal.",
+        ["esMX"] = "Dentro de Colmen'Regal. Entra en la cueva de la colmena situada al noreste para llegar hasta el cristal.",
+        ["frFR"] = "Dans la Ruche'Regal. Entrez dans la grotte de la ruche au nord-est pour atteindre le cristal.",
+        ["koKR"] = "하이브레갈 안에 있습니다. 북동쪽 동굴로 들어가 수정으로 가세요.",
+        ["ptBR"] = "Dentro da Colme'Régia. Entre na caverna da colme a nordeste para chegar ao cristal.",
+        ["ruRU"] = "Внутри Улья Регал. Войдите в пещеру улья на северо-востоке, чтобы добраться до кристалла.",
+        ["zhCN"] = "位于雷戈虫巢内。从东北侧的虫巢洞穴进入即可到达水晶处。",
+        ["zhTW"] = "位於雷戈蟲巢內。從東北側的蟲巢洞穴進入即可到達水晶處。",
+    },
+    -- Quest 9212
+    ["Inside the Amani Catacombs.  Entrances to the NW and NE."] = {
+        ["enUS"] = true,
+        ["deDE"] = "In den Amanikatakomben. Die Eingänge befinden sich im Nordwesten und Nordosten.",
+        ["esES"] = "Dentro de las Catacumbas Amani. Las entradas están al noroeste y al noreste.",
+        ["esMX"] = "Dentro de las Catacumbas Amani. Las entradas están al noroeste y al noreste.",
+        ["frFR"] = "Dans les Catacombes des Amani. Les entrées se trouvent au nord-ouest et au nord-est.",
+        ["koKR"] = "아마니 지하묘지 안에 있습니다. 입구는 북서쪽과 북동쪽에 있습니다.",
+        ["ptBR"] = "Dentro das Catacumbas Amani. As entradas ficam a noroeste e nordeste.",
+        ["ruRU"] = "Внутри Катакомб Амани. Входы находятся на северо-западе и северо-востоке.",
+        ["zhCN"] = "位于阿曼尼墓穴内。入口在西北侧和东北侧。",
+        ["zhTW"] = "位於阿曼尼地下墓穴內。入口在西北側和東北側。",
+    },
+    -- Quests 12020, 12192
+    ["The wreckage appears for 15 minutes after a successful Dark Iron attack. Attacks begin at :00 and :30 during Brewfest."] = {
+        ["enUS"] = true,
+        ["deDE"] = "Die zerstörte Maulwurfmaschine der Dunkeleisenzwerge erscheint nach einem erfolgreichen Angriff für 15 Minuten. Während des Braufests beginnen die Angriffe jeweils um :00 und :30.",
+        ["esES"] = "Los restos aparecen durante 15 minutos después de un ataque exitoso de los Hierro Negro. Durante la Fiesta de la cerveza, los ataques comienzan a los minutos :00 y :30 de cada hora.",
+        ["esMX"] = "Los restos aparecen durante 15 minutos después de un ataque exitoso de los Hierro Negro. Durante la Fiesta de la cerveza, los ataques comienzan a los minutos :00 y :30 de cada hora.",
+        ["frFR"] = "Les débris apparaissent pendant 15 minutes après une attaque réussie des Sombrefer. Pendant la fête des Brasseurs, les attaques commencent à :00 et :30.",
+        ["koKR"] = "검은무쇠 공격이 성공하면 잔해가 15분 동안 나타납니다. 가을 축제 기간에는 매시 정각과 30분에 공격이 시작됩니다.",
+        ["ptBR"] = "Os destroços aparecem por 15 minutos após um ataque bem-sucedido dos Ferro Negro. Durante a CervaFest, os ataques começam nos minutos :00 e :30 de cada hora.",
+        ["ruRU"] = "Обломки появляются на 15 минут после успешной атаки клана Черного Железа. Во время Хмельного фестиваля атаки начинаются в :00 и :30.",
+        ["zhCN"] = "黑铁矮人的攻击成功后，残骸会出现15分钟。美酒节期间，攻击会在每小时的整点和30分开始。",
+        ["zhTW"] = "黑鐵矮人的攻擊成功後，殘骸會出現15分鐘。啤酒節期間，攻擊會在每小時的整點和30分開始。",
+    },
     ["Apply the harness"] = {
         ["enUS"] = true,
         ["deDE"] = "Lege das Geschirr an",

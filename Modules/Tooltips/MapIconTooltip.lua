@@ -332,7 +332,7 @@ function MapIconTooltip:Show()
 
                 local questTooltipHint = QuestieCorrections.questTooltipHints[questData.questId]
                 if questTooltipHint then
-                    tooltipRows:AddLine("  " .. questTooltipHint, 0.60, 0.78, 1.00)
+                    tooltipRows:AddLine("  " .. l10n(questTooltipHint), 0.60, 0.78, 1.00)
                 end
 
                 if shift and reputationReward and next(reputationReward) then
@@ -766,7 +766,7 @@ function _MapIconTooltip:GetObjectiveTooltip(icon)
     end
 
     if objectiveTooltipHint then
-        tinsert(tooltips, 1, {["|cff99c7ff" .. objectiveTooltipHint .. "|r"] = {},})
+        tinsert(tooltips, 1, {["|cff99c7ff" .. l10n(objectiveTooltipHint) .. "|r"] = {},})
     end
 
     return tooltips
