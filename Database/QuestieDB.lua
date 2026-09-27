@@ -2409,6 +2409,14 @@ function QuestieDB.IsParentQuestActive(parentID)
     return false
 end
 
+---@param questId number
+---@return boolean
+local function IsPreQuestCompleted(questId)
+    -- Repeatable quests are removed from the normal completion table so they stay available,
+    -- but AzerothCore still counts rewarded repeatables as completed prerequisites.
+    return Questie.db.char.complete[questId] or (QuestieCompat.Is335 and IsQuestCompletedOnServer(questId))
+end
+
 ---@param preQuestGroup table<number, number>
 ---@return boolean
 function QuestieDB:IsPreQuestGroupFulfilled(preQuestGroup)
@@ -2419,11 +2427,11 @@ function QuestieDB:IsPreQuestGroupFulfilled(preQuestGroup)
         local preQuestId = preQuestGroup[preQuestIndex]
         if preQuestId < 0 then
             -- Negative entries in preQuestGroup skip the exclusiveTo check
-            if not Questie.db.char.complete[-preQuestId] then
+            if not IsPreQuestCompleted(-preQuestId) then
                 return false
             end
         -- If a quest is not complete and no exclusive quest is complete, the requirement is not fulfilled
-        elseif not Questie.db.char.complete[preQuestId] then
+        elseif not IsPreQuestCompleted(preQuestId) then
             local preQuest = QuestieDB.QueryQuestSingle(preQuestId, "exclusiveTo")
             if (not preQuest) then
                 return false
@@ -2431,7 +2439,7 @@ function QuestieDB:IsPreQuestGroupFulfilled(preQuestGroup)
 
             local anyExclusiveFinished = false
             for i=1, #preQuest do
-                if Questie.db.char.complete[preQuest[i]] then
+                if IsPreQuestCompleted(preQuest[i]) then
                     anyExclusiveFinished = true
                 end
             end
@@ -2447,12 +2455,12 @@ end
 ---@param preQuestSingle number[]
 ---@return boolean
 function QuestieDB:IsPreQuestSingleFulfilled(preQuestSingle)
-    if (not preQuestSingle) then
+    if (not preQuestSingle) or (not next(preQuestSingle)) then
         return true
     end
     for preQuestIndex=1, #preQuestSingle do
         -- If a quest is complete the requirement is fulfilled
-        if Questie.db.char.complete[preQuestSingle[preQuestIndex]] then
+        if IsPreQuestCompleted(preQuestSingle[preQuestIndex]) then
             return true
         end
     end
