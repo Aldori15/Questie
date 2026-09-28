@@ -750,7 +750,7 @@ local uiInfoObjectiveProgressPending = false
 local uiInfoObjectiveSyncQueued = false
 local uiInfoObjectiveLateSyncQueued = false
 
-local function syncObjectiveProgressFromUiInfoMessage(allowFullFallback)
+local function syncObjectiveProgressFromUiInfoMessage(allowFullFallback, forceFullFallback)
     local hasTargetedChanges = false
     for questId in pairs(uiInfoChangedQuestIds) do
         uiInfoChangedQuestIds[questId] = nil
@@ -760,7 +760,7 @@ local function syncObjectiveProgressFromUiInfoMessage(allowFullFallback)
     end
 
     local didSync = hasTargetedChanges
-    if (not hasTargetedChanges) and allowFullFallback then
+    if forceFullFallback or ((not hasTargetedChanges) and allowFullFallback) then
         local questEventHandlerPrivate = QuestEventHandler.private
         if questEventHandlerPrivate and questEventHandlerPrivate.UpdateAllQuests then
             questEventHandlerPrivate:UpdateAllQuests()
@@ -798,7 +798,10 @@ local function queueLateObjectiveProgressSync()
     uiInfoObjectiveLateSyncQueued = true
     QuestieCompat.C_Timer.After(0.35, function()
         uiInfoObjectiveLateSyncQueued = false
-        syncObjectiveProgressFromUiInfoMessage(false)
+        -- The 3.3.5 quest log can still be stale during the early refresh. Run a
+        -- second full scan for objective types that cannot use the item-specific
+        -- targeted update, such as hidden monster credits for scripted objectives.
+        syncObjectiveProgressFromUiInfoMessage(true, true)
     end)
 end
 
