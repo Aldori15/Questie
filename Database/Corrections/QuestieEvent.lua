@@ -61,6 +61,7 @@ _QuestieEvent.timedEventLiveStartTimers = {}
 _QuestieEvent.timedEventQuestStartTimers = {}
 _QuestieEvent.timedEventQuestEndTimers = {}
 _QuestieEvent.timedEventQuestIds = {}
+_QuestieEvent.preEventQuestRefreshTimer = nil
 _QuestieEvent.initializeTimer = nil
 _QuestieEvent.initializeAttempts = 0
 
@@ -87,11 +88,13 @@ local _WithinDates, _LoadDarkmoonFaire, _GetDarkmoonFaireLocation,
     _GetDarkmoonFaireLocationForDate, _GetDarkmoonFaireLocationForMonth,
     _GetDarkmoonFaireLocationForCalendarEvent, _GetDarkmoonFaireEventName,
     _IsEventQuestVisible, _GetCalendarEventName, _GetActiveCalendarEvents,
+    _GetNextCalendarDay,
     _IsCalendarEventMonthPlausible, _IsCalendarEventActiveNow,
     _IsCalendarEventLiveNow, _IsCalendarEventQuestActiveNow,
     _GetTimedEventLiveStartDelay, _GetTimedEventQuestStartDelay,
     _GetTimedEventQuestEndDelay, _AnnounceActiveEvent,
     _AnnounceUpcomingTimedEvent, _SetTimedEventQuestState,
+    _SetPreEventQuestState, _SchedulePreEventQuestRefresh,
     _ScheduleTimedEventActiveAnnouncement, _ScheduleTimedEventQuestStart,
     _ScheduleTimedEventQuestEnd,
     _PrimeCalendar, _RefreshAvailableQuests, _ShouldAnnounceWorldEvents,
@@ -187,6 +190,14 @@ local CALENDAR_EVENT_TIME_WINDOWS = {
     },
 }
 
+-- These promotional quests are offered on the day before the calendar event.
+-- AzerothCore spawns their Ironforge and Orgrimmar questgivers during its
+-- Saturday announcement event, while the calendar lists the contest on Sunday.
+local PRE_EVENT_QUEST_IDS = {
+    [8228] = true, -- Could I get a Fishing Flier? (Alliance)
+    [8229] = true, -- Could I get a Fishing Flier? (Horde)
+}
+
 local DMF_LOCATIONS = {
     NONE = 0,
     MULGORE = 1,
@@ -274,6 +285,28 @@ _IsCalendarEventMonthPlausible = function(eventName, month)
     end
 
     return month >= startMonth or month <= endMonth
+end
+
+_GetNextCalendarDay = function(currentDate)
+    if not CalendarGetMonth then
+        return nil
+    end
+
+    local _, _, currentMonthDays = CalendarGetMonth(0)
+    if not currentMonthDays then
+        return nil
+    end
+
+    if currentDate.monthDay < currentMonthDays then
+        return 0, currentDate.month, currentDate.monthDay + 1
+    end
+
+    local nextMonth = CalendarGetMonth(1)
+    if not nextMonth then
+        return nil
+    end
+
+    return 1, nextMonth, 1
 end
 
 _IsCalendarEventActiveNow = function(eventName, currentDate)
@@ -400,6 +433,52 @@ _SetTimedEventQuestState = function(eventName, isActive)
     end
 end
 
+_SetPreEventQuestState = function(isActive)
+    local changed = false
+    for questId in pairs(PRE_EVENT_QUEST_IDS) do
+        if isActive then
+            if QuestieEvent.activeQuests[questId] ~= true or QuestieCorrections.hiddenQuests[questId] ~= nil then
+                changed = true
+            end
+            QuestieCorrections.hiddenQuests[questId] = nil
+            QuestieEvent.activeQuests[questId] = true
+        else
+            if QuestieEvent.activeQuests[questId] == true or QuestieCorrections.hiddenQuests[questId] ~= true then
+                changed = true
+            end
+            QuestieCorrections.hiddenQuests[questId] = true
+            QuestieEvent.activeQuests[questId] = nil
+        end
+    end
+
+    if changed then
+        _RefreshAvailableQuests()
+    end
+end
+
+_SchedulePreEventQuestRefresh = function(currentDate)
+    if _QuestieEvent.preEventQuestRefreshTimer or (not currentDate) or (not currentDate.hour) then
+        return
+    end
+
+    local minutesUntilMidnight = ((24 - currentDate.hour) * 60) - (currentDate.minute or 0)
+    if minutesUntilMidnight <= 0 then
+        return
+    end
+
+    -- Run just after midnight so CalendarGetDate has advanced to the new day.
+    _QuestieEvent.preEventQuestRefreshTimer = C_Timer.After((minutesUntilMidnight * 60) + 1, function()
+        _QuestieEvent.preEventQuestRefreshTimer = nil
+
+        local _, upcomingEvents, _, calendarAvailable = _GetActiveCalendarEvents()
+        if calendarAvailable then
+            _SetPreEventQuestState(upcomingEvents["Stranglethorn Fishing Extravaganza"] == true)
+        end
+
+        _SchedulePreEventQuestRefresh(C_DateAndTime.GetCurrentCalendarTime())
+    end)
+end
+
 _ScheduleTimedEventQuestEnd = function(eventName, currentDate)
     if _QuestieEvent.timedEventQuestEndTimers[eventName] then
         return
@@ -475,15 +554,16 @@ end
 
 _GetActiveCalendarEvents = function()
     local activeEvents = {}
+    local upcomingEvents = {}
     local darkmoonLocation = nil
 
     if not QuestieCompat.Is335 or not CalendarGetNumDayEvents or not CalendarGetHolidayInfo then
-        return activeEvents, darkmoonLocation, false
+        return activeEvents, upcomingEvents, darkmoonLocation, false
     end
 
     local currentDate = C_DateAndTime.GetCurrentCalendarTime()
     if not currentDate or not currentDate.month or not currentDate.monthDay then
-        return activeEvents, darkmoonLocation, false
+        return activeEvents, upcomingEvents, darkmoonLocation, false
     end
 
     local numDayEvents = CalendarGetNumDayEvents(0, currentDate.monthDay) or 0
@@ -501,7 +581,21 @@ _GetActiveCalendarEvents = function()
         end
     end
 
-    return activeEvents, darkmoonLocation, true
+    local nextMonthOffset, nextMonth, nextMonthDay = _GetNextCalendarDay(currentDate)
+    if nextMonthOffset ~= nil then
+        local numNextDayEvents = CalendarGetNumDayEvents(nextMonthOffset, nextMonthDay) or 0
+        for index = 1, numNextDayEvents do
+            local name, _, texture = CalendarGetHolidayInfo(nextMonthOffset, nextMonthDay, index)
+            if name then
+                local eventName = _GetCalendarEventName(name, texture)
+                if eventName and _IsCalendarEventMonthPlausible(eventName, nextMonth) then
+                    upcomingEvents[eventName] = true
+                end
+            end
+        end
+    end
+
+    return activeEvents, upcomingEvents, darkmoonLocation, true
 end
 
 _PrimeCalendar = function()
@@ -591,7 +685,7 @@ function QuestieEvent:Load(isFinalPass)
 
     -- We want to replace the Lunar Festival date with the date that we estimate
     QuestieEvent.eventDates["Lunar Festival"] = QuestieEvent.lunarFestival[year]
-    local activeEvents, darkmoonLocation, calendarAvailable = _GetActiveCalendarEvents()
+    local activeEvents, upcomingEvents, darkmoonLocation, calendarAvailable = _GetActiveCalendarEvents()
 
     local eventCorrections
     if Questie.IsTBC then
@@ -653,14 +747,22 @@ function QuestieEvent:Load(isFinalPass)
         if _IsEventQuestVisible(questData[5]) then
             _QuestieEvent.eventQuestsInCurrentExpansion[questId] = true
 
-            if CALENDAR_EVENT_TIME_WINDOWS[eventName] then
+            local isPreEventQuest = PRE_EVENT_QUEST_IDS[questId] == true
+            if CALENDAR_EVENT_TIME_WINDOWS[eventName] and not isPreEventQuest then
                 _QuestieEvent.timedEventQuestIds[eventName] = _QuestieEvent.timedEventQuestIds[eventName] or {}
                 _QuestieEvent.timedEventQuestIds[eventName][questId] = true
             end
 
-            local isActiveTimedQuest = (not CALENDAR_EVENT_TIME_WINDOWS[eventName])
+            local isActiveEvent
+            if isPreEventQuest then
+                isActiveEvent = upcomingEvents[eventName] == true
+            else
+                isActiveEvent = activeEvents[eventName] == true
+            end
+            local isActiveTimedQuest = isPreEventQuest
+                or (not CALENDAR_EVENT_TIME_WINDOWS[eventName])
                 or _IsCalendarEventQuestActiveNow(eventName, currentDate)
-            if activeEvents[eventName] == true
+            if isActiveEvent
                 and isActiveTimedQuest
                 and _WithinDates(startDay, startMonth, endDay, endMonth) then
                 if not QuestieEvent.activeQuests[questId] then
@@ -671,6 +773,8 @@ function QuestieEvent:Load(isFinalPass)
             end
         end
     end
+
+    _SchedulePreEventQuestRefresh(currentDate)
 
     for eventName, isActive in pairs(activeEvents) do
         if isActive and CALENDAR_EVENT_TIME_WINDOWS[eventName] then
@@ -1220,6 +1324,8 @@ tinsert(QuestieEvent.eventQuests, {"Stranglethorn Fishing Extravaganza", 8193}) 
 tinsert(QuestieEvent.eventQuests, {"Stranglethorn Fishing Extravaganza", 8221}) -- Rare Fish - Keefer's Angelfish
 tinsert(QuestieEvent.eventQuests, {"Stranglethorn Fishing Extravaganza", 8224}) -- Rare Fish - Dezian Queenfish
 tinsert(QuestieEvent.eventQuests, {"Stranglethorn Fishing Extravaganza", 8225}) -- Rare Fish - Brownell's Blue Striped Racer
+tinsert(QuestieEvent.eventQuests, {"Stranglethorn Fishing Extravaganza", 8228}) -- Could I get a Fishing Flier? (Alliance)
+tinsert(QuestieEvent.eventQuests, {"Stranglethorn Fishing Extravaganza", 8229}) -- Could I get a Fishing Flier? (Horde)
 
 -- New TBC event quests
 
