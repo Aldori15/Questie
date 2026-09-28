@@ -539,8 +539,13 @@ function QuestieQuest:SmoothReset()
 end
 
 ---@param questId number
----@return boolean @true if the local player is tracking this quest (independent of any option)
+---@return boolean
 function QuestieQuest:IsQuestTracked(questId)
+    if not Questie.db.profile.trackerEnabled then
+        local index = QuestieCompat.GetQuestLogIndexByID(questId)
+        return index and index > 0 and (IsQuestWatched(index) and true or false) or false
+    end
+
     local autoWatch = Questie.db.profile.autoTrackQuests
     local trackedAuto = autoWatch and (not Questie.db.char.AutoUntrackedQuests or not Questie.db.char.AutoUntrackedQuests[questId])
     local trackedManual = not autoWatch and (Questie.db.char.TrackedQuests and Questie.db.char.TrackedQuests[questId])

@@ -209,6 +209,68 @@ local function _InitializeNearestQuestItemButton()
     C_Timer.NewTicker(5, _UpdateNearestQuestItemButton)
 end
 
+local disabledWatchRefreshPending = false
+local disabledWatchRefreshAgain = false
+local RefreshDisabledWatches
+
+RefreshDisabledWatches = function()
+    if Questie.db.profile.trackerEnabled or not Questie.db.profile.hideUntrackedQuestsMapIcons then
+        return
+    end
+
+    if disabledWatchRefreshPending then
+        disabledWatchRefreshAgain = true
+        return
+    end
+
+    disabledWatchRefreshPending = true
+
+    QuestieCombatQueue:Queue(function()
+        if Questie.db.profile.trackerEnabled or not Questie.db.profile.hideUntrackedQuestsMapIcons then
+            disabledWatchRefreshPending = false
+            disabledWatchRefreshAgain = false
+            return
+        end
+
+        disabledWatchRefreshAgain = false
+
+        ThreadLib.Thread(function()
+            for questId, quest in pairs(QuestiePlayer.currentQuestlog) do
+                if type(quest) == "table" and QuestieQuest:ShouldShowQuestNotes(questId) then
+                    QuestieQuest:PopulateObjectiveNotes(quest)
+                end
+            end
+
+            QuestieQuest:ShowQuestIcons()
+            QuestieQuest:HideQuestIcons()
+
+            for questId in pairs(QuestiePlayer.currentQuestlog) do
+                if not QuestieQuest:ShouldShowQuestNotes(questId) then
+                    QuestieTooltips:RemoveQuest(questId)
+                end
+            end
+        end, 0, "Disabled tracker watch refresh", function()
+            disabledWatchRefreshPending = false
+
+            if disabledWatchRefreshAgain then
+                disabledWatchRefreshAgain = false
+                RefreshDisabledWatches()
+            end
+        end)
+    end)
+end
+
+function QuestieTracker.SetupDisabledWatchRefresh()
+    if QuestieTracker._disabledWatchRefreshHooked then
+        return
+    end
+
+    QuestieTracker._disabledWatchRefreshHooked = true
+
+    hooksecurefunc("AddQuestWatch", RefreshDisabledWatches)
+    hooksecurefunc("RemoveQuestWatch", RefreshDisabledWatches)
+end
+
 function QuestieTracker.Initialize()
     assert(coroutine.running(), "QuestieTracker.Initialize must be called from a coroutine")
 
@@ -221,8 +283,8 @@ function QuestieTracker.Initialize()
     QuestieTracker.SetupKeybinding()
     _InitializeNearestQuestItemButton()
 
-    if (not Questie.db.profile.trackerEnabled) then
-        -- The Tracker is disabled, no need to continue
+    if not Questie.db.profile.trackerEnabled then
+        QuestieTracker.SetupDisabledWatchRefresh()
         return
     end
 
