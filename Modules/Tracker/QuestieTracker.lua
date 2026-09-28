@@ -581,16 +581,8 @@ function QuestieTracker:HasQuest()
 end
 
 function QuestieTracker:Enable()
-    -- Update the questsWatched var before we re-enable
-    if questsWatched == 0 then
-        questsWatched = GetNumQuestWatches()
-    end
-
     Questie.db.profile.trackerEnabled = true
-    QuestieTracker.started = false
-    ThreadLib.ThreadCallbackInstant(function()
-        QuestieTracker.Initialize()
-    end, ReloadUI)
+    StaticPopup_Show("QUESTIE_RELOAD")
 end
 
 function QuestieTracker:Disable()
@@ -602,12 +594,9 @@ function QuestieTracker:Disable()
 
     if Questie.IsWotlk or QuestieCompat.Is335 then
         Questie.db.char.trackedAchievementIds = {}
-        trackedAchievementIds = {}
     end
 
-    QuestieTracker:Unhook()
-    QuestieTracker:Update()
-    ReloadUI()
+    StaticPopup_Show("QUESTIE_RELOAD")
 end
 
 -- Function for the Slash handler
