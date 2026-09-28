@@ -967,6 +967,12 @@ function QuestieWotlkQuestFixes:Load()
         [11286] = {
             [questKeys.preQuestSingle] = {},
         },
+        [11293] = { -- Bark for the Barleybrews!
+            [questKeys.objectives] = {{{24202,"Bark Outside the Bank",Questie.ICON_TYPE_EVENT},{24203,"Bark in the Military Ward",Questie.ICON_TYPE_EVENT},{24204,"Bark in the Hall of Explorers",Questie.ICON_TYPE_EVENT},{24205,"Bark in the Mystic Ward",Questie.ICON_TYPE_EVENT}}},
+        },
+        [11294] = { -- Bark for the Thunderbrews!
+            [questKeys.objectives] = {{{24202,"Bark Outside the Bank",Questie.ICON_TYPE_EVENT},{24203,"Bark in the Military Ward",Questie.ICON_TYPE_EVENT},{24204,"Bark in the Hall of Explorers",Questie.ICON_TYPE_EVENT},{24205,"Bark in the Mystic Ward",Questie.ICON_TYPE_EVENT}}},
+        },
         [11296] = {
             [questKeys.extraObjectives] = {{nil, Questie.ICON_TYPE_SLAY, l10n("Break Riven Widow Cocoons to free captives"), 0, {{"monster", 24210}}}},
         },
@@ -1219,6 +1225,12 @@ function QuestieWotlkQuestFixes:Load()
         [11401] = {
             [questKeys.startedBy] = {nil,{186267}},
             [questKeys.finishedBy] = {nil,{186314}},
+        },
+        [11407] = { -- Bark for Drohn's Distillery!
+            [questKeys.objectives] = {{{24202,"Bark outside the Auction House",Questie.ICON_TYPE_EVENT},{24203,"Bark in the Valley of Honor",Questie.ICON_TYPE_EVENT},{24204,"Bark in the Valley of Wisdom",Questie.ICON_TYPE_EVENT},{24205,"Bark in the Valley of Spirits",Questie.ICON_TYPE_EVENT}}},
+        },
+        [11408] = { -- Bark for T'chali's Voodoo Brewery!
+            [questKeys.objectives] = {{{24202,"Bark outside the Auction House",Questie.ICON_TYPE_EVENT},{24203,"Bark in the Valley of Honor",Questie.ICON_TYPE_EVENT},{24204,"Bark in the Valley of Wisdom",Questie.ICON_TYPE_EVENT},{24205,"Bark in the Valley of Spirits",Questie.ICON_TYPE_EVENT}}},
         },
         [11409] = {
             [questKeys.preQuestSingle] = {},
