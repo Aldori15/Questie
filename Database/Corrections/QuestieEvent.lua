@@ -702,17 +702,22 @@ function QuestieEvent:Load(isFinalPass)
         end
     end
 
-    for eventName, eventData in pairs(QuestieEvent.eventDates) do
-        local startDay, startMonth = strsplit("/", eventData.startDate)
-        local endDay, endMonth = strsplit("/", eventData.endDate)
+    if not calendarAvailable then
+        -- The static dates are only a fallback for clients/servers without calendar data.
+        -- When the calendar is available, its absence of an event is authoritative because
+        -- several events (notably Harvest Festival) have dates that vary from year to year.
+        for eventName, eventData in pairs(QuestieEvent.eventDates) do
+            local startDay, startMonth = strsplit("/", eventData.startDate)
+            local endDay, endMonth = strsplit("/", eventData.endDate)
 
-        startDay = tonumber(startDay)
-        startMonth = tonumber(startMonth)
-        endDay = tonumber(endDay)
-        endMonth = tonumber(endMonth)
+            startDay = tonumber(startDay)
+            startMonth = tonumber(startMonth)
+            endDay = tonumber(endDay)
+            endMonth = tonumber(endMonth)
 
-        if (not activeEvents[eventName]) and _WithinDates(startDay, startMonth, endDay, endMonth) and (eventCorrections[eventName] ~= false) then
-            activeEvents[eventName] = true
+            if (not activeEvents[eventName]) and _WithinDates(startDay, startMonth, endDay, endMonth) and (eventCorrections[eventName] ~= false) then
+                activeEvents[eventName] = true
+            end
         end
     end
 
