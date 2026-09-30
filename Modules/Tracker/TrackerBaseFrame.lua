@@ -133,7 +133,7 @@ function TrackerBaseFrame.Initialize()
 
         if (not result) then
             Questie.db.profile.TrackerLocation = nil
-            print(l10n("Error: Questie tracker in invalid location, resetting..."))
+            Questie:Print(l10n("Questie tracker in invalid location, resetting..."))
             Questie.Debug(Questie.DEBUG_CRITICAL, "Resetting reason:", reason)
 
             local result2, _ = pcall(baseFrame.SetPoint, baseFrame, unpack({ QuestieCompat.GetWatchFramePoint() }))

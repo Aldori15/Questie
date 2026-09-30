@@ -146,7 +146,7 @@ end
 -- There are ways to toggle this function before the frame has been created
 function QuestieJourney:ToggleJourneyWindow()
     if (not Questie.started) then
-        print(Questie:Colorize(l10n("Please wait a moment for Questie to finish loading")))
+        Questie:Print(l10n("Please wait a moment for Questie to finish loading"))
         return
     end
 
