@@ -203,7 +203,7 @@ end
 
     ---@param self Thread
     Kill = function(self)
-      print(Questie.DEBUG_CRITICAL, "[ThreadLib] Thread cancelled")
+      Questie.Debug(Questie.DEBUG_CRITICAL, "[ThreadLib] Thread cancelled")
       self._timer:Cancel()
       self._thread = nil
       self._timer = nil

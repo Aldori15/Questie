@@ -1982,7 +1982,7 @@ QuestieDB.classKeys = {
         elseif Questie.IsWotlk or QuestieCompat.Is335 then
             return 1535
         else
-            print("Unknown expansion for ALL_CLASSES")
+            Questie.Error("Unknown expansion for ALL_CLASSES")
             return playerFaction == "Alliance" and 1439 or 1501
         end
     end)(),

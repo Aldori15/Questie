@@ -244,7 +244,7 @@ QuestieSerializer.WriterTable = {
             for _, v in pairs(value) do
                 local t = type(v)
                 if not QuestieSerializer.WriterTable[t] then
-                    print("QuestieSerializer Error: Unhandled type: " .. t)
+                    Questie.Debug(Questie.DEBUG_CRITICAL, "QuestieSerializer Error: Unhandled type: " .. t)
                 else
                     QuestieSerializer.WriterTable[t](self, v, depth)
                     if t == "string" then
@@ -291,7 +291,7 @@ function QuestieSerializer:WriteKeyValuePair(key, value, depth)
     local writeKey = QuestieSerializer.WriterTable[keyType]
     local writeValue = QuestieSerializer.WriterTable[valueType]
     if not writeKey or not writeValue then
-        print("QuestieSerializer Error: Unhandled type: " .. keyType .. "  " .. valueType)
+        Questie.Debug(Questie.DEBUG_CRITICAL, "QuestieSerializer Error: Unhandled type: " .. keyType .. "  " .. valueType)
     else
         writeKey(self, key, depth)
         if keyType == "string" then
