@@ -284,7 +284,6 @@ function QuestieSerializer:WriteKeyValuePair(key, value, depth)
     if not depth then
         depth = 0
     end
-    if self.objectCount > 8192 and false then print("[QuestieSerializer] Too many objects in input table!") return end
     self.objectCount = self.objectCount + 1
     local keyType = type(key)
     local valueType = type(value)

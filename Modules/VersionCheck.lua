@@ -36,14 +36,8 @@ end
 if Questie then
     C_Timer.After(4, function()
         error("ERROR!! -> Questie already loaded! Please only have one Questie installed!")
-        for _=1, 10 do
-            DEFAULT_CHAT_FRAME:AddMessage("|cFFFF0000ERROR!!|r -> Questie already loaded! Please only have one Questie installed!")
-        end
     end);
     error("ERROR!! -> Questie already loaded! Please only have one Questie installed!")
-    DEFAULT_CHAT_FRAME:AddMessage("|cFFFF0000ERROR!!|r -> Questie already loaded! Please only have one Questie installed!")
-    Questie = {}
-    return
 end
 
 --Initialized below

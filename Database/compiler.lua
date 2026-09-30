@@ -1344,34 +1344,6 @@ function QuestieDBCompiler:ValidateItems()
             end
         end
 
-        -- todo fix this test
-        --if false then
-        --    local cnt = 0 for _ in pairs(toValidate) do cnt = cnt + 1 end
-        --    print("toValidate length: " .. cnt)
-        --    --Questie.db.global.__toValidate = toValidate
-        --    local validData = QuestieDB:GetItem(id)
-        --    for id,key in pairs(QuestieDB.itemCompilerOrder) do
-        --        local a = toValidate[id]
-        --        local b = validData[key]
-        --
-        --        if type(a) == "number"  and abs(a-(b or 0)) > 0.2 then
-        --            print("Nonmatching at " .. key .. "  " .. tostring(a) .. " ~= " .. tostring(b))
-        --            return
-        --        elseif type(a) == "string" and a ~= (b or "") then
-        --            print("Nonmatching at " .. key .. "  " .. tostring(a) .. " ~= " .. tostring(b))
-        --            return
-        --        elseif type(a) == "table" then
-        --            if not equals(a, (b or {})) then
-        --                print("Nonmatching at " .. key .. "  " .. id)
-        --                --__nma = a
-        --                --__nmb = b or {}
-        --                return
-        --            end
-        --        else
-        --            print("MATCHING: " .. key)
-        --        end
-        --    end
-        --end
         if count >= VALIDATION_TICKS_PER_YIELD then
             count = 0
             coroutine.yield()

@@ -985,7 +985,6 @@ function QuestieMap:DrawWorldIcon(data, areaID, x, y, spawn, showFlag)
 
         if (not parentMapId) then
             error("No UiMapID or fitting parentAreaId for areaId : " .. areaID .. " - " .. tostring(data.Name))
-            return nil, nil
         else
             areaID = parentMapId
             uiMapId = ZoneDB:GetUiMapIdByAreaId(areaID)
@@ -1000,7 +999,6 @@ function QuestieMap:DrawWorldIcon(data, areaID, x, y, spawn, showFlag)
     if not uiMapId then
         --ZoneDB:GetUiMapIdByAreaId
         error("No UiMapID or fitting uiMapId for areaId : " .. areaID .. " - " .. tostring(data.Name))
-        return nil, nil
     end
 
     local floatOnEdge = true
