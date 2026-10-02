@@ -357,6 +357,13 @@ local function _CalculateNextMonthlyResetTime(currentTime, currentDate)
     }) or (currentTime + (32 * SECONDS_PER_DAY))
 end
 
+local function _GetLegacyDailyResetTime()
+    local char = Questie.db.char
+    if next(char.daily or {}) or next(char.acoreDailyQuestCompletions or {}) then
+        return Questie.db.profile.dailyResetTime
+    end
+end
+
 function QuestieCompat.GetQuestResetTime()
     local timeUntilReset = tonumber(GetQuestResetTime())
     local currentTime, currentDate = QuestieCompat.GetServerTime()
@@ -378,7 +385,7 @@ function QuestieCompat.GetQuestResetTime()
         Questie.Debug(Questie.DEBUG_DEVELOP, "[GetQuestResetTime] Invalid native value, using fallback: ", timeUntilReset)
     end
 
-    local storedResetTime = Questie.db.profile.dailyResetTime
+    local storedResetTime = Questie.db.char.dailyResetTime or _GetLegacyDailyResetTime()
     if type(storedResetTime) == "number" and storedResetTime > currentTime then
         return storedResetTime - currentTime
     end
@@ -394,6 +401,7 @@ local function _ScheduleDailyResetRetry()
     dailyResetRetryTimer = QuestieCompat.C_Timer.After(3, function()
         dailyResetRetryTimer = nil
         QuestieCompat.CalculateNextResetTime()
+        QuestieCompat.ResetDailyQuests()
     end)
 end
 
@@ -415,7 +423,15 @@ function QuestieCompat.CalculateNextResetTime()
         dailyResetRetryTimer = nil
     end
 
-    Questie.db.profile.dailyResetTime = Questie.db.profile.dailyResetTime or (currentTime + timeUntilReset)
+    -- Completion history belongs to the character. Migrate its old deadline
+    -- once, then keep other characters from advancing this character's reset.
+    local dailyResetTime = Questie.db.char.dailyResetTime
+    if type(dailyResetTime) ~= "number" then
+        local legacyResetTime = _GetLegacyDailyResetTime()
+        dailyResetTime = type(legacyResetTime) == "number" and legacyResetTime or (currentTime + timeUntilReset)
+        Questie.db.char.dailyResetTime = dailyResetTime
+    end
+    Questie.db.profile.dailyResetTime = dailyResetTime
     Questie.Debug(Questie.DEBUG_DEVELOP, "[CalculateNextResetTime] Next daily rest time: ", date("%m/%d/%y %H:%M:%S", Questie.db.profile.dailyResetTime))
 
     Questie.db.profile.weeklyResetHour = Questie.db.profile.weeklyResetHour or tonumber(date("%H", Questie.db.profile.dailyResetTime+300))
@@ -436,20 +452,47 @@ end
 
 function QuestieCompat.ResetDailyQuests(reset)
     local currentTime = QuestieCompat.GetServerTime()
+    local resetTime = Questie.db.char.dailyResetTime
 
-    if reset or (currentTime > Questie.db.profile.dailyResetTime) then
-        for questId in pairs(Questie.db.char.daily) do
+    if type(resetTime) ~= "number" then
+        resetTime = _GetLegacyDailyResetTime()
+        if type(resetTime) == "number" then
+            Questie.db.char.dailyResetTime = resetTime
+        end
+    end
+
+    local didReset = reset or (type(resetTime) == "number" and currentTime >= resetTime)
+    if didReset then
+        for questId in pairs(Questie.db.char.daily or {}) do
             Questie.db.char.daily[questId] = nil
             Questie.db.char.complete[questId] = nil
             serverCompletedQuests[questId] = nil
         end
-        Questie.db.char.acoreDailyQuestCompletions = {}
-        Questie.db.profile.dailyResetTime = nil
-        QuestieCompat.CalculateNextResetTime()
-        if Questie.started then
-            AvailableQuests.CalculateAndDrawAll()
+        for questId in pairs(Questie.db.char.acoreDailyQuestCompletions or {}) do
+            Questie.db.char.complete[questId] = nil
+            serverCompletedQuests[questId] = nil
         end
+        -- A server query can also report dailies completed outside this session.
+        for questId in pairs(serverCompletedQuests) do
+            if QuestieDB.IsDailyQuest(questId) then
+                Questie.db.char.complete[questId] = nil
+                serverCompletedQuests[questId] = nil
+            end
+        end
+        Questie.db.char.acoreDailyQuestCompletions = {}
+        Questie.db.char.dailyResetTime = nil
+        Questie.db.profile.dailyResetTime = nil
     end
+
+    if didReset or type(resetTime) ~= "number" then
+        QuestieCompat.CalculateNextResetTime()
+    end
+
+    if didReset and Questie.started then
+        AvailableQuests.CalculateAndDrawAll()
+    end
+
+    return didReset
 end
 
 local weeklyResetTimer
@@ -525,12 +568,18 @@ function QuestieCompat.ResetMonthlyQuests()
 end
 
 function QuestieCompat.SetQuestComplete(questId)
+    local isDailyQuest = QuestieDB.IsDailyQuest(questId)
+    if isDailyQuest then
+        -- Expire yesterday's records before adding today's completion.
+        QuestieCompat.ResetDailyQuests()
+    end
+
     if (not QuestieDB.IsRepeatable(questId)) then
         Questie.db.char.complete[questId] = true
     end
 
     if Questie.db.profile.resetDailyQuests then
-        if QuestieDB.IsDailyQuest(questId) then
+        if isDailyQuest then
             Questie.db.char.daily[questId] = true
             Questie.db.char.complete[questId] = true
         elseif QuestieDB.IsWeeklyQuest(questId) then
@@ -567,14 +616,7 @@ end
 
 local function EnsureAzerothCoreDailyCompletionReset()
     Questie.db.char.acoreDailyQuestCompletions = Questie.db.char.acoreDailyQuestCompletions or {}
-
-    local currentTime = QuestieCompat.GetServerTime()
-    local resetTime = Questie.db.profile.dailyResetTime
-    if type(resetTime) ~= "number" or resetTime <= currentTime then
-        Questie.db.char.acoreDailyQuestCompletions = {}
-        Questie.db.profile.dailyResetTime = nil
-        QuestieCompat.CalculateNextResetTime()
-    end
+    QuestieCompat.ResetDailyQuests()
 end
 
 ---@param questId number
@@ -593,6 +635,8 @@ end
 -- Fires when the data requested by QueryQuestsCompleted() is available.
 -- https://wowpedia.fandom.com/wiki/QUEST_QUERY_COMPLETE
 function QuestieCompat:QUEST_QUERY_COMPLETE(event)
+    -- Expire old caches before applying the authoritative server response.
+    QuestieCompat.ResetDailyQuests()
     GetQuestsCompleted(Questie.db.char.complete)
 
     serverCompletedQuests = {}
@@ -993,10 +1037,10 @@ end
 local function CompleteRewardQuest(questId)
     -- Keep the raw cache in sync even when the normal chat path handled the
     -- turn-in before another completed-quest query was needed.
-    serverCompletedQuests[questId] = true
     if QuestieDB.IsDailyQuest(questId) then
         QuestieCompat.SetAzerothCoreDailyQuestComplete(questId)
     end
+    serverCompletedQuests[questId] = true
     _QuestEventHandler:QuestTurnedIn(questId)
     _QuestEventHandler:QuestRemoved(questId)
 end

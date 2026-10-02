@@ -1,6 +1,3 @@
---- COMPATIBILITY ---
-local IsQuestFlaggedCompleted = QuestieCompat.IsQuestFlaggedCompleted or C_QuestLog.IsQuestFlaggedCompleted
-
 ---@class QuestieQuest
 local QuestieQuest = QuestieLoader:CreateModule("QuestieQuest")
 ---@type QuestieQuestPrivate
@@ -72,6 +69,11 @@ local coYield = coroutine.yield
 local coRunning = coroutine.running
 local NewThread = ThreadLib.ThreadSimple
 local OBJECT_SPAWN_HIDE_SECONDS = 120
+
+local function _IsQuestInLog(questId)
+    local index = QuestieCompat.GetQuestLogIndexByID(questId)
+    return index ~= nil and index > 0
+end
 
 local function _UnloadQuestFrames(questId, callback)
     TrackerUtils:ClearTomTomTargetForQuest(questId)
@@ -581,7 +583,9 @@ function QuestieQuest:UpdateQuest(questId)
     ---@type Quest
     local quest = QuestieDB.GetQuest(questId)
 
-    if quest and (not Questie.db.char.complete[questId]) then
+    -- Completion history can outlive a daily reset or server-side reacceptance.
+    -- A quest still in the live log must continue to update its objective icons.
+    if quest and (not Questie.db.char.complete[questId] or _IsQuestInLog(questId)) then
         QuestieQuest:PopulateQuestLogInfo(quest)
 
         local isComplete = quest:IsComplete()
@@ -1058,11 +1062,13 @@ end
 
 ---@param quest Quest
 function QuestieQuest:AddFinisher(quest)
-    --We should never ever add the quest if IsQuestFlaggedComplete true.
     local questId = quest.Id
     Questie.Debug(Questie.DEBUG_INFO, "[QuestieQuest] Adding finisher for quest", questId)
 
-    if (QuestiePlayer.currentQuestlog[questId] and (IsQuestFlaggedCompleted(questId) == false) and (quest:IsComplete() == 1 or quest:IsComplete() == 0) and (not Questie.db.char.complete[questId])) then
+    -- Recheck the live log after asynchronous cleanup. Historical completion
+    -- must not suppress an accepted quest's finisher or revive a removed quest.
+    if QuestiePlayer.currentQuestlog[questId] and _IsQuestInLog(questId)
+        and (quest:IsComplete() == 1 or quest:IsComplete() == 0) then
         local finisher, key
 
         if quest.Finisher ~= nil then
