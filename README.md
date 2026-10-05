@@ -12,6 +12,24 @@ A fork of the WoW Classic Questie addon aiming to provide compatibility with Wra
 - [Download](https://github.com/Aldori15/Questie/archive/refs/heads/335.zip) the archive.
 - Extract it into `Interface/AddOns/` directory, folder name should be `Questie-335`.
 
+## Optional AzerothCore Server Bridge
+
+Server owners can install [mod-questie-bridge](https://github.com/Aldori15/mod-questie-bridge)
+to let Questie use live server event activity and worldstates. This includes holiday events
+started or stopped manually with GM commands, Stranglethorn fishing winner-dependent quests,
+simultaneous Darkmoon Faire locations, Scourge Invasion activity, and Isle of Quel'Danas quest unlocks.
+
+Both the server module and a Questie version containing the client bridge integration are
+required. See the [module installation instructions](https://github.com/Aldori15/mod-questie-bridge#installation).
+Run `/qserver` in game to check the connection, active event IDs, and reported worldstate information.
+
+Fresh bridge information takes priority for supported quest availability. Your visibility
+options, character requirements, and manually hidden quests still apply. Enable **Available
+Scourge Invasion Quests** or **Available Sun's Reach Quests** to display those quest sets.
+
+The bridge is optional. If your server does not have it, or its information becomes
+unavailable, Questie continues using its existing calendar detection and manual settings.
+
 ## Questie Information
 - [Frequently Asked Questions](https://github.com/Questie/Questie/wiki/FAQ)
 - Come chat with us on [our Discord server](https://discord.gg/s33MAYKeZd).

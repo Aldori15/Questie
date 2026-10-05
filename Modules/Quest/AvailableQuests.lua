@@ -352,6 +352,22 @@ local function _ClearUnavailableQuestForToday(npcId, questId)
     return removed
 end
 
+-- An event/phase reopening invalidates observations made while its gate was closed.
+-- Completion history and player-selected hides are independent and stay intact.
+function AvailableQuests.ClearUnavailableQuestForLiveTransition(questId)
+    _GetUnavailableQuestsDeterminedByTalking()
+    local bucket = _GetUnavailableQuestBucketForQuest(_GetUnavailableQuestSyncState(), questId)
+    if not bucket then return false end
+    local npcIds = {}
+    for npcId, quests in pairs(bucket.byNpc) do
+        if quests[questId] then npcIds[#npcIds + 1] = npcId end
+    end
+    local changed = false
+    for _, npcId in ipairs(npcIds) do changed = _ClearUnavailableQuestForToday(npcId, questId) or changed end
+    if changed then lastNpcGuid = nil end
+    return changed
+end
+
 local _CalculateAvailableQuests, _DrawChildQuests, _AddStarter, _DrawAvailableQuest, _GetQuestIcon, _GetIconScaleForAvailable, _HasProperDistanceToAlreadyAddedSpawns, _RegisterQuestStartTooltips, _GetStructuredAvailableQuestsInGossip, _GetStructuredActiveQuestsInGossip, _RemoveQuestFromNpcAvailability, _SyncAvailableQuestDisplay, _HasLiveAvailableQuestFrames
 
 ---@param questId QuestId
@@ -1098,7 +1114,7 @@ _CalculateAvailableQuests = function()
     local hidden = Questie.db.char.hidden
 
     local currentQuestlog = QuestiePlayer.currentQuestlog
-    local currentIsleOfQuelDanasQuests = IsleOfQuelDanas.quests[Questie.db.profile.isleOfQuelDanasPhase] or {}
+    local currentIsleOfQuelDanasQuests = IsleOfQuelDanas.GetHiddenQuests()
     local aqWarEffortQuests = QuestieQuestBlacklist.AQWarEffortQuests
     local scourgeInvasionQuests = QuestieQuestBlacklist.ScourgeInvasionQuests
     local sunsReachQuests = QuestieQuestBlacklist.SunsReachQuests

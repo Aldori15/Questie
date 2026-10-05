@@ -2016,6 +2016,12 @@ QuestieDB.specialFlags = {
 _QuestieDB.questCache = {}; -- stores quest objects so they dont need to be regenerated
 _QuestieDB.npcCache = {};
 
+-- Event NPCs can move when a live holiday overrides the calendar location.
+function QuestieDB.InvalidateNPC(npcId)
+    _QuestieDB.npcCache[npcId] = nil
+    _QuestieDB.questCache = {}
+end
+
 ---A Memoized table for function Quest:CheckRace
 ---
 ---Usage: checkRace[requiredRaces]
@@ -3178,7 +3184,7 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
     end
 
     -- Scourge Invasion quests (Acore worldstate event)
-    if QuestieQuestBlacklist.ScourgeInvasionQuests[questId] then
+    if QuestieQuestBlacklist.ScourgeInvasionQuests[questId] and QuestieEvent.IsServerQuestActive(questId) ~= true then
         if returnText and returnBrief then
             return l10n("Unavailable")..l10n(": ")..l10n("Event inactive"), true, DoableStates.EVENT_INACTIVE
         elseif returnText then

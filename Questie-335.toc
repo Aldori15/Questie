@@ -184,6 +184,8 @@ Modules\Network\QuestieCommsData.lua
 Modules\Network\CommsVisibility.lua
 Modules\Network\QuestiePartyObjectives.lua
 Modules\Network\QuestiePlayerbots.lua
+Modules\Network\QuestieServer.lua
+Modules\Network\QuestieServerIntegrations.lua
 
 # Journey
 Modules\Journey\QuestieJourney.lua
