@@ -2,9 +2,7 @@
 local QuestieServer = QuestieLoader:CreateModule("QuestieServer")
 local Integrations = QuestieLoader:ImportModule("QuestieServerIntegrations")
 
-local PREFIX = "QSTSVR"
-local protocolVersion = "4"
-local negotiated = false
+local PREFIX, PROTOCOL_VERSION = "QSTSVR", "4"
 local frame, snapshot, assembly, watchToken, pendingUntil, lastReplyAt
 local snapshotToken, snapshotSequence, pendingRenewal
 local forceSnapshot, subscriptionsDirty = false, false
@@ -119,13 +117,13 @@ local function Request()
     local name = UnitName("player")
     if not name then return end
     lastRequestAt = now
-    if protocolVersion == "4" and QuestieServer:HasCapability("HEARTBEAT")
+    if QuestieServer:HasCapability("HEARTBEAT")
         and snapshotToken == watchToken and not forceSnapshot and not subscriptionsDirty then
         -- Keep the token and acknowledged snapshot stable; renewing must not force
         -- another copy of the event catalog. The server's subscription lease is 45s.
         pendingUntil, pendingRenewal = now + 5, true
         nextRequestAt = now + 20
-        SendAddonMessage(PREFIX, "ACK~4~" .. watchToken .. "~" .. tostring(snapshotSequence), "WHISPER", name)
+        SendAddonMessage(PREFIX, "ACK~" .. PROTOCOL_VERSION .. "~" .. watchToken .. "~" .. tostring(snapshotSequence), "WHISPER", name)
         return
     end
     requestSequence = requestSequence + 1
@@ -133,11 +131,11 @@ local function Request()
     lastSequence, assembly = 0, nil
     pendingUntil = now + 5
     pendingRenewal, forceSnapshot, subscriptionsDirty = false, false, false
-    nextRequestAt = now + (Fresh() and (protocolVersion == "4" and 20 or 10) or 60)
+    nextRequestAt = now + (Fresh() and 20 or 60)
     local ids = {}
     for id in pairs(subscriptions) do ids[#ids + 1] = id end
     table.sort(ids)
-    SendAddonMessage(PREFIX, "WATCH~" .. protocolVersion .. "~" .. watchToken .. "~" .. table.concat(ids, ","), "WHISPER", name)
+    SendAddonMessage(PREFIX, "WATCH~" .. PROTOCOL_VERSION .. "~" .. watchToken .. "~" .. table.concat(ids, ","), "WHISPER", name)
 end
 
 local function ParseRows(batch)
@@ -190,11 +188,11 @@ local function HandleMessage(message, distribution, sender)
     if distribution ~= "WHISPER" or sender ~= UnitName("player") or not watchToken
         or type(message) ~= "string" or #message > 240 then return end
     local fields = Split(message, "~")
-    if fields[2] ~= protocolVersion or fields[3] ~= watchToken then return end
+    if fields[2] ~= PROTOCOL_VERSION or fields[3] ~= watchToken then return end
     local sequence = Integer(fields[4], 9007199254740991)
     if not sequence or sequence <= lastSequence then return end
     local now = GetTime()
-    if fields[1] == "ALIVE" and #fields == 5 and protocolVersion == "4" then
+    if fields[1] == "ALIVE" and #fields == 5 then
         -- A heartbeat only confirms an already complete, fresh snapshot. It cannot
         -- create state, finish a partial batch, or revive expired information.
         if assembly or forceSnapshot or not Fresh() or snapshotToken ~= watchToken
@@ -217,8 +215,7 @@ local function HandleMessage(message, distribution, sender)
         local caps = {}
         if fields[5] ~= "" then
             for _, cap in ipairs(Split(fields[5], ",")) do
-                if not CAPABILITIES[cap] or caps[cap] or (cap == "KALUAK" and protocolVersion == "2")
-                    or (cap == "HEARTBEAT" and protocolVersion ~= "4") then return end
+                if not CAPABILITIES[cap] or caps[cap] then return end
                 caps[cap] = true
             end
         end
@@ -238,9 +235,8 @@ local function HandleMessage(message, distribution, sender)
             snapshot, lastSequence, lastReplyAt = result, sequence, now
             snapshotToken, snapshotSequence = watchToken, sequence
             snapshotCount = snapshotCount + 1
-            negotiated = true
             pendingUntil, pendingRenewal, forceSnapshot = nil, false, false
-            nextRequestAt = math.min(nextRequestAt, now + (result.caps.HEARTBEAT and 20 or 10))
+            nextRequestAt = math.min(nextRequestAt, now + 20)
             Integrations:Refresh()
         end
     end
@@ -291,9 +287,6 @@ function QuestieServer:Initialize()
                 -- A server restart/config change can remove the subscription.
                 -- A failed renewal recovers through a new full WATCH request.
                 forceSnapshot, nextRequestAt = true, 0
-            elseif protocolVersion ~= "2" and not negotiated then
-                protocolVersion = protocolVersion == "4" and "3" or "2"
-                nextRequestAt = 0
             end
             pendingRenewal = false
         end
