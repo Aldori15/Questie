@@ -3,6 +3,19 @@ local Integrations = QuestieLoader:CreateModule("QuestieServerIntegrations")
 local Server = QuestieLoader:ImportModule("QuestieServer")
 local Event = QuestieLoader:ImportModule("QuestieEvent")
 local Blacklist = QuestieLoader:ImportModule("QuestieQuestBlacklist")
+local previousPoolKey = "unknown"
+
+local function RefreshQuestPools()
+    local ids = Server:GetPooledQuests()
+    local parts = {}
+    for _, id in ipairs(ids or {}) do
+        parts[#parts + 1] = id .. ":" .. Server:GetQuestPoolId(id) .. ":" .. tostring(Server:IsPooledQuestActive(id))
+    end
+    local key = ids and table.concat(parts, ";") or "unknown"
+    local changed = key ~= previousPoolKey
+    previousPoolKey = key
+    return changed
+end
 
 -- Stable HolidayIds; server descriptions and localized calendar names are not protocol identifiers.
 local holidays = {
@@ -101,6 +114,7 @@ function Integrations:Refresh()
     end
     local changed = Event.SetServerQuestStates(states)
     changed = Event.SetServerDarkmoonLocations(locations) or changed
+    changed = RefreshQuestPools() or changed
     if changed then Event.RefreshAvailableQuests() end
 end
 

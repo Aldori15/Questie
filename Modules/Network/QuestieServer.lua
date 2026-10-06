@@ -2,7 +2,7 @@
 local QuestieServer = QuestieLoader:CreateModule("QuestieServer")
 local Integrations = QuestieLoader:ImportModule("QuestieServerIntegrations")
 
-local PREFIX, PROTOCOL_VERSION = "QSTSVR", "4"
+local PREFIX, PROTOCOL_VERSION = "QSTSVR", "5"
 local frame, snapshot, assembly, watchToken, pendingUntil, lastReplyAt
 local serverInfo, infoReceived
 local snapshotToken, snapshotSequence, pendingRenewal
@@ -12,7 +12,7 @@ local snapshotCount, heartbeatCount = 0, 0
 local requestSequence, lastSequence, nextRequestAt = 0, 0, 0
 local nextPreferenceCheck, previousPreferences = 0, nil
 local subscriptions = {}
-local CAPABILITIES = {EVENTS = true, VALUES = true, SCOURGE = true, QUELDANAS = true, KALUAK = true, HEARTBEAT = true}
+local CAPABILITIES = {EVENTS = true, VALUES = true, SCOURGE = true, QUELDANAS = true, KALUAK = true, HEARTBEAT = true, QUESTPOOLS = true}
 
 local function Split(value, separator)
     local fields, first = {}, 1
@@ -112,6 +112,34 @@ function QuestieServer:IsKaluakDerbyFinished()
     return nil
 end
 
+---@return boolean|nil nil means no authoritative pool membership is known.
+function QuestieServer:IsPooledQuestActive(questId)
+    if self:HasCapability("QUESTPOOLS") then
+        local quest = snapshot.poolQuests[questId]
+        if quest then return quest.active end
+    end
+    return nil
+end
+
+function QuestieServer:GetQuestPoolId(questId)
+    if self:HasCapability("QUESTPOOLS") then
+        local quest = snapshot.poolQuests[questId]
+        if quest then return quest.pool end
+    end
+    return nil
+end
+
+---@return number[]|nil All reported members, optionally restricted to one pool.
+function QuestieServer:GetPooledQuests(poolId)
+    if not self:HasCapability("QUESTPOOLS") then return nil end
+    local ids = {}
+    for id, quest in pairs(snapshot.poolQuests) do
+        if not poolId or quest.pool == poolId then ids[#ids + 1] = id end
+    end
+    table.sort(ids)
+    return ids
+end
+
 local function Request()
     local now = GetTime()
     if pendingUntil or now < nextRequestAt or now - lastRequestAt < 2 then return end
@@ -141,7 +169,7 @@ local function Request()
 end
 
 local function ParseRows(batch)
-    local result = {caps = batch.caps, events = {}, values = {}, ui = {}}
+    local result = {caps = batch.caps, events = {}, values = {}, ui = {}, poolQuests = {}}
     local count = 0
     for index = 1, batch.partCount do
         if not batch.parts[index] then return nil end
@@ -154,6 +182,10 @@ local function ParseRows(batch)
                 if not holiday or not string.match(fields[4], "^[01]$") or not string.match(fields[5], "^[01]$")
                     or result.events[id] then return nil end
                 result.events[id] = {holiday = holiday, main = fields[4] == "1", active = fields[5] == "1"}
+            elseif kind == "Q" and result.caps.QUESTPOOLS and #fields == 4 and id and id > 0 then
+                local pool = Integer(fields[3], 4294967295)
+                if not pool or pool < 1 or not string.match(fields[4], "^[01]$") or result.poolQuests[id] then return nil end
+                result.poolQuests[id] = {pool = pool, active = fields[4] == "1"}
             elseif kind == "W" and result.caps.VALUES and #fields == 3 and id and subscriptions[id] then
                 local raw = fields[3]
                 if not string.match(raw, "^%d+$") or #raw > 20
@@ -276,7 +308,7 @@ local function HandleMessage(message, distribution, sender)
     end
 end
 
-function QuestieServer:PrintStatus()
+function QuestieServer:PrintStatus(poolId)
     local addonVersion = GetAddOnMetadata(QuestieCompat.addonName or "Questie-335", "Version") or "unknown"
     Questie:Print("[Server bridge] Client: Questie " .. addonVersion .. "; protocol " .. PROTOCOL_VERSION)
     if serverInfo then
@@ -305,6 +337,32 @@ function QuestieServer:PrintStatus()
     table.sort(caps)
     Questie:Print("[Server bridge] Live state (" .. math.floor(GetTime() - lastReplyAt) .. "s): " .. table.concat(caps, ", "))
     Questie:Print("[Server bridge] Updates this session: " .. snapshotCount .. " snapshots, " .. heartbeatCount .. " heartbeats")
+    local poolQuests = self:GetPooledQuests(poolId)
+    if not poolQuests then
+        Questie:Print("[Server bridge] Quest pool selection unavailable.")
+    else
+        local db = QuestieLoader:ImportModule("QuestieDB")
+        local pools, selected, unknown = {}, 0, 0
+        for _, id in ipairs(poolQuests) do
+            pools[self:GetQuestPoolId(id)] = true
+            local active = self:IsPooledQuestActive(id)
+            if active then selected = selected + 1 end
+            local name = db.QueryQuestSingle(id, "name")
+            if not name then unknown = unknown + 1 end
+            if poolId then
+                Questie:Print("[Server bridge] Pool " .. poolId .. ": " .. id .. " "
+                    .. (active and "selected" or "inactive") .. " - " .. (name or "unknown to Questie"))
+            end
+        end
+        local poolCount = 0
+        for _ in pairs(pools) do poolCount = poolCount + 1 end
+        Questie:Print("[Server bridge] Quest pools: " .. poolCount .. " pools, " .. #poolQuests
+            .. " quests, " .. selected .. " selected, " .. unknown .. " unknown to Questie")
+        if poolId then
+            if #poolQuests == 0 then Questie:Print("[Server bridge] No reported quest members for pool " .. poolId) end
+            return
+        end
+    end
     local events = self:GetActiveEvents()
     if not events then
         Questie:Print("[Server bridge] Event activity unavailable.")
@@ -361,6 +419,12 @@ function QuestieServer:Initialize()
         Request()
     end)
     SLASH_QUESTIESERVER1 = "/qserver"
-    SlashCmdList.QUESTIESERVER = function() self:PrintStatus() end
+    SlashCmdList.QUESTIESERVER = function(command)
+        command = command or ""
+        if command:match("^%s*$") then self:PrintStatus(); return end
+        local id = Integer(command:match("^%s*pool%s+(%d+)%s*$"), 4294967295)
+        if id and id > 0 then self:PrintStatus(id); return end
+        Questie:Print("[Server bridge] Usage: /qserver or /qserver pool <pool ID>")
+    end
     Request()
 end

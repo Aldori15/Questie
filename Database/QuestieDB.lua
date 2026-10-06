@@ -26,6 +26,8 @@ local DailyQuests = QuestieLoader:ImportModule("DailyQuests")
 local QuestieReputation = QuestieLoader:ImportModule("QuestieReputation")
 ---@type QuestieEvent
 local QuestieEvent = QuestieLoader:ImportModule("QuestieEvent")
+---@type QuestieServer
+local QuestieServer = QuestieLoader:ImportModule("QuestieServer")
 ---@type DBCompiler
 local QuestieDBCompiler = QuestieLoader:ImportModule("DBCompiler")
 ---@type ZoneDB
@@ -2846,6 +2848,11 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions)
         return true
     end
 
+    if QuestieServer:IsPooledQuestActive(questId) == false then
+        if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Quest " .. questId .. " is not selected by the server quest pool") end
+        return false
+    end
+
     if QuestieEvent:IsEventQuestInCurrentExpansion(questId) and not QuestieEvent:IsEventActiveForQuest(questId) then
         if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Event quest " .. questId .. " is not active") end
         return false
@@ -3144,6 +3151,14 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
             return l10n("Available")..l10n(": ")..l10n("Player is on quest"), false, DoableStates.QUEST_LOG
         elseif returnText and not returnBrief then
             return msg, false, DoableStates.QUEST_LOG
+        end
+    end
+
+    if C_QuestLog.IsOnQuest(questId) ~= true and QuestieServer:IsPooledQuestActive(questId) == false then
+        if returnText and returnBrief then
+            return l10n("Unavailable") .. l10n(": ") .. "Not selected by server", true, DoableStates.MISSING_DAILY
+        elseif returnText then
+            return "Quest " .. questId .. " is not selected by the server quest pool", true, DoableStates.MISSING_DAILY
         end
     end
 

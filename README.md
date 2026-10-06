@@ -18,6 +18,8 @@ Server owners can install [mod-questie-bridge](https://github.com/Aldori15/mod-q
 to let Questie use live server event activity and worldstates. This includes holiday events
 started or stopped manually with GM commands, Stranglethorn and Kalu'ak fishing winner-dependent quests,
 simultaneous Darkmoon Faire locations, Scourge Invasion activity, and Isle of Quel'Danas quest unlocks.
+It also reports the server's daily and weekly quest pool selections, so inactive choices
+can be hidden before anyone visits the questgiver. Existing character requirements still apply.
 
 The bridge requires both the server module and the Questie client integration.
 See the [module installation instructions](https://github.com/Aldori15/mod-questie-bridge#installation).
@@ -27,6 +29,9 @@ compiled AzerothCore revision. A handshake identifies protocol mismatches or a d
 bridge; no response is reported separately. These diagnostics do not keep quest state fresh.
 It also reports snapshot and heartbeat counts for the current session. When server state
 stays unchanged, small heartbeats keep the cached snapshot fresh without resending its contents.
+Use `/qserver pool <pool ID>` to inspect a specific pool's selected and inactive quests.
+Pool membership comes from the server, including additional pools. NPC discovery and daily quest communication remain
+the fallback when authoritative selection information is unavailable.
 
 Fresh bridge information takes priority for supported quest availability. Your visibility
 options, character requirements, and manually hidden quests still apply. Enable **Available

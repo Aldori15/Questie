@@ -23,6 +23,8 @@ local IsleOfQuelDanas = QuestieLoader:ImportModule("IsleOfQuelDanas")
 local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
 ---@type DailyQuestComms
 local DailyQuestComms = QuestieLoader:ImportModule("DailyQuestComms")
+---@type QuestieServer
+local QuestieServer = QuestieLoader:ImportModule("QuestieServer")
 ---@type Phasing
 local Phasing = QuestieLoader:ImportModule("Phasing")
 ---@type QuestieIconVisibility
@@ -276,7 +278,23 @@ end
 ---@param questId QuestId
 ---@return boolean
 function AvailableQuests.IsUnavailableForCurrentReset(questId)
+    local selected = QuestieServer:IsPooledQuestActive(questId)
+    if selected ~= nil then return not selected end
     return _GetUnavailableQuestsDeterminedByTalking()[questId] == true
+end
+
+local function _GetEffectiveUnavailableQuests()
+    local observed = _GetUnavailableQuestsDeterminedByTalking()
+    local ids = QuestieServer:GetPooledQuests()
+    if not ids then return observed end
+    -- Keep observations intact for fallback. Fresh server selection overrides
+    -- only the pool-choice inference, never character or visibility requirements.
+    local effective = {}
+    for id, unavailable in pairs(observed) do effective[id] = unavailable end
+    for _, id in ipairs(ids) do
+        effective[id] = (not QuestiePlayer.currentQuestlog[id]) and QuestieServer:IsPooledQuestActive(id) == false or nil
+    end
+    return effective
 end
 
 QuestieDB.SetUnavailableQuestChecker(AvailableQuests.IsUnavailableForCurrentReset)
@@ -724,14 +742,17 @@ function AvailableQuests.RemoveQuestsForToday(npcId, questIds)
 
     local removedAnyQuest = false
     for _, questId in pairs(questIds) do
-        if availableQuests[questId] or QuestieMap.questIdFrames[questId] or QuestieTooltips.lookupKeysByQuestId[questId] then
-            AvailableQuests.RemoveAvailableQuest(questId)
-            removedAnyQuest = true
+        -- NPC/comms inference cannot replace an authoritative pool selection.
+        if QuestieServer:IsPooledQuestActive(questId) == nil then
+            if availableQuests[questId] or QuestieMap.questIdFrames[questId] or QuestieTooltips.lookupKeysByQuestId[questId] then
+                AvailableQuests.RemoveAvailableQuest(questId)
+                removedAnyQuest = true
+            end
+            if availableQuestsByNpc[npcId] then
+                availableQuestsByNpc[npcId][questId] = nil
+            end
+            _StoreUnavailableQuestForToday(npcId, questId)
         end
-        if availableQuestsByNpc[npcId] then
-            availableQuestsByNpc[npcId][questId] = nil
-        end
-        _StoreUnavailableQuestForToday(npcId, questId)
     end
 
     if removedAnyQuest then
@@ -835,7 +856,7 @@ function AvailableQuests.MergeUnavailableQuestSnapshot(snapshot)
                         local syncState = _GetUnavailableQuestSyncState()
                         local bucket = _GetUnavailableQuestBucketForQuest(syncState, questId)
                         local alreadyKnown = bucket and bucket.byNpc[npcId] and bucket.byNpc[npcId][questId]
-                        if not alreadyKnown then
+                        if not alreadyKnown and QuestieServer:IsPooledQuestActive(questId) == nil then
                             tinsert(newQuestIds, questId)
                         end
                     end
@@ -871,7 +892,8 @@ end
 ---@param questId QuestId
 ---@return boolean
 local function _ShouldCacheUnavailableQuest(questId)
-    return (QuestieDB.IsDailyQuest(questId) or QuestieDB.IsWeeklyQuest(questId))
+    return QuestieServer:IsPooledQuestActive(questId) == nil
+        and (QuestieDB.IsDailyQuest(questId) or QuestieDB.IsWeeklyQuest(questId))
         and QuestieDB:IsAzerothCoreAvailabilityConditionFulfilled(questId)
         and QuestieDB.IsDoable(questId)
         and _CanNpcOfferQuestToPlayer(questId)
@@ -1076,7 +1098,7 @@ end
 
 _CalculateAvailableQuests = function()
     local maxQuestsPerYield = questsPerYield
-    local unavailableQuests = _GetUnavailableQuestsDeterminedByTalking()
+    local unavailableQuests = _GetEffectiveUnavailableQuests()
     local previousAvailableQuests = availableQuests
     availableQuests = nextAvailableQuests
     nextAvailableQuests = previousAvailableQuests
