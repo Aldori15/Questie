@@ -2848,8 +2848,8 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions)
         return true
     end
 
-    if QuestieServer:IsPooledQuestActive(questId) == false then
-        if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Quest " .. questId .. " is not selected by the server quest pool") end
+    if QuestieServer:GetQuestAvailabilityState(questId) == false then
+        if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Quest " .. questId .. " is unavailable in the current server state") end
         return false
     end
 
@@ -3151,6 +3151,14 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
             return l10n("Available")..l10n(": ")..l10n("Player is on quest"), false, DoableStates.QUEST_LOG
         elseif returnText and not returnBrief then
             return msg, false, DoableStates.QUEST_LOG
+        end
+    end
+
+    if C_QuestLog.IsOnQuest(questId) ~= true and QuestieServer:IsWintergraspQuestActive(questId) == false then
+        if returnText and returnBrief then
+            return l10n("Unavailable") .. l10n(": ") .. "Wintergrasp quest inactive", true, DoableStates.MISSING_DAILY
+        elseif returnText then
+            return "Quest " .. questId .. " is unavailable under Wintergrasp's faction/pool rules", true, DoableStates.MISSING_DAILY
         end
     end
 

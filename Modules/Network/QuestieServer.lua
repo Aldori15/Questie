@@ -2,7 +2,7 @@
 local QuestieServer = QuestieLoader:CreateModule("QuestieServer")
 local Integrations = QuestieLoader:ImportModule("QuestieServerIntegrations")
 
-local PREFIX, PROTOCOL_VERSION = "QSTSVR", "5"
+local PREFIX, PROTOCOL_VERSION = "QSTSVR", "6"
 local frame, snapshot, assembly, watchToken, pendingUntil, lastReplyAt
 local serverInfo, infoReceived
 local snapshotToken, snapshotSequence, pendingRenewal
@@ -12,7 +12,8 @@ local snapshotCount, heartbeatCount = 0, 0
 local requestSequence, lastSequence, nextRequestAt = 0, 0, 0
 local nextPreferenceCheck, previousPreferences = 0, nil
 local subscriptions = {}
-local CAPABILITIES = {EVENTS = true, VALUES = true, SCOURGE = true, QUELDANAS = true, KALUAK = true, HEARTBEAT = true, QUESTPOOLS = true}
+local CAPABILITIES = {EVENTS = true, VALUES = true, SCOURGE = true, QUELDANAS = true,
+    KALUAK = true, HEARTBEAT = true, QUESTPOOLS = true, WINTERGRASP = true}
 
 local function Split(value, separator)
     local fields, first = {}, 1
@@ -140,6 +141,50 @@ function QuestieServer:GetPooledQuests(poolId)
     return ids
 end
 
+---@return table|nil A copy of public battlefield state; nil means unsupported/expired.
+function QuestieServer:GetWintergraspState()
+    if not self:HasCapability("WINTERGRASP") then return nil end
+    local state = snapshot.wintergrasp
+    return {loaded = state.loaded, enabled = state.enabled, battle = state.battle, defender = state.defender}
+end
+
+---@return boolean|nil Scripted faction/pool gate only, not character eligibility.
+function QuestieServer:IsWintergraspQuestActive(questId)
+    if self:HasCapability("WINTERGRASP") then return snapshot.wintergraspQuests[questId] end
+    return nil
+end
+
+function QuestieServer:GetWintergraspQuests()
+    if not self:HasCapability("WINTERGRASP") or not snapshot.wintergrasp.loaded then return nil end
+    local ids = {}
+    for id in pairs(snapshot.wintergraspQuests) do ids[#ids + 1] = id end
+    table.sort(ids)
+    return ids
+end
+
+-- Combine independent live gates. A selected quest cannot bypass a faction gate,
+-- and a permitted faction cannot bypass an inactive direct pool membership.
+function QuestieServer:GetQuestAvailabilityState(questId)
+    local pool = self:IsPooledQuestActive(questId)
+    local wintergrasp = self:IsWintergraspQuestActive(questId)
+    if pool == false or wintergrasp == false then return false end
+    if pool == true or wintergrasp == true then return true end
+    return nil
+end
+
+function QuestieServer:GetStateControlledQuests()
+    local pool, wintergrasp = self:GetPooledQuests(), self:GetWintergraspQuests()
+    if not pool and not wintergrasp then return nil end
+    local ids, seen = {}, {}
+    for _, members in ipairs({pool or {}, wintergrasp or {}}) do
+        for _, id in ipairs(members) do
+            if not seen[id] then ids[#ids + 1], seen[id] = id, true end
+        end
+    end
+    table.sort(ids)
+    return ids
+end
+
 local function Request()
     local now = GetTime()
     if pendingUntil or now < nextRequestAt or now - lastRequestAt < 2 then return end
@@ -169,7 +214,7 @@ local function Request()
 end
 
 local function ParseRows(batch)
-    local result = {caps = batch.caps, events = {}, values = {}, ui = {}, poolQuests = {}}
+    local result = {caps = batch.caps, events = {}, values = {}, ui = {}, poolQuests = {}, wintergraspQuests = {}}
     local count = 0
     for index = 1, batch.partCount do
         if not batch.parts[index] then return nil end
@@ -186,6 +231,20 @@ local function ParseRows(batch)
                 local pool = Integer(fields[3], 4294967295)
                 if not pool or pool < 1 or not string.match(fields[4], "^[01]$") or result.poolQuests[id] then return nil end
                 result.poolQuests[id] = {pool = pool, active = fields[4] == "1"}
+            elseif kind == "R" and result.caps.WINTERGRASP and #fields == 3 and id and id > 0 then
+                if not string.match(fields[3], "^[01]$") or result.wintergraspQuests[id] ~= nil then return nil end
+                result.wintergraspQuests[id] = fields[3] == "1"
+            elseif kind == "P" and result.caps.WINTERGRASP and #fields == 5
+                and fields[2] == "WG_STATE" and not result.wintergrasp then
+                if fields[3] == "?" and fields[4] == "?" and fields[5] == "?" then
+                    result.wintergrasp = {loaded = false}
+                elseif string.match(fields[3], "^[01]$") and string.match(fields[4], "^[01]$")
+                    and string.match(fields[5], "^[01]$") then
+                    result.wintergrasp = {loaded = true, enabled = fields[3] == "1",
+                        battle = fields[4] == "1", defender = tonumber(fields[5])}
+                else
+                    return nil
+                end
             elseif kind == "W" and result.caps.VALUES and #fields == 3 and id and subscriptions[id] then
                 local raw = fields[3]
                 if not string.match(raw, "^%d+$") or #raw > 20
@@ -211,6 +270,8 @@ local function ParseRows(batch)
     if count ~= batch.rowCount then return nil end
     if result.caps.SCOURGE and result.scourge == nil then return nil end
     if result.caps.KALUAK and not result.kaluakReported then return nil end
+    if result.caps.WINTERGRASP and (not result.wintergrasp
+        or (not result.wintergrasp.loaded and next(result.wintergraspQuests))) then return nil end
     if result.caps.QUELDANAS and (not result.ui[3426] or result.ui[3426] < 0 or result.ui[3426] > 3) then return nil end
     if result.caps.VALUES then
         for id in pairs(subscriptions) do if not result.values[id] then return nil end end
@@ -380,6 +441,31 @@ function QuestieServer:PrintStatus(poolId)
         .. "; Quel'Danas phase (0-3): " .. tostring(self:GetProgressValue(3426, "QUELDANAS")))
     Questie:Print("[Server bridge] Kalu'ak turn-ins 63: " .. tostring(self:IsEventActive(63))
         .. "; derby finished: " .. tostring(self:IsKaluakDerbyFinished()))
+    self:PrintWintergraspStatus(false)
+end
+
+function QuestieServer:PrintWintergraspStatus(detailed)
+    local state = self:GetWintergraspState()
+    if not state then
+        Questie:Print("[Server bridge] Wintergrasp state unavailable.")
+        return
+    end
+    if not state.loaded then
+        Questie:Print("[Server bridge] Wintergrasp: battlefield not initialized; quest gates unknown.")
+        return
+    end
+    local teams = {[0] = "Alliance", [1] = "Horde"}
+    Questie:Print("[Server bridge] Wintergrasp: enabled " .. tostring(state.enabled)
+        .. "; battle " .. tostring(state.battle) .. "; defender " .. teams[state.defender]
+        .. "; attacker " .. teams[1 - state.defender])
+    if detailed then
+        local db = QuestieLoader:ImportModule("QuestieDB")
+        for _, id in ipairs(self:GetWintergraspQuests()) do
+            Questie:Print("[Server bridge] Wintergrasp quest " .. id .. " "
+                .. (self:GetQuestAvailabilityState(id) and "permitted" or "inactive")
+                .. " - " .. (db.QueryQuestSingle(id, "name") or "unknown to Questie"))
+        end
+    end
 end
 
 function QuestieServer:Initialize()
@@ -422,9 +508,10 @@ function QuestieServer:Initialize()
     SlashCmdList.QUESTIESERVER = function(command)
         command = command or ""
         if command:match("^%s*$") then self:PrintStatus(); return end
+        if command:match("^%s*wintergrasp%s*$") then self:PrintWintergraspStatus(true); return end
         local id = Integer(command:match("^%s*pool%s+(%d+)%s*$"), 4294967295)
         if id and id > 0 then self:PrintStatus(id); return end
-        Questie:Print("[Server bridge] Usage: /qserver or /qserver pool <pool ID>")
+        Questie:Print("[Server bridge] Usage: /qserver, /qserver pool <pool ID>, or /qserver wintergrasp")
     end
     Request()
 end

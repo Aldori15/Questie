@@ -708,6 +708,44 @@ function QuestieQuest:SetObjectivesDirty(questId)
     end
 end
 
+-- Ownership changes can move a questgiver without changing the quest's gate.
+-- Refresh accepted quests too, including their turn-in and navigation targets.
+function QuestieQuest:RefreshWintergraspSpawnVisibility()
+    for questId, quest in pairs(QuestiePlayer.currentQuestlog or {}) do
+        local affected = false
+        if quest.Finisher and quest.Finisher.Type == "monster" then
+            local npc = QuestieDB:GetNPC(quest.Finisher.Id)
+            affected = npc and Phasing.HasWintergraspSpawns(npc.spawns) or false
+        end
+        for _, npcId in ipairs(quest.Starts and quest.Starts.NPC or {}) do
+            local npc = QuestieDB:GetNPC(npcId)
+            affected = npc and Phasing.HasWintergraspSpawns(npc.spawns) or affected
+        end
+        for _, objectives in ipairs({quest.Objectives or {}, quest.SpecialObjectives or {}}) do
+            for _, objective in pairs(objectives) do
+                for _, spawnData in pairs(objective.spawnList or {}) do
+                    affected = Phasing.HasWintergraspSpawns(spawnData.Spawns) or affected
+                end
+            end
+        end
+        if affected then
+            for _, objectives in ipairs({quest.Objectives or {}, quest.SpecialObjectives or {}}) do
+                for _, objective in pairs(objectives) do
+                    objective.isUpdated = false
+                    -- A hidden objective may have a spawn cache but no map frames
+                    -- for UnloadQuestFrames to clear. Invalidate pending draws too.
+                    objective.AlreadySpawned = {}
+                end
+            end
+            _UnloadQuestFrames(questId, function()
+                if QuestiePlayer.currentQuestlog[questId] == quest and _IsQuestInLog(questId) then
+                    self:PopulateObjectiveNotes(quest)
+                end
+            end)
+        end
+    end
+end
+
 --Run this if you want to update the entire table
 function QuestieQuest:GetAllQuestIds()
     Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest] Getting all quests")

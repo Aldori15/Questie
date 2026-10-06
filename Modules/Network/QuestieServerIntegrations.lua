@@ -3,17 +3,34 @@ local Integrations = QuestieLoader:CreateModule("QuestieServerIntegrations")
 local Server = QuestieLoader:ImportModule("QuestieServer")
 local Event = QuestieLoader:ImportModule("QuestieEvent")
 local Blacklist = QuestieLoader:ImportModule("QuestieQuestBlacklist")
-local previousPoolKey = "unknown"
+local previousQuestStateKey = "unknown"
+local previousSpawnStateKey = "unknown"
 
-local function RefreshQuestPools()
-    local ids = Server:GetPooledQuests()
+local function RefreshWintergraspSpawns()
+    local state = Server:GetWintergraspState()
+    local key = state and state.loaded and tostring(state.defender) or "unknown"
+    if key == previousSpawnStateKey then return false end
+    previousSpawnStateKey = key
+    if Questie.started then
+        QuestieLoader:ImportModule("AvailableQuests").InvalidateWintergraspSpawnVisibility()
+        local map = QuestieLoader:ImportModule("QuestieMap")
+        map:RefreshWintergraspStarterLocations()
+        map:RefreshWintergraspManualNotes()
+        QuestieLoader:ImportModule("QuestieQuest"):RefreshWintergraspSpawnVisibility()
+    end
+    return true
+end
+
+local function RefreshQuestStates()
+    local ids = Server:GetStateControlledQuests()
     local parts = {}
     for _, id in ipairs(ids or {}) do
-        parts[#parts + 1] = id .. ":" .. Server:GetQuestPoolId(id) .. ":" .. tostring(Server:IsPooledQuestActive(id))
+        parts[#parts + 1] = id .. ":" .. tostring(Server:GetQuestPoolId(id))
+            .. ":" .. tostring(Server:GetQuestAvailabilityState(id))
     end
     local key = ids and table.concat(parts, ";") or "unknown"
-    local changed = key ~= previousPoolKey
-    previousPoolKey = key
+    local changed = key ~= previousQuestStateKey
+    previousQuestStateKey = key
     return changed
 end
 
@@ -114,7 +131,8 @@ function Integrations:Refresh()
     end
     local changed = Event.SetServerQuestStates(states)
     changed = Event.SetServerDarkmoonLocations(locations) or changed
-    changed = RefreshQuestPools() or changed
+    changed = RefreshQuestStates() or changed
+    changed = RefreshWintergraspSpawns() or changed
     if changed then Event.RefreshAvailableQuests() end
 end
 

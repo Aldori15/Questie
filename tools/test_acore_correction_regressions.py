@@ -1,4 +1,6 @@
 import unittest
+from collections import defaultdict
+from unittest.mock import patch
 from pathlib import Path
 
 import audit_acore_trigger_end_tooltip_targets as trigger_end_audit
@@ -10,6 +12,68 @@ import validate_wdm_map_data as wdm_validator
 
 
 class AcoreCorrectionRegressionTests(unittest.TestCase):
+    WINTERGRASP_HEADER = '''
+enum WintergraspNpcs { NPC_HORDE = 31107, NPC_ALLIANCE = 31109 };
+const uint8 WG_MAX_KEEP_NPC = 1;
+const uint8 WG_MAX_OUTSIDE_NPC = 1;
+const WintergraspObjectPositionData WGKeepNPC[WG_MAX_KEEP_NPC] = {
+    {5234.970215f, 2883.399902f, 409.274994f, 4.293510f, NPC_HORDE, NPC_ALLIANCE},
+};
+const WintergraspObjectPositionData WGOutsideNPC[WG_MAX_OUTSIDE_NPC] = {
+    {5088.310059f, 2191.729980f, 359.500000f, 3.0f, NPC_HORDE, NPC_ALLIANCE},
+};
+'''
+
+    def scripted_spawns(self, header=None):
+        addon_root = Path(__file__).resolve().parents[1]
+        directory = Path('test-acore-source')
+        header_path = directory / 'src/server/game/Battlefield/Zones/BattlefieldWG.h'
+        read_text = Path.read_text
+
+        def fixture_text(path, *args, **kwargs):
+            if path == header_path:
+                return header or self.WINTERGRASP_HEADER
+            return read_text(path, *args, **kwargs)
+
+        with patch.object(Path, 'read_text', fixture_text):
+            return npc_generator.load_wintergrasp_scripted_spawns(
+                directory, addon_root, npc_generator.parse_zone_maps(addon_root))
+
+    def test_scripted_wintergrasp_coordinates_and_visibility_conditions(self):
+        spawns = self.scripted_spawns()
+        self.assertEqual([48.6, 24.29, 1036], spawns[31109][4197][0])
+        self.assertEqual([48.6, 24.29, 1037], spawns[31107][4197][0])
+        self.assertEqual(1038, spawns[31109][4197][1][2])
+        self.assertEqual(1039, spawns[31107][4197][1][2])
+
+    def test_scripted_spawn_parser_rejects_incomplete_or_changed_source(self):
+        for old, new in [('WG_MAX_KEEP_NPC = 1', 'WG_MAX_KEEP_NPC = 2'),
+                         ('5234.970215f', 'BASE_X + 1'),
+                         ('NPC_HORDE, NPC_ALLIANCE}', 'UNKNOWN_NPC, NPC_ALLIANCE}')]:
+            with self.subTest(new=new), self.assertRaises(ValueError):
+                self.scripted_spawns(self.WINTERGRASP_HEADER.replace(old, new))
+
+    def test_scripted_spawns_merge_sql_without_losing_other_locations_or_difficulty(self):
+        spawns = defaultdict(lambda: defaultdict(list))
+        spawns[31109][4197] = [[48.6, 24.29, 0, 2, 571], [1, 2, 1034]]
+        npc_generator.merge_scripted_spawn_locations(spawns, self.scripted_spawns())
+        self.assertIn([48.6, 24.29, 1036, 2, 571], spawns[31109][4197])
+        self.assertIn([1, 2, 1034], spawns[31109][4197])
+        self.assertNotIn([48.6, 24.29], spawns[31109][4197])
+
+    def test_phase_metadata_survives_deduplication_and_correction_comparison(self):
+        points = [[1, 2, 1036], [1, 2, 1037], [1, 2, 1036], [3, 4, 1038, 1, 571]]
+        unique = npc_generator.unique_coordinate_points(points, {571: 1})
+        self.assertCountEqual([[1, 2, 1036], [1, 2, 1037], [3, 4, 1038]], unique)
+        correction = npc_generator.find_differences(
+            {31109: {'spawns': {4197: [[48.6, 24.29]]}}},
+            {31109: {'spawns': {4197: [[48.6, 24.29, 1036]]}}}, ['spawns'])
+        self.assertEqual({31109: {'spawns': {4197: [[48.6, 24.29, 1036]]}}}, correction)
+        # Ordinary SQL coordinates must not strip unrelated Questie phase conditions.
+        self.assertEqual({}, npc_generator.find_differences(
+            {1: {'spawns': {4197: [[1, 2, 1034]]}}},
+            {1: {'spawns': {4197: [[1, 2]]}}}, ['spawns']))
+
     def test_shared_map_parser_loads_all_wdm_geometry(self):
         addon_root = Path(__file__).resolve().parents[1]
         zone_maps = npc_generator.parse_zone_maps(addon_root)

@@ -1,5 +1,6 @@
 ---@class Phasing
 local Phasing = QuestieLoader:CreateModule("Phasing")
+local Server = QuestieLoader:ImportModule("QuestieServer")
 
 local bitband = bit.band
 local math_max = math.max
@@ -8,14 +9,44 @@ local math_max = math.max
 local phases = {
     HAR_KOA_AT_ALTAR = 1034,
     HAR_KOA_AT_ZIM_TORGA = 1035,
+    WINTERGRASP_ALLIANCE_KEEP = 1036,
+    WINTERGRASP_HORDE_KEEP = 1037,
+    WINTERGRASP_ALLIANCE_CAMP = 1038,
+    WINTERGRASP_HORDE_CAMP = 1039,
 }
 Phasing.phases = phases
+
+local wintergraspSpawns = {
+    [phases.WINTERGRASP_ALLIANCE_KEEP] = {team = 0, keep = true},
+    [phases.WINTERGRASP_HORDE_KEEP] = {team = 1, keep = true},
+    [phases.WINTERGRASP_ALLIANCE_CAMP] = {team = 0, keep = false},
+    [phases.WINTERGRASP_HORDE_CAMP] = {team = 1, keep = false},
+}
+
+function Phasing.HasWintergraspSpawns(spawns)
+    for _, points in pairs(spawns or {}) do
+        for _, point in ipairs(points) do
+            if wintergraspSpawns[point[3]] then return true end
+        end
+    end
+    return false
+end
 
 ---@param phase number|nil
 ---@return boolean
 function Phasing.IsSpawnVisible(phase)
     if (not phase) or phase == 0 then
         return true
+    end
+
+    local spawn = wintergraspSpawns[phase]
+    if spawn then
+        local state = Server:GetWintergraspState()
+        -- Without fresh bridge data retain the usual static map locations.
+        if not state or not state.loaded then return true end
+        local defender = state.defender == spawn.team
+        if spawn.keep then return defender end
+        return not defender
     end
 
     if (not Questie) or (not Questie.db) or (not Questie.db.char) or (not Questie.db.char.complete) then

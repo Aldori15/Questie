@@ -81,6 +81,7 @@ local availableQuests = {}
 local nextAvailableQuests = {}
 local availableQuestsByNpc = {}
 local levelRequirementCache = {}
+local dirtyWintergraspSpawns = {}
 
 ---@type string|nil
 local lastNpcGuid
@@ -278,21 +279,21 @@ end
 ---@param questId QuestId
 ---@return boolean
 function AvailableQuests.IsUnavailableForCurrentReset(questId)
-    local selected = QuestieServer:IsPooledQuestActive(questId)
+    local selected = QuestieServer:GetQuestAvailabilityState(questId)
     if selected ~= nil then return not selected end
     return _GetUnavailableQuestsDeterminedByTalking()[questId] == true
 end
 
 local function _GetEffectiveUnavailableQuests()
     local observed = _GetUnavailableQuestsDeterminedByTalking()
-    local ids = QuestieServer:GetPooledQuests()
+    local ids = QuestieServer:GetStateControlledQuests()
     if not ids then return observed end
-    -- Keep observations intact for fallback. Fresh server selection overrides
-    -- only the pool-choice inference, never character or visibility requirements.
+    -- Keep observations intact for fallback. Fresh pool/faction state overrides
+    -- NPC-choice inference, never character or visibility requirements.
     local effective = {}
     for id, unavailable in pairs(observed) do effective[id] = unavailable end
     for _, id in ipairs(ids) do
-        effective[id] = (not QuestiePlayer.currentQuestlog[id]) and QuestieServer:IsPooledQuestActive(id) == false or nil
+        effective[id] = (not QuestiePlayer.currentQuestlog[id]) and QuestieServer:GetQuestAvailabilityState(id) == false or nil
     end
     return effective
 end
@@ -411,6 +412,24 @@ end
 
 function AvailableQuests.MarkQuestStartTooltipsDirty()
     availableQuestStartTooltipsDirty = true
+end
+
+-- Availability can remain true while the questgiver moves between the keep
+-- and camp. Mark existing notes for replacement in the normal drawing thread.
+function AvailableQuests.InvalidateWintergraspSpawnVisibility()
+    -- During a refresh these two buffers contain the current and previous sets.
+    for _, quests in ipairs({availableQuests, nextAvailableQuests}) do
+        for questId in pairs(quests) do
+            local quest = QuestieDB.GetQuest(questId)
+            for _, npcId in ipairs(quest and quest.Starts and quest.Starts.NPC or {}) do
+                local npc = QuestieDB:GetNPC(npcId)
+                if npc and Phasing.HasWintergraspSpawns(npc.spawns) then
+                    dirtyWintergraspSpawns[questId] = true
+                    break
+                end
+            end
+        end
+    end
 end
 
 -- Repeatable quests should be controlled by showRepeatableQuests
@@ -702,6 +721,7 @@ end
 
 ---@param questId QuestId
 function AvailableQuests.RemoveAvailableQuest(questId)
+    dirtyWintergraspSpawns[questId] = nil
     availableQuests[questId] = nil
     _RemoveQuestFromNpcAvailability(questId, QuestieDB.GetQuest(questId))
     _UnloadQuestFrames(questId, nil, "available")
@@ -742,8 +762,8 @@ function AvailableQuests.RemoveQuestsForToday(npcId, questIds)
 
     local removedAnyQuest = false
     for _, questId in pairs(questIds) do
-        -- NPC/comms inference cannot replace an authoritative pool selection.
-        if QuestieServer:IsPooledQuestActive(questId) == nil then
+        -- NPC/comms inference cannot replace authoritative pool/faction state.
+        if QuestieServer:GetQuestAvailabilityState(questId) == nil then
             if availableQuests[questId] or QuestieMap.questIdFrames[questId] or QuestieTooltips.lookupKeysByQuestId[questId] then
                 AvailableQuests.RemoveAvailableQuest(questId)
                 removedAnyQuest = true
@@ -856,7 +876,7 @@ function AvailableQuests.MergeUnavailableQuestSnapshot(snapshot)
                         local syncState = _GetUnavailableQuestSyncState()
                         local bucket = _GetUnavailableQuestBucketForQuest(syncState, questId)
                         local alreadyKnown = bucket and bucket.byNpc[npcId] and bucket.byNpc[npcId][questId]
-                        if not alreadyKnown and QuestieServer:IsPooledQuestActive(questId) == nil then
+                        if not alreadyKnown and QuestieServer:GetQuestAvailabilityState(questId) == nil then
                             tinsert(newQuestIds, questId)
                         end
                     end
@@ -892,7 +912,7 @@ end
 ---@param questId QuestId
 ---@return boolean
 local function _ShouldCacheUnavailableQuest(questId)
-    return QuestieServer:IsPooledQuestActive(questId) == nil
+    return QuestieServer:GetQuestAvailabilityState(questId) == nil
         and (QuestieDB.IsDailyQuest(questId) or QuestieDB.IsWeeklyQuest(questId))
         and QuestieDB:IsAzerothCoreAvailabilityConditionFulfilled(questId)
         and QuestieDB.IsDoable(questId)
@@ -1233,8 +1253,15 @@ _SyncAvailableQuestDisplay = function(previousAvailableQuests, nextAvailableQues
     questCount = 0
     local drawCount = 0
     for questId in pairs(nextAvailableQuests) do
+        local replaceSpawns = dirtyWintergraspSpawns[questId]
+        if replaceSpawns then
+            -- Consume before yielding so another ownership change stays dirty.
+            dirtyWintergraspSpawns[questId] = nil
+            _UnloadQuestFrames(questId, nil, "available")
+            QuestieTooltips:RemoveAvailableQuest(questId)
+        end
         local hasLiveFrames = _HasLiveAvailableQuestFrames(questId)
-        if (not previousAvailableQuests[questId]) or (not hasLiveFrames) then
+        if replaceSpawns or (not previousAvailableQuests[questId]) or (not hasLiveFrames) then
             _DrawAvailableQuest(questId)
             drawCount = drawCount + 1
         elseif shouldRestoreStartTooltips then
