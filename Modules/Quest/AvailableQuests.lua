@@ -464,7 +464,7 @@ local function _IsHiddenByTrivialRepeatableSetting(questId, isRepeatableQuest, s
 end
 
 _GetStructuredAvailableQuestsInGossip = function(npcGuid)
-    local rawAvailableQuests = { QuestieCompat.GetAvailableQuests() }
+    local rawAvailableQuests = { GetGossipAvailableQuests() }
     local availableQuestsInGossip = {}
 
     if type(rawAvailableQuests[1]) == "table" then
@@ -494,7 +494,7 @@ _GetStructuredAvailableQuestsInGossip = function(npcGuid)
 end
 
 _GetStructuredActiveQuestsInGossip = function(npcGuid)
-    local rawActiveQuests = { QuestieCompat.GetActiveQuests() }
+    local rawActiveQuests = { GetGossipActiveQuests() }
     local activeQuests = {}
 
     if type(rawActiveQuests[1]) == "table" then

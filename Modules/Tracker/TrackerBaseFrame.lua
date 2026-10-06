@@ -136,7 +136,7 @@ function TrackerBaseFrame.Initialize()
             Questie:Print(l10n("Questie tracker in invalid location, resetting..."))
             Questie.Debug(Questie.DEBUG_CRITICAL, "Resetting reason:", reason)
 
-            local result2, _ = pcall(baseFrame.SetPoint, baseFrame, unpack({ QuestieCompat.GetWatchFramePoint() }))
+            local result2, _ = pcall(baseFrame.SetPoint, baseFrame, unpack({ WatchFrame:GetPoint() }))
             Questie.db.profile.trackerSetpoint = "TOPLEFT"
 
             if (not result2) then
@@ -145,7 +145,7 @@ function TrackerBaseFrame.Initialize()
             end
         end
     else
-        local result, reason = pcall(baseFrame.SetPoint, baseFrame, unpack({ QuestieCompat.GetWatchFramePoint() }))
+        local result, reason = pcall(baseFrame.SetPoint, baseFrame, unpack({ WatchFrame:GetPoint() }))
         Questie.db.profile.trackerSetpoint = "TOPLEFT"
 
         if not result then

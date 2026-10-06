@@ -1,3 +1,8 @@
+---@class QuestieCompat
+QuestieCompat = setmetatable({}, {__index = _G})
+-- addon is running on 3.3.5 WotLK client
+QuestieCompat.Is335 = (select(4, GetBuildInfo()) == 30300)
+
 ---@type QuestieLib
 local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
 ---@type QuestieDB

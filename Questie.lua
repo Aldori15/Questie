@@ -46,7 +46,7 @@ function Questie:OnEnable()
     if Questie.IsWotlk or QuestieCompat.Is335 then
         -- Called when the addon is enabled
         if (Questie.db.profile.trackerEnabled and not Questie.db.profile.showBlizzardQuestTimer) then
-            QuestieCompat.HideWatchFrame()
+            WatchFrame:Hide()
         end
     end
 end
@@ -54,7 +54,7 @@ end
 function Questie:OnDisable()
     if Questie.IsWotlk or QuestieCompat.Is335 then
         -- Called when the addon is disabled
-        QuestieCompat.ShowWatchFrame()
+        WatchFrame:Show()
     end
 end
 

@@ -77,7 +77,7 @@ _GetQuestGiverGuid = function()
 end
 
 _GetStructuredAvailableQuests = function()
-    local rawAvailableQuests = { QuestieCompat.GetAvailableQuests() }
+    local rawAvailableQuests = { GetGossipAvailableQuests() }
     if type(rawAvailableQuests[1]) == "table" then
         return rawAvailableQuests
     end
@@ -103,7 +103,7 @@ _GetStructuredAvailableQuests = function()
 end
 
 _GetStructuredActiveQuests = function()
-    local rawActiveQuests = { QuestieCompat.GetActiveQuests() }
+    local rawActiveQuests = { GetGossipActiveQuests() }
     if type(rawActiveQuests[1]) == "table" then
         return rawActiveQuests
     end
@@ -259,7 +259,7 @@ function QuestieAuto.GOSSIP_SHOW()
         for index = 1, #completeQuests do
             local gossipQuest = completeQuests[index]
             if gossipQuest.isComplete and _IsQuestAllowedToTurnIn(gossipQuest.questID) then
-                QuestieCompat.SelectActiveQuest(index)
+                SelectGossipActiveQuest(index)
                 return
             end
         end
@@ -271,7 +271,7 @@ function QuestieAuto.GOSSIP_SHOW()
         for index = 1, #availableQuests do
             local gossipQuest = availableQuests[index]
             if _ShouldAutoAcceptQuest(gossipQuest.questID, gossipQuest) then
-                QuestieCompat.SelectAvailableQuest(index)
+                SelectGossipAvailableQuest(index)
                 return
             end
         end
