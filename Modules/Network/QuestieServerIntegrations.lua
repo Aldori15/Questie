@@ -44,9 +44,13 @@ local function FishingState(states)
     end
     local announce = Server:IsEventActive(14)
     if announce ~= nil then states[8228], states[8229] = announce, announce end
-    -- Kalu'ak winner/loser eligibility is tracked by the NPC AI, not global worldstates.
-    -- A stopped turn-in event can safely hide both; active remains on existing fallback.
-    if Server:IsEventActive(63) == false then states[24803], states[24806] = false, false end
+    local kaluak = Server:IsEventActive(63)
+    if kaluak == false then
+        states[24803], states[24806] = false, false
+    elseif kaluak == true then
+        local finished = Server:IsKaluakDerbyFinished()
+        if finished ~= nil then states[24803], states[24806] = not finished, finished end
+    end
 end
 
 local function DarkmoonState(states, registrations)

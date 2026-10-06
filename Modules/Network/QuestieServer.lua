@@ -2,12 +2,14 @@
 local QuestieServer = QuestieLoader:CreateModule("QuestieServer")
 local Integrations = QuestieLoader:ImportModule("QuestieServerIntegrations")
 
-local PREFIX, VERSION = "QSTSVR", "2"
+local PREFIX = "QSTSVR"
+local protocolVersion = "3"
+local negotiated = false
 local frame, snapshot, assembly, watchToken, pendingUntil, lastReplyAt
 local requestSequence, lastSequence, nextRequestAt = 0, 0, 0
 local nextPreferenceCheck, previousPreferences = 0, nil
 local subscriptions = {}
-local CAPABILITIES = {EVENTS = true, VALUES = true, SCOURGE = true, QUELDANAS = true}
+local CAPABILITIES = {EVENTS = true, VALUES = true, SCOURGE = true, QUELDANAS = true, KALUAK = true}
 
 local function Split(value, separator)
     local fields, first = {}, 1
@@ -100,6 +102,12 @@ function QuestieServer:IsScourgeInvasionActive()
     return nil
 end
 
+---@return boolean|nil nil means unsupported or Clearwater's AI has not been observed.
+function QuestieServer:IsKaluakDerbyFinished()
+    if self:HasCapability("KALUAK") then return snapshot.kaluakFinished end
+    return nil
+end
+
 local function Request()
     local now = GetTime()
     if pendingUntil or now < nextRequestAt then return end
@@ -113,7 +121,7 @@ local function Request()
     local ids = {}
     for id in pairs(subscriptions) do ids[#ids + 1] = id end
     table.sort(ids)
-    SendAddonMessage(PREFIX, "WATCH~" .. VERSION .. "~" .. watchToken .. "~" .. table.concat(ids, ","), "WHISPER", name)
+    SendAddonMessage(PREFIX, "WATCH~" .. protocolVersion .. "~" .. watchToken .. "~" .. table.concat(ids, ","), "WHISPER", name)
 end
 
 local function ParseRows(batch)
@@ -143,6 +151,10 @@ local function ParseRows(batch)
             elseif kind == "P" and result.caps.SCOURGE and #fields == 3 and fields[2] == "SC_ACTIVE"
                 and string.match(fields[3], "^[01]$") and result.scourge == nil then
                 result.scourge = fields[3] == "1"
+            elseif kind == "P" and result.caps.KALUAK and #fields == 3 and fields[2] == "KA_FINISHED"
+                and (fields[3] == "0" or fields[3] == "1" or fields[3] == "?") and not result.kaluakReported then
+                result.kaluakReported = true
+                if fields[3] ~= "?" then result.kaluakFinished = fields[3] == "1" end
             else
                 return nil
             end
@@ -150,6 +162,7 @@ local function ParseRows(batch)
     end
     if count ~= batch.rowCount then return nil end
     if result.caps.SCOURGE and result.scourge == nil then return nil end
+    if result.caps.KALUAK and not result.kaluakReported then return nil end
     if result.caps.QUELDANAS and (not result.ui[3426] or result.ui[3426] < 0 or result.ui[3426] > 3) then return nil end
     if result.caps.VALUES then
         for id in pairs(subscriptions) do if not result.values[id] then return nil end end
@@ -161,7 +174,7 @@ local function HandleMessage(message, distribution, sender)
     if distribution ~= "WHISPER" or sender ~= UnitName("player") or not watchToken
         or type(message) ~= "string" or #message > 240 then return end
     local fields = Split(message, "~")
-    if fields[2] ~= VERSION or fields[3] ~= watchToken then return end
+    if fields[2] ~= protocolVersion or fields[3] ~= watchToken then return end
     local sequence = Integer(fields[4], 9007199254740991)
     if not sequence or sequence <= lastSequence then return end
     local now = GetTime()
@@ -172,7 +185,7 @@ local function HandleMessage(message, distribution, sender)
         local caps = {}
         if fields[5] ~= "" then
             for _, cap in ipairs(Split(fields[5], ",")) do
-                if not CAPABILITIES[cap] or caps[cap] then return end
+                if not CAPABILITIES[cap] or caps[cap] or (cap == "KALUAK" and protocolVersion ~= "3") then return end
                 caps[cap] = true
             end
         end
@@ -190,6 +203,7 @@ local function HandleMessage(message, distribution, sender)
             assembly = nil
             if not result then return end
             snapshot, lastSequence, lastReplyAt = result, sequence, now
+            negotiated = true
             pendingUntil = nil
             nextRequestAt = math.min(nextRequestAt, now + 10)
             Integrations:Refresh()
@@ -221,6 +235,8 @@ function QuestieServer:PrintStatus()
         .. tostring(self:IsEventActive(62)) .. "/" .. tostring(self:IsEventActive(90))
         .. "; winner: " .. tostring(self:GetWorldState(198)) .. "; Scourge: " .. tostring(self:IsScourgeInvasionActive())
         .. "; Quel'Danas phase (0-3): " .. tostring(self:GetProgressValue(3426, "QUELDANAS")))
+    Questie:Print("[Server bridge] Kalu'ak turn-ins 63: " .. tostring(self:IsEventActive(63))
+        .. "; derby finished: " .. tostring(self:IsKaluakDerbyFinished()))
 end
 
 function QuestieServer:Initialize()
@@ -233,7 +249,14 @@ function QuestieServer:Initialize()
     end)
     frame:SetScript("OnUpdate", function()
         local now = GetTime()
-        if pendingUntil and now >= pendingUntil then pendingUntil, assembly, watchToken = nil, nil, nil end
+        if pendingUntil and now >= pendingUntil then
+            pendingUntil, assembly, watchToken = nil, nil, nil
+            -- Older modules understand protocol 2 only. Fall back once per session
+            -- without losing their event/worldstate support or forcing an upgrade.
+            if protocolVersion == "3" and not negotiated then
+                protocolVersion, nextRequestAt = "2", 0
+            end
+        end
         if assembly and now > assembly.untilTime then assembly = nil end
         if snapshot and not Fresh() then
             snapshot, lastReplyAt = nil, nil

@@ -16,11 +16,11 @@ A fork of the WoW Classic Questie addon aiming to provide compatibility with Wra
 
 Server owners can install [mod-questie-bridge](https://github.com/Aldori15/mod-questie-bridge)
 to let Questie use live server event activity and worldstates. This includes holiday events
-started or stopped manually with GM commands, Stranglethorn fishing winner-dependent quests,
+started or stopped manually with GM commands, Stranglethorn and Kalu'ak fishing winner-dependent quests,
 simultaneous Darkmoon Faire locations, Scourge Invasion activity, and Isle of Quel'Danas quest unlocks.
 
-Both the server module and a Questie version containing the client bridge integration are
-required. See the [module installation instructions](https://github.com/Aldori15/mod-questie-bridge#installation).
+The bridge requires both the server module and the Questie client integration.
+See the [module installation instructions](https://github.com/Aldori15/mod-questie-bridge#installation).
 Run `/qserver` in game to check the connection, active event IDs, and reported worldstate information.
 
 Fresh bridge information takes priority for supported quest availability. Your visibility
