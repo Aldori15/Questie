@@ -4,6 +4,7 @@ local Integrations = QuestieLoader:ImportModule("QuestieServerIntegrations")
 
 local PREFIX, PROTOCOL_VERSION = "QSTSVR", "4"
 local frame, snapshot, assembly, watchToken, pendingUntil, lastReplyAt
+local serverInfo, infoReceived
 local snapshotToken, snapshotSequence, pendingRenewal
 local forceSnapshot, subscriptionsDirty = false, false
 local lastRequestAt = -2
@@ -129,6 +130,7 @@ local function Request()
     requestSequence = requestSequence + 1
     watchToken = "qs" .. tostring(math.floor(now * 1000)) .. tostring(requestSequence)
     lastSequence, assembly = 0, nil
+    infoReceived = false
     pendingUntil = now + 5
     pendingRenewal, forceSnapshot, subscriptionsDirty = false, false, false
     nextRequestAt = now + (Fresh() and 20 or 60)
@@ -184,10 +186,42 @@ local function ParseRows(batch)
     return result
 end
 
+local function HandleInfo(fields)
+    -- The diagnostic envelope is independent of the quest-state protocol. Only
+    -- accept one reply to a current full WATCH; it cannot keep state alive.
+    local now = GetTime()
+    if #fields ~= 7 or fields[2] ~= "1" or fields[3] ~= watchToken or not pendingUntil
+        or now > pendingUntil or pendingRenewal or infoReceived then return end
+    local protocol = Integer(fields[4], 65535)
+    if not protocol or protocol < 1 or tostring(protocol) ~= fields[4] then return end
+    for index = 5, 6 do
+        if #fields[index] < 1 or #fields[index] > 64 or not string.match(fields[index], "^[%w._%+%-]+$") then return end
+    end
+    local status = fields[7]
+    local compatible = fields[4] == PROTOCOL_VERSION
+    if status == "MISMATCH" then
+        if compatible then return end
+    elseif status == "READY" or status == "DISABLED" then
+        if not compatible then return end
+    else
+        return
+    end
+    infoReceived = true
+    serverInfo = {protocol = fields[4], version = fields[5], revision = fields[6], status = status, receivedAt = now}
+    if status ~= "READY" then
+        local hadSnapshot = snapshot ~= nil
+        snapshot, lastReplyAt, snapshotToken, snapshotSequence = nil, nil, nil, nil
+        pendingUntil, pendingRenewal, assembly, watchToken = nil, false, nil, nil
+        forceSnapshot, nextRequestAt = true, now + 60
+        if hadSnapshot then Integrations:Refresh() end
+    end
+end
+
 local function HandleMessage(message, distribution, sender)
     if distribution ~= "WHISPER" or sender ~= UnitName("player") or not watchToken
         or type(message) ~= "string" or #message > 240 then return end
     local fields = Split(message, "~")
+    if fields[1] == "INFO" then HandleInfo(fields); return end
     if fields[2] ~= PROTOCOL_VERSION or fields[3] ~= watchToken then return end
     local sequence = Integer(fields[4], 9007199254740991)
     if not sequence or sequence <= lastSequence then return end
@@ -243,7 +277,26 @@ local function HandleMessage(message, distribution, sender)
 end
 
 function QuestieServer:PrintStatus()
+    local addonVersion = GetAddOnMetadata(QuestieCompat.addonName or "Questie-335", "Version") or "unknown"
+    Questie:Print("[Server bridge] Client: Questie " .. addonVersion .. "; protocol " .. PROTOCOL_VERSION)
+    if serverInfo then
+        Questie:Print("[Server bridge] Server: mod-questie-bridge " .. serverInfo.version .. "; protocol "
+            .. serverInfo.protocol .. "; AC revision " .. serverInfo.revision .. " (last handshake "
+            .. math.floor(GetTime() - serverInfo.receivedAt) .. "s ago)")
+    else
+        Questie:Print("[Server bridge] Server version information unavailable.")
+    end
     if not Fresh() then
+        if serverInfo and serverInfo.status == "MISMATCH" then
+            Questie:Print("[Server bridge] Last handshake: protocol mismatch; client requires " .. PROTOCOL_VERSION
+                .. ", server provides " .. serverInfo.protocol .. ". Install matching Questie and module builds.")
+        elseif serverInfo and serverInfo.status == "DISABLED" then
+            Questie:Print("[Server bridge] Last handshake: bridge disabled or no state capabilities enabled.")
+        elseif pendingUntil then
+            Questie:Print("[Server bridge] Waiting for a complete server snapshot.")
+        elseif not serverInfo then
+            Questie:Print("[Server bridge] No bridge response; module may be absent or communication unavailable.")
+        end
         Questie:Print("[Server bridge] No fresh server state; using existing calendar and manual settings.")
         return
     end
