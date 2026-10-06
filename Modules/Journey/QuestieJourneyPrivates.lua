@@ -14,6 +14,7 @@ local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
 local l10n = QuestieLoader:ImportModule("l10n")
 ---@type ThreadLib
 local ThreadLib = QuestieLoader:ImportModule("ThreadLib")
+local ServerProgress = QuestieLoader:ImportModule("QuestieServerProgress")
 
 _QuestieJourney.containerCache = nil
 _QuestieJourney.treeCache = nil
@@ -31,6 +32,7 @@ function _QuestieJourney:ShowJourneyTooltip()
         GameTooltip:SetOwner(_G["QuestieJourneyFrame"].frame:GetParent(), "ANCHOR_CURSOR")
         GameTooltip:AddLine("[".. quest.level .."] ".. quest.name)
         GameTooltip:AddLine("|cFFFFFFFF" .. _QuestieJourney:CreateObjectiveText(quest.Description))
+        ServerProgress:AddQuestTooltip(GameTooltip, quest.Id)
         GameTooltip:SetFrameStrata("TOOLTIP")
         GameTooltip:Show()
     end

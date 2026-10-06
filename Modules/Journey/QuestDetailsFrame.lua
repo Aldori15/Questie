@@ -24,6 +24,7 @@ local QuestieQuest = QuestieLoader:ImportModule("QuestieQuest")
 local QuestieProfessions = QuestieLoader:ImportModule("QuestieProfessions")
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
+local ServerProgress = QuestieLoader:ImportModule("QuestieServerProgress")
 
 local AceGUI = LibStub("AceGUI-3.0")
 local stringrep = string.rep
@@ -414,6 +415,8 @@ function QuestDetailsFrame:Draw(container, quest)
         local eligibilityTextLabel = _CreateLabel(Questie:Colorize(l10n("Doable") .. l10n(": "), "yellow") .. eligibilityText, true)
         container:AddChild(eligibilityTextLabel)
     end
+
+    ServerProgress:AddQuestDetails(container, quest.Id)
 
     if quest.preQuestSingle and next(quest.preQuestSingle) then
         QuestieJourneyUtils:Spacer(container)

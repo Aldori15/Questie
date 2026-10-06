@@ -27,6 +27,13 @@ With fresh bridge state, Questie shows the defending faction's fortress location
 the attacking faction's camp locations. Accepted quest notes and manual NPC notes
 refresh when control changes; without this state both static locations remain available.
 
+Related quests in Journey show **World Progress** in their details and hover tooltips:
+Sun's Reach phase and reported unfinished-project percentages, or Scourge activity,
+battles won, and active-zone necropolis counts. Open details update locally once per
+second and clear expired information. Re-hover to refresh a tooltip. Projects omitted
+by the server have no displayed percentage. These displays require fresh progress data
+and do not change quest availability or character eligibility.
+
 The bridge requires both the server module and the Questie client integration.
 See the [module installation instructions](https://github.com/Aldori15/mod-questie-bridge#installation).
 Run `/qserver` in game to check the connection, active event IDs, and reported worldstate information.
