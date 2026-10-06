@@ -22,6 +22,8 @@ simultaneous Darkmoon Faire locations, Scourge Invasion activity, and Isle of Qu
 The bridge requires both the server module and the Questie client integration.
 See the [module installation instructions](https://github.com/Aldori15/mod-questie-bridge#installation).
 Run `/qserver` in game to check the connection, active event IDs, and reported worldstate information.
+It also reports snapshot and heartbeat counts for the current session. When server state
+stays unchanged, small heartbeats keep the cached snapshot fresh without resending its contents.
 
 Fresh bridge information takes priority for supported quest availability. Your visibility
 options, character requirements, and manually hidden quests still apply. Enable **Available

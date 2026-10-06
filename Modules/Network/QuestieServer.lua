@@ -3,13 +3,17 @@ local QuestieServer = QuestieLoader:CreateModule("QuestieServer")
 local Integrations = QuestieLoader:ImportModule("QuestieServerIntegrations")
 
 local PREFIX = "QSTSVR"
-local protocolVersion = "3"
+local protocolVersion = "4"
 local negotiated = false
 local frame, snapshot, assembly, watchToken, pendingUntil, lastReplyAt
+local snapshotToken, snapshotSequence, pendingRenewal
+local forceSnapshot, subscriptionsDirty = false, false
+local lastRequestAt = -2
+local snapshotCount, heartbeatCount = 0, 0
 local requestSequence, lastSequence, nextRequestAt = 0, 0, 0
 local nextPreferenceCheck, previousPreferences = 0, nil
 local subscriptions = {}
-local CAPABILITIES = {EVENTS = true, VALUES = true, SCOURGE = true, QUELDANAS = true, KALUAK = true}
+local CAPABILITIES = {EVENTS = true, VALUES = true, SCOURGE = true, QUELDANAS = true, KALUAK = true, HEARTBEAT = true}
 
 local function Split(value, separator)
     local fields, first = {}, 1
@@ -77,6 +81,7 @@ function QuestieServer:WatchWorldState(id)
     for _ in pairs(subscriptions) do count = count + 1 end
     assert(count < 16, "server bridge supports 16 worldstate subscriptions")
     subscriptions[id] = true
+    subscriptionsDirty = true
     nextRequestAt = 0
 end
 
@@ -110,14 +115,25 @@ end
 
 local function Request()
     local now = GetTime()
-    if pendingUntil or now < nextRequestAt then return end
+    if pendingUntil or now < nextRequestAt or now - lastRequestAt < 2 then return end
     local name = UnitName("player")
     if not name then return end
+    lastRequestAt = now
+    if protocolVersion == "4" and QuestieServer:HasCapability("HEARTBEAT")
+        and snapshotToken == watchToken and not forceSnapshot and not subscriptionsDirty then
+        -- Keep the token and acknowledged snapshot stable; renewing must not force
+        -- another copy of the event catalog. The server's subscription lease is 45s.
+        pendingUntil, pendingRenewal = now + 5, true
+        nextRequestAt = now + 20
+        SendAddonMessage(PREFIX, "ACK~4~" .. watchToken .. "~" .. tostring(snapshotSequence), "WHISPER", name)
+        return
+    end
     requestSequence = requestSequence + 1
     watchToken = "qs" .. tostring(math.floor(now * 1000)) .. tostring(requestSequence)
     lastSequence, assembly = 0, nil
     pendingUntil = now + 5
-    nextRequestAt = now + (Fresh() and 10 or 60)
+    pendingRenewal, forceSnapshot, subscriptionsDirty = false, false, false
+    nextRequestAt = now + (Fresh() and (protocolVersion == "4" and 20 or 10) or 60)
     local ids = {}
     for id in pairs(subscriptions) do ids[#ids + 1] = id end
     table.sort(ids)
@@ -178,14 +194,31 @@ local function HandleMessage(message, distribution, sender)
     local sequence = Integer(fields[4], 9007199254740991)
     if not sequence or sequence <= lastSequence then return end
     local now = GetTime()
-    if fields[1] == "BEGIN" and #fields == 7 then
+    if fields[1] == "ALIVE" and #fields == 5 and protocolVersion == "4" then
+        -- A heartbeat only confirms an already complete, fresh snapshot. It cannot
+        -- create state, finish a partial batch, or revive expired information.
+        if assembly or forceSnapshot or not Fresh() or snapshotToken ~= watchToken
+            or not QuestieServer:HasCapability("HEARTBEAT") then return end
+        local confirmed = Integer(fields[5], 9007199254740991)
+        if not confirmed or confirmed < 1 then return end
+        if confirmed ~= snapshotSequence then
+            -- We missed a changed snapshot. Ask for a complete replacement instead
+            -- of extending the lifetime of stale quest availability.
+            forceSnapshot, pendingUntil, pendingRenewal, nextRequestAt = true, nil, false, 0
+            return
+        end
+        lastSequence, lastReplyAt = sequence, now
+        heartbeatCount = heartbeatCount + 1
+        if pendingRenewal then pendingUntil, pendingRenewal = nil, false end
+    elseif fields[1] == "BEGIN" and #fields == 7 then
         if assembly and sequence <= assembly.sequence then return end
         local rows, parts = Integer(fields[6], 4096), Integer(fields[7], 1024)
         if not rows or not parts or (rows == 0) ~= (parts == 0) or parts > rows then return end
         local caps = {}
         if fields[5] ~= "" then
             for _, cap in ipairs(Split(fields[5], ",")) do
-                if not CAPABILITIES[cap] or caps[cap] or (cap == "KALUAK" and protocolVersion ~= "3") then return end
+                if not CAPABILITIES[cap] or caps[cap] or (cap == "KALUAK" and protocolVersion == "2")
+                    or (cap == "HEARTBEAT" and protocolVersion ~= "4") then return end
                 caps[cap] = true
             end
         end
@@ -203,9 +236,11 @@ local function HandleMessage(message, distribution, sender)
             assembly = nil
             if not result then return end
             snapshot, lastSequence, lastReplyAt = result, sequence, now
+            snapshotToken, snapshotSequence = watchToken, sequence
+            snapshotCount = snapshotCount + 1
             negotiated = true
-            pendingUntil = nil
-            nextRequestAt = math.min(nextRequestAt, now + 10)
+            pendingUntil, pendingRenewal, forceSnapshot = nil, false, false
+            nextRequestAt = math.min(nextRequestAt, now + (result.caps.HEARTBEAT and 20 or 10))
             Integrations:Refresh()
         end
     end
@@ -220,6 +255,7 @@ function QuestieServer:PrintStatus()
     for cap in pairs(snapshot.caps) do caps[#caps + 1] = cap end
     table.sort(caps)
     Questie:Print("[Server bridge] Live state (" .. math.floor(GetTime() - lastReplyAt) .. "s): " .. table.concat(caps, ", "))
+    Questie:Print("[Server bridge] Updates this session: " .. snapshotCount .. " snapshots, " .. heartbeatCount .. " heartbeats")
     local events = self:GetActiveEvents()
     if not events then
         Questie:Print("[Server bridge] Event activity unavailable.")
@@ -251,15 +287,21 @@ function QuestieServer:Initialize()
         local now = GetTime()
         if pendingUntil and now >= pendingUntil then
             pendingUntil, assembly, watchToken = nil, nil, nil
-            -- Older modules understand protocol 2 only. Fall back once per session
-            -- without losing their event/worldstate support or forcing an upgrade.
-            if protocolVersion == "3" and not negotiated then
-                protocolVersion, nextRequestAt = "2", 0
+            if pendingRenewal or subscriptionsDirty then
+                -- A server restart/config change can remove the subscription.
+                -- A failed renewal recovers through a new full WATCH request.
+                forceSnapshot, nextRequestAt = true, 0
+            elseif protocolVersion ~= "2" and not negotiated then
+                protocolVersion = protocolVersion == "4" and "3" or "2"
+                nextRequestAt = 0
             end
+            pendingRenewal = false
         end
         if assembly and now > assembly.untilTime then assembly = nil end
         if snapshot and not Fresh() then
-            snapshot, lastReplyAt = nil, nil
+            snapshot, lastReplyAt, snapshotToken, snapshotSequence = nil, nil, nil, nil
+            pendingUntil, pendingRenewal, assembly = nil, false, nil
+            forceSnapshot, nextRequestAt = true, 0
             Integrations:Refresh()
         end
         if now >= nextPreferenceCheck then
