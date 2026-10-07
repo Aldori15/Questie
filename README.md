@@ -15,46 +15,27 @@ A fork of the WoW Classic Questie addon aiming to provide compatibility with Wra
 ## Optional AzerothCore Server Bridge
 
 Server owners can install [mod-questie-bridge](https://github.com/Aldori15/mod-questie-bridge)
-to let Questie use live server event activity and worldstates. This includes holiday events
-started or stopped manually with GM commands, Stranglethorn and Kalu'ak fishing winner-dependent quests,
-simultaneous Darkmoon Faire locations, Scourge Invasion activity, and Isle of Quel'Danas quest unlocks.
-It also reports the server's daily and weekly quest pool selections, so inactive choices
-can be hidden before anyone visits the questgiver. Existing character requirements still apply.
-Wintergrasp availability follows server faction control and scripted pool dependencies,
-including attacking variants that inherit a defending quest's pool selection.
-Generated NPC corrections include Wintergrasp's C++ fortress and outside-camp locations.
-With fresh bridge state, Questie shows the defending faction's fortress locations and
-the attacking faction's camp locations. Accepted quest notes and manual NPC notes
-refresh when control changes; without this state both static locations remain available.
+to let Questie follow live AzerothCore event activity and world progress. It supports:
 
-Related quests in Journey show **World Progress** in their details and hover tooltips:
-Sun's Reach phase and reported unfinished-project percentages, or Scourge activity,
-battles won, and active-zone necropolis counts. Open details update locally once per
-second and clear expired information. Re-hover to refresh a tooltip. Projects omitted
-by the server have no displayed percentage. These displays require fresh progress data
-and do not change quest availability or character eligibility.
+- Holidays started or stopped by GM commands or server scripts, including simultaneous Darkmoon Faire locations.
+- Stranglethorn and Kalu'ak fishing quests before and after a tournament winner is declared.
+- Scourge Invasion activity and Isle of Quel'Danas quest unlocks.
+- The server's selected daily and weekly pool quests, before visiting the questgiver.
+- Wintergrasp quests and questgiver locations as faction control changes.
+- **World Progress** in related Journey quest details and hover tooltips, including Sun's Reach construction
+  and Scourge Invasion battles and remaining necropolises.
 
-The bridge requires both the server module and the Questie client integration.
-See the [module installation instructions](https://github.com/Aldori15/mod-questie-bridge#installation).
-Run `/qserver` in game to check the connection, active event IDs, and reported worldstate information.
-It shows the Questie version, client and server protocol versions, module version, and
-compiled AzerothCore revision. A handshake identifies protocol mismatches or a disabled
-bridge; no response is reported separately. These diagnostics do not keep quest state fresh.
-It also reports snapshot and heartbeat counts for the current session. When server state
-stays unchanged, small heartbeats keep the cached snapshot fresh without resending its contents.
-Use `/qserver pool <pool ID>` to inspect a specific pool's selected and inactive quests.
-Use `/qserver wintergrasp` to inspect faction control, battle activity, and scripted quest gates.
-Permitted server gates still require normal character eligibility. Accepted quests remain
-tracked when control changes. Battle activity alone does not determine quest availability.
-Pool membership comes from the server, including additional pools. NPC discovery and daily quest communication remain
-the fallback when authoritative selection information is unavailable.
+Install the module on the server and this addon on the client; see the
+[module installation instructions](https://github.com/Aldori15/mod-questie-bridge#installation).
+Run `/qserver` to check the connection and server information. Use `/qserver pool <pool ID>`
+or `/qserver wintergrasp` for more detail.
 
-Fresh bridge information takes priority for supported quest availability. Your visibility
-options, character requirements, and manually hidden quests still apply. Enable **Available
-Scourge Invasion Quests** or **Available Sun's Reach Quests** to display those quest sets.
+Your visibility options, character requirements, and manually hidden quests still apply.
+Enable **Available Scourge Invasion Quests** or **Available Sun's Reach Quests** to show those quest sets.
+Accepted quests remain tracked when server state changes.
 
-The bridge is optional. If your server does not have it, or its information becomes
-unavailable, Questie continues using its existing calendar detection and manual settings.
+The bridge is optional. Without it, or when its information becomes unavailable, Questie keeps its existing
+calendar detection, manual settings, and daily quest discovery.
 
 ## Questie Information
 - [Frequently Asked Questions](https://github.com/Questie/Questie/wiki/FAQ)
