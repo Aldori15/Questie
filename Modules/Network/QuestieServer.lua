@@ -2,18 +2,19 @@
 local QuestieServer = QuestieLoader:CreateModule("QuestieServer")
 local Integrations = QuestieLoader:ImportModule("QuestieServerIntegrations")
 
-local PREFIX, PROTOCOL_VERSION = "QSTSVR", "6"
+local PREFIX, PROTOCOL_VERSION = "QSTSVR", "7"
 local frame, snapshot, assembly, watchToken, pendingUntil, lastReplyAt
 local serverInfo, infoReceived
 local snapshotToken, snapshotSequence, pendingRenewal
 local forceSnapshot, subscriptionsDirty = false, false
+local iccContextPending = false
 local lastRequestAt = -2
 local snapshotCount, heartbeatCount = 0, 0
 local requestSequence, lastSequence, nextRequestAt = 0, 0, 0
 local nextPreferenceCheck, previousPreferences = 0, nil
 local subscriptions = {}
 local CAPABILITIES = {EVENTS = true, VALUES = true, SCOURGE = true, QUELDANAS = true,
-    KALUAK = true, HEARTBEAT = true, QUESTPOOLS = true, WINTERGRASP = true}
+    KALUAK = true, HEARTBEAT = true, QUESTPOOLS = true, WINTERGRASP = true, ICC = true}
 
 local function Split(value, separator)
     local fields, first = {}, 1
@@ -162,21 +163,47 @@ function QuestieServer:GetWintergraspQuests()
     return ids
 end
 
+---@return table|nil Current raid context only; never reused after an instance transition.
+function QuestieServer:GetICCState()
+    if iccContextPending or not self:HasCapability("ICC") then return nil end
+    local state = snapshot.icc
+    return {loaded = state.loaded, inside = state.inside, instance = state.instance,
+        difficulty = state.difficulty, family = state.family, respiteReady = state.respiteReady, team = state.team}
+end
+
+---@return boolean|nil Scripted family, difficulty and unlock gate; not character eligibility.
+function QuestieServer:IsICCQuestActive(questId)
+    if not iccContextPending and self:HasCapability("ICC") and snapshot.icc.loaded and snapshot.icc.inside then
+        return snapshot.iccQuests[questId]
+    end
+    return nil
+end
+
+function QuestieServer:GetICCQuests()
+    local state = self:GetICCState()
+    if not state or not state.loaded or not state.inside then return nil end
+    local ids = {}
+    for id in pairs(snapshot.iccQuests) do ids[#ids + 1] = id end
+    table.sort(ids)
+    return ids
+end
+
 -- Combine independent live gates. A selected quest cannot bypass a faction gate,
--- and a permitted faction cannot bypass an inactive direct pool membership.
+-- raid-instance gate or inactive direct pool membership.
 function QuestieServer:GetQuestAvailabilityState(questId)
     local pool = self:IsPooledQuestActive(questId)
     local wintergrasp = self:IsWintergraspQuestActive(questId)
-    if pool == false or wintergrasp == false then return false end
-    if pool == true or wintergrasp == true then return true end
+    local icc = self:IsICCQuestActive(questId)
+    if pool == false or wintergrasp == false or icc == false then return false end
+    if pool == true or wintergrasp == true or icc == true then return true end
     return nil
 end
 
 function QuestieServer:GetStateControlledQuests()
-    local pool, wintergrasp = self:GetPooledQuests(), self:GetWintergraspQuests()
-    if not pool and not wintergrasp then return nil end
+    local pool, wintergrasp, icc = self:GetPooledQuests(), self:GetWintergraspQuests(), self:GetICCQuests()
+    if not pool and not wintergrasp and not icc then return nil end
     local ids, seen = {}, {}
-    for _, members in ipairs({pool or {}, wintergrasp or {}}) do
+    for _, members in ipairs({pool or {}, wintergrasp or {}, icc or {}}) do
         for _, id in ipairs(members) do
             if not seen[id] then ids[#ids + 1], seen[id] = id, true end
         end
@@ -214,7 +241,8 @@ local function Request()
 end
 
 local function ParseRows(batch)
-    local result = {caps = batch.caps, events = {}, values = {}, ui = {}, poolQuests = {}, wintergraspQuests = {}}
+    local result = {caps = batch.caps, events = {}, values = {}, ui = {}, poolQuests = {},
+        wintergraspQuests = {}, iccQuests = {}}
     local count = 0
     for index = 1, batch.partCount do
         if not batch.parts[index] then return nil end
@@ -234,6 +262,23 @@ local function ParseRows(batch)
             elseif kind == "R" and result.caps.WINTERGRASP and #fields == 3 and id and id > 0 then
                 if not string.match(fields[3], "^[01]$") or result.wintergraspQuests[id] ~= nil then return nil end
                 result.wintergraspQuests[id] = fields[3] == "1"
+            elseif kind == "I" and result.caps.ICC and #fields == 3 and id and id > 0 then
+                if not string.match(fields[3], "^[01]$") or result.iccQuests[id] ~= nil then return nil end
+                result.iccQuests[id] = fields[3] == "1"
+            elseif kind == "P" and result.caps.ICC and #fields == 7
+                and fields[2] == "ICC_STATE" and not result.icc then
+                if fields[3] == "?" and fields[4] == "?" and fields[5] == "?"
+                    and fields[6] == "?" and fields[7] == "?" then
+                    result.icc = {loaded = false}
+                else
+                    local instance, difficulty, family, team = Integer(fields[3], 4294967295),
+                        Integer(fields[4], 3), Integer(fields[5], 4294967295), Integer(fields[7], 1)
+                    if not instance or not difficulty or not family or not team
+                        or not string.match(fields[6], "^[01]$") then return nil end
+                    if instance == 0 and (difficulty ~= 0 or family ~= 0 or fields[6] ~= "0" or team ~= 0) then return nil end
+                    result.icc = {loaded = true, inside = instance > 0, instance = instance,
+                        difficulty = difficulty, family = family, respiteReady = fields[6] == "1", team = team}
+                end
             elseif kind == "P" and result.caps.WINTERGRASP and #fields == 5
                 and fields[2] == "WG_STATE" and not result.wintergrasp then
                 if fields[3] == "?" and fields[4] == "?" and fields[5] == "?" then
@@ -272,6 +317,15 @@ local function ParseRows(batch)
     if result.caps.KALUAK and not result.kaluakReported then return nil end
     if result.caps.WINTERGRASP and (not result.wintergrasp
         or (not result.wintergrasp.loaded and next(result.wintergraspQuests))) then return nil end
+    if result.caps.ICC then
+        local state = result.icc
+        if not state then return nil end
+        if not state.loaded or not state.inside then
+            if next(result.iccQuests) then return nil end
+        elseif not next(result.iccQuests) or (state.family ~= 0 and result.iccQuests[state.family] == nil) then
+            return nil
+        end
+    end
     if result.caps.QUELDANAS and (not result.ui[3426] or result.ui[3426] < 0 or result.ui[3426] > 3) then return nil end
     if result.caps.VALUES then
         for id in pairs(subscriptions) do if not result.values[id] then return nil end end
@@ -360,6 +414,7 @@ local function HandleMessage(message, distribution, sender)
             assembly = nil
             if not result then return end
             snapshot, lastSequence, lastReplyAt = result, sequence, now
+            iccContextPending = false
             snapshotToken, snapshotSequence = watchToken, sequence
             snapshotCount = snapshotCount + 1
             pendingUntil, pendingRenewal, forceSnapshot = nil, false, false
@@ -442,6 +497,36 @@ function QuestieServer:PrintStatus(poolId)
     Questie:Print("[Server bridge] Kalu'ak turn-ins 63: " .. tostring(self:IsEventActive(63))
         .. "; derby finished: " .. tostring(self:IsKaluakDerbyFinished()))
     self:PrintWintergraspStatus(false)
+    if self:HasCapability("ICC") then self:PrintICCStatus(false) end
+end
+
+function QuestieServer:PrintICCStatus(detailed)
+    local state = self:GetICCState()
+    if not state or not state.loaded then
+        Questie:Print("[Server bridge] ICC weekly selection unavailable" .. (iccContextPending and "; updating raid context." or "."))
+        return
+    end
+    if not state.inside then
+        Questie:Print("[Server bridge] ICC: outside the raid; using existing quest availability.")
+        return
+    end
+    local difficulties = {[0] = "10-player Normal", [1] = "25-player Normal",
+        [2] = "10-player Heroic", [3] = "25-player Heroic"}
+    local db = QuestieLoader:ImportModule("QuestieDB")
+    local family = state.family == 0 and "not selected (defeat Lord Marrowgar)"
+        or (db.QueryQuestSingle(state.family, "name") or ("unknown family " .. state.family))
+    Questie:Print("[Server bridge] ICC: instance " .. state.instance .. "; " .. difficulties[state.difficulty]
+        .. "; weekly family: " .. family)
+    if state.family == 24872 and not state.respiteReady then
+        Questie:Print("[Server bridge] ICC: Respite unlock pending; rescue Valithria Dreamwalker.")
+    end
+    if detailed then
+        for _, id in ipairs(self:GetICCQuests()) do
+            Questie:Print("[Server bridge] ICC quest " .. id .. " "
+                .. (self:GetQuestAvailabilityState(id) and "permitted" or "inactive")
+                .. " - " .. (db.QueryQuestSingle(id, "name") or "unknown to Questie"))
+        end
+    end
 end
 
 function QuestieServer:PrintWintergraspStatus(detailed)
@@ -473,8 +558,22 @@ function QuestieServer:Initialize()
     Integrations:Initialize()
     frame = CreateFrame("Frame")
     frame:RegisterEvent("CHAT_MSG_ADDON")
+    frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+    frame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
     frame:SetScript("OnEvent", function(_, event, prefix, message, distribution, sender)
-        if event == "CHAT_MSG_ADDON" and prefix == PREFIX then HandleMessage(message, distribution, sender) end
+        if event == "CHAT_MSG_ADDON" and prefix == PREFIX then
+            HandleMessage(message, distribution, sender)
+        elseif event == "PLAYER_ENTERING_WORLD" or event == "ZONE_CHANGED_NEW_AREA" then
+            local _, instanceType = IsInInstance()
+            if snapshot and snapshot.caps.ICC and (snapshot.icc.inside or instanceType == "raid") then
+                -- Clear the old lockout's gates immediately. A new WATCH/token prevents
+                -- an in-flight reply or heartbeat from restoring the previous raid context.
+                iccContextPending = true
+                pendingUntil, pendingRenewal, assembly, watchToken = nil, false, nil, nil
+                forceSnapshot, nextRequestAt = true, 0
+                Integrations:Refresh()
+            end
+        end
     end)
     frame:SetScript("OnUpdate", function()
         local now = GetTime()
@@ -509,9 +608,10 @@ function QuestieServer:Initialize()
         command = command or ""
         if command:match("^%s*$") then self:PrintStatus(); return end
         if command:match("^%s*wintergrasp%s*$") then self:PrintWintergraspStatus(true); return end
+        if command:match("^%s*icc%s*$") then self:PrintICCStatus(true); return end
         local id = Integer(command:match("^%s*pool%s+(%d+)%s*$"), 4294967295)
         if id and id > 0 then self:PrintStatus(id); return end
-        Questie:Print("[Server bridge] Usage: /qserver, /qserver pool <pool ID>, or /qserver wintergrasp")
+        Questie:Print("[Server bridge] Usage: /qserver, /qserver pool <pool ID>, /qserver wintergrasp, or /qserver icc")
     end
     Request()
 end

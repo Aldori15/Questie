@@ -22,6 +22,7 @@ to let Questie follow live AzerothCore event activity and world progress. It sup
 - Stranglethorn and Kalu'ak fishing quests before and after a tournament winner is declared.
 - Scourge Invasion activity and Isle of Quel'Danas quest unlocks.
 - The server's selected daily and weekly pool quests, before visiting the questgiver.
+- ICC weekly quests follow the selected family, raid size, and unlocks in your current raid instance.
 - Wintergrasp quests and questgiver locations as faction control changes.
 - **World Progress** in related Journey quest details and hover tooltips, including Sun's Reach construction
   and Scourge Invasion battles and remaining necropolises.
@@ -29,7 +30,7 @@ to let Questie follow live AzerothCore event activity and world progress. It sup
 Install the module on the server and this addon on the client; see the
 [module installation instructions](https://github.com/Aldori15/mod-questie-bridge#installation).
 Run `/qserver` to check the connection and server information. Use `/qserver pool <pool ID>`
-or `/qserver wintergrasp` for more detail.
+or `/qserver wintergrasp` for more detail. Inside Icecrown Citadel, use `/qserver icc` to check its weekly quests.
 
 Your visibility options, character requirements, and manually hidden quests still apply.
 Enable **Available Scourge Invasion Quests** or **Available Sun's Reach Quests** to show those quest sets.

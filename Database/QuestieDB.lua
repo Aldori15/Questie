@@ -3154,6 +3154,15 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
         end
     end
 
+    if C_QuestLog.IsOnQuest(questId) ~= true and QuestieServer:IsICCQuestActive(questId) == false then
+        if returnText and returnBrief then
+            return l10n("Unavailable") .. l10n(": ") .. "ICC weekly quest inactive", true, DoableStates.MISSING_DAILY
+        elseif returnText then
+            return "Quest " .. questId .. " is unavailable under this ICC instance's weekly selection, difficulty or unlock rules",
+                true, DoableStates.MISSING_DAILY
+        end
+    end
+
     if C_QuestLog.IsOnQuest(questId) ~= true and QuestieServer:IsWintergraspQuestActive(questId) == false then
         if returnText and returnBrief then
             return l10n("Unavailable") .. l10n(": ") .. "Wintergrasp quest inactive", true, DoableStates.MISSING_DAILY
