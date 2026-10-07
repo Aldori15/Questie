@@ -17,7 +17,7 @@ local function setup()
     env.GetTime = function() return now end
     env.ExpandFactionHeader = function() end
     env.GetNumFactions = function() return 0 end
-    env.QuestieCompat = {Is335 = true, GetFactionInfo = function() end,
+    env.QuestieCompat = {GetFactionInfo = function() end,
         AzerothCoreReputationRates = {[911] = {2, 3, 4, 5, 6}}}
     env.Questie = {db = {profile = {}}, Print = function(_, message) prints[#prints + 1] = message end}
     env.SlashCmdList = {}

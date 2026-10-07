@@ -20,7 +20,7 @@ local function setup()
     env.GetTime = function() return now end
     env.UnitName = function() return "Tester" end
     env.IsInInstance = function() return false, "none" end
-    env.QuestieCompat = {Is335 = true, addonName = "Questie-335"}
+    env.QuestieCompat = {addonName = "Questie-335"}
     env.GetAddOnMetadata = function(name, field)
         assert(name == "Questie-335" and field == "Version", "addon metadata lookup")
         return "9.9.4-335"

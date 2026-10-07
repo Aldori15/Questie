@@ -14,7 +14,7 @@ local WorldMapFrame = QuestieCompat.WorldMapFrame
 local posX = 0;
 local posY = 0;
 
-QuestieCoords.updateInterval = QuestieCompat.Is335 and 0.1 or 0.5;
+QuestieCoords.updateInterval = 0.1;
 -- Placing the functions locally to save time when spamming the updateInterval
 local GetBestMapForUnit = C_Map.GetBestMapForUnit;
 local GetPlayerMapPosition = C_Map.GetPlayerMapPosition;
@@ -32,31 +32,7 @@ local function SetTextIfChanged(fontString, text)
     end
 end
 
-local function GetMapTitleText()
-    if QuestieCompat.Is335 then return WorldMapFrameTitle end
-    local regions = {WorldMapFrame.BorderFrame:GetRegions()}
-    for i = 1, #regions do
-        if (regions[i].SetText) then
-            return regions[i]
-        end
-    end
-end
-
-local function GetMiniWorldMapTitleText()
-    if QuestieCompat.Is335 then return end
-    local regions = {WorldMapFrame.MiniBorderFrame:GetRegions()}
-    for i = 1, #regions do
-        if regions[i].SetText then
-            return regions[i]
-        end
-    end
-end
-
 local function GetWorldMapCoordsText()
-    if not QuestieCompat.Is335 then
-        return GetMapTitleText()
-    end
-
     if QuestieCoords._worldMapCoordsText then
         return QuestieCoords._worldMapCoordsText
     end
@@ -77,7 +53,7 @@ local function GetWorldMapCoordsText()
 end
 
 local function UpdateWorldMapCoordsLayout(coordsText)
-    if not QuestieCompat.Is335 or not coordsText then
+    if not coordsText then
         return
     end
 
@@ -164,13 +140,11 @@ function QuestieCoords:WriteCoords()
     if shouldShowWorldMapCoords and mapCoordsText then
         UpdateWorldMapCoordsLayout(mapCoordsText)
 
-        if QuestieCompat.Is335 then
-            local now = GetTime()
-            if QuestieCoords._nextWorldMapCoordsUpdateAt and now < QuestieCoords._nextWorldMapCoordsUpdateAt then
-                return
-            end
-            QuestieCoords._nextWorldMapCoordsUpdateAt = now + 0.2
+        local now = GetTime()
+        if QuestieCoords._nextWorldMapCoordsUpdateAt and now < QuestieCoords._nextWorldMapCoordsUpdateAt then
+            return
         end
+        QuestieCoords._nextWorldMapCoordsUpdateAt = now + 0.2
 
         -- get cursor position
         local curX, curY = GetCursorPosition();
@@ -190,7 +164,7 @@ function QuestieCoords:WriteCoords()
         curY = (top - curY) / height * 100;
         local precision = "%.".. Questie.db.profile.mapCoordinatePrecision .."f";
 
-        if QuestieCompat.Is335 and ((not canvas:IsMouseOver()) or (position.uiMapID == 946)) then
+        if (not canvas:IsMouseOver()) or (position.uiMapID == 946) then
             curX, curY = 0, 0
         end
 
@@ -198,16 +172,11 @@ function QuestieCoords:WriteCoords()
         worldmapCoordsText = worldmapCoordsText.." | Player: "..format(precision..", "..precision, posX, posY)
 
         -- Add text to world map
-        if QuestieCompat.Is335 and not mapCoordsText:IsShown() then
+        if not mapCoordsText:IsShown() then
             mapCoordsText:Show()
         end
         SetTextIfChanged(mapCoordsText, worldmapCoordsText)
 
-        -- Adding text to mini world map
-        local miniWorldMapTitleText = GetMiniWorldMapTitleText()
-        if miniWorldMapTitleText then
-            SetTextIfChanged(miniWorldMapTitleText, worldmapCoordsText)
-        end
     end
 end
 
@@ -245,17 +214,7 @@ end
 
 function QuestieCoords:ResetMapText()
     HideWorldMapCoordsText()
-    if not QuestieCompat.Is335 then
-        GetMapTitleText():SetText(WORLD_MAP);
-    end
 end
 
 function QuestieCoords:ResetMiniWorldMapText()
-    local currentMapId = WorldMapFrame:GetMapID();
-    if currentMapId then
-        local info = C_Map.GetMapInfo(currentMapId);
-        if info then
-            GetMiniWorldMapTitleText():SetText(info.name);
-        end
-    end
 end

@@ -13,10 +13,6 @@ local QuestieProfiler = QuestieLoader:ImportModule("Profiler")
 
 --- COMPATIBILITY ---
 local C_Timer = QuestieCompat.C_Timer
-local PROFILER_BACKDROP_TEMPLATE
-if not QuestieCompat.Is335 and BackdropTemplateMixin then
-    PROFILER_BACKDROP_TEMPLATE = "BackdropTemplate"
-end
 
 -- Performance: alias frequently used functions
 local tinsert = table.insert
@@ -2449,7 +2445,7 @@ function QuestieProfilerUI:Create()
         return baseFrame
     end
 
-    baseFrame = CreateFrame("Frame", "QuestieProfilerFrame", UIParent, PROFILER_BACKDROP_TEMPLATE)
+    baseFrame = CreateFrame("Frame", "QuestieProfilerFrame", UIParent, nil)
     baseFrame:SetSize(LAYOUT.windowDefaultWidth, LAYOUT.windowDefaultHeight)
     baseFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
     baseFrame:SetFrameStrata("DIALOG")

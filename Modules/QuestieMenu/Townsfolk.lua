@@ -149,13 +149,8 @@ function Townsfolk.Initialize()
         [professionKeys.SKINNING] = {}
     }
 
-    if Questie.IsTBC or Questie.IsWotlk or QuestieCompat.Is335 then
-        professionTrainers[professionKeys.JEWELCRAFTING] = {}
-    end
-
-    if Questie.IsWotlk or QuestieCompat.Is335 then
-        professionTrainers[professionKeys.INSCRIPTION] = {}
-    end
+    professionTrainers[professionKeys.JEWELCRAFTING] = {}
+    professionTrainers[professionKeys.INSCRIPTION] = {}
 
     local count = 0
     local validProfessionTrainers = Townsfolk.GetProfessionTrainers()
@@ -215,23 +210,13 @@ function Townsfolk.Initialize()
     -- Fix NPC Gubber Blump (10216) can train fishing profession
     tinsert(professionTrainers[professionKeys.FISHING], 10216)
     -- Fix NPC Aresella (18991) can train first aid profession
-    if Questie.IsTBC or Questie.IsWotlk or QuestieCompat.Is335 then
-        tinsert(professionTrainers[professionKeys.FIRST_AID], 18991)
-    end
+    tinsert(professionTrainers[professionKeys.FIRST_AID], 18991)
 
-    if Questie.IsClassic then
-        -- Vendors selling "Expert First Aid - Under Wraps"
-        tinsert(professionTrainers[professionKeys.FIRST_AID], 2805)
-        tinsert(professionTrainers[professionKeys.FIRST_AID], 13476)
-    end
+    local meetingStones = Townsfolk.GetMeetingStones()
 
-    if Questie.IsWotlk or Questie.IsTBC or QuestieCompat.Is335 then
-        local meetingStones = Townsfolk.GetMeetingStones()
-
-        townfolk["Meeting Stones"] = {}
-        for _, id in pairs(meetingStones) do
-            tinsert(townfolk["Meeting Stones"], id)
-        end
+    townfolk["Meeting Stones"] = {}
+    for _, id in pairs(meetingStones) do
+        tinsert(townfolk["Meeting Stones"], id)
     end
 
     -- todo: specialized trainer types (leatherworkers, engineers, etc)
@@ -315,7 +300,7 @@ function Townsfolk.PostBoot() -- post DB boot (use queries here)
     end
 
     -- Beginning with WotLK, all poison vendors sell all ranks of poison, so Rank 1 of one poison is enough here
-    local poisons = (Questie.IsWotlk or QuestieCompat.Is335) and {2892} or {5140,2928,8924,5173,2930,8923}
+    local poisons = {2892}
     Questie.db.char.vendorList["Poisons"] = _reformatVendors(Townsfolk:PopulateVendors(poisons))
 
     Questie.db.char.vendorList["Trade Goods"] = _reformatVendors(Townsfolk:PopulateVendors({ -- item ids from wowhead for trade goods   (temporarily disabled)
@@ -325,10 +310,10 @@ function Townsfolk.PostBoot() -- post DB boot (use queries here)
         2928,4361,10647,10648,4291,4357,8924,8343,4363,2678,5173,4400,2930,4342,2325,4340,
         6261,8923,2324,2604,6260,4378,10290,17194,4341
     }))
-    Questie.db.char.vendorList["Bags"] = _reformatVendors(Townsfolk:PopulateVendors({4496, 4497, 4498, 4499, (Questie.IsTBC or Questie.IsWotlk or QuestieCompat.Is335) and 30744 or nil}))
+    Questie.db.char.vendorList["Bags"] = _reformatVendors(Townsfolk:PopulateVendors({4496, 4497, 4498, 4499, 30744}))
     Questie.db.char.vendorList["Potions"] = _reformatVendors(Townsfolk:PopulateVendors({
-        118, 858, 929, 1710, 3928, 13446, 18839, (Questie.IsTBC or Questie.IsWotlk or QuestieCompat.Is335) and 22829 or nil, (Questie.IsTBC or Questie.IsWotlk or QuestieCompat.Is335) and 32947 or nil, (Questie.IsWotlk or QuestieCompat.Is335) and 33447 or nil, -- Healing Potions
-        2455, 3385, 3827, 6149, 13443, 13444, 18841, (Questie.IsTBC or Questie.IsWotlk or QuestieCompat.Is335) and 22832 or nil, (Questie.IsTBC or Questie.IsWotlk or QuestieCompat.Is335) and 32948 or nil, (Questie.IsWotlk or QuestieCompat.Is335) and 33448 or nil, -- Mana Potions
+        118, 858, 929, 1710, 3928, 13446, 18839, 22829, 32947, 33447, -- Healing Potions
+        2455, 3385, 3827, 6149, 13443, 13444, 18841, 22832, 32948, 33448, -- Mana Potions
     }))
     Questie.db.char.vendorListInitialized = true
     Townsfolk:UpdatePlayerVendors()

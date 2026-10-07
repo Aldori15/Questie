@@ -70,8 +70,6 @@ def build_module_text(relation_suggestions: str, metadata_suggestions: str) -> s
         "---@type QuestieProfessions",
         'local QuestieProfessions = QuestieLoader:ImportModule("QuestieProfessions")',
         "",
-        "if QuestieCompat.WOW_PROJECT_ID < QuestieCompat.WOW_PROJECT_WRATH_CLASSIC then return end",
-        "",
         "-- Generated from tools/reports/acore_relation_suggestions.lua and tools/reports/acore_metadata_suggestions.lua.",
         "-- Regenerate this file from the validators when AzerothCore quest data changes.",
         "",

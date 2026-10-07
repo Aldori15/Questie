@@ -211,7 +211,7 @@ local function UpdateLineFrameGeometry(lineFrame)
         lineBorder:SetThickness(lineWidth + 2)
     end
 
-    if QuestieCompat.Is335 and lineFrame:IsShown() then
+    if lineFrame:IsShown() then
         local onShow = lineFrame:GetScript("OnShow")
         if onShow then
             onShow(lineFrame)
@@ -246,11 +246,7 @@ function QuestieFramePool:CreateLine(iconFrame, startX, startY, endX, endY, line
         lineFrameCount = lineFrameCount + 1
     end
 
-    if QuestieCompat.Is335 then
-        lineFrame.CreateLine = QuestieCompat.CreateLine
-    else
-        lineFrame:SetFrameLevel(2015) -- This needs to be high, because of the regular WorldMapFrame.ScrollContainer
-    end
+    lineFrame.CreateLine = QuestieCompat.CreateLine
 
     --How to identify what the frame actually contains, this is not used atm could easily be changed.
     lineFrame.type = "line"

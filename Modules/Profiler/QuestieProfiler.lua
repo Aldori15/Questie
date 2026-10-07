@@ -909,10 +909,8 @@ local function HookProfiledLibraries(excludedTables, visitedTables, namespaceSha
         end
     end
 
-    if QuestieCompat.Is335 then
-        for _, target in ipairs(PROFILED_COMPAT_LIBRARIES) do
-            HookResolvedLibrary(QuestieCompat[target.field], target)
-        end
+    for _, target in ipairs(PROFILED_COMPAT_LIBRARIES) do
+        HookResolvedLibrary(QuestieCompat[target.field], target)
     end
 end
 

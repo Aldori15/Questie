@@ -820,9 +820,7 @@ function QuestieMap:DrawLineIcon(lineFrame, areaID, x, y)
     local uiMapId = ZoneDB:GetUiMapIdByAreaId(areaID)
 
     HBDPins:AddWorldMapIconMap(Questie, lineFrame, uiMapId, x, y, HBD_PINS_WORLDMAP_SHOW_CURRENT)
-    if QuestieCompat.Is335 then
-        QuestieMap.utils.SetLineDrawOrder(lineFrame)
-    end
+    QuestieMap.utils.SetLineDrawOrder(lineFrame)
 end
 
 -- Draw manually added NPC/object notes

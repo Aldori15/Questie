@@ -284,7 +284,7 @@ function _QuestieNameplate.GetFrame(guid)
         return npFrames[guid]
     end
 
-    local parent = QuestieCompat.Is335 and guid or C_NamePlate.GetNamePlateForUnit(activeGUIDs[guid])
+    local parent = guid or C_NamePlate.GetNamePlateForUnit(activeGUIDs[guid])
 
     local frame = tremove(npUnusedFrames)
 

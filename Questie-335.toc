@@ -13,7 +13,6 @@
 ## SavedVariablesPerCharacter: QuestieConfigCharacter
 ## X-Curse-Project-ID: 334372
 ## X-Wago-ID: qv634BKb
-## X-WOW_PROJECT_ID: 11
 
 # Loader module
 Modules\Libs\QuestieLoader.lua
@@ -53,7 +52,6 @@ Database\Constants.lua
 Database\MeetingStones.lua
 
 # Corrections
-Database\Corrections\AutoTableUpdates.lua
 Database\Corrections\QuestieCorrections.lua
 Database\Corrections\QuestieItemBlacklist.lua
 Database\Corrections\QuestieNPCBlacklist.lua

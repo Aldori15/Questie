@@ -711,7 +711,7 @@ function QuestieCompat:QUEST_QUERY_COMPLETE(event)
         QuestieCompat.ResetDailyQuests()
         QuestieCompat.Merge(Questie.db.char.complete, Questie.db.char.daily)
 
-        if (Questie.IsWotlk or QuestieCompat.Is335) and QuestiePlayer.GetPlayerLevel() >= 78 then
+        if QuestiePlayer.GetPlayerLevel() >= 78 then
             QuestieCompat.ResetWeeklyQuests()
             QuestieCompat.Merge(Questie.db.char.complete, Questie.db.char.weekly)
         end

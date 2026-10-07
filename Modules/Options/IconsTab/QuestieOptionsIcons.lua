@@ -285,7 +285,7 @@ local function _BuildQuestIconSurfaceOptions()
     args.showAQWarEffortQuests = {
         type = "toggle",
         order = 2.20,
-        hidden = (not Questie.IsClassic),
+        hidden = true,
         name = function() return l10n('Available AQ War Effort Quests'); end,
         desc = function() return l10n('If checked, the locations of the AQ War Effort quests will be shown on the map/minimap.'); end,
         width = 1.595,
@@ -1545,20 +1545,12 @@ _GetIconThemes = function()
         return _iconThemesCache
     end
 
-    if Questie.IsWotlk or QuestieCompat.Is335 then
-        _iconThemesCache = {
-            ['questie'] = "|T" .. Questie.icons["slay"] .. ":14|t Questie",
-            ['blizzard'] = "|TInterface/buttons/adventureguidemicrobuttonalert.blp:20:20:0:0:32:32:2:28:2:28|t Blizzard",
-            ['pfquest'] = "|T" .. Questie.icons["node"] .. ":14|t pfQuest",
-            ['custom'] = "|T" .. Questie.icons["object"] .. ":16|t " .. l10n("Custom"),
-        }
-    else
-        _iconThemesCache = {
-            ['questie'] = "|T" .. Questie.icons["complete"] .. ":14|t Questie",
-            ['pfquest'] = "|T" .. Questie.icons["node"] .. ":14|t pfQuest",
-            ['custom'] = "|T" .. Questie.icons["object"] .. ":16|t " .. l10n("Custom"),
-        }
-    end
+    _iconThemesCache = {
+        ['questie'] = "|T" .. Questie.icons["slay"] .. ":14|t Questie",
+        ['blizzard'] = "|TInterface/buttons/adventureguidemicrobuttonalert.blp:20:20:0:0:32:32:2:28:2:28|t Blizzard",
+        ['pfquest'] = "|T" .. Questie.icons["node"] .. ":14|t pfQuest",
+        ['custom'] = "|T" .. Questie.icons["object"] .. ":16|t " .. l10n("Custom"),
+    }
 
     return _iconThemesCache
 end
@@ -1568,20 +1560,12 @@ _GetIconThemesSort = function()
         return _iconThemesSortCache
     end
 
-    if Questie.IsWotlk or QuestieCompat.Is335 then
-        _iconThemesSortCache = {
-            "questie",
-            "blizzard",
-            "pfquest",
-            "custom",
-        }
-    else
-        _iconThemesSortCache = {
-            "questie",
-            "pfquest",
-            "custom",
-        }
-    end
+    _iconThemesSortCache = {
+        "questie",
+        "blizzard",
+        "pfquest",
+        "custom",
+    }
 
     return _iconThemesSortCache
 end
