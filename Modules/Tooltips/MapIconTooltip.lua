@@ -64,6 +64,21 @@ local function FormatLabelWithColon(label)
     end
 end
 
+local function GetSortedQuests(quests)
+    local sortedQuests = {}
+    for _, quest in pairs(quests) do
+        tinsert(sortedQuests, quest)
+    end
+    table.sort(sortedQuests, function(left, right)
+        local leftQuestId, rightQuestId = left.questId or 0, right.questId or 0
+        if leftQuestId ~= rightQuestId then
+            return leftQuestId < rightQuestId
+        end
+        return (left.title or "") < (right.title or "")
+    end)
+    return sortedQuests
+end
+
 ---@param questId QuestId
 ---@param questLevel number
 ---@param indent string
@@ -279,7 +294,7 @@ function MapIconTooltip:Show()
                 tooltipRows:AddLine(npcOrObjectName, 0.2, 1, 0.2);
             end
 
-            for _, questData in pairs(quests) do
+            for _, questData in ipairs(GetSortedQuests(quests)) do
                 local reputationReward = QuestieReputation.GetReputationReward(questData.questId)
 
                 if questData.title ~= nil then
@@ -414,8 +429,18 @@ function MapIconTooltip:Show()
         end
 
         -- tooltips for objectives of active quests
+        local sortedQuestIds = {}
+        for questId in pairs(self.questOrder) do
+            tinsert(sortedQuestIds, questId)
+        end
+        table.sort(sortedQuestIds, function(left, right)
+            if type(left) == type(right) then return left < right end
+            -- Custom tooltip titles can share this table with numeric quest IDs.
+            return type(left) == "number"
+        end)
         ---@param questId number
-        for questId, textList in pairs(self.questOrder) do -- this logic really needs to be improved
+        for _, questId in ipairs(sortedQuestIds) do
+            local textList = self.questOrder[questId]
             ---@type Quest
             local quest = QuestieDB.GetQuest(questId);
             local questTitle = QuestieLib:GetColoredQuestName(questId, Questie.db.profile.enableTooltipsQuestLevel, true, true);
