@@ -113,6 +113,7 @@ local function DarkmoonState(states, registrations)
 end
 
 function Integrations:Refresh()
+    if QuestieCompat.RefreshServerQuestResets then QuestieCompat.RefreshServerQuestResets() end
     local states = {}
     local registrations = Event.GetServerQuestRegistrations()
     for id, eventId in pairs(self.nonHolidayQuestEvents) do

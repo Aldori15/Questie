@@ -357,6 +357,18 @@ local function _CalculateNextMonthlyResetTime(currentTime, currentDate)
     }) or (currentTime + (32 * SECONDS_PER_DAY))
 end
 
+local function _CalculateNextWeeklyResetTime(currentTime, currentDate)
+    local resetHour = Questie.db.profile.weeklyResetHour or FALLBACK_DAILY_RESET_HOUR
+    local dayOffset = ((Questie.db.profile.weeklyResetDay or 4) - currentDate.weekday + 7) % 7
+    local deadline = time({year = currentDate.year, month = currentDate.month,
+        day = currentDate.day + dayOffset, hour = resetHour, min = 0, sec = 0})
+    if deadline <= currentTime then
+        deadline = time({year = currentDate.year, month = currentDate.month,
+            day = currentDate.day + dayOffset + 7, hour = resetHour, min = 0, sec = 0})
+    end
+    return deadline
+end
+
 local function _GetLegacyDailyResetTime()
     local char = Questie.db.char
     if next(char.daily or {}) or next(char.acoreDailyQuestCompletions or {}) then
@@ -435,19 +447,11 @@ function QuestieCompat.CalculateNextResetTime()
     Questie.Debug(Questie.DEBUG_DEVELOP, "[CalculateNextResetTime] Next daily rest time: ", date("%m/%d/%y %H:%M:%S", Questie.db.profile.dailyResetTime))
 
     Questie.db.profile.weeklyResetHour = Questie.db.profile.weeklyResetHour or tonumber(date("%H", Questie.db.profile.dailyResetTime+300))
-    local weeklyResetDay = Questie.db.profile.weeklyResetDay or 4
-    local dayOffset = (weeklyResetDay - currentDate.weekday + 7) % 7
-    if dayOffset == 0 and currentDate.hour >= Questie.db.profile.weeklyResetHour then
-        dayOffset = 7
+    if type(Questie.db.char.weeklyResetTime) ~= "number" then
+        local legacy = next(Questie.db.char.weekly or {}) and Questie.db.profile.weeklyResetTime
+        Questie.db.char.weeklyResetTime = type(legacy) == "number" and legacy
+            or _CalculateNextWeeklyResetTime(currentTime, currentDate)
     end
-
-    Questie.db.profile.weeklyResetTime = Questie.db.profile.weeklyResetTime or time({
-        year = currentDate.year,
-        month = currentDate.month,
-        day = currentDate.day + dayOffset,
-        hour = Questie.db.profile.weeklyResetHour,
-    })
-    Questie.Debug(Questie.DEBUG_DEVELOP, "[CalculateNextResetTime] Next weekly rest time: ", date("%m/%d/%y %H:%M:%S", Questie.db.profile.weeklyResetTime))
 end
 
 function QuestieCompat.ResetDailyQuests(reset)
@@ -495,76 +499,83 @@ function QuestieCompat.ResetDailyQuests(reset)
     return didReset
 end
 
-local weeklyResetTimer
-function QuestieCompat.ResetWeeklyQuests()
-    local currentTime = QuestieCompat.GetServerTime()
-    local timeUntilReset = Questie.db.profile.weeklyResetTime - currentTime
-
-    if timeUntilReset < 1800 then
-        if weeklyResetTimer then
-            weeklyResetTimer = weeklyResetTimer:Cancel()
-        end
-
-        weeklyResetTimer = weeklyResetTimer or QuestieCompat.C_Timer.After(timeUntilReset, function()
-            for questId in pairs(Questie.db.char.weekly) do
-                Questie.db.char.weekly[questId] = nil
-                Questie.db.char.complete[questId] = nil
-            end
-            Questie.db.profile.weeklyResetTime = nil
-            QuestieCompat.CalculateNextResetTime()
-            if Questie.started then
-                AvailableQuests.CalculateAndDrawAll()
-            end
-        end)
-
-        return true
-    end
-end
-
-local monthlyResetTimer
-function QuestieCompat.ResetMonthlyQuests()
+local periodicResetTimers = {}
+local resetTimingGraceUntil
+local function _ResetPeriodicQuests(period)
     local currentTime, currentDate = QuestieCompat.GetServerTime()
-    Questie.db.char.monthly = Questie.db.char.monthly or {}
+    local char = Questie.db.char
+    char[period] = char[period] or {}
+    char.serverQuestResetTimes = char.serverQuestResetTimes or {}
+    local marker = period .. "ResetTime"
+    local calculate = period == "weekly" and _CalculateNextWeeklyResetTime or _CalculateNextMonthlyResetTime
+    local server = QuestieLoader:ImportModule("QuestieServer")
+    local resets = server.GetQuestResetTimes and server:GetQuestResetTimes()
+    local didReset, delay = false, nil
+    resetTimingGraceUntil = resetTimingGraceUntil or (GetTime() + 5)
 
-    -- Monthly completion state is character-specific, so its reset marker must
-    -- also be character-specific. Otherwise one character logging in after a
-    -- reset could advance a shared marker before the others clear their state.
-    local monthlyResetTime = Questie.db.char.monthlyResetTime
-
-    if type(monthlyResetTime) ~= "number" then
-        monthlyResetTime = _CalculateNextMonthlyResetTime(currentTime, currentDate)
-        Questie.db.char.monthlyResetTime = monthlyResetTime
+    if resets then
+        local deadline, previous = resets[period], char.serverQuestResetTimes[period]
+        -- Passing the advertised time alone is insufficient: wait for AC to
+        -- advance its deadline after actually resetting the quest status.
+        didReset = type(previous) == "number" and resets.serverTime >= previous and deadline > previous
+        if deadline > resets.serverTime then
+            char.serverQuestResetTimes[period] = deadline
+            -- Keep a usable fallback in the compatibility clock's time domain.
+            char[marker] = currentTime + deadline - resets.serverTime
+            delay = deadline - resets.serverTime + 1
+        else
+            char.serverQuestResetTimes[period] = deadline
+            delay = 3
+        end
+    else
+        if type(char[marker]) ~= "number" then
+            local legacy = period == "weekly" and next(char.weekly) and Questie.db.profile.weeklyResetTime
+            char[marker] = type(legacy) == "number" and legacy or calculate(currentTime, currentDate)
+        end
+        -- A completed-quest query can arrive before the first bridge response.
+        -- Give that response time to correct an expired guessed schedule before
+        -- deleting saved completions. An absent bridge still falls back after 5s.
+        local waiting = server.GetQuestResetTimes and not server:HasCapability("HEARTBEAT")
+            and next(char[period]) and GetTime() < resetTimingGraceUntil
+        didReset = currentTime >= char[marker] and not waiting
+        if didReset then
+            char[marker] = calculate(currentTime, currentDate)
+            char.serverQuestResetTimes[period] = nil
+        end
+        delay = waiting and math_max(1, resetTimingGraceUntil - GetTime()) or (char[marker] - currentTime)
     end
 
-    local didReset = false
-    if currentTime >= monthlyResetTime then
-        for questId in pairs(Questie.db.char.monthly) do
-            Questie.db.char.monthly[questId] = nil
-            Questie.db.char.complete[questId] = nil
+    if didReset then
+        for questId in pairs(char[period]) do
+            char[period][questId] = nil
+            char.complete[questId] = nil
             serverCompletedQuests[questId] = nil
         end
-
-        Questie.db.char.monthlyResetTime = _CalculateNextMonthlyResetTime(currentTime, currentDate)
-        monthlyResetTime = Questie.db.char.monthlyResetTime
-        didReset = true
-
         if Questie.started then
             AvailableQuests.CalculateAndDrawAll()
         end
     end
 
-    if monthlyResetTimer then
-        monthlyResetTimer:Cancel()
-    end
-    local timeUntilReset = math_max(0.01, monthlyResetTime - currentTime)
-    monthlyResetTimer = QuestieCompat.C_Timer.After(math_min(timeUntilReset, MAX_ANIMATION_TIMER_SECONDS), function()
-        monthlyResetTimer = nil
-        QuestieCompat.ResetMonthlyQuests()
+    if periodicResetTimers[period] then periodicResetTimers[period]:Cancel() end
+    periodicResetTimers[period] = QuestieCompat.C_Timer.After(math_min(math_max(0.01, delay), MAX_ANIMATION_TIMER_SECONDS), function()
+        periodicResetTimers[period] = nil
+        if Questie.db.profile.resetDailyQuests then _ResetPeriodicQuests(period) end
     end)
-
-    Questie.Debug(Questie.DEBUG_DEVELOP, "[ResetMonthlyQuests] Next monthly reset time: ", date("%m/%d/%y %H:%M:%S", monthlyResetTime))
-
     return didReset
+end
+
+function QuestieCompat.ResetWeeklyQuests()
+    return _ResetPeriodicQuests("weekly")
+end
+
+function QuestieCompat.ResetMonthlyQuests()
+    return _ResetPeriodicQuests("monthly")
+end
+
+function QuestieCompat.RefreshServerQuestResets()
+    if not Questie.db.char or not Questie.db.char.complete or not Questie.db.profile.resetDailyQuests then return end
+    QuestieCompat.ResetWeeklyQuests()
+    QuestieCompat.ResetMonthlyQuests()
 end
 
 function QuestieCompat.SetQuestComplete(questId)
@@ -583,6 +594,7 @@ function QuestieCompat.SetQuestComplete(questId)
             Questie.db.char.daily[questId] = true
             Questie.db.char.complete[questId] = true
         elseif QuestieDB.IsWeeklyQuest(questId) then
+            QuestieCompat.ResetWeeklyQuests()
             Questie.db.char.weekly[questId] = true
             Questie.db.char.complete[questId] = true
         elseif QuestieDB.IsMonthlyQuest(questId) then
@@ -662,9 +674,7 @@ function QuestieCompat:QUEST_QUERY_COMPLETE(event)
         QuestieCompat.Merge(Questie.db.char.complete, Questie.db.char.daily)
 
         if (Questie.IsWotlk or QuestieCompat.Is335) and QuestiePlayer.GetPlayerLevel() >= 78 then
-            if (not QuestieCompat.ResetWeeklyQuests()) and (Questie.db.profile.weeklyResetDay == CalendarGetDate()) then
-                weeklyResetTimer = weeklyResetTimer or QuestieCompat.C_Timer.NewTicker(1800, QuestieCompat.ResetWeeklyQuests)
-            end
+            QuestieCompat.ResetWeeklyQuests()
             QuestieCompat.Merge(Questie.db.char.complete, Questie.db.char.weekly)
         end
 

@@ -2,7 +2,7 @@
 local QuestieServer = QuestieLoader:CreateModule("QuestieServer")
 local Integrations = QuestieLoader:ImportModule("QuestieServerIntegrations")
 
-local PREFIX, PROTOCOL_VERSION = "QSTSVR", "7"
+local PREFIX, PROTOCOL_VERSION = "QSTSVR", "8"
 local frame, snapshot, assembly, watchToken, pendingUntil, lastReplyAt
 local serverInfo, infoReceived
 local snapshotToken, snapshotSequence, pendingRenewal
@@ -14,7 +14,7 @@ local requestSequence, lastSequence, nextRequestAt = 0, 0, 0
 local nextPreferenceCheck, previousPreferences = 0, nil
 local subscriptions = {}
 local CAPABILITIES = {EVENTS = true, VALUES = true, SCOURGE = true, QUELDANAS = true,
-    KALUAK = true, HEARTBEAT = true, QUESTPOOLS = true, WINTERGRASP = true, ICC = true}
+    KALUAK = true, HEARTBEAT = true, QUESTPOOLS = true, WINTERGRASP = true, ICC = true, RESETS = true}
 
 local function Split(value, separator)
     local fields, first = {}, 1
@@ -42,6 +42,13 @@ end
 
 function QuestieServer:HasCapability(capability)
     return Fresh() and snapshot.caps[capability] == true or false
+end
+
+---@return table|nil Reset deadlines and an advancing server clock, in Unix seconds.
+function QuestieServer:GetQuestResetTimes()
+    if not self:HasCapability("RESETS") then return nil end
+    return {weekly = snapshot.resets.weekly, monthly = snapshot.resets.monthly,
+        serverTime = snapshot.serverTime + GetTime() - snapshot.receivedAt}
 end
 
 ---@return boolean|nil nil means unknown/unsupported, false means confirmed inactive.
@@ -250,7 +257,17 @@ local function ParseRows(batch)
             count = count + 1
             local fields = Split(row, ":")
             local kind, id = fields[1], Integer(fields[2], 4294967295)
-            if kind == "E" and result.caps.EVENTS and #fields == 5 and id and id > 0 and id <= 65535 then
+            if kind == "P" and result.caps.RESETS and fields[2] == "QUEST_RESETS"
+                and #fields == 4 and not result.resets then
+                local weekly, monthly = Integer(fields[3], 4294967295), Integer(fields[4], 4294967295)
+                if not weekly or weekly == 0 or not monthly or monthly == 0 then return nil end
+                result.resets = {weekly = weekly, monthly = monthly}
+            elseif kind == "P" and result.caps.RESETS and fields[2] == "SERVER_TIME"
+                and #fields == 3 and not result.serverTime then
+                local serverTime = Integer(fields[3], 4294967295)
+                if not serverTime or serverTime == 0 then return nil end
+                result.serverTime = serverTime
+            elseif kind == "E" and result.caps.EVENTS and #fields == 5 and id and id > 0 and id <= 65535 then
                 local holiday = Integer(fields[3], 4294967295)
                 if not holiday or not string.match(fields[4], "^[01]$") or not string.match(fields[5], "^[01]$")
                     or result.events[id] then return nil end
@@ -313,6 +330,7 @@ local function ParseRows(batch)
         end
     end
     if count ~= batch.rowCount then return nil end
+    if result.caps.RESETS and (not result.resets or not result.serverTime) then return nil end
     if result.caps.SCOURGE and result.scourge == nil then return nil end
     if result.caps.KALUAK and not result.kaluakReported then return nil end
     if result.caps.WINTERGRASP and (not result.wintergrasp
@@ -414,6 +432,7 @@ local function HandleMessage(message, distribution, sender)
             assembly = nil
             if not result then return end
             snapshot, lastSequence, lastReplyAt = result, sequence, now
+            snapshot.receivedAt = now
             iccContextPending = false
             snapshotToken, snapshotSequence = watchToken, sequence
             snapshotCount = snapshotCount + 1
@@ -498,6 +517,20 @@ function QuestieServer:PrintStatus(poolId)
         .. "; derby finished: " .. tostring(self:IsKaluakDerbyFinished()))
     self:PrintWintergraspStatus(false)
     if self:HasCapability("ICC") then self:PrintICCStatus(false) end
+    if self:HasCapability("RESETS") then self:PrintResetStatus() end
+end
+
+function QuestieServer:PrintResetStatus()
+    local resets = self:GetQuestResetTimes()
+    if not resets then
+        Questie:Print("[Server bridge] Server quest reset timing unavailable; using Questie's fallback schedule.")
+        return
+    end
+    for _, period in ipairs({"weekly", "monthly"}) do
+        local remaining = math.max(0, math.ceil(resets[period] - resets.serverTime))
+        Questie:Print("[Server bridge] " .. period:gsub("^%l", string.upper)
+            .. " quest reset: " .. resets[period] .. " (Unix seconds); in " .. remaining .. "s")
+    end
 end
 
 function QuestieServer:PrintICCStatus(detailed)
@@ -609,9 +642,10 @@ function QuestieServer:Initialize()
         if command:match("^%s*$") then self:PrintStatus(); return end
         if command:match("^%s*wintergrasp%s*$") then self:PrintWintergraspStatus(true); return end
         if command:match("^%s*icc%s*$") then self:PrintICCStatus(true); return end
+        if command:match("^%s*resets%s*$") then self:PrintResetStatus(); return end
         local id = Integer(command:match("^%s*pool%s+(%d+)%s*$"), 4294967295)
         if id and id > 0 then self:PrintStatus(id); return end
-        Questie:Print("[Server bridge] Usage: /qserver, /qserver pool <pool ID>, /qserver wintergrasp, or /qserver icc")
+        Questie:Print("[Server bridge] Usage: /qserver, /qserver pool <pool ID>, /qserver wintergrasp, /qserver icc, or /qserver resets")
     end
     Request()
 end

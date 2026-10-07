@@ -726,6 +726,7 @@ function QuestieCompat.QuestieOptions_Initialize()
         set = function (info, value)
             QuestieOptions:SetProfileValue(info, value)
             Questie.db.profile.weeklyResetTime = nil
+            Questie.db.char.weeklyResetTime = nil
             StaticPopup_Show("QUESTIE_RELOAD")
         end,
     }
