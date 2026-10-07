@@ -43,6 +43,18 @@ local holidays = {
     ["Fireworks Spectacular"] = 62,
 }
 
+-- AC game_event_creature_quest: Zalazane's Fall has no HolidayId/calendar entry.
+-- These remain ordinary quests, so their usual visibility and character filters apply.
+Integrations.nonHolidayQuestEvents = {
+    [25444] = 61, -- Da Perfect Spies
+    [25445] = 61, -- Zalazane's Fall
+    [25446] = 61, -- Frogs Away!
+    [25461] = 61, -- Trollin' For Volunteers
+    [25470] = 61, -- Lady Of Da Tigers
+    [25480] = 61, -- Dance Of De Spirits
+    [25495] = 61, -- Preparin' For Battle
+}
+
 -- AC game_event_creature_quest: permanent unlocks and construction projects are
 -- separate events, not nine mutually exclusive linear phases.
 Integrations.quelDanasQuestEvents = {
@@ -103,6 +115,9 @@ end
 function Integrations:Refresh()
     local states = {}
     local registrations = Event.GetServerQuestRegistrations()
+    for id, eventId in pairs(self.nonHolidayQuestEvents) do
+        states[id] = Server:IsEventActive(eventId)
+    end
     -- Respect the user's content visibility choices; live state changes availability only.
     local profile = Questie.db.profile
     local locations

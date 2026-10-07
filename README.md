@@ -18,6 +18,7 @@ Server owners can install [mod-questie-bridge](https://github.com/Aldori15/mod-q
 to let Questie follow live AzerothCore event activity and world progress. It supports:
 
 - Holidays started or stopped by GM commands or server scripts, including simultaneous Darkmoon Faire locations.
+- Zalazane's Fall quests appear while the server event is active.
 - Stranglethorn and Kalu'ak fishing quests before and after a tournament winner is declared.
 - Scourge Invasion activity and Isle of Quel'Danas quest unlocks.
 - The server's selected daily and weekly pool quests, before visiting the questgiver.

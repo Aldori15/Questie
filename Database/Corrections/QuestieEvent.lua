@@ -153,7 +153,7 @@ function QuestieEvent.SetServerQuestStates(states)
         local fallback = CaptureFallback(questId)
         local eventActive = fallback.active
         if serverQuestRegistrations[questId] or questId == 8194 then eventActive = active or nil end
-        -- World-progress quests retain ordinary quest classification/level filters.
+        -- Non-holiday and world-progress quests retain ordinary quest classification/level filters.
         changed = ApplyQuestState(questId, eventActive, (not active) or nil) or changed
         if serverQuestRegistrations[questId] then
             _QuestieEvent.eventNamesForQuests[questId] = serverQuestRegistrations[questId].name
