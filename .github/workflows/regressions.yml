@@ -1,0 +1,66 @@
+name: Regression tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  regressions:
+    name: Lua and Python regressions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash
+        working-directory: addon
+    env:
+      PYTHONNOUSERSITE: "1"
+      PYTHONDONTWRITEBYTECODE: "1"
+      QUESTIE_TEST_LUA: lua5.2
+      QUESTIE_BRIDGE_SOURCE: ${{ github.workspace }}/source/modules/mod-questie-bridge
+    steps:
+      - name: Check out addon
+        uses: actions/checkout@v7
+        with:
+          path: addon
+          persist-credentials: false
+
+      - name: Check out matching bridge contracts
+        uses: actions/checkout@v7
+        with:
+          repository: Aldori15/mod-questie-bridge
+          # Protocol 12. Update this pin with coordinated bridge contract changes.
+          ref: d261d83a2882ba73caf42a10cbb5591b85fd802c
+          path: source/modules/mod-questie-bridge
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Install Lua
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y lua5.1 lua5.2
+
+      - name: Check addon Lua 5.1 syntax
+        run: python -B tools/check_lua_syntax.py --luac luac5.1
+
+      - name: Run Lua regression suites
+        run: |
+          for test in tools/test_*.lua; do
+            echo "Running $test"
+            lua5.2 "$test"
+          done
+
+      - name: Run Python regression suites
+        run: python -B -m unittest discover -s tools -p 'test_*.py' -v

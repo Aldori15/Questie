@@ -1,4 +1,5 @@
 import unittest
+import os
 import re
 from collections import defaultdict
 from unittest.mock import patch
@@ -120,14 +121,26 @@ const WintergraspObjectPositionData WGOutsideNPC[WG_MAX_OUTSIDE_NPC] = {
             with self.subTest(row=row):
                 self.assertEqual([10, 20], npc_generator.add_acore_spawn_visibility([10, 20], row, {}))
 
-    def test_server_phase_profiles_match_client_and_generators(self):
+    def test_server_contracts_match_client_and_generators(self):
         addon_root = Path(__file__).resolve().parents[1]
-        headers = [parent / "source/modules/mod-questie-bridge/src/QuestieBridgePhases.h"
-                   for parent in addon_root.parents]
-        header = next((path for path in headers if path.is_file()), None)
+        bridge_source = os.environ.get("QUESTIE_BRIDGE_SOURCE")
+        if bridge_source:
+            header = Path(bridge_source) / "src/QuestieBridgePhases.h"
+            self.assertTrue(header.is_file(), f"configured bridge header is missing: {header}")
+        else:
+            headers = [parent / "source/modules/mod-questie-bridge/src/QuestieBridgePhases.h"
+                       for parent in addon_root.parents]
+            header = next((path for path in headers if path.is_file()), None)
         if not header:
             self.skipTest("matching bridge source is not available beside the addon")
         text = header.read_text(encoding="utf-8")
+        server_text = (header.parent / "QuestieBridge.cpp").read_text(encoding="utf-8")
+        client_text = (addon_root / "Modules/Network/QuestieServer.lua").read_text(encoding="utf-8")
+        server_protocol = re.search(r"constexpr uint32 ProtocolVersion = (\d+);", server_text)
+        client_protocol = re.search(r'PROTOCOL_VERSION = "QSTSVR", "(\d+)"', client_text)
+        self.assertIsNotNone(server_protocol, "bridge protocol declaration is missing")
+        self.assertIsNotNone(client_protocol, "addon protocol declaration is missing")
+        self.assertEqual(server_protocol.group(1), client_protocol.group(1), "bridge protocol mismatch")
         zones, areas, masks = npc_generator.load_server_phase_profiles()
         for name, profiles in (("PhaseZones", zones), ("PhaseAreas", areas)):
             body = re.search(rf"{name}\[\]\[2\]\s*=\s*\{{(.*?)\}};", text, re.S).group(1)

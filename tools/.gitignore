@@ -11,4 +11,5 @@ __pycache__/
 !audit_acore_trigger_end_tooltip_targets.py
 !test_patrol_spawn_metadata.py
 !test_npc_correction_batches.py
+!check_lua_syntax.py
 !validate_wdm_map_data.py

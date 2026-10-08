@@ -12,7 +12,7 @@ A fork of the WoW Classic Questie addon aiming to provide compatibility with Wra
 - [Download](https://github.com/Aldori15/Questie/archive/refs/heads/335.zip) the archive.
 - Extract it into `Interface/AddOns/` directory, folder name should be `Questie-335`.
 
-## Optional AzerothCore Server Bridge
+## Optional AzerothCore Server Bridge Module
 
 Server owners can install [mod-questie-bridge](https://github.com/Aldori15/mod-questie-bridge)
 to let Questie's quest availability, reset timing, and locations follow live AzerothCore state. It supports:
@@ -51,6 +51,31 @@ Accepted quests remain tracked when server state changes.
 The bridge is optional. Without it, or when its information becomes unavailable, Questie keeps its existing
 calendar detection, manual settings, and daily quest discovery.
 Install matching addon and module builds if `/qserver` reports a protocol mismatch.
+
+## Regression checks
+
+GitHub Actions runs the standalone regression suites on pushes and pull requests. It checks
+the addon's Lua 5.1 syntax, then uses Lua 5.2 for the simulated-client tests and Python 3.13
+for generator tests. No WoW client, running server, database, or private exports are required.
+These checks cover bridge messages and fallback, patrol pins, phase metadata, quest completion,
+and correction generation. In-game testing still verifies actual server and UI behavior.
+
+The workflow checks protocol and phase profiles against a pinned compatible revision of
+`mod-questie-bridge`. Update that revision in `.github/workflows/regressions.yml` when changing
+the shared contracts. A missing configured bridge checkout fails the check rather than skipping it.
+
+To run the same checks locally from the addon directory, with Lua 5.1, Lua 5.2, and Python installed:
+
+```sh
+python -B tools/check_lua_syntax.py --luac luac5.1
+for test in tools/test_*.lua; do lua5.2 "$test" || exit; done
+QUESTIE_TEST_LUA=lua5.2 python -B -m unittest discover -s tools -p 'test_*.py' -v
+```
+
+On Windows, run each `tools/test_*.lua` with your Lua 5.2 interpreter and set
+`QUESTIE_TEST_LUA` to its executable path before running the Python command.
+Set `QUESTIE_BRIDGE_SOURCE` to a compatible module checkout to include the shared-contract check;
+without it, local tests look beside the addon and skip that check if no module source is found.
 
 ## Questie Information
 - [Frequently Asked Questions](https://github.com/Questie/Questie/wiki/FAQ)
