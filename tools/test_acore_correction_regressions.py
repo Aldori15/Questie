@@ -1,4 +1,5 @@
 import unittest
+import re
 from collections import defaultdict
 from unittest.mock import patch
 from pathlib import Path
@@ -82,6 +83,76 @@ const WintergraspObjectPositionData WGOutsideNPC[WG_MAX_OUTSIDE_NPC] = {
         self.assertEqual("wdmWorld", zone_maps["ui_map_sources"][98])
         self.assertEqual("wdmInstance", zone_maps["ui_map_sources"][219])
         self.assertTrue(zone_maps["wdm_instance_map_data"][219]["wdmInstanceMap"])
+
+    def test_shadow_vault_masks_are_scoped_and_separate_from_logical_phases(self):
+        row = {"map": 571, "areaId": 4477, "spawnMask": 1, "phaseMask": 1}
+        self.assertEqual([10, 20, 0, 1, 571, 1, 4477],
+                         npc_generator.add_acore_spawn_visibility([10, 20], row, {571: 1}))
+        row.update(phaseMask=2, spawnMask=2)
+        self.assertEqual([10, 20, 1034, 2, 571, 2, 4477],
+                         npc_generator.add_acore_spawn_visibility([10, 20, 1034], row, {571: 3}))
+        for map_id, area in ((571, 0), (571, 4501), (530, 4477)):
+            row.update(map=map_id, areaId=area, spawnMask=1)
+            self.assertEqual([10, 20], npc_generator.add_acore_spawn_visibility([10, 20], row, {}))
+
+    def test_expanded_regions_preserve_local_npc_and_object_phase_metadata(self):
+        for map_id, zone_id, area_id, mask in (
+            (571, 210, 4501, 66), (571, 67, 4438, 4), (571, 67, 4495, 8),
+            (609, 4298, 4356, 192), (0, 139, 4281, 448), (571, 65, 4172, 2),
+            (571, 3537, 4020, 11), (571, 394, 4216, 2), (571, 66, 4325, 2),
+            (0, 85, 153, 64), (0, 1497, 1497, 128), (1, 1637, 1637, 192),
+        ):
+            row = {"map": map_id, "zoneId": zone_id, "areaId": area_id, "phaseMask": mask}
+            with self.subTest(row=row):
+                for generator in (npc_generator, object_generator):
+                    self.assertEqual([10, 20, 0, 1, map_id, mask, area_id],
+                                     generator.add_acore_spawn_visibility([10, 20], row, {}))
+                row["phaseMask"] = 1
+                self.assertEqual([10, 20, 0, 1, map_id, 1, area_id],
+                                 npc_generator.add_acore_spawn_visibility([10, 20], row, {}))
+
+    def test_unknown_areas_and_other_maps_never_guess_story_visibility(self):
+        for map_id, zone_id, area_id in (
+            (571, 210, 0), (631, 210, 4522), (0, 139, 2268),
+            (529, 3358, 3420), (571, 4395, 4613),
+        ):
+            row = {"map": map_id, "zoneId": zone_id, "areaId": area_id, "phaseMask": 64}
+            with self.subTest(row=row):
+                self.assertEqual([10, 20], npc_generator.add_acore_spawn_visibility([10, 20], row, {}))
+
+    def test_server_phase_profiles_match_client_and_generators(self):
+        addon_root = Path(__file__).resolve().parents[1]
+        headers = [parent / "source/modules/mod-questie-bridge/src/QuestieBridgePhases.h"
+                   for parent in addon_root.parents]
+        header = next((path for path in headers if path.is_file()), None)
+        if not header:
+            self.skipTest("matching bridge source is not available beside the addon")
+        text = header.read_text(encoding="utf-8")
+        zones, areas, masks = npc_generator.load_server_phase_profiles()
+        for name, profiles in (("PhaseZones", zones), ("PhaseAreas", areas)):
+            body = re.search(rf"{name}\[\]\[2\]\s*=\s*\{{(.*?)\}};", text, re.S).group(1)
+            pairs = {(int(map_id), int(region)) for map_id, region in re.findall(r"\{(\d+),\s*(\d+)\}", body)}
+            self.assertEqual({(map_id, region) for map_id, regions in profiles.items() for region in regions}, pairs)
+        body = re.search(r"PhaseMasks\[\]\s*=\s*\{(.*?)\};", text, re.S).group(1)
+        self.assertEqual(masks, [int(value) for value in re.findall(r"\d+", body)])
+        self.assertEqual(len(masks), len(set(masks)))
+
+    def test_phase_and_difficulty_alternatives_do_not_form_a_cross_product(self):
+        points = [[10, 20, 0, 1, 571, 1, 4477], [10, 20, 0, 2, 571, 2, 4477],
+                  [10, 20, 0, 4, 571, 2, 4477], [10, 20, 0, 1, 571, 1, 4477],
+                  [10, 20, 0, 1, 571, 1, 4501]]
+        self.assertCountEqual([[10, 20, 0, 1, 571, 1, 4477], [10, 20, 0, 6, 571, 2, 4477],
+                               [10, 20, 0, 1, 571, 1, 4501]],
+                              npc_generator.unique_coordinate_points(points, {571: 7}))
+
+    def test_npc_and_object_overlays_preserve_identical_coordinate_phase_changes(self):
+        old = {210: [[10, 20]]}
+        new = {210: [[10, 20, 0, 1, 571, 2, 4477]]}
+        for generator in (npc_generator, object_generator):
+            correction = generator.find_differences({1: {"spawns": old}}, {1: {"spawns": new}}, ["spawns"])
+            self.assertEqual(new, correction[1]["spawns"])
+            self.assertNotEqual(generator.normalize_coordinate_table(new),
+                                generator.normalize_coordinate_table({210: [[10, 20, 0, 1, 571, 1, 4477]]}))
 
     def test_resolves_zulfarrak_spawn_to_wdm_instance_map(self):
         addon_root = Path(__file__).resolve().parents[1]

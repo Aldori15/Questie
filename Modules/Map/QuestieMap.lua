@@ -48,8 +48,8 @@ QuestieMap.questIdFrames = {}
 -- E.g. {[-objectId] = {[frameName] = frame, ...}, ...}
 -- For details about frame.data see QuestieMap.ShowNPC and QuestieMap.ShowObject
 QuestieMap.manualFrames = {}
--- Retain explicitly requested Wintergrasp NPC notes while their locations are hidden.
-local wintergraspManualNotes = {}
+-- Retain explicitly requested notes while their dynamic locations are hidden.
+local dynamicManualNotes = {}
 
 
 --Used in my fadelogic.
@@ -328,7 +328,7 @@ end
 ---@param id number @The ID of the NPC (>0) or object (<0)
 function QuestieMap:UnloadManualFrames(id, typ)
     typ = typ or "any"
-    if wintergraspManualNotes[typ] then wintergraspManualNotes[typ][id] = nil end
+    if dynamicManualNotes[typ] then dynamicManualNotes[typ][id] = nil end
     if QuestieMap.manualFrames[typ] and (QuestieMap.manualFrames[typ][id]) then
         for _, frame in ipairs(QuestieMap:GetManualFrames(id, typ)) do
             QuestieFramePool:UnloadFrame(frame);
@@ -339,7 +339,7 @@ end
 
 function QuestieMap:ResetManualFrames(typ)
     typ = typ or "any"
-    wintergraspManualNotes[typ] = nil
+    dynamicManualNotes[typ] = nil
     if not QuestieMap.manualFrames[typ] then return end
     for id, _ in pairs(QuestieMap.manualFrames[typ]) do
         QuestieMap:UnloadManualFrames(id, typ)
@@ -654,10 +654,10 @@ function QuestieMap:ShowNPC(npcID, icon, scale, title, body, disableShiftToRemov
     local npc = QuestieDB:GetNPC(npcID)
     if (not npc) or (not npc.spawns) then return end
 
-    if Phasing.HasWintergraspSpawns(npc.spawns) then
+    if Phasing.HasDynamicSpawns(npc.spawns) then
         typ = typ or "any"
-        wintergraspManualNotes[typ] = wintergraspManualNotes[typ] or {}
-        wintergraspManualNotes[typ][npcID] = {
+        dynamicManualNotes[typ] = dynamicManualNotes[typ] or {}
+        dynamicManualNotes[typ][npcID] = {
             npcID, icon, scale, title, body, disableShiftToRemove, typ, excludeDungeon,
         }
     end
@@ -727,16 +727,22 @@ function QuestieMap:ShowNPC(npcID, icon, scale, title, body, disableShiftToRemov
     end
 end
 
-function QuestieMap:RefreshWintergraspManualNotes()
+function QuestieMap:RefreshDynamicManualNotes()
     local requests = {}
-    for _, notes in pairs(wintergraspManualNotes) do
+    for _, notes in pairs(dynamicManualNotes) do
         for _, request in pairs(notes) do requests[#requests + 1] = request end
     end
     for _, request in ipairs(requests) do
-        self:UnloadManualFrames(request[1], request[7])
-        self:ShowNPC(tunpack(request, 1, 8))
+        self:UnloadManualFrames(request.frameId or request[1], request[7])
+        if request.object then
+            self:ShowObject(tunpack(request, 1, 7))
+        else
+            self:ShowNPC(tunpack(request, 1, 8))
+        end
     end
 end
+
+QuestieMap.RefreshWintergraspManualNotes = QuestieMap.RefreshDynamicManualNotes
 
 -- Show object on map
 -- This function does the same for manualFrames as similar functions in
@@ -747,6 +753,15 @@ function QuestieMap:ShowObject(objectID, icon, scale, title, body, disableShiftT
     -- get the gameobject data
     local object = QuestieDB:GetObject(objectID)
     if not object or not object.spawns then return end
+
+    if Phasing.HasDynamicSpawns(object.spawns) then
+        local noteType = typ or "any"
+        local frameId = typ and objectID or -objectID
+        dynamicManualNotes[noteType] = dynamicManualNotes[noteType] or {}
+        local request = {objectID, icon, scale, title, body, disableShiftToRemove, typ}
+        request.object, request.frameId = true, frameId
+        dynamicManualNotes[noteType][frameId] = request
+    end
 
     -- create the icon data
     local data = {}
@@ -1084,18 +1099,27 @@ end
 --- The return type also contains, distance, zone and type but we never really use it.
 ---@type table<QuestId, {x:X, y:Y}>
 local closestStarter = {}
-function QuestieMap:RefreshWintergraspStarterLocations()
+function QuestieMap:RefreshDynamicStarterLocations()
     for questId in pairs(QuestiePlayer.currentQuestlog or {}) do
         local quest = QuestieDB.GetQuest(questId)
         for _, npcId in ipairs(quest and quest.Starts and quest.Starts.NPC or {}) do
             local npc = QuestieDB:GetNPC(npcId)
-            if npc and Phasing.HasWintergraspSpawns(npc.spawns) then
+            if npc and Phasing.HasDynamicSpawns(npc.spawns) then
+                closestStarter[questId] = nil
+                break
+            end
+        end
+        for _, objectId in ipairs(quest and quest.Starts and quest.Starts.GameObject or {}) do
+            local object = QuestieDB:GetObject(objectId)
+            if object and Phasing.HasDynamicSpawns(object.spawns) then
                 closestStarter[questId] = nil
                 break
             end
         end
     end
 end
+
+QuestieMap.RefreshWintergraspStarterLocations = QuestieMap.RefreshDynamicStarterLocations
 
 function QuestieMap:FindClosestStarter()
     local playerX, playerY = HBD:GetPlayerWorldPosition()

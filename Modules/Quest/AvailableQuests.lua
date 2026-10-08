@@ -81,7 +81,7 @@ local availableQuests = {}
 local nextAvailableQuests = {}
 local availableQuestsByNpc = {}
 local levelRequirementCache = {}
-local dirtyWintergraspSpawns = {}
+local dirtySpawnVisibility = {}
 
 ---@type string|nil
 local lastNpcGuid
@@ -414,23 +414,32 @@ function AvailableQuests.MarkQuestStartTooltipsDirty()
     availableQuestStartTooltipsDirty = true
 end
 
--- Availability can remain true while the questgiver moves between the keep
--- and camp. Mark existing notes for replacement in the normal drawing thread.
-function AvailableQuests.InvalidateWintergraspSpawnVisibility()
+-- Availability can remain true while a world/story transition changes locations.
+-- Mark existing notes for replacement in the normal drawing thread.
+function AvailableQuests.InvalidateSpawnVisibility()
     -- During a refresh these two buffers contain the current and previous sets.
     for _, quests in ipairs({availableQuests, nextAvailableQuests}) do
         for questId in pairs(quests) do
             local quest = QuestieDB.GetQuest(questId)
             for _, npcId in ipairs(quest and quest.Starts and quest.Starts.NPC or {}) do
                 local npc = QuestieDB:GetNPC(npcId)
-                if npc and Phasing.HasWintergraspSpawns(npc.spawns) then
-                    dirtyWintergraspSpawns[questId] = true
+                if npc and Phasing.HasDynamicSpawns(npc.spawns) then
+                    dirtySpawnVisibility[questId] = true
+                    break
+                end
+            end
+            for _, objectId in ipairs(quest and quest.Starts and quest.Starts.GameObject or {}) do
+                local object = QuestieDB:GetObject(objectId)
+                if object and Phasing.HasDynamicSpawns(object.spawns) then
+                    dirtySpawnVisibility[questId] = true
                     break
                 end
             end
         end
     end
 end
+
+AvailableQuests.InvalidateWintergraspSpawnVisibility = AvailableQuests.InvalidateSpawnVisibility
 
 -- Repeatable quests should be controlled by showRepeatableQuests
 local function _IsLevelRequirementsFulfilledForAvailable(questId, minLevel, maxLevel, playerLevel, isRepeatableQuest)
@@ -721,7 +730,7 @@ end
 
 ---@param questId QuestId
 function AvailableQuests.RemoveAvailableQuest(questId)
-    dirtyWintergraspSpawns[questId] = nil
+    dirtySpawnVisibility[questId] = nil
     availableQuests[questId] = nil
     _RemoveQuestFromNpcAvailability(questId, QuestieDB.GetQuest(questId))
     _UnloadQuestFrames(questId, nil, "available")
@@ -1253,10 +1262,10 @@ _SyncAvailableQuestDisplay = function(previousAvailableQuests, nextAvailableQues
     questCount = 0
     local drawCount = 0
     for questId in pairs(nextAvailableQuests) do
-        local replaceSpawns = dirtyWintergraspSpawns[questId]
+        local replaceSpawns = dirtySpawnVisibility[questId]
         if replaceSpawns then
-            -- Consume before yielding so another ownership change stays dirty.
-            dirtyWintergraspSpawns[questId] = nil
+            -- Consume before yielding so another visibility change stays dirty.
+            dirtySpawnVisibility[questId] = nil
             _UnloadQuestFrames(questId, nil, "available")
             QuestieTooltips:RemoveAvailableQuest(questId)
         end

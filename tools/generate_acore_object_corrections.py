@@ -377,6 +377,7 @@ def normalize_coordinate_table(value):
                             round(float(point[0]), 2),
                             round(float(point[1]), 2),
                             *((int(point[3]), int(point[4])) if len(point) >= 5 else ()),
+                            *((int(point[5]), int(point[6])) if len(point) >= 7 else ()),
                         )
                         for point in points
                         if isinstance(point, list) and len(point) >= 2

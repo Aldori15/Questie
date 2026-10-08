@@ -2,19 +2,45 @@
 local QuestieServer = QuestieLoader:CreateModule("QuestieServer")
 local Integrations = QuestieLoader:ImportModule("QuestieServerIntegrations")
 
-local PREFIX, PROTOCOL_VERSION = "QSTSVR", "8"
+local PREFIX, PROTOCOL_VERSION = "QSTSVR", "10"
+
+-- Shared with the correction generators. Decisions apply to the current area,
+-- never to every location in these zones. Keep the module's profiles in sync.
+local phaseZones = {
+    [0] = {[85] = "Tirisfal Glades", [1497] = "Undercity"},
+    [1] = {[1637] = "Orgrimmar"},
+    [571] = {[65] = "Dragonblight", [66] = "Zul'Drak", [67] = "Storm Peaks",
+        [210] = "Icecrown", [394] = "Grizzly Hills", [3537] = "Borean Tundra"},
+    [609] = {[4298] = "Death knight starting area"},
+}
+local phaseAreas = {
+    [0] = {[4281] = "Acherus"},
+    [571] = {[4477] = "Shadow Vault"},
+}
+-- Includes composite masks from audited creature and gameobject spawn data.
+local phaseMasks = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 16, 19, 32, 35, 51, 64, 65, 66, 71,
+    128, 129, 131, 175, 192, 193, 194, 195, 196, 197, 198, 204, 231, 243, 255, 256, 257,
+    384, 448, 449, 510, 511, 65535, 2147483647, 4294967295}
+local phaseMaskSet = {}
+for _, mask in ipairs(phaseMasks) do phaseMaskSet[mask] = true end
+
+local function PhaseRegion(map, area, zone)
+    if area == 0 then return nil end
+    return (phaseAreas[map] and phaseAreas[map][area]) or (phaseZones[map] and phaseZones[map][zone])
+end
 local frame, snapshot, assembly, watchToken, pendingUntil, lastReplyAt
 local serverInfo, infoReceived
 local snapshotToken, snapshotSequence, pendingRenewal
 local forceSnapshot, subscriptionsDirty = false, false
 local iccContextPending = false
+local phaseContextPending = false
 local lastRequestAt = -2
 local snapshotCount, heartbeatCount = 0, 0
 local requestSequence, lastSequence, nextRequestAt = 0, 0, 0
 local nextPreferenceCheck, previousPreferences = 0, nil
 local subscriptions = {}
 local CAPABILITIES = {EVENTS = true, VALUES = true, SCOURGE = true, QUELDANAS = true,
-    KALUAK = true, HEARTBEAT = true, QUESTPOOLS = true, WINTERGRASP = true, ICC = true, RESETS = true}
+    KALUAK = true, HEARTBEAT = true, QUESTPOOLS = true, WINTERGRASP = true, ICC = true, RESETS = true, PHASES = true}
 
 local function Split(value, separator)
     local fields, first = {}, 1
@@ -156,6 +182,35 @@ function QuestieServer:GetWintergraspState()
     return {loaded = state.loaded, enabled = state.enabled, battle = state.battle, defender = state.defender}
 end
 
+---@return table|nil Current local phase context; never reused across area transitions.
+function QuestieServer:GetPhaseContext()
+    if phaseContextPending or not self:HasCapability("PHASES") then return nil end
+    local state = snapshot.phaseContext
+    return {map = state.map, area = state.area, mask = state.mask, zone = state.zone}
+end
+
+function QuestieServer:GetPhaseRegion(context)
+    if not context then return nil end
+    return PhaseRegion(context.map, context.area, context.zone)
+end
+
+function QuestieServer:GetPhaseVisibilityKey()
+    local context = self:GetPhaseContext()
+    if not self:GetPhaseRegion(context) then return "unknown" end
+    local parts = {tostring(context.map), tostring(context.area), tostring(context.zone), tostring(context.mask)}
+    for _, mask in ipairs(phaseMasks) do
+        parts[#parts + 1] = tostring(self:GetSpawnPhaseVisibility(context.map, context.area, mask))
+    end
+    return table.concat(parts, ":")
+end
+
+---@return boolean|nil Server visibility decision, or nil outside the supported region.
+function QuestieServer:GetSpawnPhaseVisibility(map, region, mask)
+    local context = self:GetPhaseContext()
+    if not context or context.map ~= map or context.area ~= region then return nil end
+    return snapshot.phaseVisibility[region] and snapshot.phaseVisibility[region][mask]
+end
+
 ---@return boolean|nil Scripted faction/pool gate only, not character eligibility.
 function QuestieServer:IsWintergraspQuestActive(questId)
     if self:HasCapability("WINTERGRASP") then return snapshot.wintergraspQuests[questId] end
@@ -249,7 +304,7 @@ end
 
 local function ParseRows(batch)
     local result = {caps = batch.caps, events = {}, values = {}, ui = {}, poolQuests = {},
-        wintergraspQuests = {}, iccQuests = {}}
+        wintergraspQuests = {}, iccQuests = {}, phaseVisibility = {}}
     local count = 0
     for index = 1, batch.partCount do
         if not batch.parts[index] then return nil end
@@ -257,7 +312,20 @@ local function ParseRows(batch)
             count = count + 1
             local fields = Split(row, ":")
             local kind, id = fields[1], Integer(fields[2], 4294967295)
-            if kind == "P" and result.caps.RESETS and fields[2] == "QUEST_RESETS"
+            if kind == "P" and result.caps.PHASES and fields[2] == "PHASE_CONTEXT"
+                and #fields == 6 and not result.phaseContext then
+                local map, area, mask = Integer(fields[3], 65535), Integer(fields[4], 65535), Integer(fields[5], 4294967295)
+                local zone = Integer(fields[6], 65535)
+                if not map or not area or not mask or not zone then return nil end
+                result.phaseContext = {map = map, area = area, mask = mask, zone = zone}
+            elseif kind == "F" and result.caps.PHASES and #fields == 4 and id and id <= 65535 then
+                local mask = Integer(fields[3], 4294967295)
+                if not phaseMaskSet[mask]
+                    or not string.match(fields[4], "^[01]$") then return nil end
+                result.phaseVisibility[id] = result.phaseVisibility[id] or {}
+                if result.phaseVisibility[id][mask] ~= nil then return nil end
+                result.phaseVisibility[id][mask] = fields[4] == "1"
+            elseif kind == "P" and result.caps.RESETS and fields[2] == "QUEST_RESETS"
                 and #fields == 4 and not result.resets then
                 local weekly, monthly = Integer(fields[3], 4294967295), Integer(fields[4], 4294967295)
                 if not weekly or weekly == 0 or not monthly or monthly == 0 then return nil end
@@ -330,6 +398,22 @@ local function ParseRows(batch)
         end
     end
     if count ~= batch.rowCount then return nil end
+    if result.caps.PHASES then
+        local context = result.phaseContext
+        if not context then return nil end
+        if PhaseRegion(context.map, context.area, context.zone) then
+            local visibility = result.phaseVisibility[context.area]
+            if not visibility then return nil end
+            for _, mask in ipairs(phaseMasks) do
+                if visibility[mask] == nil then return nil end
+            end
+            for area in pairs(result.phaseVisibility) do
+                if area ~= context.area then return nil end
+            end
+        elseif next(result.phaseVisibility) then
+            return nil
+        end
+    end
     if result.caps.RESETS and (not result.resets or not result.serverTime) then return nil end
     if result.caps.SCOURGE and result.scourge == nil then return nil end
     if result.caps.KALUAK and not result.kaluakReported then return nil end
@@ -434,6 +518,7 @@ local function HandleMessage(message, distribution, sender)
             snapshot, lastSequence, lastReplyAt = result, sequence, now
             snapshot.receivedAt = now
             iccContextPending = false
+            phaseContextPending = false
             snapshotToken, snapshotSequence = watchToken, sequence
             snapshotCount = snapshotCount + 1
             pendingUntil, pendingRenewal, forceSnapshot = nil, false, false
@@ -518,6 +603,7 @@ function QuestieServer:PrintStatus(poolId)
     self:PrintWintergraspStatus(false)
     if self:HasCapability("ICC") then self:PrintICCStatus(false) end
     if self:HasCapability("RESETS") then self:PrintResetStatus() end
+    if self:HasCapability("PHASES") then self:PrintPhaseStatus() end
 end
 
 function QuestieServer:PrintResetStatus()
@@ -531,6 +617,29 @@ function QuestieServer:PrintResetStatus()
         Questie:Print("[Server bridge] " .. period:gsub("^%l", string.upper)
             .. " quest reset: " .. resets[period] .. " (Unix seconds); in " .. remaining .. "s")
     end
+end
+
+function QuestieServer:PrintPhaseStatus()
+    local context = self:GetPhaseContext()
+    if not context then
+        Questie:Print("[Server bridge] Phase visibility unavailable; using Questie's usual locations.")
+        return
+    end
+    Questie:Print("[Server bridge] Phase context: map " .. context.map .. "; zone " .. context.zone
+        .. "; area " .. context.area .. "; mask " .. context.mask)
+    local region = self:GetPhaseRegion(context)
+    if not region then
+        Questie:Print("[Server bridge] Outside supported story regions; using Questie's usual locations.")
+        return
+    end
+    Questie:Print("[Server bridge] Story-phase locations: " .. region .. "; current subarea only.")
+    local visible, hidden = {}, {}
+    for _, mask in ipairs(phaseMasks) do
+        local list = self:GetSpawnPhaseVisibility(context.map, context.area, mask) and visible or hidden
+        list[#list + 1] = tostring(mask)
+    end
+    Questie:Print("[Server bridge] Visible spawn masks: " .. table.concat(visible, ", "))
+    Questie:Print("[Server bridge] Hidden spawn masks: " .. table.concat(hidden, ", "))
 end
 
 function QuestieServer:PrintICCStatus(detailed)
@@ -593,15 +702,22 @@ function QuestieServer:Initialize()
     frame:RegisterEvent("CHAT_MSG_ADDON")
     frame:RegisterEvent("PLAYER_ENTERING_WORLD")
     frame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+    frame:RegisterEvent("ZONE_CHANGED")
+    frame:RegisterEvent("ZONE_CHANGED_INDOORS")
     frame:SetScript("OnEvent", function(_, event, prefix, message, distribution, sender)
         if event == "CHAT_MSG_ADDON" and prefix == PREFIX then
             HandleMessage(message, distribution, sender)
-        elseif event == "PLAYER_ENTERING_WORLD" or event == "ZONE_CHANGED_NEW_AREA" then
+        elseif event == "PLAYER_ENTERING_WORLD" or event == "ZONE_CHANGED_NEW_AREA"
+            or event == "ZONE_CHANGED" or event == "ZONE_CHANGED_INDOORS" then
             local _, instanceType = IsInInstance()
-            if snapshot and snapshot.caps.ICC and (snapshot.icc.inside or instanceType == "raid") then
-                -- Clear the old lockout's gates immediately. A new WATCH/token prevents
-                -- an in-flight reply or heartbeat from restoring the previous raid context.
-                iccContextPending = true
+            local refreshICC = (event == "PLAYER_ENTERING_WORLD" or event == "ZONE_CHANGED_NEW_AREA")
+                and snapshot and snapshot.caps.ICC and (snapshot.icc.inside or instanceType == "raid")
+            local refreshPhases = snapshot and snapshot.caps.PHASES
+            if refreshICC or refreshPhases then
+                -- Clear old local context immediately. A new WATCH/token prevents
+                -- an in-flight reply or heartbeat from restoring the previous area/raid.
+                iccContextPending = refreshICC or iccContextPending
+                phaseContextPending = refreshPhases or phaseContextPending
                 pendingUntil, pendingRenewal, assembly, watchToken = nil, false, nil, nil
                 forceSnapshot, nextRequestAt = true, 0
                 Integrations:Refresh()
@@ -643,9 +759,10 @@ function QuestieServer:Initialize()
         if command:match("^%s*wintergrasp%s*$") then self:PrintWintergraspStatus(true); return end
         if command:match("^%s*icc%s*$") then self:PrintICCStatus(true); return end
         if command:match("^%s*resets%s*$") then self:PrintResetStatus(); return end
+        if command:match("^%s*phases%s*$") then self:PrintPhaseStatus(); return end
         local id = Integer(command:match("^%s*pool%s+(%d+)%s*$"), 4294967295)
         if id and id > 0 then self:PrintStatus(id); return end
-        Questie:Print("[Server bridge] Usage: /qserver, /qserver pool <pool ID>, /qserver wintergrasp, /qserver icc, or /qserver resets")
+        Questie:Print("[Server bridge] Usage: /qserver, /qserver pool <pool ID>, /qserver wintergrasp, /qserver icc, /qserver resets, or /qserver phases")
     end
     Request()
 end

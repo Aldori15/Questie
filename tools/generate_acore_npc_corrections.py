@@ -6,6 +6,7 @@ import re
 import struct
 import sys
 from collections import defaultdict
+from functools import lru_cache
 from pathlib import Path
 
 
@@ -285,6 +286,19 @@ def load_map_difficulty_masks(dbc_path):
     return dict(masks)
 
 
+@lru_cache(maxsize=1)
+def load_server_phase_profiles():
+    """Read the client's supported regions so NPC and object generation agree."""
+    text = strip_lua_comments((TOOLS_DIR.parent / "Modules/Network/QuestieServer.lua").read_text(encoding="utf-8"))
+    tables = []
+    for name in ("phaseZones", "phaseAreas", "phaseMasks"):
+        match = re.search(rf"local\s+{name}\s*=\s*\{{", text)
+        if not match:
+            raise ValueError(f"QuestieServer.lua: missing {name} profile table")
+        tables.append(LuaParser(extract_balanced_braces(text, match.end() - 1)).parse())
+    return tables
+
+
 def add_acore_spawn_visibility(point, row, map_difficulty_masks):
     map_id = int(row.get("map") or 0)
     spawn_mask = int(row.get("spawnMask") or row.get("spawnmask") or 1)
@@ -293,6 +307,15 @@ def add_acore_spawn_visibility(point, row, map_difficulty_masks):
     # World and transport maps have no selectable instance difficulty. For an
     # instance, only store metadata when this row is restricted compared with
     # the difficulties supported by the server's MapDifficulty.dbc.
+    # Only audited phase regions are enabled. SQL exports must retain areaId;
+    # an unknown area must not be guessed from a coarse zone rectangle.
+    area_id = int(row.get("areaId") or row.get("areaid") or 0)
+    zone_id = int(row.get("zoneId") or row.get("zoneid") or 0)
+    phase_zones, phase_areas, _ = load_server_phase_profiles()
+    if area_id and (area_id in phase_areas.get(map_id, {}) or zone_id in phase_zones.get(map_id, {})):
+        phase_mask = int(row.get("phaseMask", row.get("phasemask", 1)))
+        return [point[0], point[1], point[2] if len(point) >= 3 else 0,
+                spawn_mask, map_id, phase_mask, area_id]
     if supported_mask == 1 or spawn_mask == supported_mask:
         return point
 
@@ -1525,10 +1548,16 @@ def unique_coordinate_points(points, map_difficulty_masks=None):
     map_difficulty_masks = map_difficulty_masks or {}
     unrestricted = set()
     restricted = defaultdict(int)
+    phased = defaultdict(int)
 
     for point in points:
         phase = int(point[2]) if len(point) >= 3 and point[2] else 0
         coordinate = (round(float(point[0]), 2), round(float(point[1]), 2), phase)
+        if len(point) >= 7:
+            # Combine difficulty alternatives only when all phase conditions match.
+            # Combining masks across phases would introduce nonexistent spawns.
+            phased[(*coordinate, int(point[4]), int(point[5]), int(point[6]))] |= int(point[3])
+            continue
         if len(point) < 5:
             unrestricted.add(coordinate)
             continue
@@ -1553,6 +1582,8 @@ def unique_coordinate_points(points, map_difficulty_masks=None):
         for map_id, spawn_mask in map_masks:
             result.append([x, y, phase, spawn_mask, map_id])
 
+    for (x, y, phase, map_id, phase_mask, region), spawn_mask in phased.items():
+        result.append([x, y, phase, spawn_mask, map_id, phase_mask, region])
     return result
 
 
@@ -1604,12 +1635,13 @@ def normalize_coordinate_table(value, waypoint=False, include_phases=False):
                 if not isinstance(point, list) or len(point) < 2:
                     continue
                 normalized_point = (round(float(point[0]), 2), round(float(point[1]), 2))
-                # SQL phaseMask is not a Questie phase ID. Compare logical phases
-                # only when a scripted source explicitly supplies those conditions.
+                # SQL phaseMask is separate from Questie's logical phase IDs.
                 if include_phases:
                     normalized_point += (int(point[2]) if len(point) >= 3 and point[2] else 0,)
                 if len(point) >= 5:
                     normalized_point += (int(point[3]), int(point[4]))
+                if len(point) >= 7:
+                    normalized_point += (int(point[5]), int(point[6]))
                 normalized_points.append(normalized_point)
             zones.append((int(zone_id), tuple(sorted(normalized_points))))
     return tuple(sorted(zones))

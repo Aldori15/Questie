@@ -5,6 +5,21 @@ local Event = QuestieLoader:ImportModule("QuestieEvent")
 local Blacklist = QuestieLoader:ImportModule("QuestieQuestBlacklist")
 local previousQuestStateKey = "unknown"
 local previousSpawnStateKey = "unknown"
+local previousPhaseStateKey = "unknown"
+
+local function RefreshPhaseSpawns()
+    local key = Server:GetPhaseVisibilityKey()
+    if key == previousPhaseStateKey then return false end
+    previousPhaseStateKey = key
+    if Questie.started then
+        QuestieLoader:ImportModule("AvailableQuests").InvalidateSpawnVisibility()
+        local map = QuestieLoader:ImportModule("QuestieMap")
+        map:RefreshDynamicStarterLocations()
+        map:RefreshDynamicManualNotes()
+        QuestieLoader:ImportModule("QuestieQuest"):RefreshSpawnVisibility()
+    end
+    return true
+end
 
 local function RefreshWintergraspSpawns()
     local state = Server:GetWintergraspState()
@@ -149,6 +164,7 @@ function Integrations:Refresh()
     changed = Event.SetServerDarkmoonLocations(locations) or changed
     changed = RefreshQuestStates() or changed
     changed = RefreshWintergraspSpawns() or changed
+    changed = RefreshPhaseSpawns() or changed
     if changed then Event.RefreshAvailableQuests() end
 end
 
