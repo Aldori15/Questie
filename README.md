@@ -15,7 +15,7 @@ A fork of the WoW Classic Questie addon aiming to provide compatibility with Wra
 ## Optional AzerothCore Server Bridge
 
 Server owners can install [mod-questie-bridge](https://github.com/Aldori15/mod-questie-bridge)
-to let Questie follow live AzerothCore event activity and world progress. It supports:
+to let Questie's quest availability, reset timing, and locations follow live AzerothCore state. It supports:
 
 - Holidays started or stopped by GM commands or server scripts, including simultaneous Darkmoon Faire locations.
 - Zalazane's Fall quests appear while the server event is active.
@@ -40,7 +40,9 @@ Use `/qserver resets` to check the server's next weekly and monthly quest resets
 Use `/qserver phases` to check story-phase location filtering. It applies within your
 current subarea; locations elsewhere keep their usual behavior.
 Use `/qserver patrol` or `/qserver patrol <NPC ID>` to check live questgiver positions.
-Remote or unavailable locations keep their usual marker and patrol line.
+Patrol pins update once per second without smoothing, using loaded NPCs visible to your character
+in the current zone. Opening another zone's map does not request remote NPC positions.
+Missing or expired positions restore the usual marker and patrol line.
 
 Your visibility options, character requirements, and manually hidden quests still apply.
 Enable **Available Scourge Invasion Quests** or **Available Sun's Reach Quests** to show those quest sets.
@@ -48,6 +50,7 @@ Accepted quests remain tracked when server state changes.
 
 The bridge is optional. Without it, or when its information becomes unavailable, Questie keeps its existing
 calendar detection, manual settings, and daily quest discovery.
+Install matching addon and module builds if `/qserver` reports a protocol mismatch.
 
 ## Questie Information
 - [Frequently Asked Questions](https://github.com/Questie/Questie/wiki/FAQ)
