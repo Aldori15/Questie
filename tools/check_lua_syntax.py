@@ -25,6 +25,17 @@ def collect_lua_files(path, visited, lua_files):
             collect_lua_files(path.parent / reference.replace("\\", "/"), visited, lua_files)
 
 
+def check_lua_file(path, luac):
+    # Some bundled libraries have a UTF-8 BOM that WoW accepts but stock
+    # Lua 5.1's file loader does not. Strip only that prefix in memory;
+    # preserve the source bytes and line numbers, and never rewrite the file.
+    source = path.read_bytes().removeprefix(b"\xef\xbb\xbf")
+    result = subprocess.run([luac, "-p", "-"], input=source, capture_output=True)
+    if result.returncode:
+        detail = result.stderr.decode("utf-8", errors="replace").strip()
+        raise SystemExit(f"{path}: {detail or 'Lua syntax check failed'}")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--luac", default="luac5.1", help="Lua compiler executable (syntax checks only)")
@@ -35,7 +46,7 @@ def main():
         if line and not line.startswith("#"):
             collect_lua_files(ROOT / line.replace("\\", "/"), visited, lua_files)
     for path in sorted(lua_files):
-        subprocess.run([args.luac, "-p", str(path)], check=True)
+        check_lua_file(path, args.luac)
     print(f"Lua syntax: {len(lua_files)} addon files passed")
 
 

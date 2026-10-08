@@ -7,9 +7,7 @@ __pycache__/
 !generate_acore_item_corrections.py
 !generate_acore_npc_corrections.py
 !generate_acore_object_corrections.py
-!test_acore_correction_regressions.py
+!test_*.py
 !audit_acore_trigger_end_tooltip_targets.py
-!test_patrol_spawn_metadata.py
-!test_npc_correction_batches.py
 !check_lua_syntax.py
 !validate_wdm_map_data.py

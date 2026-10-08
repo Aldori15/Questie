@@ -25,6 +25,7 @@ jobs:
       PYTHONNOUSERSITE: "1"
       PYTHONDONTWRITEBYTECODE: "1"
       QUESTIE_TEST_LUA: lua5.2
+      QUESTIE_TEST_LUAC: luac5.1
       QUESTIE_BRIDGE_SOURCE: ${{ github.workspace }}/source/modules/mod-questie-bridge
     steps:
       - name: Check out addon

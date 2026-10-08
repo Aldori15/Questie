@@ -60,6 +60,11 @@ for generator tests. No WoW client, running server, database, or private exports
 These checks cover bridge messages and fallback, patrol pins, phase metadata, quest completion,
 and correction generation. In-game testing still verifies actual server and UI behavior.
 
+All committed `tools/test_*.lua` and `tools/test_*.py` files are discovered automatically;
+new suites following those names need no workflow edit. Python suites use `unittest`.
+The syntax check follows the TOC and XML includes, ignoring a leading UTF-8 byte-order
+mark in memory for bundled libraries without changing their files. It still rejects invalid Lua.
+
 The workflow checks protocol and phase profiles against a pinned compatible revision of
 `mod-questie-bridge`. Update that revision in `.github/workflows/regressions.yml` when changing
 the shared contracts. A missing configured bridge checkout fails the check rather than skipping it.
@@ -69,11 +74,12 @@ To run the same checks locally from the addon directory, with Lua 5.1, Lua 5.2, 
 ```sh
 python -B tools/check_lua_syntax.py --luac luac5.1
 for test in tools/test_*.lua; do lua5.2 "$test" || exit; done
-QUESTIE_TEST_LUA=lua5.2 python -B -m unittest discover -s tools -p 'test_*.py' -v
+QUESTIE_TEST_LUA=lua5.2 QUESTIE_TEST_LUAC=luac5.1 python -B -m unittest discover -s tools -p 'test_*.py' -v
 ```
 
 On Windows, run each `tools/test_*.lua` with your Lua 5.2 interpreter and set
 `QUESTIE_TEST_LUA` to its executable path before running the Python command.
+Set `QUESTIE_TEST_LUAC` to a Lua compiler path to include the syntax-checker integration tests.
 Set `QUESTIE_BRIDGE_SOURCE` to a compatible module checkout to include the shared-contract check;
 without it, local tests look beside the addon and skip that check if no module source is found.
 
