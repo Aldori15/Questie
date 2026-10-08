@@ -1260,6 +1260,24 @@ def build_acore_npcs(
         include_modules,
     )
     ender_rows, skipped_ender = load_row_table(source_root, "creature_questender", ("id", "quest"), include_modules)
+    starts_by_entry = defaultdict(set)
+    for row in starter_rows + event_starter_rows:
+        entry = int(row.get("id") or 0)
+        quest = int(row.get("quest") or 0)
+        if entry and quest:
+            starts_by_entry[entry].add(quest)
+
+    ends_by_entry = defaultdict(set)
+    for row in ender_rows:
+        entry = int(row.get("id") or 0)
+        quest = int(row.get("quest") or 0)
+        if entry and quest:
+            ends_by_entry[entry].add(quest)
+
+    # The bridge only reports entries with quest relations. Keep identity metadata
+    # for those entries, including event questgivers, rather than every creature.
+    # Do not restrict by DB movement type: scripts can move an otherwise idle NPC.
+    questgiver_entries = starts_by_entry.keys() | ends_by_entry.keys()
     faction_template_rows, skipped_faction_template = load_keyed_table(source_root, "factiontemplate_dbc", "ID", include_modules)
     creature_addon_rows, skipped_creature_addon = load_keyed_table(source_root, "creature_addon", "guid", include_modules)
     waypoint_rows, skipped_waypoint = load_row_table(source_root, "waypoint_data", ("id", "point"), include_modules)
@@ -1312,9 +1330,10 @@ def build_acore_npcs(
             creatures_by_entry[entry].append(row)
             seen_spawn_entries.add(entry)
             if zone_id and point:
-                spawns_by_entry[entry][zone_id].append(
-                    add_acore_spawn_identity(add_acore_spawn_visibility(point, row, map_difficulty_masks), row)
-                )
+                visible_point = add_acore_spawn_visibility(point, row, map_difficulty_masks)
+                if entry in questgiver_entries:
+                    visible_point = add_acore_spawn_identity(visible_point, row)
+                spawns_by_entry[entry][zone_id].append(visible_point)
                 spawn_zone_counts[entry][zone_id] += 1
             else:
                 unmapped_spawn_entries.add(entry)
@@ -1326,20 +1345,6 @@ def build_acore_npcs(
         seen_spawn_entries.add(entry)
         for zone, points in zones.items():
             spawn_zone_counts[entry][zone] += len(points)
-
-    starts_by_entry = defaultdict(set)
-    for row in starter_rows + event_starter_rows:
-        entry = int(row.get("id") or 0)
-        quest = int(row.get("quest") or 0)
-        if entry and quest:
-            starts_by_entry[entry].add(quest)
-
-    ends_by_entry = defaultdict(set)
-    for row in ender_rows:
-        entry = int(row.get("id") or 0)
-        quest = int(row.get("quest") or 0)
-        if entry and quest:
-            ends_by_entry[entry].add(quest)
 
     waypoint_by_path = defaultdict(list)
     for row in waypoint_rows:
@@ -1458,7 +1463,7 @@ def build_acore_npcs(
             # Some captains also have ICC encounter spawns. Only annotate the
             # outdoor Icecrown fallback for its uniquely identified gunship copy.
             fallback = (questie_npcs or {}).get(int(npc_id), {}).get("spawns")
-            if len(transport_spawns) == 1 and fallback and fallback.get(210):
+            if int(npc_id) in questgiver_entries and len(transport_spawns) == 1 and fallback and fallback.get(210):
                 npc["spawns"] = annotate_gunship_fallback(fallback, transport_spawns[0])
         elif spawns_by_entry.get(int(npc_id)):
             npc["spawns"] = sort_coordinate_table(
@@ -1854,7 +1859,7 @@ def format_corrections_module(corrections, zone_names):
         "",
         "-- Generated from tools/generate_acore_npc_corrections.py.",
         "-- Includes Wintergrasp's scripted fortress and outside-camp coordinates.",
-        "-- NPC spawn IDs support exact live patrol matching through the optional server bridge.",
+        "-- Only quest starters and finishers carry spawn IDs for optional live patrol matching.",
         "-- Bounded correction batches keep constructor allocations small on the 3.3.5 client.",
         "-- Regenerate this file when AzerothCore NPC data changes.",
         "",
