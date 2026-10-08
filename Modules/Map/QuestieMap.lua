@@ -707,7 +707,7 @@ function QuestieMap:ShowNPC(npcID, icon, scale, title, body, disableShiftToRemov
                         end
                     -- world spawn
                     else
-                        manualIcons[zone] = QuestieMap:DrawManualIcon(data, zone, coords[1], coords[2], typ)
+                        manualIcons[zone] = QuestieMap:DrawManualIcon(data, zone, coords[1], coords[2], typ, coords)
                     end
                 end
             end
@@ -799,7 +799,7 @@ function QuestieMap:ShowObject(objectID, icon, scale, title, body, disableShiftT
                         end
                         -- world spawn
                     else
-                        QuestieMap:DrawManualIcon(data, zone, coords[1], coords[2], typ)
+                        QuestieMap:DrawManualIcon(data, zone, coords[1], coords[2], typ, coords)
                     end
                 end
             end
@@ -827,7 +827,7 @@ end
 ---@param x number @The X coordinate in 0-100 format
 ---@param y number @The Y coordinate in 0-100 format
 ---@param typ string? @The manual icon category
-function QuestieMap:DrawManualIcon(data, areaID, x, y, typ)
+function QuestieMap:DrawManualIcon(data, areaID, x, y, typ, spawn)
     if type(data) ~= "table" then
         error("Questie" .. ": AddWorldMapIconMap: must have some data")
     end
@@ -846,6 +846,9 @@ function QuestieMap:DrawManualIcon(data, areaID, x, y, typ)
         Questie.Debug(Questie.DEBUG_CRITICAL, "[QuestieMap:DrawManualIcon] No UiMapID for areaId:", areaID, tostring(data.Name))
         return nil, nil
     end
+    local originalX, originalY = x, y
+    local patrol = QuestieLoader:ImportModule("QuestieServerPatrol")
+    if patrol.GetDrawCoordinates then x, y = patrol:GetDrawCoordinates(data, areaID, uiMapId, x, y, spawn) end
     -- set the icon
     local texture = data.Icon or "Interface\\WorldMap\\WorldMapPartyIcon"
     -- Save new zone ID format, used in QuestieFramePool
@@ -934,6 +937,10 @@ function QuestieMap:DrawManualIcon(data, areaID, x, y, typ)
     QuestieMap.utils.RescaleIcon(icon)
 
     -- return the frames in case they need to be stored seperately from QuestieMap.manualFrames
+    if patrol.Register then
+        patrol:Register(icon, spawn, originalX, originalY)
+        patrol:Register(iconMinimap, spawn, originalX, originalY)
+    end
     return icon, iconMinimap;
 end
 
@@ -1039,6 +1046,9 @@ function QuestieMap:DrawWorldIcon(data, areaID, x, y, spawn, showFlag)
         error("No UiMapID or fitting uiMapId for areaId : " .. areaID .. " - " .. tostring(data.Name))
     end
 
+    local originalX, originalY = x, y
+    local patrol = QuestieLoader:ImportModule("QuestieServerPatrol")
+    if patrol.GetDrawCoordinates then x, y = patrol:GetDrawCoordinates(data, areaID, uiMapId, x, y, spawn) end
     local floatOnEdge = true
 
     ---@type IconFrame
@@ -1093,6 +1103,10 @@ function QuestieMap:DrawWorldIcon(data, areaID, x, y, spawn, showFlag)
         iconMinimap:FakeHide()
     end
 
+    if patrol.Register then
+        patrol:Register(iconMap, spawn, originalX, originalY)
+        patrol:Register(iconMinimap, spawn, originalX, originalY)
+    end
     return iconMap, iconMinimap;
 end
 

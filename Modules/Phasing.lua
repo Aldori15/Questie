@@ -35,7 +35,7 @@ end
 function Phasing.HasServerPhaseSpawns(spawns)
     for _, points in pairs(spawns or {}) do
         for _, point in ipairs(points) do
-            if point[6] and point[7] then return true end
+            if point[6] and point[6] > 0 and point[7] and point[7] > 0 then return true end
         end
     end
     return false
@@ -101,6 +101,7 @@ end
 ---A spawn tuple may contain Questie's phase ID at index 3 and generated
 ---AzerothCore spawnMask/map metadata at indices 4 and 5.
 ---Audited story regions may also carry SQL phaseMask/region at indices 6 and 7.
+---Index 8 identifies a server spawn; zero placeholders impose no phase restriction.
 ---Spawn masks are evaluated only while inside the matching instance. Outside,
 ---all difficulty variants remain visible for world-map planning.
 ---@param spawn number[]|nil
@@ -114,12 +115,13 @@ function Phasing.IsSpawnDataVisible(spawn)
         return false
     end
 
-    if spawn[6] and spawn[7] and Server:GetSpawnPhaseVisibility(spawn[5], spawn[7], spawn[6]) == false then
+    if spawn[6] and spawn[6] > 0 and spawn[7] and spawn[7] > 0
+        and Server:GetSpawnPhaseVisibility(spawn[5], spawn[7], spawn[6]) == false then
         return false
     end
 
     local spawnMask = spawn[4]
-    if not spawnMask then
+    if not spawnMask or spawnMask == 0 then
         return true
     end
 

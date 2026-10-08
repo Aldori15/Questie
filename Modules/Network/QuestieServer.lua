@@ -2,7 +2,7 @@
 local QuestieServer = QuestieLoader:CreateModule("QuestieServer")
 local Integrations = QuestieLoader:ImportModule("QuestieServerIntegrations")
 
-local PREFIX, PROTOCOL_VERSION = "QSTSVR", "10"
+local PREFIX, PROTOCOL_VERSION = "QSTSVR", "12"
 
 -- Shared with the correction generators. Decisions apply to the current area,
 -- never to every location in these zones. Keep the module's profiles in sync.
@@ -29,6 +29,9 @@ local function PhaseRegion(map, area, zone)
     return (phaseAreas[map] and phaseAreas[map][area]) or (phaseZones[map] and phaseZones[map][zone])
 end
 local frame, snapshot, assembly, watchToken, pendingUntil, lastReplyAt
+local patrol, patrolAssembly
+local patrolLastToken, patrolLastSequence
+local Patrol = QuestieLoader:ImportModule("QuestieServerPatrol")
 local serverInfo, infoReceived
 local snapshotToken, snapshotSequence, pendingRenewal
 local forceSnapshot, subscriptionsDirty = false, false
@@ -40,7 +43,7 @@ local requestSequence, lastSequence, nextRequestAt = 0, 0, 0
 local nextPreferenceCheck, previousPreferences = 0, nil
 local subscriptions = {}
 local CAPABILITIES = {EVENTS = true, VALUES = true, SCOURGE = true, QUELDANAS = true,
-    KALUAK = true, HEARTBEAT = true, QUESTPOOLS = true, WINTERGRASP = true, ICC = true, RESETS = true, PHASES = true}
+    KALUAK = true, HEARTBEAT = true, QUESTPOOLS = true, WINTERGRASP = true, ICC = true, RESETS = true, PHASES = true, PATROLS = true}
 
 local function Split(value, separator)
     local fields, first = {}, 1
@@ -68,6 +71,77 @@ end
 
 function QuestieServer:HasCapability(capability)
     return Fresh() and snapshot.caps[capability] == true or false
+end
+
+-- Accepted patrol samples survive an area-only handshake, but cannot renew
+-- their own five-second lifetime or the main state snapshot.
+function QuestieServer:GetPatrolPositions()
+    if not self:HasCapability("PATROLS") or not patrol or GetTime() - patrol.receivedAt >= 5 then return nil end
+    local context = snapshot.phaseContext
+    if context and (context.map ~= patrol.map or context.zone ~= patrol.zone) then return nil end
+    return patrol
+end
+
+local function Coordinate(value)
+    if not value or #value > 18 or not value:match("^%-?%d+%.%d+$") then return nil end
+    local number = tonumber(value)
+    if not number or math.abs(number) > 20000 then return nil end
+    return number
+end
+
+local function HandlePatrol(fields)
+    if not QuestieServer:HasCapability("PATROLS") or assembly or forceSnapshot
+        or snapshotToken ~= watchToken then return end
+    local anchor = Integer(fields[4], 9007199254740991)
+    local sequence = Integer(fields[5], 9007199254740991)
+    if anchor ~= snapshotSequence or not sequence or sequence < 1
+        or (patrolLastToken == watchToken and sequence <= patrolLastSequence) then return end
+    local now = GetTime()
+    if fields[1] == "MBEGIN" and #fields == 11 then
+        if patrolAssembly and patrolAssembly.token == watchToken and sequence <= patrolAssembly.sequence then return end
+        local map, instance, zone = Integer(fields[6], 65535), Integer(fields[7], 4294967295), Integer(fields[8], 65535)
+        local rows, parts = Integer(fields[9], 64), Integer(fields[10], 64)
+        local status = fields[11]
+        if not map or not instance or not zone or not rows or not parts or parts > rows
+            or (rows == 0) ~= (parts == 0) or (status ~= "READY" and status ~= "OVERFLOW")
+            or (status == "OVERFLOW" and rows ~= 0) then return end
+        patrolAssembly = {token = watchToken, anchor = anchor, sequence = sequence, map = map, instance = instance,
+            zone = zone, rowCount = rows, partCount = parts, parts = {}, status = status, untilTime = now + 2}
+    elseif patrolAssembly and patrolAssembly.token == watchToken and patrolAssembly.anchor == anchor
+        and patrolAssembly.sequence == sequence and now <= patrolAssembly.untilTime then
+        if fields[1] == "MPART" and #fields == 7 then
+            local index = Integer(fields[6], patrolAssembly.partCount)
+            if not index or index < 1 or patrolAssembly.parts[index] or fields[7] == "" or #fields[7] > 150 then
+                patrolAssembly = nil; return
+            end
+            patrolAssembly.parts[index] = fields[7]
+        elseif fields[1] == "MEND" and #fields == 5 then
+            local batch = patrolAssembly
+            patrolAssembly = nil
+            local result = {map = batch.map, instance = batch.instance, zone = batch.zone, status = batch.status,
+                positions = {}, byEntry = {}, count = 0, receivedAt = now}
+            for index = 1, batch.partCount do
+                if not batch.parts[index] then return end
+                for _, row in ipairs(Split(batch.parts[index], ";")) do
+                    local values = Split(row, ":")
+                    if #values ~= 4 then return end
+                    local entry, spawn = Integer(values[1], 4294967295), Integer(values[2], 4294967295)
+                    local nativeX, nativeY = Coordinate(values[3]), Coordinate(values[4])
+                    if not entry or entry == 0 or not spawn or spawn == 0 or result.positions[spawn]
+                        or not nativeX or not nativeY then return end
+                    -- AC's native axes are reversed relative to HBD world coordinates.
+                    local position = {entry = entry, spawn = spawn, worldX = nativeY, worldY = nativeX}
+                    result.positions[spawn] = position
+                    result.byEntry[entry] = result.byEntry[entry] or {}
+                    table.insert(result.byEntry[entry], position)
+                    result.count = result.count + 1
+                    if result.count > batch.rowCount then return end
+                end
+            end
+            if result.count ~= batch.rowCount then return end
+            patrolLastToken, patrolLastSequence, patrol = watchToken, sequence, result
+        end
+    end
 end
 
 ---@return table|nil Reset deadlines and an advancing server clock, in Unix seconds.
@@ -472,6 +546,7 @@ local function HandleMessage(message, distribution, sender)
     local fields = Split(message, "~")
     if fields[1] == "INFO" then HandleInfo(fields); return end
     if fields[2] ~= PROTOCOL_VERSION or fields[3] ~= watchToken then return end
+    if fields[1] == "MBEGIN" or fields[1] == "MPART" or fields[1] == "MEND" then HandlePatrol(fields); return end
     local sequence = Integer(fields[4], 9007199254740991)
     if not sequence or sequence <= lastSequence then return end
     local now = GetTime()
@@ -604,6 +679,31 @@ function QuestieServer:PrintStatus(poolId)
     if self:HasCapability("ICC") then self:PrintICCStatus(false) end
     if self:HasCapability("RESETS") then self:PrintResetStatus() end
     if self:HasCapability("PHASES") then self:PrintPhaseStatus() end
+    if self:HasCapability("PATROLS") then self:PrintPatrolStatus() end
+end
+
+function QuestieServer:PrintPatrolStatus(entry)
+    local state = self:GetPatrolPositions()
+    if not state then
+        Questie:Print("[Server bridge] Live patrol positions unavailable; using the usual locations and patrol lines.")
+        return
+    end
+    Questie:Print(string.format("[Server bridge] Patrols: map %d; zone %d; %d live questgiver spawns; sample %.1fs old.",
+        state.map, state.zone, state.count, GetTime() - state.receivedAt))
+    if state.status == "OVERFLOW" then
+        Questie:Print("[Server bridge] Patrol limit exceeded; using the usual locations.")
+    end
+    if entry then
+        local positions = state.byEntry[entry] or {}
+        if #positions == 0 then
+            Questie:Print("[Server bridge] NPC " .. entry .. ": no loaded, visible moving questgiver in your current zone.")
+        else
+            for _, position in ipairs(positions) do
+                Questie:Print(string.format("[Server bridge] NPC %d; spawn %d; world X %.3f, Y %.3f.",
+                    entry, position.spawn, position.worldY, position.worldX))
+            end
+        end
+    end
 end
 
 function QuestieServer:PrintResetStatus()
@@ -712,8 +812,13 @@ function QuestieServer:Initialize()
             local _, instanceType = IsInInstance()
             local refreshICC = (event == "PLAYER_ENTERING_WORLD" or event == "ZONE_CHANGED_NEW_AREA")
                 and snapshot and snapshot.caps.ICC and (snapshot.icc.inside or instanceType == "raid")
+            local majorTransition = event == "PLAYER_ENTERING_WORLD" or event == "ZONE_CHANGED_NEW_AREA"
+            local phase = snapshot and snapshot.phaseContext
             local refreshPhases = snapshot and snapshot.caps.PHASES
-            if refreshICC or refreshPhases then
+                and (majorTransition or (phase and PhaseRegion(phase.map, phase.area, phase.zone)))
+            local refreshPatrol = majorTransition and snapshot and snapshot.caps.PATROLS
+            if majorTransition then patrol, patrolAssembly = nil, nil end
+            if refreshICC or refreshPhases or refreshPatrol then
                 -- Clear old local context immediately. A new WATCH/token prevents
                 -- an in-flight reply or heartbeat from restoring the previous area/raid.
                 iccContextPending = refreshICC or iccContextPending
@@ -736,6 +841,7 @@ function QuestieServer:Initialize()
             pendingRenewal = false
         end
         if assembly and now > assembly.untilTime then assembly = nil end
+        if patrolAssembly and now > patrolAssembly.untilTime then patrolAssembly = nil end
         if snapshot and not Fresh() then
             snapshot, lastReplyAt, snapshotToken, snapshotSequence = nil, nil, nil, nil
             pendingUntil, pendingRenewal, assembly = nil, false, nil
@@ -750,6 +856,7 @@ function QuestieServer:Initialize()
             if previousPreferences and previousPreferences ~= preferences then Integrations:Refresh() end
             previousPreferences = preferences
         end
+        if Patrol.Update then Patrol:Update(now) end
         Request()
     end)
     SLASH_QUESTIESERVER1 = "/qserver"
@@ -760,9 +867,12 @@ function QuestieServer:Initialize()
         if command:match("^%s*icc%s*$") then self:PrintICCStatus(true); return end
         if command:match("^%s*resets%s*$") then self:PrintResetStatus(); return end
         if command:match("^%s*phases%s*$") then self:PrintPhaseStatus(); return end
+        if command:match("^%s*patrol%s*$") then self:PrintPatrolStatus(); return end
+        local patrolEntry = Integer(command:match("^%s*patrol%s+(%d+)%s*$"), 4294967295)
+        if patrolEntry and patrolEntry > 0 then self:PrintPatrolStatus(patrolEntry); return end
         local id = Integer(command:match("^%s*pool%s+(%d+)%s*$"), 4294967295)
         if id and id > 0 then self:PrintStatus(id); return end
-        Questie:Print("[Server bridge] Usage: /qserver, /qserver pool <pool ID>, /qserver wintergrasp, /qserver icc, /qserver resets, or /qserver phases")
+        Questie:Print("[Server bridge] Usage: /qserver, /qserver pool <pool ID>, /qserver wintergrasp, /qserver icc, /qserver resets, /qserver phases, or /qserver patrol [NPC ID]")
     end
     Request()
 end

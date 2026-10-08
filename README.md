@@ -25,6 +25,8 @@ to let Questie follow live AzerothCore event activity and world progress. It sup
 - ICC weekly quests follow the selected family, raid size, and unlocks in your current raid instance.
 - Weekly and monthly quest completion history follows the server's reset schedule.
 - Wintergrasp quests and questgiver locations as faction control changes.
+- Questgiver markers follow loaded patrols and moving transport passengers in your current zone,
+  including Orgrim's Hammer and the Skybreaker.
 - NPC and object quest locations match your story phase in supported areas, including
   Icecrown, Storm Peaks, the death knight starting area, and other Wrath story regions.
 - **World Progress** in related Journey quest details and hover tooltips, including Sun's Reach construction
@@ -37,6 +39,8 @@ or `/qserver wintergrasp` for more detail. Inside Icecrown Citadel, use `/qserve
 Use `/qserver resets` to check the server's next weekly and monthly quest resets.
 Use `/qserver phases` to check story-phase location filtering. It applies within your
 current subarea; locations elsewhere keep their usual behavior.
+Use `/qserver patrol` or `/qserver patrol <NPC ID>` to check live questgiver positions.
+Remote or unavailable locations keep their usual marker and patrol line.
 
 Your visibility options, character requirements, and manually hidden quests still apply.
 Enable **Available Scourge Invasion Quests** or **Available Sun's Reach Quests** to show those quest sets.

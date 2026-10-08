@@ -357,6 +357,9 @@ function _QuestieFrame:UpdateTexture(texture)
 end
 
 function _QuestieFrame:Unload()
+    if self.serverPatrolTracked then
+        QuestieLoader:ImportModule("QuestieServerPatrol"):Unregister(self)
+    end
     if not self._loaded then
         self._needsUnload = true
         return -- icon is still in the draw queue

@@ -32,7 +32,7 @@ local coYield = coroutine.yield
 local coRunning = coroutine.running
 
 -- Bump when field types/order or generated visibility coverage change to invalidate cached DB blobs.
-QuestieDBCompiler.compiledSchemaVersion = 63
+QuestieDBCompiler.compiledSchemaVersion = 64
 
 ---@alias CompilerTypes
 ---| "u8"
@@ -303,12 +303,14 @@ readers["spawnlist"] = function(stream)
             local phase = stream:ReadShort()
             local spawnMask = stream:ReadByte()
             local mapId = stream:ReadShort()
-            local phaseMask, region
-            if stream:ReadByte() ~= 0 then
-                phaseMask, region = stream:ReadInt(), stream:ReadShort()
-            end
+            local phaseMask, region, spawnId
+            local metadata = stream:ReadByte()
+            if metadata % 2 == 1 then phaseMask, region = stream:ReadInt(), stream:ReadShort() end
+            if metadata >= 2 then spawnId = stream:ReadInt() end
             if x == 0 and y == 0 then
                 list[i] = {-1, -1}
+            elseif spawnId then
+                list[i] = {x / 40.90, y / 40.90, phase, spawnMask, mapId, phaseMask or 0, region or 0, spawnId}
             elseif region then
                 list[i] = {x / 40.90, y / 40.90, phase, spawnMask, mapId, phaseMask, region}
             elseif phase == 0 and spawnMask == 0 and mapId == 0 then
@@ -630,12 +632,14 @@ QuestieDBCompiler.writers = {
                     stream:WriteShort(spawn[3] or 0)
                     stream:WriteByte(spawn[4] or 0)
                     stream:WriteShort(spawn[5] or 0)
-                    local hasPhaseRegion = spawn[6] ~= nil and spawn[7] ~= nil
-                    stream:WriteByte(hasPhaseRegion and 1 or 0)
+                    local hasPhaseRegion = spawn[6] ~= nil and spawn[7] ~= nil and (spawn[6] ~= 0 or spawn[7] ~= 0)
+                    local hasSpawnId = spawn[8] and spawn[8] > 0
+                    stream:WriteByte((hasPhaseRegion and 1 or 0) + (hasSpawnId and 2 or 0))
                     if hasPhaseRegion then
                         stream:WriteInt(spawn[6])
                         stream:WriteShort(spawn[7])
                     end
+                    if hasSpawnId then stream:WriteInt(spawn[8]) end
                 end
             end
         else
@@ -820,7 +824,9 @@ skippers["spawnlist"] = function(stream)
         local spawnCount = stream:ReadShort()
         for _ = 1, spawnCount do
             stream._pointer = stream._pointer + 8
-            if stream:ReadByte() ~= 0 then stream._pointer = stream._pointer + 6 end
+            local metadata = stream:ReadByte()
+            if metadata % 2 == 1 then stream._pointer = stream._pointer + 6 end
+            if metadata >= 2 then stream._pointer = stream._pointer + 4 end
         end
     end
 end

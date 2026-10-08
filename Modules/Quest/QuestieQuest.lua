@@ -1197,6 +1197,7 @@ function QuestieQuest:AddFinisher(quest)
                                 Name = finisher.name,
                                 IsObjectiveNote = false,
                                 FinisherType = finisherType,
+                                FinisherEntryId = finisher.id,
                             }
 
                             if QuestieEvent:IsEventQuest(quest.Id) then
@@ -1250,6 +1251,7 @@ function QuestieQuest:AddFinisher(quest)
                                 Name = finisher.name,
                                 IsObjectiveNote = false,
                                 FinisherType = finisherType,
+                                FinisherEntryId = finisher.id,
                             }
 
                             if QuestieEvent:IsEventQuest(quest.Id) then

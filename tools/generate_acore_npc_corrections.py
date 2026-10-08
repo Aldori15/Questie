@@ -322,6 +322,17 @@ def add_acore_spawn_visibility(point, row, map_difficulty_masks):
     return [point[0], point[1], 0, spawn_mask, map_id]
 
 
+def add_acore_spawn_identity(point, row):
+    """Attach a DB spawn identity without inventing phase or difficulty restrictions."""
+    guid = int(row.get("guid") or 0)
+    if not guid or point[:2] == [-1, -1]:
+        return list(point)
+    identified = list(point) + [0] * (8 - len(point))
+    identified[4] = int(row.get("map") or 0)
+    identified[7] = guid
+    return identified
+
+
 class LuaParser:
     def __init__(self, text, constants=None):
         self.text = text
@@ -1225,6 +1236,7 @@ def build_acore_npcs(
     creature_multispawn_sql=None,
     map_difficulty_dbc=None,
     wdm_root=None,
+    questie_npcs=None,
 ):
     source_root = Path(source_root)
     map_difficulty_dbc = find_map_difficulty_dbc(source_root, map_difficulty_dbc)
@@ -1301,7 +1313,7 @@ def build_acore_npcs(
             seen_spawn_entries.add(entry)
             if zone_id and point:
                 spawns_by_entry[entry][zone_id].append(
-                    add_acore_spawn_visibility(point, row, map_difficulty_masks)
+                    add_acore_spawn_identity(add_acore_spawn_visibility(point, row, map_difficulty_masks), row)
                 )
                 spawn_zone_counts[entry][zone_id] += 1
             else:
@@ -1441,7 +1453,13 @@ def build_acore_npcs(
             npc["maxLevelHealth"] = max(health_values)
 
         if int(npc_id) in unmapped_spawn_entries:
-            pass
+            transport_spawns = [spawn for spawn in creatures_by_entry.get(int(npc_id), [])
+                                if int(spawn.get("map") or 0) in (622, 623)]
+            # Some captains also have ICC encounter spawns. Only annotate the
+            # outdoor Icecrown fallback for its uniquely identified gunship copy.
+            fallback = (questie_npcs or {}).get(int(npc_id), {}).get("spawns")
+            if len(transport_spawns) == 1 and fallback and fallback.get(210):
+                npc["spawns"] = annotate_gunship_fallback(fallback, transport_spawns[0])
         elif spawns_by_entry.get(int(npc_id)):
             npc["spawns"] = sort_coordinate_table(
                 spawns_by_entry[int(npc_id)],
@@ -1488,6 +1506,15 @@ def build_acore_npcs(
         **{f"mapping:{key}": value for key, value in map_stats.items()},
     }
     return acore_npcs, skipped_mutations
+
+
+def annotate_gunship_fallback(spawns, row):
+    """Keep outdoor marker coordinates; ship database positions are deck-local."""
+    return {
+        zone: [add_acore_spawn_identity(point, row) for point in points]
+              if int(zone) == 210 else [list(point) for point in points]
+        for zone, points in spawns.items()
+    }
 
 
 def sort_coordinate_table(zone_points, map_difficulty_masks=None):
@@ -1549,10 +1576,14 @@ def unique_coordinate_points(points, map_difficulty_masks=None):
     unrestricted = set()
     restricted = defaultdict(int)
     phased = defaultdict(int)
+    identified = defaultdict(int)
 
     for point in points:
         phase = int(point[2]) if len(point) >= 3 and point[2] else 0
         coordinate = (round(float(point[0]), 2), round(float(point[1]), 2), phase)
+        if len(point) >= 8 and point[7]:
+            identified[(*coordinate, int(point[4]), int(point[5]), int(point[6]), int(point[7]))] |= int(point[3])
+            continue
         if len(point) >= 7:
             # Combine difficulty alternatives only when all phase conditions match.
             # Combining masks across phases would introduce nonexistent spawns.
@@ -1584,6 +1615,8 @@ def unique_coordinate_points(points, map_difficulty_masks=None):
 
     for (x, y, phase, map_id, phase_mask, region), spawn_mask in phased.items():
         result.append([x, y, phase, spawn_mask, map_id, phase_mask, region])
+    for (x, y, phase, map_id, phase_mask, region, guid), spawn_mask in identified.items():
+        result.append([x, y, phase, spawn_mask, map_id, phase_mask, region, guid])
     return result
 
 
@@ -1642,6 +1675,8 @@ def normalize_coordinate_table(value, waypoint=False, include_phases=False):
                     normalized_point += (int(point[3]), int(point[4]))
                 if len(point) >= 7:
                     normalized_point += (int(point[5]), int(point[6]))
+                if len(point) >= 8:
+                    normalized_point += (int(point[7]),)
                 normalized_points.append(normalized_point)
             zones.append((int(zone_id), tuple(sorted(normalized_points))))
     return tuple(sorted(zones))
@@ -1803,7 +1838,12 @@ def format_lua_field_value(field, value, zone_names):
     return format_lua_value(value, zone_names, zone_keyed_table=(field in NESTED_FIELDS))
 
 
-def write_corrections_module(corrections, output_path, zone_names):
+def format_corrections_module(corrections, zone_names):
+    # The 3.3.5 Lua allocator rejects large contiguous blocks. Spawn identities
+    # substantially increase constructor bytecode, so bound each callback rather
+    # than compiling the entire NPC export into one enormous Lua function.
+    max_batch_bytes = 128 * 1024
+    max_batch_entries = 500
     lines = [
         "---@type QuestieDB",
         'local QuestieDB = QuestieLoader:ImportModule("QuestieDB")',
@@ -1814,30 +1854,52 @@ def write_corrections_module(corrections, output_path, zone_names):
         "",
         "-- Generated from tools/generate_acore_npc_corrections.py.",
         "-- Includes Wintergrasp's scripted fortress and outside-camp coordinates.",
+        "-- NPC spawn IDs support exact live patrol matching through the optional server bridge.",
+        "-- Bounded correction batches keep constructor allocations small on the 3.3.5 client.",
         "-- Regenerate this file when AzerothCore NPC data changes.",
         "",
-        'QuestieCompat.RegisterCorrection("npcData", function()',
-        "    local npcKeys = QuestieDB.npcKeys",
-        "    local zoneIDs = ZoneDB.zoneIDs",
-        "",
-        "    return {",
     ]
 
+    batch, batch_bytes = [], 0
+    def flush_batch():
+        if not batch:
+            return
+        lines.extend([
+            'QuestieCompat.RegisterCorrection("npcData", function()',
+            "    local npcKeys = QuestieDB.npcKeys",
+            "    local zoneIDs = ZoneDB.zoneIDs",
+            "",
+            "    return {",
+            *batch,
+            "    }",
+            "end)",
+            "",
+        ])
+        batch.clear()
+
     for npc_id in sorted(corrections):
-        lines.append(f"        [{npc_id}] = {{")
+        entry_lines = [f"        [{npc_id}] = {{"]
         fields = corrections[npc_id]
         for field in FIELD_ORDER:
             if field in fields:
-                lines.append(f"            [npcKeys.{field}] = {format_lua_field_value(field, fields[field], zone_names)},")
-        lines.append("        },")
-        lines.append("")
+                entry_lines.append(f"            [npcKeys.{field}] = {format_lua_field_value(field, fields[field], zone_names)},")
+        entry_lines.extend(["        },", ""])
+        entry = "\n".join(entry_lines)
+        entry_bytes = len(entry.encode("utf-8"))
+        if entry_bytes > max_batch_bytes:
+            raise ValueError(f"NPC {npc_id} exceeds the safe correction batch size ({entry_bytes} bytes)")
+        if batch and (batch_bytes + entry_bytes > max_batch_bytes or len(batch) >= max_batch_entries):
+            flush_batch()
+            batch_bytes = 0
+        batch.append(entry)
+        batch_bytes += entry_bytes
 
-    lines.extend([
-        "    }",
-        "end)",
-        "",
-    ])
-    text = "\n".join(lines)
+    flush_batch()
+    return "\n".join(lines)
+
+
+def write_corrections_module(corrections, output_path, zone_names):
+    text = format_corrections_module(corrections, zone_names)
     validate_lua_fragment(text, str(output_path))
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(text, encoding="utf-8")
@@ -1939,6 +2001,7 @@ def main():
         args.creature_multispawn_sql,
         args.map_difficulty_dbc,
         args.wdm_root,
+        questie_npcs,
     )
     candidate_spawn_ids = {
         npc_id

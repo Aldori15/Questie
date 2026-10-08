@@ -184,6 +184,7 @@ Modules\Network\QuestieCommsData.lua
 Modules\Network\CommsVisibility.lua
 Modules\Network\QuestiePartyObjectives.lua
 Modules\Network\QuestiePlayerbots.lua
+Modules\Network\QuestieServerPatrol.lua
 Modules\Network\QuestieServer.lua
 Modules\Network\QuestieServerIntegrations.lua
 Modules\Network\QuestieServerProgress.lua
