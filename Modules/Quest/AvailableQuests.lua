@@ -21,6 +21,8 @@ local QuestieQuestBlacklist = QuestieLoader:ImportModule("QuestieQuestBlacklist"
 local IsleOfQuelDanas = QuestieLoader:ImportModule("IsleOfQuelDanas")
 ---@type QuestieLib
 local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
+---@type QuestieEvent
+local QuestieEvent = QuestieLoader:ImportModule("QuestieEvent")
 ---@type DailyQuestComms
 local DailyQuestComms = QuestieLoader:ImportModule("DailyQuestComms")
 ---@type QuestieServer
@@ -97,7 +99,9 @@ local availableQuestStartTooltipsDirty = true
 local availableQuests = {}
 local nextAvailableQuests = {}
 local availableQuestsByNpc = {}
+---@type table<string, table<QuestId, boolean>>
 local levelRequirementCache = {}
+local repeatableQuestCache = {}
 local dirtySpawnVisibility = {}
 
 ---@type string|nil
@@ -406,19 +410,37 @@ end
 
 local _CalculateAvailableQuests, _DrawChildQuests, _AddStarter, _DrawAvailableQuest, _GetQuestIcon, _GetIconScaleForAvailable, _HasProperDistanceToAlreadyAddedSpawns, _RegisterQuestStartTooltips, _GetStructuredAvailableQuestsInGossip, _GetStructuredActiveQuestsInGossip, _RemoveQuestFromNpcAvailability, _SyncAvailableQuestDisplay, _HasLiveAvailableQuestFrames
 
+-- A scan selects its level range once, then uses numeric quest IDs on cache hits.
+local function _GetLevelRequirementCache(minLevel, maxLevel, playerLevel)
+    local cacheKey = minLevel .. ":" .. maxLevel .. ":" .. playerLevel .. ":" .. Questie.db.profile.lowLevelStyle
+    local cache = levelRequirementCache[cacheKey]
+    if not cache then
+        cache = {}
+        levelRequirementCache[cacheKey] = cache
+    end
+    return cache
+end
+
 ---@param questId QuestId
 ---@param minLevel Level
 ---@param maxLevel Level
 ---@param playerLevel Level?
 ---@return boolean
 function AvailableQuests.IsLevelRequirementsFulfilled(questId, minLevel, maxLevel, playerLevel)
-    local cacheKey = questId .. ":" .. minLevel .. ":" .. maxLevel .. ":" .. (playerLevel or 0)
-    if levelRequirementCache[cacheKey] ~= nil then
-        return levelRequirementCache[cacheKey]
+    playerLevel = playerLevel or QuestiePlayer.GetPlayerLevel()
+    local cache = _GetLevelRequirementCache(minLevel, maxLevel, playerLevel)
+    local isActiveEvent = QuestieEvent.activeQuests and QuestieEvent.activeQuests[questId]
+    if not isActiveEvent and cache[questId] ~= nil then
+        return cache[questId]
     end
 
     local isFulfilled = QuestieDB.IsLevelRequirementsFulfilled(questId, minLevel, maxLevel, playerLevel)
-    levelRequirementCache[cacheKey] = isFulfilled
+    -- Parent-log and active-event overrides are live decisions, not static level
+    -- results. Never retain them when a quest/event changes between resumes.
+    if not isActiveEvent then
+        local parentQuestId = QuestieDB.QueryQuestSingle(questId, "parentQuest")
+        if not parentQuestId or parentQuestId == 0 then cache[questId] = isFulfilled end
+    end
     return isFulfilled
 end
 
@@ -459,12 +481,21 @@ end
 AvailableQuests.InvalidateWintergraspSpawnVisibility = AvailableQuests.InvalidateSpawnVisibility
 
 -- Repeatable quests should be controlled by showRepeatableQuests
-local function _IsLevelRequirementsFulfilledForAvailable(questId, minLevel, maxLevel, playerLevel, isRepeatableQuest)
-    if AvailableQuests.IsLevelRequirementsFulfilled(questId, minLevel, maxLevel, playerLevel) then
+local function _IsLevelRequirementsFulfilledForAvailable(questId, minLevel, maxLevel, playerLevel, isRepeatableQuest, levelCache, repeatableLevelCache)
+    local isActiveEvent = QuestieEvent.activeQuests and QuestieEvent.activeQuests[questId]
+    local isFulfilled
+    if levelCache and not isActiveEvent then isFulfilled = levelCache[questId] end
+    if isFulfilled == nil then
+        isFulfilled = AvailableQuests.IsLevelRequirementsFulfilled(questId, minLevel, maxLevel, playerLevel)
+    end
+    if isFulfilled then
         return true
     end
 
     if isRepeatableQuest and Questie.db.profile.lowLevelStyle ~= Questie.LOWLEVEL_RANGE then
+        if repeatableLevelCache and not isActiveEvent and repeatableLevelCache[questId] ~= nil then
+            return repeatableLevelCache[questId]
+        end
         return AvailableQuests.IsLevelRequirementsFulfilled(questId, 1, maxLevel, playerLevel)
     end
 
@@ -1191,12 +1222,16 @@ _CalculateAvailableQuests = function()
 
     QuestieDB.activeChildQuests = {} -- Reset here so we don't need to keep track in the quest event system
     local questLogQuestIds
+    local levelCache, repeatableLevelCache
+
+    local function _SelectLevelCaches()
+        levelCache = _GetLevelRequirementCache(minLevel, maxLevel, playerLevel)
+        repeatableLevelCache = _GetLevelRequirementCache(1, maxLevel, playerLevel)
+    end
 
     -- We create a local function here to improve readability but use the localized variables above.
     -- The order of checks is important here to bring the speed to a max
     local function _CheckAvailability(questId)
-        local isRepeatableQuest = QuestieDB.IsRepeatable(questId)
-
         if (autoBlacklist[questId] or -- Don't show autoBlacklist quests marked as such by IsDoable
             completedQuests[questId] or -- Don't show completed quests
             hiddenQuests[questId] or -- Don't show blacklisted quests
@@ -1214,6 +1249,12 @@ _CalculateAvailableQuests = function()
                 nextAvailableQuestSet[questId] = nil
                 return
             end
+        end
+
+        local isRepeatableQuest = repeatableQuestCache[questId]
+        if isRepeatableQuest == nil then
+            isRepeatableQuest = QuestieDB.IsRepeatable(questId)
+            repeatableQuestCache[questId] = isRepeatableQuest
         end
 
         if (
@@ -1235,7 +1276,7 @@ _CalculateAvailableQuests = function()
             return
         end
 
-        if not _IsLevelRequirementsFulfilledForAvailable(questId, minLevel, maxLevel, playerLevel, isRepeatableQuest) then
+        if not _IsLevelRequirementsFulfilledForAvailable(questId, minLevel, maxLevel, playerLevel, isRepeatableQuest, levelCache, repeatableLevelCache) then
             --If the quests are not within level range we want to unload them
             --(This is for when people level up or change settings etc)
             nextAvailableQuestSet[questId] = nil
@@ -1253,6 +1294,7 @@ _CalculateAvailableQuests = function()
     end
 
     yieldRefresh() -- Include setup work in the first slice.
+    _SelectLevelCaches()
     local questCount = 0
     for questId in pairs(questData) do
         _CheckAvailability(questId)
@@ -1262,6 +1304,7 @@ _CalculateAvailableQuests = function()
         if yieldRefresh(questCount > maxQuestsPerYield) then
             questCount = 0
             questLogQuestIds = nil -- The next check must reread changes made while suspended.
+            _SelectLevelCaches() -- A level/settings event may have reset the cache while suspended.
         end
     end
 
