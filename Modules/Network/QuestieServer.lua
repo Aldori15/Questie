@@ -2,7 +2,7 @@
 local QuestieServer = QuestieLoader:CreateModule("QuestieServer")
 local Integrations = QuestieLoader:ImportModule("QuestieServerIntegrations")
 
-local PREFIX, PROTOCOL_VERSION = "QSTSVR", "13"
+local PREFIX, PROTOCOL_VERSION = "QSTSVR", "14"
 
 -- Shared with the correction generators. Decisions apply to the current area,
 -- never to every location in these zones. Keep the module's profiles in sync.
@@ -44,7 +44,7 @@ local nextPreferenceCheck, previousPreferences = 0, nil
 local subscriptions = {}
 local CAPABILITIES = {EVENTS = true, VALUES = true, SCOURGE = true, QUELDANAS = true,
     KALUAK = true, HEARTBEAT = true, QUESTPOOLS = true, WINTERGRASP = true, ICC = true, RESETS = true,
-    PHASES = true, PATROLS = true, QUESTXP = true}
+    PHASES = true, PATROLS = true, QUESTXP = true, QUESTREP = true}
 
 local function Split(value, separator)
     local fields, first = {}, 1
@@ -79,9 +79,14 @@ function QuestieServer:GetQuestXPRates()
     if self:HasCapability("QUESTXP") then return snapshot.questXP end
 end
 
+---@return table|nil Fresh global/grey-quest rates, aura modifier, RAF multiplier and faction rates.
+function QuestieServer:GetQuestReputationRates()
+    if self:HasCapability("QUESTREP") then return snapshot.questReputation end
+end
+
 -- The server sends IEEE-754 float bits as unsigned integers. Decode exactly,
 -- rejecting sign, infinity/NaN and multipliers outside the shared 0..1000 bound.
-local function XPMultiplier(raw)
+local function RewardMultiplier(raw)
     local bits = Integer(raw, 2147483647)
     if not bits then return nil end
     local exponent, fraction = math.floor(bits / 8388608), bits % 8388608
@@ -397,8 +402,8 @@ end
 
 local function ParseRows(batch)
     local result = {caps = batch.caps, events = {}, values = {}, ui = {}, poolQuests = {},
-        wintergraspQuests = {}, iccQuests = {}, phaseVisibility = {}}
-    local count = 0
+        wintergraspQuests = {}, iccQuests = {}, phaseVisibility = {}, reputationFactions = {}}
+    local count, reputationFactionCount = 0, 0
     for index = 1, batch.partCount do
         if not batch.parts[index] then return nil end
         for _, row in ipairs(Split(batch.parts[index], ";")) do
@@ -407,10 +412,30 @@ local function ParseRows(batch)
             local kind, id = fields[1], Integer(fields[2], 4294967295)
             if kind == "P" and result.caps.QUESTXP and fields[2] == "QUEST_XP"
                 and #fields == 6 and not result.questXP then
-                local normal, dungeonFinder, aura = XPMultiplier(fields[3]), XPMultiplier(fields[4]), XPMultiplier(fields[5])
+                local normal, dungeonFinder, aura = RewardMultiplier(fields[3]), RewardMultiplier(fields[4]), RewardMultiplier(fields[5])
                 local maxLevel = Integer(fields[6], 255)
                 if not normal or not dungeonFinder or not aura or not maxLevel or maxLevel == 0 then return nil end
                 result.questXP = {normal = normal, dungeonFinder = dungeonFinder, aura = aura, maxLevel = maxLevel}
+            elseif kind == "P" and result.caps.QUESTREP and fields[2] == "QUEST_REP"
+                and #fields == 8 and not result.questReputation then
+                local gain, lowLevel, raf = RewardMultiplier(fields[3]), RewardMultiplier(fields[4]), RewardMultiplier(fields[6])
+                local aura = fields[5]:match("^%-?%d+$") and #fields[5] <= 6 and tonumber(fields[5])
+                local grayLevel, factionCount = Integer(fields[7], 255), Integer(fields[8], 256)
+                if not gain or not lowLevel or not raf or not aura or math.abs(aura) > 10000
+                    or not grayLevel or not factionCount then return nil end
+                result.questReputation = {gain = gain, lowLevel = lowLevel, auraModifier = aura,
+                    recruitAFriend = raf, grayLevel = grayLevel, factionCount = factionCount,
+                    factions = result.reputationFactions}
+            elseif kind == "T" and result.caps.QUESTREP and #fields == 7 and id and id > 0 then
+                if result.reputationFactions[id] or reputationFactionCount >= 256 then return nil end
+                local rates = {}
+                for field = 3, 7 do
+                    local value = RewardMultiplier(fields[field])
+                    if not value then return nil end
+                    rates[#rates + 1] = value
+                end
+                result.reputationFactions[id] = rates
+                reputationFactionCount = reputationFactionCount + 1
             elseif kind == "P" and result.caps.PHASES and fields[2] == "PHASE_CONTEXT"
                 and #fields == 6 and not result.phaseContext then
                 local map, area, mask = Integer(fields[3], 65535), Integer(fields[4], 65535), Integer(fields[5], 4294967295)
@@ -498,6 +523,8 @@ local function ParseRows(batch)
     end
     if count ~= batch.rowCount then return nil end
     if result.caps.QUESTXP and not result.questXP then return nil end
+    if result.caps.QUESTREP and (not result.questReputation
+        or result.questReputation.factionCount ~= reputationFactionCount) then return nil end
     if result.caps.PHASES then
         local context = result.phaseContext
         if not context then return nil end
@@ -707,6 +734,22 @@ function QuestieServer:PrintStatus(poolId)
     if self:HasCapability("PHASES") then self:PrintPhaseStatus() end
     if self:HasCapability("PATROLS") then self:PrintPatrolStatus() end
     if self:HasCapability("QUESTXP") then self:PrintXPStatus() end
+    if self:HasCapability("QUESTREP") then self:PrintReputationStatus() end
+end
+
+function QuestieServer:PrintReputationStatus(factionId)
+    local rates = self:GetQuestReputationRates()
+    if not rates then
+        Questie:Print("[Server bridge] Quest reputation rates unavailable; using generated faction rates and racial bonuses.")
+        return
+    end
+    Questie:Print(string.format("[Server bridge] Quest reputation: gain %.6gx; grey quests %.6gx (level <= %d); reputation auras %+d%%; RAF %.6gx; %d faction rate overrides.",
+        rates.gain, rates.lowLevel, rates.grayLevel, rates.auraModifier, rates.recruitAFriend, rates.factionCount))
+    if factionId then
+        local faction = rates.factions[factionId] or {1, 1, 1, 1, 1}
+        Questie:Print(string.format("[Server bridge] Faction %d quest rates: normal %.6gx; daily %.6gx; weekly %.6gx; monthly %.6gx; repeatable %.6gx.",
+            factionId, faction[1], faction[2], faction[3], faction[4], faction[5]))
+    end
 end
 
 function QuestieServer:PrintXPStatus()
@@ -906,11 +949,15 @@ function QuestieServer:Initialize()
         if command:match("^%s*phases%s*$") then self:PrintPhaseStatus(); return end
         if command:match("^%s*patrol%s*$") then self:PrintPatrolStatus(); return end
         if command:match("^%s*xp%s*$") then self:PrintXPStatus(); return end
+        local factionId = Integer(command:match("^%s*rep%s+(%d+)%s*$"), 4294967295)
+        if command:match("^%s*rep%s*$") or (factionId and factionId > 0) then
+            self:PrintReputationStatus(factionId); return
+        end
         local patrolEntry = Integer(command:match("^%s*patrol%s+(%d+)%s*$"), 4294967295)
         if patrolEntry and patrolEntry > 0 then self:PrintPatrolStatus(patrolEntry); return end
         local id = Integer(command:match("^%s*pool%s+(%d+)%s*$"), 4294967295)
         if id and id > 0 then self:PrintStatus(id); return end
-        Questie:Print("[Server bridge] Usage: /qserver, /qserver pool <pool ID>, /qserver wintergrasp, /qserver icc, /qserver resets, /qserver phases, /qserver patrol [NPC ID], or /qserver xp")
+        Questie:Print("[Server bridge] Usage: /qserver, /qserver pool <pool ID>, /qserver wintergrasp, /qserver icc, /qserver resets, /qserver phases, /qserver patrol [NPC ID], /qserver xp, or /qserver rep [faction ID]")
     end
     Request()
 end

@@ -25,6 +25,7 @@ to let Questie's quest availability, reset timing, and locations follow live Aze
 - ICC weekly quests follow the selected family, raid size, and unlocks in your current raid instance.
 - Weekly and monthly quest completion history follows the server's reset schedule.
 - Quest XP displays follow the character's effective normal/dungeon-finder rates and active quest-XP auras, including heirlooms.
+- Quest reputation previews follow global/faction rates, reputation auras, grey-quest reduction, and eligible RAF bonuses.
 - Wintergrasp quests and questgiver locations as faction control changes.
 - Questgiver markers follow loaded patrols and moving transport passengers in your current zone,
   including Orgrim's Hammer and the Skybreaker.
@@ -42,6 +43,7 @@ Use `/qserver phases` to check story-phase location filtering. It applies within
 current subarea; locations elsewhere keep their usual behavior.
 Use `/qserver patrol` or `/qserver patrol <NPC ID>` to check live questgiver positions.
 Use `/qserver xp` to check effective quest XP rates, aura multiplier, and the server's level cap.
+Use `/qserver rep` or `/qserver rep <faction ID>` to check live reputation modifiers and faction quest rates.
 Patrol pins update once per second without smoothing, using loaded NPCs visible to your character
 in the current zone. Opening another zone's map does not request remote NPC positions.
 Missing or expired positions restore the usual marker and patrol line.
@@ -53,7 +55,20 @@ reopen or hover the reward tooltip again to see the new value. Unknown, disabled
 restores the generated calculation and equipped-item bonuses. No regeneration is needed for rate changes.
 XP multipliers do not change displayed max-level bonus money. Arbitrary quest/reward hooks,
 recruit-a-friend XP, XP locks, and other later reward changes are outside this rate capability.
-Reputation and money rate reporting are separate features and are not included in `QUESTXP`.
+Money rate reporting is separate and is not included in these capabilities.
+
+Quest reputation uses generated base rewards plus live global and faction rates for normal, daily,
+weekly, monthly, and repeatable quests. It includes reputation auras (replacing the racial estimate),
+grey-quest reduction, and eligible recruit-a-friend reputation bonuses. Gains and losses apply aura
+bonuses with the core's different signs. Changes through `.reload config` and
+`.reload reputation_reward_rate` need no addon reload or regeneration; rehover or reopen the reward
+display to see updates. A complete empty faction catalog means the server's default 1x rates.
+Unavailable reputation data restores generated faction rates and racial bonuses.
+
+These reputation values are previews. AC's alternating faction rounding can change the final reward
+by one point. Reputation caps, hostile-faction suppression, custom spillover, fractional base rewards
+omitted by generated data, and later reward hooks can also affect the amount awarded. Existing
+Aldor/Scryer penalty and Sha'tar display rules remain in place.
 
 Your visibility options, character requirements, and manually hidden quests still apply.
 Enable **Available Scourge Invasion Quests** or **Available Sun's Reach Quests** to show those quest sets.
