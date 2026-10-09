@@ -3658,17 +3658,16 @@ end
 ---@return number @Complete = 1, Failed = -1, Incomplete = 0
 function QuestieDB.IsComplete(questId)
     local questLogEntry = QuestLogCache.questLog_DO_NOT_MODIFY[questId] -- DO NOT MODIFY THE RETURNED TABLE
-    local noQuestItem = not QuestieQuest:CheckQuestSourceItem(questId)
+    if not questLogEntry then return 0 end
 
-    --[[ pseudo:
-    if no questLogEntry then return 0
-    if has questLogEntry.isComplete then return questLogEntry.isComplete
-    if no objectives and an item is needed but not obtained then return 0
-    if no objectives then return 1
-    return 0
-    --]]
+    -- Cached status already determines completion.
+    -- Source-item inventory scans only affect the empty-objective fallback.
+    if questLogEntry.isComplete then return questLogEntry.isComplete end
 
-    return questLogEntry and (questLogEntry.isComplete or (questLogEntry.objectives[1] and 0) or (#questLogEntry.objectives == 0 and noQuestItem and 0) or 1) or 0
+    local objectives = questLogEntry.objectives
+    if objectives[1] then return 0 end
+    if #objectives == 0 and not QuestieQuest:CheckQuestSourceItem(questId) then return 0 end
+    return 1
 end
 
 ---@param self Quest
