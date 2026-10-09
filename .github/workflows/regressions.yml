@@ -39,7 +39,7 @@ jobs:
         with:
           repository: Aldori15/mod-questie-bridge
           # Bridge contract revision.
-          ref: d261d83a2882ba73caf42a10cbb5591b85fd802c
+          ref: ad6ebd8fd70270992d0d843f0dc8c73ba924be30
           path: source/modules/mod-questie-bridge
           persist-credentials: false
 
