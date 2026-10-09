@@ -12,6 +12,31 @@ A fork of the WoW Classic Questie addon aiming to provide compatibility with Wra
 - [Download](https://github.com/Aldori15/Questie/archive/refs/heads/335.zip) the archive.
 - Extract it into `Interface/AddOns/` directory, folder name should be `Questie-335`.
 
+## Optional AzerothCore Server Bridge Module
+
+Install [mod-questie-bridge](https://github.com/Aldori15/mod-questie-bridge) on your AzerothCore
+server to let Questie follow live server state:
+
+- Holidays, fishing tournaments, Scourge Invasion, and Isle of Quel'Danas unlocks.
+- Selected daily/weekly quest pools, ICC weekly quests, and Wintergrasp control.
+- Weekly/monthly quest resets and live XP, reputation, and money rates.
+- Moving questgiver markers in your current zone, including Orgrim's Hammer and the Skybreaker.
+- Phase-dependent locations in supported story areas, including Icecrown, Storm Peaks, and the death knight start.
+- World Progress in related Journey quest details and tooltips.
+
+See the [module setup instructions](https://github.com/Aldori15/mod-questie-bridge#installation).
+Install matching addon and module builds, then log in or `/reload`. Run `/qserver` to check the connection;
+`/qserver xp`, `/qserver rep [faction ID]`, and `/qserver money` show reward rates.
+The module README lists the other diagnostic commands.
+
+Server rate changes appear within a few seconds; rehover or reopen the reward display to refresh it.
+Rewards are estimates: server rounding, caps, or custom rules can affect the final amount awarded.
+Moving markers work in your current zone; other zones keep their static locations and patrol lines.
+Phase filtering applies within your current subarea. Quest prerequisites and your visibility settings still apply.
+
+Enable **Available Scourge Invasion Quests** or **Available Sun's Reach Quests** to show those quest sets.
+The bridge is optional. Missing, disabled, or expired server information restores Questie's usual behavior.
+
 ## Questie Information
 - [Frequently Asked Questions](https://github.com/Questie/Questie/wiki/FAQ)
 - Come chat with us on [our Discord server](https://discord.gg/s33MAYKeZd).

@@ -6,6 +6,7 @@ local QuestiePlayer = QuestieLoader:ImportModule("QuestiePlayer")
 local QuestieQuest = QuestieLoader:ImportModule("QuestieQuest")
 ---@type QuestieDB
 local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
+local QuestieServer = QuestieLoader:ImportModule("QuestieServer")
 
 --- COMPATIBILITY ---
 local GetFactionInfo = QuestieCompat.GetFactionInfo
@@ -14,6 +15,7 @@ local playerReputations = {}
 local factionNameCache = {}
 
 local _ReachedNewStanding, _WinterSaberChanged, _FilterShaTarRewards, _GetRewardMultiplier, _GetFactionQuestRewardRate
+local _GetQuestRewardRateIndex
 
 -- Fast local references
 local ExpandFactionHeader, GetNumFactions = ExpandFactionHeader, GetNumFactions
@@ -231,6 +233,45 @@ function QuestieReputation.GetFactionName(factionId)
     return nil
 end
 
+-- Match CalculateReputationGain's float operations before applying the global
+-- rate. Final faction rounding can alternate between truncation and ceil on AC;
+-- these previews use truncation and can differ by one point at that boundary.
+local function float32(value)
+    if value == 0 then return 0 end
+    local sign = value < 0 and -1 or 1
+    value = math.abs(value)
+    local _, exponent = math.frexp(value)
+    local shift = exponent < -125 and 149 or 24 - exponent
+    local scaled = math.ldexp(value, shift)
+    local rounded = floor(scaled)
+    local fraction = scaled - rounded
+    if fraction > 0.5 or (fraction == 0.5 and rounded % 2 ~= 0) then rounded = rounded + 1 end
+    return sign * math.ldexp(rounded, -shift)
+end
+
+local function finishLiveReward(value, live)
+    value = float32(value * live.gain)
+    return value < 0 and math.ceil(value) or floor(value)
+end
+
+local function liveReward(questId, rewardPair, live)
+    local base = rewardPair[2]
+    local percent = 100 + (base > 0 and live.auraModifier or -live.auraModifier)
+    local questLevel = QuestieDB.QueryQuestSingle(questId, "questLevel")
+    if not questLevel or questLevel <= 0 then questLevel = UnitLevel("player") end
+    if questLevel <= live.grayLevel then percent = float32(percent * live.lowLevel) end
+    if percent <= 0 then return 0 end
+    local factionRates = live.factions[rewardPair[1]]
+    local factionRate = factionRates and factionRates[_GetQuestRewardRateIndex(questId)] or 1
+    if factionRate <= 0 then return 0 end
+    percent = float32(percent * factionRate)
+    percent = float32(percent * live.recruitAFriend)
+    local value = float32(float32(float32(base) * percent) / 100)
+    local scaled = float32(value * live.gain)
+    if scaled < -2147483648 or scaled > 2147483647 then return nil end
+    return value
+end
+
 ---@param questId QuestId
 ---@return ReputationPair[]|nil
 function QuestieReputation.GetReputationReward(questId)
@@ -252,14 +293,28 @@ function QuestieReputation.GetReputationReward(questId)
     rewards = _FilterShaTarRewards(rewards, factionIDs)
 
     local reputationMultiplier = _GetRewardMultiplier()
+    local live = QuestieCompat.Is335 and QuestieServer.GetQuestReputationRates and QuestieServer:GetQuestReputationRates()
+    local liveValues = {}
+    if live then
+        for index, rewardPair in ipairs(rewards) do
+            liveValues[index] = liveReward(questId, rewardPair, live)
+            if liveValues[index] and (rewardPair[1] == factionIDs.THE_ALDOR or rewardPair[1] == factionIDs.THE_SCRYERS) then
+                local penalty = float32(float32(liveValues[index] * float32(-1.1)) * live.gain)
+                if penalty < -2147483648 or penalty > 2147483647 then liveValues[index] = nil end
+            end
+            if liveValues[index] == nil then live = nil; break end
+        end
+    end
     local aldorPenalty, scryersPenalty
     local adjustedRewards = {}
 
-    for _, rewardPair in pairs(rewards) do
+    for index, rewardPair in ipairs(rewards) do
         local factionId = rewardPair[1]
-        local rewardValue = rewardPair[2] * _GetFactionQuestRewardRate(questId, factionId)
+        local rawValue = live and liveValues[index]
+        local rewardValue = live and finishLiveReward(rawValue, live)
+            or rewardPair[2] * _GetFactionQuestRewardRate(questId, factionId)
 
-        if rewardValue > 0 and reputationMultiplier ~= 1 then
+        if not live and rewardValue > 0 and reputationMultiplier ~= 1 then
             rewardValue = floor(rewardValue * reputationMultiplier)
         end
 
@@ -269,9 +324,11 @@ function QuestieReputation.GetReputationReward(questId)
             adjustedRewards[#adjustedRewards + 1] = rewardPair
 
             if factionId == factionIDs.THE_ALDOR then
-                scryersPenalty = {factionIDs.THE_SCRYERS, 0 - floor(rewardValue * 1.1)}
+                scryersPenalty = {factionIDs.THE_SCRYERS, live
+                    and finishLiveReward(float32(rawValue * float32(-1.1)), live) or 0 - floor(rewardValue * 1.1)}
             elseif factionId == factionIDs.THE_SCRYERS then
-                aldorPenalty = {factionIDs.THE_ALDOR, 0 - floor(rewardValue * 1.1)}
+                aldorPenalty = {factionIDs.THE_ALDOR, live
+                    and finishLiveReward(float32(rawValue * float32(-1.1)), live) or 0 - floor(rewardValue * 1.1)}
             end
         end
     end
@@ -296,17 +353,15 @@ _GetFactionQuestRewardRate = function(questId, factionId)
         return 1
     end
 
-    if QuestieDB.IsDailyQuest(questId) then
-        return rates[2]
-    elseif QuestieDB.IsWeeklyQuest(questId) then
-        return rates[3]
-    elseif QuestieDB.IsMonthlyQuest(questId) then
-        return rates[4]
-    elseif QuestieDB.IsRepeatable(questId) then
-        return rates[5]
-    end
+    return rates[_GetQuestRewardRateIndex(questId)]
+end
 
-    return rates[1]
+_GetQuestRewardRateIndex = function(questId)
+    if QuestieDB.IsDailyQuest(questId) then return 2 end
+    if QuestieDB.IsWeeklyQuest(questId) then return 3 end
+    if QuestieDB.IsMonthlyQuest(questId) then return 4 end
+    if QuestieDB.IsRepeatable(questId) then return 5 end
+    return 1
 end
 
 ---@return number

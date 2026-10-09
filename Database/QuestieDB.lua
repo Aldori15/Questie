@@ -26,6 +26,8 @@ local DailyQuests = QuestieLoader:ImportModule("DailyQuests")
 local QuestieReputation = QuestieLoader:ImportModule("QuestieReputation")
 ---@type QuestieEvent
 local QuestieEvent = QuestieLoader:ImportModule("QuestieEvent")
+---@type QuestieServer
+local QuestieServer = QuestieLoader:ImportModule("QuestieServer")
 ---@type DBCompiler
 local QuestieDBCompiler = QuestieLoader:ImportModule("DBCompiler")
 ---@type ZoneDB
@@ -2016,6 +2018,12 @@ QuestieDB.specialFlags = {
 _QuestieDB.questCache = {}; -- stores quest objects so they dont need to be regenerated
 _QuestieDB.npcCache = {};
 
+-- Event NPCs can move when a live holiday overrides the calendar location.
+function QuestieDB.InvalidateNPC(npcId)
+    _QuestieDB.npcCache[npcId] = nil
+    _QuestieDB.questCache = {}
+end
+
 ---A Memoized table for function Quest:CheckRace
 ---
 ---Usage: checkRace[requiredRaces]
@@ -2840,6 +2848,11 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions)
         return true
     end
 
+    if QuestieServer:GetQuestAvailabilityState(questId) == false then
+        if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Quest " .. questId .. " is unavailable in the current server state") end
+        return false
+    end
+
     if QuestieEvent:IsEventQuestInCurrentExpansion(questId) and not QuestieEvent:IsEventActiveForQuest(questId) then
         if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Event quest " .. questId .. " is not active") end
         return false
@@ -3141,11 +3154,36 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
         end
     end
 
+    if C_QuestLog.IsOnQuest(questId) ~= true and QuestieServer:IsICCQuestActive(questId) == false then
+        if returnText and returnBrief then
+            return l10n("Unavailable") .. l10n(": ") .. "ICC weekly quest inactive", true, DoableStates.MISSING_DAILY
+        elseif returnText then
+            return "Quest " .. questId .. " is unavailable under this ICC instance's weekly selection, difficulty or unlock rules",
+                true, DoableStates.MISSING_DAILY
+        end
+    end
+
+    if C_QuestLog.IsOnQuest(questId) ~= true and QuestieServer:IsWintergraspQuestActive(questId) == false then
+        if returnText and returnBrief then
+            return l10n("Unavailable") .. l10n(": ") .. "Wintergrasp quest inactive", true, DoableStates.MISSING_DAILY
+        elseif returnText then
+            return "Quest " .. questId .. " is unavailable under Wintergrasp's faction/pool rules", true, DoableStates.MISSING_DAILY
+        end
+    end
+
+    if C_QuestLog.IsOnQuest(questId) ~= true and QuestieServer:IsPooledQuestActive(questId) == false then
+        if returnText and returnBrief then
+            return l10n("Unavailable") .. l10n(": ") .. "Not selected by server", true, DoableStates.MISSING_DAILY
+        elseif returnText then
+            return "Quest " .. questId .. " is not selected by the server quest pool", true, DoableStates.MISSING_DAILY
+        end
+    end
+
     -- Automatically blacklisted quests by Questie. These are localized in the init function
     if QuestieCorrectionshiddenQuests[questId] and QuestieCorrectionshiddenQuests[questId] ~= HIDE_ON_MAP then
         local msg = "Quest " .. questId .. " is hidden automatically"
         local msgevent = "Quest " .. questId .. " is unavailable because the world event is inactive"
-        if QuestieEvent:IsEventQuestInCurrentExpansion(questId) and not QuestieEvent:IsEventActiveForQuest(questId) then
+        if QuestieEvent.IsServerQuestActive(questId) == false or (QuestieEvent:IsEventQuestInCurrentExpansion(questId) and not QuestieEvent:IsEventActiveForQuest(questId)) then
             if returnText and returnBrief then
                 return l10n("Unavailable")..l10n(": ")..l10n("Event inactive"), true, DoableStates.EVENT_INACTIVE
             elseif returnText and not returnBrief then
@@ -3178,7 +3216,7 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
     end
 
     -- Scourge Invasion quests (Acore worldstate event)
-    if QuestieQuestBlacklist.ScourgeInvasionQuests[questId] then
+    if QuestieQuestBlacklist.ScourgeInvasionQuests[questId] and QuestieEvent.IsServerQuestActive(questId) ~= true then
         if returnText and returnBrief then
             return l10n("Unavailable")..l10n(": ")..l10n("Event inactive"), true, DoableStates.EVENT_INACTIVE
         elseif returnText then

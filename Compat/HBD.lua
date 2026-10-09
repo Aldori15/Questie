@@ -1358,6 +1358,26 @@ function pins:AddWorldMapIconMap(ref, icon, uiMapID, x, y, showFlag, frameLevel)
     HandleWorldMapPin(icon, t, currentUiMapID)
 end
 
+-- Reposition an existing pin on its current map. Unlike Add*Icon, this does not
+-- rebuild registries, rescale unrelated pins, or force a full minimap sweep.
+function pins:MoveIconWorld(ref, icon, instanceID, x, y)
+    local mini = minimapPinRegistry[ref] and minimapPinRegistry[ref][icon] and minimapPins[icon]
+    local world = worldmapPinRegistry[ref] and worldmapPinRegistry[ref][icon] and worldmapPins[icon]
+    local data = mini or world
+    if not data or data.instanceID ~= instanceID then return false end
+    data.x, data.y = x, y
+    if mini then
+        if activeMinimapPins[icon] and lastXY and lastYY then
+            drawMinimapPin(icon, data)
+        end
+        -- Inactive pins are reconsidered by the existing once-per-second sweep.
+    else
+        local uiMapID = WorldMapFrame and WorldMapFrame:IsVisible() and QuestieCompat.GetCurrentUiMapID() or nil
+        HandleWorldMapPin(icon, data, uiMapID)
+    end
+    return true
+end
+
 --- Remove a worldmap icon
 -- @param ref Reference to your addon to track the icon under (ie. your "self" or string identifier)
 -- @param icon Icon Frame

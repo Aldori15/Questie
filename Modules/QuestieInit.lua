@@ -77,6 +77,8 @@ local CommsVisibility = QuestieLoader:ImportModule("CommsVisibility")
 local DailyQuestComms = QuestieLoader:ImportModule("DailyQuestComms")
 ---@type QuestiePlayerbots
 local QuestiePlayerbots = QuestieLoader:ImportModule("QuestiePlayerbots")
+---@type QuestieServer
+local QuestieServer = QuestieLoader:ImportModule("QuestieServer")
 ---@type QuestieOptions
 local QuestieOptions = QuestieLoader:ImportModule("QuestieOptions");
 ---@type QuestieCoords
@@ -437,6 +439,8 @@ QuestieInit.Stages[3] = function() -- run as a coroutine
         Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage3] QuestieEvent initializing.")
         QuestieEvent.Initialize()
     end
+
+    QuestieServer:Initialize()
 
     if QuestieCompat.Is335 then
         -- 3.3.5 can miss the emulated group join sync on login/reload while already in a party.

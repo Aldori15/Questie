@@ -2,6 +2,7 @@
 local IsleOfQuelDanas = QuestieLoader:CreateModule("IsleOfQuelDanas")
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
+local ServerIntegrations = QuestieLoader:ImportModule("QuestieServerIntegrations")
 
 
 IsleOfQuelDanas.MAX_ISLE_OF_QUEL_DANAS_PHASES = 9
@@ -24,6 +25,9 @@ end
 ---@param questId number
 ---@return boolean
 function IsleOfQuelDanas.CheckForActivePhase(questId)
+    if ServerIntegrations:GetQuelDanasQuestState(questId) ~= nil then
+        return false -- Live progress must not overwrite the saved manual fallback.
+    end
     local isleQuests = IsleOfQuelDanas.quests
     if isleQuests[1][questId] and isleQuests[Questie.db.profile.isleOfQuelDanasPhase][questId] then
         -- The accepted quest is one from the Isle Of Quel'Danas
@@ -41,6 +45,18 @@ function IsleOfQuelDanas.CheckForActivePhase(questId)
         return true
     end
     return false
+end
+
+function IsleOfQuelDanas.GetHiddenQuests()
+    local hidden = {}
+    for id, value in pairs(IsleOfQuelDanas.quests[Questie.db.profile.isleOfQuelDanasPhase] or {}) do
+        hidden[id] = value
+    end
+    for id in pairs(ServerIntegrations.quelDanasQuestEvents) do
+        local active = ServerIntegrations:GetQuelDanasQuestState(id)
+        if active ~= nil then hidden[id] = (not active) or nil end
+    end
+    return hidden
 end
 
 -- These quests are the blacklisted ones for each phase

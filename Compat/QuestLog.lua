@@ -20,6 +20,7 @@ local QuestieTracker = QuestieLoader:ImportModule("QuestieTracker")
 local QuestiePlayer = QuestieLoader:ImportModule("QuestiePlayer")
 ---@type QuestXP
 local QuestXP = QuestieLoader:ImportModule("QuestXP")
+local QuestieServer = QuestieLoader:ImportModule("QuestieServer")
 
 local math_max = math.max
 local math_min = math.min
@@ -274,6 +275,26 @@ function QuestieCompat.GetQuestLogRewardMoney(questID)
         end
     end
 
+    local live = QuestieServer.GetQuestMoneyRates and QuestieServer:GetQuestMoneyRates()
+    if live then
+        -- Costs remain unscaled. Ordinary rewards and the capped-level bonus
+        -- have independent rates and are each truncated before being added.
+        local normal = rewardMoney < 0 and rewardMoney or QuestXP:ScaleRewardMoney(rewardMoney, live.normal)
+        local bonus = 0
+        if playerLevel >= live.maxLevel then
+            local questFlags = QuestieDB.QueryQuestSingle(questID, "questFlags") or 0
+            if bitband(questFlags, QUEST_FLAGS_NO_MONEY_FROM_XP) == 0 then
+                local baseXP = QuestXP:GetQuestLogRewardXP(questID, true, true, live.maxLevel)
+                bonus = QuestXP:ScaleRewardMoney(baseXP * 6, live.bonus)
+            end
+        end
+        if normal and bonus then
+            local total = normal + bonus
+            if total >= -2147483648 and total <= 2147483647 then return total end
+        end
+        -- Unsupported conversions retain the complete generated fallback.
+    end
+
     -- https://wowpedia.fandom.com/wiki/Quest?oldid=1035002 Formula is XP gained * 6c
     if QuestiePlayer.IsMaxLevel() then
         local questFlags = QuestieDB.QueryQuestSingle(questID, "questFlags") or 0
@@ -357,6 +378,18 @@ local function _CalculateNextMonthlyResetTime(currentTime, currentDate)
     }) or (currentTime + (32 * SECONDS_PER_DAY))
 end
 
+local function _CalculateNextWeeklyResetTime(currentTime, currentDate)
+    local resetHour = Questie.db.profile.weeklyResetHour or FALLBACK_DAILY_RESET_HOUR
+    local dayOffset = ((Questie.db.profile.weeklyResetDay or 4) - currentDate.weekday + 7) % 7
+    local deadline = time({year = currentDate.year, month = currentDate.month,
+        day = currentDate.day + dayOffset, hour = resetHour, min = 0, sec = 0})
+    if deadline <= currentTime then
+        deadline = time({year = currentDate.year, month = currentDate.month,
+            day = currentDate.day + dayOffset + 7, hour = resetHour, min = 0, sec = 0})
+    end
+    return deadline
+end
+
 local function _GetLegacyDailyResetTime()
     local char = Questie.db.char
     if next(char.daily or {}) or next(char.acoreDailyQuestCompletions or {}) then
@@ -435,19 +468,11 @@ function QuestieCompat.CalculateNextResetTime()
     Questie.Debug(Questie.DEBUG_DEVELOP, "[CalculateNextResetTime] Next daily rest time: ", date("%m/%d/%y %H:%M:%S", Questie.db.profile.dailyResetTime))
 
     Questie.db.profile.weeklyResetHour = Questie.db.profile.weeklyResetHour or tonumber(date("%H", Questie.db.profile.dailyResetTime+300))
-    local weeklyResetDay = Questie.db.profile.weeklyResetDay or 4
-    local dayOffset = (weeklyResetDay - currentDate.weekday + 7) % 7
-    if dayOffset == 0 and currentDate.hour >= Questie.db.profile.weeklyResetHour then
-        dayOffset = 7
+    if type(Questie.db.char.weeklyResetTime) ~= "number" then
+        local legacy = next(Questie.db.char.weekly or {}) and Questie.db.profile.weeklyResetTime
+        Questie.db.char.weeklyResetTime = type(legacy) == "number" and legacy
+            or _CalculateNextWeeklyResetTime(currentTime, currentDate)
     end
-
-    Questie.db.profile.weeklyResetTime = Questie.db.profile.weeklyResetTime or time({
-        year = currentDate.year,
-        month = currentDate.month,
-        day = currentDate.day + dayOffset,
-        hour = Questie.db.profile.weeklyResetHour,
-    })
-    Questie.Debug(Questie.DEBUG_DEVELOP, "[CalculateNextResetTime] Next weekly rest time: ", date("%m/%d/%y %H:%M:%S", Questie.db.profile.weeklyResetTime))
 end
 
 function QuestieCompat.ResetDailyQuests(reset)
@@ -495,76 +520,83 @@ function QuestieCompat.ResetDailyQuests(reset)
     return didReset
 end
 
-local weeklyResetTimer
-function QuestieCompat.ResetWeeklyQuests()
-    local currentTime = QuestieCompat.GetServerTime()
-    local timeUntilReset = Questie.db.profile.weeklyResetTime - currentTime
-
-    if timeUntilReset < 1800 then
-        if weeklyResetTimer then
-            weeklyResetTimer = weeklyResetTimer:Cancel()
-        end
-
-        weeklyResetTimer = weeklyResetTimer or QuestieCompat.C_Timer.After(timeUntilReset, function()
-            for questId in pairs(Questie.db.char.weekly) do
-                Questie.db.char.weekly[questId] = nil
-                Questie.db.char.complete[questId] = nil
-            end
-            Questie.db.profile.weeklyResetTime = nil
-            QuestieCompat.CalculateNextResetTime()
-            if Questie.started then
-                AvailableQuests.CalculateAndDrawAll()
-            end
-        end)
-
-        return true
-    end
-end
-
-local monthlyResetTimer
-function QuestieCompat.ResetMonthlyQuests()
+local periodicResetTimers = {}
+local resetTimingGraceUntil
+local function _ResetPeriodicQuests(period)
     local currentTime, currentDate = QuestieCompat.GetServerTime()
-    Questie.db.char.monthly = Questie.db.char.monthly or {}
+    local char = Questie.db.char
+    char[period] = char[period] or {}
+    char.serverQuestResetTimes = char.serverQuestResetTimes or {}
+    local marker = period .. "ResetTime"
+    local calculate = period == "weekly" and _CalculateNextWeeklyResetTime or _CalculateNextMonthlyResetTime
+    local server = QuestieLoader:ImportModule("QuestieServer")
+    local resets = server.GetQuestResetTimes and server:GetQuestResetTimes()
+    local didReset, delay = false, nil
+    resetTimingGraceUntil = resetTimingGraceUntil or (GetTime() + 5)
 
-    -- Monthly completion state is character-specific, so its reset marker must
-    -- also be character-specific. Otherwise one character logging in after a
-    -- reset could advance a shared marker before the others clear their state.
-    local monthlyResetTime = Questie.db.char.monthlyResetTime
-
-    if type(monthlyResetTime) ~= "number" then
-        monthlyResetTime = _CalculateNextMonthlyResetTime(currentTime, currentDate)
-        Questie.db.char.monthlyResetTime = monthlyResetTime
+    if resets then
+        local deadline, previous = resets[period], char.serverQuestResetTimes[period]
+        -- Passing the advertised time alone is insufficient: wait for AC to
+        -- advance its deadline after actually resetting the quest status.
+        didReset = type(previous) == "number" and resets.serverTime >= previous and deadline > previous
+        if deadline > resets.serverTime then
+            char.serverQuestResetTimes[period] = deadline
+            -- Keep a usable fallback in the compatibility clock's time domain.
+            char[marker] = currentTime + deadline - resets.serverTime
+            delay = deadline - resets.serverTime + 1
+        else
+            char.serverQuestResetTimes[period] = deadline
+            delay = 3
+        end
+    else
+        if type(char[marker]) ~= "number" then
+            local legacy = period == "weekly" and next(char.weekly) and Questie.db.profile.weeklyResetTime
+            char[marker] = type(legacy) == "number" and legacy or calculate(currentTime, currentDate)
+        end
+        -- A completed-quest query can arrive before the first bridge response.
+        -- Give that response time to correct an expired guessed schedule before
+        -- deleting saved completions. An absent bridge still falls back after 5s.
+        local waiting = server.GetQuestResetTimes and not server:HasCapability("HEARTBEAT")
+            and next(char[period]) and GetTime() < resetTimingGraceUntil
+        didReset = currentTime >= char[marker] and not waiting
+        if didReset then
+            char[marker] = calculate(currentTime, currentDate)
+            char.serverQuestResetTimes[period] = nil
+        end
+        delay = waiting and math_max(1, resetTimingGraceUntil - GetTime()) or (char[marker] - currentTime)
     end
 
-    local didReset = false
-    if currentTime >= monthlyResetTime then
-        for questId in pairs(Questie.db.char.monthly) do
-            Questie.db.char.monthly[questId] = nil
-            Questie.db.char.complete[questId] = nil
+    if didReset then
+        for questId in pairs(char[period]) do
+            char[period][questId] = nil
+            char.complete[questId] = nil
             serverCompletedQuests[questId] = nil
         end
-
-        Questie.db.char.monthlyResetTime = _CalculateNextMonthlyResetTime(currentTime, currentDate)
-        monthlyResetTime = Questie.db.char.monthlyResetTime
-        didReset = true
-
         if Questie.started then
             AvailableQuests.CalculateAndDrawAll()
         end
     end
 
-    if monthlyResetTimer then
-        monthlyResetTimer:Cancel()
-    end
-    local timeUntilReset = math_max(0.01, monthlyResetTime - currentTime)
-    monthlyResetTimer = QuestieCompat.C_Timer.After(math_min(timeUntilReset, MAX_ANIMATION_TIMER_SECONDS), function()
-        monthlyResetTimer = nil
-        QuestieCompat.ResetMonthlyQuests()
+    if periodicResetTimers[period] then periodicResetTimers[period]:Cancel() end
+    periodicResetTimers[period] = QuestieCompat.C_Timer.After(math_min(math_max(0.01, delay), MAX_ANIMATION_TIMER_SECONDS), function()
+        periodicResetTimers[period] = nil
+        if Questie.db.profile.resetDailyQuests then _ResetPeriodicQuests(period) end
     end)
-
-    Questie.Debug(Questie.DEBUG_DEVELOP, "[ResetMonthlyQuests] Next monthly reset time: ", date("%m/%d/%y %H:%M:%S", monthlyResetTime))
-
     return didReset
+end
+
+function QuestieCompat.ResetWeeklyQuests()
+    return _ResetPeriodicQuests("weekly")
+end
+
+function QuestieCompat.ResetMonthlyQuests()
+    return _ResetPeriodicQuests("monthly")
+end
+
+function QuestieCompat.RefreshServerQuestResets()
+    if not Questie.db.char or not Questie.db.char.complete or not Questie.db.profile.resetDailyQuests then return end
+    QuestieCompat.ResetWeeklyQuests()
+    QuestieCompat.ResetMonthlyQuests()
 end
 
 function QuestieCompat.SetQuestComplete(questId)
@@ -583,6 +615,7 @@ function QuestieCompat.SetQuestComplete(questId)
             Questie.db.char.daily[questId] = true
             Questie.db.char.complete[questId] = true
         elseif QuestieDB.IsWeeklyQuest(questId) then
+            QuestieCompat.ResetWeeklyQuests()
             Questie.db.char.weekly[questId] = true
             Questie.db.char.complete[questId] = true
         elseif QuestieDB.IsMonthlyQuest(questId) then
@@ -662,9 +695,7 @@ function QuestieCompat:QUEST_QUERY_COMPLETE(event)
         QuestieCompat.Merge(Questie.db.char.complete, Questie.db.char.daily)
 
         if (Questie.IsWotlk or QuestieCompat.Is335) and QuestiePlayer.GetPlayerLevel() >= 78 then
-            if (not QuestieCompat.ResetWeeklyQuests()) and (Questie.db.profile.weeklyResetDay == CalendarGetDate()) then
-                weeklyResetTimer = weeklyResetTimer or QuestieCompat.C_Timer.NewTicker(1800, QuestieCompat.ResetWeeklyQuests)
-            end
+            QuestieCompat.ResetWeeklyQuests()
             QuestieCompat.Merge(Questie.db.char.complete, Questie.db.char.weekly)
         end
 
@@ -945,7 +976,8 @@ local QUEST_COMPLETE_MSG = string.gsub(ERR_QUEST_COMPLETE_S, "(%%s)", "(.+)")
 -- QUEST_TURNED_IN is unavailable on the 3.3.5 client. Most quests are
 -- reconstructed from ERR_QUEST_COMPLETE_S, but some immediate-turn-in quests
 -- do not produce a usable message. Keep reward claims until the server confirms
--- the exact quest ID obtained from the current quest ender.
+-- the exact quest ID. Shared titles retain candidates until the rewarded set
+-- and live quest-log removals disambiguate them.
 local pendingRewardCompletions = {}
 local rewardCompletionQueryScheduled = false
 local rewardCompletionQueryInFlight = false
@@ -979,9 +1011,11 @@ local function ResolveQuestEnderQuestId(questTitle)
     local uniqueDoableMatch
     local multipleMatches = false
     local multipleDoableMatches = false
+    local matches, doableMatches = {}, {}
 
     for _, questId in pairs(questsEnded) do
         if QuestieDB.QueryQuestSingle(questId, "name") == questTitle then
+            matches[questId] = true
             if uniqueMatch and uniqueMatch ~= questId then
                 multipleMatches = true
             else
@@ -989,6 +1023,7 @@ local function ResolveQuestEnderQuestId(questTitle)
             end
 
             if QuestieDB.IsDoable(questId) then
+                doableMatches[questId] = true
                 if uniqueDoableMatch and uniqueDoableMatch ~= questId then
                     multipleDoableMatches = true
                 else
@@ -999,24 +1034,27 @@ local function ResolveQuestEnderQuestId(questTitle)
     end
 
     if uniqueDoableMatch and not multipleDoableMatches then
-        return uniqueDoableMatch
+        return uniqueDoableMatch, {[uniqueDoableMatch] = true}
     end
     if uniqueMatch and not multipleMatches then
-        return uniqueMatch
+        return uniqueMatch, {[uniqueMatch] = true}
     end
+    return nil, next(doableMatches) and doableMatches or matches
 end
 
 local function ResolveRewardQuestId(questTitle)
     -- Immediate-turn-in quests can disappear from (or never enter) the quest
     -- log, so resolve against the current quest ender first.
-    local questId = ResolveQuestEnderQuestId(questTitle)
+    local questId, candidates = ResolveQuestEnderQuestId(questTitle)
     if questId then
-        return questId
+        return questId, candidates
     end
 
     -- Database mismatches can prevent quest-ender resolution. Fall back to the
     -- quest log only when the title identifies one unique quest ID.
     local uniqueQuestId
+    local logMatches = {}
+    local multipleMatches = false
     for questLogIndex = 1, MAX_QUEST_LOG_INDEX do
         local title, _, _, _, isHeader, _, _, _, id = GetQuestLogTitle(questLogIndex)
         if not title then
@@ -1025,13 +1063,20 @@ local function ResolveRewardQuestId(questTitle)
 
         if (not isHeader) and title == questTitle then
             if uniqueQuestId and uniqueQuestId ~= id then
-                return nil
+                multipleMatches = true
             end
             uniqueQuestId = id
+            logMatches[id] = true
         end
     end
 
-    return uniqueQuestId
+    if not multipleMatches and uniqueQuestId and
+        (not candidates or not next(candidates) or candidates[uniqueQuestId]) then
+        return uniqueQuestId, logMatches
+    end
+    -- Prefer the current ender's candidates when available; unrelated NPCs can
+    -- also offer quests with this title.
+    return nil, candidates and next(candidates) and candidates or logMatches
 end
 
 local function CompleteRewardQuest(questId)
@@ -1094,8 +1139,10 @@ ProcessPendingRewardCompletions = function()
         -- our delayed request. Fold its result into each pending baseline so it
         -- cannot be mistaken for the reward we are about to verify.
         for _, pending in ipairs(pendingRewardCompletions) do
-            if pending.questId and serverCompletedQuests[pending.questId] then
-                pending.completedBefore = true
+            for questId, candidate in pairs(pending.candidates) do
+                if serverCompletedQuests[questId] then
+                    candidate.completedBefore = true
+                end
             end
         end
         return
@@ -1103,18 +1150,74 @@ ProcessPendingRewardCompletions = function()
 
     local completedQuerySerial = rewardCompletionQuerySerial
     rewardCompletionQueryInFlight = false
-
+    local groups = {}
     for index = #pendingRewardCompletions, 1, -1 do
         local pending = pendingRewardCompletions[index]
         if pending.minimumQuerySerial <= completedQuerySerial then
             table.remove(pendingRewardCompletions, index)
+            local group = groups[pending.title] or {claims = {}, confirmed = {}}
+            groups[pending.title] = group
+            group.claims[#group.claims + 1] = pending
+            for questId, candidate in pairs(pending.candidates) do
+                local leftLog = candidate.wasInLog and not QuestieCompat.GetQuestLogIndexByID(questId)
+                -- AzerothCore can retain lifetime reward history for repeatables.
+                -- In that case a live-log removal proves this claim succeeded.
+                -- Never treat an explicit abandon or an unchanged log as a reward.
+                if not candidate.abandoned and serverCompletedQuests[questId]
+                    and ((candidate.wasInLog and leftLog)
+                        or (not candidate.wasInLog and not candidate.completedBefore)) then
+                    group.confirmed[questId] = group.confirmed[questId] or {}
+                    group.confirmed[questId][#group.claims] = true
+                end
+            end
+        end
+    end
 
-            -- Require a false -> true transition for this exact quest ID. This
-            -- prevents failed reward attempts and previously completed
-            -- repeatable quests from being marked complete locally.
-            if pending.questId and (not pending.completedBefore)
-                and serverCompletedQuests[pending.questId] then
-                CompleteRewardQuest(pending.questId)
+    for _, group in pairs(groups) do
+        local confirmedIds = {}
+        for questId in pairs(group.confirmed) do confirmedIds[#confirmedIds + 1] = questId end
+        table.sort(confirmedIds)
+        -- Each confirmed ID must have a distinct supporting reward claim.
+        -- Counts alone are insufficient if different NPCs share this title.
+        local assignedClaims = {}
+        local function assignClaim(questId, visited)
+            for claimIndex in pairs(group.confirmed[questId]) do
+                if not visited[claimIndex] then
+                    visited[claimIndex] = true
+                    if not assignedClaims[claimIndex] or assignClaim(assignedClaims[claimIndex], visited) then
+                        assignedClaims[claimIndex] = questId
+                        return true
+                    end
+                end
+            end
+            return false
+        end
+        local canConfirm = #confirmedIds <= #group.claims
+        if canConfirm then
+            for _, questId in ipairs(confirmedIds) do
+                if not assignClaim(questId, {}) then canConfirm = false; break end
+            end
+        end
+        if canConfirm then
+            -- Several same-title rewards can finish before one query. Consume
+            -- each confirmed ID once, without guessing which claim came first.
+            for _, questId in ipairs(confirmedIds) do
+                for _, pending in ipairs(pendingRewardCompletions) do
+                    local candidate = pending.candidates[questId]
+                    if candidate then
+                        candidate.completedBefore, candidate.wasInLog = true, false
+                    end
+                end
+                CompleteRewardQuest(questId)
+            end
+        else
+            -- A newer claim may have completed while this query was in flight.
+            -- Wait for its query rather than assign several rewards to one claim.
+            for _, pending in ipairs(group.claims) do
+                if GetTime() < pending.expiresAt then
+                    pending.minimumQuerySerial = completedQuerySerial + 1
+                    pendingRewardCompletions[#pendingRewardCompletions + 1] = pending
+                end
             end
         end
     end
@@ -1135,14 +1238,15 @@ function QuestieCompat:CHAT_MSG_SYSTEM(event, message)
         local matchingIndex
         local matchingCount = 0
         for index, pending in ipairs(pendingRewardCompletions) do
-            if pending.title == questName and pending.questId then
+            if pending.title == questName then
                 matchingIndex = index
                 matchingCount = matchingCount + 1
             end
         end
 
-        if matchingCount == 1 then
-            local questId = pendingRewardCompletions[matchingIndex].questId
+        local pending = matchingIndex and pendingRewardCompletions[matchingIndex]
+        if matchingCount == 1 and pending.questId and not pending.candidates[pending.questId].abandoned then
+            local questId = pending.questId
             table.remove(pendingRewardCompletions, matchingIndex)
             CompleteRewardQuest(questId)
         end
@@ -1185,11 +1289,20 @@ function QuestieCompat.QuestEventHandler_RegisterEvents()
             return
         end
 
-        local questId = ResolveRewardQuestId(questTitle)
+        local questId, matchingIds = ResolveRewardQuestId(questTitle)
+        local candidates = {}
+        for id in pairs(matchingIds or {}) do
+            candidates[id] = {
+                completedBefore = serverCompletedQuests[id] or false,
+                wasInLog = QuestieCompat.GetQuestLogIndexByID(id) ~= nil,
+            }
+        end
+        if not next(candidates) then return end
         pendingRewardCompletions[#pendingRewardCompletions + 1] = {
             title = questTitle,
             questId = questId,
-            completedBefore = questId and (serverCompletedQuests[questId] or false) or false,
+            candidates = candidates,
+            expiresAt = GetTime() + REWARD_COMPLETION_QUERY_TIMEOUT,
             -- The next query issued after this hook is the first one which can
             -- legitimately contain this completion.
             minimumQuerySerial = rewardCompletionQuerySerial + 1,
@@ -1207,6 +1320,11 @@ function QuestieCompat.QuestEventHandler_RegisterEvents()
     hooksecurefunc("AbandonQuest", function()
         local questId = QuestieCompat.abandonQuestID or select(9, GetQuestLogTitle(GetQuestLogSelection()))
         if questId and questId > 0 then
+            for _, pending in ipairs(pendingRewardCompletions) do
+                if pending.candidates[questId] then
+                    pending.candidates[questId].abandoned = true
+                end
+            end
             _QuestEventHandler:QuestRemoved(questId, true)
         end
         QuestieCompat.abandonQuestID = nil

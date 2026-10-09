@@ -492,7 +492,7 @@ function _QuestieJourney.questsByZone:CategorizeQuests(quests)
             end
 
             -- Scourge Invasion quests (Acore worldstate event)
-            if QuestieQuestBlacklist.ScourgeInvasionQuests[questId] then
+            if QuestieQuestBlacklist.ScourgeInvasionQuests[questId] and QuestieEvent.IsServerQuestActive(questId) ~= true then
                 tinsert(zoneTree[6].children, temp)
                 unobtainableCounter = unobtainableCounter + 1
             end

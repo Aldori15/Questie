@@ -23,6 +23,8 @@ local IsleOfQuelDanas = QuestieLoader:ImportModule("IsleOfQuelDanas")
 local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
 ---@type DailyQuestComms
 local DailyQuestComms = QuestieLoader:ImportModule("DailyQuestComms")
+---@type QuestieServer
+local QuestieServer = QuestieLoader:ImportModule("QuestieServer")
 ---@type Phasing
 local Phasing = QuestieLoader:ImportModule("Phasing")
 ---@type QuestieIconVisibility
@@ -79,6 +81,7 @@ local availableQuests = {}
 local nextAvailableQuests = {}
 local availableQuestsByNpc = {}
 local levelRequirementCache = {}
+local dirtySpawnVisibility = {}
 
 ---@type string|nil
 local lastNpcGuid
@@ -276,7 +279,23 @@ end
 ---@param questId QuestId
 ---@return boolean
 function AvailableQuests.IsUnavailableForCurrentReset(questId)
+    local selected = QuestieServer:GetQuestAvailabilityState(questId)
+    if selected ~= nil then return not selected end
     return _GetUnavailableQuestsDeterminedByTalking()[questId] == true
+end
+
+local function _GetEffectiveUnavailableQuests()
+    local observed = _GetUnavailableQuestsDeterminedByTalking()
+    local ids = QuestieServer:GetStateControlledQuests()
+    if not ids then return observed end
+    -- Keep observations intact for fallback. Fresh pool/faction state overrides
+    -- NPC-choice inference, never character or visibility requirements.
+    local effective = {}
+    for id, unavailable in pairs(observed) do effective[id] = unavailable end
+    for _, id in ipairs(ids) do
+        effective[id] = (not QuestiePlayer.currentQuestlog[id]) and QuestieServer:GetQuestAvailabilityState(id) == false or nil
+    end
+    return effective
 end
 
 QuestieDB.SetUnavailableQuestChecker(AvailableQuests.IsUnavailableForCurrentReset)
@@ -352,6 +371,22 @@ local function _ClearUnavailableQuestForToday(npcId, questId)
     return removed
 end
 
+-- An event/phase reopening invalidates observations made while its gate was closed.
+-- Completion history and player-selected hides are independent and stay intact.
+function AvailableQuests.ClearUnavailableQuestForLiveTransition(questId)
+    _GetUnavailableQuestsDeterminedByTalking()
+    local bucket = _GetUnavailableQuestBucketForQuest(_GetUnavailableQuestSyncState(), questId)
+    if not bucket then return false end
+    local npcIds = {}
+    for npcId, quests in pairs(bucket.byNpc) do
+        if quests[questId] then npcIds[#npcIds + 1] = npcId end
+    end
+    local changed = false
+    for _, npcId in ipairs(npcIds) do changed = _ClearUnavailableQuestForToday(npcId, questId) or changed end
+    if changed then lastNpcGuid = nil end
+    return changed
+end
+
 local _CalculateAvailableQuests, _DrawChildQuests, _AddStarter, _DrawAvailableQuest, _GetQuestIcon, _GetIconScaleForAvailable, _HasProperDistanceToAlreadyAddedSpawns, _RegisterQuestStartTooltips, _GetStructuredAvailableQuestsInGossip, _GetStructuredActiveQuestsInGossip, _RemoveQuestFromNpcAvailability, _SyncAvailableQuestDisplay, _HasLiveAvailableQuestFrames
 
 ---@param questId QuestId
@@ -378,6 +413,33 @@ end
 function AvailableQuests.MarkQuestStartTooltipsDirty()
     availableQuestStartTooltipsDirty = true
 end
+
+-- Availability can remain true while a world/story transition changes locations.
+-- Mark existing notes for replacement in the normal drawing thread.
+function AvailableQuests.InvalidateSpawnVisibility()
+    -- During a refresh these two buffers contain the current and previous sets.
+    for _, quests in ipairs({availableQuests, nextAvailableQuests}) do
+        for questId in pairs(quests) do
+            local quest = QuestieDB.GetQuest(questId)
+            for _, npcId in ipairs(quest and quest.Starts and quest.Starts.NPC or {}) do
+                local npc = QuestieDB:GetNPC(npcId)
+                if npc and Phasing.HasDynamicSpawns(npc.spawns) then
+                    dirtySpawnVisibility[questId] = true
+                    break
+                end
+            end
+            for _, objectId in ipairs(quest and quest.Starts and quest.Starts.GameObject or {}) do
+                local object = QuestieDB:GetObject(objectId)
+                if object and Phasing.HasDynamicSpawns(object.spawns) then
+                    dirtySpawnVisibility[questId] = true
+                    break
+                end
+            end
+        end
+    end
+end
+
+AvailableQuests.InvalidateWintergraspSpawnVisibility = AvailableQuests.InvalidateSpawnVisibility
 
 -- Repeatable quests should be controlled by showRepeatableQuests
 local function _IsLevelRequirementsFulfilledForAvailable(questId, minLevel, maxLevel, playerLevel, isRepeatableQuest)
@@ -668,6 +730,7 @@ end
 
 ---@param questId QuestId
 function AvailableQuests.RemoveAvailableQuest(questId)
+    dirtySpawnVisibility[questId] = nil
     availableQuests[questId] = nil
     _RemoveQuestFromNpcAvailability(questId, QuestieDB.GetQuest(questId))
     _UnloadQuestFrames(questId, nil, "available")
@@ -708,14 +771,17 @@ function AvailableQuests.RemoveQuestsForToday(npcId, questIds)
 
     local removedAnyQuest = false
     for _, questId in pairs(questIds) do
-        if availableQuests[questId] or QuestieMap.questIdFrames[questId] or QuestieTooltips.lookupKeysByQuestId[questId] then
-            AvailableQuests.RemoveAvailableQuest(questId)
-            removedAnyQuest = true
+        -- NPC/comms inference cannot replace authoritative pool/faction state.
+        if QuestieServer:GetQuestAvailabilityState(questId) == nil then
+            if availableQuests[questId] or QuestieMap.questIdFrames[questId] or QuestieTooltips.lookupKeysByQuestId[questId] then
+                AvailableQuests.RemoveAvailableQuest(questId)
+                removedAnyQuest = true
+            end
+            if availableQuestsByNpc[npcId] then
+                availableQuestsByNpc[npcId][questId] = nil
+            end
+            _StoreUnavailableQuestForToday(npcId, questId)
         end
-        if availableQuestsByNpc[npcId] then
-            availableQuestsByNpc[npcId][questId] = nil
-        end
-        _StoreUnavailableQuestForToday(npcId, questId)
     end
 
     if removedAnyQuest then
@@ -819,7 +885,7 @@ function AvailableQuests.MergeUnavailableQuestSnapshot(snapshot)
                         local syncState = _GetUnavailableQuestSyncState()
                         local bucket = _GetUnavailableQuestBucketForQuest(syncState, questId)
                         local alreadyKnown = bucket and bucket.byNpc[npcId] and bucket.byNpc[npcId][questId]
-                        if not alreadyKnown then
+                        if not alreadyKnown and QuestieServer:GetQuestAvailabilityState(questId) == nil then
                             tinsert(newQuestIds, questId)
                         end
                     end
@@ -855,7 +921,8 @@ end
 ---@param questId QuestId
 ---@return boolean
 local function _ShouldCacheUnavailableQuest(questId)
-    return (QuestieDB.IsDailyQuest(questId) or QuestieDB.IsWeeklyQuest(questId))
+    return QuestieServer:GetQuestAvailabilityState(questId) == nil
+        and (QuestieDB.IsDailyQuest(questId) or QuestieDB.IsWeeklyQuest(questId))
         and QuestieDB:IsAzerothCoreAvailabilityConditionFulfilled(questId)
         and QuestieDB.IsDoable(questId)
         and _CanNpcOfferQuestToPlayer(questId)
@@ -1060,7 +1127,7 @@ end
 
 _CalculateAvailableQuests = function()
     local maxQuestsPerYield = questsPerYield
-    local unavailableQuests = _GetUnavailableQuestsDeterminedByTalking()
+    local unavailableQuests = _GetEffectiveUnavailableQuests()
     local previousAvailableQuests = availableQuests
     availableQuests = nextAvailableQuests
     nextAvailableQuests = previousAvailableQuests
@@ -1098,7 +1165,7 @@ _CalculateAvailableQuests = function()
     local hidden = Questie.db.char.hidden
 
     local currentQuestlog = QuestiePlayer.currentQuestlog
-    local currentIsleOfQuelDanasQuests = IsleOfQuelDanas.quests[Questie.db.profile.isleOfQuelDanasPhase] or {}
+    local currentIsleOfQuelDanasQuests = IsleOfQuelDanas.GetHiddenQuests()
     local aqWarEffortQuests = QuestieQuestBlacklist.AQWarEffortQuests
     local scourgeInvasionQuests = QuestieQuestBlacklist.ScourgeInvasionQuests
     local sunsReachQuests = QuestieQuestBlacklist.SunsReachQuests
@@ -1195,8 +1262,15 @@ _SyncAvailableQuestDisplay = function(previousAvailableQuests, nextAvailableQues
     questCount = 0
     local drawCount = 0
     for questId in pairs(nextAvailableQuests) do
+        local replaceSpawns = dirtySpawnVisibility[questId]
+        if replaceSpawns then
+            -- Consume before yielding so another visibility change stays dirty.
+            dirtySpawnVisibility[questId] = nil
+            _UnloadQuestFrames(questId, nil, "available")
+            QuestieTooltips:RemoveAvailableQuest(questId)
+        end
         local hasLiveFrames = _HasLiveAvailableQuestFrames(questId)
-        if (not previousAvailableQuests[questId]) or (not hasLiveFrames) then
+        if replaceSpawns or (not previousAvailableQuests[questId]) or (not hasLiveFrames) then
             _DrawAvailableQuest(questId)
             drawCount = drawCount + 1
         elseif shouldRestoreStartTooltips then
@@ -1454,6 +1528,7 @@ _AddStarter = function(starter, quest, tooltipKey, limit)
                         Name = starter.name,
                         IsObjectiveNote = false,
                         StarterType = starterType,
+                        StarterEntryId = starter.id,
                         isDungeonQuest = isDungeonQuest,
                         isRaidQuest = isRaidQuest,
                         IsItemStartQuestSource = starterType == "itemFromMonster" or starterType == "itemFromObject",
@@ -1506,6 +1581,7 @@ _AddStarter = function(starter, quest, tooltipKey, limit)
                             Name = starter.name,
                             IsObjectiveNote = false,
                             StarterType = starterType,
+                            StarterEntryId = starter.id,
                             isDungeonQuest = isDungeonQuest,
                             isRaidQuest = isRaidQuest,
                             IsItemStartQuestSource = starterType == "itemFromMonster" or starterType == "itemFromObject",

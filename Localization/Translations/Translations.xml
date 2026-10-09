@@ -44,6 +44,7 @@
     <Script file="Moonwell.lua"/>
     <Script file="Professions.lua"/>
     <Script file="QuestStates.lua"/>
+    <Script file="ServerProgress.lua"/>
     <Script file="Races.lua"/>
     <Script file="StaticPopup.lua"/>
     <Script file="TooltipsUI.lua"/>

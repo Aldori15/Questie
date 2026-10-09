@@ -104,6 +104,134 @@ local EVENT_INIT_INITIAL_DELAY = 1
 local EVENT_INIT_RETRY_INTERVAL = 1
 local EVENT_INIT_MAX_ATTEMPTS = 12
 
+-- Calendar/manual results remain independent of optional live overrides.
+local fallbackQuestStates, serverQuestStates = {}, {}
+local serverQuestRegistrations = {}
+local serverDarkmoonLocationKey
+local calendarDarkmoonNpcs = {}
+
+local function CaptureFallback(questId)
+    if not fallbackQuestStates[questId] then
+        fallbackQuestStates[questId] = {
+            active = QuestieEvent.activeQuests[questId],
+            hidden = QuestieCorrections.hiddenQuests[questId],
+        }
+    end
+    return fallbackQuestStates[questId]
+end
+
+local function ApplyQuestState(questId, active, hidden)
+    local changed = QuestieEvent.activeQuests[questId] ~= active or QuestieCorrections.hiddenQuests[questId] ~= hidden
+    QuestieEvent.activeQuests[questId], QuestieCorrections.hiddenQuests[questId] = active, hidden
+    return changed
+end
+
+local function SetEventQuestState(questId, isActive)
+    local fallback = CaptureFallback(questId)
+    fallback.active, fallback.hidden = isActive or nil, (not isActive) or nil
+    if serverQuestStates[questId] ~= nil then isActive = serverQuestStates[questId] end
+    return ApplyQuestState(questId, isActive or nil, (not isActive) or nil)
+end
+
+-- A complete set of supported gates. Missing keys restore that quest's fallback.
+function QuestieEvent.SetServerQuestStates(states)
+    states = states or {}
+    local changed = false
+    for questId in pairs(serverQuestStates) do
+        if states[questId] == nil then
+            local fallback = CaptureFallback(questId)
+            changed = ApplyQuestState(questId, fallback.active, fallback.hidden) or changed
+            fallbackQuestStates[questId] = nil
+            changed = true -- Phase filters also need to restore their manual fallback.
+        end
+    end
+    for questId, active in pairs(states) do
+        if serverQuestStates[questId] ~= active then changed = true end
+    end
+    serverQuestStates = states
+    for questId, active in pairs(states) do
+        local fallback = CaptureFallback(questId)
+        local eventActive = fallback.active
+        if serverQuestRegistrations[questId] or questId == 8194 then eventActive = active or nil end
+        -- Non-holiday and world-progress quests retain ordinary quest classification/level filters.
+        changed = ApplyQuestState(questId, eventActive, (not active) or nil) or changed
+        if serverQuestRegistrations[questId] then
+            _QuestieEvent.eventNamesForQuests[questId] = serverQuestRegistrations[questId].name
+            _QuestieEvent.eventQuestsInCurrentExpansion[questId] = true
+        end
+    end
+    if states[8194] ~= nil then
+        _QuestieEvent.eventNamesForQuests[8194] = "Stranglethorn Fishing Extravaganza"
+        _QuestieEvent.eventQuestsInCurrentExpansion[8194] = true
+    else
+        _QuestieEvent.eventNamesForQuests[8194] = nil
+        _QuestieEvent.eventQuestsInCurrentExpansion[8194] = nil
+    end
+    return changed
+end
+
+function QuestieEvent.GetServerQuestRegistrations()
+    return serverQuestRegistrations
+end
+
+function QuestieEvent.IsServerQuestActive(questId)
+    return serverQuestStates[questId]
+end
+
+function QuestieEvent.RefreshAvailableQuests()
+    _RefreshAvailableQuests()
+end
+
+function QuestieEvent.IsQuestVisibleForExpansion(hideQuest)
+    return _IsEventQuestVisible(hideQuest)
+end
+
+local function DarkmoonNpcFixes(location)
+    if Questie.IsWotlk then return QuestieWotlkNpcFixes:LoadDarkmoonFixes(location) end
+    return QuestieNPCFixes:LoadDarkmoonFixes(location == 1)
+end
+
+function QuestieEvent.SetServerDarkmoonLocations(locations)
+    local key = locations and table.concat(locations, ",") or nil
+    if serverDarkmoonLocationKey == key then return false end
+    serverDarkmoonLocationKey = key
+    local changed = false
+    for id, fallback in pairs(calendarDarkmoonNpcs) do
+        QuestieDB.npcDataOverrides[id] = fallback or nil
+        QuestieDB.InvalidateNPC(id)
+        changed = true
+    end
+    if locations then
+        local npcFixes = {}
+        local spawnsKey = QuestieDB.npcKeys.spawns
+        for _, location in ipairs(locations) do
+            for id, data in pairs(DarkmoonNpcFixes(location) or {}) do
+                if not npcFixes[id] then
+                    npcFixes[id] = {}
+                    for field, value in pairs(data) do npcFixes[id][field] = value end
+                    npcFixes[id][spawnsKey] = {}
+                end
+                for zone, spawns in pairs(data[spawnsKey] or {}) do
+                    npcFixes[id][spawnsKey][zone] = spawns
+                end
+            end
+        end
+        for id, data in pairs(npcFixes) do
+            if calendarDarkmoonNpcs[id] == nil then calendarDarkmoonNpcs[id] = QuestieDB.npcDataOverrides[id] or false end
+            QuestieDB.npcDataOverrides[id] = data
+            QuestieDB.InvalidateNPC(id)
+            changed = true
+        end
+    end
+    if changed and Questie.started then
+        local available = QuestieLoader:ImportModule("AvailableQuests")
+        for id, registration in pairs(serverQuestRegistrations) do
+            if registration.name == "Darkmoon Faire" then available.RemoveAvailableQuest(id) end
+        end
+    end
+    return changed
+end
+
 _ShouldAnnounceWorldEvents = function()
     return (not Questie.db) or (not Questie.db.profile) or Questie.db.profile.announceWorldEvents ~= false
 end
@@ -413,19 +541,7 @@ _SetTimedEventQuestState = function(eventName, isActive)
 
     local changed = false
     for questId in pairs(questIds) do
-        if isActive then
-            if QuestieEvent.activeQuests[questId] ~= true or QuestieCorrections.hiddenQuests[questId] ~= nil then
-                changed = true
-            end
-            QuestieCorrections.hiddenQuests[questId] = nil
-            QuestieEvent.activeQuests[questId] = true
-        else
-            if QuestieEvent.activeQuests[questId] == true or QuestieCorrections.hiddenQuests[questId] ~= true then
-                changed = true
-            end
-            QuestieCorrections.hiddenQuests[questId] = true
-            QuestieEvent.activeQuests[questId] = nil
-        end
+        changed = SetEventQuestState(questId, isActive) or changed
     end
 
     if changed then
@@ -436,19 +552,7 @@ end
 _SetPreEventQuestState = function(isActive)
     local changed = false
     for questId in pairs(PRE_EVENT_QUEST_IDS) do
-        if isActive then
-            if QuestieEvent.activeQuests[questId] ~= true or QuestieCorrections.hiddenQuests[questId] ~= nil then
-                changed = true
-            end
-            QuestieCorrections.hiddenQuests[questId] = nil
-            QuestieEvent.activeQuests[questId] = true
-        else
-            if QuestieEvent.activeQuests[questId] == true or QuestieCorrections.hiddenQuests[questId] ~= true then
-                changed = true
-            end
-            QuestieCorrections.hiddenQuests[questId] = true
-            QuestieEvent.activeQuests[questId] = nil
-        end
+        changed = SetEventQuestState(questId, isActive) or changed
     end
 
     if changed then
@@ -770,11 +874,7 @@ function QuestieEvent:Load(isFinalPass)
             if isActiveEvent
                 and isActiveTimedQuest
                 and _WithinDates(startDay, startMonth, endDay, endMonth) then
-                if not QuestieEvent.activeQuests[questId] then
-                    addedActiveQuest = true
-                end
-                QuestieCorrections.hiddenQuests[questId] = nil
-                QuestieEvent.activeQuests[questId] = true
+                addedActiveQuest = SetEventQuestState(questId, true) or addedActiveQuest
             end
         end
     end
@@ -918,63 +1018,26 @@ _LoadDarkmoonFaire = function(eventLocation)
     local addedActiveQuest = false
     local isInMulgore = eventLocation == DMF_LOCATIONS.MULGORE
     local isInTerokkar = eventLocation == DMF_LOCATIONS.TEROKKAR_FOREST
-    local darkmoonNpcFixes = nil
-
-    if Questie.IsWotlk then
-        darkmoonNpcFixes = QuestieWotlkNpcFixes:LoadDarkmoonFixes(eventLocation)
-    else
-        darkmoonNpcFixes = QuestieNPCFixes:LoadDarkmoonFixes(isInMulgore)
-    end
+    local darkmoonNpcFixes = DarkmoonNpcFixes(eventLocation)
 
     -- The faire is setting up right now or is already up
     local allianceAnnouncingQuestId = 7905 -- Alliance announcement quest
     local hordeAnnouncingQuestId = 7926 -- Horde announcement quest
 
-    if isInTerokkar then
-        -- Neither city announcement quest is available while the Faire is in Terokkar
-        if QuestieCorrections.hiddenQuests[allianceAnnouncingQuestId] ~= true
-            or QuestieCorrections.hiddenQuests[hordeAnnouncingQuestId] ~= true
-            or QuestieEvent.activeQuests[allianceAnnouncingQuestId]
-            or QuestieEvent.activeQuests[hordeAnnouncingQuestId]
-        then
-            addedActiveQuest = true
-        end
-        QuestieCorrections.hiddenQuests[allianceAnnouncingQuestId] = true
-        QuestieCorrections.hiddenQuests[hordeAnnouncingQuestId] = true
-        QuestieEvent.activeQuests[allianceAnnouncingQuestId] = nil
-        QuestieEvent.activeQuests[hordeAnnouncingQuestId] = nil
-    elseif isInMulgore then
-        if not QuestieEvent.activeQuests[hordeAnnouncingQuestId] then
-            addedActiveQuest = true
-        end
-        QuestieCorrections.hiddenQuests[hordeAnnouncingQuestId] = nil
-        QuestieCorrections.hiddenQuests[allianceAnnouncingQuestId] = true
-        QuestieEvent.activeQuests[hordeAnnouncingQuestId] = true
-        QuestieEvent.activeQuests[allianceAnnouncingQuestId] = nil
-    else
-        if not QuestieEvent.activeQuests[allianceAnnouncingQuestId] then
-            addedActiveQuest = true
-        end
-        QuestieCorrections.hiddenQuests[allianceAnnouncingQuestId] = nil
-        QuestieCorrections.hiddenQuests[hordeAnnouncingQuestId] = true
-        QuestieEvent.activeQuests[allianceAnnouncingQuestId] = true
-        QuestieEvent.activeQuests[hordeAnnouncingQuestId] = nil
-    end
+    addedActiveQuest = SetEventQuestState(allianceAnnouncingQuestId, not isInMulgore and not isInTerokkar) or addedActiveQuest
+    addedActiveQuest = SetEventQuestState(hordeAnnouncingQuestId, isInMulgore) or addedActiveQuest
 
     for _, questData in pairs(QuestieEvent.eventQuests) do
         if questData[1] == "Darkmoon Faire" and _IsEventQuestVisible(questData[5]) then
             local questId = questData[2]
-            if not QuestieEvent.activeQuests[questId] then
-                addedActiveQuest = true
-            end
-            QuestieCorrections.hiddenQuests[questId] = nil
-            QuestieEvent.activeQuests[questId] = true
+            addedActiveQuest = SetEventQuestState(questId, true) or addedActiveQuest
         end
     end
 
     if darkmoonNpcFixes then
         for id, data in pairs(darkmoonNpcFixes) do
-            QuestieDB.npcDataOverrides[id] = data
+            calendarDarkmoonNpcs[id] = data
+            if serverDarkmoonLocationKey == nil then QuestieDB.npcDataOverrides[id] = data end
         end
     end
 
@@ -1881,3 +1944,8 @@ tinsert(QuestieEvent.eventQuests, {"Midsummer", 13497}) -- Honor the Flame
 tinsert(QuestieEvent.eventQuests, {"Midsummer", 13498}) -- Honor the Flame
 tinsert(QuestieEvent.eventQuests, {"Midsummer", 13499}) -- Honor the Flame
 tinsert(QuestieEvent.eventQuests, {"Midsummer", 13500}) -- Honor the Flame
+
+-- Retain lightweight metadata after the calendar loader releases its input list.
+for _, data in ipairs(QuestieEvent.eventQuests) do
+    serverQuestRegistrations[data[2]] = {name = data[1], expansion = data[5]}
+end

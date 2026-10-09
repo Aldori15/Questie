@@ -1,10 +1,12 @@
 import argparse
 import ast
 import csv
+import math
 import re
 import struct
 import sys
 from collections import defaultdict
+from functools import lru_cache
 from pathlib import Path
 
 
@@ -147,6 +149,101 @@ SMART_SOURCE_TYPE_CREATURE = 0
 SMART_ACTION_ESCORT_START = 53
 SMART_SCRIPT_KEY_COLUMNS = ("entryorguid", "source_type", "id", "link")
 
+WINTERGRASP_PHASE_NAMES = {
+    ("Alliance", "keep"): "WINTERGRASP_ALLIANCE_KEEP",
+    ("Horde", "keep"): "WINTERGRASP_HORDE_KEEP",
+    ("Alliance", "camp"): "WINTERGRASP_ALLIANCE_CAMP",
+    ("Horde", "camp"): "WINTERGRASP_HORDE_CAMP",
+}
+
+
+def parse_spawn_phase_constants(repo_root):
+    text = (Path(repo_root) / "Modules/Phasing.lua").read_text(encoding="utf-8")
+    match = re.search(r"local\s+phases\s*=\s*\{", strip_lua_comments(text))
+    if not match:
+        raise ValueError("Modules/Phasing.lua: phase constants table not found")
+    table = extract_balanced_braces(strip_lua_comments(text), match.end() - 1)
+    return {name: int(value) for name, value in re.findall(r"(\w+)\s*=\s*(\d+)", table)}
+
+
+def load_wintergrasp_scripted_spawns(source_root, repo_root, zone_maps):
+    """Read the two stock tables used by BattlefieldWG::SetupBattlefield.
+
+    This intentionally parses literal table data, not arbitrary C++ expressions.
+    A changed source format must fail visibly instead of silently dropping spawns.
+    """
+    path = Path(source_root) / "src/server/game/Battlefield/Zones/BattlefieldWG.h"
+    text = re.sub(r"//[^\n]*|/\*.*?\*/", "", path.read_text(encoding="utf-8"), flags=re.S)
+    enum = re.search(r"enum\s+WintergraspNpcs\s*\{([^}]+)\}", text, re.S)
+    if not enum:
+        raise ValueError(f"{path}: WintergraspNpcs table not found")
+    entries = {}
+    for declaration in enum.group(1).split(","):
+        if not declaration.strip():
+            continue
+        match = re.fullmatch(r"\s*(\w+)\s*=\s*(\d+)\s*", declaration)
+        if not match:
+            raise ValueError(f"{path}: unsupported NPC enum declaration: {declaration.strip()}")
+        entries[match.group(1)] = int(match.group(2))
+
+    phases = parse_spawn_phase_constants(repo_root)
+    required = set(WINTERGRASP_PHASE_NAMES.values())
+    if not required <= phases.keys() or len({phases[name] for name in required}) != 4:
+        raise ValueError("Missing or duplicate Wintergrasp phase constants in Modules/Phasing.lua")
+    spawns = defaultdict(lambda: defaultdict(list))
+    for table_name, count_name, location in (
+        ("WGKeepNPC", "WG_MAX_KEEP_NPC", "keep"),
+        ("WGOutsideNPC", "WG_MAX_OUTSIDE_NPC", "camp"),
+    ):
+        count = re.search(rf"\b{count_name}\s*=\s*(\d+)\s*;", text)
+        table = re.search(rf"\b{table_name}\s*\[[^]]+\]\s*=\s*\{{", text)
+        if not count or not table:
+            raise ValueError(f"{path}: {table_name} or its count not found")
+        body = extract_balanced_braces(text, table.end() - 1)[1:-1]
+        rows = re.findall(r"\{([^{}]+)\}", body)
+        remainder = re.sub(r"\{[^{}]+\}", "", body).replace(",", "").strip()
+        if remainder or len(rows) != int(count.group(1)):
+            raise ValueError(f"{path}: unsupported or incomplete {table_name} table")
+        for row in rows:
+            fields = [field.strip() for field in row.split(",")]
+            if len(fields) != 6:
+                raise ValueError(f"{path}: expected six fields in {table_name}: {row}")
+            try:
+                x, y, z, orientation = (float(field.rstrip("fF")) for field in fields[:4])
+            except ValueError as error:
+                raise ValueError(f"{path}: unsupported coordinate expression: {row}") from error
+            if not all(math.isfinite(value) for value in (x, y, z, orientation)):
+                raise ValueError(f"{path}: non-finite coordinate in {table_name}")
+            point = convert_world_to_zone(y, x, 4197, zone_maps, map_id=571)
+            if not point:
+                raise ValueError(f"{path}: Wintergrasp coordinate outside its map: {row}")
+            for name, team in zip(fields[4:], ("Horde", "Alliance")):
+                if name == "0":
+                    continue
+                if name not in entries or not entries[name]:
+                    raise ValueError(f"{path}: unknown NPC entry {name}")
+                phase = phases[WINTERGRASP_PHASE_NAMES[(team, location)]]
+                spawns[entries[name]][4197].append([*point, phase])
+    return {entry: dict(zones) for entry, zones in spawns.items()}
+
+
+def merge_scripted_spawn_locations(spawns_by_entry, scripted_spawns):
+    for entry, zones in scripted_spawns.items():
+        for zone, points in zones.items():
+            coordinates = {tuple(point[:2]) for point in points}
+            # Replace the SQL copy's visibility condition at matching locations,
+            # retaining any difficulty restriction. Other SQL locations stay intact.
+            existing = spawns_by_entry[entry][zone]
+            replacements = []
+            for point in points:
+                matching = [old for old in existing if tuple(old[:2]) == tuple(point[:2])]
+                if matching and all(len(old) >= 5 for old in matching):
+                    replacements.extend([*point, *old[3:5]] for old in matching)
+                else:
+                    replacements.append(point)
+            existing[:] = [point for point in existing if tuple(point[:2]) not in coordinates]
+            existing.extend(replacements)
+
 
 def find_map_difficulty_dbc(source_root, explicit_path=None):
     if explicit_path:
@@ -189,6 +286,19 @@ def load_map_difficulty_masks(dbc_path):
     return dict(masks)
 
 
+@lru_cache(maxsize=1)
+def load_server_phase_profiles():
+    """Read the client's supported regions so NPC and object generation agree."""
+    text = strip_lua_comments((TOOLS_DIR.parent / "Modules/Network/QuestieServer.lua").read_text(encoding="utf-8"))
+    tables = []
+    for name in ("phaseZones", "phaseAreas", "phaseMasks"):
+        match = re.search(rf"local\s+{name}\s*=\s*\{{", text)
+        if not match:
+            raise ValueError(f"QuestieServer.lua: missing {name} profile table")
+        tables.append(LuaParser(extract_balanced_braces(text, match.end() - 1)).parse())
+    return tables
+
+
 def add_acore_spawn_visibility(point, row, map_difficulty_masks):
     map_id = int(row.get("map") or 0)
     spawn_mask = int(row.get("spawnMask") or row.get("spawnmask") or 1)
@@ -197,10 +307,30 @@ def add_acore_spawn_visibility(point, row, map_difficulty_masks):
     # World and transport maps have no selectable instance difficulty. For an
     # instance, only store metadata when this row is restricted compared with
     # the difficulties supported by the server's MapDifficulty.dbc.
+    # Only audited phase regions are enabled. SQL exports must retain areaId;
+    # an unknown area must not be guessed from a coarse zone rectangle.
+    area_id = int(row.get("areaId") or row.get("areaid") or 0)
+    zone_id = int(row.get("zoneId") or row.get("zoneid") or 0)
+    phase_zones, phase_areas, _ = load_server_phase_profiles()
+    if area_id and (area_id in phase_areas.get(map_id, {}) or zone_id in phase_zones.get(map_id, {})):
+        phase_mask = int(row.get("phaseMask", row.get("phasemask", 1)))
+        return [point[0], point[1], point[2] if len(point) >= 3 else 0,
+                spawn_mask, map_id, phase_mask, area_id]
     if supported_mask == 1 or spawn_mask == supported_mask:
         return point
 
     return [point[0], point[1], 0, spawn_mask, map_id]
+
+
+def add_acore_spawn_identity(point, row):
+    """Attach a DB spawn identity without inventing phase or difficulty restrictions."""
+    guid = int(row.get("guid") or 0)
+    if not guid or point[:2] == [-1, -1]:
+        return list(point)
+    identified = list(point) + [0] * (8 - len(point))
+    identified[4] = int(row.get("map") or 0)
+    identified[7] = guid
+    return identified
 
 
 class LuaParser:
@@ -589,6 +719,7 @@ def apply_corrections(npcs, corrections):
 def load_effective_questie_npcs(repo_root, npc_keys, fields):
     npcs = load_questie_npcs(repo_root / "Database/Wotlk/wotlkNpcDB.lua", npc_keys)
     zone_constants = parse_zone_id_constants(repo_root)
+    zone_constants.update({f"phases.{name}": value for name, value in parse_spawn_phase_constants(repo_root).items()})
     for relative_path, function_names in NPC_CORRECTION_FILES:
         path = repo_root / relative_path
         if not path.exists():
@@ -1105,6 +1236,7 @@ def build_acore_npcs(
     creature_multispawn_sql=None,
     map_difficulty_dbc=None,
     wdm_root=None,
+    questie_npcs=None,
 ):
     source_root = Path(source_root)
     map_difficulty_dbc = find_map_difficulty_dbc(source_root, map_difficulty_dbc)
@@ -1128,6 +1260,24 @@ def build_acore_npcs(
         include_modules,
     )
     ender_rows, skipped_ender = load_row_table(source_root, "creature_questender", ("id", "quest"), include_modules)
+    starts_by_entry = defaultdict(set)
+    for row in starter_rows + event_starter_rows:
+        entry = int(row.get("id") or 0)
+        quest = int(row.get("quest") or 0)
+        if entry and quest:
+            starts_by_entry[entry].add(quest)
+
+    ends_by_entry = defaultdict(set)
+    for row in ender_rows:
+        entry = int(row.get("id") or 0)
+        quest = int(row.get("quest") or 0)
+        if entry and quest:
+            ends_by_entry[entry].add(quest)
+
+    # The bridge only reports entries with quest relations. Keep identity metadata
+    # for those entries, including event questgivers, rather than every creature.
+    # Do not restrict by DB movement type: scripts can move an otherwise idle NPC.
+    questgiver_entries = starts_by_entry.keys() | ends_by_entry.keys()
     faction_template_rows, skipped_faction_template = load_keyed_table(source_root, "factiontemplate_dbc", "ID", include_modules)
     creature_addon_rows, skipped_creature_addon = load_keyed_table(source_root, "creature_addon", "guid", include_modules)
     waypoint_rows, skipped_waypoint = load_row_table(source_root, "waypoint_data", ("id", "point"), include_modules)
@@ -1180,27 +1330,21 @@ def build_acore_npcs(
             creatures_by_entry[entry].append(row)
             seen_spawn_entries.add(entry)
             if zone_id and point:
-                spawns_by_entry[entry][zone_id].append(
-                    add_acore_spawn_visibility(point, row, map_difficulty_masks)
-                )
+                visible_point = add_acore_spawn_visibility(point, row, map_difficulty_masks)
+                if entry in questgiver_entries:
+                    visible_point = add_acore_spawn_identity(visible_point, row)
+                spawns_by_entry[entry][zone_id].append(visible_point)
                 spawn_zone_counts[entry][zone_id] += 1
             else:
                 unmapped_spawn_entries.add(entry)
                 map_stats["unmapped_spawns"] += 1
 
-    starts_by_entry = defaultdict(set)
-    for row in starter_rows + event_starter_rows:
-        entry = int(row.get("id") or 0)
-        quest = int(row.get("quest") or 0)
-        if entry and quest:
-            starts_by_entry[entry].add(quest)
-
-    ends_by_entry = defaultdict(set)
-    for row in ender_rows:
-        entry = int(row.get("id") or 0)
-        quest = int(row.get("quest") or 0)
-        if entry and quest:
-            ends_by_entry[entry].add(quest)
+    scripted_spawns = load_wintergrasp_scripted_spawns(source_root, repo_root or ".", zone_maps)
+    merge_scripted_spawn_locations(spawns_by_entry, scripted_spawns)
+    for entry, zones in scripted_spawns.items():
+        seen_spawn_entries.add(entry)
+        for zone, points in zones.items():
+            spawn_zone_counts[entry][zone] += len(points)
 
     waypoint_by_path = defaultdict(list)
     for row in waypoint_rows:
@@ -1314,7 +1458,13 @@ def build_acore_npcs(
             npc["maxLevelHealth"] = max(health_values)
 
         if int(npc_id) in unmapped_spawn_entries:
-            pass
+            transport_spawns = [spawn for spawn in creatures_by_entry.get(int(npc_id), [])
+                                if int(spawn.get("map") or 0) in (622, 623)]
+            # Some captains also have ICC encounter spawns. Only annotate the
+            # outdoor Icecrown fallback for its uniquely identified gunship copy.
+            fallback = (questie_npcs or {}).get(int(npc_id), {}).get("spawns")
+            if int(npc_id) in questgiver_entries and len(transport_spawns) == 1 and fallback and fallback.get(210):
+                npc["spawns"] = annotate_gunship_fallback(fallback, transport_spawns[0])
         elif spawns_by_entry.get(int(npc_id)):
             npc["spawns"] = sort_coordinate_table(
                 spawns_by_entry[int(npc_id)],
@@ -1361,6 +1511,15 @@ def build_acore_npcs(
         **{f"mapping:{key}": value for key, value in map_stats.items()},
     }
     return acore_npcs, skipped_mutations
+
+
+def annotate_gunship_fallback(spawns, row):
+    """Keep outdoor marker coordinates; ship database positions are deck-local."""
+    return {
+        zone: [add_acore_spawn_identity(point, row) for point in points]
+              if int(zone) == 210 else [list(point) for point in points]
+        for zone, points in spawns.items()
+    }
 
 
 def sort_coordinate_table(zone_points, map_difficulty_masks=None):
@@ -1421,33 +1580,48 @@ def unique_coordinate_points(points, map_difficulty_masks=None):
     map_difficulty_masks = map_difficulty_masks or {}
     unrestricted = set()
     restricted = defaultdict(int)
+    phased = defaultdict(int)
+    identified = defaultdict(int)
 
     for point in points:
-        coordinate = (round(float(point[0]), 2), round(float(point[1]), 2))
+        phase = int(point[2]) if len(point) >= 3 and point[2] else 0
+        coordinate = (round(float(point[0]), 2), round(float(point[1]), 2), phase)
+        if len(point) >= 8 and point[7]:
+            identified[(*coordinate, int(point[4]), int(point[5]), int(point[6]), int(point[7]))] |= int(point[3])
+            continue
+        if len(point) >= 7:
+            # Combine difficulty alternatives only when all phase conditions match.
+            # Combining masks across phases would introduce nonexistent spawns.
+            phased[(*coordinate, int(point[4]), int(point[5]), int(point[6]))] |= int(point[3])
+            continue
         if len(point) < 5:
             unrestricted.add(coordinate)
             continue
-        restricted[(coordinate[0], coordinate[1], int(point[4]))] |= int(point[3])
+        restricted[(*coordinate, int(point[4]))] |= int(point[3])
 
     result = []
     for coordinate in unrestricted:
-        result.append([coordinate[0], coordinate[1]])
+        result.append(list(coordinate) if coordinate[2] else list(coordinate[:2]))
 
     restricted_coordinates = defaultdict(list)
-    for (x, y, map_id), spawn_mask in restricted.items():
-        if (x, y) in unrestricted:
+    for (x, y, phase, map_id), spawn_mask in restricted.items():
+        if (x, y, phase) in unrestricted:
             continue
-        restricted_coordinates[(x, y)].append((map_id, spawn_mask))
+        restricted_coordinates[(x, y, phase)].append((map_id, spawn_mask))
 
-    for (x, y), map_masks in restricted_coordinates.items():
+    for (x, y, phase), map_masks in restricted_coordinates.items():
         if len(map_masks) == 1:
             map_id, spawn_mask = map_masks[0]
             if spawn_mask == map_difficulty_masks.get(map_id):
-                result.append([x, y])
+                result.append([x, y, phase] if phase else [x, y])
                 continue
         for map_id, spawn_mask in map_masks:
-            result.append([x, y, 0, spawn_mask, map_id])
+            result.append([x, y, phase, spawn_mask, map_id])
 
+    for (x, y, phase, map_id, phase_mask, region), spawn_mask in phased.items():
+        result.append([x, y, phase, spawn_mask, map_id, phase_mask, region])
+    for (x, y, phase, map_id, phase_mask, region, guid), spawn_mask in identified.items():
+        result.append([x, y, phase, spawn_mask, map_id, phase_mask, region, guid])
     return result
 
 
@@ -1471,7 +1645,7 @@ def normalize_list(value):
     return tuple(sorted({int(v) for v in value if v is not None}))
 
 
-def normalize_coordinate_table(value, waypoint=False):
+def normalize_coordinate_table(value, waypoint=False, include_phases=False):
     if not value:
         return ()
     zones = []
@@ -1499,21 +1673,25 @@ def normalize_coordinate_table(value, waypoint=False):
                 if not isinstance(point, list) or len(point) < 2:
                     continue
                 normalized_point = (round(float(point[0]), 2), round(float(point[1]), 2))
-                # spawn[3] is Questie's phase ID and is intentionally not
-                # compared with AzerothCore data. Generated spawnMask/map
-                # metadata lives at indices 4 and 5.
+                # SQL phaseMask is separate from Questie's logical phase IDs.
+                if include_phases:
+                    normalized_point += (int(point[2]) if len(point) >= 3 and point[2] else 0,)
                 if len(point) >= 5:
                     normalized_point += (int(point[3]), int(point[4]))
+                if len(point) >= 7:
+                    normalized_point += (int(point[5]), int(point[6]))
+                if len(point) >= 8:
+                    normalized_point += (int(point[7]),)
                 normalized_points.append(normalized_point)
             zones.append((int(zone_id), tuple(sorted(normalized_points))))
     return tuple(sorted(zones))
 
 
-def normalize_value(field, value):
+def normalize_value(field, value, include_spawn_phases=False):
     if field in LIST_FIELDS:
         return normalize_list(value)
     if field in NESTED_FIELDS:
-        return normalize_coordinate_table(value, waypoint=(field == "waypoints"))
+        return normalize_coordinate_table(value, waypoint=(field == "waypoints"), include_phases=include_spawn_phases)
     if field in STRING_FIELDS:
         return value or ""
     return int(value or 0)
@@ -1598,8 +1776,12 @@ def find_differences(
                     questie.get(field),
                     entrance_marker_zone_ids,
                 )
-            expected = normalize_value(field, acore_value)
-            actual = normalize_value(field, questie.get(field))
+            compare_phases = field == "spawns" and any(
+                len(point) >= 3 and point[2]
+                for points in (acore_value or {}).values() for point in points
+            )
+            expected = normalize_value(field, acore_value, compare_phases)
+            actual = normalize_value(field, questie.get(field), compare_phases)
             if (
                 npc_id in preserve_spawn_ids
                 and field in {"spawns", "waypoints", "zoneID"}
@@ -1661,7 +1843,12 @@ def format_lua_field_value(field, value, zone_names):
     return format_lua_value(value, zone_names, zone_keyed_table=(field in NESTED_FIELDS))
 
 
-def write_corrections_module(corrections, output_path, zone_names):
+def format_corrections_module(corrections, zone_names):
+    # The 3.3.5 Lua allocator rejects large contiguous blocks. Spawn identities
+    # substantially increase constructor bytecode, so bound each callback rather
+    # than compiling the entire NPC export into one enormous Lua function.
+    max_batch_bytes = 128 * 1024
+    max_batch_entries = 500
     lines = [
         "---@type QuestieDB",
         'local QuestieDB = QuestieLoader:ImportModule("QuestieDB")',
@@ -1671,30 +1858,53 @@ def write_corrections_module(corrections, output_path, zone_names):
         "if QuestieCompat.WOW_PROJECT_ID < QuestieCompat.WOW_PROJECT_WRATH_CLASSIC then return end",
         "",
         "-- Generated from tools/generate_acore_npc_corrections.py.",
+        "-- Includes Wintergrasp's scripted fortress and outside-camp coordinates.",
+        "-- Only quest starters and finishers carry spawn IDs for optional live patrol matching.",
+        "-- Bounded correction batches keep constructor allocations small on the 3.3.5 client.",
         "-- Regenerate this file when AzerothCore NPC data changes.",
         "",
-        'QuestieCompat.RegisterCorrection("npcData", function()',
-        "    local npcKeys = QuestieDB.npcKeys",
-        "    local zoneIDs = ZoneDB.zoneIDs",
-        "",
-        "    return {",
     ]
 
+    batch, batch_bytes = [], 0
+    def flush_batch():
+        if not batch:
+            return
+        lines.extend([
+            'QuestieCompat.RegisterCorrection("npcData", function()',
+            "    local npcKeys = QuestieDB.npcKeys",
+            "    local zoneIDs = ZoneDB.zoneIDs",
+            "",
+            "    return {",
+            *batch,
+            "    }",
+            "end)",
+            "",
+        ])
+        batch.clear()
+
     for npc_id in sorted(corrections):
-        lines.append(f"        [{npc_id}] = {{")
+        entry_lines = [f"        [{npc_id}] = {{"]
         fields = corrections[npc_id]
         for field in FIELD_ORDER:
             if field in fields:
-                lines.append(f"            [npcKeys.{field}] = {format_lua_field_value(field, fields[field], zone_names)},")
-        lines.append("        },")
-        lines.append("")
+                entry_lines.append(f"            [npcKeys.{field}] = {format_lua_field_value(field, fields[field], zone_names)},")
+        entry_lines.extend(["        },", ""])
+        entry = "\n".join(entry_lines)
+        entry_bytes = len(entry.encode("utf-8"))
+        if entry_bytes > max_batch_bytes:
+            raise ValueError(f"NPC {npc_id} exceeds the safe correction batch size ({entry_bytes} bytes)")
+        if batch and (batch_bytes + entry_bytes > max_batch_bytes or len(batch) >= max_batch_entries):
+            flush_batch()
+            batch_bytes = 0
+        batch.append(entry)
+        batch_bytes += entry_bytes
 
-    lines.extend([
-        "    }",
-        "end)",
-        "",
-    ])
-    text = "\n".join(lines)
+    flush_batch()
+    return "\n".join(lines)
+
+
+def write_corrections_module(corrections, output_path, zone_names):
+    text = format_corrections_module(corrections, zone_names)
     validate_lua_fragment(text, str(output_path))
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(text, encoding="utf-8")
@@ -1748,7 +1958,7 @@ def write_report(corrections, skipped_mutations, fields, report_path):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate Questie npcData corrections from AzerothCore 3.3.5 SQL data.")
+    parser = argparse.ArgumentParser(description="Generate NPC corrections from AzerothCore SQL and scripted Wintergrasp spawns.")
     parser.add_argument("--acore-source", default=r"P:\AC\source", type=Path)
     parser.add_argument("--repo-root", default=Path("."), type=Path)
     parser.add_argument("--output", default=Path("Compat/AzerothCoreNPCCorrections.lua"), type=Path)
@@ -1796,6 +2006,7 @@ def main():
         args.creature_multispawn_sql,
         args.map_difficulty_dbc,
         args.wdm_root,
+        questie_npcs,
     )
     candidate_spawn_ids = {
         npc_id
