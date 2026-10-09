@@ -2804,8 +2804,9 @@ end
 ---@param questId number
 ---@param debugPrint boolean? -- if true, IsDoable will print conclusions to debug channel
 ---@param ignoreAcoreLocationConditions boolean? -- map pins filter these conditions per starter spawn
+---@param questLogQuestIds table<QuestId, boolean>? -- client log snapshot valid only until the caller yields
 ---@return boolean
-function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions)
+function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions, questLogQuestIds)
 
     --!  Before changing any logic in QuestieDB.IsDoable, make sure
     --!  to mirror the same logic to QuestieDB.IsDoableVerbose!
@@ -2843,7 +2844,15 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions)
         return false
     end
 
-    if C_QuestLog.IsOnQuest(questId) == true then
+    -- The snapshot preserves the live membership check used by IsDoableVerbose.
+    -- Callers outside an availability batch still query the client directly.
+    local isOnQuest
+    if questLogQuestIds then
+        isOnQuest = questLogQuestIds[questId] == true
+    else
+        isOnQuest = C_QuestLog.IsOnQuest(questId) == true
+    end
+    if isOnQuest then
         if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Quest " .. questId .. " is eligible because Player is on the quest!") end
         return true
     end

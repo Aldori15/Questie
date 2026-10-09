@@ -1171,6 +1171,7 @@ _CalculateAvailableQuests = function()
     local sunsReachQuests = QuestieQuestBlacklist.SunsReachQuests
 
     QuestieDB.activeChildQuests = {} -- Reset here so we don't need to keep track in the quest event system
+    local questLogQuestIds
 
     -- We create a local function here to improve readability but use the localized variables above.
     -- The order of checks is important here to bring the speed to a max
@@ -1215,12 +1216,16 @@ _CalculateAvailableQuests = function()
             return
         end
 
-        if (
-            (not _IsLevelRequirementsFulfilledForAvailable(questId, minLevel, maxLevel, playerLevel, isRepeatableQuest)) or
-            (not QuestieDB.IsDoable(questId, debugEnabled, true))
-        ) then
+        if not _IsLevelRequirementsFulfilledForAvailable(questId, minLevel, maxLevel, playerLevel, isRepeatableQuest) then
             --If the quests are not within level range we want to unload them
             --(This is for when people level up or change settings etc)
+            nextAvailableQuestSet[questId] = nil
+            return
+        end
+
+        -- Build lazily: batches containing only filtered quests need no log scan.
+        questLogQuestIds = questLogQuestIds or QuestieCompat.GetQuestLogQuestIds()
+        if not QuestieDB.IsDoable(questId, debugEnabled, true, questLogQuestIds) then
             nextAvailableQuestSet[questId] = nil
             return
         end
@@ -1236,6 +1241,7 @@ _CalculateAvailableQuests = function()
         questCount = questCount + 1
         if questCount > maxQuestsPerYield then
             questCount = 0
+            questLogQuestIds = nil -- Events may change the client log while suspended.
             yield()
         end
     end

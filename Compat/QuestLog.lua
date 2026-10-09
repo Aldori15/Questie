@@ -185,6 +185,23 @@ function QuestieCompat.GetQuestLogTitle(questLogIndex)
 end
 
 local MAX_QUEST_LOG_INDEX = 75
+-- A batch can reuse membership without repeatedly searching the client log.
+-- Discard this snapshot before yielding so the next batch sees log changes.
+---@return table<QuestId, boolean>
+function QuestieCompat.GetQuestLogQuestIds()
+    local questIds = {}
+    for questLogIndex = 1, MAX_QUEST_LOG_INDEX do
+        local title, _, _, _, isHeader, _, _, _, id = GetQuestLogTitle(questLogIndex)
+        if not title then
+            break
+        end
+        if not isHeader and id then
+            questIds[id] = true
+        end
+    end
+    return questIds
+end
+
 -- Returns the current quest log index of a quest by its ID.
 -- https://wowpedia.fandom.com/wiki/API_GetQuestLogIndexByID
 function QuestieCompat.GetQuestLogIndexByID(questId)

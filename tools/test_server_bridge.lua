@@ -117,6 +117,11 @@ local function availabilitySetup(s)
     env.GetRealmName = function() return "Test realm" end
     env.GetQuestGreenRange = function() return 100 end
     env.QuestieCompat.C_QuestLog = {IsOnQuest = function(id) return modules.QuestiePlayer.currentQuestlog[id] ~= nil end}
+    env.QuestieCompat.GetQuestLogQuestIds = function()
+        local ids = {}
+        for id in pairs(modules.QuestiePlayer.currentQuestlog) do ids[id] = true end
+        return ids
+    end
     env.QuestieCompat.GetQuestResetTime = function() return 3600 end
     env.QuestieCompat.GetServerTime = function()
         return 1791302400, {year = 2026, month = 10, day = 6, hour = 12, weekday = 3}
