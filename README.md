@@ -14,100 +14,28 @@ A fork of the WoW Classic Questie addon aiming to provide compatibility with Wra
 
 ## Optional AzerothCore Server Bridge Module
 
-Server owners can install [mod-questie-bridge](https://github.com/Aldori15/mod-questie-bridge)
-to let Questie's quest availability, reset timing, and locations follow live AzerothCore state. It supports:
+Install [mod-questie-bridge](https://github.com/Aldori15/mod-questie-bridge) on your AzerothCore
+server to let Questie follow live server state:
 
-- Holidays started or stopped by GM commands or server scripts, including simultaneous Darkmoon Faire locations.
-- Zalazane's Fall quests appear while the server event is active.
-- Stranglethorn and Kalu'ak fishing quests before and after a tournament winner is declared.
-- Scourge Invasion activity and Isle of Quel'Danas quest unlocks.
-- The server's selected daily and weekly pool quests, before visiting the questgiver.
-- ICC weekly quests follow the selected family, raid size, and unlocks in your current raid instance.
-- Weekly and monthly quest completion history follows the server's reset schedule.
-- Quest XP displays follow the character's effective normal/dungeon-finder rates and active quest-XP auras, including heirlooms.
-- Quest reputation previews follow global/faction rates, reputation auras, grey-quest reduction, and eligible RAF bonuses.
-- Wintergrasp quests and questgiver locations as faction control changes.
-- Questgiver markers follow loaded patrols and moving transport passengers in your current zone,
-  including Orgrim's Hammer and the Skybreaker.
-- NPC and object quest locations match your story phase in supported areas, including
-  Icecrown, Storm Peaks, the death knight starting area, and other Wrath story regions.
-- **World Progress** in related Journey quest details and hover tooltips, including Sun's Reach construction
-  and Scourge Invasion battles and remaining necropolises.
+- Holidays, fishing tournaments, Scourge Invasion, and Isle of Quel'Danas unlocks.
+- Selected daily/weekly quest pools, ICC weekly quests, and Wintergrasp control.
+- Weekly/monthly quest resets and live XP, reputation, and money rates.
+- Moving questgiver markers in your current zone, including Orgrim's Hammer and the Skybreaker.
+- Phase-dependent locations in supported story areas, including Icecrown, Storm Peaks, and the death knight start.
+- World Progress in related Journey quest details and tooltips.
 
-Install the module on the server and this addon on the client; see the
-[module installation instructions](https://github.com/Aldori15/mod-questie-bridge#installation).
-Run `/qserver` to check the connection and server information. Use `/qserver pool <pool ID>`
-or `/qserver wintergrasp` for more detail. Inside Icecrown Citadel, use `/qserver icc` to check its weekly quests.
-Use `/qserver resets` to check the server's next weekly and monthly quest resets.
-Use `/qserver phases` to check story-phase location filtering. It applies within your
-current subarea; locations elsewhere keep their usual behavior.
-Use `/qserver patrol` or `/qserver patrol <NPC ID>` to check live questgiver positions.
-Use `/qserver xp` to check effective quest XP rates, aura multiplier, and the server's level cap.
-Use `/qserver rep` or `/qserver rep <faction ID>` to check live reputation modifiers and faction quest rates.
-Patrol pins update once per second without smoothing, using loaded NPCs visible to your character
-in the current zone. Opening another zone's map does not request remote NPC positions.
-Missing or expired positions restore the usual marker and patrol line.
+See the [module setup instructions](https://github.com/Aldori15/mod-questie-bridge#installation).
+Install matching addon and module builds, then log in or `/reload`. Run `/qserver` to check the connection;
+`/qserver xp`, `/qserver rep [faction ID]`, and `/qserver money` show reward rates.
+The module README lists the other diagnostic commands.
 
-Quest XP uses generated base rewards plus the server's effective rates and quest-XP aura multiplier.
-Live aura data replaces the equipped-item calculation, so heirloom bonuses apply once.
-Rates changed through `.reload config` or `OnPlayerGetQuestRate` are picked up while logged in;
-reopen or hover the reward tooltip again to see the new value. Unknown, disabled, or stale XP data
-restores the generated calculation and equipped-item bonuses. No regeneration is needed for rate changes.
-XP multipliers do not change displayed max-level bonus money. Arbitrary quest/reward hooks,
-recruit-a-friend XP, XP locks, and other later reward changes are outside this rate capability.
-Money rate reporting is separate and is not included in these capabilities.
+Server rate changes appear within a few seconds; rehover or reopen the reward display to refresh it.
+Rewards are estimates: server rounding, caps, or custom rules can affect the final amount awarded.
+Moving markers work in your current zone; other zones keep their static locations and patrol lines.
+Phase filtering applies within your current subarea. Quest prerequisites and your visibility settings still apply.
 
-Quest reputation uses generated base rewards plus live global and faction rates for normal, daily,
-weekly, monthly, and repeatable quests. It includes reputation auras (replacing the racial estimate),
-grey-quest reduction, and eligible recruit-a-friend reputation bonuses. Gains and losses apply aura
-bonuses with the core's different signs. Changes through `.reload config` and
-`.reload reputation_reward_rate` need no addon reload or regeneration; rehover or reopen the reward
-display to see updates. A complete empty faction catalog means the server's default 1x rates.
-Unavailable reputation data restores generated faction rates and racial bonuses.
-
-These reputation values are previews. AC's alternating faction rounding can change the final reward
-by one point. Reputation caps, hostile-faction suppression, custom spillover, fractional base rewards
-omitted by generated data, and later reward hooks can also affect the amount awarded. Existing
-Aldor/Scryer penalty and Sha'tar display rules remain in place.
-
-Your visibility options, character requirements, and manually hidden quests still apply.
 Enable **Available Scourge Invasion Quests** or **Available Sun's Reach Quests** to show those quest sets.
-Accepted quests remain tracked when server state changes.
-
-The bridge is optional. Without it, or when its information becomes unavailable, Questie keeps its existing
-calendar detection, manual settings, and daily quest discovery.
-Install matching addon and module builds if `/qserver` reports a protocol mismatch.
-
-## Regression checks
-
-GitHub Actions runs the standalone regression suites on pushes and pull requests. It checks
-the addon's Lua 5.1 syntax, then uses Lua 5.2 for the simulated-client tests and Python 3.13
-for generator tests. No WoW client, running server, database, or private exports are required.
-These checks cover bridge messages and fallback, patrol pins, phase metadata, quest completion,
-and correction generation. In-game testing still verifies actual server and UI behavior.
-
-All committed `tools/test_*.lua` and `tools/test_*.py` files are discovered automatically;
-new suites following those names need no workflow edit. Python suites use `unittest`.
-The syntax check follows the TOC and XML includes, ignoring a leading UTF-8 byte-order
-mark in memory for bundled libraries without changing their files. It still rejects invalid Lua.
-
-The workflow checks protocol and phase profiles against a pinned compatible revision of
-`mod-questie-bridge`. Update that revision in `.github/workflows/regressions.yml` when changing
-the shared contracts. A missing configured bridge checkout fails the check rather than skipping it.
-
-To run the same checks locally from the addon directory, with Lua 5.1, Lua 5.2, and Python installed:
-
-```sh
-python -B tools/check_lua_syntax.py --luac luac5.1
-for test in tools/test_*.lua; do lua5.2 "$test" || exit; done
-QUESTIE_TEST_LUA=lua5.2 QUESTIE_TEST_LUAC=luac5.1 python -B -m unittest discover -s tools -p 'test_*.py' -v
-```
-
-On Windows, run each `tools/test_*.lua` with your Lua 5.2 interpreter and set
-`QUESTIE_TEST_LUA` to its executable path before running the Python command.
-Set `QUESTIE_TEST_LUAC` to a Lua compiler path to include the syntax-checker integration tests.
-Set `QUESTIE_BRIDGE_SOURCE` to a compatible module checkout to include the shared-contract check;
-without it, local tests look beside the addon and skip that check if no module source is found.
+The bridge is optional. Missing, disabled, or expired server information restores Questie's usual behavior.
 
 ## Questie Information
 - [Frequently Asked Questions](https://github.com/Questie/Questie/wiki/FAQ)
