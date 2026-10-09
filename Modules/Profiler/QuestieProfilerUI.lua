@@ -427,15 +427,15 @@ local function ShowRowTooltip(row, reportRow)
     if reportRow.isThreadJob then
         GameTooltip:AddDoubleLine("Submitted jobs", tostring(reportRow.jobCalls or 0), 0.7, 0.7, 0.7, 1, 1, 1)
         GameTooltip:AddDoubleLine("Coroutine resumes", tostring(reportRow.resumeCount or 0), 0.7, 0.7, 0.7, 1, 1, 1)
-        GameTooltip:AddDoubleLine("Average per job", FormatDuration(reportRow.averageTime),
-            0.7, 0.7, 0.7, 1, 1, 1)
+        GameTooltip:AddDoubleLine("Longest resume", sformat("%.3f ms", reportRow.maxResumeTime or 0), 0.7, 0.7, 0.7, 1, 1, 1)
+        GameTooltip:AddDoubleLine("Average per resume", sformat("%.3f ms", reportRow.averageResumeTime or 0), 0.7, 0.7, 0.7, 1, 1, 1)
+        GameTooltip:AddDoubleLine("Average per job", FormatDuration(reportRow.averageTime), 0.7, 0.7, 0.7, 1, 1, 1)
         GameTooltip:AddLine(" ")
-        GameTooltip:AddLine("Job time covers active resume slices only. Time spent suspended between resumes is excluded.",
-            0.45, 0.8, 1, true)
+        GameTooltip:AddLine("Job time covers active resume slices only. Time spent suspended between resumes is excluded.", 0.45, 0.8, 1, true)
+        GameTooltip:AddLine("Longest resume is one job's uninterrupted slice. Other work in the same frame adds to it.", 0.45, 0.8, 1, true)
         GameTooltip:AddLine("This row is the authoritative total for work spanning multiple resumes.", 0.45, 0.8, 1, true)
     elseif reportRow.hasCalls then
-        GameTooltip:AddDoubleLine("Average per call", FormatDuration(reportRow.averageTime),
-            0.7, 0.7, 0.7, 1, 1, 1)
+        GameTooltip:AddDoubleLine("Average per call", FormatDuration(reportRow.averageTime), 0.7, 0.7, 0.7, 1, 1, 1)
     end
 
     -- The Share column is one number with no units, so the tooltip is where its denominator gets named. A
@@ -504,17 +504,17 @@ local function DetailLineFor(reportRow)
     -- Calls and averages are function ideas; a file has one load and one allocation, and printing
     -- "0 calls | 0.000 ms avg" for it reads as a measurement of nothing.
     if reportRow.isFileLoad then
-        return sformat("|  %.3f ms load  |  %s allocated",
-            reportRow.totalTime, FormatKilobytes(reportRow.memoryKilobytes or 0))
+        return sformat("|  %.3f ms load  |  %s allocated", reportRow.totalTime, FormatKilobytes(reportRow.memoryKilobytes or 0))
     end
 
     local selfDetail = reportRow.hasSelfTime and sformat("%.3f ms self", reportRow.selfTime) or "no self time"
     -- The identity moved into the copy box beside this, so the line starts at the measurements. It keeps a
     -- leading separator so the strip still reads as one sentence across the seam between the two widgets.
-    local detail = sformat("|  %.3f ms total  |  %s  |  %d calls  |  %s avg",
-        reportRow.totalTime, selfDetail, reportRow.calls, FormatDuration(reportRow.averageTime))
+    local detail
     if reportRow.isThreadJob then
-        detail = detail .. sformat("  |  %d jobs  |  %d resumes", reportRow.jobCalls or 0, reportRow.resumeCount or 0)
+        detail = sformat("|  %.3f ms total  |  %.3f ms longest resume  |  %.3f ms avg resume  |  %d resumes  |  %d jobs", reportRow.totalTime, reportRow.maxResumeTime or 0, reportRow.averageResumeTime or 0, reportRow.resumeCount or 0, reportRow.jobCalls or 0)
+    else
+        detail = sformat("|  %.3f ms total  |  %s  |  %d calls  |  %s avg", reportRow.totalTime, selfDetail, reportRow.calls, FormatDuration(reportRow.averageTime))
     end
     if reportRow.calls > 0 and not reportRow.hasTiming then
         detail = detail .. "  |  no timed slices"

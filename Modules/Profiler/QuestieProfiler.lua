@@ -328,6 +328,7 @@ local function ResetSessionState()
     QuestieProfiler.highestCalls = 0
     QuestieProfiler.threadJobCallCount = {}
     QuestieProfiler.threadJobResumeCount = {}
+    QuestieProfiler.threadJobMaxResumeTime = {}
 
     currentThread = nil
     mainDepth = 0
@@ -353,6 +354,7 @@ local profilingCallbacks = {
             QuestieProfiler.hookSelfTime[lookupKey] = 0
             QuestieProfiler.threadJobCallCount[lookupKey] = 0
             QuestieProfiler.threadJobResumeCount[lookupKey] = 0
+            QuestieProfiler.threadJobMaxResumeTime[lookupKey] = 0
             QuestieProfiler.lowerCaseLookup[lookupKey] = string.lower(lookupKey)
         end
 
@@ -397,8 +399,12 @@ local profilingCallbacks = {
 
         local job = threadJobs[thread]
         if job and job.activeSince then
+            local elapsed = now - job.activeSince
             QuestieProfiler.threadJobResumeCount[job.lookupKey] = QuestieProfiler.threadJobResumeCount[job.lookupKey] + 1
-            AddMeasurement(job.lookupKey, now - job.activeSince)
+            if elapsed > QuestieProfiler.threadJobMaxResumeTime[job.lookupKey] then
+                QuestieProfiler.threadJobMaxResumeTime[job.lookupKey] = elapsed
+            end
+            AddMeasurement(job.lookupKey, elapsed)
             job.activeSince = nil
         end
 
@@ -1110,6 +1116,7 @@ function QuestieProfiler:ResetMeasurements()
     for lookupKey in pairs(QuestieProfiler.threadJobCallCount) do
         QuestieProfiler.threadJobCallCount[lookupKey] = 0
         QuestieProfiler.threadJobResumeCount[lookupKey] = 0
+        QuestieProfiler.threadJobMaxResumeTime[lookupKey] = 0
     end
     -- Edges name callers that may not be called again, so clearing beats zeroing every pair.
     QuestieProfiler.callerCallCount = {}

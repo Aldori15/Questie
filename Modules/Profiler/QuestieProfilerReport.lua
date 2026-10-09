@@ -80,6 +80,8 @@ local GROUPING_NOISE_SEGMENTS = {private = true}
 ---@field hasTiming boolean @False when the entry was counted but never produced a timed slice
 ---@field jobCalls number? @Submitted ThreadLib jobs
 ---@field resumeCount number? @Coroutine resumes across all submitted jobs
+---@field maxResumeTime number? @Longest active resume slice in milliseconds, across all submitted jobs
+---@field averageResumeTime number? @Total active time divided by measured resumes, in milliseconds
 ---@field mergedPaths string[]? @Full paths folded into this row in grouped view
 
 ---@class ProfilerReportSource
@@ -93,6 +95,7 @@ local GROUPING_NOISE_SEGMENTS = {private = true}
 ---@field lowerCaseLookup table<string, string>
 ---@field threadJobCallCount table<string, number>
 ---@field threadJobResumeCount table<string, number>
+---@field threadJobMaxResumeTime table<string, number>
 
 ---@class ProfilerReportOptions
 ---@field filter string?
@@ -228,6 +231,7 @@ function QuestieProfilerReport.BuildReport(source, options)
     local lowerCaseLookup = source.lowerCaseLookup or {}
     local jobCallCounts = source.threadJobCallCount or {}
     local jobResumeCounts = source.threadJobResumeCount or {}
+    local jobMaxResumeTimes = source.threadJobMaxResumeTime or {}
 
     local lowerFilter = options.filter and slower(options.filter) or ""
     local grouped = options.grouped == true
@@ -277,6 +281,7 @@ function QuestieProfilerReport.BuildReport(source, options)
                     if isThreadJob then
                         existingRow.jobCalls = (existingRow.jobCalls or 0) + (jobCallCounts[lookupKey] or 0)
                         existingRow.resumeCount = (existingRow.resumeCount or 0) + (jobResumeCounts[lookupKey] or 0)
+                        existingRow.maxResumeTime = math.max(existingRow.maxResumeTime or 0, jobMaxResumeTimes[lookupKey] or 0)
                     end
                     tinsert(existingRow.mergedPaths, lookupKey)
                 else
@@ -297,6 +302,8 @@ function QuestieProfilerReport.BuildReport(source, options)
                         hasSelfTime = not isThreadJob,
                         jobCalls = isThreadJob and (jobCallCounts[lookupKey] or 0) or nil,
                         resumeCount = isThreadJob and (jobResumeCounts[lookupKey] or 0) or nil,
+                        maxResumeTime = isThreadJob and (jobMaxResumeTimes[lookupKey] or 0) or nil,
+                        averageResumeTime = isThreadJob and 0 or nil,
                         mergedPaths = grouped and {lookupKey} or nil,
                     }
                     tinsert(rows, row)
@@ -385,6 +392,9 @@ function QuestieProfilerReport.BuildReport(source, options)
                 row.averageTime = row.totalTime / averageDivisor
             end
             row.hasTiming = row.totalTime > 0
+            if row.isThreadJob and row.resumeCount and row.resumeCount > 0 then
+                row.averageResumeTime = row.totalTime / row.resumeCount
+            end
         end
         if row.totalTime > maxTotalTime then
             maxTotalTime = row.totalTime
