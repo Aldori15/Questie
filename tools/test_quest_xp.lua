@@ -40,7 +40,7 @@ local function setup()
     local function reply(rows, caps, incomplete, protocol)
         sequence = sequence + 1
         local token = messages[#messages]:match("^[^~]+~%d+~([^~]+)~")
-        local header = "~" .. (protocol or "14") .. "~" .. token .. "~" .. sequence
+        local header = "~" .. (protocol or "15") .. "~" .. token .. "~" .. sequence
         frame.OnEvent(frame, "CHAT_MSG_ADDON", "QSTSVR", "BEGIN" .. header .. "~" .. (caps or "QUESTXP,HEARTBEAT")
             .. "~" .. #rows .. "~" .. #rows, "WHISPER", "Tester")
         for index, row in ipairs(rows) do
@@ -100,7 +100,7 @@ s.level(80)
 local file = assert(io.open("Compat/QuestLog.lua", "r"))
 local source = file:read("*a"); file:close()
 s.env.QuestiePlayer = {GetPlayerLevel = function() return 80 end, IsMaxLevel = function() return true end}
-s.env.QuestXP, s.env.QuestieDB = s.xp, s.modules.QuestieDB
+s.env.QuestXP, s.env.QuestieDB, s.env.QuestieServer = s.xp, s.modules.QuestieDB, s.server
 s.env.bitband, s.env.QUEST_FLAGS_NO_MONEY_FROM_XP = bit32.band, 256
 s.env.QuestieCompat.RewardMoney, s.env.QuestieCompat.RewardMoneyDifficulty = {[1] = 100}, {}
 assert(load(assert(source:match("(function QuestieCompat.GetQuestLogRewardMoney.-\nend)")), "money helper", "t", s.env))()
@@ -121,7 +121,7 @@ s.rates(1073741824, 1065353216, 1065353216)
 s.reply({}, "HEARTBEAT")
 equal(s.xp:GetQuestLogRewardXP(1), 1155, "disabled capability restores fallback")
 s = setup()
-s.reply({"P:QUEST_XP:1073741824:1065353216:1065353216:80"}, nil, false, "13")
+s.reply({"P:QUEST_XP:1073741824:1065353216:1065353216:80"}, nil, false, "14")
 equal(s.xp:GetQuestLogRewardXP(1), 1155, "protocol mismatch restores fallback")
 tests = tests + 1
 

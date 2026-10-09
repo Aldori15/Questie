@@ -2,7 +2,7 @@
 local QuestieServer = QuestieLoader:CreateModule("QuestieServer")
 local Integrations = QuestieLoader:ImportModule("QuestieServerIntegrations")
 
-local PREFIX, PROTOCOL_VERSION = "QSTSVR", "14"
+local PREFIX, PROTOCOL_VERSION = "QSTSVR", "15"
 
 -- Shared with the correction generators. Decisions apply to the current area,
 -- never to every location in these zones. Keep the module's profiles in sync.
@@ -44,7 +44,7 @@ local nextPreferenceCheck, previousPreferences = 0, nil
 local subscriptions = {}
 local CAPABILITIES = {EVENTS = true, VALUES = true, SCOURGE = true, QUELDANAS = true,
     KALUAK = true, HEARTBEAT = true, QUESTPOOLS = true, WINTERGRASP = true, ICC = true, RESETS = true,
-    PHASES = true, PATROLS = true, QUESTXP = true, QUESTREP = true}
+    PHASES = true, PATROLS = true, QUESTXP = true, QUESTREP = true, QUESTMONEY = true}
 
 local function Split(value, separator)
     local fields, first = {}, 1
@@ -82,6 +82,11 @@ end
 ---@return table|nil Fresh global/grey-quest rates, aura modifier, RAF multiplier and faction rates.
 function QuestieServer:GetQuestReputationRates()
     if self:HasCapability("QUESTREP") then return snapshot.questReputation end
+end
+
+---@return table|nil Fresh ordinary/max-level quest money rates and the server level cap.
+function QuestieServer:GetQuestMoneyRates()
+    if self:HasCapability("QUESTMONEY") then return snapshot.questMoney end
 end
 
 -- The server sends IEEE-754 float bits as unsigned integers. Decode exactly,
@@ -416,6 +421,12 @@ local function ParseRows(batch)
                 local maxLevel = Integer(fields[6], 255)
                 if not normal or not dungeonFinder or not aura or not maxLevel or maxLevel == 0 then return nil end
                 result.questXP = {normal = normal, dungeonFinder = dungeonFinder, aura = aura, maxLevel = maxLevel}
+            elseif kind == "P" and result.caps.QUESTMONEY and fields[2] == "QUEST_MONEY"
+                and #fields == 5 and not result.questMoney then
+                local normal, bonus = RewardMultiplier(fields[3]), RewardMultiplier(fields[4])
+                local maxLevel = Integer(fields[5], 255)
+                if not normal or not bonus or not maxLevel or maxLevel == 0 then return nil end
+                result.questMoney = {normal = normal, bonus = bonus, maxLevel = maxLevel}
             elseif kind == "P" and result.caps.QUESTREP and fields[2] == "QUEST_REP"
                 and #fields == 8 and not result.questReputation then
                 local gain, lowLevel, raf = RewardMultiplier(fields[3]), RewardMultiplier(fields[4]), RewardMultiplier(fields[6])
@@ -523,6 +534,7 @@ local function ParseRows(batch)
     end
     if count ~= batch.rowCount then return nil end
     if result.caps.QUESTXP and not result.questXP then return nil end
+    if result.caps.QUESTMONEY and not result.questMoney then return nil end
     if result.caps.QUESTREP and (not result.questReputation
         or result.questReputation.factionCount ~= reputationFactionCount) then return nil end
     if result.caps.PHASES then
@@ -735,6 +747,17 @@ function QuestieServer:PrintStatus(poolId)
     if self:HasCapability("PATROLS") then self:PrintPatrolStatus() end
     if self:HasCapability("QUESTXP") then self:PrintXPStatus() end
     if self:HasCapability("QUESTREP") then self:PrintReputationStatus() end
+    if self:HasCapability("QUESTMONEY") then self:PrintMoneyStatus() end
+end
+
+function QuestieServer:PrintMoneyStatus()
+    local rates = self:GetQuestMoneyRates()
+    if not rates then
+        Questie:Print("[Server bridge] Quest money rates unavailable; using generated rewards at default rates.")
+        return
+    end
+    Questie:Print(string.format("[Server bridge] Quest money: normal %.6gx; max-level bonus %.6gx; server level cap %d.",
+        rates.normal, rates.bonus, rates.maxLevel))
 end
 
 function QuestieServer:PrintReputationStatus(factionId)
@@ -949,6 +972,7 @@ function QuestieServer:Initialize()
         if command:match("^%s*phases%s*$") then self:PrintPhaseStatus(); return end
         if command:match("^%s*patrol%s*$") then self:PrintPatrolStatus(); return end
         if command:match("^%s*xp%s*$") then self:PrintXPStatus(); return end
+        if command:match("^%s*money%s*$") then self:PrintMoneyStatus(); return end
         local factionId = Integer(command:match("^%s*rep%s+(%d+)%s*$"), 4294967295)
         if command:match("^%s*rep%s*$") or (factionId and factionId > 0) then
             self:PrintReputationStatus(factionId); return
@@ -957,7 +981,7 @@ function QuestieServer:Initialize()
         if patrolEntry and patrolEntry > 0 then self:PrintPatrolStatus(patrolEntry); return end
         local id = Integer(command:match("^%s*pool%s+(%d+)%s*$"), 4294967295)
         if id and id > 0 then self:PrintStatus(id); return end
-        Questie:Print("[Server bridge] Usage: /qserver, /qserver pool <pool ID>, /qserver wintergrasp, /qserver icc, /qserver resets, /qserver phases, /qserver patrol [NPC ID], /qserver xp, or /qserver rep [faction ID]")
+        Questie:Print("[Server bridge] Usage: /qserver, /qserver pool <pool ID>, /qserver wintergrasp, /qserver icc, /qserver resets, /qserver phases, /qserver patrol [NPC ID], /qserver xp, /qserver rep [faction ID], or /qserver money")
     end
     Request()
 end

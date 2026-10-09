@@ -53,7 +53,7 @@ local function setup()
     local function reply(rows, caps, incomplete, protocol, sender)
         sequence = sequence + 1
         local token = messages[#messages]:match("^[^~]+~%d+~([^~]+)~")
-        local header = "~" .. (protocol or "14") .. "~" .. token .. "~" .. sequence
+        local header = "~" .. (protocol or "15") .. "~" .. token .. "~" .. sequence
         local function receive(value)
             frame.OnEvent(frame, "CHAT_MSG_ADDON", "QSTSVR", value, "WHISPER", sender or "Tester")
         end
@@ -145,7 +145,7 @@ s = setup(); s.human(true); s.rates(TWO, ONE, 10)
 s.reply({}, "HEARTBEAT")
 equal(reward(s, 1), 550, "disabled capability restores generated faction rate and human bonus")
 s = setup()
-s.reply({"P:QUEST_REP:" .. TWO .. ":" .. ONE .. ":0:" .. ONE .. ":51:0"}, nil, false, "13")
+s.reply({"P:QUEST_REP:" .. TWO .. ":" .. ONE .. ":0:" .. ONE .. ":51:0"}, nil, false, "14")
 equal(reward(s, 1), 500, "previous protocol cannot apply live rates")
 tests = tests + 1
 

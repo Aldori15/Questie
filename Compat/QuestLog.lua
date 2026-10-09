@@ -20,6 +20,7 @@ local QuestieTracker = QuestieLoader:ImportModule("QuestieTracker")
 local QuestiePlayer = QuestieLoader:ImportModule("QuestiePlayer")
 ---@type QuestXP
 local QuestXP = QuestieLoader:ImportModule("QuestXP")
+local QuestieServer = QuestieLoader:ImportModule("QuestieServer")
 
 local math_max = math.max
 local math_min = math.min
@@ -272,6 +273,26 @@ function QuestieCompat.GetQuestLogRewardMoney(questID)
         if scaledRewardMoney and scaledRewardMoney > 0 then
             rewardMoney = scaledRewardMoney
         end
+    end
+
+    local live = QuestieServer.GetQuestMoneyRates and QuestieServer:GetQuestMoneyRates()
+    if live then
+        -- Costs remain unscaled. Ordinary rewards and the capped-level bonus
+        -- have independent rates and are each truncated before being added.
+        local normal = rewardMoney < 0 and rewardMoney or QuestXP:ScaleRewardMoney(rewardMoney, live.normal)
+        local bonus = 0
+        if playerLevel >= live.maxLevel then
+            local questFlags = QuestieDB.QueryQuestSingle(questID, "questFlags") or 0
+            if bitband(questFlags, QUEST_FLAGS_NO_MONEY_FROM_XP) == 0 then
+                local baseXP = QuestXP:GetQuestLogRewardXP(questID, true, true, live.maxLevel)
+                bonus = QuestXP:ScaleRewardMoney(baseXP * 6, live.bonus)
+            end
+        end
+        if normal and bonus then
+            local total = normal + bonus
+            if total >= -2147483648 and total <= 2147483647 then return total end
+        end
+        -- Unsupported conversions retain the complete generated fallback.
     end
 
     -- https://wowpedia.fandom.com/wiki/Quest?oldid=1035002 Formula is XP gained * 6c

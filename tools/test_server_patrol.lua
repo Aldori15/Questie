@@ -61,7 +61,7 @@ local function setup()
     end
     local function snapshot(sequence, caps, rows)
         rows = rows or {}
-        local header = "~14~" .. token() .. "~" .. sequence
+        local header = "~15~" .. token() .. "~" .. sequence
         receive("BEGIN" .. header .. "~" .. (caps or "PATROLS,HEARTBEAT") .. "~" .. #rows .. "~" .. #rows)
         for index, row in ipairs(rows) do receive("PART" .. header .. "~" .. index .. "~" .. row) end
         receive("END" .. header)
@@ -69,7 +69,7 @@ local function setup()
     local function motion(sequence, rows, context, anchor, oldToken, dropped)
         rows = rows or {"37780:133649:5915.750:626.745"}
         context = context or {571, 0, 4395}
-        local header = "~14~" .. (oldToken or token()) .. "~" .. (anchor or 1) .. "~" .. sequence
+        local header = "~15~" .. (oldToken or token()) .. "~" .. (anchor or 1) .. "~" .. sequence
         receive("MBEGIN" .. header .. "~" .. table.concat(context, "~") .. "~" .. #rows .. "~" .. #rows .. "~READY")
         for index, row in ipairs(rows) do
             if dropped ~= index then receive("MPART" .. header .. "~" .. index .. "~" .. row) end
@@ -118,7 +118,7 @@ s.motion(2, nil, nil, 99); s.motion(2, nil, nil, nil, "oldtoken")
 equal(s.server:GetPatrolPositions(), good, "old connection/snapshot rejected")
 s.motion(2, {"37780:133649:5915.750:626.745", "37780:133649:5916.750:627.745"})
 equal(s.server:GetPatrolPositions(), good, "duplicate spawn rejected")
-local unauthorized = "~14~" .. s.token() .. "~1~2"
+local unauthorized = "~15~" .. s.token() .. "~1~2"
 for _, senderAndChannel in ipairs({{"Other", "WHISPER"}, {"Tester", "PARTY"}}) do
     for _, payload in ipairs({"MBEGIN" .. unauthorized .. "~571~0~4395~0~0~READY", "MEND" .. unauthorized}) do
         s.receive(payload, senderAndChannel[1], senderAndChannel[2])
@@ -132,7 +132,7 @@ s.motion(2, nil, nil, nil, nil, 1)
 equal(s.server:GetPatrolPositions(), good, "missing part cannot replace sample")
 s.motion(3, nil, nil, nil, nil, "END")
 equal(s.server:GetPatrolPositions(), good, "missing end cannot replace sample")
-s.elapse(3); s.receive("MEND~14~" .. s.token() .. "~1~3")
+s.elapse(3); s.receive("MEND~15~" .. s.token() .. "~1~3")
 equal(s.server:GetPatrolPositions(), good, "late batch end rejected")
 s.motion(4); local newest = s.server:GetPatrolPositions(); s.motion(1, {})
 equal(s.server:GetPatrolPositions(), newest, "reordered catalog rejected")
@@ -164,8 +164,8 @@ near(map.x, 51.3, "missing NPC restores static map position")
 near(mini.y, 27.27, "missing NPC restores static minimap position")
 s.motion(5, nil, nil, 2); s.step(0.11); s.elapse(5); s.update()
 near(map.x, 51.3, "expiry restores static location without reload")
-s.receive("MBEGIN~14~" .. s.token() .. "~2~6~571~0~4395~0~0~OVERFLOW")
-s.receive("MEND~14~" .. s.token() .. "~2~6")
+s.receive("MBEGIN~15~" .. s.token() .. "~2~6~571~0~4395~0~0~OVERFLOW")
+s.receive("MEND~15~" .. s.token() .. "~2~6")
 equal(s.server:GetPatrolPositions().status, "OVERFLOW", "overflow never supplies a partial catalog")
 s.step(0.11); near(map.x, 51.3, "overflow retains static fallback")
 

@@ -46,6 +46,15 @@ local function applyLiveXP(xp, rate, aura)
     return floor(xp)
 end
 
+--- Scale nonnegative copper with the core's float32/int32 money conversion.
+---@return number|nil nil when the core conversion would be out of range.
+function QuestXP:ScaleRewardMoney(copper, rate)
+    if copper < 0 or copper > 4294967295 then return nil end
+    local value = float32(float32(copper) * rate)
+    if value < 0 or value > 2147483647 then return nil end
+    return floor(value)
+end
+
 ---@return number multiplier
 local function getEquippedQuestXPMultiplier()
     local multiplier = 1
@@ -71,8 +80,8 @@ end
 ---@param ignorePlayerLevel boolean
 ---@param ignoreQuestXPModifiers boolean
 ---@return XP experience
-local function getAdjustedXP(questId, xp, qLevel, ignorePlayerLevel, ignoreQuestXPModifiers)
-    local charLevel = UnitLevel("player")
+local function getAdjustedXP(questId, xp, qLevel, ignorePlayerLevel, ignoreQuestXPModifiers, calculationLevel)
+    local charLevel = calculationLevel or UnitLevel("player")
     local live = not ignoreQuestXPModifiers and QuestieServer.GetQuestXPRates and QuestieServer:GetQuestXPRates()
     local maxLevel = live and live.maxLevel or GetMaxPlayerLevel()
     if charLevel >= maxLevel and (not ignorePlayerLevel) then
@@ -117,8 +126,9 @@ end
 ---@param questId QuestId
 ---@param ignorePlayerLevel boolean
 ---@param ignoreQuestXPModifiers boolean?
+---@param calculationLevel number? Level used for the unmodified max-level money conversion.
 ---@return XP experience
-function QuestXP:GetQuestLogRewardXP(questId, ignorePlayerLevel, ignoreQuestXPModifiers)
+function QuestXP:GetQuestLogRewardXP(questId, ignorePlayerLevel, ignoreQuestXPModifiers, calculationLevel)
     local questData = QuestXP.db[questId]
     if questData then
         local level = questData[1]
@@ -126,13 +136,13 @@ function QuestXP:GetQuestLogRewardXP(questId, ignorePlayerLevel, ignoreQuestXPMo
 
         -- AzerothCore uses the player's current level for quests with QuestLevel -1.
         if level == -1 then
-            level = UnitLevel("player")
+            level = calculationLevel or UnitLevel("player")
         end
 
         local levelRewards = QuestXP.xpByLevel[level]
         local xp = levelRewards and levelRewards[rewardDifficulty + 1]
         if level > 0 and xp and xp > 0 then
-            return getAdjustedXP(questId, xp, level, ignorePlayerLevel, ignoreQuestXPModifiers)
+            return getAdjustedXP(questId, xp, level, ignorePlayerLevel, ignoreQuestXPModifiers, calculationLevel)
         end
     end
 
