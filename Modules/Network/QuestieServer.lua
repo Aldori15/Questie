@@ -2,7 +2,7 @@
 local QuestieServer = QuestieLoader:CreateModule("QuestieServer")
 local Integrations = QuestieLoader:ImportModule("QuestieServerIntegrations")
 
-local PREFIX, PROTOCOL_VERSION = "QSTSVR", "12"
+local PREFIX, PROTOCOL_VERSION = "QSTSVR", "13"
 
 -- Shared with the correction generators. Decisions apply to the current area,
 -- never to every location in these zones. Keep the module's profiles in sync.
@@ -43,7 +43,8 @@ local requestSequence, lastSequence, nextRequestAt = 0, 0, 0
 local nextPreferenceCheck, previousPreferences = 0, nil
 local subscriptions = {}
 local CAPABILITIES = {EVENTS = true, VALUES = true, SCOURGE = true, QUELDANAS = true,
-    KALUAK = true, HEARTBEAT = true, QUESTPOOLS = true, WINTERGRASP = true, ICC = true, RESETS = true, PHASES = true, PATROLS = true}
+    KALUAK = true, HEARTBEAT = true, QUESTPOOLS = true, WINTERGRASP = true, ICC = true, RESETS = true,
+    PHASES = true, PATROLS = true, QUESTXP = true}
 
 local function Split(value, separator)
     local fields, first = {}, 1
@@ -71,6 +72,24 @@ end
 
 function QuestieServer:HasCapability(capability)
     return Fresh() and snapshot.caps[capability] == true or false
+end
+
+---@return table|nil Fresh effective quest XP rates, aura multiplier and server level cap.
+function QuestieServer:GetQuestXPRates()
+    if self:HasCapability("QUESTXP") then return snapshot.questXP end
+end
+
+-- The server sends IEEE-754 float bits as unsigned integers. Decode exactly,
+-- rejecting sign, infinity/NaN and multipliers outside the shared 0..1000 bound.
+local function XPMultiplier(raw)
+    local bits = Integer(raw, 2147483647)
+    if not bits then return nil end
+    local exponent, fraction = math.floor(bits / 8388608), bits % 8388608
+    if exponent == 255 then return nil end
+    local value = exponent == 0 and math.ldexp(fraction, -149)
+        or math.ldexp(8388608 + fraction, exponent - 150)
+    if value > 1000 then return nil end
+    return value
 end
 
 -- Accepted patrol samples survive an area-only handshake, but cannot renew
@@ -386,7 +405,13 @@ local function ParseRows(batch)
             count = count + 1
             local fields = Split(row, ":")
             local kind, id = fields[1], Integer(fields[2], 4294967295)
-            if kind == "P" and result.caps.PHASES and fields[2] == "PHASE_CONTEXT"
+            if kind == "P" and result.caps.QUESTXP and fields[2] == "QUEST_XP"
+                and #fields == 6 and not result.questXP then
+                local normal, dungeonFinder, aura = XPMultiplier(fields[3]), XPMultiplier(fields[4]), XPMultiplier(fields[5])
+                local maxLevel = Integer(fields[6], 255)
+                if not normal or not dungeonFinder or not aura or not maxLevel or maxLevel == 0 then return nil end
+                result.questXP = {normal = normal, dungeonFinder = dungeonFinder, aura = aura, maxLevel = maxLevel}
+            elseif kind == "P" and result.caps.PHASES and fields[2] == "PHASE_CONTEXT"
                 and #fields == 6 and not result.phaseContext then
                 local map, area, mask = Integer(fields[3], 65535), Integer(fields[4], 65535), Integer(fields[5], 4294967295)
                 local zone = Integer(fields[6], 65535)
@@ -472,6 +497,7 @@ local function ParseRows(batch)
         end
     end
     if count ~= batch.rowCount then return nil end
+    if result.caps.QUESTXP and not result.questXP then return nil end
     if result.caps.PHASES then
         local context = result.phaseContext
         if not context then return nil end
@@ -680,6 +706,17 @@ function QuestieServer:PrintStatus(poolId)
     if self:HasCapability("RESETS") then self:PrintResetStatus() end
     if self:HasCapability("PHASES") then self:PrintPhaseStatus() end
     if self:HasCapability("PATROLS") then self:PrintPatrolStatus() end
+    if self:HasCapability("QUESTXP") then self:PrintXPStatus() end
+end
+
+function QuestieServer:PrintXPStatus()
+    local rates = self:GetQuestXPRates()
+    if not rates then
+        Questie:Print("[Server bridge] Quest XP rates unavailable; using generated XP and equipped-item bonuses.")
+        return
+    end
+    Questie:Print(string.format("[Server bridge] Quest XP: normal %.6gx; dungeon finder %.6gx; quest-XP auras %.6gx; server level cap %d.",
+        rates.normal, rates.dungeonFinder, rates.aura, rates.maxLevel))
 end
 
 function QuestieServer:PrintPatrolStatus(entry)
@@ -868,11 +905,12 @@ function QuestieServer:Initialize()
         if command:match("^%s*resets%s*$") then self:PrintResetStatus(); return end
         if command:match("^%s*phases%s*$") then self:PrintPhaseStatus(); return end
         if command:match("^%s*patrol%s*$") then self:PrintPatrolStatus(); return end
+        if command:match("^%s*xp%s*$") then self:PrintXPStatus(); return end
         local patrolEntry = Integer(command:match("^%s*patrol%s+(%d+)%s*$"), 4294967295)
         if patrolEntry and patrolEntry > 0 then self:PrintPatrolStatus(patrolEntry); return end
         local id = Integer(command:match("^%s*pool%s+(%d+)%s*$"), 4294967295)
         if id and id > 0 then self:PrintStatus(id); return end
-        Questie:Print("[Server bridge] Usage: /qserver, /qserver pool <pool ID>, /qserver wintergrasp, /qserver icc, /qserver resets, /qserver phases, or /qserver patrol [NPC ID]")
+        Questie:Print("[Server bridge] Usage: /qserver, /qserver pool <pool ID>, /qserver wintergrasp, /qserver icc, /qserver resets, /qserver phases, /qserver patrol [NPC ID], or /qserver xp")
     end
     Request()
 end

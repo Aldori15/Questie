@@ -1,6 +1,8 @@
 --Contains functions to fetch the Quest Experiance for quests.
 ---@class QuestXP
 local QuestXP = QuestieLoader:CreateModule("QuestXP")
+local QuestieServer = QuestieLoader:ImportModule("QuestieServer")
+local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 
 ---@type table<QuestId,table<Level,number>> -- {questId = {QuestLevel, RewardXPDifficulty}}
 QuestXP.db = {}
@@ -22,6 +24,28 @@ local UnitLevel = UnitLevel
 local FIRST_EQUIPMENT_SLOT = 1
 local LAST_EQUIPMENT_SLOT = 19
 
+-- Core reward multiplications use float32, followed by uint32 truncation.
+-- Lua's doubles otherwise differ near integer boundaries for fractional rates.
+local function float32(value)
+    if value == 0 then return 0 end
+    local _, exponent = math.frexp(value)
+    local shift = exponent < -125 and 149 or 24 - exponent
+    local scaled = math.ldexp(value, shift)
+    local rounded = floor(scaled)
+    local fraction = scaled - rounded
+    if fraction > 0.5 or (fraction == 0.5 and rounded % 2 ~= 0) then rounded = rounded + 1 end
+    return math.ldexp(rounded, -shift)
+end
+
+local function applyLiveXP(xp, rate, aura)
+    xp = float32(float32(xp) * rate)
+    -- Out-of-range float-to-uint32 conversion is not a supported core reward.
+    if xp > 4294967295 then return nil end
+    xp = float32(float32(floor(xp)) * aura)
+    if xp > 4294967295 then return nil end
+    return floor(xp)
+end
+
 ---@return number multiplier
 local function getEquippedQuestXPMultiplier()
     local multiplier = 1
@@ -41,18 +65,21 @@ local function getEquippedQuestXPMultiplier()
     return multiplier
 end
 
+---@param questId QuestId
 ---@param xp XP
 ---@param qLevel Level
 ---@param ignorePlayerLevel boolean
 ---@param ignoreQuestXPModifiers boolean
 ---@return XP experience
-local function getAdjustedXP(xp, qLevel, ignorePlayerLevel, ignoreQuestXPModifiers)
+local function getAdjustedXP(questId, xp, qLevel, ignorePlayerLevel, ignoreQuestXPModifiers)
     local charLevel = UnitLevel("player")
-    if charLevel == GetMaxPlayerLevel() and (not ignorePlayerLevel) then
+    local live = not ignoreQuestXPModifiers and QuestieServer.GetQuestXPRates and QuestieServer:GetQuestXPRates()
+    local maxLevel = live and live.maxLevel or GetMaxPlayerLevel()
+    if charLevel >= maxLevel and (not ignorePlayerLevel) then
         return 0
     end
 
-    --? These calculations are fetched from cmangos
+    -- Match AzerothCore's Quest::XPValue level factor and rounding buckets.
     local xpMultiplier = 2 * (qLevel - charLevel) + 20
     if (xpMultiplier < 1) then
         xpMultiplier = 1
@@ -60,8 +87,7 @@ local function getAdjustedXP(xp, qLevel, ignorePlayerLevel, ignoreQuestXPModifie
         xpMultiplier = 10
     end
 
-    xp = xp * xpMultiplier / 10
-    --? I am unsure if the first xp <= 100 is actually correct... because some 85 xp quests should actually give 90
+    xp = floor(xp * xpMultiplier / 10)
     if (xp <= 100) then
         xp = 5 * floor((xp + 2) / 5)
     elseif (xp <= 500) then
@@ -73,6 +99,13 @@ local function getAdjustedXP(xp, qLevel, ignorePlayerLevel, ignoreQuestXPModifie
     end
 
     if not ignoreQuestXPModifiers then
+        if live then
+            -- SpecialFlags bit 8 identifies DF rewards, not ordinary dungeon quests.
+            local flags = QuestieDB.QueryQuestSingle(questId, "specialFlags") or 0
+            local rate = flags % 16 >= 8 and live.dungeonFinder or live.normal
+            local adjusted = applyLiveXP(xp, rate, live.aura)
+            if adjusted then return adjusted end
+        end
         xp = xp * getEquippedQuestXPMultiplier()
     end
 
@@ -99,7 +132,7 @@ function QuestXP:GetQuestLogRewardXP(questId, ignorePlayerLevel, ignoreQuestXPMo
         local levelRewards = QuestXP.xpByLevel[level]
         local xp = levelRewards and levelRewards[rewardDifficulty + 1]
         if level > 0 and xp and xp > 0 then
-            return getAdjustedXP(xp, level, ignorePlayerLevel, ignoreQuestXPModifiers)
+            return getAdjustedXP(questId, xp, level, ignorePlayerLevel, ignoreQuestXPModifiers)
         end
     end
 

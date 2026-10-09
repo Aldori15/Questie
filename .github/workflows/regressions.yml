@@ -38,7 +38,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           repository: Aldori15/mod-questie-bridge
-          # Protocol 12. Update this pin with coordinated bridge contract changes.
+          # Bridge contract revision.
           ref: d261d83a2882ba73caf42a10cbb5591b85fd802c
           path: source/modules/mod-questie-bridge
           persist-credentials: false

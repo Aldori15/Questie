@@ -24,6 +24,7 @@ to let Questie's quest availability, reset timing, and locations follow live Aze
 - The server's selected daily and weekly pool quests, before visiting the questgiver.
 - ICC weekly quests follow the selected family, raid size, and unlocks in your current raid instance.
 - Weekly and monthly quest completion history follows the server's reset schedule.
+- Quest XP displays follow the character's effective normal/dungeon-finder rates and active quest-XP auras, including heirlooms.
 - Wintergrasp quests and questgiver locations as faction control changes.
 - Questgiver markers follow loaded patrols and moving transport passengers in your current zone,
   including Orgrim's Hammer and the Skybreaker.
@@ -40,9 +41,19 @@ Use `/qserver resets` to check the server's next weekly and monthly quest resets
 Use `/qserver phases` to check story-phase location filtering. It applies within your
 current subarea; locations elsewhere keep their usual behavior.
 Use `/qserver patrol` or `/qserver patrol <NPC ID>` to check live questgiver positions.
+Use `/qserver xp` to check effective quest XP rates, aura multiplier, and the server's level cap.
 Patrol pins update once per second without smoothing, using loaded NPCs visible to your character
 in the current zone. Opening another zone's map does not request remote NPC positions.
 Missing or expired positions restore the usual marker and patrol line.
+
+Quest XP uses generated base rewards plus the server's effective rates and quest-XP aura multiplier.
+Live aura data replaces the equipped-item calculation, so heirloom bonuses apply once.
+Rates changed through `.reload config` or `OnPlayerGetQuestRate` are picked up while logged in;
+reopen or hover the reward tooltip again to see the new value. Unknown, disabled, or stale XP data
+restores the generated calculation and equipped-item bonuses. No regeneration is needed for rate changes.
+XP multipliers do not change displayed max-level bonus money. Arbitrary quest/reward hooks,
+recruit-a-friend XP, XP locks, and other later reward changes are outside this rate capability.
+Reputation and money rate reporting are separate features and are not included in `QUESTXP`.
 
 Your visibility options, character requirements, and manually hidden quests still apply.
 Enable **Available Scourge Invasion Quests** or **Available Sun's Reach Quests** to show those quest sets.
