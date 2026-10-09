@@ -356,9 +356,17 @@ end
 -- Combine independent live gates. A selected quest cannot bypass a faction gate,
 -- raid-instance gate or inactive direct pool membership.
 function QuestieServer:GetQuestAvailabilityState(questId)
-    local pool = self:IsPooledQuestActive(questId)
-    local wintergrasp = self:IsWintergraspQuestActive(questId)
-    local icc = self:IsICCQuestActive(questId)
+    if not Fresh() then return nil end
+    local caps = snapshot.caps
+    local pool, wintergrasp, icc
+    if caps.QUESTPOOLS then
+        local quest = snapshot.poolQuests[questId]
+        if quest then pool = quest.active end
+    end
+    if caps.WINTERGRASP then wintergrasp = snapshot.wintergraspQuests[questId] end
+    if caps.ICC and not iccContextPending and snapshot.icc.loaded and snapshot.icc.inside then
+        icc = snapshot.iccQuests[questId]
+    end
     if pool == false or wintergrasp == false or icc == false then return false end
     if pool == true or wintergrasp == true or icc == true then return true end
     return nil

@@ -1444,6 +1444,37 @@ do
     equal(#s.server:GetStateControlledQuests(), 12, "combined catalog deduplicates quest IDs")
     tests = tests + 1
 
+    -- Repeated combined lookups use one clock read, preserving false/true/unknown
+    -- across overlapping gates and expiry even before the frame cleanup runs.
+    do
+        local combined = setup()
+        equal(combined.server:GetQuestAvailabilityState(999), nil, "no snapshot keeps availability unknown")
+        local rows = iccRows(100, 0, 24869, false, 0)
+        for _, row in ipairs({"Q:24869:10000:0", "Q:24873:10000:1", "P:WG_STATE:1:0:1",
+            "R:13154:0", "R:13196:1", "Q:13154:385:1", "Q:13196:9000:0", "Q:13830:5676:1"}) do
+            rows[#rows + 1] = row
+        end
+        combined.reply(rows, "ICC,WINTERGRASP,QUESTPOOLS,HEARTBEAT")
+        local clockReads, getTime = 0, combined.env.GetTime
+        combined.env.GetTime = function() clockReads = clockReads + 1; return getTime() end
+        for _ = 1, 100 do
+            equal(combined.server:GetQuestAvailabilityState(24869), false, "inactive pool overrides active ICC gate")
+            equal(combined.server:GetQuestAvailabilityState(24873), false, "inactive ICC overrides active pool gate")
+            equal(combined.server:GetQuestAvailabilityState(13154), false, "inactive Wintergrasp overrides active pool gate")
+            equal(combined.server:GetQuestAvailabilityState(13196), false, "inactive pool overrides active Wintergrasp gate")
+            equal(combined.server:GetQuestAvailabilityState(13830), true, "active pool with no other gates")
+            equal(combined.server:GetQuestAvailabilityState(999), nil, "unreported quest keeps fallback")
+        end
+        equal(clockReads, 600, "combined availability checks freshness once per lookup")
+        combined.elapse(29)
+        equal(combined.server:GetQuestAvailabilityState(13830), true, "snapshot remains fresh before deadline")
+        combined.elapse(1)
+        for _, id in ipairs({24869, 24873, 13154, 13196, 13830}) do
+            equal(combined.server:GetQuestAvailabilityState(id), nil, "expired combined gate keeps fallback before frame cleanup")
+        end
+        tests = tests + 1
+    end
+
     s.reply(iccRows(100, 0, 24869, false, 0), "ICC,HEARTBEAT")
     s.reply({"P:ICC_STATE:0:0:0:0:0"}, "ICC,HEARTBEAT")
     equal(available.IsUnavailableForCurrentReset(24869), true, "leaving restores original observation")
@@ -1496,6 +1527,7 @@ do
     local oldHeartbeat = s.heartbeat()
     s.event("PLAYER_ENTERING_WORLD")
     equal(s.server:IsICCQuestActive(24869), nil, "travel clears old instance gate immediately")
+    equal(s.server:GetQuestAvailabilityState(24869), nil, "combined availability immediately discards old raid gate")
     equal(s.server:IsEventActive(61), false, "travel preserves fresh global event state")
     s.receive(oldHeartbeat)
     equal(s.server:GetICCState(), nil, "old heartbeat cannot restore raid context")
@@ -1510,9 +1542,12 @@ do
     equal(s.server:GetICCState().instance, 200, "new instance confirmed")
     equal(s.server:IsICCQuestActive(24878), true, "new raid choice replaces old choice")
     equal(s.server:IsICCQuestActive(24869), false, "old choice inactive in new raid")
+    equal(s.server:GetQuestAvailabilityState(24878), true, "combined availability uses new raid choice")
+    equal(s.server:GetQuestAvailabilityState(24869), false, "combined availability rejects old raid choice")
     s.env.IsInInstance = function() return false, "none" end
     s.event("ZONE_CHANGED_NEW_AREA")
     equal(s.server:IsICCQuestActive(24878), nil, "leaving clears old raid choice")
+    equal(s.server:GetQuestAvailabilityState(24878), nil, "combined availability immediately discards departed raid gate")
     s.advance(2)
     s.reply({"P:ICC_STATE:0:0:0:0:0"}, "ICC,HEARTBEAT")
     equal(s.server:GetICCState().inside, false, "outside state confirmed after travel")
