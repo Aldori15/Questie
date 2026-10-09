@@ -40,11 +40,13 @@ local time = time
 local date = date
 local tonumber = tonumber
 local coRunning = coroutine.running
+local getProfilerTime = QuestieLoader.GetProfilerTime
 
 ---@param onComplete function?
-local function _UnloadQuestFrames(questId, iconType, noteType, onComplete)
+---@param yieldRefresh (fun(forceYield: boolean?): boolean)?
+local function _UnloadQuestFrames(questId, iconType, noteType, onComplete, yieldRefresh)
     if coRunning() then
-        QuestieMap:UnloadQuestFrames(questId, iconType, noteType)
+        QuestieMap:UnloadQuestFrames(questId, iconType, noteType, yieldRefresh)
         if onComplete then
             onComplete()
         end
@@ -63,8 +65,23 @@ local QUESTS_PER_YIELD = 24
 local QUESTS_PER_YIELD_FAST = 512
 -- Drawing is substantially more expensive than checking availability, so use a smaller normal batch.
 local AVAILABLE_QUEST_DRAWS_PER_YIELD = 4
+local AVAILABLE_QUEST_SLICE_SECONDS = 0.003
 local questsPerYield = QUESTS_PER_YIELD
 local isFastRefreshActive = false
+
+-- Share one deadline across the scan and display passes, including nested frame
+-- removal. Reset after resuming so suspended scheduler time is never charged.
+local function _CreateRefreshYield()
+    local deadline = getProfilerTime and (getProfilerTime() + AVAILABLE_QUEST_SLICE_SECONDS)
+    return function(forceYield)
+        if forceYield or (deadline and getProfilerTime() >= deadline) then
+            yield()
+            deadline = getProfilerTime and (getProfilerTime() + AVAILABLE_QUEST_SLICE_SECONDS)
+            return true
+        end
+        return false
+    end
+end
 
 --- Used to keep track of the active timer for CalculateAndDrawAll
 ---@type Ticker|nil
@@ -729,11 +746,12 @@ _RemoveQuestFromNpcAvailability = function(questId, quest)
 end
 
 ---@param questId QuestId
-function AvailableQuests.RemoveAvailableQuest(questId)
+---@param yieldRefresh (fun(forceYield: boolean?): boolean)? Optional shared refresh budget.
+function AvailableQuests.RemoveAvailableQuest(questId, yieldRefresh)
     dirtySpawnVisibility[questId] = nil
     availableQuests[questId] = nil
     _RemoveQuestFromNpcAvailability(questId, QuestieDB.GetQuest(questId))
-    _UnloadQuestFrames(questId, nil, "available")
+    _UnloadQuestFrames(questId, nil, "available", nil, yieldRefresh)
     QuestieTooltips:RemoveAvailableQuest(questId)
 end
 
@@ -1127,6 +1145,7 @@ end
 
 _CalculateAvailableQuests = function()
     local maxQuestsPerYield = questsPerYield
+    local yieldRefresh = _CreateRefreshYield()
     local unavailableQuests = _GetEffectiveUnavailableQuests()
     local previousAvailableQuests = availableQuests
     availableQuests = nextAvailableQuests
@@ -1233,34 +1252,33 @@ _CalculateAvailableQuests = function()
         nextAvailableQuestSet[questId] = true
     end
 
+    yieldRefresh() -- Include setup work in the first slice.
     local questCount = 0
     for questId in pairs(questData) do
         _CheckAvailability(questId)
 
         -- Reset the questCount
         questCount = questCount + 1
-        if questCount > maxQuestsPerYield then
+        if yieldRefresh(questCount > maxQuestsPerYield) then
             questCount = 0
-            questLogQuestIds = nil -- Events may change the client log while suspended.
-            yield()
+            questLogQuestIds = nil -- The next check must reread changes made while suspended.
         end
     end
 
-    _SyncAvailableQuestDisplay(previousAvailableQuests, availableQuests, maxQuestsPerYield)
+    _SyncAvailableQuestDisplay(previousAvailableQuests, availableQuests, maxQuestsPerYield, yieldRefresh)
 end
 
-_SyncAvailableQuestDisplay = function(previousAvailableQuests, nextAvailableQuests, maxQuestsPerYield)
+_SyncAvailableQuestDisplay = function(previousAvailableQuests, nextAvailableQuests, maxQuestsPerYield, yieldRefresh)
     local questCount = 0
 
     for questId in pairs(previousAvailableQuests) do
         if not nextAvailableQuests[questId] then
-            AvailableQuests.RemoveAvailableQuest(questId)
+            AvailableQuests.RemoveAvailableQuest(questId, yieldRefresh)
         end
 
         questCount = questCount + 1
-        if questCount > maxQuestsPerYield then
+        if yieldRefresh(questCount > maxQuestsPerYield) then
             questCount = 0
-            yield()
         end
     end
 
@@ -1272,7 +1290,7 @@ _SyncAvailableQuestDisplay = function(previousAvailableQuests, nextAvailableQues
         if replaceSpawns then
             -- Consume before yielding so another visibility change stays dirty.
             dirtySpawnVisibility[questId] = nil
-            _UnloadQuestFrames(questId, nil, "available")
+            _UnloadQuestFrames(questId, nil, "available", nil, yieldRefresh)
             QuestieTooltips:RemoveAvailableQuest(questId)
         end
         local hasLiveFrames = _HasLiveAvailableQuestFrames(questId)
@@ -1284,11 +1302,9 @@ _SyncAvailableQuestDisplay = function(previousAvailableQuests, nextAvailableQues
         end
 
         questCount = questCount + 1
-        if questCount > maxQuestsPerYield or ((not isFastRefreshActive) and drawCount >= AVAILABLE_QUEST_DRAWS_PER_YIELD)
-        then
+        if yieldRefresh(questCount > maxQuestsPerYield or ((not isFastRefreshActive) and drawCount >= AVAILABLE_QUEST_DRAWS_PER_YIELD)) then
             questCount = 0
             drawCount = 0
-            yield()
         end
     end
 

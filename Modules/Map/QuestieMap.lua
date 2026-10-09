@@ -285,7 +285,8 @@ local function _IsCurrentQuestFrame(questId, frameInfo)
         and frameInfo.frame.data == frameInfo.data
 end
 
-function QuestieMap:UnloadQuestFrames(questId, iconType, noteType)
+---@param yieldRefresh (fun(forceYield: boolean): boolean)? Optional shared refresh budget.
+function QuestieMap:UnloadQuestFrames(questId, iconType, noteType, yieldRefresh)
     assert(coRunning(), "UnloadQuestFrames must be called from a coroutine")
 
     if QuestieMap.questIdFrames[questId] then
@@ -302,7 +303,11 @@ function QuestieMap:UnloadQuestFrames(questId, iconType, noteType)
                 end
 
                 yieldCount = yieldCount + 1
-                if yieldCount >= TICKS_PER_YIELD then
+                if yieldRefresh then
+                    if yieldRefresh(yieldCount >= TICKS_PER_YIELD) then
+                        yieldCount = 0
+                    end
+                elseif yieldCount >= TICKS_PER_YIELD then
                     yieldCount = 0
                     coYield()
                 end
