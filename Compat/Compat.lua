@@ -322,21 +322,6 @@ function QuestieCompat.UnitBuff(unit, index)
     return name, icon, count, debuffType, duration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellId
 end
 
--- Returns the race of the unit.
--- https://wowpedia.fandom.com/wiki/API_UnitRace
-function QuestieCompat.UnitRace(unit)
-    local raceName, raceFile = UnitRace(unit)
-    return raceName, raceFile, QuestieCompat.ChrRaces[raceFile]
-end
-
--- Returns the class of the unit.
--- https://wowpedia.fandom.com/wiki/API_UnitClass
--- Patch 5.0.4 (2012-08-28): Added classId return value.
-function QuestieCompat.UnitClass(unit)
-    local className, classFile = UnitClass(unit)
-    return className, classFile, QuestieCompat.ChrClasses[classFile]
-end
-
 -- Returns info for a faction.
 -- https://wowpedia.fandom.com/wiki/API_GetFactionInfo
 -- Patch 5.0.4 (2012-08-28): Added new return value: factionID
