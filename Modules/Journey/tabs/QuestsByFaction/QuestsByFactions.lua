@@ -28,8 +28,6 @@ local QuestiePlayer = QuestieLoader:ImportModule("QuestiePlayer")
 local l10n = QuestieLoader:ImportModule("l10n")
 
 local AceGUI = LibStub("AceGUI-3.0")
-local IsSpellKnownOrOverridesKnown = QuestieCompat.IsSpellKnownOrOverridesKnown
-local IsPlayerSpell = QuestieCompat.IsPlayerSpell
 local coYield = coroutine.yield
 
 local factionTreeFrame

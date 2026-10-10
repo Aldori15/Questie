@@ -23,8 +23,6 @@ local QuestieLink = QuestieLoader:ImportModule("QuestieLink")
 local l10n = QuestieLoader:ImportModule("l10n")
 
 local AceGUI = LibStub("AceGUI-3.0")
-local IsSpellKnownOrOverridesKnown = QuestieCompat.IsSpellKnownOrOverridesKnown
-local IsPlayerSpell = QuestieCompat.IsPlayerSpell
 local zoneTreeFrame
 --- COMPATIBILITY ---
 local C_Timer = QuestieCompat.C_Timer

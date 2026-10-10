@@ -249,7 +249,7 @@ QuestieInit.Stages[1] = function() -- run as a coroutine
     local dbCompiledCount = Questie.db.global.dbCompiledCount
 
     -- The class file token returned by UnitClass is locale independent.
-    local _, playerClass = QuestieCompat.UnitClass("player")
+    local _, playerClass = UnitClass("player")
     if (not Questie.db.char.townsfolk) or (dbCompiledCount ~= Questie.db.char.townsfolkVersion) or (Questie.db.char.townsfolkClass ~= playerClass) then
         Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage1] Townsfolk building.")
         coYield()

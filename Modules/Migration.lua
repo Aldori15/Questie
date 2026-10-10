@@ -52,7 +52,7 @@ local migrationFunctions = {
         Questie.db.profile.enableTooltipDroprates = true
     end,
     [14] = function()
-        local _, playerClass = QuestieCompat.UnitClass("player")
+        local _, playerClass = UnitClass("player")
         if playerClass == "ROGUE" and Questie.db.profile.townsfolkConfig["Reagents"] then
             Questie.db.profile.townsfolkConfig["Reagents"] = false
             Questie.db.profile.townsfolkConfig["Poisons"] = true
