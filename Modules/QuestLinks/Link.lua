@@ -26,7 +26,6 @@ local CALENDAR_FULLDATE_MONTH_NAMES = QuestieCompat.CALENDAR_FULLDATE_MONTH_NAME
 local HaveQuestData = QuestieCompat.HaveQuestData
 local GetQuestObjectives = QuestieCompat.C_QuestLog.GetQuestObjectives
 local GetQuestLogIndexByID = QuestieCompat.GetQuestLogIndexByID
-local GetSpellName = QuestieCompat.GetSpellName
 local strfind = string.find
 
 ---@type QuestId?
@@ -347,7 +346,7 @@ _GetObjectiveText = function(objectiveId, objectiveType)
     elseif objectiveType == "reputation" then
         return QuestieReputation.GetFactionName(objectiveId)
     elseif objectiveType == "spell" then
-        return GetSpellName(objectiveId)
+        return (GetSpellInfo(objectiveId))
     end
     return ""
 end
