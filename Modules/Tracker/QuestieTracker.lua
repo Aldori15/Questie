@@ -2197,9 +2197,9 @@ function QuestieTracker:UpdateFormatting()
     TrackerBaseFrame:Update()
 
     if Questie.db.profile.trackerHeaderEnabled or (Questie.db.profile.alwaysShowTracker and not QuestieTracker:HasQuest()) then
-        QuestieCompat.SetResizeBounds(trackerBaseFrame, trackerHeaderFrame:GetWidth() + Questie.db.profile.trackerFontSizeHeader + 10, trackerHeaderFrame:GetHeight() + Questie.db.profile.trackerFontSizeZone + 23)
+        trackerBaseFrame:SetMinResize(trackerHeaderFrame:GetWidth() + Questie.db.profile.trackerFontSizeHeader + 10, trackerHeaderFrame:GetHeight() + Questie.db.profile.trackerFontSizeZone + 23)
     else
-        QuestieCompat.SetResizeBounds(trackerBaseFrame, (TrackerLinePool.GetFirstLine().label:GetUnboundedStringWidth() + 40), Questie.db.profile.trackerFontSizeZone + 22)
+        trackerBaseFrame:SetMinResize(TrackerLinePool.GetFirstLine().label:GetUnboundedStringWidth() + 40, Questie.db.profile.trackerFontSizeZone + 22)
     end
 
     TrackerUtils:ShowVoiceOverPlayButtons()
