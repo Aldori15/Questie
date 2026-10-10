@@ -77,7 +77,7 @@ _GetQuestGiverGuid = function()
 end
 
 _GetStructuredAvailableQuests = function()
-    local rawAvailableQuests = { GetGossipAvailableQuests() }
+    local rawAvailableQuests = { QuestieCompat.GetAvailableQuests() }
     if type(rawAvailableQuests[1]) == "table" then
         return rawAvailableQuests
     end
@@ -103,7 +103,7 @@ _GetStructuredAvailableQuests = function()
 end
 
 _GetStructuredActiveQuests = function()
-    local rawActiveQuests = { GetGossipActiveQuests() }
+    local rawActiveQuests = { QuestieCompat.GetActiveQuests() }
     if type(rawActiveQuests[1]) == "table" then
         return rawActiveQuests
     end

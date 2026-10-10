@@ -57,8 +57,8 @@ end
 local function updateGossipFrame()
     local numAvailable = GetNumGossipAvailableQuests()
     local numActive = GetNumGossipActiveQuests()
-    local availQuests = {GetGossipAvailableQuests()}
-    local activeQuests = {GetGossipActiveQuests()}
+    local availQuests = {QuestieCompat.GetAvailableQuests()}
+    local activeQuests = {QuestieCompat.GetActiveQuests()}
     local index = 0 -- this variable tracks the GossipTitleButton we should be targeting for icon changes
     local questgiver = UnitGUID("npc")
     if numAvailable > 0 then
