@@ -2040,6 +2040,36 @@ local QuestieCorrectionshiddenQuests
 ---Questie.db.char.hidden
 local Questiedbcharhidden
 
+local questRequirementQuery
+local questRequirementQuerySource
+
+local function CreateQuestRequirementQuery(querySingle, questKeys, overrides)
+    local cache = {}
+    local missing = {}
+    return function(questId, field)
+        -- Corrections remain live, including false/zero values and edited lists.
+        -- Only unmodified compiled fields are cached; consumers must not mutate them.
+        local override = overrides[questId]
+        if override then
+            local index = questKeys[field]
+            if index and override[index] ~= nil then return override[index] end
+        end
+
+        local requirements = cache[questId]
+        if not requirements then
+            requirements = {}
+            cache[questId] = requirements
+        end
+        local value = requirements[field]
+        if value == nil then
+            value = querySingle(questId, field)
+            if value == nil then value = missing end
+            requirements[field] = value
+        end
+        if value ~= missing then return value end
+    end
+end
+
 QuestieDB.itemDataOverrides = {}
 QuestieDB.npcDataOverrides = {}
 QuestieDB.objectDataOverrides = {}
@@ -2108,6 +2138,9 @@ function QuestieDB:Initialize()
 
     QuestieDB.QueryNPCSingle = QuestieDB.QueryNPC.QuerySingle
     QuestieDB.QueryQuestSingle = QuestieDB.QueryQuest.QuerySingle
+    -- Rebuild with each database handle. Cache requirement data, never eligibility.
+    questRequirementQuerySource = QuestieDB.QueryQuestSingle
+    questRequirementQuery = CreateQuestRequirementQuery(questRequirementQuerySource, QuestieDB.questKeys, QuestieDB.questDataOverrides)
     QuestieDB.QueryObjectSingle = QuestieDB.QueryObject.QuerySingle
     QuestieDB.QueryItemSingle = QuestieDB.QueryItem.QuerySingle
 
@@ -2825,6 +2858,8 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions, 
 
     local completedQuests = Questie.db.char.complete
     local currentQuestlog = QuestiePlayer.currentQuestlog
+    local queryRequirements = QuestieDB.QueryQuestSingle
+    if queryRequirements == questRequirementQuerySource then queryRequirements = questRequirementQuery end
 
     -- These are localized in the init function
     if completedQuests[questId] then
@@ -2874,7 +2909,7 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions, 
         -- if we're on the parent quest then we implicitly know all other requirements are met
     end
 
-    local requiredRaces = QuestieDB.QueryQuestSingle(questId, "requiredRaces")
+    local requiredRaces = queryRequirements(questId, "requiredRaces")
     if (requiredRaces and not checkRace[requiredRaces]) then
         QuestieDB.autoBlacklist[questId] = "race"
         if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Race requirement not fulfilled for quest " .. questId) end
@@ -2882,7 +2917,7 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions, 
     end
 
     -- Check the preQuestSingle field where just one of the required quests has to be complete for a quest to show up
-    local preQuestSingle = QuestieDB.QueryQuestSingle(questId, "preQuestSingle")
+    local preQuestSingle = queryRequirements(questId, "preQuestSingle")
     if preQuestSingle then
         local isPreQuestSingleFulfilled = QuestieDB:IsPreQuestSingleFulfilled(preQuestSingle)
         if not isPreQuestSingleFulfilled then
@@ -2891,15 +2926,15 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions, 
         end
     end
 
-    local requiredClasses = QuestieDB.QueryQuestSingle(questId, "requiredClasses")
+    local requiredClasses = queryRequirements(questId, "requiredClasses")
     if (requiredClasses and not checkClass[requiredClasses]) then
         QuestieDB.autoBlacklist[questId] = "class"
         if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Class requirement not fulfilled for quest " .. questId) end
         return false
     end
 
-    local requiredMinRep = QuestieDB.QueryQuestSingle(questId, "requiredMinRep")
-    local requiredMaxRep = QuestieDB.QueryQuestSingle(questId, "requiredMaxRep")
+    local requiredMinRep = queryRequirements(questId, "requiredMinRep")
+    local requiredMaxRep = queryRequirements(questId, "requiredMaxRep")
     if (requiredMinRep or requiredMaxRep) then
         local aboveMinRep, hasMinFaction, belowMaxRep, hasMaxFaction = QuestieReputation:HasFactionAndReputationLevel(requiredMinRep, requiredMaxRep)
         if (not ((aboveMinRep and hasMinFaction) and (belowMaxRep and hasMaxFaction))) then
@@ -2913,7 +2948,7 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions, 
         end
     end
 
-    local requiredSkill = QuestieDB.QueryQuestSingle(questId, "requiredSkill")
+    local requiredSkill = queryRequirements(questId, "requiredSkill")
     if (requiredSkill) then
         local hasProfession, hasSkillLevel = QuestieProfessions:HasProfessionAndSkillLevel(requiredSkill)
         if (not (hasProfession and hasSkillLevel)) then
@@ -2927,7 +2962,7 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions, 
         end
     end
 
-    local requiredRanks = QuestieDB.QueryQuestSingle(questId, "requiredRanks")
+    local requiredRanks = queryRequirements(questId, "requiredRanks")
     if (requiredRanks) then
         local hasProfession, hasRankLevel = QuestieProfessions:HasProfessionAndRankLevel(requiredRanks)
         if (not (hasProfession and hasRankLevel)) then
@@ -2945,7 +2980,7 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions, 
     --? Only try group if single does not exist.
     if not preQuestSingle then
         -- Check the preQuestGroup field where every required quest has to be complete for a quest to show up
-        local preQuestGroup = QuestieDB.QueryQuestSingle(questId, "preQuestGroup")
+        local preQuestGroup = queryRequirements(questId, "preQuestGroup")
         if preQuestGroup then
             local isPreQuestGroupFulfilled = QuestieDB:IsPreQuestGroupFulfilled(preQuestGroup)
             if not isPreQuestGroupFulfilled then
@@ -2955,7 +2990,7 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions, 
         end
     end
 
-    local parentQuest = QuestieDB.QueryQuestSingle(questId, "parentQuest")
+    local parentQuest = queryRequirements(questId, "parentQuest")
     if parentQuest and parentQuest ~= 0 then
         if not currentQuestlog[parentQuest] then
             if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Quest " .. questId .. " has an inactive parent quest") end
@@ -2963,7 +2998,7 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions, 
         end
     end
 
-    local nextQuestInChain = QuestieDB.QueryQuestSingle(questId, "nextQuestInChain")
+    local nextQuestInChain = queryRequirements(questId, "nextQuestInChain")
     if nextQuestInChain and nextQuestInChain ~= 0 then
         if completedQuests[nextQuestInChain] or currentQuestlog[nextQuestInChain] then
             if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Follow up quests already completed or in the quest log for quest " .. questId) end
@@ -2973,7 +3008,7 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions, 
 
     -- Check if a quest which is exclusive to the current has already been completed or accepted
     -- If yes the current quest can't be accepted
-    local ExclusiveQuestGroup = QuestieDB.QueryQuestSingle(questId, "exclusiveTo")
+    local ExclusiveQuestGroup = queryRequirements(questId, "exclusiveTo")
     if ExclusiveQuestGroup then -- fix (DO NOT REVERT, tested thoroughly)
         for _, v in pairs(ExclusiveQuestGroup) do
             if completedQuests[v] or currentQuestlog[v] then
@@ -2983,7 +3018,7 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions, 
         end
     end
 
-    local requiredSpecialization = QuestieDB.QueryQuestSingle(questId, "requiredSpecialization")
+    local requiredSpecialization = queryRequirements(questId, "requiredSpecialization")
     if (requiredSpecialization) and (requiredSpecialization > 0) then
         local hasSpecialization = QuestieProfessions:HasSpecialization(requiredSpecialization)
         if (not hasSpecialization) then
@@ -2992,7 +3027,7 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions, 
         end
     end
 
-    local requiredSpell = QuestieDB.QueryQuestSingle(questId, "requiredSpell")
+    local requiredSpell = queryRequirements(questId, "requiredSpell")
     if (requiredSpell) and (requiredSpell ~= 0) then
         local hasSpell = IsSpellKnownOrOverridesKnown(math.abs(requiredSpell))
         local hasProfSpell = IsPlayerSpell(math.abs(requiredSpell))
@@ -3005,7 +3040,7 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions, 
         end
     end
 
-    local requiredItemConditions = QuestieDB.QueryQuestSingle(questId, "requiredItemConditions")
+    local requiredItemConditions = queryRequirements(questId, "requiredItemConditions")
     if requiredItemConditions then
         QuestieDB.requiredItemConditionQuestIds[questId] = true
         local itemConditionsFulfilled = QuestieDB:IsRequiredItemConditionsFulfilled(requiredItemConditions)
@@ -3028,7 +3063,7 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions, 
     end
 
     -- Check if this quest is a breadcrumb
-    local breadcrumbForQuestId = QuestieDB.QueryQuestSingle(questId, "breadcrumbForQuestId")
+    local breadcrumbForQuestId = queryRequirements(questId, "breadcrumbForQuestId")
     if breadcrumbForQuestId and breadcrumbForQuestId ~= 0 then
         -- Check the target quest of this breadcrumb
         if completedQuests[breadcrumbForQuestId] or currentQuestlog[breadcrumbForQuestId] then
@@ -3037,7 +3072,7 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions, 
         end
         -- The next case is commented out since it's not a valid check to have. Breadcrumbs to the same quest are not always exclusive to each other
         --[[ Check if the other breadcrumbs are active
-        local otherBreadcrumbs = QuestieDB.QueryQuestSingle(breadcrumbForQuestId, "breadcrumbs")
+        local otherBreadcrumbs = queryRequirements(breadcrumbForQuestId, "breadcrumbs")
         for _, breadcrumbId in ipairs(otherBreadcrumbs or {}) do -- TODO: Remove `or {}` when we have a validation for the breadcrumb data
             if breadcrumbId ~= questId and currentQuestlog[breadcrumbId] then
                 if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Alternative breadcrumb quest in the quest log for quest " .. questId) end
@@ -3047,7 +3082,7 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions, 
     end
 
     -- Check if this quest has active breadcrumbs
-    local breadcrumbs = QuestieDB.QueryQuestSingle(questId, "breadcrumbs")
+    local breadcrumbs = queryRequirements(questId, "breadcrumbs")
     if breadcrumbs then
         for _, breadcrumbId in ipairs(breadcrumbs) do
             if currentQuestlog[breadcrumbId] then
@@ -3058,7 +3093,7 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions, 
     end
 
     -- Check if this quest has a quest that disables it while in quest log
-    local disabledByQuest = QuestieDB.QueryQuestSingle(questId, "disabledByQuest")
+    local disabledByQuest = queryRequirements(questId, "disabledByQuest")
     if disabledByQuest and disabledByQuest ~= 0 then
         if QuestiePlayer.currentQuestlog[disabledByQuest] then
             if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Disabling quest " .. disabledByQuest .. " in the quest log for quest " .. questId) end
@@ -3078,7 +3113,7 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions, 
     end
 
     -- Check if this quest is visible until you turn in a certain quest
-    local availableUntilCompleted = QuestieDB.QueryQuestSingle(questId, "availableUntilCompleted")
+    local availableUntilCompleted = queryRequirements(questId, "availableUntilCompleted")
     if availableUntilCompleted and availableUntilCompleted ~= 0 then
         if completedQuests[availableUntilCompleted] then
             if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Quest " .. questId .. " is not available because " .. availableUntilCompleted .. " has been turned in!") end
@@ -3088,7 +3123,7 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions, 
 
     -- Check if this quest is visible if you have a certain quest in log or turned in (slightly different to preQuestSingle)
     -- In order to not mess with the existing logic for preQuestSingle, this field must be accompanied by preQuestSingle
-    local availableStartingWith = QuestieDB.QueryQuestSingle(questId, "availableStartingWith")
+    local availableStartingWith = queryRequirements(questId, "availableStartingWith")
     if availableStartingWith and availableStartingWith ~= 0 then
         if not completedQuests[availableStartingWith] and not currentQuestlog[availableStartingWith] then
             if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Quest " .. questId .. " is not available because " .. availableStartingWith .. " is not active/turned in!") end
@@ -3123,6 +3158,8 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
 
     local completedQuests = Questie.db.char.complete
     local currentQuestlog = QuestiePlayer.currentQuestlog
+    local queryRequirements = QuestieDB.QueryQuestSingle
+    if queryRequirements == questRequirementQuerySource then queryRequirements = questRequirementQuery end
     local DoableStates = QuestieDB.DoableStates
     local HIDE_ON_MAP = QuestieQuestBlacklist.HIDE_ON_MAP
 
@@ -3234,7 +3271,7 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
     end
 
     -- Check character race
-    local requiredRaces = QuestieDB.QueryQuestSingle(questId, "requiredRaces")
+    local requiredRaces = queryRequirements(questId, "requiredRaces")
     if (requiredRaces and not checkRace[requiredRaces]) then
         local requirementLabel = "Race requirement"
         if requiredRaces == QuestieDB.raceKeys.ALL_ALLIANCE or requiredRaces == QuestieDB.raceKeys.ALL_HORDE then
@@ -3249,7 +3286,7 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
     end
 
     -- Check character class
-    local requiredClasses = QuestieDB.QueryQuestSingle(questId, "requiredClasses")
+    local requiredClasses = queryRequirements(questId, "requiredClasses")
     if (requiredClasses and not checkClass[requiredClasses]) then
         QuestieDB.autoBlacklist[questId] = "class"
         local msg = "Class requirement not fulfilled for quest " .. questId
@@ -3273,7 +3310,7 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
 
     -- Check if a quest which is exclusive to the current has already been completed or accepted
     -- If yes the current quest can't be accepted
-    local ExclusiveQuestGroup = QuestieDB.QueryQuestSingle(questId, "exclusiveTo")
+    local ExclusiveQuestGroup = queryRequirements(questId, "exclusiveTo")
     if ExclusiveQuestGroup then -- fix (DO NOT REVERT, tested thoroughly)
         for _, v in pairs(ExclusiveQuestGroup) do
             if completedQuests[v] then
@@ -3295,8 +3332,8 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
     end
 
     -- Check profession requirements
-    local requiredSkill = QuestieDB.QueryQuestSingle(questId, "requiredSkill")
-    local requiredRanks = QuestieDB.QueryQuestSingle(questId, "requiredRanks")
+    local requiredSkill = queryRequirements(questId, "requiredSkill")
+    local requiredRanks = queryRequirements(questId, "requiredRanks")
     -- Until then these two should be mutually exclusive
     -- TODO: if we find a quest that has both requiredSkill and requiredRanks we need to be able to return correct message
     if (requiredSkill) then
@@ -3337,7 +3374,7 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
     end
 
     -- Check profession specialization requirements
-    local requiredSpecialization = QuestieDB.QueryQuestSingle(questId, "requiredSpecialization")
+    local requiredSpecialization = queryRequirements(questId, "requiredSpecialization")
     if (requiredSpecialization) and (requiredSpecialization > 0) then
         local hasSpecialization = QuestieProfessions:HasSpecialization(requiredSpecialization)
         if (not hasSpecialization) then
@@ -3351,7 +3388,7 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
     end
 
     -- Check if the character is higher than the quest allows
-    local requiredMaxLevel = QuestieDB.QueryQuestSingle(questId, "requiredMaxLevel")
+    local requiredMaxLevel = queryRequirements(questId, "requiredMaxLevel")
     if (requiredMaxLevel and requiredMaxLevel ~= 0 and (UnitLevel("player") > requiredMaxLevel)) then
         local msg = "Player level is too high for quest " .. questId
         if returnText and returnBrief then
@@ -3363,7 +3400,7 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
 
     -- only present in verbose.
     -- IsDoable has its own logic that varies based on player settings for quest visibility
-    local requiredLevel = QuestieDB.QueryQuestSingle(questId, "requiredLevel")
+    local requiredLevel = queryRequirements(questId, "requiredLevel")
     if (requiredLevel and (UnitLevel("player") < requiredLevel)) then
         local msg = "Player level is too low for quest " .. questId
         if returnText and returnBrief then
@@ -3374,7 +3411,7 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
     end
 
     -- Check if this quest is a breadcrumb
-    local breadcrumbForQuestId = QuestieDB.QueryQuestSingle(questId, "breadcrumbForQuestId")
+    local breadcrumbForQuestId = queryRequirements(questId, "breadcrumbForQuestId")
     if breadcrumbForQuestId and breadcrumbForQuestId ~= 0 then
         -- Check the follow up quest of this breadcrumb
         if completedQuests[breadcrumbForQuestId] or currentQuestlog[breadcrumbForQuestId] then
@@ -3386,7 +3423,7 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
         end
         -- The next case is commented out since it's not a valid check to have. Breadcrumbs to the same quest are not always exclusive to eachother
         --[[ Check if the other breadcrumbs are active
-        local otherBreadcrumbs = QuestieDB.QueryQuestSingle(breadcrumbForQuestId, "breadcrumbs")
+        local otherBreadcrumbs = queryRequirements(breadcrumbForQuestId, "breadcrumbs")
         for _, breadcrumbId in ipairs(otherBreadcrumbs or {}) do
             if breadcrumbId ~= questId and currentQuestlog[breadcrumbId] then
                 if returnText and returnBrief then
@@ -3399,8 +3436,8 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
     end
 
     -- Check reputation requirements
-    local requiredMinRep = QuestieDB.QueryQuestSingle(questId, "requiredMinRep")
-    local requiredMaxRep = QuestieDB.QueryQuestSingle(questId, "requiredMaxRep")
+    local requiredMinRep = queryRequirements(questId, "requiredMinRep")
+    local requiredMaxRep = queryRequirements(questId, "requiredMaxRep")
     if (requiredMinRep or requiredMaxRep) then
         local aboveMinRep, hasMinFaction, belowMaxRep, hasMaxFaction = QuestieReputation:HasFactionAndReputationLevel(requiredMinRep, requiredMaxRep)
         -- Below reputation requirement
@@ -3424,7 +3461,7 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
     end
 
     -- Check the preQuestSingle field where just one of the required quests has to be complete for a quest to show up
-    local preQuestSingle = QuestieDB.QueryQuestSingle(questId, "preQuestSingle")
+    local preQuestSingle = queryRequirements(questId, "preQuestSingle")
     if preQuestSingle then
         local isPreQuestSingleFulfilled = QuestieDB:IsPreQuestSingleFulfilled(preQuestSingle)
         if not isPreQuestSingleFulfilled then
@@ -3438,7 +3475,7 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
     end
 
     -- Check the preQuestGroup field where every required quest has to be complete for a quest to show up
-    local preQuestGroup = QuestieDB.QueryQuestSingle(questId, "preQuestGroup")
+    local preQuestGroup = queryRequirements(questId, "preQuestGroup")
     if preQuestGroup then
         local isPreQuestGroupFulfilled = QuestieDB:IsPreQuestGroupFulfilled(preQuestGroup)
         if not isPreQuestGroupFulfilled then
@@ -3452,7 +3489,7 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
     end
 
     -- Check parent quests
-    local parentQuest = QuestieDB.QueryQuestSingle(questId, "parentQuest")
+    local parentQuest = queryRequirements(questId, "parentQuest")
     if parentQuest and parentQuest ~= 0 then
         if not currentQuestlog[parentQuest] then
             local msg = "Quest " .. questId .. " has an inactive parent quest: " .. parentQuest
@@ -3465,7 +3502,7 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
     end
 
     -- Check if it has nextQuestInChain completed or in quest log
-    local nextQuestInChain = QuestieDB.QueryQuestSingle(questId, "nextQuestInChain")
+    local nextQuestInChain = queryRequirements(questId, "nextQuestInChain")
     if nextQuestInChain and nextQuestInChain ~= 0 then
         if completedQuests[nextQuestInChain] or currentQuestlog[nextQuestInChain] then
             local msg = "Follow up quest " .. nextQuestInChain .. " already completed or in the quest log for quest " .. questId
@@ -3478,7 +3515,7 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
     end
 
     -- Check spell requirements
-    local requiredSpell = QuestieDB.QueryQuestSingle(questId, "requiredSpell")
+    local requiredSpell = queryRequirements(questId, "requiredSpell")
     if (requiredSpell) and (requiredSpell ~= 0) then
         local hasSpell = IsSpellKnownOrOverridesKnown(math.abs(requiredSpell))
         local hasProfSpell = IsPlayerSpell(math.abs(requiredSpell))
@@ -3499,7 +3536,7 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
         end
     end
 
-    local requiredItemConditions = QuestieDB.QueryQuestSingle(questId, "requiredItemConditions")
+    local requiredItemConditions = queryRequirements(questId, "requiredItemConditions")
     if requiredItemConditions then
         QuestieDB.requiredItemConditionQuestIds[questId] = true
         local itemConditionsFulfilled, itemId, itemRequired, requiredCount = QuestieDB:IsRequiredItemConditionsFulfilled(requiredItemConditions)
@@ -3540,7 +3577,7 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
     end
 
     -- Check if this quest has active breadcrumbs
-    local breadcrumbs = QuestieDB.QueryQuestSingle(questId, "breadcrumbs")
+    local breadcrumbs = queryRequirements(questId, "breadcrumbs")
     if breadcrumbs then
         for _, breadcrumbId in ipairs(breadcrumbs) do
             if currentQuestlog[breadcrumbId] then
@@ -3554,7 +3591,7 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
     end
 
     -- Check if this quest has a quest that disables it while in quest log
-    local disabledByQuest = QuestieDB.QueryQuestSingle(questId, "disabledByQuest")
+    local disabledByQuest = queryRequirements(questId, "disabledByQuest")
     if disabledByQuest and disabledByQuest ~= 0 then
         if currentQuestlog[disabledByQuest] then
             if returnText and returnBrief then
@@ -3583,7 +3620,7 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
     end
 
     -- Check if this quest is visible until you turn in a certain quest
-    local availableUntilCompleted = QuestieDB.QueryQuestSingle(questId, "availableUntilCompleted")
+    local availableUntilCompleted = queryRequirements(questId, "availableUntilCompleted")
     if availableUntilCompleted and availableUntilCompleted ~= 0 then
         if completedQuests[availableUntilCompleted] then
             if returnText and returnBrief then
@@ -3595,7 +3632,7 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
     end
 
     -- Check if this quest is visible if you have a certain quest in log or turned in (slightly different to preQuestSingle)
-    local availableStartingWith = QuestieDB.QueryQuestSingle(questId, "availableStartingWith")
+    local availableStartingWith = queryRequirements(questId, "availableStartingWith")
     if availableStartingWith and availableStartingWith ~= 0 then
         if not completedQuests[availableStartingWith] and not currentQuestlog[availableStartingWith] then
             if returnText and returnBrief then
@@ -3606,7 +3643,7 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
         end
     end
 
-    local startedBy = QuestieDB.QueryQuestSingle(questId, "startedBy")
+    local startedBy = queryRequirements(questId, "startedBy")
     local itemStarts = startedBy and startedBy[3]
     if itemStarts and next(itemStarts) and (not startedBy[1]) and (not startedBy[2]) then
         local hasStartItem = false
