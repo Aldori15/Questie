@@ -510,10 +510,6 @@ function QuestieCompat.GetContainerItemInfo(bagID, slot)
     end
 end
 
--- https://wowpedia.fandom.com/wiki/API_IsSpellKnown
-QuestieCompat.IsSpellKnownOrOverridesKnown = IsSpellKnown
-QuestieCompat.IsPlayerSpell = IsSpellKnown
-
 function QuestieCompat.GetSpellName(spellId)
     local spellName = GetSpellInfo(spellId)
     return spellName

@@ -18,13 +18,13 @@ env.UnitLevel = function() return 80 end
 env.StaticPopupDialogs = {}
 env.Questie = {db = {global = {}, profile = {}, char = {complete = {}, hidden = {}}}, Debug = noop, Error = error}
 env.QuestieCompat = {Is335 = true, C_QuestLog = {IsOnQuest = function(id) return state.onQuest == id end},
-    AzerothCoreQuestAvailabilityConditions = {[23] = {{{4, 210, 0, 0, 0}}}}}
+    AzerothCoreQuestAvailabilityConditions = {
+    [23] = {{{4, 210, 0, 0, 0}}},
+    [25] = {{{25, 403, 0, 0, 0}}},
+}
 env.IsQuestCompletedOnServer = function(id) return state.rewarded[id] == true end
 env.QuestieCompat.IsQuestCompletedOnServer = env.IsQuestCompletedOnServer
-env.IsSpellKnownOrOverridesKnown = function(id) return state.spells[id] == true end
-env.IsPlayerSpell = function(id) return state.professionSpells[id] == true end
-env.QuestieCompat.IsSpellKnownOrOverridesKnown = env.IsSpellKnownOrOverridesKnown
-env.QuestieCompat.IsPlayerSpell = env.IsPlayerSpell
+env.IsSpellKnown = function(id) return state.spells[id] == true or state.professionSpells[id] == true end
 env.GetItemCount = function(id) return state.items[id] or 0 end
 env.GetAchievementInfo = function() return nil, nil, nil, state.achievement end
 env.GetRealZoneText = function() return "Test zone" end
@@ -94,6 +94,7 @@ add(20, {requiredRaces = 2})
 add(21, {requiredClasses = 2})
 add(23)
 add(24)
+add(25)
 add(14107)
 local function compile()
     local global = env.Questie.db.global
@@ -216,6 +217,14 @@ state.events[24] = true
 verify(24, true, "event active")
 state.events[24] = false
 verify(24, false, "event ended")
+verify(25, false, "missing AzerothCore spell condition")
+state.spells[403] = true
+verify(25, true, "known AzerothCore spell condition")
+state.spells[403] = nil
+state.professionSpells[403] = true
+verify(25, true, "profession spell satisfies AzerothCore condition")
+state.professionSpells[403] = nil
+verify(25, false, "removed spell invalidates AzerothCore condition")
 verify(14107, true, "achievement earned")
 state.achievement = false
 verify(14107, false, "achievement missing")
