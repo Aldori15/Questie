@@ -8393,7 +8393,6 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [8347] = {
-            [questKeys.breadcrumbForQuestId] = 0,
             [questKeys.questFlags] = 128,
             [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
@@ -11181,6 +11180,8 @@ QuestieCompat.RegisterCorrection("questData", function()
         },
 
         [9704] = {
+            [questKeys.preQuestSingle] = {},
+            [questKeys.breadcrumbs] = {8347},
             [questKeys.questFlags] = 136,
             [questKeys.specialFlags] = specialFlags.AUTO_ACCEPT,
         },
