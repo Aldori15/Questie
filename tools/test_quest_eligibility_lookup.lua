@@ -21,6 +21,7 @@ env.QuestieCompat = {Is335 = true, C_QuestLog = {IsOnQuest = function(id) return
     AzerothCoreQuestAvailabilityConditions = {
     [23] = {{{4, 210, 0, 0, 0}}},
     [25] = {{{25, 403, 0, 0, 0}}},
+    },
 }
 env.IsQuestCompletedOnServer = function(id) return state.rewarded[id] == true end
 env.QuestieCompat.IsQuestCompletedOnServer = env.IsQuestCompletedOnServer
