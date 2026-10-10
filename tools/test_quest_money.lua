@@ -14,7 +14,7 @@ local function setup()
     env.UnitName = function() return "Tester" end
     env.UnitLevel = function() return level end
     env.GetInventoryItemID = function() return nil end
-    env.QuestieCompat = {Is335 = true, GetMaxPlayerLevel = function() return 80 end,
+    env.QuestieCompat = {GetMaxPlayerLevel = function() return 80 end,
         RewardMoney = {[1] = 7400, [2] = -10000, [3] = 100, [4] = 100, [5] = 50, [6] = 100, [7] = 100},
         RewardMoneyDifficulty = {[2] = 1, [3] = 1}, QuestMoneyReward = {[78] = {125}, [80] = {200}}}
     env.Questie = {db = {profile = {}}, Print = function(_, value) prints[#prints + 1] = value end}

@@ -164,10 +164,8 @@ local function _BuildExpansionDropdownData()
     wipe(QuestieJourney.availableFactionExpansionOrder)
 
     for _, expansion in ipairs(expansionDefinitions) do
-        if QuestieCompat.WOW_PROJECT_ID >= expansion.order then
-            QuestieJourney.availableFactionExpansions[expansion.key] = expansion.label
-            table.insert(QuestieJourney.availableFactionExpansionOrder, expansion.key)
-        end
+        QuestieJourney.availableFactionExpansions[expansion.key] = expansion.label
+        table.insert(QuestieJourney.availableFactionExpansionOrder, expansion.key)
     end
 end
 

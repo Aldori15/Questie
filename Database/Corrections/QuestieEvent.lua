@@ -69,8 +69,6 @@ _QuestieEvent.initializeAttempts = 0
 local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 ---@type QuestieCorrections
 local QuestieCorrections = QuestieLoader:ImportModule("QuestieCorrections")
----@type QuestieNPCFixes
-local QuestieNPCFixes = QuestieLoader:ImportModule("QuestieNPCFixes")
 ---@type QuestieWotlkNpcFixes
 local QuestieWotlkNpcFixes = QuestieLoader:ImportModule("QuestieWotlkNpcFixes")
 ---@type l10n
@@ -187,8 +185,7 @@ function QuestieEvent.IsQuestVisibleForExpansion(hideQuest)
 end
 
 local function DarkmoonNpcFixes(location)
-    if Questie.IsWotlk then return QuestieWotlkNpcFixes:LoadDarkmoonFixes(location) end
-    return QuestieNPCFixes:LoadDarkmoonFixes(location == 1)
+    return QuestieWotlkNpcFixes:LoadDarkmoonFixes(location)
 end
 
 function QuestieEvent.SetServerDarkmoonLocations(locations)
@@ -363,16 +360,8 @@ _IsEventQuestVisible = function(hideQuest)
         return not hideQuest
     end
 
-    if hideQuest == QuestieCorrections.TBC_ONLY then
-        return not Questie.IsTBC
-    elseif hideQuest == QuestieCorrections.CLASSIC_ONLY then
-        return not Questie.IsClassic
-    elseif hideQuest == QuestieCorrections.WOTLK_ONLY then
-        return not Questie.IsWotlk
-    elseif hideQuest == QuestieCorrections.TBC_AND_WOTLK then
-        return not (Questie.IsTBC or Questie.IsWotlk)
-    elseif hideQuest == QuestieCorrections.CLASSIC_AND_TBC then
-        return not (Questie.IsClassic or Questie.IsTBC)
+    if hideQuest == QuestieCorrections.WOTLK_ONLY or hideQuest == QuestieCorrections.TBC_AND_WOTLK then
+        return false
     end
 
     return true
@@ -519,7 +508,7 @@ _GetTimedEventQuestEndDelay = function(eventName, currentDate)
 end
 
 _AnnounceActiveEvent = function(eventName)
-    if eventName == "Darkmoon Faire" and (Questie.IsClassic or Questie.IsWotlk) then
+    if eventName == "Darkmoon Faire" then
         return
     end
 
@@ -661,7 +650,7 @@ _GetActiveCalendarEvents = function()
     local upcomingEvents = {}
     local darkmoonLocation = nil
 
-    if not QuestieCompat.Is335 or not CalendarGetNumDayEvents or not CalendarGetHolidayInfo then
+    if not CalendarGetNumDayEvents or not CalendarGetHolidayInfo then
         return activeEvents, upcomingEvents, darkmoonLocation, false
     end
 
@@ -705,7 +694,7 @@ end
 _PrimeCalendar = function()
     if OpenCalendar then
         OpenCalendar()
-    elseif QuestieCompat.Is335 and ToggleCalendar then
+    elseif ToggleCalendar then
         -- since this actually opens the calendar, we need to toggle it twice
         ToggleCalendar()
         ToggleCalendar()
@@ -748,9 +737,7 @@ function QuestieEvent.Initialize()
 
         _QuestieEvent.initializeAttempts = _QuestieEvent.initializeAttempts + 1
 
-        if QuestieCompat.Is335 then
-            _PrimeCalendar()
-        end
+        _PrimeCalendar()
 
         local isFinalAttempt = _QuestieEvent.initializeAttempts >= EVENT_INIT_MAX_ATTEMPTS
         QuestieEvent:Load(isFinalAttempt)
@@ -791,21 +778,6 @@ function QuestieEvent:Load(isFinalPass)
     QuestieEvent.eventDates["Lunar Festival"] = QuestieEvent.lunarFestival[year]
     local activeEvents, upcomingEvents, darkmoonLocation, calendarAvailable = _GetActiveCalendarEvents()
 
-    local eventCorrections
-    if Questie.IsTBC then
-        eventCorrections = QuestieEvent.eventDateCorrections["TBC"]
-    elseif Questie.IsClassic then
-        eventCorrections = QuestieEvent.eventDateCorrections["CLASSIC"]
-    else
-        eventCorrections = {}
-    end
-
-    for eventName,dates in pairs(eventCorrections) do
-        if dates then
-            QuestieEvent.eventDates[eventName] = dates
-        end
-    end
-
     if not calendarAvailable then
         -- The static dates are only a fallback for clients/servers without calendar data.
         -- When the calendar is available, its absence of an event is authoritative because
@@ -819,7 +791,7 @@ function QuestieEvent:Load(isFinalPass)
             endDay = tonumber(endDay)
             endMonth = tonumber(endMonth)
 
-            if (not activeEvents[eventName]) and _WithinDates(startDay, startMonth, endDay, endMonth) and (eventCorrections[eventName] ~= false) then
+            if (not activeEvents[eventName]) and _WithinDates(startDay, startMonth, endDay, endMonth) then
                 activeEvents[eventName] = true
             end
         end
@@ -891,15 +863,13 @@ function QuestieEvent:Load(isFinalPass)
         end
     end
 
-    if Questie.IsClassic or Questie.IsWotlk then
-        if activeEvents["Darkmoon Faire"] then
-            -- The calendar determines whether the Faire is active. The month rotation is only
-            -- a location fallback when a server omits the zone from the active event texture.
-            darkmoonLocation = darkmoonLocation or _GetDarkmoonFaireLocationForMonth(currentDate)
-            addedActiveQuest = _LoadDarkmoonFaire(darkmoonLocation) or addedActiveQuest
-        elseif not calendarAvailable then
-            addedActiveQuest = _LoadDarkmoonFaire() or addedActiveQuest
-        end
+    if activeEvents["Darkmoon Faire"] then
+        -- The calendar determines whether the Faire is active. The month rotation is only
+        -- a location fallback when a server omits the zone from the active event texture.
+        darkmoonLocation = darkmoonLocation or _GetDarkmoonFaireLocationForMonth(currentDate)
+        addedActiveQuest = _LoadDarkmoonFaire(darkmoonLocation) or addedActiveQuest
+    elseif not calendarAvailable then
+        addedActiveQuest = _LoadDarkmoonFaire() or addedActiveQuest
     end
 
     if isFinalPass then
@@ -982,14 +952,10 @@ _GetDarkmoonFaireLocationForMonth = function(currentDate)
     local monthModulo = currentDate.month % 3
     local eventLocation = DMF_LOCATIONS.ELWYNN_FOREST
 
-    if Questie.IsWotlk then
-        if monthModulo == 1 then
-            eventLocation = DMF_LOCATIONS.MULGORE
-        elseif monthModulo == 2 then
-            eventLocation = DMF_LOCATIONS.TEROKKAR_FOREST
-        end
-    else
-        eventLocation = (currentDate.month % 2) == 0 and DMF_LOCATIONS.MULGORE or DMF_LOCATIONS.ELWYNN_FOREST
+    if monthModulo == 1 then
+        eventLocation = DMF_LOCATIONS.MULGORE
+    elseif monthModulo == 2 then
+        eventLocation = DMF_LOCATIONS.TEROKKAR_FOREST
     end
 
     return eventLocation
@@ -1120,22 +1086,6 @@ QuestieEvent.eventDates = {
     ["Hallow's End"] = {startDate = "18/10", endDate = "31/10"},
     ["Day of the Dead"] = {startDate = "1/11", endDate = "2/11"},
     ["Winter Veil"] = {startDate = "15/12", endDate = "2/1"}
-}
-
--- ["EventName"] = false -> event doesn't exists in expansion
--- ["EventName"] = {startDate = "12/3", endDate = "12/3"} -> change dates for the expansion
-QuestieEvent.eventDateCorrections = {
-    ["CLASSIC"] = {
-        ["Brewfest"] = false,
-        ["Pilgrim's Bounty"] = false,
-        ["Noblegarden"] = {startDate = "28/3", endDate = "28/3"}, -- One day event on Era, on the actual day of Easter. Date is set for 2027. Please update this every year.
-        ["Love is in the Air"] = {startDate = "11/2", endDate = "16/2"}, -- WARNING THIS DATE VARIES!!!!
-    },
-    ["TBC"] = {
-        ["Noblegarden"] = false,
-        ["Harvest Festival"] = false,
-        ["Love is in the Air"] = {startDate = "11/2", endDate = "16/2"}, -- WARNING THIS DATE VARIES!!!!
-    },
 }
 
 QuestieEvent.lunarFestival = {

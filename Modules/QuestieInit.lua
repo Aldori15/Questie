@@ -107,7 +107,6 @@ local DropDB = QuestieLoader:ImportModule("DropDB")
 local QuestLogCache = QuestieLoader:ImportModule("QuestLogCache")
 
 --- COMPATIBILITY ---
-local WOW_PROJECT_ID = QuestieCompat.WOW_PROJECT_ID
 local C_Timer = QuestieCompat.C_Timer
 
 local coYield = coroutine.yield
@@ -224,7 +223,7 @@ QuestieInit.Stages[1] = function() -- run as a coroutine
     dbCompiledSchemaVersion = Questie.db.global.dbCompiledSchemaVersion
 
     -- Check if the DB needs to be recompiled
-    if (not dbIsCompiled) or (QuestieLib:GetAddonVersionString() ~= dbCompiledOnVersion) or (l10n:GetUILocale() ~= dbCompiledLang) or (dbCompiledSchemaVersion ~= QuestieDBCompiler.compiledSchemaVersion) or (Questie.db.global.dbCompiledExpansion ~= WOW_PROJECT_ID) then
+    if (not dbIsCompiled) or (QuestieLib:GetAddonVersionString() ~= dbCompiledOnVersion) or (l10n:GetUILocale() ~= dbCompiledLang) or (dbCompiledSchemaVersion ~= QuestieDBCompiler.compiledSchemaVersion) then
         Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage1] DB compile beginning.")
         print("\124cFFAAEEFF" .. l10n("Questie DB has updated!") .. "\124r\124cFFFF6F22 " .. l10n("Data is being processed, this may take a few moments and cause some lag..."))
         loadFullDatabase()
@@ -410,7 +409,7 @@ QuestieInit.Stages[3] = function() -- run as a coroutine
         end)
     end
 
-    if QuestieCompat.Is335 and Questie.db.profile.showSunsReachQuests and (not Questie.db.profile.isIsleOfQuelDanasPhaseReminderDisabled) then
+    if Questie.db.profile.showSunsReachQuests and (not Questie.db.profile.isIsleOfQuelDanasPhaseReminderDisabled) then
         C_Timer.After(2, function()
             Questie:Print(l10n("Current active phase of Isle of Quel'Danas is '%s'. Check the Advanced settings to change the phase or disable this message.", IsleOfQuelDanas.localizedPhaseNames[Questie.db.profile.isleOfQuelDanasPhase]))
         end)
@@ -442,25 +441,23 @@ QuestieInit.Stages[3] = function() -- run as a coroutine
 
     QuestieServer:Initialize()
 
-    if QuestieCompat.Is335 then
-        -- 3.3.5 can miss the emulated group join sync on login/reload while already in a party.
-        -- Request a fresh quest log sync only after Questie is fully initialized.
-        local syncTicker
-        local attempts = 0
-        syncTicker = C_Timer.NewTicker(0.5, function()
-            attempts = attempts + 1
+    -- 3.3.5 can miss the emulated group join sync on login/reload while already in a party.
+    -- Request a fresh quest log sync only after Questie is fully initialized.
+    local syncTicker
+    local attempts = 0
+    syncTicker = C_Timer.NewTicker(0.5, function()
+        attempts = attempts + 1
 
-            local currentMembers = QuestieCompat.GetNumGroupMembers()
+        local currentMembers = QuestieCompat.GetNumGroupMembers()
 
-            if currentMembers > 0 then
-                QuestiePlayer.numberOfGroupMembers = currentMembers
-                Questie:SendMessage("QC_ID_REQUEST_FULL_QUESTLIST")
-                syncTicker:Cancel()
-            elseif attempts >= 10 then
-                syncTicker:Cancel()
-            end
-        end)
-    end
+        if currentMembers > 0 then
+            QuestiePlayer.numberOfGroupMembers = currentMembers
+            Questie:SendMessage("QC_ID_REQUEST_FULL_QUESTLIST")
+            syncTicker:Cancel()
+        elseif attempts >= 10 then
+            syncTicker:Cancel()
+        end
+    end)
 
     -- We only update this if Questie fully loads to make sure we don't update it on crashes/fast reloads
     QuestieLib.UpdateLastKnownDailyReset()
@@ -566,22 +563,7 @@ function QuestieInit:Init()
         -- This needs to be called ASAP otherwise tracked Achievements in the Blizzard WatchFrame shows upon login
         local WatchFrame = QuestTimerFrame or WatchFrame
 
-        if Questie.IsWotlk or QuestieCompat.Is335 then
-            -- Classic WotLK
-            WatchFrame:Hide()
-        else
-            -- Classic WoW: This moves the QuestTimerFrame off screen. A faux Hide().
-            -- Otherwise, if the frame is hidden then the OnUpdate doesn't work.
-            WatchFrame:ClearAllPoints()
-            WatchFrame:SetPoint("TOP", "UIParent", -10000, -10000)
-        end
-        if not (Questie.IsWotlk or QuestieCompat.Is335) then
-            -- Need to hook this ASAP otherwise the scroll bars show up
-            hooksecurefunc("ScrollFrame_OnScrollRangeChanged", function()
-                if TrackedQuestsScrollFrame then
-                    TrackedQuestsScrollFrame.ScrollBar:Hide()
-                end
-            end)
-        end
+        -- Classic WotLK
+        WatchFrame:Hide()
     end
 end

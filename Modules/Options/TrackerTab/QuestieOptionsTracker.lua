@@ -115,11 +115,7 @@ function QuestieOptions.tabs.tracker:Initialize()
                 inline = true,
                 width = 0.5,
                 name = function()
-                    if Questie.IsWotlk or QuestieCompat.Is335 then
-                        return l10n("Quest and Achievement Options")
-                    else
-                        return l10n('Quest Options')
-                    end
+                    return l10n("Quest and Achievement Options")
                 end,
                 disabled = function() return not Questie.db.profile.trackerEnabled end,
                 args = {
@@ -191,7 +187,7 @@ function QuestieOptions.tabs.tracker:Initialize()
                         name = function() return l10n("List Achievements First") end,
                         desc = function() return l10n("When this is checked, the Questie Tracker will list Achievements first then Quests.") end,
                         disabled = function() return not Questie.db.profile.trackerEnabled end,
-                        hidden = function() return not (Questie.IsWotlk or QuestieCompat.Is335) end,
+                        hidden = function() return false end,
                         get = function() return Questie.db.profile.listAchievementsFirst end,
                         set = function(_, value)
                             Questie.db.profile.listAchievementsFirst = value
@@ -205,18 +201,10 @@ function QuestieOptions.tabs.tracker:Initialize()
                         values = _GetShortcuts(),
                         style = 'dropdown',
                         name = function()
-                            if Questie.IsWotlk or QuestieCompat.Is335 then
-                                return l10n('Show Quest / Achievement')
-                            else
-                                return l10n('Show in Quest Log')
-                            end
+                            return l10n('Show Quest / Achievement')
                         end,
                         desc = function()
-                            if Questie.IsWotlk or QuestieCompat.Is335 then
-                                return l10n('This shortcut will open the Quest Log with the clicked Quest selected or open Achievements with the clicked Achievement selected.')
-                            else
-                                return l10n('This shortcut will open the Quest Log with the clicked Quest selected.')
-                            end
+                            return l10n('This shortcut will open the Quest Log with the clicked Quest selected or open Achievements with the clicked Achievement selected.')
                         end,
                         disabled = function() return not Questie.db.profile.trackerEnabled end,
                         get = function() return Questie.db.profile.trackerbindOpenQuestLog end,
@@ -231,18 +219,10 @@ function QuestieOptions.tabs.tracker:Initialize()
                         values = _GetShortcuts(),
                         style = 'dropdown',
                         name = function()
-                            if Questie.IsWotlk or QuestieCompat.Is335 then
-                                return l10n('Untrack / Link')
-                            else
-                                return l10n('Untrack / Link Quest')
-                            end
+                            return l10n('Untrack / Link')
                         end,
                         desc = function()
-                            if Questie.IsWotlk or QuestieCompat.Is335 then
-                                return l10n('This shortcut removes a Quest or an Achievement from the Questie Tracker when the chat input box is NOT visible, otherwise this will link a Quest or an Achievement to chat.')
-                            else
-                                return l10n('This shortcut removes a Quest from the Questie Tracker when the chat input box is NOT visible, otherwise this will link a Quest to chat.')
-                            end
+                            return l10n('This shortcut removes a Quest or an Achievement from the Questie Tracker when the chat input box is NOT visible, otherwise this will link a Quest or an Achievement to chat.')
                         end,
                         disabled = function() return not Questie.db.profile.trackerEnabled end,
                         get = function() return Questie.db.profile.trackerbindUntrack end,
@@ -331,7 +311,7 @@ function QuestieOptions.tabs.tracker:Initialize()
                                 name = function() return l10n('Hide Completed Achieve Objectives') end,
                                 desc = function() return l10n('When this is checked, completed Achievement Objectives will automatically be removed from the Questie Tracker.') end,
                                 disabled = function() return not Questie.db.profile.trackerEnabled end,
-                                hidden = function() return not (Questie.IsWotlk or QuestieCompat.Is335) end,
+                                hidden = function() return false end,
                                 get = function() return Questie.db.profile.hideCompletedAchieveObjectives end,
                                 set = function(_, value)
                                     Questie.db.profile.hideCompletedAchieveObjectives = value
@@ -675,11 +655,7 @@ function QuestieOptions.tabs.tracker:Initialize()
                         style = 'dropdown',
                         name = function() return l10n('Set |cFF54e33bTomTom|r Target') end,
                         desc = function()
-                            if Questie.IsWotlk or QuestieCompat.Is335 then
-                                return l10n('This shortcut will set the TomTom arrow to point to either an NPC or the first incomplete Quest Objective (if location data is available).\n\nNOTE: This will not work with Achievements.')
-                            else
-                                return l10n('This shortcut will set the TomTom arrow to point to either an NPC or the first incomplete Quest Objective (if location data is available).')
-                            end
+                            return l10n('This shortcut will set the TomTom arrow to point to either an NPC or the first incomplete Quest Objective (if location data is available).\n\nNOTE: This will not work with Achievements.')
                         end,
                         disabled = function() return not Questie.db.profile.trackerEnabled end,
                         hidden = function() return not IsAddOnLoaded("TomTom") end,

@@ -184,90 +184,86 @@ function QuestieEventHandler:RegisterLateEvents()
     end)
 
     -- UI Achievement Events
-    if Questie.IsWotlk or QuestieCompat.Is335 then
-        -- Earned Achievement update
-        Questie:RegisterEvent("ACHIEVEMENT_EARNED", function(index, achieveId, alreadyEarned)
-            Questie.Debug(Questie.DEBUG_DEVELOP, "[EVENT] ACHIEVEMENT_EARNED")
-            QuestieTracker:UntrackAchieveId(achieveId)
+    -- Earned Achievement update
+    Questie:RegisterEvent("ACHIEVEMENT_EARNED", function(index, achieveId, alreadyEarned)
+        Questie.Debug(Questie.DEBUG_DEVELOP, "[EVENT] ACHIEVEMENT_EARNED")
+        QuestieTracker:UntrackAchieveId(achieveId)
+        QuestieTracker:UpdateAchieveTrackerCache(achieveId)
+
+        if (not AchievementFrame) then
+            AchievementFrame_LoadUI()
+        end
+
+        AchievementFrameAchievements_ForceUpdate()
+
+        QuestieCombatQueue:Queue(function()
+            QuestieTracker:Update()
+        end)
+
+        -- AzerothCore can gate quest availability directly on earned
+        -- achievements, so refresh quest markers immediately.
+        AvailableQuests.CalculateAndDrawAll()
+    end)
+
+    -- Track/Untrack Achievement updates
+    Questie:RegisterEvent("TRACKED_ACHIEVEMENT_LIST_CHANGED", function(index, achieveId, added)
+        Questie.Debug(Questie.DEBUG_DEVELOP, "[EVENT] TRACKED_ACHIEVEMENT_LIST_CHANGED")
+        QuestieTracker:UpdateAchieveTrackerCache(achieveId)
+    end)
+
+    -- Timed based Achievement updates
+    -- TODO: Fired when a timed event for an achievement begins or ends. The achievement does not have to be actively tracked for this to trigger.
+    Questie:RegisterEvent("TRACKED_ACHIEVEMENT_UPDATE", function(self, achieveId)
+        Questie.Debug(Questie.DEBUG_DEVELOP, "[EVENT] TRACKED_ACHIEVEMENT_UPDATE")
+        QuestieCombatQueue:Queue(function()
             QuestieTracker:UpdateAchieveTrackerCache(achieveId)
-
-            if (not AchievementFrame) then
-                AchievementFrame_LoadUI()
-            end
-
-            AchievementFrameAchievements_ForceUpdate()
-
-            QuestieCombatQueue:Queue(function()
-                QuestieTracker:Update()
-            end)
-
-            -- AzerothCore can gate quest availability directly on earned
-            -- achievements, so refresh quest markers immediately.
-            AvailableQuests.CalculateAndDrawAll()
+            QuestieTracker:Update()
         end)
+    end)
 
-        -- Track/Untrack Achievement updates
-        Questie:RegisterEvent("TRACKED_ACHIEVEMENT_LIST_CHANGED", function(index, achieveId, added)
-            Questie.Debug(Questie.DEBUG_DEVELOP, "[EVENT] TRACKED_ACHIEVEMENT_LIST_CHANGED")
-            QuestieTracker:UpdateAchieveTrackerCache(achieveId)
-        end)
+    Questie:RegisterEvent("CRITERIA_UPDATE", function()
+        Questie.Debug(Questie.DEBUG_DEVELOP, "[EVENT] CRITERIA_UPDATE")
+        if (not Questie.db.profile.trackerEnabled) or (not _HasTrackedAchievements()) then
+            return
+        end
 
-        -- Timed based Achievement updates
-        -- TODO: Fired when a timed event for an achievement begins or ends. The achievement does not have to be actively tracked for this to trigger.
-        Questie:RegisterEvent("TRACKED_ACHIEVEMENT_UPDATE", function(self, achieveId)
-            Questie.Debug(Questie.DEBUG_DEVELOP, "[EVENT] TRACKED_ACHIEVEMENT_UPDATE")
-            QuestieCombatQueue:Queue(function()
-                if QuestieCompat.Is335 then
-                    QuestieTracker:UpdateAchieveTrackerCache(achieveId)
-                end
-                QuestieTracker:Update()
-            end)
-        end)
+        -- This event can fire rapidly while criteria are being evaluated. Queue one delayed update so
+        -- tracker objectives refresh once criteria state has settled.
+        if criteriaUpdateQueued then
+            return
+        end
 
-        Questie:RegisterEvent("CRITERIA_UPDATE", function()
-            Questie.Debug(Questie.DEBUG_DEVELOP, "[EVENT] CRITERIA_UPDATE")
-            if (not Questie.db.profile.trackerEnabled) or (not _HasTrackedAchievements()) then
-                return
-            end
-
-            -- This event can fire rapidly while criteria are being evaluated. Queue one delayed update so
-            -- tracker objectives refresh once criteria state has settled.
-            if criteriaUpdateQueued then
-                return
-            end
-
-            criteriaUpdateQueued = true
-            C_Timer.After(0.1, function()
-                criteriaUpdateQueued = nil
-                QuestieCombatQueue:Queue(function()
-                    QuestieTracker:Update()
-                end)
-            end)
-        end)
-        -- Money based Achievement updates
-        Questie:RegisterEvent("CHAT_MSG_MONEY", function()
-            Questie.Debug(Questie.DEBUG_DEVELOP, "[EVENT] CHAT_MSG_MONEY")
+        criteriaUpdateQueued = true
+        C_Timer.After(0.1, function()
+            criteriaUpdateQueued = nil
             QuestieCombatQueue:Queue(function()
                 QuestieTracker:Update()
             end)
         end)
-
-        -- Emote based Achievement updates
-        Questie:RegisterEvent("CHAT_MSG_TEXT_EMOTE", function()
-            Questie.Debug(Questie.DEBUG_DEVELOP, "[EVENT] CHAT_MSG_TEXT_EMOTE")
-            QuestieCombatQueue:Queue(function()
-                QuestieTracker:Update()
-            end)
+    end)
+    -- Money based Achievement updates
+    Questie:RegisterEvent("CHAT_MSG_MONEY", function()
+        Questie.Debug(Questie.DEBUG_DEVELOP, "[EVENT] CHAT_MSG_MONEY")
+        QuestieCombatQueue:Queue(function()
+            QuestieTracker:Update()
         end)
+    end)
 
-        -- Player equipment changed based Achievement updates
-        Questie:RegisterEvent("PLAYER_EQUIPMENT_CHANGED", function()
-            Questie.Debug(Questie.DEBUG_DEVELOP, "[EVENT] PLAYER_EQUIPMENT_CHANGED")
-            QuestieCombatQueue:Queue(function()
-                QuestieTracker:Update()
-            end)
+    -- Emote based Achievement updates
+    Questie:RegisterEvent("CHAT_MSG_TEXT_EMOTE", function()
+        Questie.Debug(Questie.DEBUG_DEVELOP, "[EVENT] CHAT_MSG_TEXT_EMOTE")
+        QuestieCombatQueue:Queue(function()
+            QuestieTracker:Update()
         end)
-    end
+    end)
+
+    -- Player equipment changed based Achievement updates
+    Questie:RegisterEvent("PLAYER_EQUIPMENT_CHANGED", function()
+        Questie.Debug(Questie.DEBUG_DEVELOP, "[EVENT] PLAYER_EQUIPMENT_CHANGED")
+        QuestieCombatQueue:Queue(function()
+            QuestieTracker:Update()
+        end)
+    end)
 
     -- Questie Comms Events
 
@@ -295,9 +291,7 @@ function QuestieEventHandler:RegisterLateEvents()
 
     -- quest announce
     Questie:RegisterEvent("CHAT_MSG_LOOT", function(_, text, notPlayerName, _, _, playerName)
-        if QuestieCompat.Is335 then
-            playerName = QuestieCompat.ChatMessageLoot(text)
-        end
+        playerName = QuestieCompat.ChatMessageLoot(text)
         QuestieTracker.QuestItemLooted(_, text)
         QuestieAnnounce.ItemLooted(_, text, notPlayerName, _, _, playerName)
     end)
@@ -424,11 +418,9 @@ function _EventHandler:MapExplorationUpdated()
     end
 
     -- Exploratory based Achievement updates
-    if Questie.IsWotlk or QuestieCompat.Is335 then
-        QuestieCombatQueue:Queue(function()
-            QuestieTracker:Update()
-        end)
-    end
+    QuestieCombatQueue:Queue(function()
+        QuestieTracker:Update()
+    end)
 end
 
 --- Fires when the player levels up
@@ -546,11 +538,9 @@ function _EventHandler:ChatMsgSkill()
     end
 
     -- Skill based Achievement updates
-    if Questie.IsWotlk or QuestieCompat.Is335 then
-        QuestieCombatQueue:Queue(function()
-            QuestieTracker:Update()
-        end)
-    end
+    QuestieCombatQueue:Queue(function()
+        QuestieTracker:Update()
+    end)
 end
 
 --- Fires when some chat messages about reputations are displayed

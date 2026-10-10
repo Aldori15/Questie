@@ -91,7 +91,7 @@ ChatFilter.Filter = function(chatFrame, _, msg, playerName, languageName, channe
         return
     end
 
-    if not (chatFrame and ((chatFrame.historyBuffer and #(chatFrame.historyBuffer.elements) > 0) or QuestieCompat.Is335) and chatFrame ~= _G.ChatFrame2) then
+    if not (chatFrame and chatFrame ~= _G.ChatFrame2) then
         return
     end
 

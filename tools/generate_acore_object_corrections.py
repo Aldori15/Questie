@@ -562,8 +562,6 @@ def write_corrections_module(corrections, output_path, zone_names):
         "---@type ZoneDB",
         'local ZoneDB = QuestieLoader:ImportModule("ZoneDB")',
         "",
-        "if QuestieCompat.WOW_PROJECT_ID < QuestieCompat.WOW_PROJECT_WRATH_CLASSIC then return end",
-        "",
         "-- Generated from tools/generate_acore_object_corrections.py.",
         "-- Regenerate this file when AzerothCore object data changes.",
         "",

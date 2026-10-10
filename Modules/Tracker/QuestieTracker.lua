@@ -75,13 +75,8 @@ end
 
 local questsWatched = GetNumQuestWatches()
 
-local trackedAchievements
-local trackedAchievementIds
-
-if Questie.IsWotlk or QuestieCompat.Is335 then
-    trackedAchievements = {GetTrackedAchievements()}
-    trackedAchievementIds = {}
-end
+local trackedAchievements = {GetTrackedAchievements()}
+local trackedAchievementIds = {}
 
 local isFirstRun = true
 local allowFormattingUpdate = false
@@ -392,38 +387,34 @@ function QuestieTracker.Initialize()
 
             -- The trackedAchievements variable is populated by GetTrackedAchievements(). If Questie
             -- is enabled, this will always return nil so we need to save it before we enable Questie.
-            if Questie.IsWotlk or QuestieCompat.Is335 then
-                if #trackedAchievements > 0 then
-                    local tempAchieves = trackedAchievements
+            if #trackedAchievements > 0 then
+                local tempAchieves = trackedAchievements
 
-                    -- Remove achievement from the Blizzard Quest Watch and populate the tracker.
-                    for _, achieveId in pairs(tempAchieves) do
-                        if achieveId then
-                            RemoveTrackedAchievement(achieveId)
-                            Questie.db.char.trackedAchievementIds[achieveId] = true
+                -- Remove achievement from the Blizzard Quest Watch and populate the tracker.
+                for _, achieveId in pairs(tempAchieves) do
+                    if achieveId then
+                        RemoveTrackedAchievement(achieveId)
+                        Questie.db.char.trackedAchievementIds[achieveId] = true
 
-                            if (not AchievementFrame) then
-                                AchievementFrame_LoadUI()
-                            end
-
-                            AchievementFrameAchievements_ForceUpdate()
+                        if (not AchievementFrame) then
+                            AchievementFrame_LoadUI()
                         end
+
+                        AchievementFrameAchievements_ForceUpdate()
                     end
                 end
+            end
 
-                trackedAchievements = {GetTrackedAchievements()}
-                WatchFrame_Update()
+            trackedAchievements = {GetTrackedAchievements()}
+            WatchFrame_Update()
 
-                -- Sync and populate QuestieTrackers achievement cache
-                if Questie.db.char.trackedAchievementIds ~= trackedAchievementIds then
-                    for achieveId in pairs(Questie.db.char.trackedAchievementIds) do
-                        if Questie.db.char.trackedAchievementIds[achieveId] == true then
-                            trackedAchievementIds[achieveId] = true
-                        end
+            -- Sync and populate QuestieTrackers achievement cache
+            if Questie.db.char.trackedAchievementIds ~= trackedAchievementIds then
+                for achieveId in pairs(Questie.db.char.trackedAchievementIds) do
+                    if Questie.db.char.trackedAchievementIds[achieveId] == true then
+                        trackedAchievementIds[achieveId] = true
                     end
                 end
-            else
-                QuestWatch_Update()
             end
 
             if QuestLogFrame:IsShown() then QuestLog_Update() end
@@ -654,9 +645,7 @@ function QuestieTracker:Disable()
     Questie.db.char.TrackedQuests = {}
     Questie.db.char.AutoUntrackedQuests = {}
 
-    if Questie.IsWotlk or QuestieCompat.Is335 then
-        Questie.db.char.trackedAchievementIds = {}
-    end
+    Questie.db.char.trackedAchievementIds = {}
 
     StaticPopup_Show("QUESTIE_RELOAD")
 end
@@ -1682,7 +1671,7 @@ function QuestieTracker:Update(force)
     -- Begin populating the tracker with achievements
     local _UpdateAchievements = function()
         -- Begin populating the tracker with achievements
-        if Questie.IsWotlk or QuestieCompat.Is335 then
+        do
             -- Begin populating the tracker with tracked achievements - Note: We're limited to tracking only 10 Achievements at a time.
             -- For all intents and purposes at a code level we're going to treat each tracked Achievement the same way we treat and add Quests. This loop is
             -- necessary to keep separate from the above tracked Quests loop so we can place all tracked Achievements into it's own "Zone" called Achievements.
@@ -2083,7 +2072,7 @@ function QuestieTracker:Update(force)
     end
 
     -- Populate Achievements first then Quests
-    if Questie.db.profile.listAchievementsFirst and (Questie.IsWotlk or QuestieCompat.Is335) then
+    if Questie.db.profile.listAchievementsFirst then
         _UpdateAchievements()
         _UpdateQuests()
     else
@@ -2362,11 +2351,9 @@ function QuestieTracker:Unhook()
     end
 
     -- Achievement Hooks
-    if Questie.IsWotlk or QuestieCompat.Is335 then
-        if QuestieTracker.IsTrackedAchievement then
-            IsTrackedAchievement = QuestieTracker.IsTrackedAchievement
-            GetNumTrackedAchievements = QuestieTracker.GetNumTrackedAchievements
-        end
+    if QuestieTracker.IsTrackedAchievement then
+        IsTrackedAchievement = QuestieTracker.IsTrackedAchievement
+        GetNumTrackedAchievements = QuestieTracker.GetNumTrackedAchievements
     end
 
     QuestieTracker.alreadyHooked = nil
@@ -2394,10 +2381,8 @@ function QuestieTracker:HookBaseTracker()
         hooksecurefunc("RemoveQuestWatch", QuestieTracker.RemoveQuestWatch)
 
         -- Achievement secure hooks
-        if Questie.IsWotlk or QuestieCompat.Is335 then
-            hooksecurefunc("AddTrackedAchievement", function(achieveId) QuestieTracker:TrackAchieve(achieveId) end)
-            hooksecurefunc("RemoveTrackedAchievement", QuestieTracker.RemoveTrackedAchievement)
-        end
+        hooksecurefunc("AddTrackedAchievement", function(achieveId) QuestieTracker:TrackAchieve(achieveId) end)
+        hooksecurefunc("RemoveTrackedAchievement", QuestieTracker.RemoveTrackedAchievement)
 
         QuestieTracker.alreadyHookedSecure = true
     end
@@ -2447,32 +2432,30 @@ function QuestieTracker:HookBaseTracker()
     end
 
     -- Achievement Hooks
-    if Questie.IsWotlk or QuestieCompat.Is335 then
-        if not QuestieTracker.IsTrackedAchievement then
-            QuestieTracker.IsTrackedAchievement = IsTrackedAchievement
-            QuestieTracker.GetNumTrackedAchievements = GetNumTrackedAchievements
-        end
+    if not QuestieTracker.IsTrackedAchievement then
+        QuestieTracker.IsTrackedAchievement = IsTrackedAchievement
+        QuestieTracker.GetNumTrackedAchievements = GetNumTrackedAchievements
+    end
 
-        -- Intercept and return a Questie boolean value
-        IsTrackedAchievement = function(achieveId)
-            if Questie.db.char.trackedAchievementIds[achieveId] then
-                return achieveId and Questie.db.char.trackedAchievementIds[achieveId]
-            else
-                return false
-            end
+    -- Intercept and return a Questie boolean value
+    IsTrackedAchievement = function(achieveId)
+        if Questie.db.char.trackedAchievementIds[achieveId] then
+            return achieveId and Questie.db.char.trackedAchievementIds[achieveId]
+        else
+            return false
         end
+    end
 
-        -- Intercept and return only what Questie is tracking
-        GetNumTrackedAchievements = function(isQuestie)
-            if isQuestie and Questie.db.char.trackedAchievementIds then
-                local numTrackedAchievements = 0
-                for _ in pairs(Questie.db.char.trackedAchievementIds) do
-                    numTrackedAchievements = numTrackedAchievements + 1
-                end
-                return numTrackedAchievements
-            else
-                return 0
+    -- Intercept and return only what Questie is tracking
+    GetNumTrackedAchievements = function(isQuestie)
+        if isQuestie and Questie.db.char.trackedAchievementIds then
+            local numTrackedAchievements = 0
+            for _ in pairs(Questie.db.char.trackedAchievementIds) do
+                numTrackedAchievements = numTrackedAchievements + 1
             end
+            return numTrackedAchievements
+        else
+            return 0
         end
     end
 

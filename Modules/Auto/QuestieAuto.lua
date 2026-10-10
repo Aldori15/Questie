@@ -366,7 +366,4 @@ function QuestieAuto.GOSSIP_CLOSED()
 end
 
 function QuestieAuto.QUEST_ACCEPTED()
-    if not QuestieCompat.Is335 and Questie.db.profile.bugWorkarounds == true and QuestFrameDetailPanel and QuestFrameDetailPanel:IsVisible() and QuestFrameCloseButton then
-        QuestFrameCloseButton:Click()
-    end
 end

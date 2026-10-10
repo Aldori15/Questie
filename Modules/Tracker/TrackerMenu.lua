@@ -405,17 +405,10 @@ StaticPopupDialogs["QUESTIE_WOWHEAD_URL"] = {
             langShort = ""
         end
 
-        local wowheadLink
-        if Questie.IsWotlk or QuestieCompat.Is335 then
-            if langShort then
-                langShort = langShort:gsub("%.", "/") -- The Wotlk WoWHead URL differs to the other Classic URLs
-            end
-            wowheadLink = "https://" .. "wowhead.com/wotlk/" .. langShort .. "quest=" .. questID
-        elseif Questie.IsTBC then
-            wowheadLink = "https://" .. langShort .. "tbc.wowhead.com/quest=" .. questID
-        else
-            wowheadLink = "https://" .. langShort .. "classic.wowhead.com/quest=" .. questID
+        if langShort then
+            langShort = langShort:gsub("%.", "/") -- The Wotlk WoWHead URL differs to the other Classic URLs
         end
+        local wowheadLink = "https://" .. "wowhead.com/wotlk/" .. langShort .. "quest=" .. questID
 
         self.editBox:SetText(wowheadLink)
         self.editBox:SetFocus()

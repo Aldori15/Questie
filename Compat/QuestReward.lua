@@ -1320,8 +1320,6 @@ QuestieCompat.QuestMoneyReward = {
 	[80] = {7400,19000,37000,58000,74000,148000,222000,296000},
 }
 
-if QuestieCompat.WOW_PROJECT_ID < QuestieCompat.WOW_PROJECT_BURNING_CRUSADE_CLASSIC then return end
-
 local RewardMoney = {
 	[908] = 4500,
 	[3911] = 24500,
@@ -2436,8 +2434,6 @@ for id, money in pairs(RewardMoney) do
 	QuestieCompat.RewardMoney[id] = (money == 0) and nil or money
 end
 RewardMoney = nil
-
-if QuestieCompat.WOW_PROJECT_ID < QuestieCompat.WOW_PROJECT_WRATH_CLASSIC then return end
 
 local RewardMoney = {
 	[1] = 296000,

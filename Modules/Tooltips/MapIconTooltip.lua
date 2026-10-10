@@ -47,8 +47,7 @@ local BREADCRUMB_TOOLTIP_ICON_PATH = QuestieLib.AddonPath .. "Icons\\breadcrumbt
 local BREADCRUMB_TOOLTIP_ICON_TEXTURE_SIZE = 16
 local BREADCRUMB_TOOLTIP_ICON_TEXTURE = "|T" .. BREADCRUMB_TOOLTIP_ICON_PATH .. ":" .. BREADCRUMB_TOOLTIP_ICON_TEXTURE_SIZE .. ":" .. BREADCRUMB_TOOLTIP_ICON_TEXTURE_SIZE .. ":2:0|t"
 
-local TRANSPARENT_ICON_PATH = "Interface\\Minimap\\UI-bonusobjectiveblob-inside.blp"
-local TRANSPARENT_ICON_TEXTURE = QuestieCompat.Is335 and "" or "|T" .. TRANSPARENT_ICON_PATH .. ":14:14:2:0|t"
+local TRANSPARENT_ICON_TEXTURE = ""
 
 local DEFAULT_WAYPOINT_HOVER_COLOR = { 0.93, 0.46, 0.13, 0.8 }
 
@@ -118,7 +117,7 @@ function MapIconTooltip:Show()
         return
     end
 
-    local Tooltip = QuestieCompat.Is335 and QuestieCompat.SetupTooltip(self) or GameTooltip;
+    local Tooltip = QuestieCompat.SetupTooltip(self) or GameTooltip;
     Tooltip._owner = self;
     Tooltip:SetOwner(self, "ANCHOR_CURSOR"); --"ANCHOR_CURSOR" or (self, self)
 

@@ -76,17 +76,8 @@ function QuestieFrame.CreateIconFrame(frameId, OnEnter)
     local newTexture = newFrame:CreateTexture(nil, "OVERLAY", nil, 0)
     newTexture:SetAllPoints(newFrame)
 
-    if not QuestieCompat.Is335 then
-        newTexture:SetTexelSnappingBias(0)
-        newTexture:SetSnapToPixelGrid(false)
-    end
-
     local overlayTexture = newFrame:CreateTexture(nil, "OVERLAY", nil, 1)
     overlayTexture:SetAllPoints(newFrame)
-    if not QuestieCompat.Is335 then
-        overlayTexture:SetTexelSnappingBias(0)
-        overlayTexture:SetSnapToPixelGrid(false)
-    end
     overlayTexture:Hide()
 
     ---@type IconTexture
@@ -94,10 +85,6 @@ function QuestieFrame.CreateIconFrame(frameId, OnEnter)
     glowTexture:SetPoint("CENTER", newFrame, 0, 0)
     glowTexture:SetSize(18, 18)
     glowTexture:SetTexture(Questie.icons["glow"])
-    if not QuestieCompat.Is335 then
-        glowTexture:SetTexelSnappingBias(0)
-        glowTexture:SetSnapToPixelGrid(false)
-    end
     glowTexture:Hide()
 
     newFrame.texture = newTexture;
@@ -184,7 +171,7 @@ function _QuestieFrame:OnLeave()
     end
     GameTooltip.ShownAsMapIcon = false
 
-    if QuestieCompat.Is335 then QuestieCompat.SetupTooltip(self, true) end
+    QuestieCompat.SetupTooltip(self, true)
 end
 
 function _QuestieFrame:OnClick(button)
@@ -223,25 +210,10 @@ function _QuestieFrame:OnClick(button)
 
     -- TomTom integration
     if self and self.UiMapID and IsControlKeyDown() and TomTom and TomTom.AddWaypoint then
-        local m = self.UiMapID
-        local x = self.x / 100
-        local y = self.y / 100
         local title = self.data.Name
-        local add = true
-
-        -- The newer TomTom waypoint handle supports toggling the same icon off.
-        if (not QuestieCompat.Is335) and Questie.db.char._tom_waypoint and TomTom.RemoveWaypoint then
-            local waypoint = Questie.db.char._tom_waypoint
-            add = waypoint[1] ~= m or waypoint[2] ~= x or waypoint[3] ~= y or waypoint.title ~= title or waypoint.from ~= "Questie"
-        end
-
-        if add then
-            local questId = self.data.QuestData and self.data.Id
-            local objectiveIndex = self.data.ObjectiveData and self.data.ObjectiveData.Index
-            TrackerUtils:SetTomTomTarget(title, self.AreaID, self.x, self.y, questId, objectiveIndex)
-        else
-            TrackerUtils:ClearTomTomTarget()
-        end
+        local questId = self.data.QuestData and self.data.Id
+        local objectiveIndex = self.data.ObjectiveData and self.data.ObjectiveData.Index
+        TrackerUtils:SetTomTomTarget(title, self.AreaID, self.x, self.y, questId, objectiveIndex)
     end
 
     -- Make sure we don't break the map ping feature - this allows us to ping our own icons.

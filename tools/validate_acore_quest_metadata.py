@@ -12,15 +12,6 @@ QUESTIE_FIX_FILES = [
     "Database/Corrections/wotlkQuestFixes.lua",
 ]
 
-QUESTIE_RUNTIME_FLAGS = {
-    "Questie.IsEra": False,
-    "Questie.IsClassic": False,
-    "Questie.IsTBC": False,
-    "Questie.IsWotlk": True,
-    "QuestieCompat.Is335": True,
-    "VANILLA": False,
-}
-
 EXCLUDED_MODULE_NAMES = {
     "mod-individual-progression",
 }
@@ -760,12 +751,6 @@ def safe_eval_scalar(expr, constants):
     if token[0] in {'"', "'"} and token[-1] == token[0]:
         return parse_lua_string(token)
 
-    token = token.replace("Questie.IsEra", "False")
-    token = token.replace("Questie.IsClassic", "False")
-    token = token.replace("Questie.IsTBC", "False")
-    token = token.replace("Questie.IsWotlk", "True")
-    token = token.replace("QuestieCompat.Is335", "True")
-    token = re.sub(r"\bVANILLA\b", "False", token)
     token = replace_constant_refs(token, constants)
 
     l10n_match = re.fullmatch(r"l10n\((.*)\)", token, re.DOTALL)
@@ -850,12 +835,7 @@ def load_constants(addon_root):
     faction_ids = load_constant_table(questie_quest_db_path, "QuestieDB.factionIDs")
     quest_flags = load_constant_table(questie_quest_db_path, "QuestieDB.questFlags")
     special_flags = load_constant_table(questie_db_path, "QuestieDB.specialFlags")
-
-    race_ids = load_constant_table(
-        questie_db_path,
-        "QuestieDB.raceKeys",
-        constants={"VANILLA": False},
-    )
+    race_ids = load_constant_table(questie_db_path, "QuestieDB.raceKeys")
     class_ids = load_constant_table(
         questie_db_path,
         "QuestieDB.classKeys",
