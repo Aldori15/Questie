@@ -259,7 +259,7 @@ function QuestieAuto.GOSSIP_SHOW()
         for index = 1, #completeQuests do
             local gossipQuest = completeQuests[index]
             if gossipQuest.isComplete and _IsQuestAllowedToTurnIn(gossipQuest.questID) then
-                QuestieCompat.SelectActiveQuest(index)
+                SelectGossipActiveQuest(index)
                 return
             end
         end
@@ -271,7 +271,7 @@ function QuestieAuto.GOSSIP_SHOW()
         for index = 1, #availableQuests do
             local gossipQuest = availableQuests[index]
             if _ShouldAutoAcceptQuest(gossipQuest.questID, gossipQuest) then
-                QuestieCompat.SelectAvailableQuest(index)
+                SelectGossipAvailableQuest(index)
                 return
             end
         end

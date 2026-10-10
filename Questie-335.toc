@@ -20,7 +20,6 @@ Modules\Libs\QuestieLoader.lua
 Modules\Profiler\QuestieProfilerPreHook.lua
 
 # COMPATIBILITY
-Modules\QuestieCompat.lua
 embeds.xml
 Compat\Compat.xml
 

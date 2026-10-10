@@ -250,7 +250,7 @@ function TrackerHeaderFrame:Update()
 
         TrackerHeaderFrame.PositionTrackerHeaderFrame(headerFrame, trackerBaseFrame)
 
-        QuestieCompat.SetResizeBounds(trackerBaseFrame, headerFrame.trackedQuests.label:GetUnboundedStringWidth(), trackerFontSizeHeader)
+        trackerBaseFrame:SetMinResize(headerFrame.trackedQuests.label:GetUnboundedStringWidth(), trackerFontSizeHeader)
     else
         headerFrame:Hide()
 
