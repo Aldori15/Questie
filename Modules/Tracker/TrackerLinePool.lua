@@ -550,7 +550,7 @@ function TrackerLinePool.Initialize(questFrame)
             self.itemName = nil
 
             for bag = -2, 4 do
-                for slot = 1, QuestieCompat.GetContainerNumSlots(bag) do
+                for slot = 1, GetContainerNumSlots(bag) do
                     local texture, _, _, _, _, _, _, _, _, itemId = QuestieCompat.GetContainerItemInfo(bag, slot)
                     if questItemId == itemId and QuestieDB.QueryItemSingle(itemId, "class") == 12 then
                         validTexture = texture
@@ -636,7 +636,7 @@ function TrackerLinePool.Initialize(questFrame)
         end
 
         btn.RefreshCooldown = function(self)
-            local start, duration, enabled = QuestieCompat.GetItemCooldown(self.itemId)
+            local start, duration, enabled = GetItemCooldown(self.itemId)
 
             if enabled == 1 and duration > 0 then
                 if self.cooldownStart ~= start or self.cooldownDuration ~= duration or self.cooldownEnabled ~= enabled then

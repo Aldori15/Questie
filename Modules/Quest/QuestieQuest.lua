@@ -1069,7 +1069,7 @@ function QuestieQuest:CheckQuestSourceItem(questId, makeObjective)
         end
 
         for bag = -2, 4 do
-            for slot = 1, QuestieCompat.GetContainerNumSlots(bag) do
+            for slot = 1, GetContainerNumSlots(bag) do
                 local itemId = select(10, QuestieCompat.GetContainerItemInfo(bag, slot))
                 if itemId == quest.sourceItemId then
                     return true
