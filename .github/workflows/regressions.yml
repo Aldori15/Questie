@@ -59,6 +59,7 @@ jobs:
       - name: Run compatibility and loader contracts on Lua 5.1
         run: |
           lua5.1 tools/test_compat_contracts.lua
+          lua5.1 tools/test_compat_timers.lua
           lua5.1 tools/test_module_loader.lua
           lua5.1 tools/test_options_335.lua
           lua5.1 tools/test_tracker_initialization.lua

@@ -2,6 +2,7 @@
     <Script>QuestieLoader:StampLoadBoundary("Compat/Compat.xml")</Script>
 
     <Script file="Compat.lua"/>
+    <Script file="Timers.lua"/>
     <Script file="ProtectedCall.lua"/>
     <Script file="Corrections.lua"/>
     <Script file="FactionId.lua"/>
