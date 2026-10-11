@@ -326,6 +326,9 @@ end
 
 function QuestieLoader:PopulateGlobals() -- called when debugging is enabled
     for name, module in pairs(modules) do
-        _G[name] = module
+        -- Keep existing client/addon globals, such as WorldMapButton.
+        if not _G[name] then
+            _G[name] = module
+        end
     end
 end

@@ -541,15 +541,6 @@ function QuestieCompat.GetClassColor(classFilename)
 	return 1, 1, 1, "ffffffff";
 end
 
--- prevents the override of existing global variables with the same name(e.g., WorldMapButton)
-function QuestieCompat.PopulateGlobals(self)
-    for name, module in pairs(QuestieLoader._modules) do
-        if not _G[name] then
-            _G[name] = module
-        end
-    end
-end
-
 QuestieCompat.isReloadingUi = false
 function QuestieCompat.OnReloadUi(command)
 	command = command or "reloadui"
@@ -681,7 +672,6 @@ function QuestieCompat:ADDON_LOADED(event, addon)
         QuestieLoader:MarkModuleDisabled(moduleName)
     end
 
-	QuestieLoader.PopulateGlobals = QuestieCompat.PopulateGlobals
     QuestieCompat.RegisterStreamCompatibility()
     ZoneDB.private.RunTests = QuestieCompat.NOOP
     QuestieLib.TextWrap = QuestieCompat.TextWrap

@@ -1,5 +1,5 @@
 -- Run from the addon root with Lua 5.1 or 5.2+.
--- Exercise the real loader's forward references, diagnostics, and profiler observer.
+-- Exercise the real loader's forward references, debug exports, diagnostics, and profiler observer.
 local tests = 0
 local function equal(actual, expected, label)
     assert(actual == expected, label .. ": expected " .. tostring(expected) .. ", got " .. tostring(actual))
@@ -102,6 +102,49 @@ do
     loader:FinishLoadTimings()
     assert(loader.loadTimings["Modules/Libs/QuestieLoader.lua"] > 0, "loader interval recorded")
     assert(loader.loadTimings["Modules/Example.lua"] > 0, "calling file interval recorded")
+    tests = tests + 1
+end
+
+-- Debug exports must work before compatibility startup without replacing client/addon globals.
+do
+    local loader, env = setup()
+    local existing = {
+        WorldMapButton = {},
+        ExistingFunction = function() end,
+        ExistingNumber = 0,
+        ExistingString = "",
+    }
+    for name, value in pairs(existing) do
+        env[name] = value
+        loader:CreateModule(name)
+    end
+    local declared = loader:CreateModule("DebugModule")
+    local forward = loader:ImportModule("ForwardModule")
+    local falseGlobal = loader:CreateModule("FalseGlobal")
+    env.FalseGlobal = false -- Preserve the compatibility implementation's treatment of false as unset.
+    equal(env.DebugModule, nil, "module creation does not export globals")
+    loader:PopulateGlobals()
+    for name, value in pairs(existing) do
+        equal(env[name], value, "existing global preserved: " .. name)
+        equal(loader:ImportModule(name), loader._modules[name], "collision keeps module registry intact")
+        assert(loader._modules[name] ~= value, "global and module remain separate after collision")
+    end
+    equal(env.DebugModule, declared, "declared module exported by reference")
+    equal(env.ForwardModule, forward, "forward import exported by reference")
+    equal(env.FalseGlobal, falseGlobal, "false global retains previous export behavior")
+
+    -- Subsequent declarations and exports must preserve captured references and intervening globals.
+    equal(loader:CreateModule("ForwardModule"), forward, "export preserves forward declaration identity")
+    forward.ready = true
+    equal(env.ForwardModule.ready, true, "export sees subsequent module changes")
+    local late = loader:CreateModule("LateModule")
+    local replacement = {}
+    env.DebugModule = replacement
+    loader:PopulateGlobals()
+    equal(env.DebugModule, replacement, "repeat export preserves replacement global")
+    equal(loader:ImportModule("DebugModule"), declared, "repeat export preserves original module")
+    equal(env.ForwardModule, forward, "repeat export preserves forward reference")
+    equal(env.LateModule, late, "repeat export includes new modules")
     tests = tests + 1
 end
 
