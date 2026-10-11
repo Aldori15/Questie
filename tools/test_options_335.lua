@@ -51,7 +51,7 @@ env.SetCVar = function(name, value)
     cvar = value
 end
 local visibilityCalls, cacheCleared = 0, false
-env.QuestieCompat = {Is335 = true, C_Timer = {}, CALENDAR_WEEKDAY_NAMES = {
+env.QuestieCompat = {C_Timer = {}, CALENDAR_WEEKDAY_NAMES = {
     "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"},
     ClearExplorationCache = function() cacheCleared = true end}
 loadModule("Modules/Libs/QuestieLoader.lua")

@@ -96,7 +96,7 @@ env.Questie = {db = {profile = {trackerHeaderEnabled = true, trackerFontSizeHead
     trackerFontSizeQuest = 12, trackerFontSizeObjective = 10, trackerFontSizeZone = 13,
     trackerEnabled = true}, char = {isTrackerExpanded = true}},
     icons = {complete = "complete"}, Debug = noop}
-env.QuestieCompat = {Is335 = true, NOOP = noop, NOOP_MT = {__index = function() return noop end},
+env.QuestieCompat = {NOOP = noop, NOOP_MT = {__index = function() return noop end},
     C_Timer = {}, C_QuestLog = {GetMaxNumQuestsCanAccept = function() return 25 end},
     LibUIDropDownMenu = {}}
 env.LibStub = function(name)
