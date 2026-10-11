@@ -56,6 +56,12 @@ jobs:
       - name: Check addon Lua 5.1 syntax
         run: python -B tools/check_lua_syntax.py --luac luac5.1
 
+      - name: Check Lua regression test syntax
+        run: |
+          for test in tools/test_*.lua; do
+            luac5.2 -p "$test"
+          done
+
       - name: Run compatibility and loader contracts on Lua 5.1
         run: |
           lua5.1 tools/test_compat_contracts.lua
