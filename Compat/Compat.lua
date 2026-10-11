@@ -672,7 +672,6 @@ function QuestieCompat:ADDON_LOADED(event, addon)
         QuestieLoader:MarkModuleDisabled(moduleName)
     end
 
-    QuestieCompat.RegisterStreamCompatibility()
     ZoneDB.private.RunTests = QuestieCompat.NOOP
     QuestieLib.TextWrap = QuestieCompat.TextWrap
     QuestieCoords.GetPlayerMapPosition = QuestieCompat.GetPlayerMapPosition

@@ -21,9 +21,8 @@ local realmList = string.lower(GetCVar("realmList") or "")
 local isWarmane = string.find(realmList, "warmane", 1, true) ~= nil
 local quoteEscapeByte = isWarmane and stringbyte("~") or stringbyte("|")
 
--- When QuestieCompat swaps stream byte IO to its segmented-table implementation,
--- we must also load incoming data into the expected segmented structure.
-local COMPAT_MAX_TABLE_SIZE = 524288
+-- Keep byte tables within the 3.3.5 client's allocation limit for large databases.
+local MAX_TABLE_SIZE = 524288
 local LOAD_BYTE_CHUNK = 4096
 
 -- shift level table
@@ -137,11 +136,11 @@ function QuestieStreamLib:GetStream(mode) -- returns a new stream
 end
 
 function QuestieStreamLib:_writeByte(val)
-    --print("Writing " .. val .. " at " .. self._pointer)
-    self._bin[self._pointer] = stringchar(val)
-    --if val > 255 or val < 0 then
-    --    stringchar(val) -- error
-    --end
+    local subIndex = math.ceil(self._pointer / MAX_TABLE_SIZE)
+    local index = self._pointer - (subIndex - 1) * MAX_TABLE_SIZE
+
+    self._bin[subIndex] = self._bin[subIndex] or {}
+    self._bin[subIndex][index] = stringchar(val)
     self._pointer = self._pointer + 1
 end
 
@@ -153,8 +152,11 @@ function QuestieStreamLib:_writeByte_assert(val)
 end
 
 function QuestieStreamLib:_readByte()
+    local subIndex = math.ceil(self._pointer / MAX_TABLE_SIZE)
+    local index = self._pointer - (subIndex - 1) * MAX_TABLE_SIZE
+
     self._pointer = self._pointer + 1
-    return self._bin[self._pointer-1]
+    return self._bin[subIndex][index]
 end
 
 function QuestieStreamLib:SetPointer(pointer)
@@ -478,15 +480,11 @@ end
 
 
 function QuestieStreamLib:Save()
-    --if self._pointer-1 > unpack_limit then
-        --for i=1,self._pointer-1 do
-            --print(self._bin[i])
-        --    self._bin[i] = stringchar(self._bin[i])
-        --end
-        --return table.concat(self._bin)
-    --end
-    --return stringchar(unpack(self._bin))
-    return table.concat(self._bin)
+    local chunks = {}
+    for i = 1, #self._bin do
+        chunks[i] = table.concat(self._bin[i])
+    end
+    return table.concat(chunks)
 end
 
 function QuestieStreamLib:Load(bin)
@@ -494,32 +492,27 @@ function QuestieStreamLib:Load(bin)
     if self._mode == "raw" or self._mode == "raw_assert" then
         self._bin = bin
     else
-        local useCompatIO = QuestieCompat and QuestieCompat._readByte and (self._readByte == QuestieCompat._readByte)
-        if useCompatIO then
-            self._bin = {}
-            local len = string.len(bin)
-            local pointer = 1
+        self._bin = {}
+        local len = string.len(bin)
+        local pointer = 1
 
-            for startPos = 1, len, LOAD_BYTE_CHUNK do
-                local endPos = startPos + LOAD_BYTE_CHUNK - 1
-                if endPos > len then
-                    endPos = len
-                end
-                local bytes = { stringbyte(bin, startPos, endPos) }
-                for i = 1, #bytes do
-                    local subIndex = math.ceil(pointer / COMPAT_MAX_TABLE_SIZE)
-                    local index = pointer - (subIndex - 1) * COMPAT_MAX_TABLE_SIZE
-                    local sub = self._bin[subIndex]
-                    if not sub then
-                        sub = {}
-                        self._bin[subIndex] = sub
-                    end
-                    sub[index] = bytes[i]
-                    pointer = pointer + 1
-                end
+        for startPos = 1, len, LOAD_BYTE_CHUNK do
+            local endPos = startPos + LOAD_BYTE_CHUNK - 1
+            if endPos > len then
+                endPos = len
             end
-        else
-            self._bin = {stringbyte(bin, 1, -1)}
+            local bytes = { stringbyte(bin, startPos, endPos) }
+            for i = 1, #bytes do
+                local subIndex = math.ceil(pointer / MAX_TABLE_SIZE)
+                local index = pointer - (subIndex - 1) * MAX_TABLE_SIZE
+                local sub = self._bin[subIndex]
+                if not sub then
+                    sub = {}
+                    self._bin[subIndex] = sub
+                end
+                sub[index] = bytes[i]
+                pointer = pointer + 1
+            end
         end
     end
     self._level = 0

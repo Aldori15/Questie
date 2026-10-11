@@ -23,8 +23,7 @@ local stream = streamLib:GetStream("raw_assert")
 compiler.writers.spawnlist(stream, input)
 local endPointer = stream._pointer
 stream:WriteInt(123456789)
-stream._bin = table.concat(stream._bin)
-stream._pointer = 1
+stream:Load(stream:Save())
 local output = compiler.readers.spawnlist(stream)
 assert(stream._pointer == endPointer, "reader consumed the complete variable-length spawn field")
 assert(stream:ReadInt() == 123456789, "following field remains aligned after reading")
@@ -46,7 +45,7 @@ assert(stream:ReadInt() == 123456789, "following field remains aligned after ski
 
 stream = streamLib:GetStream("raw_assert")
 compiler.writers.spawnlist(stream, nil)
-stream._bin, stream._pointer = table.concat(stream._bin), 1
+stream:Load(stream:Save())
 assert(compiler.readers.spawnlist(stream) == nil, "empty spawn field preserved")
 assert(stream._pointer == 2, "empty field reader remains aligned")
 stream._pointer = 1

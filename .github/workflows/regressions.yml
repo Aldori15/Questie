@@ -62,6 +62,7 @@ jobs:
           lua5.1 tools/test_module_loader.lua
           lua5.1 tools/test_options_335.lua
           lua5.1 tools/test_tracker_initialization.lua
+          lua5.1 tools/test_stream_storage.lua
 
       - name: Run Lua regression suites
         run: |
