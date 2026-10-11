@@ -123,7 +123,7 @@ end
 
 function TrackerUtils:GetTomTomTarget()
     local waypoint = Questie.db.char._tom_waypoint
-    if not waypoint or not QuestieCompat.Is335 then
+    if not waypoint then
         return waypoint
     end
 
@@ -184,17 +184,13 @@ function TrackerUtils:SetTomTomTarget(title, zone, x, y, questId, objectiveIndex
         TrackerUtils:ClearTomTomTarget()
         local uiMapId = ZoneDB:GetUiMapIdByAreaId(zone)
 
-        if QuestieCompat.Is335 then
-            local persistent
-            if source == "autoRoute" then
-                persistent = false
-            end
-            Questie.db.char._tom_waypoint = QuestieCompat.TomTom_AddWaypoint(title, uiMapId, x, y, persistent)
-        else
-            Questie.db.char._tom_waypoint = TomTom:AddWaypoint(uiMapId, x / 100, y / 100, { title = title, crazy = true, from = "Questie" })
+        local persistent
+        if source == "autoRoute" then
+            persistent = false
         end
+        Questie.db.char._tom_waypoint = QuestieCompat.TomTom_AddWaypoint(title, uiMapId, x, y, persistent)
 
-        if QuestieCompat.Is335 and Questie.db.char._tom_waypoint and TomTom.waypoints then
+        if Questie.db.char._tom_waypoint and TomTom.waypoints then
             local data = TomTom.waypoints[Questie.db.char._tom_waypoint]
             if data then
                 Questie.db.char._tom_waypoint_identity = { zone = data.zone, coord = data.coord, title = data.title }
@@ -1180,14 +1176,10 @@ function TrackerUtils.HasQuest()
     local hasQuest
 
     if (GetNumQuestWatches(true) == 0) then
-        if Questie.IsWotlk or QuestieCompat.Is335 then
-            if (GetNumTrackedAchievements(true) == 0) then
-                hasQuest = false
-            else
-                hasQuest = true
-            end
-        else
+        if (GetNumTrackedAchievements(true) == 0) then
             hasQuest = false
+        else
+            hasQuest = true
         end
     else
         if not Questie.db.profile.trackerShowCompleteQuests then

@@ -20,7 +20,7 @@ local function setup()
         ImportModule = function(_, name) modules[name] = modules[name] or {}; return modules[name] end,
     }
     env.Questie = {db = {profile = {}}, Print = function() end}
-    env.QuestieCompat = {Is335 = true}
+    env.QuestieCompat = {}
     assert(loadfile("Compat/UiMapData.lua", "t", env))()
     local npcs = {}
     modules.QuestieDB = {GetNPC = function(_, id) return npcs[id] end}

@@ -309,7 +309,7 @@ function _QuestEventHandler:HandleQuestAccepted(questId)
     QuestieAnnounce:AcceptedQuest(questId)
 
     local isLastIslePhase = Questie.db.profile.isleOfQuelDanasPhase == IsleOfQuelDanas.MAX_ISLE_OF_QUEL_DANAS_PHASES
-    if QuestieCompat.Is335 and (not isLastIslePhase) and IsleOfQuelDanas.CheckForActivePhase(questId) then
+    if (not isLastIslePhase) and IsleOfQuelDanas.CheckForActivePhase(questId) then
         QuestieQuest:SmoothReset()
     else
         QuestLifecycle:AcceptQuest(questId)
@@ -342,7 +342,7 @@ function _QuestEventHandler:QuestTurnedIn(questId, xpReward, moneyReward)
         -- There are quests which you just turn in so there is no preceding QUEST_ACCEPTED event and questLog[questId]
         -- is empty
         questLog[questId].state = QUEST_LOG_STATES.QUEST_TURNED_IN
-    elseif QuestieCompat.Is335 then
+    else
         questLog[questId] = {state = QUEST_LOG_STATES.QUEST_TURNED_IN}
     end
 

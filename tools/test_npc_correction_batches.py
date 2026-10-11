@@ -52,8 +52,7 @@ class NpcCorrectionBatchTests(unittest.TestCase):
 local keys = {name = 1, spawns = 2}
 QuestieLoader = {ImportModule = function(_, name) return name == "QuestieDB" and {npcKeys = keys} or {zoneIDs = {}} end}
 local callbacks, seen, count = {}, {}, 0
-QuestieCompat = {WOW_PROJECT_ID = 11, WOW_PROJECT_WRATH_CLASSIC = 11,
-    RegisterCorrection = function(_, fn) callbacks[#callbacks + 1] = fn end}
+QuestieCompat = {RegisterCorrection = function(_, fn) callbacks[#callbacks + 1] = fn end}
 '''
         verify = '''
 assert(#callbacks > 1)

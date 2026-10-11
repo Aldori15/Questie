@@ -33,10 +33,16 @@ local coYield = coroutine.yield
 local factionTreeFrame
 local factionQuestMap
 
+local EXPANSION_ORDER = {
+    classic = 2,
+    tbc = 5,
+    wotlk = 11,
+}
+
 local expansionDefinitions = {
-    { key = "classic", label = EXPANSION_NAME0, order = QuestieCompat.WOW_PROJECT_CLASSIC },
-    { key = "tbc", label = EXPANSION_NAME1, order = QuestieCompat.WOW_PROJECT_BURNING_CRUSADE_CLASSIC },
-    { key = "wotlk", label = EXPANSION_NAME2, order = QuestieCompat.WOW_PROJECT_WRATH_CLASSIC },
+    { key = "classic", label = EXPANSION_NAME0, order = EXPANSION_ORDER.classic },
+    { key = "tbc", label = EXPANSION_NAME1, order = EXPANSION_ORDER.tbc },
+    { key = "wotlk", label = EXPANSION_NAME2, order = EXPANSION_ORDER.wotlk },
 }
 
 local expansionKeyByOrder = {}
@@ -99,7 +105,7 @@ local function _EnsureFactionRegistered(factionId)
     end
 
     if not factionIntroductionOrder[factionId] then
-        factionIntroductionOrder[factionId] = QuestieCompat.WOW_PROJECT_WRATH_CLASSIC
+        factionIntroductionOrder[factionId] = EXPANSION_ORDER.wotlk
     end
 
     _RegisterFactionForExpansion(factionId, factionIntroductionOrder[factionId])
@@ -162,10 +168,8 @@ local function _BuildExpansionDropdownData()
     wipe(QuestieJourney.availableFactionExpansionOrder)
 
     for _, expansion in ipairs(expansionDefinitions) do
-        if QuestieCompat.WOW_PROJECT_ID >= expansion.order then
-            QuestieJourney.availableFactionExpansions[expansion.key] = expansion.label
-            table.insert(QuestieJourney.availableFactionExpansionOrder, expansion.key)
-        end
+        QuestieJourney.availableFactionExpansions[expansion.key] = expansion.label
+        table.insert(QuestieJourney.availableFactionExpansionOrder, expansion.key)
     end
 end
 

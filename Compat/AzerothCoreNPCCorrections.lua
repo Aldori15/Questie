@@ -3,8 +3,6 @@ local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 ---@type ZoneDB
 local ZoneDB = QuestieLoader:ImportModule("ZoneDB")
 
-if QuestieCompat.WOW_PROJECT_ID < QuestieCompat.WOW_PROJECT_WRATH_CLASSIC then return end
-
 -- Generated from tools/generate_acore_npc_corrections.py.
 -- Includes Wintergrasp's scripted fortress and outside-camp coordinates.
 -- Only quest starters and finishers carry spawn IDs for optional live patrol matching.

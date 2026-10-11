@@ -20,7 +20,7 @@ end
 env.Questie = {db = {profile = {lowLevelStyle = "default", showAQWarEffortQuests = true,
     showScourgeInvasionQuests = true, showSunsReachQuests = true}, global = {},
     char = {complete = {}, hidden = {}}}, Debug = noop, Error = error}
-env.QuestieCompat = {Is335 = true}
+env.QuestieCompat = {}
 env.QuestieLoader = {
     CreateModule = function(_, name) modules[name] = modules[name] or {private = {}}; return modules[name] end,
     ImportModule = function(_, name) modules[name] = modules[name] or {private = {}}; return modules[name] end,

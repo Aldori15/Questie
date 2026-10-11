@@ -8,8 +8,6 @@
 -- quest taken=9, quest none=14, class=15, achievement=17, spawn mask=19,
 -- area=23, spell=25, quest complete=28, daily quest done=43, quest state=47.
 
-if not QuestieCompat.Is335 then return end
-
 QuestieCompat.AzerothCoreQuestAvailabilityConditions = {
     [247] = {
         {{8,2,0,0,0},{8,23,0,0,0},{8,24,0,0,0}},

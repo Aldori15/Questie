@@ -293,7 +293,7 @@ function QuestieReputation.GetReputationReward(questId)
     rewards = _FilterShaTarRewards(rewards, factionIDs)
 
     local reputationMultiplier = _GetRewardMultiplier()
-    local live = QuestieCompat.Is335 and QuestieServer.GetQuestReputationRates and QuestieServer:GetQuestReputationRates()
+    local live = QuestieServer.GetQuestReputationRates and QuestieServer:GetQuestReputationRates()
     local liveValues = {}
     if live then
         for index, rewardPair in ipairs(rewards) do

@@ -23,13 +23,8 @@ function Hooks:HookQuestLogTitle()
             return
         end
 
-        local questLogLineIndex
-        if Questie.IsWotlk or QuestieCompat.Is335 then
-            -- With Wotlk the offset is no longer required cause the API already hands the correct index
-            questLogLineIndex = self:GetID()
-        else
-            questLogLineIndex = self:GetID() + FauxScrollFrame_GetOffset(QuestLogListScrollFrame)
-        end
+        -- With Wotlk the offset is no longer required cause the API already hands the correct index
+        local questLogLineIndex = self:GetID()
 
         if (IsModifiedClick("CHATLINK") and ChatEdit_GetActiveWindow()) then
             local _, _, _, _, _, _, _, questId = GetQuestLogTitle(questLogLineIndex)

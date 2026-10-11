@@ -1,7 +1,5 @@
 ---@class QuestieCompat
 QuestieCompat = setmetatable({}, {__index = _G})
--- addon is running on 3.3.5 WotLK client
-QuestieCompat.Is335 = (select(4, GetBuildInfo()) == 30300)
 
 ---@type QuestieLib
 local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
@@ -34,12 +32,6 @@ QuestieCompat.frame:RegisterEvent("PLAYER_LOGOUT")
 QuestieCompat.frame:SetScript("OnEvent", function(self, event, ...)
     QuestieCompat[event](self, event, ...)
 end)
-
--- current expansion level (https://wowpedia.fandom.com/wiki/WOW_PROJECT_ID)
-QuestieCompat.WOW_PROJECT_CLASSIC = 2
-QuestieCompat.WOW_PROJECT_BURNING_CRUSADE_CLASSIC = 5
-QuestieCompat.WOW_PROJECT_WRATH_CLASSIC = 11
-QuestieCompat.WOW_PROJECT_ID = tonumber(GetAddOnMetadata(QuestieCompat.addonName, "X-WOW_PROJECT_ID"))
 
 -- check for a specific type of group
 QuestieCompat.LE_PARTY_CATEGORY_HOME = 1 -- home-realm parties
@@ -109,7 +101,7 @@ function QuestieCompat.UnitGUID(unit)
 end
 
 function QuestieCompat.GetMaxPlayerLevel()
-    return ((Questie.IsWotlk or QuestieCompat.Is335) and 80) or (Questie.IsTBC and 70) or (Questie.IsClassic and 60)
+    return 80
 end
 
 -- https://wowpedia.fandom.com/wiki/API_UnitAura?oldid=2681338

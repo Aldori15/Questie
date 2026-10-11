@@ -182,7 +182,7 @@ end
 ---@param self Frame
 ---@return GameTooltip
 local function GetTooltip(self)
-    return QuestieCompat.Is335 and QuestieCompat.SetupTooltip(self) or GameTooltip
+    return QuestieCompat.SetupTooltip(self) or GameTooltip
 end
 
 ---@param self Frame

@@ -38,7 +38,7 @@ local function setup(ids, completed)
         CreateModule = function(_, name) modules[name] = modules[name] or {private = {}}; return modules[name] end,
         ImportModule = function(_, name) modules[name] = modules[name] or {private = {}}; return modules[name] end,
     }
-    env.QuestieCompat = {Is335 = true, frame = env.CreateFrame(), UnitGUID = function() return "Creature-0-0-0-0-18265-00000001" end,
+    env.QuestieCompat = {frame = env.CreateFrame(), UnitGUID = function() return "Creature-0-0-0-0-18265-00000001" end,
         C_Timer = {After = function(delay, callback)
             timers[#timers + 1] = {due = now + delay, callback = callback}
         end}}

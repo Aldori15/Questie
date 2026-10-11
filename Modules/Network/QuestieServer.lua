@@ -907,7 +907,7 @@ function QuestieServer:PrintWintergraspStatus(detailed)
 end
 
 function QuestieServer:Initialize()
-    if frame or not QuestieCompat.Is335 then return end
+    if frame then return end
     Integrations:Initialize()
     frame = CreateFrame("Frame")
     frame:RegisterEvent("CHAT_MSG_ADDON")
