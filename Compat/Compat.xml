@@ -15,7 +15,6 @@
     <Script file="Map.lua"/>
     <Script file="HBD.lua"/>
     <Script file="UI.lua"/>
-    <Script file="Tracker.lua"/>
     <Script file="AzerothCoreReputationRates.lua"/>
     <Script file="AzerothCoreQuestAvailabilityConditions.lua"/>
     <Script file="AzerothCoreQuestCorrections.lua"/>

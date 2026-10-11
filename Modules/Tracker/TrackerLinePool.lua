@@ -124,6 +124,9 @@ function TrackerLinePool.Initialize(questFrame)
         line:SetWidth(1)
         line:SetHeight(1)
         line.label = line:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+        line.label.GetUnboundedStringWidth = QuestieCompat.GetUnboundedStringWidth
+        line.label.GetWrappedWidth = line.label.GetWidth
+        line.label.GetNumLines = QuestieCompat.GetNumLines
         line.label:SetJustifyH("LEFT")
         line.label:SetJustifyV("TOP")
         line.label:SetPoint("TOPLEFT", line)

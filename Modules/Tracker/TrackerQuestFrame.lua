@@ -74,31 +74,36 @@ function TrackerQuestFrame.Initialize(baseFrame, headerFrame)
     if not Questie.IsWotlk or QuestieCompat.Is335 then
         local frameName = questFrame.ScrollFrame:GetName()
         questFrame.ScrollBar = _G[frameName .. "ScrollBar"]
-        questFrame.ScrollBar:ClearAllPoints()
-        questFrame.ScrollBar:SetPoint("TOPRIGHT", questFrame.ScrollUpButton, "BOTTOMRIGHT", -1, 4)
-        questFrame.ScrollBar:SetPoint("BOTTOMRIGHT", questFrame.scrolldownbutton, "TOPRIGHT", -1, -2)
+        questFrame.ScrollUpButton = _G[frameName .. "ScrollBarScrollUpButton"]
+        questFrame.ScrollDownButton = _G[frameName .. "ScrollBarScrollDownButton"]
         questFrame.ScrollBar:SetValueStep(25)
         questFrame.ScrollBar.scrollStep = 25
         questFrame.ScrollBar:SetValue(0)
         questFrame.scrollBarHideable = true
+        questFrame.ScrollFrame.scrollBarHideable = true
         questFrame.ScrollBar:Hide()
+        questFrame.ScrollBar.Show = QuestieCompat.NOOP
 
-        questFrame.ScrollUpButton = _G[frameName .. "ScrollBarScrollUpButton"]
         questFrame.ScrollUpButton:ClearAllPoints()
         questFrame.ScrollUpButton:SetPoint("TOPRIGHT", questFrame.ScrollFrame, "TOPRIGHT", -4, -1)
         questFrame.ScrollUpButton:Hide()
 
-        questFrame.ScrollDownButton = _G[frameName .. "ScrollBarScrollDownButton"]
         questFrame.ScrollDownButton:ClearAllPoints()
-        questFrame.ScrollDownButton:SetPoint("BOTTOMRIGHT", questFrame.ScrollFrame, "BOTTOMRIGHT", -4, -7)
+        questFrame.ScrollDownButton:SetPoint("BOTTOMRIGHT", questFrame.ScrollFrame, "BOTTOMRIGHT", -4, 12)
         questFrame.ScrollDownButton:Hide()
+
+        questFrame.ScrollBar:ClearAllPoints()
+        questFrame.ScrollBar:SetPoint("TOPRIGHT", questFrame.ScrollUpButton, "BOTTOMRIGHT", -1, 4)
+        questFrame.ScrollBar:SetPoint("BOTTOMRIGHT", questFrame.ScrollDownButton, "TOPRIGHT", -1, -4)
 
         questFrame.ScrollBg = questFrame.ScrollBar:CreateTexture(nil, "BACKGROUND")
         questFrame.ScrollBg:SetAllPoints(questFrame.ScrollBar)
         if (not QuestieCompat.Is335) then
             questFrame.ScrollBg:SetColorTexture(0, 0, 0, 0.75)
+        else
+            questFrame.ScrollBg:SetTexture(0, 0, 0, 0.35)
         end
-        questFrame.ScrollBg:Hide()
+        questFrame.ScrollBg:Show()
 
         questFrame.ScrollChildFrame = CreateFrame("Frame", _G[frameName .. "ScrollChildFrame"])
     else

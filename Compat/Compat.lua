@@ -684,7 +684,6 @@ function QuestieCompat:ADDON_LOADED(event, addon)
 	QuestieLink.GetQuestHyperLink = rawget(QuestieLink, "GetQuestHyperLink") or QuestieCompat.GetQuestLinkStringById
 
     QuestieCompat.RegisterEventCompatibilityHooks()
-    QuestieCompat.RegisterTrackerCompatibilityHooks()
     hooksecurefunc(QuestieQuest, "ToggleNotes", QuestieCompat.HBDPins.UpdateWorldMap)
 	hooksecurefunc("ReloadUI", QuestieCompat.OnReloadUi)
 	hooksecurefunc("ConsoleExec", QuestieCompat.OnReloadUi)
