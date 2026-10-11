@@ -15,8 +15,6 @@ local QuestieQuest = QuestieLoader:ImportModule("QuestieQuest")
 local ZoneDB = QuestieLoader:ImportModule("ZoneDB")
 ---@class QuestieCoords
 local QuestieCoords = QuestieLoader:ImportModule("QuestieCoords")
----@class Sounds
-local Sounds = QuestieLoader:ImportModule("Sounds")
 ---@class QuestieMenu
 local QuestieMenu = QuestieLoader:ImportModule("QuestieMenu")
 ---@type QuestieCorrections
@@ -554,17 +552,6 @@ function QuestieCompat.PopulateGlobals(self)
     end
 end
 
--- The 3.3.5 game archive uses .wav names for Questie's built-in sound paths.
--- LibSharedMedia addon paths must keep their registered extension.
-function QuestieCompat.GetSelectedSoundFile(typeSelected)
-    local soundFile = QuestieCompat.orig_GetSelectedSoundFile(typeSelected)
-    if soundFile:lower():find("^interface[\\/]addons[\\/]") then
-        return soundFile
-    end
-
-    return soundFile:gsub("%.ogg$", ".wav")
-end
-
 QuestieCompat.isReloadingUi = false
 function QuestieCompat.OnReloadUi(command)
 	command = command or "reloadui"
@@ -814,8 +801,6 @@ function QuestieCompat:ADDON_LOADED(event, addon)
     QuestieCoords.ResetMiniWorldMapText = QuestieCompat.NOOP
     QuestieCompat.orig_QuestieOptions_Initialize = QuestieOptions.Initialize
     QuestieOptions.Initialize = QuestieCompat.QuestieOptions_Initialize
-    QuestieCompat.orig_GetSelectedSoundFile = Sounds.GetSelectedSoundFile
-    Sounds.GetSelectedSoundFile = QuestieCompat.GetSelectedSoundFile
 	QuestieLink.GetQuestLinkString = rawget(QuestieLink, "GetQuestLinkString") or QuestieCompat.GetQuestLinkString
 	QuestieLink.GetQuestLinkStringById = rawget(QuestieLink, "GetQuestLinkStringById") or QuestieCompat.GetQuestLinkStringById
 	QuestieLink.GetQuestInsertString = rawget(QuestieLink, "GetQuestInsertString") or QuestieCompat.GetQuestInsertString

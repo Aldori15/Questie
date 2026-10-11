@@ -1,7 +1,7 @@
 -- Run from the addon root with Lua 5.1 or 5.2+.
 -- Execute the production adapters and gossip readers with native 3.3.5 tuples.
 -- Only the relevant function chunks are loaded for adapters/private readers;
--- unrelated UI bootstrap is excluded, and the questgiver module is loaded whole.
+-- unrelated UI bootstrap is excluded. Questgiver and sound modules are loaded whole.
 local unpackValues = unpack or table.unpack
 local tests = 0
 local function equal(actual, expected, label)
@@ -185,5 +185,68 @@ equal(itemQueries, 1, "only unknown quality needs an item query")
 itemInfo = {n = 0}
 equal(pack(env.QuestieCompat.GetContainerItemInfo(-2, 3)).n, 0, "empty slot returns no item")
 tests = tests + 1
+
+-- Sound selection must work directly from its owning module, before compatibility startup.
+do
+    local soundEnv = setmetatable({}, {__index = _G})
+    local sounds, timers, played = {}, {}, {}
+    local mediaQueries = 0
+    local mediaPaths = {
+        CustomOgg = "Interface\\AddOns\\MySounds\\quest.ogg",
+        CustomMp3 = "Interface/AddOns/MySounds/quest.mp3",
+        CustomWav = "Interface\\AddOns\\MySounds\\quest.wav",
+        MixedCase = "INTERFACE/ADDONS/MySounds/quest.ogg",
+        MixedSlashes = "Interface\\AddOns/MySounds/quest.ogg",
+        GameOgg = "Sound/Interface/MapPing.ogg",
+        GameWav = "Sound/Interface/MapPing.wav",
+        Silent = "",
+    }
+    soundEnv.QuestieLoader = {CreateModule = function(_, name)
+        equal(name, "Sounds", "sound module declaration")
+        return sounds
+    end}
+    soundEnv.LibStub = function(name)
+        equal(name, "LibSharedMedia-3.0", "sound media library")
+        return {Fetch = function(_, kind, selection)
+            equal(kind, "sound", "media lookup category")
+            mediaQueries = mediaQueries + 1
+            return mediaPaths[selection] or "Sound/Interface/iquestcomplete.ogg"
+        end}
+    end
+    soundEnv.QuestieCompat = {C_Timer = {After = function(delay, callback)
+        equal(delay, 0.3, "sound delay preserved")
+        timers[#timers + 1] = callback
+    end}}
+    soundEnv.Questie = {db = {profile = {
+        soundOnObjectiveProgress = true, soundOnObjectiveComplete = true, soundOnQuestComplete = true,
+        soundDelay = 0.3, objectiveProgressSoundChoiceName = "CustomOgg",
+        objectiveCompleteSoundChoiceName = "ObjectiveDefault", questCompleteSoundChoiceName = "GameDefault",
+    }}}
+    soundEnv.PlaySoundFile = function(path, channel) played[#played + 1] = {path, channel} end
+    compile(read("Modules/Sounds.lua"), "@Modules/Sounds.lua", soundEnv)()
+
+    equal(sounds.GetSelectedSoundFile("QuestDefault"), "Sound/Creature/Peon/PeonBuildingComplete1.wav", "built-in quest sound")
+    equal(sounds.GetSelectedSoundFile("ObjectiveDefault"), "Sound/Interface/iquestupdate.wav", "built-in objective sound")
+    equal(mediaQueries, 0, "built-in choices do not fall back to shared media")
+    for _, selection in ipairs({"CustomOgg", "CustomMp3", "CustomWav", "MixedCase", "MixedSlashes", "GameWav", "Silent"}) do
+        equal(sounds.GetSelectedSoundFile(selection), mediaPaths[selection], "registered path preserved: " .. selection)
+    end
+    equal(sounds.GetSelectedSoundFile("GameOgg"), "Sound/Interface/MapPing.wav", "registered game-archive sound")
+    equal(sounds.GetSelectedSoundFile("Unknown"), "Sound/Interface/iquestcomplete.wav", "shared-media fallback sound")
+    tests = tests + 1
+
+    sounds.PlayObjectiveProgress()
+    sounds.PlayObjectiveComplete()
+    equal(#played, 0, "objective playback remains delayed")
+    equal(#timers, 2, "objective callbacks scheduled")
+    for _, callback in ipairs(timers) do callback() end
+    sounds.PlayQuestComplete()
+    equal(#played, 3, "all sound events play")
+    equal(played[1][1], mediaPaths.CustomOgg, "progress event preserves custom extension")
+    equal(played[2][1], "Sound/Interface/iquestupdate.wav", "objective event uses native sound path")
+    equal(played[3][1], "Sound/Interface/iquestcomplete.wav", "quest event uses native sound path")
+    for _, entry in ipairs(played) do equal(entry[2], "Master", "playback channel preserved") end
+    tests = tests + 1
+end
 
 print("Compatibility contract regression tests passed (" .. tests .. " groups)")
