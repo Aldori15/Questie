@@ -482,7 +482,7 @@ local function _CreateItemIcon(itemId)
 
         if itemLink then
             GameTooltip:SetHyperlink(itemLink)
-        elseif QuestieCompat.Is335 then
+        else
             GameTooltip:AddLine("Item Unavailable", 1, 0, 0)
             GameTooltip:AddLine("This item is unsafe.  To view this item without the risk of disconnection, you need to have first seen it in the game world. This is a restriction enforced by Blizzard since Patch 1.10.", nil, nil, nil, 1)
             GameTooltip:AddLine(" ")
@@ -493,8 +493,6 @@ local function _CreateItemIcon(itemId)
                 GameTooltip:SetHyperlink("item:"..itemId..":0:0:0:0:0:0:0")
                 GameTooltip:Show()
             end)
-        else
-            GameTooltip:SetHyperlink("item:"..itemId..":0:0:0:0:0:0:0")
         end
         GameTooltip:Show()
     end)

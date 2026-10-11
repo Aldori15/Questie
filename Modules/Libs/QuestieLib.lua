@@ -15,7 +15,7 @@ local l10n = QuestieLoader:ImportModule("l10n")
 local WrappedText = QuestieLoader:ImportModule("WrappedText")
 
 --- COMPATIBILITY ---
-local addonName = QuestieCompat.Is335 and QuestieCompat.addonName or "Questie"
+local addonName = QuestieCompat.addonName or "Questie"
 
 QuestieLib.AddonPath = "Interface\\Addons\\"..addonName.."\\"
 

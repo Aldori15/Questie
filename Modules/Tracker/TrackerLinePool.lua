@@ -180,7 +180,7 @@ function TrackerLinePool.Initialize(questFrame)
         end
 
         function line:RefreshTimedQuestUpdater()
-            if (Questie.IsWotlk or QuestieCompat.Is335) and self.trackTimedQuest and self.label.activeTimer then
+            if self.trackTimedQuest and self.label.activeTimer then
                 if self:GetScript("OnUpdate") ~= self.OnUpdate then
                     timeElapsed = 0
                     self:SetScript("OnUpdate", self.OnUpdate)
@@ -194,33 +194,29 @@ function TrackerLinePool.Initialize(questFrame)
         end
 
         line.OnUpdate = function(self, elapsed)
-            if Questie.IsWotlk or QuestieCompat.Is335 then
-                timeElapsed = timeElapsed + elapsed
+            timeElapsed = timeElapsed + elapsed
 
-                if timeElapsed > 1 and self.trackTimedQuest and self.label.activeTimer then
-                    local timeRemainingString, timeRemaining = TrackerQuestTimers:GetRemainingTimeByQuestId(self.Quest.Id)
+            if timeElapsed > 1 and self.trackTimedQuest and self.label.activeTimer then
+                local timeRemainingString, timeRemaining = TrackerQuestTimers:GetRemainingTimeByQuestId(self.Quest.Id)
 
-                    if timeRemaining ~= nil then
-                        if timeRemaining > 1 then
-                            TrackerQuestTimers:UpdateTimerFrame(self, self.Quest.Id, timeRemainingString)
-                        else
-                            TrackerQuestTimers:UpdateTimerFrame(self, self.Quest.Id, l10n("Time's up!"))
-                        end
-
-                        timeElapsed = 0
+                if timeRemaining ~= nil then
+                    if timeRemaining > 1 then
+                        TrackerQuestTimers:UpdateTimerFrame(self, self.Quest.Id, timeRemainingString)
                     else
-                        self.label.activeTimer = false
-                        self:RefreshTimedQuestUpdater()
-                        timeElapsed = 0
-
-                        QuestieCombatQueue:Queue(function()
-                            QuestieTracker:Update(true)
-                        end)
-                        return
+                        TrackerQuestTimers:UpdateTimerFrame(self, self.Quest.Id, l10n("Time's up!"))
                     end
+
+                    timeElapsed = 0
+                else
+                    self.label.activeTimer = false
+                    self:RefreshTimedQuestUpdater()
+                    timeElapsed = 0
+
+                    QuestieCombatQueue:Queue(function()
+                        QuestieTracker:Update(true)
+                    end)
+                    return
                 end
-            else
-                return
             end
         end
 
@@ -537,7 +533,7 @@ function TrackerLinePool.Initialize(questFrame)
         local btn = CreateFrame("Button", buttonName, UIParent, "SecureActionButtonTemplate")
         local cooldown = CreateFrame("Cooldown", nil, btn, "CooldownFrameTemplate")
         btn.range = btn:CreateFontString(nil, "OVERLAY", "NumberFontNormalSmallGray")
-        btn.count = btn:CreateFontString(nil, "ARTWORK", QuestieCompat.Is335 and "SystemFont_Outline_Small" or "Game10Font_o1")
+        btn.count = btn:CreateFontString(nil, "ARTWORK", "SystemFont_Outline_Small")
         btn:Hide()
 
         if Questie.db.profile.trackerFadeQuestItemButtons then

@@ -17,13 +17,11 @@ WeaponMasterSkills.data = {
     [11870] = {"Crossbows", "Daggers", "One-Handed Swords", "Polearms", "Two-Handed Swords"},
 }
 
-if Questie.IsTBC or Questie.IsWotlk or QuestieCompat.Is335 then
-    -- Blood Elf Starting Area Weapon Trainers
-    WeaponMasterSkills.data[16621] = {"Bows", "Daggers", "One-Handed Swords", "Polearms", "Thrown", "Two-Handed Swords"}
-    WeaponMasterSkills.data[17005] = {"Bows", "Daggers", "One-Handed Swords", "Polearms", "Thrown", "Two-Handed Swords"}
-    -- Draenei Starting Area Weapon Trainers
-    WeaponMasterSkills.data[16773] = {"Crossbows", "Daggers", "One-Handed Maces", "One-Handed Swords", "Two-Handed Maces", "Two-Handed Swords"}
-end
+-- Blood Elf Starting Area Weapon Trainers
+WeaponMasterSkills.data[16621] = {"Bows", "Daggers", "One-Handed Swords", "Polearms", "Thrown", "Two-Handed Swords"}
+WeaponMasterSkills.data[17005] = {"Bows", "Daggers", "One-Handed Swords", "Polearms", "Thrown", "Two-Handed Swords"}
+-- Draenei Starting Area Weapon Trainers
+WeaponMasterSkills.data[16773] = {"Crossbows", "Daggers", "One-Handed Maces", "One-Handed Swords", "Two-Handed Maces", "Two-Handed Swords"}
 
 function WeaponMasterSkills.AppendSkillsToTitle(title, npcId)
     local skills = WeaponMasterSkills.data[npcId]

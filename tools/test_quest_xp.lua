@@ -12,7 +12,7 @@ local function setup()
     env.UnitName = function() return "Tester" end
     env.UnitLevel = function() return level end
     env.GetInventoryItemID = function(_, slot) return equipped and slot == 1 and 42985 or nil end
-    env.QuestieCompat = {Is335 = true, GetMaxPlayerLevel = function() return 80 end,
+    env.QuestieCompat = {GetMaxPlayerLevel = function() return 80 end,
         GetQuestLogRewardMoney = function() return 0 end}
     env.Questie = {db = {profile = {}}, Print = function() end}
     env.SlashCmdList = {}

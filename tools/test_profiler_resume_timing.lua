@@ -11,7 +11,7 @@ local modules, timers, errors, now = {}, {}, {}, 0
 env.Questie = {Error = function(...) errors[#errors + 1] = {...} end}
 env.debugstack = function() return "test stack" end
 env.CreateFrame = function() return {SetScript = noop} end
-env.QuestieCompat = {Is335 = true, C_Timer = {NewTicker = function(_, callback)
+env.QuestieCompat = {C_Timer = {NewTicker = function(_, callback)
     local timer = {tick = callback, Cancel = function(self) self.cancelled = true end}
     timers[#timers + 1] = timer
     return timer

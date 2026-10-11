@@ -86,40 +86,17 @@ QuestieCorrections.triggerEndTooltipTargets = {}
 ---@param values T
 ---@return T
 local function filterExpansion(values)
-    local isClassic = Questie.IsClassic
-    local isTBC = Questie.IsTBC
-    local isWotlk = Questie.IsWotlk
     for k, v in pairs(values) do
         if v == QuestieCorrections.WOTLK_ONLY then
-            if isWotlk then
-                values[k] = true
-            else
-                values[k] = nil
-            end
+            values[k] = true
         elseif v == QuestieCorrections.TBC_ONLY then
-            if isTBC then
-                values[k] = true
-            else
-                values[k] = nil
-            end
+            values[k] = nil
         elseif v == QuestieCorrections.CLASSIC_ONLY then
-            if isTBC or isWotlk then
-                values[k] = nil
-            else
-                values[k] = true
-            end
+            values[k] = nil
         elseif v == QuestieCorrections.TBC_AND_WOTLK then
-            if isTBC or isWotlk then
-                values[k] = true
-            else
-                values[k] = nil
-            end
+            values[k] = true
         elseif v == QuestieCorrections.CLASSIC_AND_TBC then
-            if isClassic or isTBC then
-                values[k] = true
-            else
-                values[k] = nil
-            end
+            values[k] = nil
         end
     end
     return values
@@ -157,19 +134,15 @@ do
         addOverride(QuestieDB.questDataOverrides, QuestieQuestFixes:LoadFactionFixes())
 
         -- TBC Corrections
-        if (Questie.IsTBC or Questie.IsWotlk) then
-            addOverride(QuestieDB.itemDataOverrides, QuestieTBCItemFixes:LoadFactionFixes())
-            addOverride(QuestieDB.npcDataOverrides, QuestieTBCNpcFixes:LoadFactionFixes())
-            addOverride(QuestieDB.objectDataOverrides, QuestieTBCObjectFixes:LoadFactionFixes())
-            addOverride(QuestieDB.questDataOverrides, QuestieTBCQuestFixes:LoadFactionFixes())
-        end
+        addOverride(QuestieDB.itemDataOverrides, QuestieTBCItemFixes:LoadFactionFixes())
+        addOverride(QuestieDB.npcDataOverrides, QuestieTBCNpcFixes:LoadFactionFixes())
+        addOverride(QuestieDB.objectDataOverrides, QuestieTBCObjectFixes:LoadFactionFixes())
+        addOverride(QuestieDB.questDataOverrides, QuestieTBCQuestFixes:LoadFactionFixes())
 
         -- WOTLK Corrections
-        if (Questie.IsWotlk) then
-            addOverride(QuestieDB.npcDataOverrides, QuestieWotlkNpcFixes:LoadFactionFixes())
-            addOverride(QuestieDB.itemDataOverrides, QuestieWotlkItemFixes:LoadFactionFixes())
-            addOverride(QuestieDB.objectDataOverrides, QuestieWotlkObjectFixes:LoadFactionFixes())
-        end
+        addOverride(QuestieDB.npcDataOverrides, QuestieWotlkNpcFixes:LoadFactionFixes())
+        addOverride(QuestieDB.itemDataOverrides, QuestieWotlkItemFixes:LoadFactionFixes())
+        addOverride(QuestieDB.objectDataOverrides, QuestieWotlkObjectFixes:LoadFactionFixes())
 
         QuestieCorrections.questItemBlacklist = filterExpansion(QuestieItemBlacklist:Load())
         QuestieCorrections.questNPCBlacklist = filterExpansion(QuestieNPCBlacklist:Load())
@@ -186,17 +159,15 @@ do
         end
 
         -- Wotlk Blacklist
-        if (Questie.IsWotlk) then
-            -- We only add blacklist if no blacklist entry for the quest already exists
-            for id, hide in pairs(QuestieQuestBlacklist.LoadAutoBlacklistWotlk()) do
-                -- This has to be a nil-check, because the value could be false
-                if (QuestieCorrections.hiddenQuests[id] == nil) then
-                    QuestieCorrections.hiddenQuests[id] = hide
-                end
+        -- We only add blacklist if no blacklist entry for the quest already exists
+        for id, hide in pairs(QuestieQuestBlacklist.LoadAutoBlacklistWotlk()) do
+            -- This has to be a nil-check, because the value could be false
+            if (QuestieCorrections.hiddenQuests[id] == nil) then
+                QuestieCorrections.hiddenQuests[id] = hide
             end
         end
 
-        if QuestieCompat.Is335 then QuestieCompat.LoadBlacklists() end
+        QuestieCompat.LoadBlacklists()
 
     end
 end
@@ -237,38 +208,31 @@ end
 function QuestieCorrections:Initialize(validationTables)
     -- Older expansion corrections should not create incomplete records on newer clients.
     -- 335 uses the AzerothCore compatibility corrections as its current expansion data.
-    local classicNoNewEntries = Questie.IsTBC or Questie.IsWotlk or QuestieCompat.Is335
-    local tbcNoNewEntries = Questie.IsWotlk or QuestieCompat.Is335
-
     -- Classic Corrections
-    _LoadCorrections("questData", QuestieClassicQuestReputationFixes:Load(), QuestieDB.questKeysReversed, validationTables, nil, classicNoNewEntries)
-    _LoadCorrections("questData", QuestieQuestFixes:Load(), QuestieDB.questKeysReversed, validationTables, nil, classicNoNewEntries)
-    _LoadCorrections("npcData", QuestieNPCFixes:Load(), QuestieDB.npcKeysReversed, validationTables, nil, classicNoNewEntries)
-    _LoadCorrections("itemData", QuestieItemFixes:Load(), QuestieDB.itemKeysReversed, validationTables, nil, classicNoNewEntries)
-    _LoadCorrections("objectData", QuestieObjectFixes:Load(), QuestieDB.objectKeysReversed, validationTables, nil, classicNoNewEntries)
+    _LoadCorrections("questData", QuestieClassicQuestReputationFixes:Load(), QuestieDB.questKeysReversed, validationTables, nil, true)
+    _LoadCorrections("questData", QuestieQuestFixes:Load(), QuestieDB.questKeysReversed, validationTables, nil, true)
+    _LoadCorrections("npcData", QuestieNPCFixes:Load(), QuestieDB.npcKeysReversed, validationTables, nil, true)
+    _LoadCorrections("itemData", QuestieItemFixes:Load(), QuestieDB.itemKeysReversed, validationTables, nil, true)
+    _LoadCorrections("objectData", QuestieObjectFixes:Load(), QuestieDB.objectKeysReversed, validationTables, nil, true)
 
-    if Questie.IsTBC or Questie.IsWotlk then
-        _LoadCorrections("questData", QuestieTBCQuestFixes:Load(), QuestieDB.questKeysReversed, validationTables, nil, tbcNoNewEntries)
-        _LoadCorrections("npcData", QuestieTBCNpcFixes:Load(), QuestieDB.npcKeysReversed, validationTables, nil, tbcNoNewEntries)
-        _LoadCorrections("itemData", QuestieTBCItemFixes:Load(), QuestieDB.itemKeysReversed, validationTables, nil, tbcNoNewEntries)
-        _LoadCorrections("objectData", QuestieTBCObjectFixes:Load(), QuestieDB.objectKeysReversed, validationTables, nil, tbcNoNewEntries)
-    end
+    _LoadCorrections("questData", QuestieTBCQuestFixes:Load(), QuestieDB.questKeysReversed, validationTables, nil, true)
+    _LoadCorrections("npcData", QuestieTBCNpcFixes:Load(), QuestieDB.npcKeysReversed, validationTables, nil, true)
+    _LoadCorrections("itemData", QuestieTBCItemFixes:Load(), QuestieDB.itemKeysReversed, validationTables, nil, true)
+    _LoadCorrections("objectData", QuestieTBCObjectFixes:Load(), QuestieDB.objectKeysReversed, validationTables, nil, true)
 
-    if Questie.IsWotlk then
-        _LoadCorrections("questData", QuestieWotlkQuestFixes:Load(), QuestieDB.questKeysReversed, validationTables)
-        _LoadCorrections("npcData", QuestieWotlkNpcFixes:LoadAutomatics(), QuestieDB.npcKeysReversed, validationTables)
-        _LoadCorrections("npcData", QuestieWotlkNpcFixes:Load(), QuestieDB.npcKeysReversed, validationTables)
-        _LoadCorrections("npcData", QuestieWotlkNpcFixes:LoadReverseLinkFixes(), QuestieDB.npcKeysReversed, validationTables)
-        _LoadCorrections("itemData", QuestieWotlkItemFixes:Load(), QuestieDB.itemKeysReversed, validationTables)
-        _LoadCorrections("itemData", QuestieWotlkItemFixes:LoadReverseStartQuestFixes(), QuestieDB.itemKeysReversed, validationTables)
-        _LoadCorrections("objectData", QuestieWotlkObjectFixes:Load(), QuestieDB.objectKeysReversed, validationTables)
-        _LoadCorrections("objectData", QuestieWotlkObjectFixes:LoadReverseLinkFixes(), QuestieDB.objectKeysReversed, validationTables)
-    end
+    _LoadCorrections("questData", QuestieWotlkQuestFixes:Load(), QuestieDB.questKeysReversed, validationTables)
+    _LoadCorrections("npcData", QuestieWotlkNpcFixes:LoadAutomatics(), QuestieDB.npcKeysReversed, validationTables)
+    _LoadCorrections("npcData", QuestieWotlkNpcFixes:Load(), QuestieDB.npcKeysReversed, validationTables)
+    _LoadCorrections("npcData", QuestieWotlkNpcFixes:LoadReverseLinkFixes(), QuestieDB.npcKeysReversed, validationTables)
+    _LoadCorrections("itemData", QuestieWotlkItemFixes:Load(), QuestieDB.itemKeysReversed, validationTables)
+    _LoadCorrections("itemData", QuestieWotlkItemFixes:LoadReverseStartQuestFixes(), QuestieDB.itemKeysReversed, validationTables)
+    _LoadCorrections("objectData", QuestieWotlkObjectFixes:Load(), QuestieDB.objectKeysReversed, validationTables)
+    _LoadCorrections("objectData", QuestieWotlkObjectFixes:LoadReverseLinkFixes(), QuestieDB.objectKeysReversed, validationTables)
 
     --- Corrections that apply to all versions
     _LoadCorrections("itemData", QuestieItemStartFixes:LoadAutomaticQuestStarts(), QuestieDB.itemKeysReversed, validationTables, true, true)
 
-    if QuestieCompat.Is335 then QuestieCompat.LoadCorrections(_LoadCorrections, validationTables) end
+    QuestieCompat.LoadCorrections(_LoadCorrections, validationTables)
 
     local patchCount = 0
     QuestieDB.requiredItemConditionQuestIds = {}

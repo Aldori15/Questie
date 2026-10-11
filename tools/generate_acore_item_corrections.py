@@ -1494,8 +1494,6 @@ def write_corrections_module(corrections, output_path):
         "---@type QuestieDB",
         'local QuestieDB = QuestieLoader:ImportModule("QuestieDB")',
         "",
-        "if QuestieCompat.WOW_PROJECT_ID < QuestieCompat.WOW_PROJECT_WRATH_CLASSIC then return end",
-        "",
         "-- Generated from tools/generate_acore_item_corrections.py.",
         "-- Regenerate this file when AzerothCore item data changes.",
         "",

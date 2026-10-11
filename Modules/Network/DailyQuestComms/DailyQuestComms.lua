@@ -316,12 +316,8 @@ function DailyQuestComms.Initialize()
     if not commsAudienceFrame then
         commsAudienceFrame = CreateFrame("Frame")
         commsAudienceFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-        if QuestieCompat.Is335 then
-            commsAudienceFrame:RegisterEvent("PARTY_MEMBERS_CHANGED")
-            commsAudienceFrame:RegisterEvent("RAID_ROSTER_UPDATE")
-        else
-            commsAudienceFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
-        end
+        commsAudienceFrame:RegisterEvent("PARTY_MEMBERS_CHANGED")
+        commsAudienceFrame:RegisterEvent("RAID_ROSTER_UPDATE")
         commsAudienceFrame:RegisterEvent("PLAYER_GUILD_UPDATE")
         commsAudienceFrame:SetScript("OnEvent", _RefreshUnavailableQuestSyncRequest)
     end

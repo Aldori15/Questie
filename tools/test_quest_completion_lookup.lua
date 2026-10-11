@@ -7,7 +7,7 @@ local modules, bagItem, bagReads, sourceChecks = {}, nil, 0, 0
 env.UnitFactionGroup = function() return "Alliance" end
 env.Questie = {db = {profile = {}}, Debug = function() end}
 env.LibStub = function() return {} end
-env.QuestieCompat = {Is335 = true, C_QuestLog = {}, C_Timer = {},
+env.QuestieCompat = {C_QuestLog = {}, C_Timer = {},
     GetContainerNumSlots = function(bag) return bag == 0 and 2 or 0 end,
     GetContainerItemInfo = function(_, slot)
         bagReads = bagReads + 1

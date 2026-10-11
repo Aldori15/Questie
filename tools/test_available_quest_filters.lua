@@ -13,7 +13,7 @@ env.Questie = {LOWLEVEL_RANGE = "range", LOWLEVEL_OFFSET = "offset", LOWLEVEL_AL
     db = {profile = {lowLevelStyle = "default", showAQWarEffortQuests = true,
         showScourgeInvasionQuests = true, showSunsReachQuests = true}, global = {}, char = {complete = {}, hidden = {}}},
     Debug = noop, Error = error}
-env.QuestieCompat = {Is335 = true, addonName = "Questie-335", C_QuestLog = {IsOnQuest = function() return false end},
+env.QuestieCompat = {addonName = "Questie-335", C_QuestLog = {IsOnQuest = function() return false end},
     GetQuestResetTime = function() return 3600 end,
     GetServerTime = function() return 1791302400, {year = 2026, month = 10, day = 6, hour = 12, weekday = 3} end,
     GetQuestLogQuestIds = function() return {} end}

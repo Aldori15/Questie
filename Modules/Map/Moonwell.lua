@@ -6,10 +6,6 @@ local l10n = QuestieLoader:ImportModule("l10n")
 ---@type QuestieMap
 local QuestieMap = QuestieLoader:ImportModule("QuestieMap")
 
---- COMPATIBILITY ---
-local WOW_PROJECT_ID = QuestieCompat.WOW_PROJECT_ID
-local WOW_PROJECT_BURNING_CRUSADE_CLASSIC = QuestieCompat.WOW_PROJECT_BURNING_CRUSADE_CLASSIC
-
 ---@type table<number, boolean>
 Moonwell.dataClassic = {
     -- Teldrassil Moonwells
@@ -53,10 +49,8 @@ local function _GetActiveMoonwellData()
         data[objectId] = true
     end
 
-    if WOW_PROJECT_ID >= WOW_PROJECT_BURNING_CRUSADE_CLASSIC then
-        for objectId in pairs(Moonwell.dataTBC) do
-            data[objectId] = true
-        end
+    for objectId in pairs(Moonwell.dataTBC) do
+        data[objectId] = true
     end
 
     return data

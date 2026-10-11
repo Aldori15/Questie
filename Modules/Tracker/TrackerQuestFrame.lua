@@ -60,51 +60,36 @@ function TrackerQuestFrame.Initialize(baseFrame, headerFrame)
     questFrame:SetScript("OnEnter", TrackerFadeTicker.Unfade)
     questFrame:SetScript("OnLeave", TrackerFadeTicker.Fade)
 
-    local scrollFrameTemplete
-    if Questie.IsWotlk and (not QuestieCompat.Is335) then
-        scrollFrameTemplete = "ScrollFrameTemplate"
-    else
-        scrollFrameTemplete = "UIPanelScrollFrameTemplate"
-    end
-
     -- ScrollFrame
-    questFrame.ScrollFrame = CreateFrame("ScrollFrame", "TrackedQuestsScrollFrame", questFrame, scrollFrameTemplete)
+    questFrame.ScrollFrame = CreateFrame("ScrollFrame", "TrackedQuestsScrollFrame", questFrame, "UIPanelScrollFrameTemplate")
     questFrame.ScrollFrame:SetAllPoints(questFrame)
 
-    if not Questie.IsWotlk or QuestieCompat.Is335 then
-        local frameName = questFrame.ScrollFrame:GetName()
-        questFrame.ScrollBar = _G[frameName .. "ScrollBar"]
-        questFrame.ScrollBar:ClearAllPoints()
-        questFrame.ScrollBar:SetPoint("TOPRIGHT", questFrame.ScrollUpButton, "BOTTOMRIGHT", -1, 4)
-        questFrame.ScrollBar:SetPoint("BOTTOMRIGHT", questFrame.scrolldownbutton, "TOPRIGHT", -1, -2)
-        questFrame.ScrollBar:SetValueStep(25)
-        questFrame.ScrollBar.scrollStep = 25
-        questFrame.ScrollBar:SetValue(0)
-        questFrame.scrollBarHideable = true
-        questFrame.ScrollBar:Hide()
+    local frameName = questFrame.ScrollFrame:GetName()
+    questFrame.ScrollBar = _G[frameName .. "ScrollBar"]
+    questFrame.ScrollBar:ClearAllPoints()
+    questFrame.ScrollBar:SetPoint("TOPRIGHT", questFrame.ScrollUpButton, "BOTTOMRIGHT", -1, 4)
+    questFrame.ScrollBar:SetPoint("BOTTOMRIGHT", questFrame.scrolldownbutton, "TOPRIGHT", -1, -2)
+    questFrame.ScrollBar:SetValueStep(25)
+    questFrame.ScrollBar.scrollStep = 25
+    questFrame.ScrollBar:SetValue(0)
+    questFrame.scrollBarHideable = true
+    questFrame.ScrollBar:Hide()
 
-        questFrame.ScrollUpButton = _G[frameName .. "ScrollBarScrollUpButton"]
-        questFrame.ScrollUpButton:ClearAllPoints()
-        questFrame.ScrollUpButton:SetPoint("TOPRIGHT", questFrame.ScrollFrame, "TOPRIGHT", -4, -1)
-        questFrame.ScrollUpButton:Hide()
+    questFrame.ScrollUpButton = _G[frameName .. "ScrollBarScrollUpButton"]
+    questFrame.ScrollUpButton:ClearAllPoints()
+    questFrame.ScrollUpButton:SetPoint("TOPRIGHT", questFrame.ScrollFrame, "TOPRIGHT", -4, -1)
+    questFrame.ScrollUpButton:Hide()
 
-        questFrame.ScrollDownButton = _G[frameName .. "ScrollBarScrollDownButton"]
-        questFrame.ScrollDownButton:ClearAllPoints()
-        questFrame.ScrollDownButton:SetPoint("BOTTOMRIGHT", questFrame.ScrollFrame, "BOTTOMRIGHT", -4, -7)
-        questFrame.ScrollDownButton:Hide()
+    questFrame.ScrollDownButton = _G[frameName .. "ScrollBarScrollDownButton"]
+    questFrame.ScrollDownButton:ClearAllPoints()
+    questFrame.ScrollDownButton:SetPoint("BOTTOMRIGHT", questFrame.ScrollFrame, "BOTTOMRIGHT", -4, -7)
+    questFrame.ScrollDownButton:Hide()
 
-        questFrame.ScrollBg = questFrame.ScrollBar:CreateTexture(nil, "BACKGROUND")
-        questFrame.ScrollBg:SetAllPoints(questFrame.ScrollBar)
-        if (not QuestieCompat.Is335) then
-            questFrame.ScrollBg:SetColorTexture(0, 0, 0, 0.75)
-        end
-        questFrame.ScrollBg:Hide()
+    questFrame.ScrollBg = questFrame.ScrollBar:CreateTexture(nil, "BACKGROUND")
+    questFrame.ScrollBg:SetAllPoints(questFrame.ScrollBar)
+    questFrame.ScrollBg:Hide()
 
-        questFrame.ScrollChildFrame = CreateFrame("Frame", _G[frameName .. "ScrollChildFrame"])
-    else
-        questFrame.ScrollFrame.ScrollBar:Hide()
-        questFrame.ScrollChildFrame = CreateFrame("Frame", "TrackedQuestsScrollChildFrame")
-    end
+    questFrame.ScrollChildFrame = CreateFrame("Frame", _G[frameName .. "ScrollChildFrame"])
 
     questFrame.ScrollChildFrame:SetSize(questFrame.ScrollFrame:GetWidth(), (questFrame.ScrollFrame:GetHeight()))
 

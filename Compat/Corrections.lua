@@ -1,8 +1,6 @@
 ---@type QuestieDB
 local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 
-if QuestieCompat.WOW_PROJECT_ID < QuestieCompat.WOW_PROJECT_WRATH_CLASSIC then return end
-
 QuestieCompat.RegisterCorrection("questData", function()
 	local questKeys = QuestieDB.questKeys
 

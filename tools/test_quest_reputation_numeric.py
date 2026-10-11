@@ -47,7 +47,7 @@ QuestieLoader = {
 ExpandFactionHeader = function() end
 GetNumFactions = function() return 0 end
 UnitLevel = function() return 60 end
-QuestieCompat = {Is335 = true, GetFactionInfo = function() end}
+QuestieCompat = {GetFactionInfo = function() end}
 modules.QuestiePlayer = {HasRequiredRace = function() return false end}
 local base, grey, rates
 modules.QuestieDB = {

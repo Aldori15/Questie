@@ -744,15 +744,13 @@ _GetObjectiveSoundChoices = function()
         ["Bell Toll Alliance"] = "Bell Toll Alliance",
         ["Bell Toll Horde"]    = "Bell Toll Horde",
     }
-    if Questie.IsWotlk or QuestieCompat.Is335 then
-        choices["Explosion"] = "Explosion"
-        choices["Shing!"] = "Shing!"
-        choices["Wham!"] = "Wham!"
-        choices["Simon Chime"] = "Simon Chime"
-        choices["War Drums"] = "War Drums"
-        choices["Humm"] = "Humm"
-        choices["Short Circuit"] = "Short Circuit"
-    end
+    choices["Explosion"] = "Explosion"
+    choices["Shing!"] = "Shing!"
+    choices["Wham!"] = "Wham!"
+    choices["Simon Chime"] = "Simon Chime"
+    choices["War Drums"] = "War Drums"
+    choices["Humm"] = "Humm"
+    choices["Short Circuit"] = "Short Circuit"
 
     if Questie.db.profile.loadCustomSounds then
         for _, sound in pairs(LSM30:List(LSM30.MediaType.SOUND)) do
@@ -774,15 +772,13 @@ _GetObjectiveProgressSoundChoices = function()
         ["Bell Toll Alliance"] = "Bell Toll Alliance",
         ["Bell Toll Horde"]    = "Bell Toll Horde",
     }
-    if Questie.IsWotlk or QuestieCompat.Is335 then
-        choices["Explosion"] = "Explosion"
-        choices["Shing!"] = "Shing!"
-        choices["Wham!"] = "Wham!"
-        choices["Simon Chime"] = "Simon Chime"
-        choices["War Drums"] = "War Drums"
-        choices["Humm"] = "Humm"
-        choices["Short Circuit"] = "Short Circuit"
-    end
+    choices["Explosion"] = "Explosion"
+    choices["Shing!"] = "Shing!"
+    choices["Wham!"] = "Wham!"
+    choices["Simon Chime"] = "Simon Chime"
+    choices["War Drums"] = "War Drums"
+    choices["Humm"] = "Humm"
+    choices["Short Circuit"] = "Short Circuit"
 
     if Questie.db.profile.loadCustomSounds then
         for _, sound in pairs(LSM30:List(LSM30.MediaType.SOUND)) do

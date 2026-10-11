@@ -17,7 +17,7 @@ env.UnitFactionGroup = function() return "Alliance" end
 env.UnitLevel = function() return 80 end
 env.StaticPopupDialogs = {}
 env.Questie = {db = {global = {}, profile = {}, char = {complete = {}, hidden = {}}}, Debug = noop, Error = error}
-env.QuestieCompat = {Is335 = true, C_QuestLog = {IsOnQuest = function(id) return state.onQuest == id end},
+env.QuestieCompat = {C_QuestLog = {IsOnQuest = function(id) return state.onQuest == id end},
     AzerothCoreQuestAvailabilityConditions = {[23] = {{{4, 210, 0, 0, 0}}}}}
 env.IsQuestCompletedOnServer = function(id) return state.rewarded[id] == true end
 env.QuestieCompat.IsQuestCompletedOnServer = env.IsQuestCompletedOnServer
