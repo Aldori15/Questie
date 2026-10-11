@@ -19,6 +19,22 @@ local AceGUI = LibStub("AceGUI-3.0")
 ---@type AceConfigDialog-3.0
 local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 
+StaticPopupDialogs["QUESTIE_RELOAD"] = {
+    text = "Changes you have made require a UI reload",
+    button1 = 'Reload UI',
+    button2 = CANCEL,
+    OnAccept = function()
+        ReloadUI()
+    end,
+    OnShow = function(self)
+        self:SetFrameStrata("TOOLTIP")
+    end,
+    timeout = 0,
+    whileDead = true,
+    hideOnEscape = true,
+    preferredIndex = 3
+}
+
 -- Forward declaration
 local _CreateOptionsTable
 local journeyButton

@@ -53,11 +53,7 @@ function QuestieOptions.tabs.nameplate:Initialize()
                         get = function(info) return QuestieOptions:GetProfileValue(info); end,
                         set = function (info, value)
                             QuestieOptions:SetProfileValue(info, value)
-
-                            -- on false, hide current nameplates
-                            if not value then
-                                QuestieNameplate:HideCurrentFrames();
-                            end
+                            StaticPopup_Show("QUESTIE_RELOAD")
                         end,
                     },
                     nameplateTextDescSpacer = {

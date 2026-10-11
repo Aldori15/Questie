@@ -60,6 +60,7 @@ jobs:
         run: |
           lua5.1 tools/test_compat_contracts.lua
           lua5.1 tools/test_module_loader.lua
+          lua5.1 tools/test_options_335.lua
 
       - name: Run Lua regression suites
         run: |

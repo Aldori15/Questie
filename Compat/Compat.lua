@@ -7,8 +7,6 @@ QuestieCompat.Is335 = (select(4, GetBuildInfo()) == 30300)
 local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
 ---@type QuestieDB
 local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
----@type QuestieOptions
-local QuestieOptions = QuestieLoader:ImportModule("QuestieOptions")
 ---@type QuestieQuest
 local QuestieQuest = QuestieLoader:ImportModule("QuestieQuest")
 ---@type ZoneDB
@@ -590,116 +588,6 @@ local townsfolk_texturemap = {
     ["Portal Trainer"] = "Interface\\Addons\\"..QuestieCompat.addonName.."\\Compat\\Icons\\Vehicle-AllianceMagePortal.blp",
 }
 
-StaticPopupDialogs["QUESTIE_RELOAD"] = {
-    text = "Changes you have made require a UI reload",
-    button1 = 'Reload UI',
-    button2 = CANCEL,
-    OnAccept = function()
-        ReloadUI()
-    end,
-    OnShow = function(self)
-        self:SetFrameStrata("TOOLTIP")
-    end,
-    timeout = 0,
-    whileDead = true,
-    hideOnEscape = true,
-    preferredIndex = 3
-}
-
-function QuestieCompat.QuestieOptions_Initialize()
-    QuestieCompat.orig_QuestieOptions_Initialize()
-
-    local optionsTable = LibStub("AceConfigRegistry-3.0"):GetOptionsTable("Questie", "dialog", "MyLib-1.0")
-
-    -- revert instant quest text to old cvar
-    optionsTable.args.general_tab.args.interface_options_group.args.instantQuest.get = function()
-        return GetCVar("questFadingDisable") == '1' and true or false
-    end
-    optionsTable.args.general_tab.args.interface_options_group.args.instantQuest.set = function(info, value)
-        QUEST_FADING_DISABLE = tostring(value and 1 or 0)
-        SetCVar("questFadingDisable", tostring(value and 1 or 0))
-    end
-
-    optionsTable.args.nameplate_tab.args.nameplate_options_group.args.nameplateEnabled.set = function (info, value)
-        QuestieOptions:SetProfileValue(info, value)
-        StaticPopup_Show("QUESTIE_RELOAD")
-    end
-
-    optionsTable.args.icons_tab.args.map_settings_group.args.hideUnexploredMapIconsToggle.set = function(info, value)
-        Questie.db.profile.hideUnexploredMapIcons = value
-        QuestieCompat.ClearExplorationCache()
-        QuestieQuest:RefreshQuestIconVisibility()
-    end
-
-    -- 3.3.5 section
-    optionsTable.args.advanced_tab.args.compat_header = {
-        type = "header",
-        order = 6,
-        name = "3.3.5 Compatibility Settings",
-    }
-	
-	optionsTable.args.advanced_tab.args.initDelay = {
-        type = "range",
-        order = 6.1,
-        name = "Init rate delay",
-        desc = "Init rate delay",
-        width = "full",
-        min = 0.1,
-        max = 1,
-        step = 0.01,
-        hidden = function() return not Questie.db.profile.debugEnabled; end,
-        get = function(info) return QuestieOptions:GetProfileValue(info)*10; end,
-        set = function (info, value)
-            QuestieOptions:SetProfileValue(info, value/10)
-        end,
-    }
-
-    optionsTable.args.advanced_tab.args.useQuestieLinks = {
-        type = "toggle",
-        order = 6.3,
-        name = "Use Questie Links",
-        desc = "Use Questie Links",
-        width = "full",
-        get = function (info) return QuestieOptions:GetProfileValue(info); end,
-        set = function (info, value)
-            QuestieOptions:SetProfileValue(info, value)
-            StaticPopup_Show("QUESTIE_RELOAD")
-        end,
-    }
-
-    optionsTable.args.advanced_tab.args.resetDailyQuests = {
-        type = "toggle",
-        order = 6.4,
-        name = "Reset Daily Quests",
-        desc = "Reset Daily Quests",
-        width = 1.65,
-        get = function (info) return QuestieOptions:GetProfileValue(info); end,
-        set = function (info, value)
-            QuestieOptions:SetProfileValue(info, value)
-            Questie.db.profile.dailyResetTime = nil
-            StaticPopup_Show("QUESTIE_RELOAD")
-        end,
-    }
-
-    optionsTable.args.advanced_tab.args.weeklyResetDay = {
-        type = "select",
-        order = 6.5,
-        values = QuestieCompat.CALENDAR_WEEKDAY_NAMES,
-        style = 'dropdown',
-        disabled = function() return not Questie.db.profile.resetDailyQuests end,
-        name = "Weekly Reset Day",
-        desc = "Weekly Reset Day",
-        width = 1.6,
-        get = function (info) return QuestieOptions:GetProfileValue(info) end,
-        set = function (info, value)
-            QuestieOptions:SetProfileValue(info, value)
-            Questie.db.profile.weeklyResetTime = nil
-            Questie.db.char.weeklyResetTime = nil
-            StaticPopup_Show("QUESTIE_RELOAD")
-        end,
-    }
-end
-
 local correctionsRegistry = {}
 
 function QuestieCompat.RegisterCorrection(dbName, corrections)
@@ -799,8 +687,6 @@ function QuestieCompat:ADDON_LOADED(event, addon)
     QuestieLib.TextWrap = QuestieCompat.TextWrap
     QuestieCoords.GetPlayerMapPosition = QuestieCompat.GetPlayerMapPosition
     QuestieCoords.ResetMiniWorldMapText = QuestieCompat.NOOP
-    QuestieCompat.orig_QuestieOptions_Initialize = QuestieOptions.Initialize
-    QuestieOptions.Initialize = QuestieCompat.QuestieOptions_Initialize
 	QuestieLink.GetQuestLinkString = rawget(QuestieLink, "GetQuestLinkString") or QuestieCompat.GetQuestLinkString
 	QuestieLink.GetQuestLinkStringById = rawget(QuestieLink, "GetQuestLinkStringById") or QuestieCompat.GetQuestLinkStringById
 	QuestieLink.GetQuestInsertString = rawget(QuestieLink, "GetQuestInsertString") or QuestieCompat.GetQuestInsertString
