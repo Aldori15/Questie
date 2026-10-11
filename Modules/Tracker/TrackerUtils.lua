@@ -1,5 +1,5 @@
 ---@class TrackerUtils
-local TrackerUtils = QuestieLoader:ImportModule("TrackerUtils")
+local TrackerUtils = QuestieLoader:CreateModule("TrackerUtils")
 -------------------------
 --Import QuestieTracker modules.
 -------------------------

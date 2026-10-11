@@ -803,6 +803,7 @@ function QuestieCompat:ADDON_LOADED(event, addon)
     for _, moduleName in pairs(DISABLED_MODULES) do
         local module = QuestieLoader:ImportModule(moduleName)
         setmetatable(wipe(module), QuestieCompat.NOOP_MT)
+        QuestieLoader:MarkModuleDisabled(moduleName)
     end
 
 	QuestieLoader.PopulateGlobals = QuestieCompat.PopulateGlobals

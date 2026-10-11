@@ -538,6 +538,13 @@ function _QuestieInit.StartStageCoroutine()
 end
 
 function _QuestieInit.OnInitializationComplete()
+    if Questie.db.profile.debugEnabled then
+        local unresolvedImports = QuestieLoader:GetUnresolvedModuleImports()
+        if #unresolvedImports > 0 then
+            Questie.Debug(Questie.DEBUG_CRITICAL, "[QuestieLoader] Modules imported without declarations:", table.concat(unresolvedImports, ", "))
+        end
+    end
+
     -- Compat.HBD installs its minimap OnUpdate script only after pins exist. A startup session begins before
     -- that, so refresh once after initialization to include the late frame script and any late module methods.
     if QuestieProfiler.active then
