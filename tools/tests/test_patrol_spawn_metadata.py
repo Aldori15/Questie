@@ -2,6 +2,7 @@
 import unittest
 from unittest.mock import patch
 
+import _test_paths
 import generate_acore_npc_corrections as npc
 
 

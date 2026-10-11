@@ -1,11 +1,12 @@
 """Compare production reputation previews with independent float32 core arithmetic."""
 import math
 import os
-from pathlib import Path
 import random
 import struct
 import subprocess
 import unittest
+
+from _test_paths import ADDON_ROOT
 
 
 def float32(value):
@@ -71,7 +72,7 @@ for index, case in ipairs(cases) do
 end
 '''
         subprocess.run([os.environ["QUESTIE_TEST_LUA"], "-"], input=script, encoding="utf-8", check=True,
-                       cwd=Path(__file__).resolve().parents[1])
+                       cwd=ADDON_ROOT)
 
 
 if __name__ == "__main__":

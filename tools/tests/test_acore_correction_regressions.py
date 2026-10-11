@@ -5,6 +5,8 @@ from collections import defaultdict
 from unittest.mock import patch
 from pathlib import Path
 
+from _test_paths import ADDON_ROOT
+
 import audit_acore_trigger_end_tooltip_targets as trigger_end_audit
 import generate_acore_item_corrections as item_generator
 import generate_acore_npc_corrections as npc_generator
@@ -27,7 +29,7 @@ const WintergraspObjectPositionData WGOutsideNPC[WG_MAX_OUTSIDE_NPC] = {
 '''
 
     def scripted_spawns(self, header=None):
-        addon_root = Path(__file__).resolve().parents[1]
+        addon_root = ADDON_ROOT
         directory = Path('test-acore-source')
         header_path = directory / 'src/server/game/Battlefield/Zones/BattlefieldWG.h'
         read_text = Path.read_text
@@ -77,7 +79,7 @@ const WintergraspObjectPositionData WGOutsideNPC[WG_MAX_OUTSIDE_NPC] = {
             {1: {'spawns': {4197: [[1, 2]]}}}, ['spawns']))
 
     def test_shared_map_parser_loads_all_wdm_geometry(self):
-        addon_root = Path(__file__).resolve().parents[1]
+        addon_root = ADDON_ROOT
         zone_maps = npc_generator.parse_zone_maps(addon_root)
 
         self.assertEqual(1176, zone_maps["instance_to_zone"][209])
@@ -122,7 +124,7 @@ const WintergraspObjectPositionData WGOutsideNPC[WG_MAX_OUTSIDE_NPC] = {
                 self.assertEqual([10, 20], npc_generator.add_acore_spawn_visibility([10, 20], row, {}))
 
     def test_server_contracts_match_client_and_generators(self):
-        addon_root = Path(__file__).resolve().parents[1]
+        addon_root = ADDON_ROOT
         bridge_source = os.environ.get("QUESTIE_BRIDGE_SOURCE")
         if bridge_source:
             header = Path(bridge_source) / "src/QuestieBridgePhases.h"
@@ -168,7 +170,7 @@ const WintergraspObjectPositionData WGOutsideNPC[WG_MAX_OUTSIDE_NPC] = {
                                 generator.normalize_coordinate_table({210: [[10, 20, 0, 1, 571, 1, 4477]]}))
 
     def test_resolves_zulfarrak_spawn_to_wdm_instance_map(self):
-        addon_root = Path(__file__).resolve().parents[1]
+        addon_root = ADDON_ROOT
         zone_maps = npc_generator.parse_zone_maps(addon_root)
         row = {
             "guid": 0,
@@ -182,7 +184,7 @@ const WintergraspObjectPositionData WGOutsideNPC[WG_MAX_OUTSIDE_NPC] = {
         self.assertEqual((1176, [23.55, 18.33]), npc_generator.resolve_coordinate_zone(row, zone_maps))
 
     def test_wdm_floor_zone_ids_resolve_to_exact_ui_maps(self):
-        addon_root = Path(__file__).resolve().parents[1]
+        addon_root = ADDON_ROOT
         zone_maps = npc_generator.parse_zone_maps(addon_root)
 
         self.assertEqual(11292, zone_maps["ui_to_zone"][292])
@@ -201,7 +203,7 @@ const WintergraspObjectPositionData WGOutsideNPC[WG_MAX_OUTSIDE_NPC] = {
         self.assertEqual("zoneIDs.WDM_BLACKROCK_SPIRE_FLOOR_7", npc_generator.format_zone_ref(22003, zone_names))
 
     def test_world_spawn_does_not_enter_wdm_instance_floor_fallback(self):
-        addon_root = Path(__file__).resolve().parents[1]
+        addon_root = ADDON_ROOT
         zone_maps = npc_generator.parse_zone_maps(addon_root)
         row = {
             "map": 0,
@@ -215,7 +217,7 @@ const WintergraspObjectPositionData WGOutsideNPC[WG_MAX_OUTSIDE_NPC] = {
         self.assertEqual(12, npc_generator.resolve_coordinate_zone(row, zone_maps)[0])
 
     def test_resolves_deadmines_spawn_below_cutoff_to_floor_two(self):
-        addon_root = Path(__file__).resolve().parents[1]
+        addon_root = ADDON_ROOT
         zone_maps = npc_generator.parse_zone_maps(addon_root)
         zone_maps["floor_threshold_by_ui"].update({291: 27.0, 292: None})
         row = {
@@ -229,7 +231,7 @@ const WintergraspObjectPositionData WGOutsideNPC[WG_MAX_OUTSIDE_NPC] = {
         self.assertEqual((11292, [10.43, 61.64]), npc_generator.resolve_coordinate_zone(row, zone_maps))
 
     def test_resolves_overlapping_boss_floors(self):
-        addon_root = Path(__file__).resolve().parents[1]
+        addon_root = ADDON_ROOT
         zone_maps = npc_generator.parse_zone_maps(addon_root)
         zone_maps["floor_threshold_by_ui"].update({
             250: None,
@@ -255,7 +257,7 @@ const WintergraspObjectPositionData WGOutsideNPC[WG_MAX_OUTSIDE_NPC] = {
                 self.assertEqual(expected_zone_id, npc_generator.resolve_coordinate_zone(row, zone_maps)[0])
 
     def test_resolves_missing_classic_boss_icons(self):
-        addon_root = Path(__file__).resolve().parents[1]
+        addon_root = ADDON_ROOT
         zone_maps = npc_generator.parse_zone_maps(addon_root)
 
         cases = (
@@ -269,7 +271,7 @@ const WintergraspObjectPositionData WGOutsideNPC[WG_MAX_OUTSIDE_NPC] = {
                 self.assertEqual(expected_zone_id, npc_generator.resolve_coordinate_zone(row, zone_maps)[0])
 
     def test_generated_corrections_use_wdm_floor_constants(self):
-        addon_root = Path(__file__).resolve().parents[1]
+        addon_root = ADDON_ROOT
         zone_maps = npc_generator.parse_zone_maps(addon_root)
         zone_names = npc_generator.parse_zone_id_names(addon_root, zone_maps)
 
@@ -283,7 +285,7 @@ const WintergraspObjectPositionData WGOutsideNPC[WG_MAX_OUTSIDE_NPC] = {
         )
 
     def test_reported_boss_floor_coordinates_round_trip(self):
-        addon_root = Path(__file__).resolve().parents[1]
+        addon_root = ADDON_ROOT
         zone_maps = npc_generator.parse_zone_maps(addon_root)
         cases = (
             (22003, 11003, [33.44, 45.32]),
@@ -337,7 +339,7 @@ const WintergraspObjectPositionData WGOutsideNPC[WG_MAX_OUTSIDE_NPC] = {
         self.assertEqual({1: {"spawns": {9999: [[50.0, 50.0]]}}}, corrections)
 
     def test_wdm_validator_loads_world_and_instance_tables(self):
-        ui_map_data = Path(__file__).resolve().parents[1] / "Compat/UiMapData.lua"
+        ui_map_data = ADDON_ROOT / "Compat/UiMapData.lua"
 
         self.assertIn(98, wdm_validator.load_wdm_rows(ui_map_data, "wdmWorldMapData"))
         self.assertEqual(
@@ -445,7 +447,7 @@ const WintergraspObjectPositionData WGOutsideNPC[WG_MAX_OUTSIDE_NPC] = {
         self.assertEqual("preserveQuestieEventObjectiveSlot", result[3][0]["reason"])
 
     def test_tbc_trigger_end_corrections_are_loaded_as_event_slots(self):
-        addon_root = Path(__file__).resolve().parents[1]
+        addon_root = ADDON_ROOT
         constants = quest_validator.load_constants(addon_root)
         corrections = quest_validator.load_questie_correction_file(
             addon_root / "Database/Corrections/tbcQuestFixes.lua",
@@ -457,7 +459,7 @@ const WintergraspObjectPositionData WGOutsideNPC[WG_MAX_OUTSIDE_NPC] = {
         self.assertTrue(corrections[10887]["_hasTriggerEnd"])
 
     def test_direct_trigger_end_tooltip_targets_are_complete_and_classified(self):
-        addon_root = Path(__file__).resolve().parents[1]
+        addon_root = ADDON_ROOT
         trigger_ends = trigger_end_audit.load_trigger_ends(addon_root)
         targets = trigger_end_audit.load_configured_targets(addon_root)
 

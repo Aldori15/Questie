@@ -5,6 +5,7 @@ import subprocess
 import unittest
 from unittest.mock import Mock, patch
 
+import _test_paths
 import check_lua_syntax as syntax
 
 

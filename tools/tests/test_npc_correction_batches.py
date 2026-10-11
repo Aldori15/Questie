@@ -4,6 +4,8 @@ import re
 import subprocess
 import unittest
 
+import _test_paths
+
 import generate_acore_npc_corrections as npc
 
 

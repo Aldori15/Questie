@@ -58,25 +58,25 @@ jobs:
 
       - name: Check Lua regression test syntax
         run: |
-          for test in tools/test_*.lua; do
+          for test in tools/tests/test_*.lua; do
             luac5.2 -p "$test"
           done
 
       - name: Run compatibility and loader contracts on Lua 5.1
         run: |
-          lua5.1 tools/test_compat_contracts.lua
-          lua5.1 tools/test_compat_timers.lua
-          lua5.1 tools/test_module_loader.lua
-          lua5.1 tools/test_options_335.lua
-          lua5.1 tools/test_tracker_initialization.lua
-          lua5.1 tools/test_stream_storage.lua
+          lua5.1 tools/tests/test_compat_contracts.lua
+          lua5.1 tools/tests/test_compat_timers.lua
+          lua5.1 tools/tests/test_module_loader.lua
+          lua5.1 tools/tests/test_options_335.lua
+          lua5.1 tools/tests/test_tracker_initialization.lua
+          lua5.1 tools/tests/test_stream_storage.lua
 
       - name: Run Lua regression suites
         run: |
-          for test in tools/test_*.lua; do
+          for test in tools/tests/test_*.lua; do
             echo "Running $test"
             lua5.2 "$test"
           done
 
       - name: Run Python regression suites
-        run: python -B -m unittest discover -s tools -p 'test_*.py' -v
+        run: python -B -m unittest discover -s tools/tests -p 'test_*.py' -v
