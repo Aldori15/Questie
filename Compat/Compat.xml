@@ -11,6 +11,7 @@
     <Script file="QuestReward.lua"/>
     <Script file="QuestLog.lua"/>
     <Script file="QuestResets.lua"/>
+    <Script file="QuestRewardCompletion.lua"/>
     <Script file="Nameplate.lua"/>
     <Script file="Events.lua"/>
     <Script file="UiMapData.lua"/>

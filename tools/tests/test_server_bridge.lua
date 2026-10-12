@@ -1594,6 +1594,7 @@ local function resetSetup(state, character)
     env.QuestieLoader.StampLoadBoundary = function() end
     assert(loadfile("Compat/QuestLog.lua", "t", env))()
     assert(loadfile("Compat/QuestResets.lua", "t", env))()
+    assert(loadfile("Compat/QuestRewardCompletion.lua", "t", env))()
     return {
         char = env.Questie.db.char, compat = compat,
         draws = function() return draws end,

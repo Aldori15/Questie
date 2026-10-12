@@ -62,6 +62,7 @@ local function setup(options)
     end
     loadModule("Compat/QuestLog.lua")
     loadModule("Compat/QuestResets.lua")
+    loadModule("Compat/QuestRewardCompletion.lua")
     return {env = env, compat = compat, char = char, profile = profile, timers = timers, rewarded = rewarded,
         now = function() return now end, warnings = function() return warnings end, draws = function() return draws end,
         native = function(value) native = value end,

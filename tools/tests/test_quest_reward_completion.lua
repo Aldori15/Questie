@@ -1,8 +1,19 @@
--- Run from the addon directory with Lua 5.2+. Uses the production 3.3.5
+-- Run from the addon directory with Lua 5.1 or 5.2+. Uses the production 3.3.5
 -- reward hooks and quest event handler; the client APIs and UI are simulated.
 local tests = 0
 local function equal(actual, expected, label)
     assert(actual == expected, label .. ": expected " .. tostring(expected) .. ", got " .. tostring(actual))
+end
+
+local function loadModule(path, env)
+    local chunk
+    if setfenv then
+        chunk = assert(loadfile(path))
+        setfenv(chunk, env)
+    else
+        chunk = assert(loadfile(path, "t", env))
+    end
+    chunk()
 end
 
 local function setup(ids, completed)
@@ -12,7 +23,9 @@ local function setup(ids, completed)
     for _, id in ipairs(ids or {}) do log[#log + 1] = id end
     for _, id in ipairs(completed or {}) do rewarded[id] = true end
     local function noop() end
-    env.bit, env.time, env.date = bit32, os.time, os.date
+    -- QuestLog declares a money-helper alias, but reward handling never uses it.
+    env.bit = bit32 or {band = function() error("unexpected money helper in reward test") end}
+    env.time, env.date = os.time, os.date
     env.ERR_QUEST_COMPLETE_S, env.DAILY_QUESTS_REMAINING = "%s completed.", "%d dailies remaining"
     env.Questie = {started = true, db = {profile = {resetDailyQuests = true},
         char = {complete = {}, daily = {}, weekly = {}, monthly = {}}}, Debug = noop, SendMessage = noop}
@@ -75,15 +88,16 @@ local function setup(ids, completed)
     modules.QuestieTracker = {RemoveQuest = function(_, id) tracker[id] = nil end, Update = noop}
     modules.QuestieCombatQueue = {Queue = function(_, callback) callback() end}
     modules.CommsVisibility = {ScheduleSnapshot = noop}
-    assert(loadfile("Compat/QuestLog.lua", "t", env))()
-    assert(loadfile("Compat/QuestResets.lua", "t", env))()
+    loadModule("Compat/QuestLog.lua", env)
+    loadModule("Compat/QuestResets.lua", env)
+    loadModule("Compat/QuestRewardCompletion.lua", env)
     local compat = env.QuestieCompat
     -- Timing is covered by the bridge suite. Keep these tests focused on rewards.
     compat.ResetDailyQuests, compat.ResetWeeklyQuests, compat.ResetMonthlyQuests = noop, noop, noop
     compat.CalculateNextResetTime = noop
     compat.Merge = function(target, source) for id in pairs(source) do target[id] = true end end
-    assert(loadfile("Modules/Quest/QuestEventHandler.lua", "t", env))()
-    assert(loadfile("Modules/Quest/Lifecycle/QuestLifecycle.lua", "t", env))()
+    loadModule("Modules/Quest/QuestEventHandler.lua", env)
+    loadModule("Modules/Quest/Lifecycle/QuestLifecycle.lua", env)
     compat.QuestEventHandler_RegisterEvents()
     local function remove(id)
         for index, active in ipairs(log) do
@@ -195,6 +209,48 @@ do
     s.claim(); s.rewarded[9886] = true; s.query() -- unrelated response before our delayed request
     s.advance(0.5); s.query()
     equal(#s.history, 0, "unrelated query updates the immediate-quest baseline")
+    tests = tests + 1
+end
+
+-- Saved repeatable completion flags must not replace the raw server baseline.
+do
+    local s = setup()
+    s.env.Questie.db.char.complete[9886] = true
+    s.claim(); s.reward(9886); s.advance(0.5); s.query()
+    equal(#s.history, 1, "saved completion does not hide a new immediate reward")
+    equal(s.history[1], 9886, "raw server baseline identifies immediate reward")
+    tests = tests + 1
+end
+
+-- Game-object enders and missing NPC context retain their existing resolution paths.
+do
+    local s = setup({9884, 9885})
+    s.env.QuestieCompat.UnitGUID = function() return "GameObject-0-0-0-0-12345-00000001" end
+    s.env.QuestieLoader:ImportModule("QuestieDB").QueryObjectSingle = function(id, field)
+        equal(id, 12345, "game-object ender ID")
+        equal(field, "questEnds", "game-object ender lookup")
+        return {9884, 9885}
+    end
+    s.claim(); s.reward(9885); s.advance(0.5); s.query()
+    equal(#s.history, 1, "game-object reward recorded once")
+    equal(s.history[1], 9885, "game-object rewarded ID")
+    equal(s.tracker[9884], true, "other game-object variant retained")
+
+    s = setup({9884})
+    s.env.QuestieCompat.UnitGUID = function() return nil end
+    s.claim(); s.reward(9884); s.chat(); s.advance(0.5); s.query()
+    equal(#s.history, 1, "unique log fallback recorded once without NPC context")
+    equal(s.history[1], 9884, "unique log fallback ID")
+    tests = tests + 1
+end
+
+-- Empty reward dialogs must not create completion queries or history.
+do
+    local s = setup({9884})
+    s.env.GetTitleText = function() return "" end
+    s.claim(); s.advance(1); s.query()
+    equal(s.queries(), 0, "empty reward title ignored")
+    equal(#s.history, 0, "empty reward title preserves history")
     tests = tests + 1
 end
 
