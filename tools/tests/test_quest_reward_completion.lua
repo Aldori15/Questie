@@ -35,6 +35,7 @@ local function setup(ids, completed)
         for id in pairs(rewarded) do target[id] = true end
     end
     env.QuestieLoader = {
+        StampLoadBoundary = noop,
         CreateModule = function(_, name) modules[name] = modules[name] or {private = {}}; return modules[name] end,
         ImportModule = function(_, name) modules[name] = modules[name] or {private = {}}; return modules[name] end,
     }
@@ -75,6 +76,7 @@ local function setup(ids, completed)
     modules.QuestieCombatQueue = {Queue = function(_, callback) callback() end}
     modules.CommsVisibility = {ScheduleSnapshot = noop}
     assert(loadfile("Compat/QuestLog.lua", "t", env))()
+    assert(loadfile("Compat/QuestResets.lua", "t", env))()
     local compat = env.QuestieCompat
     -- Timing is covered by the bridge suite. Keep these tests focused on rewards.
     compat.ResetDailyQuests, compat.ResetWeeklyQuests, compat.ResetMonthlyQuests = noop, noop, noop

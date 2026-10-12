@@ -1591,7 +1591,9 @@ local function resetSetup(state, character)
         timers[#timers + 1] = timer
         return timer
     end}
+    env.QuestieLoader.StampLoadBoundary = function() end
     assert(loadfile("Compat/QuestLog.lua", "t", env))()
+    assert(loadfile("Compat/QuestResets.lua", "t", env))()
     return {
         char = env.Questie.db.char, compat = compat,
         draws = function() return draws end,
