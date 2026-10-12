@@ -444,6 +444,7 @@ function QuestieCompat:ADDON_LOADED(event, addon)
         }
     })
 
+    QuestieCompat.InitializeMapExplorationCompatibility()
     QuestieCompat.InitializeMapCompatibility()
     QuestieCompat.InitializeQuestLogCompatibility()
 

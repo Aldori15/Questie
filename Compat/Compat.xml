@@ -15,6 +15,7 @@
     <Script file="UiMapData.lua"/>
     <Script file="ExplorationMasks.lua"/>
     <Script file="Map.lua"/>
+    <Script file="MapExploration.lua"/>
     <Script file="TomTom.lua"/>
     <Script file="HBD.lua"/>
     <Script file="UI.lua"/>
