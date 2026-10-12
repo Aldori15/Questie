@@ -17,6 +17,8 @@ local TrackerFadeTicker = QuestieLoader:ImportModule("TrackerFadeTicker")
 local TrackerQuestTimers = QuestieLoader:ImportModule("TrackerQuestTimers")
 ---@type TrackerNearestQuestItem
 local TrackerNearestQuestItem = QuestieLoader:ImportModule("TrackerNearestQuestItem")
+---@type TrackerQuestOrder
+local TrackerQuestOrder = QuestieLoader:ImportModule("TrackerQuestOrder")
 ---@type TrackerUtils
 local TrackerUtils = QuestieLoader:ImportModule("TrackerUtils")
 ---@type AutoRoute
@@ -811,7 +813,7 @@ function QuestieTracker:Update(force)
         return
     end
 
-    if TrackerBaseFrame.isSizing == true or TrackerBaseFrame.isMoving == true or TrackerUtils.FilterProximityTimer == true then
+    if TrackerBaseFrame.isSizing == true or TrackerBaseFrame.isMoving == true or TrackerQuestOrder.FilterProximityTimer == true then
         Questie.Debug(Questie.DEBUG_SPAM, "[QuestieTracker:Update]")
     else
         Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieTracker:Update]")
@@ -855,7 +857,7 @@ function QuestieTracker:Update(force)
 
     local line
 
-    local sortedQuestIds, questDetails = TrackerUtils:GetSortedQuestIds()
+    local sortedQuestIds, questDetails = TrackerQuestOrder:GetSortedQuestIds()
 
     local firstQuestInZone = false
     local zoneCheck
@@ -1993,7 +1995,7 @@ function QuestieTracker:UpdateFormatting()
         return
     end
 
-    if TrackerBaseFrame.isSizing == true or TrackerBaseFrame.isMoving == true or TrackerUtils.FilterProximityTimer == true then
+    if TrackerBaseFrame.isSizing == true or TrackerBaseFrame.isMoving == true or TrackerQuestOrder.FilterProximityTimer == true then
         Questie.Debug(Questie.DEBUG_SPAM, "[QuestieTracker:UpdateFormatting]")
     else
         Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieTracker:UpdateFormatting]")
@@ -2001,7 +2003,7 @@ function QuestieTracker:UpdateFormatting()
 
     -- The Proximity Timer only pulses every 5 secs while running.
     -- Flip back to false so we're not hiding other valid updates.
-    TrackerUtils.FilterProximityTimer = nil
+    TrackerQuestOrder.FilterProximityTimer = nil
 
     -- Hide unused lines
     TrackerLinePool.HideUnusedLines()
