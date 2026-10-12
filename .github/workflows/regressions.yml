@@ -66,6 +66,7 @@ jobs:
         run: |
           lua5.1 tools/tests/test_compat_contracts.lua
           lua5.1 tools/tests/test_compat_timers.lua
+          lua5.1 tools/tests/test_compat_tomtom.lua
           lua5.1 tools/tests/test_module_loader.lua
           lua5.1 tools/tests/test_options_335.lua
           lua5.1 tools/tests/test_tracker_initialization.lua

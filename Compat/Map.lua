@@ -1293,68 +1293,13 @@ local function BuildMapIdToCZ()
     RestoreLegacyMapSelection(savedMapSelection)
 end
 
-local function GetTomTomCZForUiMapID(uiMapID)
+-- Resolve native map indices without exposing the shared map-selection cache.
+function QuestieCompat.GetLegacyMapContinentAndZone(uiMapID)
     local uiData = uiMapID and QuestieCompat.UiMapData[uiMapID]
-    if not uiData then
-        return nil
+    local mapIndex = uiData and mapIdToCZ[uiData.mapID]
+    if mapIndex then
+        return QuestieCompat.Round(mapIndex % 1 * 10), math.floor(mapIndex)
     end
-
-    if uiMapID == 947 then
-        return 0
-    elseif uiMapID == 1414 then
-        return 0.1
-    elseif uiMapID == 1415 then
-        return 0.2
-    elseif uiMapID == 1945 then
-        return 0.3
-    end
-
-    return mapIdToCZ[uiData.mapID]
-end
-
-local function GetTomTomDungeonEntranceWaypoint(uiMapID)
-    local areaID
-    if ZoneDB.GetAreaIdByUiMapId then
-        local success, resolvedAreaID = pcall(ZoneDB.GetAreaIdByUiMapId, ZoneDB, uiMapID)
-        if success then
-            areaID = resolvedAreaID
-        end
-    end
-
-    local dungeonLocations = ZoneDB.private and ZoneDB.private.dungeonLocations
-    local subZoneToParentZone = ZoneDB.private and ZoneDB.private.subZoneToParentZone
-    if areaID and dungeonLocations and not dungeonLocations[areaID] and subZoneToParentZone and subZoneToParentZone[areaID] then
-        areaID = subZoneToParentZone[areaID]
-    end
-
-    local entrance = areaID and dungeonLocations and dungeonLocations[areaID] and dungeonLocations[areaID][1]
-    if not entrance then
-        return nil, nil, nil
-    end
-
-    local entranceUiMapID = ZoneDB.GetUiMapIdByAreaId and ZoneDB:GetUiMapIdByAreaId(entrance[1])
-    local entranceCZ = GetTomTomCZForUiMapID(entranceUiMapID)
-    if not entranceCZ then
-        return nil, nil, nil
-    end
-
-    return entranceCZ, entrance[2], entrance[3]
-end
-
-function QuestieCompat.TomTom_AddWaypoint(title, zone, x, y, persistent)
-    local CZ = GetTomTomCZForUiMapID(zone)
-    if (zone == 125) or (zone == 126) then CZ = 3.4 end
-    if not CZ then
-        local entranceCZ, entranceX, entranceY = GetTomTomDungeonEntranceWaypoint(zone)
-        if entranceCZ then
-            CZ = entranceCZ
-            x = entranceX
-            y = entranceY
-        end
-    end
-    if not CZ then return nil end
-    -- Force the crazy arrow on 3.3.5 so Questie behaves like newer TomTom integrations.
-    return TomTom:AddZWaypoint(QuestieCompat.Round(CZ%1 * 10), math.floor(CZ), x, y, title, persistent, nil, nil, nil, nil, true)
 end
 
 -- This function will do its utmost to retrieve some sort of valid position
@@ -1919,7 +1864,15 @@ local function ResolveActualPlayerUiMapID()
     return ResolveActualUiMapIDForMapContext(ResolveUiMapIDByZoneTexts()) or lastKnownZoneLikeUiMapID
 end
 
-local function GetCurrentActualPlayerZonePosition()
+-- Keep displayed-map resolution and actual player context together in the map layer.
+function QuestieCompat.GetWorldMapUiMapContext()
+    local rawMapID, rawMapLevel = GetRawMapContext()
+    local displayedMapName = GetDisplayedWorldMapName()
+    return ResolveDisplayedWorldMapUiMapID(rawMapID, rawMapLevel, displayedMapName), ResolveActualPlayerUiMapID()
+end
+
+-- Return coordinates in the actual player zone, even while browsing another map.
+function QuestieCompat.GetActualPlayerZonePosition()
     local actualUiMapID = ResolveActualPlayerUiMapID()
     if not actualUiMapID then
         return nil, nil, nil
@@ -1953,127 +1906,6 @@ local function GetCurrentActualPlayerZonePosition()
     end
 
     return nil, nil, nil
-end
-
-local function SetTomTomTextIfChanged(fontString, text)
-    if fontString and text and fontString:GetText() ~= text then
-        fontString:SetText(text)
-    end
-end
-
-local function GetTomTomWorldMapCursorPosition()
-    if not WorldMapDetailFrame or not WorldMapDetailFrame:IsVisible() then
-        return nil, nil
-    end
-
-    local cursorX, cursorY = GetCursorPosition()
-    local left = WorldMapDetailFrame:GetLeft()
-    local top = WorldMapDetailFrame:GetTop()
-    local width = WorldMapDetailFrame:GetWidth()
-    local height = WorldMapDetailFrame:GetHeight()
-    local scale = WorldMapDetailFrame:GetEffectiveScale()
-
-    if not cursorX or not cursorY or not left or not top or not width or width == 0 or not height or height == 0 or not scale or scale == 0 then
-        return nil, nil
-    end
-
-    local mapX = (cursorX / scale - left) / width
-    local mapY = (top - cursorY / scale) / height
-    if mapX < 0 or mapX > 1 or mapY < 0 or mapY > 1 then
-        return nil, nil
-    end
-
-    return mapX, mapY
-end
-
-local function FormatTomTomCoordinatePair(x, y, precision)
-    precision = precision or 2
-    return string.format("%." .. precision .. "f, %." .. precision .. "f", x * 100, y * 100)
-end
-
-local function ShouldUseCompatTomTomWorldCoords()
-    if not WorldMapFrame or not WorldMapFrame:IsVisible() then
-        return false
-    end
-
-    local rawMapID, rawMapLevel = GetRawMapContext()
-    local displayedMapName = GetDisplayedWorldMapName()
-    local displayedUiMapID = ResolveDisplayedWorldMapUiMapID(rawMapID, rawMapLevel, displayedMapName)
-    local actualUiMapID = ResolveActualPlayerUiMapID()
-
-    if not displayedUiMapID or not actualUiMapID then
-        return false
-    end
-
-    return displayedUiMapID ~= actualUiMapID
-end
-
-function QuestieCompat.UpdateTomTomWorldCoords(frame, elapsed)
-    if not frame or not frame:IsVisible() then
-        return
-    end
-
-    if frame.questieOriginalOnUpdate and not ShouldUseCompatTomTomWorldCoords() then
-        frame.questieOriginalCoordElapsed = (frame.questieOriginalCoordElapsed or 0) + (elapsed or 0)
-        if frame.questieOriginalCoordElapsed < 0.1 then
-            return
-        end
-
-        local originalElapsed = frame.questieOriginalCoordElapsed
-        frame.questieOriginalCoordElapsed = 0
-        return frame.questieOriginalOnUpdate(frame, originalElapsed)
-    end
-
-    frame.questieCoordElapsed = (frame.questieCoordElapsed or 0) + (elapsed or 0)
-    if frame.questieCoordElapsed < 0.05 then
-        return
-    end
-    frame.questieCoordElapsed = 0
-
-    local TomTom = _G.TomTom
-    local profile = TomTom and TomTom.db and TomTom.db.profile
-    local mapCoordsProfile = profile and profile.mapcoords
-    if not mapCoordsProfile then
-        return
-    end
-    local _, playerX, playerY = GetCurrentActualPlayerZonePosition()
-
-    if frame.Player then
-        if playerX and playerY then
-            SetTomTomTextIfChanged(frame.Player, "Player: " .. FormatTomTomCoordinatePair(playerX, playerY, mapCoordsProfile.playeraccuracy))
-        else
-            SetTomTomTextIfChanged(frame.Player, "Player: ---")
-        end
-    end
-
-    if frame.Cursor then
-        local cursorX, cursorY = GetTomTomWorldMapCursorPosition()
-        if cursorX and cursorY then
-            SetTomTomTextIfChanged(frame.Cursor, "Cursor: " .. FormatTomTomCoordinatePair(cursorX, cursorY, mapCoordsProfile.cursoraccuracy))
-        else
-            SetTomTomTextIfChanged(frame.Cursor, "Cursor: ---")
-        end
-    end
-end
-
-function QuestieCompat.PatchTomTomWorldCoords()
-    local TomTom = _G.TomTom
-    if not TomTom or not TomTom.ShowHideWorldCoords then
-        return
-    end
-
-    if not TomTom.questieWorldCoordsHooked then
-        TomTom.questieWorldCoordsHooked = true
-        hooksecurefunc(TomTom, "ShowHideWorldCoords", QuestieCompat.PatchTomTomWorldCoords)
-    end
-
-    local tomTomWorldFrame = _G.TomTomWorldFrame
-    if tomTomWorldFrame then
-        if not tomTomWorldFrame.questieOriginalOnUpdate then
-            tomTomWorldFrame.questieOriginalOnUpdate = tomTomWorldFrame:GetScript("OnUpdate")
-        end
-        tomTomWorldFrame:SetScript("OnUpdate", QuestieCompat.UpdateTomTomWorldCoords)
-    end
 end
 
 -- wrapper used by QuestieCoords
