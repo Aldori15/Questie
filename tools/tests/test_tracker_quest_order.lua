@@ -28,16 +28,17 @@ for _, path in ipairs(files) do
 end
 equal(moduleEntries, 1, "quest-order controller registered exactly once")
 
-local function setup(mode)
+local function setup(mode, useCombatQueue)
     local env = setmetatable({}, {__index = _G})
     env._G, env.strmatch = env, string.match
     local s = {quests = {}, spawns = {}, priorities = {}, tickers = {}, queued = {}, updates = 0,
-        x = 0, y = 0, positionAvailable = true, inInstance = false, nearestReads = 0}
-    env.Questie = {db = {profile = {trackerSortObjectives = mode}, char = {}}, Debug = function() end}
+        x = 0, y = 0, worldInstance = 1, positionAvailable = true, inInstance = false, nearestReads = 0}
+    env.Questie = {db = {profile = {trackerSortObjectives = mode, trackerEnabled = true}, char = {}}, Debug = function() end}
     env.GetTime = function() return 0 end
     env.debugstack = function() end
     env.QuestLogListScrollFrame = {ScrollBar = {}}
     env.IsInInstance = function() return s.inInstance end
+    env.InCombatLockdown = function() return s.inCombat end
     local maps = {
         [1000] = {mapType = 3, parentMapID = 1}, [1] = {mapType = 2, name = "Continent A"},
         [2000] = {mapType = 3, parentMapID = 2}, [2] = {mapType = 2, name = "Continent B"},
@@ -47,7 +48,9 @@ local function setup(mode)
         GetBestMapForUnit = function() return s.playerMap or 1000 end,
         GetMapInfo = function(id) return maps[id] end,
         GetAreaInfo = function(id) return ({[200] = "Beta"})[id] end,
-        GetWorldPosFromMapPos = function(_, position) return 1, position end,
+        GetWorldPosFromMapPos = function(_, position)
+            if not s.worldPositionMissing then return s.worldInstance, position end
+        end,
     }, C_Timer = {NewTicker = function(interval, callback)
         local ticker = {interval = interval, callback = callback}
         function ticker:Cancel() self.cancelled = true end
@@ -75,10 +78,20 @@ local function setup(mode)
         return nil, spawn.zone, nil, nil, nil, spawn.distance
     end
     module("QuestieCoords").GetPlayerMapPosition = function()
-        if s.positionAvailable then return {x = s.x, y = s.y}, 1000 end
+        if s.positionAvailable then return {x = s.x, y = s.y}, s.playerMap or 1000 end
     end
-    module("QuestieCombatQueue").Queue = function(_, callback) s.queued[#s.queued + 1] = callback end
-    module("QuestieTracker").Update = function() s.updates = s.updates + 1 end
+    if useCombatQueue then
+        module("QuestieLib").tpack = function(...) return {n = select("#", ...), ...} end
+        module("QuestieLib").tunpack = function(args) return (unpack or table.unpack)(args, 1, args.n) end
+        loadModule("Modules/Libs/QuestieCombatQueue.lua", env)
+        loader:ImportModule("QuestieCombatQueue").Initialize()
+    else
+        module("QuestieCombatQueue").Queue = function(_, callback) s.queued[#s.queued + 1] = callback end
+    end
+    module("QuestieTracker").Update = function()
+        s.updates = s.updates + 1
+        s.renderedIds = s.sort()
+    end
     for _, path in ipairs(files) do loadModule(path, env) end
     s.owner = loader:ImportModule("TrackerQuestOrder")
     equal(type(s.owner.GetSortedQuestIds), "function", "ordering available after manifest load")
@@ -218,6 +231,178 @@ do
     equal(#ids, 0, "empty log has no sorted quests")
     equal(next(details), nil, "empty log has no metadata")
     equal(#s.tickers, 0, "static sort has no timer")
+    tests = tests + 1
+end
+
+-- Movement refreshes actual distances without mutating the snapshot used by the renderer.
+local proximityModes = {"byProximity", "byProximityReversed", "byZonePlayerProximity", "byZonePlayerProximityReversed"}
+for _, mode in ipairs(proximityModes) do
+    local s = setup(mode)
+    s.quest(1, 5, 100, {}, false, 1, 100)
+    s.quest(2, 10, 100, {}, false, 10, 100)
+    local ids = s.sort()
+    local reversed = mode:match("Reversed$")
+    order(ids, reversed and {2, 1} or {1, 2}, "initial proximity order")
+    s.tickers[1].callback()
+    local reads = s.nearestReads
+    s.tickers[1].callback()
+    equal(s.nearestReads, reads, "stationary ticks do not scan quest distances")
+    s.spawns[1].distance, s.spawns[2].distance, s.x = 20, 1, 1
+    s.tickers[1].callback()
+    equal(#s.queued, 1, "moving between quest objectives queues updated order")
+    assert(s.nearestReads > reads, "movement recalculates nearest spawn distances")
+    order(ids, reversed and {2, 1} or {1, 2}, "render snapshot is not mutated by timer")
+    equal(s.updates, 0, "combat queue defers rendering")
+    s.queued[1]()
+    order(s.renderedIds, reversed and {1, 2} or {2, 1}, "renderer receives fresh distances")
+    s.tickers[1].callback()
+    equal(#s.queued, 1, "stationary player does not queue another update")
+    tests = tests + 1
+end
+
+-- Regular tracker refreshes replace the timer's snapshot without duplicating its ticker.
+do
+    local s = setup("byProximity")
+    s.quest(1, 5, 100, {}, false, 1, 100)
+    s.quest(2, 10, 100, {}, false, 10, 100)
+    s.sort(); s.tickers[1].callback()
+    s.quests[1] = nil
+    s.quest(3, 20, 100, {}, false, 20, 100)
+    s.sort()
+    equal(#s.tickers, 1, "regular refresh reuses timer")
+    s.spawns[3].distance, s.x = 1, 1
+    s.tickers[1].callback()
+    equal(#s.queued, 1, "timer uses replacement log snapshot")
+    s.queued[1]()
+    order(s.renderedIds, {3, 2}, "removed quest is not retained in timer closure")
+    tests = tests + 1
+end
+
+-- Read the live log if quest membership changes before normal quest events render.
+for _, remove in ipairs({false, true}) do
+    local s = setup("byProximity")
+    s.quest(1, 5, 100, {}, false, 1, 100)
+    if remove then s.quest(2, 10, 100, {}, false, 10, 100) end
+    s.sort(); s.tickers[1].callback()
+    if remove then s.quests[2] = nil else s.quest(2, 10, 100, {}, false, 10, 100) end
+    s.x = 1; s.tickers[1].callback()
+    equal(#s.queued, 1, "changed quest count triggers refresh")
+    s.queued[1]()
+    order(s.renderedIds, remove and {1} or {1, 2}, "render uses current log membership")
+    tests = tests + 1
+end
+
+-- Changing continent at identical X/Y still refreshes continent priority.
+do
+    local s = setup("byProximity")
+    s.quest(1, 5, 100, {}, false, 1, 100)
+    s.quest(2, 10, 200, {}, false, 1, 200)
+    s.sort(); s.tickers[1].callback()
+    s.playerMap, s.worldInstance = 2000, 2
+    s.tickers[1].callback()
+    equal(#s.queued, 1, "continent transition triggers refresh without X/Y change")
+    s.queued[1]()
+    order(s.renderedIds, {2, 1}, "current continent recalculated")
+    tests = tests + 1
+end
+
+-- Queue one render while combat delays it; ignore work superseded by another render.
+do
+    local s = setup("byProximity")
+    s.quest(1, 5, 100, {}, false, 1, 100)
+    s.quest(2, 10, 100, {}, false, 10, 100)
+    s.sort(); s.tickers[1].callback()
+    s.spawns[1].distance, s.x = 20, 1; s.tickers[1].callback()
+    local reads = s.nearestReads
+    s.x = 2; s.tickers[1].callback()
+    equal(#s.queued, 1, "combat does not accumulate repeated proximity renders")
+    equal(s.nearestReads, reads, "pending render does not repeat distance scans")
+    s.sort()
+    s.queued[1]()
+    equal(s.updates, 0, "superseded proximity render ignored")
+    s.spawns[1].distance, s.x = 1, 3; s.tickers[1].callback()
+    equal(#s.queued, 2, "future movement can queue after superseded render")
+    s.queued[2]()
+    order(s.renderedIds, {1, 2}, "latest pending render uses current distances")
+    tests = tests + 1
+end
+
+-- Switching direction within the same family replaces the captured comparison mode.
+for _, mode in ipairs({"byProximity", "byZonePlayerProximity"}) do
+    local s = setup(mode)
+    s.quest(1, 5, 100, {}, false, 1, 100)
+    s.quest(2, 10, 100, {}, false, 10, 100)
+    s.sort(); s.tickers[1].callback()
+    s.spawns[1].distance, s.x = 20, 1; s.tickers[1].callback()
+    local staleTick = s.tickers[1].callback
+    s.sort(mode .. "Reversed")
+    equal(s.tickers[1].cancelled, true, "direction change cancels old timer")
+    staleTick(); s.queued[1]()
+    equal(s.updates, 0, "old timer and combat callback cannot render reversed mode")
+    s.spawns[1].distance, s.x = 1, 2; s.tickers[#s.tickers].callback()
+    equal(#s.queued, 2, "new direction still responds to movement")
+    s.queued[2]()
+    order(s.renderedIds, {2, 1}, "new timer uses reversed comparison")
+    tests = tests + 1
+end
+
+-- Disabled trackers/static sorting/instances invalidate pending movement renders.
+for _, change in ipairs({"disabled", "static", "instance"}) do
+    local s = setup("byProximity")
+    s.quest(1, 5, 100, {}, false, 1, 100)
+    s.quest(2, 10, 100, {}, false, 10, 100)
+    s.sort(); s.tickers[1].callback()
+    s.spawns[1].distance, s.x = 20, 1; s.tickers[1].callback()
+    if change == "disabled" then s.env.Questie.db.profile.trackerEnabled = false
+    elseif change == "static" then s.env.Questie.db.profile.trackerSortObjectives = "byLevel"
+    else s.inInstance = true end
+    s.queued[1]()
+    equal(s.updates, 0, "invalid pending render skipped: " .. change)
+    s.tickers[1].callback()
+    equal(s.tickers[1].cancelled, true, "invalid timer cancelled: " .. change)
+    tests = tests + 1
+end
+
+do
+    local s = setup("byProximity")
+    s.quest(1, 5, 100, {}, false, 1, 100)
+    s.sort()
+    s.worldPositionMissing, s.x = true, 1
+    s.tickers[1].callback()
+    equal(#s.queued, 0, "unavailable world position skips refresh safely")
+    tests = tests + 1
+end
+
+-- Equal-distance/level quests use a stable type/ID tie-break in every proximity mode.
+for _, mode in ipairs(proximityModes) do
+    local s = setup(mode)
+    s.quest(1, 5, 100, {}, false, 1, 100, 2)
+    s.quest(2, 5, 100, {}, false, 1, 100, 1)
+    s.quest(3, 5, 100, {}, false, 1, 100, 1)
+    order(s.sort(), {2, 3, 1}, "deterministic proximity ties")
+    s.x = 1; s.tickers[1].callback()
+    equal(#s.queued, 0, "movement with unchanged equal distances does not render")
+    tests = tests + 1
+end
+
+-- The actual combat queue must defer proximity rendering until combat ends.
+do
+    local s = setup("byProximity", true)
+    s.quest(1, 5, 100, {}, false, 1, 100)
+    s.quest(2, 10, 100, {}, false, 10, 100)
+    s.sort()
+    s.inCombat, s.spawns[1].distance, s.x = true, 20, 1
+    s.tickers[1].callback()
+    equal(#s.tickers, 2, "combat queue starts its processor")
+    equal(s.tickers[2].interval, 0.1, "actual combat queue interval")
+    s.tickers[2].callback()
+    equal(s.updates, 0, "actual queue blocks render during combat")
+    s.x = 2; s.tickers[1].callback()
+    equal(#s.tickers, 2, "pending combat render does not create another timer")
+    s.inCombat = false; s.tickers[2].callback()
+    equal(s.updates, 1, "combat ending allows one render")
+    order(s.renderedIds, {2, 1}, "safe render receives updated proximity order")
+    equal(s.tickers[2].cancelled, true, "drained combat queue stops its processor")
     tests = tests + 1
 end
 
