@@ -820,9 +820,7 @@ function QuestieTracker:Update(force)
 
     -- Begin populating the Tracker with Quests
     local _UpdateQuests = function()
-        for _, questId in pairs(sortedQuestIds) do
-            if not questId then break end
-
+        for _, questId in ipairs(sortedQuestIds) do
             -- reset objectiveMarginLeft for each quest, it can be increased if there are quest items
             objectiveMarginLeft = questMarginLeft + trackerFontSizeQuest
 
