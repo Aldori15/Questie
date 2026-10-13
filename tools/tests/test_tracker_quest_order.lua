@@ -18,6 +18,7 @@ for line in io.lines("Questie-335.toc") do
     local path = line:gsub("\\", "/"):match("^%s*(.-)%s*$")
     if path:match("^Modules/Tracker/Sorter/.*%.lua$")
         or path == "Modules/Tracker/TrackerUtils.lua"
+        or path == "Modules/Tracker/TrackerWaypoints.lua"
         or path == "Modules/Tracker/TrackerQuestOrder.lua" then
         files[#files + 1] = path
     end

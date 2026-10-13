@@ -217,6 +217,7 @@ Modules\Tracker\Sorter\byComplete.lua
 Modules\Tracker\Sorter\byLevel.lua
 Modules\Tracker\Sorter\byZone.lua
 Modules\Tracker\TrackerQuestOrder.lua
+Modules\Tracker\TrackerWaypoints.lua
 Modules\Tracker\TrackerUtils.lua
 Modules\Tracker\AutoRoute.lua
 Modules\Tracker\TrackerMenu.lua
