@@ -1833,7 +1833,12 @@ _QuestieDB.npcCache = {};
 -- Event NPCs can move when a live holiday overrides the calendar location.
 function QuestieDB.InvalidateNPC(npcId)
     _QuestieDB.npcCache[npcId] = nil
-    _QuestieDB.questCache = {}
+    -- Quests in the log own mutable objective state and queued draw work.
+    -- Refresh previews without replacing those live quest objects.
+    local activeQuests = QuestiePlayer.currentQuestlog or {}
+    for questId in pairs(_QuestieDB.questCache) do
+        _QuestieDB.questCache[questId] = activeQuests[questId]
+    end
 end
 
 ---A Memoized table for function Quest:CheckRace
