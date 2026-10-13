@@ -1565,7 +1565,7 @@ def main():
     parser = argparse.ArgumentParser(description="Generate Questie itemData corrections from AzerothCore 3.3.5 SQL data.")
     parser.add_argument("--acore-source", default=r"P:\AC\source", type=Path)
     parser.add_argument("--repo-root", default=Path("."), type=Path)
-    parser.add_argument("--output", default=Path("Compat/AzerothCoreItemCorrections.lua"), type=Path)
+    parser.add_argument("--output", default=Path("Database/AzerothCore/AzerothCoreItemCorrections.lua"), type=Path)
     parser.add_argument("--report", default=Path("tools/reports/acore_item_corrections.md"), type=Path)
     parser.add_argument("--preservation-report", default=Path("tools/reports/acore_item_preservations.json"), type=Path)
     parser.add_argument("--include-modules", action="store_true", help="Also scan SQL under AzerothCore modules/. This can be slow.")

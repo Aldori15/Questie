@@ -53,7 +53,7 @@ def main():
     )
     parser.add_argument(
         "--output",
-        default="Compat/AzerothCoreQuestAvailabilityConditions.lua",
+        default="Database/AzerothCore/AzerothCoreQuestAvailabilityConditions.lua",
         help="Generated Lua output path",
     )
     args = parser.parse_args()

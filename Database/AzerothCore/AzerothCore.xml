@@ -1,0 +1,11 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/ ..\FrameXML\UI.xsd">
+    <Script>QuestieLoader:StampLoadBoundary("Database/AzerothCore/AzerothCore.xml")</Script>
+
+    <!-- Register callbacks now; QuestieCorrections applies them after expansion fixes. -->
+    <Script file="AzerothCoreReputationRates.lua"/>
+    <Script file="AzerothCoreQuestAvailabilityConditions.lua"/>
+    <Script file="AzerothCoreQuestCorrections.lua"/>
+    <Script file="AzerothCoreItemCorrections.lua"/>
+    <Script file="AzerothCoreNPCCorrections.lua"/>
+    <Script file="AzerothCoreObjectCorrections.lua"/>
+</Ui>

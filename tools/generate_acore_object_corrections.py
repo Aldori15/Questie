@@ -643,7 +643,7 @@ def main():
     parser = argparse.ArgumentParser(description="Generate Questie objectData corrections from AzerothCore 3.3.5 SQL data.")
     parser.add_argument("--acore-source", default=r"P:\AC\source", type=Path)
     parser.add_argument("--repo-root", default=Path("."), type=Path)
-    parser.add_argument("--output", default=Path("Compat/AzerothCoreObjectCorrections.lua"), type=Path)
+    parser.add_argument("--output", default=Path("Database/AzerothCore/AzerothCoreObjectCorrections.lua"), type=Path)
     parser.add_argument("--report", default=Path("tools/reports/acore_object_corrections.md"), type=Path)
     parser.add_argument(
         "--wdm-root",

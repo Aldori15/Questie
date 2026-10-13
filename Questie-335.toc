@@ -22,6 +22,9 @@ Modules\Profiler\QuestieProfilerPreHook.lua
 embeds.xml
 Compat\Compat.xml
 
+# Server data must register after Compat and before database consumers load.
+Database\AzerothCore\AzerothCore.xml
+
 Modules\VersionCheck.lua
 
 # Thread Manager

@@ -1959,7 +1959,7 @@ def main():
     parser = argparse.ArgumentParser(description="Generate NPC corrections from AzerothCore SQL and scripted Wintergrasp spawns.")
     parser.add_argument("--acore-source", default=r"P:\AC\source", type=Path)
     parser.add_argument("--repo-root", default=Path("."), type=Path)
-    parser.add_argument("--output", default=Path("Compat/AzerothCoreNPCCorrections.lua"), type=Path)
+    parser.add_argument("--output", default=Path("Database/AzerothCore/AzerothCoreNPCCorrections.lua"), type=Path)
     parser.add_argument("--report", default=Path("tools/reports/acore_npc_corrections.md"), type=Path)
     parser.add_argument(
         "--wdm-root",

@@ -12,7 +12,7 @@ if str(TOOLS_DIR) not in sys.path:
 from validate_acore_quest_metadata import load_acore_sql_table  # noqa: E402
 
 
-DEFAULT_OUTPUT = Path("Compat/AzerothCoreReputationRates.lua")
+DEFAULT_OUTPUT = Path("Database/AzerothCore/AzerothCoreReputationRates.lua")
 QUEST_RATE_COLUMNS = (
     "quest_rate",
     "quest_daily_rate",
