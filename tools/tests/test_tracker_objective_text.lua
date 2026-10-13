@@ -232,6 +232,7 @@ do
     env.GetScreenWidth = function() return 2000 end
     env.GetScreenHeight = function() return 1000 end
     env.InCombatLockdown = function() return false end
+    loadModule("Modules/Tracker/TrackerAchievements.lua", env)
     loadModule("Modules/Tracker/QuestieTracker.lua", env)
     local tracker = loader:ImportModule("QuestieTracker")
     tracker.started = true
@@ -267,6 +268,30 @@ do
         assert(rows[2].label:GetWidth() >= rows[2].label:GetUnboundedStringWidth(), "resized title fits")
     end
     equal(finished, 6, "resizing completes both redraws")
+
+    -- The achievement renderer must consume the controller's synchronized cache.
+    local achievements = loader:ImportModule("TrackerAchievements")
+    env.Questie.db.char.trackedAchievementIds = {[978] = true}
+    env.WatchFrame_Update = noop
+    achievements.Initialize()
+    setmetatable(loader:ImportModule("l10n"), {__call = function(_, text) return text end})
+    env.GetNumTrackedAchievements = function() return 1 end
+    env.GetAchievementInfo = function(id)
+        if id == 978 then return 978, "3000 Quests Completed", nil, nil, nil, nil, nil, "Complete 3000 quests" end
+    end
+    env.GetAchievementNumCriteria = function() return 1 end
+    env.GetAchievementCriteriaInfo = function()
+        return "Quests completed", nil, false, 4, 3000, nil, nil, nil, "4/3000"
+    end
+    for _, first in ipairs({false, true}) do
+        profile.listAchievementsFirst = first
+        tracker:Update(true)
+        equal(#rows, 7, "redraw includes achievement heading/title/criterion")
+        local index = first and 2 or 6
+        equal(rows[index].label.text, "|cFFFFFF003000 Quests Completed|r", "achievement title rendered from moved cache")
+        assert(rows[index + 1].label.text:find("4/3000", 1, true), "achievement progress rendered")
+    end
+    equal(finished, 8, "both achievement ordering settings complete layout")
     groups = groups + 1
 end
 print("Tracker objective-text regressions passed (" .. groups .. " groups)")

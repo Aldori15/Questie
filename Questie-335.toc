@@ -208,6 +208,7 @@ Modules\Journey\QuestieSearchResults.lua
 
 # Tracker
 Modules\Tracker\TrackerNearestQuestItem.lua
+Modules\Tracker\TrackerAchievements.lua
 Modules\Tracker\TrackerObjectiveText.lua
 Modules\Tracker\QuestieTracker.lua
 Modules\Tracker\Sorter\Sorter.lua
