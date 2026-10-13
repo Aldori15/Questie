@@ -165,7 +165,7 @@ function QuestieCompat.CreateLine(self)
     if self.line then return stub_line end -- stub lineBorder, as our line texture already has border
 
     local line = self:CreateTexture(nil, "OVERLAY")
-    line:SetTexture(QuestieLib.AddonPath.."Compat\\Icons\\Waypoint-Line.blp")
+    line:SetTexture(QuestieLib.AddonPath.."Icons\\Waypoint-Line.blp")
     line.SetColorTexture = line.SetVertexColor
 
     for k,v in pairs(LineMixin) do

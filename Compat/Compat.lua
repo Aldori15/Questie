@@ -371,8 +371,8 @@ local townsfolk_texturemap = {
     ["Drink"] = "Interface\\Icons\\inv_potion_01",
     ["Food"] = "Interface\\Icons\\inv_misc_food_11",
     ["Pet Food"] = "Interface\\Icons\\ability_hunter_beasttraining",
-    ["Spirit Healer"] = "Interface\\Addons\\"..QuestieCompat.addonName.."\\Compat\\Icons\\Raid-Icon-Rez.blp",
-    ["Portal Trainer"] = "Interface\\Addons\\"..QuestieCompat.addonName.."\\Compat\\Icons\\Vehicle-AllianceMagePortal.blp",
+    ["Spirit Healer"] = "Interface\\Addons\\"..QuestieCompat.addonName.."\\Icons\\Raid-Icon-Rez.blp",
+    ["Portal Trainer"] = "Interface\\Addons\\"..QuestieCompat.addonName.."\\Icons\\Vehicle-AllianceMagePortal.blp",
 }
 
 local correctionsRegistry = {}
