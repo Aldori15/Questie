@@ -249,4 +249,19 @@ do
     tests = tests + 1
 end
 
+-- Registered artwork must resolve to packaged files, including the mount TGA.
+do
+    local iconEnv = setmetatable({Questie = {}, QuestieLib = {AddonPath = ""}}, {__index = _G})
+    local declaration = assert(read("Questie.lua"):match("(Questie%.icons = %b{})"), "missing icon registry")
+    compile(declaration, "@Questie.lua", iconEnv)()
+    equal(iconEnv.Questie.icons.mount_up, "Icons\\mount_up.blp", "mount icon uses its packaged format")
+    for name, path in pairs(iconEnv.Questie.icons) do
+        if path:match("^Icons\\") then
+            local file = assert(io.open(path:gsub("\\", "/"), "rb"), "missing registered icon: " .. name .. " (" .. path .. ")")
+            file:close()
+        end
+    end
+    tests = tests + 1
+end
+
 print("Compatibility contract regression tests passed (" .. tests .. " groups)")

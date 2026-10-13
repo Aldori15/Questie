@@ -275,7 +275,6 @@ function TrackerLinePool.Initialize(questFrame)
                     ---------------------------------------------------------------------
                     --self.texture:SetAlpha(1)
                     --else
-                    --self.texture:SetTexture("Interface\\Addons\\Questie\\Icons\\Minus")
                     --self.texture:SetAlpha(0.5)
                     ---------------------------------------------------------------------
                 end
