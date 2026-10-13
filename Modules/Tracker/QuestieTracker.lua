@@ -19,6 +19,8 @@ local TrackerQuestTimers = QuestieLoader:ImportModule("TrackerQuestTimers")
 local TrackerNearestQuestItem = QuestieLoader:ImportModule("TrackerNearestQuestItem")
 ---@type TrackerQuestOrder
 local TrackerQuestOrder = QuestieLoader:ImportModule("TrackerQuestOrder")
+---@type TrackerVisibility
+local TrackerVisibility = QuestieLoader:ImportModule("TrackerVisibility")
 ---@type TrackerAchievements
 local TrackerAchievements = QuestieLoader:ImportModule("TrackerAchievements")
 ---@type TrackerObjectiveText
@@ -86,10 +88,6 @@ local isFirstRun = true
 local allowFormattingUpdate = false
 local trackerBaseFrame, trackerHeaderFrame, trackerQuestFrame
 local QuestLogFrame = QuestLogExFrame or ClassicQuestLog or QuestLogFrame
-local minimizedByInstance = false
-local hiddenByInstance = false
-local minimizedByCombat = false
-local hiddenByCombat = false
 
 local disabledWatchRefreshPending = false
 local disabledWatchRefreshAgain = false
@@ -547,7 +545,7 @@ end
 
 -- Shows the QuestieTracker
 function QuestieTracker:Show()
-    if hiddenByInstance or hiddenByCombat then
+    if TrackerVisibility.IsHidden() then
         return
     end
 
@@ -562,149 +560,14 @@ function QuestieTracker:Show()
     end
 end
 
-function QuestieTracker.HandleZoneChanged()
-    if (not QuestieTracker.started) or (not Questie.db.profile.trackerEnabled) then
-        return
-    end
-
-    if IsInInstance() then
-        if Questie.db.profile.minimizeTrackerInInstances then
-            if Questie.db.char.isTrackerExpanded then
-                minimizedByInstance = true
-                QuestieCombatQueue:Queue(function()
-                    QuestieTracker:Collapse()
-                end)
-            end
-        elseif Questie.db.profile.hideTrackerInInstances then
-            hiddenByInstance = true
-            QuestieTracker:Hide()
-        end
-    else
-        if minimizedByInstance and (not UnitIsGhost("player")) then
-            minimizedByInstance = false
-            if Questie.db.profile.minimizeTrackerInInstances and (not Questie.db.char.isTrackerExpanded) then
-                QuestieCombatQueue:Queue(function()
-                    QuestieTracker:Expand()
-                end)
-            end
-        end
-
-        if hiddenByInstance then
-            hiddenByInstance = false
-            if Questie.db.profile.hideTrackerInInstances then
-                QuestieTracker:Show()
-            end
-        end
-    end
-end
-
----@param enabled boolean
-function QuestieTracker.OnMinimizeInInstancesChanged(enabled)
-    if enabled then
-        if QuestieTracker.started and IsInInstance() and Questie.db.char.isTrackerExpanded then
-            minimizedByInstance = true
-            QuestieCombatQueue:Queue(function()
-                QuestieTracker:Collapse()
-            end)
-        end
-    elseif minimizedByInstance then
-        minimizedByInstance = false
-        QuestieCombatQueue:Queue(function()
-            QuestieTracker:Expand()
-        end)
-    end
-end
-
----@param enabled boolean
-function QuestieTracker.OnHideInInstancesChanged(enabled)
-    if enabled then
-        if QuestieTracker.started and IsInInstance() then
-            hiddenByInstance = true
-            QuestieTracker:Hide()
-        end
-    elseif hiddenByInstance then
-        hiddenByInstance = false
-        QuestieTracker:Show()
-    end
-end
-
-function QuestieTracker.HandleCombatStarted()
-    if (not QuestieTracker.started) or (not Questie.db.profile.trackerEnabled) then
-        return
-    end
-
-    if Questie.db.profile.minimizeTrackerInCombat and Questie.db.char.isTrackerExpanded and (not minimizedByCombat) then
-        minimizedByCombat = true
-        QuestieTracker:Collapse()
-    elseif Questie.db.profile.hideTrackerInCombat and (not hiddenByCombat) then
-        hiddenByCombat = true
-        QuestieTracker:Hide()
-    end
-
-    if IsInInstance() and Questie.db.profile.minimizeTrackerInInstances then
-        QuestieTracker:Collapse()
-    end
-end
-
-function QuestieTracker.HandleCombatEnded()
-    if Questie.db.profile.minimizeTrackerInCombat and minimizedByCombat then
-        if IsInInstance() and Questie.db.profile.minimizeTrackerInInstances then
-            minimizedByCombat = false
-            minimizedByInstance = true
-        else
-            minimizedByCombat = false
-            QuestieTracker:Expand()
-        end
-
-        QuestieCombatQueue:Queue(function()
-            QuestieTracker:Update()
-        end)
-    elseif Questie.db.profile.hideTrackerInCombat and hiddenByCombat then
-        if IsInInstance() and Questie.db.profile.hideTrackerInInstances then
-            hiddenByCombat = false
-            hiddenByInstance = true
-        else
-            hiddenByCombat = false
-            QuestieTracker:Show()
-        end
-    end
-end
-
----@param enabled boolean
-function QuestieTracker.OnMinimizeInCombatChanged(enabled)
-    if enabled then
-        if QuestieTracker.started and InCombatLockdown() and Questie.db.char.isTrackerExpanded then
-            minimizedByCombat = true
-            QuestieTracker:Collapse()
-        end
-    elseif minimizedByCombat then
-        if IsInInstance() and Questie.db.profile.minimizeTrackerInInstances then
-            minimizedByCombat = false
-            minimizedByInstance = true
-        else
-            minimizedByCombat = false
-            QuestieTracker:Expand()
-        end
-    end
-end
-
----@param enabled boolean
-function QuestieTracker.OnHideInCombatChanged(enabled)
-    if enabled then
-        if QuestieTracker.started and InCombatLockdown() then
-            hiddenByCombat = true
-            QuestieTracker:Hide()
-        end
-    elseif hiddenByCombat then
-        if IsInInstance() and Questie.db.profile.hideTrackerInInstances then
-            hiddenByCombat = false
-            hiddenByInstance = true
-        else
-            hiddenByCombat = false
-            QuestieTracker:Show()
-        end
-    end
-end
+-- Keep the event-handler and options entry points stable.
+QuestieTracker.HandleZoneChanged = TrackerVisibility.HandleZoneChanged
+QuestieTracker.OnMinimizeInInstancesChanged = TrackerVisibility.OnMinimizeInInstancesChanged
+QuestieTracker.OnHideInInstancesChanged = TrackerVisibility.OnHideInInstancesChanged
+QuestieTracker.HandleCombatStarted = TrackerVisibility.HandleCombatStarted
+QuestieTracker.HandleCombatEnded = TrackerVisibility.HandleCombatEnded
+QuestieTracker.OnMinimizeInCombatChanged = TrackerVisibility.OnMinimizeInCombatChanged
+QuestieTracker.OnHideInCombatChanged = TrackerVisibility.OnHideInCombatChanged
 
 -- Toggles the QuestieTracker (Expand/Collapse)
 function QuestieTracker.ToggleTracker()
@@ -1893,17 +1756,7 @@ function QuestieTracker:UpdateFormatting()
 
     -- This is responsible for handling the visibility of the Tracker
     -- when nothing is tracked or when alwaysShowTracker is being used.
-    if hiddenByInstance or hiddenByCombat then
-        trackerBaseFrame:Hide()
-    elseif (not QuestieTracker:HasQuest()) then
-        if Questie.db.profile.alwaysShowTracker then
-            trackerBaseFrame:Show()
-        else
-            trackerBaseFrame:Hide()
-        end
-    else
-        trackerBaseFrame:Show()
-    end
+    TrackerVisibility.UpdateFrameVisibility(trackerBaseFrame)
 
     TrackerHeaderFrame:Update()
 

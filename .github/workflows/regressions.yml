@@ -77,6 +77,7 @@ jobs:
           lua5.1 tools/tests/test_tracker_quest_order.lua
           lua5.1 tools/tests/test_tracker_objective_text.lua
           lua5.1 tools/tests/test_tracker_achievements.lua
+          lua5.1 tools/tests/test_tracker_visibility.lua
           lua5.1 tools/tests/test_stream_storage.lua
 
       - name: Run Lua regression suites

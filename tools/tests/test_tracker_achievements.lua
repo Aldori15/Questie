@@ -77,6 +77,7 @@ local function setup(nativeIds, savedIds)
             callback(...)
         end
     end
+    loadModule("Modules/Tracker/TrackerVisibility.lua", env)
     loadModule("Modules/Tracker/TrackerAchievements.lua", env)
     loadModule("Modules/Tracker/QuestieTracker.lua", env)
     s.controller = loader:ImportModule("TrackerAchievements")

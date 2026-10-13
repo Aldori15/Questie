@@ -232,6 +232,7 @@ do
     env.GetScreenWidth = function() return 2000 end
     env.GetScreenHeight = function() return 1000 end
     env.InCombatLockdown = function() return false end
+    loadModule("Modules/Tracker/TrackerVisibility.lua", env)
     loadModule("Modules/Tracker/TrackerAchievements.lua", env)
     loadModule("Modules/Tracker/QuestieTracker.lua", env)
     local tracker = loader:ImportModule("QuestieTracker")
