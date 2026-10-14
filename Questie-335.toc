@@ -1,12 +1,12 @@
 ## Interface: 30300
-## Title: Questie-335|cFF00FF00 v9.9.6-335|r
+## Title: Questie-335|cFF00FF00 v10.0.0-335|r
 ## Author: Aldori + Original Questie Team
 ## Notes: A standalone Classic QuestHelper backported to 335 and sourced using AzerothCore data.
 ## Notes-esMX: Ayundante de misión
 ## Notes-esES: Ayundante de misión
 ## Notes-ptBR: Ajudante de missão
 ## Notes-frFR: Assistant de quête
-## Version: 9.9.6-335
+## Version: 10.0.0-335
 ## RequiredDeps:
 ## OptionalDeps: Ace3, CallbackHandler-1.0, HereBeDragons, LibDataBroker-1.1, LibDBIcon-1.0, LibSharedMedia-3.0, LibStub, LibUIDropDownMenu
 ## SavedVariables: QuestieConfig, QuestieProfilerEnabled
@@ -21,6 +21,9 @@ Modules\Profiler\QuestieProfilerPreHook.lua
 # COMPATIBILITY
 embeds.xml
 Compat\Compat.xml
+
+# Server data must register after Compat and before database consumers load.
+Database\AzerothCore\AzerothCore.xml
 
 Modules\VersionCheck.lua
 
@@ -207,11 +210,17 @@ Modules\Journey\QuestieSearch.lua
 Modules\Journey\QuestieSearchResults.lua
 
 # Tracker
+Modules\Tracker\TrackerNearestQuestItem.lua
+Modules\Tracker\TrackerVisibility.lua
+Modules\Tracker\TrackerAchievements.lua
+Modules\Tracker\TrackerObjectiveText.lua
 Modules\Tracker\QuestieTracker.lua
 Modules\Tracker\Sorter\Sorter.lua
 Modules\Tracker\Sorter\byComplete.lua
 Modules\Tracker\Sorter\byLevel.lua
 Modules\Tracker\Sorter\byZone.lua
+Modules\Tracker\TrackerQuestOrder.lua
+Modules\Tracker\TrackerWaypoints.lua
 Modules\Tracker\TrackerUtils.lua
 Modules\Tracker\AutoRoute.lua
 Modules\Tracker\TrackerMenu.lua
@@ -220,6 +229,7 @@ Modules\Tracker\TrackerBaseFrame.lua
 Modules\Tracker\TrackerHeaderFrame.lua
 Modules\Tracker\TrackerQuestFrame.lua
 Modules\Tracker\TrackerQuestTimers.lua
+Modules\Tracker\TrackerQuestItemButtons.lua
 Modules\Tracker\TrackerLinePool.lua
 
 # Tutorial

@@ -156,8 +156,7 @@ end
 local C_QuestLog = QuestieCompat.C_QuestLog
 local C_Timer = QuestieCompat.C_Timer
 local GetQuestTagInfo = QuestieCompat.GetQuestTagInfo
-local IsPlayerSpell = QuestieCompat.IsPlayerSpell
-local IsSpellKnownOrOverridesKnown = QuestieCompat.IsSpellKnownOrOverridesKnown
+local IsSpellKnown = IsSpellKnown
 local IsQuestFlaggedCompleted = QuestieCompat.IsQuestFlaggedCompleted or C_QuestLog.IsQuestFlaggedCompleted
 local IsQuestCompletedOnServer = QuestieCompat.IsQuestCompletedOnServer or IsQuestFlaggedCompleted
 local IsAzerothCoreDailyQuestComplete = QuestieCompat.IsAzerothCoreDailyQuestComplete
@@ -1834,7 +1833,12 @@ _QuestieDB.npcCache = {};
 -- Event NPCs can move when a live holiday overrides the calendar location.
 function QuestieDB.InvalidateNPC(npcId)
     _QuestieDB.npcCache[npcId] = nil
-    _QuestieDB.questCache = {}
+    -- Quests in the log own mutable objective state and queued draw work.
+    -- Refresh previews without replacing those live quest objects.
+    local activeQuests = QuestiePlayer.currentQuestlog or {}
+    for questId in pairs(_QuestieDB.questCache) do
+        _QuestieDB.questCache[questId] = activeQuests[questId]
+    end
 end
 
 ---A Memoized table for function Quest:CheckRace
@@ -2479,7 +2483,7 @@ local function IsAzerothCoreConditionFulfilled(condition, ignoreLocationConditio
     elseif conditionType == ACORE_CONDITION_AREA_ID then
         fulfilled = QuestiePlayer:GetCurrentAreaId() == value1
     elseif conditionType == ACORE_CONDITION_SPELL then
-        fulfilled = IsSpellKnownOrOverridesKnown(value1) or IsPlayerSpell(value1)
+        fulfilled = IsSpellKnown(value1)
     elseif conditionType == ACORE_CONDITION_QUEST_COMPLETE then
         fulfilled = GetAzerothCoreQuestStatusMask(value1) == ACORE_QUEST_STATUS_COMPLETE
     elseif conditionType == ACORE_CONDITION_DAILY_QUEST_DONE then
@@ -2842,12 +2846,11 @@ function QuestieDB.IsDoable(questId, debugPrint, ignoreAcoreLocationConditions, 
 
     local requiredSpell = queryRequirements(questId, "requiredSpell")
     if (requiredSpell) and (requiredSpell ~= 0) then
-        local hasSpell = IsSpellKnownOrOverridesKnown(math.abs(requiredSpell))
-        local hasProfSpell = IsPlayerSpell(math.abs(requiredSpell))
-        if (requiredSpell > 0) and (not hasSpell) and (not hasProfSpell) then --if requiredSpell is positive, we make the quest unavailable if the player does NOT have the spell
+        local hasSpell = IsSpellKnown(math.abs(requiredSpell))
+        if (requiredSpell > 0) and (not hasSpell) then --if requiredSpell is positive, we make the quest unavailable if the player does NOT have the spell
             if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Player does not meet learned spell requirements for quest " .. questId) end
             return false
-        elseif (requiredSpell < 0) and (hasSpell or hasProfSpell) then --if requiredSpell is negative, we make the quest unavailable if the player DOES  have the spell
+        elseif (requiredSpell < 0) and hasSpell then --if requiredSpell is negative, we make the quest unavailable if the player DOES  have the spell
             if debugPrint then Questie.Debug(Questie.DEBUG_SPAM, "[QuestieDB.IsDoable] Player does not meet unlearned spell requirements for quest " .. questId) end
             return false
         end
@@ -3330,16 +3333,15 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
     -- Check spell requirements
     local requiredSpell = queryRequirements(questId, "requiredSpell")
     if (requiredSpell) and (requiredSpell ~= 0) then
-        local hasSpell = IsSpellKnownOrOverridesKnown(math.abs(requiredSpell))
-        local hasProfSpell = IsPlayerSpell(math.abs(requiredSpell))
-        if (requiredSpell > 0) and (not hasSpell) and (not hasProfSpell) then --if requiredSpell is positive, we make the quest unavailable if the player does NOT have the spell
+        local hasSpell = IsSpellKnown(math.abs(requiredSpell))
+        if (requiredSpell > 0) and (not hasSpell) then --if requiredSpell is positive, we make the quest unavailable if the player does NOT have the spell
             local msg = "Player does not know spell ID: " .. math.abs(requiredSpell) .. " for quest " .. questId
             if returnText and returnBrief then
                 return l10n("Unavailable")..l10n(": ")..l10n("Spell not yet learned"), true, DoableStates.SPELL_MISSING
             elseif returnText and not returnBrief then
                 return msg, true, DoableStates.SPELL_MISSING
             end
-        elseif (requiredSpell < 0) and (hasSpell or hasProfSpell) then --if requiredSpell is negative, we make the quest unavailable if the player DOES have the spell
+        elseif (requiredSpell < 0) and hasSpell then --if requiredSpell is negative, we make the quest unavailable if the player DOES have the spell
             local msg = "Player knows spell ID: " .. math.abs(requiredSpell) .. " for quest " .. questId
             if returnText and returnBrief then
                 return l10n("Unavailable")..l10n(": ")..l10n("Already learned spell"), true, DoableStates.SPELL_KNOWN

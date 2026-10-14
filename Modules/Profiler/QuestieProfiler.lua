@@ -1,7 +1,5 @@
 ---@class QuestieProfiler
 local QuestieProfiler = QuestieLoader:CreateModule("Profiler")
----@type Expansions
-local Expansions = QuestieLoader:ImportModule("Expansions")
 ---@type ThreadLib
 local ThreadLib = QuestieLoader:ImportModule("ThreadLib")
 ---@type QuestieProfilerPreHook

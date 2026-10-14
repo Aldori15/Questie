@@ -5,16 +5,12 @@ QuestieCompat = setmetatable({}, {__index = _G})
 local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
 ---@type QuestieDB
 local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
----@type QuestieOptions
-local QuestieOptions = QuestieLoader:ImportModule("QuestieOptions")
 ---@type QuestieQuest
 local QuestieQuest = QuestieLoader:ImportModule("QuestieQuest")
 ---@type ZoneDB
 local ZoneDB = QuestieLoader:ImportModule("ZoneDB")
 ---@class QuestieCoords
 local QuestieCoords = QuestieLoader:ImportModule("QuestieCoords")
----@class Sounds
-local Sounds = QuestieLoader:ImportModule("Sounds")
 ---@class QuestieMenu
 local QuestieMenu = QuestieLoader:ImportModule("QuestieMenu")
 ---@type QuestieCorrections
@@ -40,33 +36,6 @@ end)
 -- check for a specific type of group
 QuestieCompat.LE_PARTY_CATEGORY_HOME = 1 -- home-realm parties
 QuestieCompat.LE_PARTY_CATEGORY_INSTANCE = 2 -- instance-specific groups
-
--- Date stuff
-QuestieCompat.CALENDAR_WEEKDAY_NAMES = {
-	WEEKDAY_SUNDAY,
-	WEEKDAY_MONDAY,
-	WEEKDAY_TUESDAY,
-	WEEKDAY_WEDNESDAY,
-	WEEKDAY_THURSDAY,
-	WEEKDAY_FRIDAY,
-	WEEKDAY_SATURDAY,
-};
-
--- month names show up differently for full date displays in some languages
-QuestieCompat.CALENDAR_FULLDATE_MONTH_NAMES = {
-	FULLDATE_MONTH_JANUARY,
-	FULLDATE_MONTH_FEBRUARY,
-	FULLDATE_MONTH_MARCH,
-	FULLDATE_MONTH_APRIL,
-	FULLDATE_MONTH_MAY,
-	FULLDATE_MONTH_JUNE,
-	FULLDATE_MONTH_JULY,
-	FULLDATE_MONTH_AUGUST,
-	FULLDATE_MONTH_SEPTEMBER,
-	FULLDATE_MONTH_OCTOBER,
-	FULLDATE_MONTH_NOVEMBER,
-	FULLDATE_MONTH_DECEMBER,
-};
 
 -- https://wago.tools/db2/ChrRaces?build=3.4.3.52237
 QuestieCompat.ChrRaces = {
@@ -107,175 +76,6 @@ QuestieCompat.ChrClasses = {
 	DRUID = 11,
 }
 
-local activeTimers = {}
-local inactiveTimers = {}
-
-local math_ceil = math.ceil
-local math_max = math.max
-local strfind = string.find
-
-local MIN_TIMER_DURATION = 0.01
--- WoW 3.3.5 stores animation progress as a single-precision float. Long
--- animation durations can stop advancing once their elapsed time reaches 2048
--- seconds, so longer timer intervals are divided into safe animation chunks.
-local MAX_ANIMATION_TIMER_SECONDS = 30 * 60
-
-local function timerCancel(id)
-    local timer = activeTimers[id]
-    if not timer then return end
-
-    timer:GetParent():Stop()
-
-    timer.id = nil
-    activeTimers[id] = nil
-	inactiveTimers[timer] = true
-end
-
-local function timerOnFinished(self)
-    self.pendingChunks = self.pendingChunks - 1
-    if self.pendingChunks > 0 then return end
-
-    self.pendingChunks = self.chunksPerIteration
-    local id = self.id
-    self.callback(id)
-
-    -- Make sure timer wasn't cancelled during the callback and used again
-    if id == self.id then
-        if self.iterations > 0 then
-            self.iterations = self.iterations - 1
-            if self.iterations == 0 then
-                timerCancel(id)
-            end
-        end
-    end
-end
-
-QuestieCompat.C_Timer = {
-    -- Schedules a repeating timer that can be canceled. (https://wowpedia.fandom.com/wiki/API_C_Timer.NewTicker)
-    NewTicker = function(duration, callback, iterations)
-        local timer = next(inactiveTimers)
-        if timer then
-        	inactiveTimers[timer] = nil
-        else
-        	local anim = QuestieCompat.frame:CreateAnimationGroup()
-        	timer = anim:CreateAnimation()
-        	timer:SetScript("OnFinished", timerOnFinished)
-        end
-
-        if duration < MIN_TIMER_DURATION then duration = MIN_TIMER_DURATION end
-        local chunksPerIteration = math_ceil(duration / MAX_ANIMATION_TIMER_SECONDS)
-        timer:SetDuration(duration / chunksPerIteration)
-
-        timer.callback = callback
-        timer.chunksPerIteration = chunksPerIteration
-        timer.pendingChunks = chunksPerIteration
-        timer.iterations = iterations or -1
-        timer.id = {Cancel = timerCancel}
-        activeTimers[timer.id] = timer
-
-        local anim = timer:GetParent()
-        anim:SetLooping("REPEAT")
-        anim:Play()
-
-        return timer.id
-    end,
-    -- Schedules a one-shot timer that can be canceled. (https://wowpedia.fandom.com/wiki/API_C_Timer.NewTimer)
-    NewTimer = function(duration, callback)
-        return QuestieCompat.C_Timer.NewTicker(duration, callback, 1)
-    end,
-    -- Schedules a timer. (https://wowpedia.fandom.com/wiki/API_C_Timer.After)
-    After = function(duration, callback)
-        return QuestieCompat.C_Timer.NewTimer(duration, callback)
-    end
-}
-
-QuestieCompat.C_Calendar = {
-    -- Returns information about the calendar month by offset.
-	-- https://wowpedia.fandom.com/wiki/API_C_Calendar.GetMonthInfo
-	GetMonthInfo = function(offsetMonths)
-        local month, year, numdays, firstday = CalendarGetMonth(offsetMonths or 0);
-		return {
-			month = month,
-			year = year,
-			numDays = numdays,
-			firstWeekday = firstday,
-		}
-	end,
-    OpenCalendar = function()
-        if OpenCalendar then
-            OpenCalendar()
-        end
-    end,
-    SetMonth = function(offsetMonths)
-        if CalendarSetMonth then
-            CalendarSetMonth(offsetMonths or 0)
-        end
-    end,
-    GetNumDayEvents = function(offsetMonths, dayOfMonth)
-        if CalendarGetNumDayEvents then
-            return CalendarGetNumDayEvents(offsetMonths or 0, dayOfMonth)
-        end
-
-        return 0
-    end,
-    GetHolidayInfo = function(offsetMonths, dayOfMonth, index)
-        if not CalendarGetHolidayInfo then
-            return nil
-        end
-
-        local name, description, texture = CalendarGetHolidayInfo(
-            offsetMonths or 0,
-            dayOfMonth,
-            index
-        )
-
-        if not name then
-            return nil
-        end
-
-        return {
-            name = name,
-            description = description,
-            texture = texture,
-        }
-    end,
-}
-
-QuestieCompat.C_DateAndTime = {
-    -- Returns the realm's current date and time.
-	-- https://wowpedia.fandom.com/wiki/API_C_DateAndTime.GetCurrentCalendarTime
-	GetCurrentCalendarTime = function()
-		local weekday, month, day, year = CalendarGetDate();
-		local hours, minutes = GetGameTime()
-		return {
-			year = year,
-			month = month,
-			monthDay = day,
-			weekday = weekday,
-			hour = hours,
-			minute = minutes
-		}
-	end
-}
-
--- Returns the server's Unix time.
--- https://wowpedia.fandom.com/wiki/API_GetServerTime
-function QuestieCompat.GetServerTime()
-    local weekday, month, day, year = CalendarGetDate()
-	local hours, minutes = GetGameTime()
-
-    local currentDate = {
-        year = year,
-        month = month,
-        day = day,
-        weekday = weekday,
-        hour = hours,
-        min = minutes,
-    }
-
-    return time(currentDate), currentDate
-end
-
 -- https://wowwiki-archive.fandom.com/wiki/API_UnitGUID?oldid=2368080
 local GUIDType = {
     [0]="Player",
@@ -312,21 +112,6 @@ function QuestieCompat.UnitBuff(unit, index)
     local name, rank, icon, count, debuffType, duration, expirationTime,
         unitCaster, isStealable, shouldConsolidate, spellId = UnitBuff(unit, index)
     return name, icon, count, debuffType, duration, expirationTime, unitCaster, isStealable, shouldConsolidate, spellId
-end
-
--- Returns the race of the unit.
--- https://wowpedia.fandom.com/wiki/API_UnitRace
-function QuestieCompat.UnitRace(unit)
-    local raceName, raceFile = UnitRace(unit)
-    return raceName, raceFile, QuestieCompat.ChrRaces[raceFile]
-end
-
--- Returns the class of the unit.
--- https://wowpedia.fandom.com/wiki/API_UnitClass
--- Patch 5.0.4 (2012-08-28): Added classId return value.
-function QuestieCompat.UnitClass(unit)
-    local className, classFile = UnitClass(unit)
-    return className, classFile, QuestieCompat.ChrClasses[classFile]
 end
 
 -- Returns info for a faction.
@@ -517,15 +302,6 @@ function QuestieCompat.GetContainerItemInfo(bagID, slot)
     end
 end
 
--- https://wowpedia.fandom.com/wiki/API_IsSpellKnown
-QuestieCompat.IsSpellKnownOrOverridesKnown = IsSpellKnown
-QuestieCompat.IsPlayerSpell = IsSpellKnown
-
-function QuestieCompat.GetSpellName(spellId)
-    local spellName = GetSpellInfo(spellId)
-    return spellName
-end
-
 local LARGE_NUMBER_SEPERATOR = ",";
 function QuestieCompat.FormatLargeNumber(amount)
 	amount = tostring(amount);
@@ -559,26 +335,6 @@ function QuestieCompat.GetClassColor(classFilename)
 		return color.r, color.g, color.b, GenerateHexColor(color.r, color.g, color.b)
 	end
 	return 1, 1, 1, "ffffffff";
-end
-
--- prevents the override of existing global variables with the same name(e.g., WorldMapButton)
-function QuestieCompat.PopulateGlobals(self)
-    for name, module in pairs(QuestieLoader._modules) do
-        if not _G[name] then
-            _G[name] = module
-        end
-    end
-end
-
--- The 3.3.5 game archive uses .wav names for Questie's built-in sound paths.
--- LibSharedMedia addon paths must keep their registered extension.
-function QuestieCompat.GetSelectedSoundFile(typeSelected)
-    local soundFile = QuestieCompat.orig_GetSelectedSoundFile(typeSelected)
-    if soundFile:lower():find("^interface[\\/]addons[\\/]") then
-        return soundFile
-    end
-
-    return soundFile:gsub("%.ogg$", ".wav")
 end
 
 QuestieCompat.isReloadingUi = false
@@ -615,119 +371,9 @@ local townsfolk_texturemap = {
     ["Drink"] = "Interface\\Icons\\inv_potion_01",
     ["Food"] = "Interface\\Icons\\inv_misc_food_11",
     ["Pet Food"] = "Interface\\Icons\\ability_hunter_beasttraining",
-    ["Spirit Healer"] = "Interface\\Addons\\"..QuestieCompat.addonName.."\\Compat\\Icons\\Raid-Icon-Rez.blp",
-    ["Portal Trainer"] = "Interface\\Addons\\"..QuestieCompat.addonName.."\\Compat\\Icons\\Vehicle-AllianceMagePortal.blp",
+    ["Spirit Healer"] = "Interface\\Addons\\"..QuestieCompat.addonName.."\\Icons\\Raid-Icon-Rez.blp",
+    ["Portal Trainer"] = "Interface\\Addons\\"..QuestieCompat.addonName.."\\Icons\\Vehicle-AllianceMagePortal.blp",
 }
-
-StaticPopupDialogs["QUESTIE_RELOAD"] = {
-    text = "Changes you have made require a UI reload",
-    button1 = 'Reload UI',
-    button2 = CANCEL,
-    OnAccept = function()
-        ReloadUI()
-    end,
-    OnShow = function(self)
-        self:SetFrameStrata("TOOLTIP")
-    end,
-    timeout = 0,
-    whileDead = true,
-    hideOnEscape = true,
-    preferredIndex = 3
-}
-
-function QuestieCompat.QuestieOptions_Initialize()
-    QuestieCompat.orig_QuestieOptions_Initialize()
-
-    local optionsTable = LibStub("AceConfigRegistry-3.0"):GetOptionsTable("Questie", "dialog", "MyLib-1.0")
-
-    -- revert instant quest text to old cvar
-    optionsTable.args.general_tab.args.interface_options_group.args.instantQuest.get = function()
-        return GetCVar("questFadingDisable") == '1' and true or false
-    end
-    optionsTable.args.general_tab.args.interface_options_group.args.instantQuest.set = function(info, value)
-        QUEST_FADING_DISABLE = tostring(value and 1 or 0)
-        SetCVar("questFadingDisable", tostring(value and 1 or 0))
-    end
-
-    optionsTable.args.nameplate_tab.args.nameplate_options_group.args.nameplateEnabled.set = function (info, value)
-        QuestieOptions:SetProfileValue(info, value)
-        StaticPopup_Show("QUESTIE_RELOAD")
-    end
-
-    optionsTable.args.icons_tab.args.map_settings_group.args.hideUnexploredMapIconsToggle.set = function(info, value)
-        Questie.db.profile.hideUnexploredMapIcons = value
-        QuestieCompat.ClearExplorationCache()
-        QuestieQuest:RefreshQuestIconVisibility()
-    end
-
-    -- 3.3.5 section
-    optionsTable.args.advanced_tab.args.compat_header = {
-        type = "header",
-        order = 6,
-        name = "3.3.5 Compatibility Settings",
-    }
-	
-	optionsTable.args.advanced_tab.args.initDelay = {
-        type = "range",
-        order = 6.1,
-        name = "Init rate delay",
-        desc = "Init rate delay",
-        width = "full",
-        min = 0.1,
-        max = 1,
-        step = 0.01,
-        hidden = function() return not Questie.db.profile.debugEnabled; end,
-        get = function(info) return QuestieOptions:GetProfileValue(info)*10; end,
-        set = function (info, value)
-            QuestieOptions:SetProfileValue(info, value/10)
-        end,
-    }
-
-    optionsTable.args.advanced_tab.args.useQuestieLinks = {
-        type = "toggle",
-        order = 6.3,
-        name = "Use Questie Links",
-        desc = "Use Questie Links",
-        width = "full",
-        get = function (info) return QuestieOptions:GetProfileValue(info); end,
-        set = function (info, value)
-            QuestieOptions:SetProfileValue(info, value)
-            StaticPopup_Show("QUESTIE_RELOAD")
-        end,
-    }
-
-    optionsTable.args.advanced_tab.args.resetDailyQuests = {
-        type = "toggle",
-        order = 6.4,
-        name = "Reset Daily Quests",
-        desc = "Reset Daily Quests",
-        width = 1.65,
-        get = function (info) return QuestieOptions:GetProfileValue(info); end,
-        set = function (info, value)
-            QuestieOptions:SetProfileValue(info, value)
-            Questie.db.profile.dailyResetTime = nil
-            StaticPopup_Show("QUESTIE_RELOAD")
-        end,
-    }
-
-    optionsTable.args.advanced_tab.args.weeklyResetDay = {
-        type = "select",
-        order = 6.5,
-        values = QuestieCompat.CALENDAR_WEEKDAY_NAMES,
-        style = 'dropdown',
-        disabled = function() return not Questie.db.profile.resetDailyQuests end,
-        name = "Weekly Reset Day",
-        desc = "Weekly Reset Day",
-        width = 1.6,
-        get = function (info) return QuestieOptions:GetProfileValue(info) end,
-        set = function (info, value)
-            QuestieOptions:SetProfileValue(info, value)
-            Questie.db.profile.weeklyResetTime = nil
-            Questie.db.char.weeklyResetTime = nil
-            StaticPopup_Show("QUESTIE_RELOAD")
-        end,
-    }
-end
 
 local correctionsRegistry = {}
 
@@ -798,6 +444,7 @@ function QuestieCompat:ADDON_LOADED(event, addon)
         }
     })
 
+    QuestieCompat.InitializeMapExplorationCompatibility()
     QuestieCompat.InitializeMapCompatibility()
     QuestieCompat.InitializeQuestLogCompatibility()
 
@@ -819,18 +466,13 @@ function QuestieCompat:ADDON_LOADED(event, addon)
     for _, moduleName in pairs(DISABLED_MODULES) do
         local module = QuestieLoader:ImportModule(moduleName)
         setmetatable(wipe(module), QuestieCompat.NOOP_MT)
+        QuestieLoader:MarkModuleDisabled(moduleName)
     end
 
-	QuestieLoader.PopulateGlobals = QuestieCompat.PopulateGlobals
-    QuestieCompat.RegisterStreamCompatibility()
     ZoneDB.private.RunTests = QuestieCompat.NOOP
     QuestieLib.TextWrap = QuestieCompat.TextWrap
     QuestieCoords.GetPlayerMapPosition = QuestieCompat.GetPlayerMapPosition
     QuestieCoords.ResetMiniWorldMapText = QuestieCompat.NOOP
-    QuestieCompat.orig_QuestieOptions_Initialize = QuestieOptions.Initialize
-    QuestieOptions.Initialize = QuestieCompat.QuestieOptions_Initialize
-    QuestieCompat.orig_GetSelectedSoundFile = Sounds.GetSelectedSoundFile
-    Sounds.GetSelectedSoundFile = QuestieCompat.GetSelectedSoundFile
 	QuestieLink.GetQuestLinkString = rawget(QuestieLink, "GetQuestLinkString") or QuestieCompat.GetQuestLinkString
 	QuestieLink.GetQuestLinkStringById = rawget(QuestieLink, "GetQuestLinkStringById") or QuestieCompat.GetQuestLinkStringById
 	QuestieLink.GetQuestInsertString = rawget(QuestieLink, "GetQuestInsertString") or QuestieCompat.GetQuestInsertString
@@ -838,7 +480,6 @@ function QuestieCompat:ADDON_LOADED(event, addon)
 	QuestieLink.GetQuestHyperLink = rawget(QuestieLink, "GetQuestHyperLink") or QuestieCompat.GetQuestLinkStringById
 
     QuestieCompat.RegisterEventCompatibilityHooks()
-    QuestieCompat.RegisterTrackerCompatibilityHooks()
     hooksecurefunc(QuestieQuest, "ToggleNotes", QuestieCompat.HBDPins.UpdateWorldMap)
 	hooksecurefunc("ReloadUI", QuestieCompat.OnReloadUi)
 	hooksecurefunc("ConsoleExec", QuestieCompat.OnReloadUi)

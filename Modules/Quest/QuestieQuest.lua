@@ -755,6 +755,51 @@ end
 
 QuestieQuest.RefreshWintergraspSpawnVisibility = QuestieQuest.RefreshSpawnVisibility
 
+-- NPC overrides replace spawn tables while accepted quests retain their objects.
+-- Refresh entries in place so multi-source extras and item objectives keep all
+-- their other sources, icons and progress. Tooltip keys distinguish NPC/object IDs.
+---@param changedNpcs table<NpcId, boolean>
+function QuestieQuest:RefreshNPCSpawns(changedNpcs)
+    for questId, quest in pairs(QuestiePlayer.currentQuestlog or {}) do
+        local affected = quest.Finisher and quest.Finisher.Type == "monster" and changedNpcs[quest.Finisher.Id]
+        for _, npcId in ipairs(quest.Starts and quest.Starts.NPC or {}) do
+            affected = changedNpcs[npcId] or affected
+        end
+        for _, objectives in ipairs({quest.Objectives or {}, quest.SpecialObjectives or {}}) do
+            for _, objective in pairs(objectives) do
+                for _, spawnData in pairs(objective.spawnList or {}) do
+                    if changedNpcs[spawnData.Id] and spawnData.TooltipKey == "m_" .. spawnData.Id then
+                        local source = _QuestieQuest.objectiveSpawnListCallTable.monster(spawnData.Id, objective)
+                        local npc = source and source[spawnData.Id]
+                        if npc then
+                            spawnData.Spawns, spawnData.Waypoints = npc.Spawns, npc.Waypoints
+                        end
+                        affected = true
+                    end
+                end
+            end
+        end
+        if affected then
+            for _, objectives in ipairs({quest.Objectives or {}, quest.SpecialObjectives or {}}) do
+                for _, objective in pairs(objectives) do
+                    -- Invalidate queued work even for objectives without visible frames.
+                    objective.AlreadySpawned = {}
+                end
+            end
+            _UnloadQuestFrames(questId, function()
+                if QuestiePlayer.currentQuestlog[questId] == quest and _IsQuestInLog(questId)
+                    and not Questie.db.char.hidden[questId] and self:ShouldShowQuestNotes(questId) then
+                    if quest:IsComplete() == 1 then
+                        self:AddFinisher(quest)
+                    elseif quest:IsComplete() == 0 then
+                        self:UpdateObjectiveNotes(quest)
+                    end
+                end
+            end)
+        end
+    end
+end
+
 --Run this if you want to update the entire table
 function QuestieQuest:GetAllQuestIds()
     Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest] Getting all quests")
@@ -1069,7 +1114,7 @@ function QuestieQuest:CheckQuestSourceItem(questId, makeObjective)
         end
 
         for bag = -2, 4 do
-            for slot = 1, QuestieCompat.GetContainerNumSlots(bag) do
+            for slot = 1, GetContainerNumSlots(bag) do
                 local itemId = select(10, QuestieCompat.GetContainerItemInfo(bag, slot))
                 if itemId == quest.sourceItemId then
                     return true

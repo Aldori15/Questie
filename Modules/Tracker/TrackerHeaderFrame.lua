@@ -147,6 +147,7 @@ function TrackerHeaderFrame.Initialize(baseFrame)
 
     -- Questie Tracked Quests Label
     trackedQuests.label = headerFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    trackedQuests.label.GetUnboundedStringWidth = QuestieCompat.GetUnboundedStringWidth
     trackedQuests.label:SetPoint("TOPLEFT", headerFrame, "TOPLEFT", 0, 0)
 
     trackedQuests.SetMode = function(self, mode)

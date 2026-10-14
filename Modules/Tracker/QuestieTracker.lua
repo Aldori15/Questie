@@ -15,6 +15,16 @@ local TrackerLinePool = QuestieLoader:ImportModule("TrackerLinePool")
 local TrackerFadeTicker = QuestieLoader:ImportModule("TrackerFadeTicker")
 ---@type TrackerQuestTimers
 local TrackerQuestTimers = QuestieLoader:ImportModule("TrackerQuestTimers")
+---@type TrackerNearestQuestItem
+local TrackerNearestQuestItem = QuestieLoader:ImportModule("TrackerNearestQuestItem")
+---@type TrackerQuestOrder
+local TrackerQuestOrder = QuestieLoader:ImportModule("TrackerQuestOrder")
+---@type TrackerVisibility
+local TrackerVisibility = QuestieLoader:ImportModule("TrackerVisibility")
+---@type TrackerAchievements
+local TrackerAchievements = QuestieLoader:ImportModule("TrackerAchievements")
+---@type TrackerObjectiveText
+local TrackerObjectiveText = QuestieLoader:ImportModule("TrackerObjectiveText")
 ---@type TrackerUtils
 local TrackerUtils = QuestieLoader:ImportModule("TrackerUtils")
 ---@type AutoRoute
@@ -65,7 +75,6 @@ local trackerMarginRight = 30
 local trackerMarginLeft = 14
 local lastAQW = GetTime()
 local lastTrackerUpdate = GetTime()
-local lastAchieveId = GetTime()
 local durabilityInitialPosition
 
 local voiceOverInitialPosition
@@ -75,134 +84,10 @@ end
 
 local questsWatched = GetNumQuestWatches()
 
-local trackedAchievements = {GetTrackedAchievements()}
-local trackedAchievementIds = {}
-
 local isFirstRun = true
 local allowFormattingUpdate = false
 local trackerBaseFrame, trackerHeaderFrame, trackerQuestFrame
 local QuestLogFrame = QuestLogExFrame or ClassicQuestLog or QuestLogFrame
-local minimizedByInstance = false
-local hiddenByInstance = false
-local minimizedByCombat = false
-local hiddenByCombat = false
-
-local nearestQuestItemButton
-
----@param quest Quest
----@return ItemId|nil
-local function _GetUsableClickQuestItemId(quest)
-    if not quest then
-        return nil
-    end
-
-    local items = TrackerUtils:GetUsableQuestItemIds(quest)
-    if quest:IsComplete() == 1 then
-        local isComplete = (quest.isComplete ~= true and #quest.Objectives == 0) or quest.isComplete == true
-        local primaryItem = items[1]
-        if not isComplete or not primaryItem or not GetItemSpell(primaryItem) then
-            return nil
-        end
-
-        local sourceItemId = quest.sourceItemId
-        if sourceItemId == nil then
-            sourceItemId = QuestieDB.QueryQuestSingle(quest.Id, "sourceItemId")
-        end
-        if primaryItem == sourceItemId then
-            return primaryItem
-        end
-        for _, itemId in pairs(quest.requiredSourceItems or {}) do
-            if itemId == primaryItem then
-                return primaryItem
-            end
-        end
-        return nil
-    end
-
-    for _, itemId in ipairs(items) do
-        -- The keybind is specifically for USING an item.
-        if GetItemSpell(itemId) then
-            return itemId
-        end
-    end
-
-    return nil
-end
-
----@return ItemId|nil
-local function _GetNearestQuestItemId()
-    -- Prefer the quest Questie is currently routing to.
-    -- This covers both manually selected Questie/TomTom targets and AutoRoute,
-    -- because both store quest ownership in _tom_waypoint_quest.
-    local waypointQuest = TrackerUtils:GetTomTomTarget() and Questie.db.char._tom_waypoint_quest
-
-    if waypointQuest and waypointQuest.questId then
-        local quest = QuestiePlayer.currentQuestlog[waypointQuest.questId]
-        local itemId = _GetUsableClickQuestItemId(quest)
-
-        if itemId then
-            return itemId
-        end
-    end
-
-    -- Otherwise fall back to the nearest tracked quest that has a usable item.
-    local bestItemId
-    local bestDistance
-    local bestQuestId
-
-    for questId, quest in pairs(QuestiePlayer.currentQuestlog or {}) do
-        if quest and QuestieQuest:IsQuestTracked(questId) then
-            local itemId = _GetUsableClickQuestItemId(quest)
-
-            if itemId then
-                local _, _, _, _, _, distance = QuestieMap:GetNearestQuestSpawn(quest)
-
-                if type(distance) == "number" and ((not bestDistance) or distance < bestDistance or (distance == bestDistance and questId < bestQuestId)) then
-                    bestItemId = itemId
-                    bestDistance = distance
-                    bestQuestId = questId
-                end
-            end
-        end
-    end
-
-    return bestItemId
-end
-
-local function _UpdateNearestQuestItemButton()
-    if not nearestQuestItemButton or InCombatLockdown() then
-        return
-    end
-
-    local itemId = _GetNearestQuestItemId()
-
-    -- Secure attributes cannot be changed in combat, so only update them here.
-    -- Also avoid rewriting the same secure attribute unnecessarily.
-    if nearestQuestItemButton.questieItemId == itemId then
-        return
-    end
-
-    nearestQuestItemButton.questieItemId = itemId
-    nearestQuestItemButton:SetAttribute("item", itemId and ("item:" .. itemId) or nil)
-end
-
-local function _InitializeNearestQuestItemButton()
-    if nearestQuestItemButton then
-        return
-    end
-
-    nearestQuestItemButton = CreateFrame("Button", "Questie_NearestQuestItemButton", UIParent, "SecureActionButtonTemplate")
-
-    nearestQuestItemButton:SetAttribute("type", "item")
-    nearestQuestItemButton:RegisterForClicks("AnyDown")
-    nearestQuestItemButton:Hide()
-
-    _UpdateNearestQuestItemButton()
-
-    -- Re-evaluate periodically because proximity can change simply by moving.
-    -- During combat the existing secure selection remains untouched.
-    C_Timer.NewTicker(5, _UpdateNearestQuestItemButton)
-end
 
 local disabledWatchRefreshPending = false
 local disabledWatchRefreshAgain = false
@@ -276,7 +161,7 @@ function QuestieTracker.Initialize()
 
     -- Register the keybinding label even when the tracker starts disabled.
     QuestieTracker.SetupKeybinding()
-    _InitializeNearestQuestItemButton()
+    TrackerNearestQuestItem.Initialize()
 
     if not Questie.db.profile.trackerEnabled then
         QuestieTracker.SetupDisabledWatchRefresh()
@@ -385,37 +270,7 @@ function QuestieTracker.Initialize()
                 end
             end
 
-            -- The trackedAchievements variable is populated by GetTrackedAchievements(). If Questie
-            -- is enabled, this will always return nil so we need to save it before we enable Questie.
-            if #trackedAchievements > 0 then
-                local tempAchieves = trackedAchievements
-
-                -- Remove achievement from the Blizzard Quest Watch and populate the tracker.
-                for _, achieveId in pairs(tempAchieves) do
-                    if achieveId then
-                        RemoveTrackedAchievement(achieveId)
-                        Questie.db.char.trackedAchievementIds[achieveId] = true
-
-                        if (not AchievementFrame) then
-                            AchievementFrame_LoadUI()
-                        end
-
-                        AchievementFrameAchievements_ForceUpdate()
-                    end
-                end
-            end
-
-            trackedAchievements = {GetTrackedAchievements()}
-            WatchFrame_Update()
-
-            -- Sync and populate QuestieTrackers achievement cache
-            if Questie.db.char.trackedAchievementIds ~= trackedAchievementIds then
-                for achieveId in pairs(Questie.db.char.trackedAchievementIds) do
-                    if Questie.db.char.trackedAchievementIds[achieveId] == true then
-                        trackedAchievementIds[achieveId] = true
-                    end
-                end
-            end
+            TrackerAchievements.Initialize()
 
             if QuestLogFrame:IsShown() then QuestLog_Update() end
             QuestieTracker:Update()
@@ -645,7 +500,7 @@ function QuestieTracker:Disable()
     Questie.db.char.TrackedQuests = {}
     Questie.db.char.AutoUntrackedQuests = {}
 
-    Questie.db.char.trackedAchievementIds = {}
+    TrackerAchievements.ClearSavedTracking()
 
     StaticPopup_Show("QUESTIE_RELOAD")
 end
@@ -690,7 +545,7 @@ end
 
 -- Shows the QuestieTracker
 function QuestieTracker:Show()
-    if hiddenByInstance or hiddenByCombat then
+    if TrackerVisibility.IsHidden() then
         return
     end
 
@@ -705,149 +560,14 @@ function QuestieTracker:Show()
     end
 end
 
-function QuestieTracker.HandleZoneChanged()
-    if (not QuestieTracker.started) or (not Questie.db.profile.trackerEnabled) then
-        return
-    end
-
-    if IsInInstance() then
-        if Questie.db.profile.minimizeTrackerInInstances then
-            if Questie.db.char.isTrackerExpanded then
-                minimizedByInstance = true
-                QuestieCombatQueue:Queue(function()
-                    QuestieTracker:Collapse()
-                end)
-            end
-        elseif Questie.db.profile.hideTrackerInInstances then
-            hiddenByInstance = true
-            QuestieTracker:Hide()
-        end
-    else
-        if minimizedByInstance and (not UnitIsGhost("player")) then
-            minimizedByInstance = false
-            if Questie.db.profile.minimizeTrackerInInstances and (not Questie.db.char.isTrackerExpanded) then
-                QuestieCombatQueue:Queue(function()
-                    QuestieTracker:Expand()
-                end)
-            end
-        end
-
-        if hiddenByInstance then
-            hiddenByInstance = false
-            if Questie.db.profile.hideTrackerInInstances then
-                QuestieTracker:Show()
-            end
-        end
-    end
-end
-
----@param enabled boolean
-function QuestieTracker.OnMinimizeInInstancesChanged(enabled)
-    if enabled then
-        if QuestieTracker.started and IsInInstance() and Questie.db.char.isTrackerExpanded then
-            minimizedByInstance = true
-            QuestieCombatQueue:Queue(function()
-                QuestieTracker:Collapse()
-            end)
-        end
-    elseif minimizedByInstance then
-        minimizedByInstance = false
-        QuestieCombatQueue:Queue(function()
-            QuestieTracker:Expand()
-        end)
-    end
-end
-
----@param enabled boolean
-function QuestieTracker.OnHideInInstancesChanged(enabled)
-    if enabled then
-        if QuestieTracker.started and IsInInstance() then
-            hiddenByInstance = true
-            QuestieTracker:Hide()
-        end
-    elseif hiddenByInstance then
-        hiddenByInstance = false
-        QuestieTracker:Show()
-    end
-end
-
-function QuestieTracker.HandleCombatStarted()
-    if (not QuestieTracker.started) or (not Questie.db.profile.trackerEnabled) then
-        return
-    end
-
-    if Questie.db.profile.minimizeTrackerInCombat and Questie.db.char.isTrackerExpanded and (not minimizedByCombat) then
-        minimizedByCombat = true
-        QuestieTracker:Collapse()
-    elseif Questie.db.profile.hideTrackerInCombat and (not hiddenByCombat) then
-        hiddenByCombat = true
-        QuestieTracker:Hide()
-    end
-
-    if IsInInstance() and Questie.db.profile.minimizeTrackerInInstances then
-        QuestieTracker:Collapse()
-    end
-end
-
-function QuestieTracker.HandleCombatEnded()
-    if Questie.db.profile.minimizeTrackerInCombat and minimizedByCombat then
-        if IsInInstance() and Questie.db.profile.minimizeTrackerInInstances then
-            minimizedByCombat = false
-            minimizedByInstance = true
-        else
-            minimizedByCombat = false
-            QuestieTracker:Expand()
-        end
-
-        QuestieCombatQueue:Queue(function()
-            QuestieTracker:Update()
-        end)
-    elseif Questie.db.profile.hideTrackerInCombat and hiddenByCombat then
-        if IsInInstance() and Questie.db.profile.hideTrackerInInstances then
-            hiddenByCombat = false
-            hiddenByInstance = true
-        else
-            hiddenByCombat = false
-            QuestieTracker:Show()
-        end
-    end
-end
-
----@param enabled boolean
-function QuestieTracker.OnMinimizeInCombatChanged(enabled)
-    if enabled then
-        if QuestieTracker.started and InCombatLockdown() and Questie.db.char.isTrackerExpanded then
-            minimizedByCombat = true
-            QuestieTracker:Collapse()
-        end
-    elseif minimizedByCombat then
-        if IsInInstance() and Questie.db.profile.minimizeTrackerInInstances then
-            minimizedByCombat = false
-            minimizedByInstance = true
-        else
-            minimizedByCombat = false
-            QuestieTracker:Expand()
-        end
-    end
-end
-
----@param enabled boolean
-function QuestieTracker.OnHideInCombatChanged(enabled)
-    if enabled then
-        if QuestieTracker.started and InCombatLockdown() then
-            hiddenByCombat = true
-            QuestieTracker:Hide()
-        end
-    elseif hiddenByCombat then
-        if IsInInstance() and Questie.db.profile.hideTrackerInInstances then
-            hiddenByCombat = false
-            hiddenByInstance = true
-        else
-            hiddenByCombat = false
-            QuestieTracker:Show()
-        end
-    end
-end
+-- Keep the event-handler and options entry points stable.
+QuestieTracker.HandleZoneChanged = TrackerVisibility.HandleZoneChanged
+QuestieTracker.OnMinimizeInInstancesChanged = TrackerVisibility.OnMinimizeInInstancesChanged
+QuestieTracker.OnHideInInstancesChanged = TrackerVisibility.OnHideInInstancesChanged
+QuestieTracker.HandleCombatStarted = TrackerVisibility.HandleCombatStarted
+QuestieTracker.HandleCombatEnded = TrackerVisibility.HandleCombatEnded
+QuestieTracker.OnMinimizeInCombatChanged = TrackerVisibility.OnMinimizeInCombatChanged
+QuestieTracker.OnHideInCombatChanged = TrackerVisibility.OnHideInCombatChanged
 
 -- Toggles the QuestieTracker (Expand/Collapse)
 function QuestieTracker.ToggleTracker()
@@ -864,7 +584,7 @@ end
 
 function QuestieTracker.SetupKeybinding()
     _G.BINDING_NAME_QUESTIE_TOGGLE_TRACKER = l10n("Toggle Questie Tracker")
-    _G["BINDING_NAME_CLICK Questie_NearestQuestItemButton:LeftButton"] = l10n("Use Nearest Quest Item")
+    TrackerNearestQuestItem.SetupKeybinding()
 end
 
 local function _UpdateLineWidth(line, objectiveMarginLeft)
@@ -926,7 +646,7 @@ function QuestieTracker:Update(force)
         return
     end
 
-    if TrackerBaseFrame.isSizing == true or TrackerBaseFrame.isMoving == true or TrackerUtils.FilterProximityTimer == true then
+    if TrackerBaseFrame.isSizing == true or TrackerBaseFrame.isMoving == true or TrackerQuestOrder.FilterProximityTimer == true then
         Questie.Debug(Questie.DEBUG_SPAM, "[QuestieTracker:Update]")
     else
         Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieTracker:Update]")
@@ -950,27 +670,9 @@ function QuestieTracker:Update(force)
     local questItemButtonSize = 12 + trackerFontSizeQuest
     local objectiveColor = Questie.db.profile.trackerColorObjectives
 
-    local function FloatRGBToHex(r, g, b)
-        if r > 255 then r = 255 end
-        if g > 255 then g = 255 end
-        if b > 255 then b = 255 end
-        return string.format("|cFF%02x%02x%02x", math.floor(r * 254), math.floor(g * 254), math.floor(b * 254))
-    end
-
-    local function GetPercentColorHex(float)
-        if type(float) ~= "number" then
-            return FloatRGBToHex(0.937, 0.937, 0.937)
-        end
-        if float <= .50 then
-            return FloatRGBToHex(1, 0 + float * 2, 0)
-        else
-            return FloatRGBToHex(1.843 - float / 0.593, 1, (float * 2 - 1) * 0.157)
-        end
-    end
-
     local line
 
-    local sortedQuestIds, questDetails = TrackerUtils:GetSortedQuestIds()
+    local sortedQuestIds, questDetails = TrackerQuestOrder:GetSortedQuestIds()
 
     local firstQuestInZone = false
     local zoneCheck
@@ -981,9 +683,7 @@ function QuestieTracker:Update(force)
 
     -- Begin populating the Tracker with Quests
     local _UpdateQuests = function()
-        for _, questId in pairs(sortedQuestIds) do
-            if not questId then break end
-
+        for _, questId in ipairs(sortedQuestIds) do
             -- reset objectiveMarginLeft for each quest, it can be increased if there are quest items
             objectiveMarginLeft = questMarginLeft + trackerFontSizeQuest
 
@@ -1150,13 +850,7 @@ function QuestieTracker:Update(force)
                         coloredQuestName = QuestieLib:GetColoredQuestName(quest.Id, Questie.db.profile.trackerShowQuestLevel, ((isMinimizable and Questie.db.profile.collapseCompletedQuests) or Questie.db.char.collapsedQuests[quest.Id] ~= nil), false)
                     end
 
-                    if Questie.db.profile.showQuestPercent and questDetails[quest.Id] and type(questDetails[quest.Id].questCompletePercent) == "number" then
-                        local pct = math.floor(questDetails[quest.Id].questCompletePercent * 100)
-                        local pctColor = GetPercentColorHex(questDetails[quest.Id].questCompletePercent)
-                        line.label:SetText(coloredQuestName .. " " .. pctColor .. "(" .. tostring(pct) .. "%)|r")
-                    else
-                        line.label:SetText(coloredQuestName)
-                    end
+                    line.label:SetText(TrackerObjectiveText.GetQuestTitleText(coloredQuestName, questDetails[quest.Id] and questDetails[quest.Id].questCompletePercent))
 
                     -- Set status icon (yellow question mark for 100%, gray for incomplete)
                     if line.statusIcon and line.statusIcon.texture then
@@ -1500,27 +1194,7 @@ function QuestieTracker:Update(force)
                                             end
                                         end
 
-                                        local questProgress
-                                        questProgress = tostring(objective.Collected) .. "/" .. tostring(objective.Needed)
-
-                                        -- Set Objective text
-                                        local prefix = "- "
-                                        if Questie.db.profile.showQuestPercent and type(objective.Collected) == "number" and type(objective.Needed) == "number" and objective.Needed > 0 then
-                                            local progressColor = GetPercentColorHex(objective.Collected / objective.Needed)
-                                            local white = FloatRGBToHex(0.937, 0.937, 0.937)
-                                            if (Questie.db.profile.showQuestProgressFirst) then
-                                                line.label:SetText(white .. prefix .. "|r" .. progressColor .. questProgress .. "|r " .. white .. objDesc .. "|r")
-                                            else
-                                                line.label:SetText(white .. prefix .. objDesc .. ": " .. "|r" .. progressColor .. questProgress .. "|r")
-                                            end
-                                        else
-                                            local objColor = QuestieLib:GetRGBForObjective(objective)
-                                            if (Questie.db.profile.showQuestProgressFirst) then
-                                                line.label:SetText(objColor .. prefix .. questProgress .. " " .. objDesc .. "|r")
-                                            else
-                                                line.label:SetText(objColor .. prefix .. objDesc .. ": " .. questProgress .. "|r")
-                                            end
-                                        end
+                                        line.label:SetText(TrackerObjectiveText.GetQuestObjectiveText(objective, objDesc))
                                         _UpdateLineWidth(line, objectiveMarginLeft)
 
                                         -- Edge case where the quest is still flagged incomplete for single objectives and yet the objective itself is flagged complete
@@ -1679,6 +1353,7 @@ function QuestieTracker:Update(force)
             local firstAchieveInZone = false
             local achieveId, achieveName, achieveDescription, achieveComplete, numCriteria, zoneName, achieve
 
+            local trackedAchievementIds = TrackerAchievements.GetTrackedIds()
             for trackedId, _ in pairs(trackedAchievementIds) do
                 achieveId, achieveName, _, _, _, _, _, achieveDescription, _, _, _, _, achieveComplete, _, _ = GetAchievementInfo(trackedId)
                 numCriteria = GetAchievementNumCriteria(trackedId)
@@ -1857,13 +1532,7 @@ function QuestieTracker:Update(force)
 
                                 -- Set Objective text
                                 local objDesc = achieve.Description:gsub("%.", "")
-                                local prefix = "- "
-                                if Questie.db.profile.showQuestPercent then
-                                    local white = FloatRGBToHex(0.937, 0.937, 0.937)
-                                    line.label:SetText(white .. prefix .. objDesc .. "|r")
-                                else
-                                    line.label:SetText(QuestieLib:GetRGBForObjective({Collected = 0, Needed = 1}) .. prefix .. objDesc)
-                                end
+                                line.label:SetText(TrackerObjectiveText.GetAchievementLabelText(objDesc, false))
                                 _UpdateLineWidth(line, objectiveMarginLeft)
 
                                 -- Set Objective state
@@ -1914,22 +1583,8 @@ function QuestieTracker:Update(force)
 
                                     -- Set Objectives with more than one Objective number criteria
                                     if not (completed or quantityNeeded == 1 or quantityProgress == quantityNeeded) then
-                                        if strfind(quantityString, "|") then
-                                            quantityString = quantityString:gsub("/%s?", "/")
-                                        else
-                                            quantityString = quantityProgress .. "/" .. quantityNeeded
-                                        end
-
-                                        local lineEnding = tostring(quantityString)
-
-                                        -- Set Objective text
-                                        local prefix = "- "
-                                        if Questie.db.profile.showQuestPercent then
-                                            local white = FloatRGBToHex(0.937, 0.937, 0.937)
-                                            line.label:SetText(white .. prefix .. objDesc .. ": " .. "|r" .. GetPercentColorHex(quantityProgress / (quantityNeeded > 0 and quantityNeeded or 1)) .. lineEnding .. "|r")
-                                        else
-                                            line.label:SetText(QuestieLib:GetRGBForObjective({Collected = quantityProgress, Needed = quantityNeeded}) .. prefix .. objDesc .. ": " .. lineEnding)
-                                        end
+                                        local objectiveText, headingText, progressText = TrackerObjectiveText.GetAchievementProgressText(objDesc, quantityProgress, quantityNeeded, quantityString)
+                                        line.label:SetText(objectiveText)
 
                                         -- Check and measure Objective text width and update tracker width
                                         QuestieTracker:UpdateWidth(line.label:GetUnboundedStringWidth() + objectiveMarginLeft + trackerMarginRight)
@@ -1940,13 +1595,7 @@ function QuestieTracker:Update(force)
                                         -- Split Objective description and Progress/Needed into seperate lines
                                         if (trackerLineWidth < line.label:GetUnboundedStringWidth() + objectiveMarginLeft) and (line.label:GetWidth() < line.label:GetUnboundedStringWidth() + 5) then
                                             -- Set Objective text
-                                            local prefix = "- "
-                                            if Questie.db.profile.showQuestPercent then
-                                                local white = FloatRGBToHex(0.937, 0.937, 0.937)
-                                                line.label:SetText(white .. prefix .. objDesc .. ": " .. "|r")
-                                            else
-                                                line.label:SetText(QuestieLib:GetRGBForObjective({Collected = quantityProgress, Needed = quantityNeeded}) .. prefix .. objDesc .. ": ")
-                                            end
+                                            line.label:SetText(headingText)
 
                                             -- Check and measure Objective text width and update tracker width
                                             QuestieTracker:UpdateWidth(line.label:GetUnboundedStringWidth() + objectiveMarginLeft + trackerMarginRight)
@@ -1986,12 +1635,7 @@ function QuestieTracker:Update(force)
                                             line.label:SetPoint("TOPLEFT", line, "TOPLEFT", objectiveMarginLeft, 0)
 
                                             -- Set Objective text
-                                            if Questie.db.profile.showQuestPercent then
-                                                local white = FloatRGBToHex(0.937, 0.937, 0.937)
-                                                line.label:SetText(white .. "    > " .. "|r" .. GetPercentColorHex(quantityProgress / (quantityNeeded > 0 and quantityNeeded or 1)) .. lineEnding .. "|r")
-                                            else
-                                                line.label:SetText(QuestieLib:GetRGBForObjective({Collected = quantityProgress, Needed = quantityNeeded}) .. "    > " .. lineEnding)
-                                            end
+                                            line.label:SetText(progressText)
 
                                             -- Check and measure Objective text width and update tracker width
                                             QuestieTracker:UpdateWidth(line.label:GetUnboundedStringWidth() + objectiveMarginLeft + trackerMarginRight)
@@ -2010,23 +1654,7 @@ function QuestieTracker:Update(force)
                                         -- Set Objectives with a single Objective number criteria
                                     else
                                         -- Set Objective text
-                                        if completed then
-                                            local prefix = "- "
-                                            if Questie.db.profile.showQuestPercent then
-                                                local white = FloatRGBToHex(0.937, 0.937, 0.937)
-                                                line.label:SetText(white .. prefix .. objDesc .. "|r")
-                                            else
-                                                line.label:SetText(QuestieLib:GetRGBForObjective({Collected = 1, Needed = 1}) .. prefix .. objDesc)
-                                            end
-                                        else
-                                            local prefix = "- "
-                                            if Questie.db.profile.showQuestPercent then
-                                                local white = FloatRGBToHex(0.937, 0.937, 0.937)
-                                                line.label:SetText(white .. prefix .. objDesc .. "|r")
-                                            else
-                                                line.label:SetText(QuestieLib:GetRGBForObjective({Collected = 0, Needed = 1}) .. prefix .. objDesc)
-                                            end
-                                        end
+                                        line.label:SetText(TrackerObjectiveText.GetAchievementLabelText(objDesc, completed))
 
                                         -- Set Objective criteria mark
                                         if not Questie.db.profile.hideCompletedAchieveObjectives and (not objectiveColor or objectiveColor == "white") then
@@ -2108,7 +1736,7 @@ function QuestieTracker:UpdateFormatting()
         return
     end
 
-    if TrackerBaseFrame.isSizing == true or TrackerBaseFrame.isMoving == true or TrackerUtils.FilterProximityTimer == true then
+    if TrackerBaseFrame.isSizing == true or TrackerBaseFrame.isMoving == true or TrackerQuestOrder.FilterProximityTimer == true then
         Questie.Debug(Questie.DEBUG_SPAM, "[QuestieTracker:UpdateFormatting]")
     else
         Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieTracker:UpdateFormatting]")
@@ -2116,7 +1744,7 @@ function QuestieTracker:UpdateFormatting()
 
     -- The Proximity Timer only pulses every 5 secs while running.
     -- Flip back to false so we're not hiding other valid updates.
-    TrackerUtils.FilterProximityTimer = nil
+    TrackerQuestOrder.FilterProximityTimer = nil
 
     -- Hide unused lines
     TrackerLinePool.HideUnusedLines()
@@ -2128,17 +1756,7 @@ function QuestieTracker:UpdateFormatting()
 
     -- This is responsible for handling the visibility of the Tracker
     -- when nothing is tracked or when alwaysShowTracker is being used.
-    if hiddenByInstance or hiddenByCombat then
-        trackerBaseFrame:Hide()
-    elseif (not QuestieTracker:HasQuest()) then
-        if Questie.db.profile.alwaysShowTracker then
-            trackerBaseFrame:Show()
-        else
-            trackerBaseFrame:Hide()
-        end
-    else
-        trackerBaseFrame:Show()
-    end
+    TrackerVisibility.UpdateFrameVisibility(trackerBaseFrame)
 
     TrackerHeaderFrame:Update()
 
@@ -2350,11 +1968,7 @@ function QuestieTracker:Unhook()
         GetNumQuestWatches = QuestieTracker.GetNumQuestWatches
     end
 
-    -- Achievement Hooks
-    if QuestieTracker.IsTrackedAchievement then
-        IsTrackedAchievement = QuestieTracker.IsTrackedAchievement
-        GetNumTrackedAchievements = QuestieTracker.GetNumTrackedAchievements
-    end
+    TrackerAchievements.RestoreQueryHooks()
 
     QuestieTracker.alreadyHooked = nil
 end
@@ -2380,9 +1994,7 @@ function QuestieTracker:HookBaseTracker()
         hooksecurefunc("AddQuestWatch", function(index, watchTimer) QuestieTracker:AQW_Insert(index, watchTimer) end)
         hooksecurefunc("RemoveQuestWatch", QuestieTracker.RemoveQuestWatch)
 
-        -- Achievement secure hooks
-        hooksecurefunc("AddTrackedAchievement", function(achieveId) QuestieTracker:TrackAchieve(achieveId) end)
-        hooksecurefunc("RemoveTrackedAchievement", QuestieTracker.RemoveTrackedAchievement)
+        TrackerAchievements.RegisterHooks()
 
         QuestieTracker.alreadyHookedSecure = true
     end
@@ -2431,33 +2043,7 @@ function QuestieTracker:HookBaseTracker()
         end
     end
 
-    -- Achievement Hooks
-    if not QuestieTracker.IsTrackedAchievement then
-        QuestieTracker.IsTrackedAchievement = IsTrackedAchievement
-        QuestieTracker.GetNumTrackedAchievements = GetNumTrackedAchievements
-    end
-
-    -- Intercept and return a Questie boolean value
-    IsTrackedAchievement = function(achieveId)
-        if Questie.db.char.trackedAchievementIds[achieveId] then
-            return achieveId and Questie.db.char.trackedAchievementIds[achieveId]
-        else
-            return false
-        end
-    end
-
-    -- Intercept and return only what Questie is tracking
-    GetNumTrackedAchievements = function(isQuestie)
-        if isQuestie and Questie.db.char.trackedAchievementIds then
-            local numTrackedAchievements = 0
-            for _ in pairs(Questie.db.char.trackedAchievementIds) do
-                numTrackedAchievements = numTrackedAchievements + 1
-            end
-            return numTrackedAchievements
-        else
-            return 0
-        end
-    end
+    TrackerAchievements.InstallQueryHooks()
 
     if Questie.db.profile.showBlizzardQuestTimer then
         TrackerQuestTimers:ShowBlizzardTimer()
@@ -2629,140 +2215,8 @@ function QuestieTracker:AQW_Insert(index, expire)
     end)
 end
 
-QuestieTracker.RemoveTrackedAchievement = function(achieveId, isQuestie)
-    if QuestieTracker.disableHooks then
-        return
-    end
-
-    if not isQuestie then
-        if achieveId then
-            QuestieTracker:UntrackAchieveId(achieveId)
-            Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieTracker.RemoveTrackedAchievement] - by Blizzard")
-        end
-    else
-        Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieTracker.RemoveTrackedAchievement] - by Questie")
-    end
-end
-
-function QuestieTracker:UpdateAchieveTrackerCache(achieveId)
-    -- Since we're essentially adding & force removing an achievement from the QuestWatch frame while we add an achievement to the Questie Tracker, the event this
-    -- function is called from, TRACKED_ACHIEVEMENT_LIST_CHANGED, fires twice. When we remove an achievement from the Questie Tracker the event still fires twice
-    -- because the Blizzard function responsible for this is essentially a "toggle". It quickly re-adds the achievement to the QuestWatch frame and then removes it.
-    -- So, again this event again fires twice. We only need to allow this to run once and it often fires before the Questie.db.char.trackedAchievementIds table is
-    -- updated so we're going to throttle this 1/10th of a second.
-    if Questie.db.profile.trackerEnabled then
-        if achieveId then
-            C_Timer.After(0.1, function()
-                Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieTracker:UpdateAchieveTrackerCache] - ", achieveId)
-
-                if (not Questie.db.profile.trackerEnabled) or (achieveId == 0) then
-                    return
-                end
-
-                -- Look for changes in the Saved VAR and update the achievement cache
-                if Questie.db.char.trackedAchievementIds[achieveId] ~= trackedAchievementIds[achieveId] then
-                    Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieTracker:UpdateAchieveTrackerCache] - Change Detected!")
-
-                    trackedAchievementIds[achieveId] = Questie.db.char.trackedAchievementIds[achieveId]
-
-                    QuestieCombatQueue:Queue(function()
-                        C_Timer.After(0.1, function()
-                            QuestieTracker:Update()
-                        end)
-                    end)
-                else
-                    Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieTracker:UpdateAchieveTrackerCache] - No Change Detected!")
-                end
-            end)
-        end
-    end
-end
-
-function QuestieTracker:UntrackAchieveId(achieveId)
-    Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieTracker:UntrackAchieve] - ", achieveId)
-    if Questie.db.char.trackedAchievementIds[achieveId] then
-        Questie.db.char.trackedAchievementIds[achieveId] = nil
-    end
-end
-
-function QuestieTracker:TrackAchieve(achieveId)
-    Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieTracker:TrackAchieve] - ", achieveId)
-    if (not Questie.db.profile.trackerEnabled) or (achieveId == 0) then
-        return
-    end
-
-    -- Questie removes achievements from Blizzard's tracker, so another click in the
-    -- Achievement UI comes back through AddTrackedAchievement and needs to toggle off.
-    if Questie.db.char.trackedAchievementIds[achieveId] then
-        RemoveTrackedAchievement(achieveId, true)
-
-        if AchievementFrame and AchievementFrame:IsShown() then
-            QuestieTracker:UntrackAchieveId(achieveId)
-        end
-
-        return
-    end
-
-    -- Prevents tracking more than 10 Achievements
-    if (GetNumTrackedAchievements(true) == 10) then
-        RemoveTrackedAchievement(achieveId, true)
-        UIErrorsFrame:AddMessage(format(l10n("You may only track 10 achievements at a time."), 10), 1.0, 0.1, 0.1, 1.0)
-        return
-    end
-
-    -- This prevents double calling this function
-    local now = GetTime()
-    if achieveId and achieveId == QuestieTracker.last_achieveId and (now - lastAchieveId) < 0.1 then
-        return
-    end
-
-    lastAchieveId = now
-    QuestieTracker.last_achieveId = achieveId
-
-    -- This removes achievements from the Blizzard QuestWatchFrame so when the
-    -- option "Show Blizzard Timer" is enabled, that is all the player will see.
-    RemoveTrackedAchievement(achieveId, true)
-
-    if achieveId > 0 then
-        -- This handles the Track check box in the Achievement UI
-        local mouseFocus
-        local frameMatch
-
-        -- Krowi isn't using this check box for their Achievement frame
-        if not IsAddOnLoaded("Krowi_AchievementFilter") then
-            local mouseFocusFrame = GetMouseFocus()
-            mouseFocus = mouseFocusFrame and mouseFocusFrame:GetName()
-
-            if mouseFocus then
-                frameMatch = strmatch(mouseFocus, "(AchievementFrameAchievementsContainerButton%dTracked.*)")
-            end
-        end
-
-        -- Upon first login or reloadui, this frame isn't loaded
-        if (not AchievementFrame) then
-            AchievementFrame_LoadUI()
-        end
-
-        -- Allow achievements to be tracked through the Blizzard Achievement UI
-        -- or programmatically through AddTrackedAchievement.
-        if Questie.db.char.trackedAchievementIds[achieveId] then
-            Questie.db.char.trackedAchievementIds[achieveId] = nil
-        elseif not AchievementFrame:IsShown() then
-            Questie.db.char.trackedAchievementIds[achieveId] = true
-        elseif IsShiftKeyDown() and AchievementFrame:IsShown() then
-            Questie.db.char.trackedAchievementIds[achieveId] = true
-        elseif AchievementFrame:IsShown() and (mouseFocus == frameMatch) then
-            Questie.db.char.trackedAchievementIds[achieveId] = true
-        end
-
-        -- Forces the achievement out of a minimized state
-        if Questie.db.char.collapsedQuests[achieveId] == true then
-            Questie.db.char.collapsedQuests[achieveId] = nil
-        end
-
-        -- Forces the 'Achievement Zone' out of a minimized state
-        if Questie.db.char.collapsedZones["Achievements"] == true then
-            Questie.db.char.collapsedZones["Achievements"] = nil
-        end
-    end
-end
+-- Preserve the entry points used by tracker menus, pooled rows, and events.
+QuestieTracker.RemoveTrackedAchievement = TrackerAchievements.RemoveTrackedAchievement
+QuestieTracker.UpdateAchieveTrackerCache = TrackerAchievements.UpdateAchieveTrackerCache
+QuestieTracker.UntrackAchieveId = TrackerAchievements.UntrackAchieveId
+QuestieTracker.TrackAchieve = TrackerAchievements.TrackAchieve

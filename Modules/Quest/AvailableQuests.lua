@@ -408,7 +408,7 @@ function AvailableQuests.ClearUnavailableQuestForLiveTransition(questId)
     return changed
 end
 
-local _CalculateAvailableQuests, _DrawChildQuests, _AddStarter, _DrawAvailableQuest, _GetQuestIcon, _GetIconScaleForAvailable, _HasProperDistanceToAlreadyAddedSpawns, _RegisterQuestStartTooltips, _GetStructuredAvailableQuestsInGossip, _GetStructuredActiveQuestsInGossip, _RemoveQuestFromNpcAvailability, _SyncAvailableQuestDisplay, _HasLiveAvailableQuestFrames
+local _CalculateAvailableQuests, _MarkActiveChildQuests, _AddStarter, _DrawAvailableQuest, _GetQuestIcon, _GetIconScaleForAvailable, _HasProperDistanceToAlreadyAddedSpawns, _RegisterQuestStartTooltips, _GetStructuredAvailableQuestsInGossip, _GetStructuredActiveQuestsInGossip, _RemoveQuestFromNpcAvailability, _SyncAvailableQuestDisplay, _HasLiveAvailableQuestFrames
 
 -- A scan selects its level range once, then uses numeric quest IDs on cache hits.
 local function _GetLevelRequirementCache(minLevel, maxLevel, playerLevel)
@@ -1243,8 +1243,6 @@ _CalculateAvailableQuests = function()
         end
 
         if currentQuestlog[questId] then
-            _DrawChildQuests(questId, currentQuestlog, completedQuests, hiddenQuests, hidden, unavailableQuests, nextAvailableQuestSet)
-
             if QuestieDB.IsComplete(questId) ~= -1 then -- The quest in the quest log is not failed, so we don't show it as available
                 nextAvailableQuestSet[questId] = nil
                 return
@@ -1294,6 +1292,17 @@ _CalculateAvailableQuests = function()
     end
 
     yieldRefresh() -- Include setup work in the first slice.
+    -- Discover children before filtering so pointer order cannot undo a rejection
+    -- or hide the parent-active eligibility shortcut from an earlier child.
+    local parentCount = 0
+    for questId in pairs(currentQuestlog) do
+        if questData[questId] and not (autoBlacklist[questId] or completedQuests[questId] or
+            hiddenQuests[questId] or hidden[questId] or unavailableQuests[questId]) then
+            _MarkActiveChildQuests(questId, currentQuestlog, completedQuests, hiddenQuests, hidden, unavailableQuests)
+        end
+        parentCount = parentCount + 1
+        if yieldRefresh(parentCount > maxQuestsPerYield) then parentCount = 0 end
+    end
     _SelectLevelCaches()
     local questCount = 0
     for questId in pairs(questData) do
@@ -1305,6 +1314,19 @@ _CalculateAvailableQuests = function()
             questCount = 0
             questLogQuestIds = nil -- The next check must reread changes made while suspended.
             _SelectLevelCaches() -- A level/settings event may have reset the cache while suspended.
+        end
+    end
+
+    -- Children can also be supplied by runtime corrections without a compiled pointer.
+    for questId in pairs(QuestieDB.activeChildQuests) do
+        if not questData[questId] then
+            _CheckAvailability(questId)
+            questCount = questCount + 1
+            if yieldRefresh(questCount > maxQuestsPerYield) then
+                questCount = 0
+                questLogQuestIds = nil
+                _SelectLevelCaches()
+            end
         end
     end
 
@@ -1439,17 +1461,14 @@ _RegisterQuestStartTooltips = function(quest)
     end
 end
 
---- Mark all child quests as active when the parent quest is in the quest log
---- Reused this logic in QuestsByZone.lua/QuestsByFaction.lua -- TO DO: copy logic to QBF
---- if this is modified, also make sure the changes are reflected in the other file
+--- Mark eligible children of quests in the log, leaving display decisions to the availability scan.
 ---@param questId number
----@param currentQuestlog table<number, boolean>
+---@param currentQuestlog table<QuestId, Quest>
 ---@param completedQuests table<number, boolean>
 ---@param hiddenQuests table<number, boolean>
 ---@param hidden table<number, boolean>
 ---@param unavailableQuests table<number, boolean>
----@param availableQuestSet table<number, boolean>
-_DrawChildQuests = function(questId, currentQuestlog, completedQuests, hiddenQuests, hidden, unavailableQuests, availableQuestSet)
+_MarkActiveChildQuests = function(questId, currentQuestlog, completedQuests, hiddenQuests, hidden, unavailableQuests)
     local childQuests = QuestieDB.QueryQuestSingle(questId, "childQuests")
     if (not childQuests) then
         return
@@ -1488,9 +1507,6 @@ _DrawChildQuests = function(questId, currentQuestlog, completedQuests, hiddenQue
 
                 if isPreQuestSingleFulfilled and isPreQuestGroupFulfilled then
                     QuestieDB.activeChildQuests[childQuestId] = true
-                    availableQuestSet[childQuestId] = true
-                    -- Mark them here so the draw pass can render them even if their
-                    -- questId was processed earlier in the availability pass.
                 end
             end
         end

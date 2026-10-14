@@ -1,0 +1,513 @@
+import unittest
+import os
+import re
+from collections import defaultdict
+from unittest.mock import patch
+from pathlib import Path
+
+from _test_paths import ADDON_ROOT
+
+import audit_acore_trigger_end_tooltip_targets as trigger_end_audit
+import generate_acore_item_corrections as item_generator
+import generate_acore_npc_corrections as npc_generator
+import generate_acore_object_corrections as object_generator
+import validate_acore_quest_metadata as quest_validator
+import validate_wdm_map_data as wdm_validator
+
+
+class AcoreCorrectionRegressionTests(unittest.TestCase):
+    WINTERGRASP_HEADER = '''
+enum WintergraspNpcs { NPC_HORDE = 31107, NPC_ALLIANCE = 31109 };
+const uint8 WG_MAX_KEEP_NPC = 1;
+const uint8 WG_MAX_OUTSIDE_NPC = 1;
+const WintergraspObjectPositionData WGKeepNPC[WG_MAX_KEEP_NPC] = {
+    {5234.970215f, 2883.399902f, 409.274994f, 4.293510f, NPC_HORDE, NPC_ALLIANCE},
+};
+const WintergraspObjectPositionData WGOutsideNPC[WG_MAX_OUTSIDE_NPC] = {
+    {5088.310059f, 2191.729980f, 359.500000f, 3.0f, NPC_HORDE, NPC_ALLIANCE},
+};
+'''
+
+    def scripted_spawns(self, header=None):
+        addon_root = ADDON_ROOT
+        directory = Path('test-acore-source')
+        header_path = directory / 'src/server/game/Battlefield/Zones/BattlefieldWG.h'
+        read_text = Path.read_text
+
+        def fixture_text(path, *args, **kwargs):
+            if path == header_path:
+                return header or self.WINTERGRASP_HEADER
+            return read_text(path, *args, **kwargs)
+
+        with patch.object(Path, 'read_text', fixture_text):
+            return npc_generator.load_wintergrasp_scripted_spawns(
+                directory, addon_root, npc_generator.parse_zone_maps(addon_root))
+
+    def test_scripted_wintergrasp_coordinates_and_visibility_conditions(self):
+        spawns = self.scripted_spawns()
+        self.assertEqual([48.6, 24.29, 1036], spawns[31109][4197][0])
+        self.assertEqual([48.6, 24.29, 1037], spawns[31107][4197][0])
+        self.assertEqual(1038, spawns[31109][4197][1][2])
+        self.assertEqual(1039, spawns[31107][4197][1][2])
+
+    def test_scripted_spawn_parser_rejects_incomplete_or_changed_source(self):
+        for old, new in [('WG_MAX_KEEP_NPC = 1', 'WG_MAX_KEEP_NPC = 2'),
+                         ('5234.970215f', 'BASE_X + 1'),
+                         ('NPC_HORDE, NPC_ALLIANCE}', 'UNKNOWN_NPC, NPC_ALLIANCE}')]:
+            with self.subTest(new=new), self.assertRaises(ValueError):
+                self.scripted_spawns(self.WINTERGRASP_HEADER.replace(old, new))
+
+    def test_scripted_spawns_merge_sql_without_losing_other_locations_or_difficulty(self):
+        spawns = defaultdict(lambda: defaultdict(list))
+        spawns[31109][4197] = [[48.6, 24.29, 0, 2, 571], [1, 2, 1034]]
+        npc_generator.merge_scripted_spawn_locations(spawns, self.scripted_spawns())
+        self.assertIn([48.6, 24.29, 1036, 2, 571], spawns[31109][4197])
+        self.assertIn([1, 2, 1034], spawns[31109][4197])
+        self.assertNotIn([48.6, 24.29], spawns[31109][4197])
+
+    def test_phase_metadata_survives_deduplication_and_correction_comparison(self):
+        points = [[1, 2, 1036], [1, 2, 1037], [1, 2, 1036], [3, 4, 1038, 1, 571]]
+        unique = npc_generator.unique_coordinate_points(points, {571: 1})
+        self.assertCountEqual([[1, 2, 1036], [1, 2, 1037], [3, 4, 1038]], unique)
+        correction = npc_generator.find_differences(
+            {31109: {'spawns': {4197: [[48.6, 24.29]]}}},
+            {31109: {'spawns': {4197: [[48.6, 24.29, 1036]]}}}, ['spawns'])
+        self.assertEqual({31109: {'spawns': {4197: [[48.6, 24.29, 1036]]}}}, correction)
+        # Ordinary SQL coordinates must not strip unrelated Questie phase conditions.
+        self.assertEqual({}, npc_generator.find_differences(
+            {1: {'spawns': {4197: [[1, 2, 1034]]}}},
+            {1: {'spawns': {4197: [[1, 2]]}}}, ['spawns']))
+
+    def test_shared_map_parser_loads_all_wdm_geometry(self):
+        addon_root = ADDON_ROOT
+        zone_maps = npc_generator.parse_zone_maps(addon_root)
+
+        self.assertEqual(1176, zone_maps["instance_to_zone"][209])
+        self.assertEqual("wdmWorld", zone_maps["ui_map_sources"][98])
+        self.assertEqual("wdmInstance", zone_maps["ui_map_sources"][219])
+        self.assertTrue(zone_maps["wdm_instance_map_data"][219]["wdmInstanceMap"])
+
+    def test_shadow_vault_masks_are_scoped_and_separate_from_logical_phases(self):
+        row = {"map": 571, "areaId": 4477, "spawnMask": 1, "phaseMask": 1}
+        self.assertEqual([10, 20, 0, 1, 571, 1, 4477],
+                         npc_generator.add_acore_spawn_visibility([10, 20], row, {571: 1}))
+        row.update(phaseMask=2, spawnMask=2)
+        self.assertEqual([10, 20, 1034, 2, 571, 2, 4477],
+                         npc_generator.add_acore_spawn_visibility([10, 20, 1034], row, {571: 3}))
+        for map_id, area in ((571, 0), (571, 4501), (530, 4477)):
+            row.update(map=map_id, areaId=area, spawnMask=1)
+            self.assertEqual([10, 20], npc_generator.add_acore_spawn_visibility([10, 20], row, {}))
+
+    def test_expanded_regions_preserve_local_npc_and_object_phase_metadata(self):
+        for map_id, zone_id, area_id, mask in (
+            (571, 210, 4501, 66), (571, 67, 4438, 4), (571, 67, 4495, 8),
+            (609, 4298, 4356, 192), (0, 139, 4281, 448), (571, 65, 4172, 2),
+            (571, 3537, 4020, 11), (571, 394, 4216, 2), (571, 66, 4325, 2),
+            (0, 85, 153, 64), (0, 1497, 1497, 128), (1, 1637, 1637, 192),
+        ):
+            row = {"map": map_id, "zoneId": zone_id, "areaId": area_id, "phaseMask": mask}
+            with self.subTest(row=row):
+                for generator in (npc_generator, object_generator):
+                    self.assertEqual([10, 20, 0, 1, map_id, mask, area_id],
+                                     generator.add_acore_spawn_visibility([10, 20], row, {}))
+                row["phaseMask"] = 1
+                self.assertEqual([10, 20, 0, 1, map_id, 1, area_id],
+                                 npc_generator.add_acore_spawn_visibility([10, 20], row, {}))
+
+    def test_unknown_areas_and_other_maps_never_guess_story_visibility(self):
+        for map_id, zone_id, area_id in (
+            (571, 210, 0), (631, 210, 4522), (0, 139, 2268),
+            (529, 3358, 3420), (571, 4395, 4613),
+        ):
+            row = {"map": map_id, "zoneId": zone_id, "areaId": area_id, "phaseMask": 64}
+            with self.subTest(row=row):
+                self.assertEqual([10, 20], npc_generator.add_acore_spawn_visibility([10, 20], row, {}))
+
+    def test_server_contracts_match_client_and_generators(self):
+        addon_root = ADDON_ROOT
+        bridge_source = os.environ.get("QUESTIE_BRIDGE_SOURCE")
+        if bridge_source:
+            header = Path(bridge_source) / "src/QuestieBridgePhases.h"
+            self.assertTrue(header.is_file(), f"configured bridge header is missing: {header}")
+        else:
+            headers = [parent / "source/modules/mod-questie-bridge/src/QuestieBridgePhases.h"
+                       for parent in addon_root.parents]
+            header = next((path for path in headers if path.is_file()), None)
+        if not header:
+            self.skipTest("matching bridge source is not available beside the addon")
+        text = header.read_text(encoding="utf-8")
+        server_text = (header.parent / "QuestieBridge.cpp").read_text(encoding="utf-8")
+        client_text = (addon_root / "Modules/Network/QuestieServer.lua").read_text(encoding="utf-8")
+        server_protocol = re.search(r"constexpr uint32 ProtocolVersion = (\d+);", server_text)
+        client_protocol = re.search(r'PROTOCOL_VERSION = "QSTSVR", "(\d+)"', client_text)
+        self.assertIsNotNone(server_protocol, "bridge protocol declaration is missing")
+        self.assertIsNotNone(client_protocol, "addon protocol declaration is missing")
+        self.assertEqual(server_protocol.group(1), client_protocol.group(1), "bridge protocol mismatch")
+        zones, areas, masks = npc_generator.load_server_phase_profiles()
+        for name, profiles in (("PhaseZones", zones), ("PhaseAreas", areas)):
+            body = re.search(rf"{name}\[\]\[2\]\s*=\s*\{{(.*?)\}};", text, re.S).group(1)
+            pairs = {(int(map_id), int(region)) for map_id, region in re.findall(r"\{(\d+),\s*(\d+)\}", body)}
+            self.assertEqual({(map_id, region) for map_id, regions in profiles.items() for region in regions}, pairs)
+        body = re.search(r"PhaseMasks\[\]\s*=\s*\{(.*?)\};", text, re.S).group(1)
+        self.assertEqual(masks, [int(value) for value in re.findall(r"\d+", body)])
+        self.assertEqual(len(masks), len(set(masks)))
+
+    def test_phase_and_difficulty_alternatives_do_not_form_a_cross_product(self):
+        points = [[10, 20, 0, 1, 571, 1, 4477], [10, 20, 0, 2, 571, 2, 4477],
+                  [10, 20, 0, 4, 571, 2, 4477], [10, 20, 0, 1, 571, 1, 4477],
+                  [10, 20, 0, 1, 571, 1, 4501]]
+        self.assertCountEqual([[10, 20, 0, 1, 571, 1, 4477], [10, 20, 0, 6, 571, 2, 4477],
+                               [10, 20, 0, 1, 571, 1, 4501]],
+                              npc_generator.unique_coordinate_points(points, {571: 7}))
+
+    def test_npc_and_object_overlays_preserve_identical_coordinate_phase_changes(self):
+        old = {210: [[10, 20]]}
+        new = {210: [[10, 20, 0, 1, 571, 2, 4477]]}
+        for generator in (npc_generator, object_generator):
+            correction = generator.find_differences({1: {"spawns": old}}, {1: {"spawns": new}}, ["spawns"])
+            self.assertEqual(new, correction[1]["spawns"])
+            self.assertNotEqual(generator.normalize_coordinate_table(new),
+                                generator.normalize_coordinate_table({210: [[10, 20, 0, 1, 571, 1, 4477]]}))
+
+    def test_resolves_zulfarrak_spawn_to_wdm_instance_map(self):
+        addon_root = ADDON_ROOT
+        zone_maps = npc_generator.parse_zone_maps(addon_root)
+        row = {
+            "guid": 0,
+            "areaId": 1176,
+            "zoneId": 1176,
+            "map": 209,
+            "position_x": 1882.89,
+            "position_y": 1299.27,
+        }
+
+        self.assertEqual((1176, [23.55, 18.33]), npc_generator.resolve_coordinate_zone(row, zone_maps))
+
+    def test_wdm_floor_zone_ids_resolve_to_exact_ui_maps(self):
+        addon_root = ADDON_ROOT
+        zone_maps = npc_generator.parse_zone_maps(addon_root)
+
+        self.assertEqual(11292, zone_maps["ui_to_zone"][292])
+        self.assertEqual(292, zone_maps["wdm_floor_zone_to_ui"][11292])
+        self.assertEqual(52, len(zone_maps["wdm_floor_zone_to_ui"]))
+        self.assertEqual(292, npc_generator.zone_to_ui(11292, zone_maps))
+        self.assertEqual(291, npc_generator.zone_to_ui(1581, zone_maps))
+        self.assertTrue(all(zone_id <= 65535 for zone_id in zone_maps["wdm_floor_zone_to_ui"]))
+        self.assertTrue(all(
+            zone_maps["wdm_instance_map_data"][ui_id]["instance"] in zone_maps["instance_to_zone"]
+            for ui_id in zone_maps["floor_threshold_by_ui"]
+        ))
+
+        zone_names = npc_generator.parse_zone_id_names(addon_root, zone_maps)
+        self.assertEqual("WDM_THE_DEADMINES_FLOOR_2", zone_names[11292])
+        self.assertEqual("zoneIDs.WDM_BLACKROCK_SPIRE_FLOOR_7", npc_generator.format_zone_ref(22003, zone_names))
+
+    def test_world_spawn_does_not_enter_wdm_instance_floor_fallback(self):
+        addon_root = ADDON_ROOT
+        zone_maps = npc_generator.parse_zone_maps(addon_root)
+        row = {
+            "map": 0,
+            "areaId": 12,
+            "zoneId": 12,
+            "position_x": -9465.58,
+            "position_y": 16.8472,
+            "position_z": 65.921,
+        }
+
+        self.assertEqual(12, npc_generator.resolve_coordinate_zone(row, zone_maps)[0])
+
+    def test_resolves_deadmines_spawn_below_cutoff_to_floor_two(self):
+        addon_root = ADDON_ROOT
+        zone_maps = npc_generator.parse_zone_maps(addon_root)
+        zone_maps["floor_threshold_by_ui"].update({291: 27.0, 292: None})
+        row = {
+            "guid": 79210,
+            "map": 36,
+            "position_x": -139.828,
+            "position_y": -569.442,
+            "position_z": 19.79,
+        }
+
+        self.assertEqual((11292, [10.43, 61.64]), npc_generator.resolve_coordinate_zone(row, zone_maps))
+
+    def test_resolves_overlapping_boss_floors(self):
+        addon_root = ADDON_ROOT
+        zone_maps = npc_generator.parse_zone_maps(addon_root)
+        zone_maps["floor_threshold_by_ui"].update({
+            250: None,
+            251: 20.0,
+            252: 44.0,
+            253: None,
+            254: 77.0,
+            255: None,
+            11003: 98.0,
+            256: None,
+            257: 12.0,
+            348: None,
+            349: -3.0,
+        })
+
+        cases = (
+            ({"map": 229, "position_x": -40.8713, "position_y": -433.589, "position_z": 111.918}, 22003),
+            ({"map": 558, "position_x": 68.131, "position_y": -387.821, "position_z": 26}, 11257),
+            ({"map": 585, "position_x": 148.549, "position_y": 186.981, "position_z": -16}, 4131),
+        )
+        for row, expected_zone_id in cases:
+            with self.subTest(map_id=row["map"]):
+                self.assertEqual(expected_zone_id, npc_generator.resolve_coordinate_zone(row, zone_maps)[0])
+
+    def test_resolves_missing_classic_boss_icons(self):
+        addon_root = ADDON_ROOT
+        zone_maps = npc_generator.parse_zone_maps(addon_root)
+
+        cases = (
+            ({"guid": 247103, "map": 33, "position_x": -218.958, "position_y": 2152.83, "position_z": 81.1}, 11316),
+            ({"guid": 27424, "map": 48, "position_x": -818.832, "position_y": -155.576, "position_z": -25.7923}, 11222),
+            ({"guid": 30139, "map": 90, "position_x": -531.324, "position_y": 670.159, "position_z": -325.185}, 11229),
+            ({"map": 429, "position_x": 132.626, "position_y": 625.913, "position_z": -48.38}, 11237),
+        )
+        for row, expected_zone_id in cases:
+            with self.subTest(map_id=row["map"]):
+                self.assertEqual(expected_zone_id, npc_generator.resolve_coordinate_zone(row, zone_maps)[0])
+
+    def test_generated_corrections_use_wdm_floor_constants(self):
+        addon_root = ADDON_ROOT
+        zone_maps = npc_generator.parse_zone_maps(addon_root)
+        zone_names = npc_generator.parse_zone_id_names(addon_root, zone_maps)
+
+        self.assertEqual(
+            "{[zoneIDs.WDM_THE_DEADMINES_FLOOR_2] = {{10,20}}}",
+            npc_generator.format_lua_field_value("spawns", {11292: [[10.0, 20.0]]}, zone_names),
+        )
+        self.assertEqual(
+            "zoneIDs.WDM_THE_DEADMINES_FLOOR_2",
+            npc_generator.format_lua_field_value("zoneID", 11292, zone_names),
+        )
+
+    def test_reported_boss_floor_coordinates_round_trip(self):
+        addon_root = ADDON_ROOT
+        zone_maps = npc_generator.parse_zone_maps(addon_root)
+        cases = (
+            (22003, 11003, [33.44, 45.32]),
+            (11237, 237, [59.88, 23.47]),
+            (11237, 237, [35.01, 57.62]),
+            (11257, 257, [73.74, 48.96]),
+        )
+
+        for zone_id, ui_map_id, point in cases:
+            with self.subTest(zone_id=zone_id, point=point):
+                self.assertEqual(ui_map_id, npc_generator.zone_to_ui(zone_id, zone_maps))
+                data = zone_maps["ui_map_data"][ui_map_id]
+                world_x = data[3] - data[1] * point[0] / 100
+                world_y = data[4] - data[2] * point[1] / 100
+                self.assertEqual(point, npc_generator.convert_world_to_zone(world_x, world_y, zone_id, zone_maps))
+
+    def test_preserves_dungeon_entrance_beside_npc_interior_spawn(self):
+        corrections = npc_generator.find_differences(
+            {7604: {"spawns": {1176: [[-1, -1]]}}},
+            {7604: {"spawns": {1176: [[23.55, 18.33]]}}},
+            ["spawns"],
+            entrance_marker_zone_ids={1176},
+        )
+
+        self.assertEqual(
+            {7604: {"spawns": {1176: [[-1.0, -1.0], [23.55, 18.33]]}}},
+            corrections,
+        )
+
+    def test_preserves_dungeon_entrance_beside_object_interior_spawn(self):
+        corrections = object_generator.find_differences(
+            {141832: {"spawns": {1176: [[-1, -1]]}}},
+            {141832: {"spawns": {1176: [[40.0, 40.0]]}}},
+            ["spawns"],
+            entrance_marker_zone_ids={1176},
+        )
+
+        self.assertEqual(
+            {141832: {"spawns": {1176: [[-1.0, -1.0], [40.0, 40.0]]}}},
+            corrections,
+        )
+
+    def test_does_not_preserve_entrance_marker_outside_wdm_instances(self):
+        corrections = npc_generator.find_differences(
+            {1: {"spawns": {9999: [[-1, -1]]}}},
+            {1: {"spawns": {9999: [[50.0, 50.0]]}}},
+            ["spawns"],
+            entrance_marker_zone_ids={1176},
+        )
+
+        self.assertEqual({1: {"spawns": {9999: [[50.0, 50.0]]}}}, corrections)
+
+    def test_wdm_validator_loads_world_and_instance_tables(self):
+        ui_map_data = ADDON_ROOT / "Compat/UiMapData.lua"
+
+        self.assertIn(98, wdm_validator.load_wdm_rows(ui_map_data, "wdmWorldMapData"))
+        self.assertEqual(
+            1176,
+            wdm_validator.load_wdm_rows(ui_map_data, "wdmInstanceMapData")[219]["areaID"],
+        )
+
+    def test_preserves_spawned_object_when_ac_npc_dropper_is_unspawned(self):
+        questie = {"objectDrops": [181616], "relatedQuests": [9452]}
+        acore = {"objectDrops": [], "npcDrops": [17102], "relatedQuests": [9452]}
+        source_context = {
+            "spawnedCreatureIds": set(),
+            "spawnedGameObjectIds": {181616},
+            "gameObjectTemplateIds": {181616},
+        }
+
+        self.assertTrue(
+            item_generator.should_preserve_indirect_quest_item_object_sources(
+                "objectDrops",
+                questie,
+                acore,
+                source_context,
+            )
+        )
+
+    def test_static_npc_dropper_remains_authoritative(self):
+        questie = {"objectDrops": [181616], "relatedQuests": [9452]}
+        acore = {"objectDrops": [], "npcDrops": [17102], "relatedQuests": [9452]}
+        source_context = {
+            "spawnedCreatureIds": {17102},
+            "spawnedGameObjectIds": {181616},
+            "gameObjectTemplateIds": {181616},
+        }
+
+        self.assertFalse(
+            item_generator.should_preserve_indirect_quest_item_object_sources(
+                "objectDrops",
+                questie,
+                acore,
+                source_context,
+            )
+        )
+
+    def test_does_not_preserve_unknown_gameobject_source(self):
+        questie = {"objectDrops": [181616], "relatedQuests": [9452]}
+        acore = {"objectDrops": [], "npcDrops": [17102], "relatedQuests": [9452]}
+
+        self.assertFalse(
+            item_generator.should_preserve_indirect_quest_item_object_sources(
+                "objectDrops",
+                questie,
+                acore,
+                {
+                    "spawnedCreatureIds": set(),
+                    "gameObjectTemplateIds": set(),
+                },
+            )
+        )
+
+    def test_preserves_smartai_gameobject_display_replacement(self):
+        acore = (((17243,),), (), ())
+        questie = ((), ((181694,),), ())
+
+        self.assertTrue(
+            quest_validator.objective_values_have_smartai_object_display_replacement(
+                acore,
+                questie,
+                {17243: {181694}},
+                {181694},
+            )
+        )
+
+    def test_detects_icon_helper_inside_creature_objectives(self):
+        raw_objectives = [[[17701], [17701, None, "Questie.ICON_TYPE_INTERACT"]]]
+        self.assertTrue(quest_validator.raw_objectives_have_display_helpers(raw_objectives))
+
+    def test_preserves_objective_that_supplies_an_acore_event_slot(self):
+        acore = {
+            field: quest_validator.default_field_value(field)
+            for field in quest_validator.FIELD_ORDER
+        }
+        questie = {
+            field: quest_validator.default_field_value(field)
+            for field in quest_validator.FIELD_ORDER
+        }
+        acore.update({
+            "_areaDescription": "Unkor Submits",
+            "objectives": (((18260,),), (), ()),
+            "specialFlags": quest_validator.QUEST_SPECIAL_FLAGS_EXPLORATION_OR_EVENT,
+        })
+        questie.update({
+            "_hasTriggerEnd": False,
+            "objectives": (((18260,), (18262,)), (), ()),
+            "specialFlags": quest_validator.QUEST_SPECIAL_FLAGS_EXPLORATION_OR_EVENT,
+        })
+
+        result = quest_validator.compare_metadata(
+            {9889: acore},
+            {9889: questie},
+            {},
+            set(),
+        )
+
+        self.assertEqual([], result[0])
+        self.assertEqual("preserveQuestieEventObjectiveSlot", result[3][0]["reason"])
+
+    def test_tbc_trigger_end_corrections_are_loaded_as_event_slots(self):
+        addon_root = ADDON_ROOT
+        constants = quest_validator.load_constants(addon_root)
+        corrections = quest_validator.load_questie_correction_file(
+            addon_root / "Database/Corrections/tbcQuestFixes.lua",
+            constants,
+        )
+
+        self.assertTrue(corrections[9889]["_hasTriggerEnd"])
+        self.assertNotIn("objectives", corrections[9889])
+        self.assertTrue(corrections[10887]["_hasTriggerEnd"])
+
+    def test_direct_trigger_end_tooltip_targets_are_complete_and_classified(self):
+        addon_root = ADDON_ROOT
+        trigger_ends = trigger_end_audit.load_trigger_ends(addon_root)
+        targets = trigger_end_audit.load_configured_targets(addon_root)
+
+        self.assertEqual(109, len(targets))
+        self.assertEqual([("monster", 18262)], targets[9889]["targets"])
+        self.assertEqual([("monster", 22377)], targets[10887]["targets"])
+        self.assertLessEqual(set(targets), set(trigger_ends))
+        self.assertTrue(set(targets).isdisjoint(trigger_end_audit.REVIEW_REASONS))
+
+    def test_does_not_preserve_waypoints_without_ac_path_evidence(self):
+        questie = {17528: {"waypoints": {3525: [[[38.43, 82.02], [36.51, 71.61]]]}}}
+        acore = {17528: {"waypoints": {}}}
+
+        corrections = npc_generator.find_differences(
+            questie,
+            acore,
+            ["waypoints"],
+        )
+
+        self.assertEqual({17528: {"waypoints": {}}}, corrections)
+
+    def test_preserves_object_spawn_for_ac_required_quest_item(self):
+        questie_items = {23880: {"objectDrops": [181781]}}
+        preserve_spawn_ids = object_generator.collect_indirect_quest_item_object_source_ids(
+            questie_items,
+            {23880},
+            {181781},
+        )
+
+        corrections = object_generator.find_differences(
+            {181781: {"spawns": {3525: [[41, 30]]}, "zoneID": 3525}},
+            {181781: {"spawns": {}, "zoneID": 0}},
+            ["spawns", "zoneID"],
+            preserve_spawn_ids=preserve_spawn_ids,
+        )
+
+        self.assertEqual({181781}, preserve_spawn_ids)
+        self.assertEqual({}, corrections)
+
+    def test_does_not_preserve_object_spawn_for_non_quest_item(self):
+        preserve_spawn_ids = object_generator.collect_indirect_quest_item_object_source_ids(
+            {23880: {"objectDrops": [181781]}},
+            set(),
+            {181781},
+        )
+
+        self.assertEqual(set(), preserve_spawn_ids)
+
+
+if __name__ == "__main__":
+    unittest.main()

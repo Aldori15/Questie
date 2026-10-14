@@ -7,6 +7,8 @@ QuestieLoader = {}
 
 ---@type table<string, QuestieModule>
 local modules = {}
+local declaredModules = {}
+local disabledModules = {}
 
 QuestieLoader._modules = modules -- store reference so modules can be iterated for profiling
 
@@ -254,6 +256,7 @@ function QuestieLoader:CreateModule(name)
     if moduleCallObserver then
         moduleCallObserver(name)
     end
+    declaredModules[name] = true
     if (not modules[name]) then
         modules[name] = { private = {} }
         return modules[name]
@@ -280,6 +283,27 @@ function QuestieLoader:ImportModule(name)
     end
 end
 
+---Records an intentional stub without changing the module or its existing references.
+---The caller remains responsible for installing the disabled module's behavior.
+---@param name string
+function QuestieLoader:MarkModuleDisabled(name)
+    disabledModules[name] = true
+end
+
+---Call after initialization, when forward declarations and disabled modules are settled.
+---Returns diagnostics only; unresolved imports still retain their original placeholder tables.
+---@return string[] names @Sorted names imported without a declaration or intentional stub
+function QuestieLoader:GetUnresolvedModuleImports()
+    local names = {}
+    for name in pairs(modules) do
+        if not declaredModules[name] and not disabledModules[name] then
+            names[#names + 1] = name
+        end
+    end
+    table.sort(names)
+    return names
+end
+
 ---Closes the preceding load interval and opens one for a file or XML group that has no module call.
 ---
 ---Call without an argument when this main chunk should name the following interval. The identity is read
@@ -302,6 +326,9 @@ end
 
 function QuestieLoader:PopulateGlobals() -- called when debugging is enabled
     for name, module in pairs(modules) do
-        _G[name] = module
+        -- Keep existing client/addon globals, such as WorldMapButton.
+        if not _G[name] then
+            _G[name] = module
+        end
     end
 end

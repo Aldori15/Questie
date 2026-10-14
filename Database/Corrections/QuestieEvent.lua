@@ -188,18 +188,26 @@ local function DarkmoonNpcFixes(location)
     return QuestieWotlkNpcFixes:LoadDarkmoonFixes(location)
 end
 
+local function SameDarkmoonSpawnData(left, right)
+    if left == right then return true end
+    if type(left) ~= "table" or type(right) ~= "table" then return false end
+    for key, value in pairs(left) do
+        if not SameDarkmoonSpawnData(value, right[key]) then return false end
+    end
+    for key in pairs(right) do
+        if left[key] == nil then return false end
+    end
+    return true
+end
+
+---@return boolean changed
+---@return table<NpcId, boolean>? changedNpcs
 function QuestieEvent.SetServerDarkmoonLocations(locations)
     local key = locations and table.concat(locations, ",") or nil
     if serverDarkmoonLocationKey == key then return false end
     serverDarkmoonLocationKey = key
-    local changed = false
-    for id, fallback in pairs(calendarDarkmoonNpcs) do
-        QuestieDB.npcDataOverrides[id] = fallback or nil
-        QuestieDB.InvalidateNPC(id)
-        changed = true
-    end
+    local npcFixes = {}
     if locations then
-        local npcFixes = {}
         local spawnsKey = QuestieDB.npcKeys.spawns
         for _, location in ipairs(locations) do
             for id, data in pairs(DarkmoonNpcFixes(location) or {}) do
@@ -213,20 +221,31 @@ function QuestieEvent.SetServerDarkmoonLocations(locations)
                 end
             end
         end
-        for id, data in pairs(npcFixes) do
+        for id in pairs(npcFixes) do
             if calendarDarkmoonNpcs[id] == nil then calendarDarkmoonNpcs[id] = QuestieDB.npcDataOverrides[id] or false end
-            QuestieDB.npcDataOverrides[id] = data
-            QuestieDB.InvalidateNPC(id)
-            changed = true
         end
     end
+    local changedNpcs = {}
+    for id, fallback in pairs(calendarDarkmoonNpcs) do
+        local oldSpawns = QuestieDB.QueryNPCSingle(id, "spawns")
+        local oldWaypoints = QuestieDB.QueryNPCSingle(id, "waypoints")
+        local oldZoneID = QuestieDB.QueryNPCSingle(id, "zoneID")
+        QuestieDB.npcDataOverrides[id] = npcFixes[id] or fallback or nil
+        if not SameDarkmoonSpawnData(oldSpawns, QuestieDB.QueryNPCSingle(id, "spawns")) or
+            not SameDarkmoonSpawnData(oldWaypoints, QuestieDB.QueryNPCSingle(id, "waypoints")) or
+            oldZoneID ~= QuestieDB.QueryNPCSingle(id, "zoneID") then
+            QuestieDB.InvalidateNPC(id)
+            changedNpcs[id] = true
+        end
+    end
+    local changed = next(changedNpcs) ~= nil
     if changed and Questie.started then
         local available = QuestieLoader:ImportModule("AvailableQuests")
         for id, registration in pairs(serverQuestRegistrations) do
             if registration.name == "Darkmoon Faire" then available.RemoveAvailableQuest(id) end
         end
     end
-    return changed
+    return changed, changedNpcs
 end
 
 _ShouldAnnounceWorldEvents = function()

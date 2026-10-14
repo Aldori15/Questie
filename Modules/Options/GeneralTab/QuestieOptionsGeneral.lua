@@ -240,18 +240,11 @@ function QuestieOptions.tabs.general:Initialize()
                         desc = function() return l10n('Toggles the default Instant Quest Text option. This is just a shortcut for the WoW option in Interface.'); end,
                         width = 1.55,
                         get = function()
-                            if GetCVar("instantQuestText") == '1' then
-                                return true;
-                            else
-                                return false;
-                            end
+                            return GetCVar("questFadingDisable") == '1'
                         end,
                         set = function(info, value)
-                            if value then
-                                SetCVar("instantQuestText", 1);
-                            else
-                                SetCVar("instantQuestText", 0);
-                            end
+                            QUEST_FADING_DISABLE = tostring(value and 1 or 0)
+                            SetCVar("questFadingDisable", QUEST_FADING_DISABLE)
                         end,
                     },
                     showCustomQuestFrameIcons = {

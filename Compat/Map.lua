@@ -58,6 +58,11 @@ local outdoorWorldInstanceIDs = {
     [571] = true, -- Northrend
 }
 
+-- Share the outdoor-world classification without exposing mutable map state.
+function QuestieCompat.IsOutdoorWorldInstance(instanceID)
+    return outdoorWorldInstanceIDs[instanceID] == true
+end
+
 local function IsValidZoneCoords(x, y)
     if not x or not y then return false end
     return x >= MIN_ZONE_COORD and x <= MAX_ZONE_COORD and y >= MIN_ZONE_COORD and y <= MAX_ZONE_COORD
@@ -984,6 +989,21 @@ local function RestoreLegacyMapSelection(savedSelection)
     RestoreLegacyMapDropdownSelection(savedSelection)
 end
 
+-- Map selection and the internal-read guard stay in the map layer.
+-- The reader returns one value; restore the browsed map even if the reader fails.
+function QuestieCompat.WithLegacyMapRead(uiMapID, reader)
+    local savedSelection = CaptureLegacyMapSelection()
+    BeginInternalMapRead(savedSelection)
+    local success, result = pcall(function()
+        SetLegacyMapToUiMap(uiMapID)
+        return reader()
+    end)
+    RestoreLegacyMapSelection(savedSelection)
+    EndInternalMapRead()
+    if not success then error(result, 0) end
+    return result
+end
+
 local function GetPlayerWorldPositionFromActualZoneUiMap(actualUiMapID)
     if not actualUiMapID then
         return nil, nil, nil, nil
@@ -1293,68 +1313,13 @@ local function BuildMapIdToCZ()
     RestoreLegacyMapSelection(savedMapSelection)
 end
 
-local function GetTomTomCZForUiMapID(uiMapID)
+-- Resolve native map indices without exposing the shared map-selection cache.
+function QuestieCompat.GetLegacyMapContinentAndZone(uiMapID)
     local uiData = uiMapID and QuestieCompat.UiMapData[uiMapID]
-    if not uiData then
-        return nil
+    local mapIndex = uiData and mapIdToCZ[uiData.mapID]
+    if mapIndex then
+        return QuestieCompat.Round(mapIndex % 1 * 10), math.floor(mapIndex)
     end
-
-    if uiMapID == 947 then
-        return 0
-    elseif uiMapID == 1414 then
-        return 0.1
-    elseif uiMapID == 1415 then
-        return 0.2
-    elseif uiMapID == 1945 then
-        return 0.3
-    end
-
-    return mapIdToCZ[uiData.mapID]
-end
-
-local function GetTomTomDungeonEntranceWaypoint(uiMapID)
-    local areaID
-    if ZoneDB.GetAreaIdByUiMapId then
-        local success, resolvedAreaID = pcall(ZoneDB.GetAreaIdByUiMapId, ZoneDB, uiMapID)
-        if success then
-            areaID = resolvedAreaID
-        end
-    end
-
-    local dungeonLocations = ZoneDB.private and ZoneDB.private.dungeonLocations
-    local subZoneToParentZone = ZoneDB.private and ZoneDB.private.subZoneToParentZone
-    if areaID and dungeonLocations and not dungeonLocations[areaID] and subZoneToParentZone and subZoneToParentZone[areaID] then
-        areaID = subZoneToParentZone[areaID]
-    end
-
-    local entrance = areaID and dungeonLocations and dungeonLocations[areaID] and dungeonLocations[areaID][1]
-    if not entrance then
-        return nil, nil, nil
-    end
-
-    local entranceUiMapID = ZoneDB.GetUiMapIdByAreaId and ZoneDB:GetUiMapIdByAreaId(entrance[1])
-    local entranceCZ = GetTomTomCZForUiMapID(entranceUiMapID)
-    if not entranceCZ then
-        return nil, nil, nil
-    end
-
-    return entranceCZ, entrance[2], entrance[3]
-end
-
-function QuestieCompat.TomTom_AddWaypoint(title, zone, x, y, persistent)
-    local CZ = GetTomTomCZForUiMapID(zone)
-    if (zone == 125) or (zone == 126) then CZ = 3.4 end
-    if not CZ then
-        local entranceCZ, entranceX, entranceY = GetTomTomDungeonEntranceWaypoint(zone)
-        if entranceCZ then
-            CZ = entranceCZ
-            x = entranceX
-            y = entranceY
-        end
-    end
-    if not CZ then return nil end
-    -- Force the crazy arrow on 3.3.5 so Questie behaves like newer TomTom integrations.
-    return TomTom:AddZWaypoint(QuestieCompat.Round(CZ%1 * 10), math.floor(CZ), x, y, title, persistent, nil, nil, nil, nil, true)
 end
 
 -- This function will do its utmost to retrieve some sort of valid position
@@ -1919,161 +1884,52 @@ local function ResolveActualPlayerUiMapID()
     return ResolveActualUiMapIDForMapContext(ResolveUiMapIDByZoneTexts()) or lastKnownZoneLikeUiMapID
 end
 
-local function GetCurrentActualPlayerZonePosition()
-    local actualUiMapID = ResolveActualPlayerUiMapID()
-    if not actualUiMapID then
+-- Keep displayed-map resolution and actual player context together in the map layer.
+function QuestieCompat.GetWorldMapUiMapContext()
+    local rawMapID, rawMapLevel = GetRawMapContext()
+    local displayedMapName = GetDisplayedWorldMapName()
+    return ResolveDisplayedWorldMapUiMapID(rawMapID, rawMapLevel, displayedMapName), ResolveActualPlayerUiMapID()
+end
+
+-- Return coordinates in the actual player zone, even while browsing another map.
+function QuestieCompat.GetActualPlayerZonePosition()
+    local resolvedUiMapID, resolvedX, resolvedY = QuestieCompat.GetCurrentPlayerPosition()
+    local targetUiMapID = ResolveActualPlayerUiMapID()
+    if not targetUiMapID then
         return nil, nil, nil
     end
 
-    local worldX = lastMinimapPlayerWorldX or lastStablePlayerWorldX
-    local worldY = lastMinimapPlayerWorldY or lastStablePlayerWorldY
-    if not worldX or not worldY then
-        worldX, worldY = QuestieCompat.GetCurrentPlayerMinimapWorldPosition()
+    local targetUiData = QuestieCompat.UiMapData and QuestieCompat.UiMapData[targetUiMapID]
+    -- Prefer the current read over saved world coordinates, including movement
+    -- within a zone that has not changed the map-cache context.
+    if resolvedUiMapID and IsValidZoneCoords(resolvedX, resolvedY) and (resolvedX > 0 or resolvedY > 0) then
+        if resolvedUiMapID == targetUiMapID then
+            return targetUiMapID, resolvedX, resolvedY
+        end
+
+        local resolvedUiData = QuestieCompat.UiMapData and QuestieCompat.UiMapData[resolvedUiMapID]
+        if AreUiMapsRelated(resolvedUiMapID, targetUiMapID) and resolvedUiData and targetUiData
+            and targetUiData.instance ~= nil and resolvedUiData.instance == targetUiData.instance then
+            local translatedX, translatedY = TranslateZoneCoordinatesBetweenUiMaps(resolvedX, resolvedY, resolvedUiMapID, targetUiMapID)
+            if IsValidZoneCoords(translatedX, translatedY) then
+                return targetUiMapID, translatedX, translatedY
+            end
+        end
     end
 
-    local resolvedUiMapID, resolvedX, resolvedY = QuestieCompat.GetCurrentPlayerPosition()
-    local targetUiMapID = actualUiMapID
-
-    if worldX and worldY and QuestieCompat.HBD and QuestieCompat.HBD.GetZoneCoordinatesFromWorld then
+    local worldX, worldY, instanceID, worldUiMapID = QuestieCompat.GetCurrentPlayerMinimapWorldPosition()
+    -- A fallback can outlive a zone/instance transition. Validate its complete
+    -- context before converting it into coordinates on the actual player map.
+    if worldX and worldY and worldUiMapID and targetUiData and instanceID ~= nil
+        and instanceID == targetUiData.instance and AreUiMapsRelated(worldUiMapID, targetUiMapID)
+        and QuestieCompat.HBD and QuestieCompat.HBD.GetZoneCoordinatesFromWorld then
         local zoneX, zoneY = QuestieCompat.HBD:GetZoneCoordinatesFromWorld(worldX, worldY, targetUiMapID, true)
         if IsValidZoneCoords(zoneX, zoneY) then
             return targetUiMapID, zoneX, zoneY
         end
     end
 
-    if resolvedUiMapID and resolvedX and resolvedY and (resolvedX > 0 or resolvedY > 0) then
-        if resolvedUiMapID == targetUiMapID then
-            return targetUiMapID, resolvedX, resolvedY
-        end
-
-        local translatedX, translatedY = TranslateZoneCoordinatesBetweenUiMaps(resolvedX, resolvedY, resolvedUiMapID, targetUiMapID)
-        if translatedX and translatedY then
-            return targetUiMapID, translatedX, translatedY
-        end
-    end
-
     return nil, nil, nil
-end
-
-local function SetTomTomTextIfChanged(fontString, text)
-    if fontString and text and fontString:GetText() ~= text then
-        fontString:SetText(text)
-    end
-end
-
-local function GetTomTomWorldMapCursorPosition()
-    if not WorldMapDetailFrame or not WorldMapDetailFrame:IsVisible() then
-        return nil, nil
-    end
-
-    local cursorX, cursorY = GetCursorPosition()
-    local left = WorldMapDetailFrame:GetLeft()
-    local top = WorldMapDetailFrame:GetTop()
-    local width = WorldMapDetailFrame:GetWidth()
-    local height = WorldMapDetailFrame:GetHeight()
-    local scale = WorldMapDetailFrame:GetEffectiveScale()
-
-    if not cursorX or not cursorY or not left or not top or not width or width == 0 or not height or height == 0 or not scale or scale == 0 then
-        return nil, nil
-    end
-
-    local mapX = (cursorX / scale - left) / width
-    local mapY = (top - cursorY / scale) / height
-    if mapX < 0 or mapX > 1 or mapY < 0 or mapY > 1 then
-        return nil, nil
-    end
-
-    return mapX, mapY
-end
-
-local function FormatTomTomCoordinatePair(x, y, precision)
-    precision = precision or 2
-    return string.format("%." .. precision .. "f, %." .. precision .. "f", x * 100, y * 100)
-end
-
-local function ShouldUseCompatTomTomWorldCoords()
-    if not WorldMapFrame or not WorldMapFrame:IsVisible() then
-        return false
-    end
-
-    local rawMapID, rawMapLevel = GetRawMapContext()
-    local displayedMapName = GetDisplayedWorldMapName()
-    local displayedUiMapID = ResolveDisplayedWorldMapUiMapID(rawMapID, rawMapLevel, displayedMapName)
-    local actualUiMapID = ResolveActualPlayerUiMapID()
-
-    if not displayedUiMapID or not actualUiMapID then
-        return false
-    end
-
-    return displayedUiMapID ~= actualUiMapID
-end
-
-function QuestieCompat.UpdateTomTomWorldCoords(frame, elapsed)
-    if not frame or not frame:IsVisible() then
-        return
-    end
-
-    if frame.questieOriginalOnUpdate and not ShouldUseCompatTomTomWorldCoords() then
-        frame.questieOriginalCoordElapsed = (frame.questieOriginalCoordElapsed or 0) + (elapsed or 0)
-        if frame.questieOriginalCoordElapsed < 0.1 then
-            return
-        end
-
-        local originalElapsed = frame.questieOriginalCoordElapsed
-        frame.questieOriginalCoordElapsed = 0
-        return frame.questieOriginalOnUpdate(frame, originalElapsed)
-    end
-
-    frame.questieCoordElapsed = (frame.questieCoordElapsed or 0) + (elapsed or 0)
-    if frame.questieCoordElapsed < 0.05 then
-        return
-    end
-    frame.questieCoordElapsed = 0
-
-    local TomTom = _G.TomTom
-    local profile = TomTom and TomTom.db and TomTom.db.profile
-    local mapCoordsProfile = profile and profile.mapcoords
-    if not mapCoordsProfile then
-        return
-    end
-    local _, playerX, playerY = GetCurrentActualPlayerZonePosition()
-
-    if frame.Player then
-        if playerX and playerY then
-            SetTomTomTextIfChanged(frame.Player, "Player: " .. FormatTomTomCoordinatePair(playerX, playerY, mapCoordsProfile.playeraccuracy))
-        else
-            SetTomTomTextIfChanged(frame.Player, "Player: ---")
-        end
-    end
-
-    if frame.Cursor then
-        local cursorX, cursorY = GetTomTomWorldMapCursorPosition()
-        if cursorX and cursorY then
-            SetTomTomTextIfChanged(frame.Cursor, "Cursor: " .. FormatTomTomCoordinatePair(cursorX, cursorY, mapCoordsProfile.cursoraccuracy))
-        else
-            SetTomTomTextIfChanged(frame.Cursor, "Cursor: ---")
-        end
-    end
-end
-
-function QuestieCompat.PatchTomTomWorldCoords()
-    local TomTom = _G.TomTom
-    if not TomTom or not TomTom.ShowHideWorldCoords then
-        return
-    end
-
-    if not TomTom.questieWorldCoordsHooked then
-        TomTom.questieWorldCoordsHooked = true
-        hooksecurefunc(TomTom, "ShowHideWorldCoords", QuestieCompat.PatchTomTomWorldCoords)
-    end
-
-    local tomTomWorldFrame = _G.TomTomWorldFrame
-    if tomTomWorldFrame then
-        if not tomTomWorldFrame.questieOriginalOnUpdate then
-            tomTomWorldFrame.questieOriginalOnUpdate = tomTomWorldFrame:GetScript("OnUpdate")
-        end
-        tomTomWorldFrame:SetScript("OnUpdate", QuestieCompat.UpdateTomTomWorldCoords)
-    end
 end
 
 -- wrapper used by QuestieCoords
@@ -2165,115 +2021,9 @@ QuestieCompat.WorldMapFrame = {
     end,
 }
 
-local exploredMapOverlays = {}
-local mapsWithoutExploration = {
-    [1453] = true, [1454] = true, [1455] = true, -- Stormwind, Orgrimmar, Ironforge
-    [1456] = true, [1457] = true, [1458] = true, -- Thunder Bluff, Darnassus, Undercity
-    [1947] = true, [1954] = true, [1955] = true, -- Exodar, Silvermoon, Shattrath
-    [125] = true, [126] = true, -- Dalaran and the Underbelly
-    [123] = true, -- Wintergrasp
-}
-
-function QuestieCompat.ClearExplorationCache()
-    wipe(exploredMapOverlays)
-end
-
-local function IsOverlayPixelOpaque(overlay, x, y)
-    local localX, localY = x - overlay[1], y - overlay[2]
-    local tile = math.floor(localY / 256) * math.ceil(overlay.width / 256) + math.floor(localX / 256) + 1
-    local key = overlay.texture .. tile
-    local rows = QuestieCompat.ExplorationMasks[key]
-    if not rows then
-        -- Unknown/custom artwork: preserve icons instead of hiding an entire region.
-        return true
-    end
-    if type(rows) == "string" then
-        local mask = rows
-        rows = {}
-        for row in mask:gmatch("(.-)~") do rows[#rows + 1] = row end
-        QuestieCompat.ExplorationMasks[key] = rows
-    end
-    local row = rows[math.floor((localY % 256) / 4) + 1]
-    local column = math.floor((localX % 256) / 4)
-    for i = 1, #row, 2 do
-        if column >= row:byte(i) - 33 and column <= row:byte(i + 1) - 33 then
-            return true
-        end
-    end
-    return false
-end
-
-local function IsMapPositionExplored(uiMapID, x, y)
-    local data = QuestieCompat.UiMapData[uiMapID]
-    -- Cities, instances and maps without a usable outdoor map have no fog to check.
-    if not data or mapsWithoutExploration[uiMapID] or data.mapType ~= 3
-        or not outdoorWorldInstanceIDs[data.instance] or not data.mapID or data.mapID <= 0 then
-        return true
-    end
-    if not x or not y then return true end
-
-    local overlays = exploredMapOverlays[uiMapID]
-    if not overlays then
-        overlays = {}
-        -- Cache before selecting the map to guard against map-update hooks reentering.
-        exploredMapOverlays[uiMapID] = overlays
-        local savedSelection = CaptureLegacyMapSelection()
-        BeginInternalMapRead(savedSelection)
-        SetLegacyMapToUiMap(uiMapID)
-        -- UiMapData stores the ID returned by GetCurrentMapAreaID. Only the
-        -- SetMapByID call in SetLegacyMapToUiMap needs the legacy -1 adjustment.
-        if GetCurrentMapAreaID() ~= math.floor(data.mapID) then
-            RestoreLegacyMapSelection(savedSelection)
-            EndInternalMapRead()
-            exploredMapOverlays[uiMapID] = nil
-            return true
-        end
-
-        -- Mapster's fog removal replaces the overlay count with zero. Read its
-        -- original API so revealing the map visually does not count as exploration.
-        local getNumOverlays = GetNumMapOverlays
-        local mapster = LibStub("AceAddon-3.0"):GetAddon("Mapster", true)
-        local fogClear = mapster and mapster:GetModule("FogClear", true)
-        if fogClear and fogClear.hooks and fogClear.hooks.GetNumMapOverlays then
-            getNumOverlays = fogClear.hooks.GetNumMapOverlays
-        end
-        for i = 1, getNumOverlays() do
-            local texture, width, height, left, top = GetMapOverlayInfo(i)
-            if texture and texture ~= "" and width and height and left and top
-                and width > 0 and height > 0 and not texture:lower():find("pixelfix", 1, true) then
-                overlays[#overlays + 1] = {
-                    left, top, left + width, top + height,
-                    width = width,
-                    texture = texture:lower():gsub("^interface\\worldmap\\", ""),
-                }
-            end
-        end
-        RestoreLegacyMapSelection(savedSelection)
-        EndInternalMapRead()
-    end
-
-    -- Legacy world-map overlays use a fixed 1002 x 668 canvas, regardless of UI scale.
-    x, y = x * 10.02, y * 6.68
-    for _, rect in ipairs(overlays) do
-        if x >= rect[1] and y >= rect[2] and x < rect[3] and y < rect[4]
-            and IsOverlayPixelOpaque(rect, x, y) then
-            return true
-        end
-    end
-    return false
-end
-
 function QuestieCompat.InitializeMapCompatibility()
     if mapCompatibilityInitialized then return end
     mapCompatibilityInitialized = true
-
-    local QuestieMap = QuestieLoader:ImportModule("QuestieMap")
-    QuestieMap.utils.IsExplored = IsMapPositionExplored
-    local mapExplorationUpdate = QuestieMap.utils.MapExplorationUpdate
-    QuestieMap.utils.MapExplorationUpdate = function()
-        QuestieCompat.ClearExplorationCache()
-        mapExplorationUpdate()
-    end
 
     -- SetUILocale is defined only after all addon files have loaded. Install
     -- the cache invalidation hook here instead of while Compat/Map.lua loads.

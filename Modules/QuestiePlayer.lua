@@ -12,8 +12,6 @@ local l10n = QuestieLoader:ImportModule("l10n")
 
 --- COMPATIBILITY ---
 local C_Map = QuestieCompat.C_Map
-local UnitRace = QuestieCompat.UnitRace
-local UnitClass = QuestieCompat.UnitClass
 local UnitInParty = QuestieCompat.UnitInParty
 local IsInGroup = QuestieCompat.IsInGroup
 local GetHomePartyInfo = QuestieCompat.GetHomePartyInfo
@@ -40,12 +38,14 @@ QuestiePlayer.numberOfGroupMembers = 0
 function QuestiePlayer:Initialize()
     _QuestiePlayer.playerLevel = UnitLevel("player")
 
-    playerRaceId = select(3, UnitRace("player"))
+    local _, raceFile = UnitRace("player")
+    playerRaceId = QuestieCompat.ChrRaces[raceFile]
     playerRaceFlag = 2 ^ (playerRaceId - 1)
     playerRaceFlagX2 = 2 * playerRaceFlag
 
-    playerClassName = select(1, UnitClass("player"))
-    local classId = select(3, UnitClass("player"))
+    local className, classFile = UnitClass("player")
+    playerClassName = className
+    local classId = QuestieCompat.ChrClasses[classFile]
     playerClassFlag = 2 ^ (classId - 1)
     playerClassFlagX2 = 2 * playerClassFlag
 
@@ -184,7 +184,7 @@ function QuestiePlayer:GetPartyMembers()
         for _, v in pairs(partyMembers) do
             local member = {}
             member.Name = v;
-            local class, _, _ = UnitClass(v)
+            local class = UnitClass(v)
             member.Class = class
             member.Level = UnitLevel(v);
             table.insert(party, member);

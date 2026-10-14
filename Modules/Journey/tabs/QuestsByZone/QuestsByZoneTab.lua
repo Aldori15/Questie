@@ -24,7 +24,7 @@ local playerClass
 
 local function _GetPlayerClass()
     if not playerClass then
-        local _, currentPlayerClass = QuestieCompat.UnitClass("player")
+        local _, currentPlayerClass = UnitClass("player")
         playerClass = currentPlayerClass
     end
     return playerClass

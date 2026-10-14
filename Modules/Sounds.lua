@@ -52,7 +52,14 @@ function Sounds.PlayQuestComplete()
 end
 
 function Sounds.GetSelectedSoundFile(typeSelected)
-    return soundTable[typeSelected] or LSM30:Fetch("sound", typeSelected)
+    local soundFile = soundTable[typeSelected] or LSM30:Fetch("sound", typeSelected)
+    -- The 3.3.5 game archive uses .wav names for built-in sounds.
+    -- LibSharedMedia addon paths must keep their registered extension.
+    if soundFile:lower():find("^interface[\\/]addons[\\/]") then
+        return soundFile
+    end
+
+    return soundFile:gsub("%.ogg$", ".wav")
 end
 
 soundTable = {

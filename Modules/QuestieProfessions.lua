@@ -16,7 +16,6 @@ local alternativeProfessionNames = {}
 
 -- Fast local references
 local ExpandSkillHeader, GetNumSkillLines, GetSkillLineInfo, IsSpellKnown = ExpandSkillHeader, GetNumSkillLines, GetSkillLineInfo, IsSpellKnown
-local IsPlayerSpell = QuestieCompat.IsPlayerSpell
 
 hooksecurefunc("AbandonSkill", function(skillIndex)
     local skillName = GetSkillLineInfo(skillIndex)
@@ -123,7 +122,7 @@ local function _HasRankLevel(profession, rankLevel)
     local HasProfessionAndRankOrHigher = false
     for rankIndex = rankLevel, #professionRanks do
         local spellId = professionRanks[rankIndex]
-        if IsPlayerSpell(spellId) then
+        if IsSpellKnown(spellId) then
             HasProfessionAndRankOrHigher = true
         end
     end
@@ -179,28 +178,28 @@ function QuestieProfessions:HasSpecialization(requiredSpecialization)
     for _, value in pairs(QuestieProfessions.professionKeys) do
         if value == requiredSpecialization then -- if we determine input is a profession
             if requiredSpecialization == professionKeys.ALCHEMY then
-                return not (IsPlayerSpell(specializationKeys.ALCHEMY_ELIXIR)
-                or IsPlayerSpell(specializationKeys.ALCHEMY_POTION)
-                or IsPlayerSpell(specializationKeys.ALCHEMY_TRANSMUTATION))
+                return not (IsSpellKnown(specializationKeys.ALCHEMY_ELIXIR)
+                or IsSpellKnown(specializationKeys.ALCHEMY_POTION)
+                or IsSpellKnown(specializationKeys.ALCHEMY_TRANSMUTATION))
                 -- if the profession is alchemy, we only return true if the player does NOT know
                 -- the spells for elixir, potion, or transmutation master; otherwise return false
             elseif requiredSpecialization == professionKeys.BLACKSMITHING then
-                return not (IsPlayerSpell(specializationKeys.BLACKSMITHING_ARMOR)
-                or IsPlayerSpell(specializationKeys.BLACKSMITHING_WEAPON))
+                return not (IsSpellKnown(specializationKeys.BLACKSMITHING_ARMOR)
+                or IsSpellKnown(specializationKeys.BLACKSMITHING_WEAPON))
 
             elseif requiredSpecialization == professionKeys.ENGINEERING then
-                return not (IsPlayerSpell(specializationKeys.ENGINEERING_GNOMISH)
-                or IsPlayerSpell(specializationKeys.ENGINEERING_GOBLIN))
+                return not (IsSpellKnown(specializationKeys.ENGINEERING_GNOMISH)
+                or IsSpellKnown(specializationKeys.ENGINEERING_GOBLIN))
 
             elseif requiredSpecialization == professionKeys.LEATHERWORKING then
-                return not (IsPlayerSpell(specializationKeys.LEATHERWORKING_DRAGONSCALE)
-                or IsPlayerSpell(specializationKeys.LEATHERWORKING_ELEMENTAL)
-                or IsPlayerSpell(specializationKeys.LEATHERWORKING_TRIBAL))
+                return not (IsSpellKnown(specializationKeys.LEATHERWORKING_DRAGONSCALE)
+                or IsSpellKnown(specializationKeys.LEATHERWORKING_ELEMENTAL)
+                or IsSpellKnown(specializationKeys.LEATHERWORKING_TRIBAL))
 
             elseif requiredSpecialization == professionKeys.TAILORING then
-                return not (IsPlayerSpell(specializationKeys.TAILORING_MOONCLOTH)
-                or IsPlayerSpell(specializationKeys.TAILORING_SHADOWEAVE)
-                or IsPlayerSpell(specializationKeys.TAILORING_SPELLFIRE))
+                return not (IsSpellKnown(specializationKeys.TAILORING_MOONCLOTH)
+                or IsSpellKnown(specializationKeys.TAILORING_SHADOWEAVE)
+                or IsSpellKnown(specializationKeys.TAILORING_SPELLFIRE))
 
             end
             return _HasProfession(requiredSpecialization)
@@ -209,7 +208,7 @@ function QuestieProfessions:HasSpecialization(requiredSpecialization)
     end
     for _, value in pairs(specializationKeys) do
         if value == requiredSpecialization then -- if we determine input is a specialization
-            return IsPlayerSpell(requiredSpecialization) -- return true if the spell is known, false if not
+            return IsSpellKnown(requiredSpecialization) -- return true if the spell is known, false if not
         end
     end
     return true

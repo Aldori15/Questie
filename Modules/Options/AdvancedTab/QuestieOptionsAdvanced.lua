@@ -413,6 +413,68 @@ function QuestieOptions.tabs.advanced:Initialize()
                     end
                 end,
             },
+            compat_header = {
+                type = "header",
+                order = 6,
+                name = "3.3.5 Compatibility Settings",
+            },
+            initDelay = {
+                type = "range",
+                order = 6.1,
+                name = "Init rate delay",
+                desc = "Init rate delay",
+                width = "full",
+                min = 0.1,
+                max = 1,
+                step = 0.01,
+                hidden = function() return not Questie.db.profile.debugEnabled; end,
+                get = function(info) return QuestieOptions:GetProfileValue(info)*10; end,
+                set = function (info, value)
+                    QuestieOptions:SetProfileValue(info, value/10)
+                end,
+            },
+            useQuestieLinks = {
+                type = "toggle",
+                order = 6.3,
+                name = "Use Questie Links",
+                desc = "Use Questie Links",
+                width = "full",
+                get = function (info) return QuestieOptions:GetProfileValue(info); end,
+                set = function (info, value)
+                    QuestieOptions:SetProfileValue(info, value)
+                    StaticPopup_Show("QUESTIE_RELOAD")
+                end,
+            },
+            resetDailyQuests = {
+                type = "toggle",
+                order = 6.4,
+                name = "Reset Daily Quests",
+                desc = "Reset Daily Quests",
+                width = 1.65,
+                get = function (info) return QuestieOptions:GetProfileValue(info); end,
+                set = function (info, value)
+                    QuestieOptions:SetProfileValue(info, value)
+                    Questie.db.profile.dailyResetTime = nil
+                    StaticPopup_Show("QUESTIE_RELOAD")
+                end,
+            },
+            weeklyResetDay = {
+                type = "select",
+                order = 6.5,
+                values = QuestieCompat.CALENDAR_WEEKDAY_NAMES,
+                style = 'dropdown',
+                disabled = function() return not Questie.db.profile.resetDailyQuests end,
+                name = "Weekly Reset Day",
+                desc = "Weekly Reset Day",
+                width = 1.6,
+                get = function (info) return QuestieOptions:GetProfileValue(info) end,
+                set = function (info, value)
+                    QuestieOptions:SetProfileValue(info, value)
+                    Questie.db.profile.weeklyResetTime = nil
+                    Questie.db.char.weeklyResetTime = nil
+                    StaticPopup_Show("QUESTIE_RELOAD")
+                end,
+            },
         },
     }
 end

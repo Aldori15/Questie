@@ -25,9 +25,9 @@ DEFAULT_OBJECT_FIXES = [
     "Database/Corrections/tbcObjectFixes.lua",
     "Database/Corrections/wotlkObjectFixes.lua",
 ]
-ACORE_QUEST_FIXES = ["Compat/AzerothCoreQuestCorrections.lua"]
-ACORE_NPC_FIXES = ["Compat/AzerothCoreNPCCorrections.lua"]
-ACORE_OBJECT_FIXES = ["Compat/AzerothCoreObjectCorrections.lua"]
+ACORE_QUEST_FIXES = ["Database/AzerothCore/AzerothCoreQuestCorrections.lua"]
+ACORE_NPC_FIXES = ["Database/AzerothCore/AzerothCoreNPCCorrections.lua"]
+ACORE_OBJECT_FIXES = ["Database/AzerothCore/AzerothCoreObjectCorrections.lua"]
 QUEST_CORRECTION_TABLE_MARKERS = [
     "return {",
     "local relationCorrections = ",

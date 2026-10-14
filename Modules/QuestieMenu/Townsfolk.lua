@@ -10,7 +10,7 @@ local playerClass
 local playerFaction
 
 local function _UpdatePlayerIdentity()
-    local _, currentPlayerClass = QuestieCompat.UnitClass("player")
+    local _, currentPlayerClass = UnitClass("player")
     local currentPlayerFaction = UnitFactionGroup("player")
 
     playerClass = currentPlayerClass or playerClass
