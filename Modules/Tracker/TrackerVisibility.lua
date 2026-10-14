@@ -21,6 +21,23 @@ local function CollapseInInstance()
     end
 end
 
+local function ExpandAfterInstance()
+    if (not QuestieTracker.started) or (not Questie.db.profile.trackerEnabled)
+        or Questie.db.char.isTrackerExpanded then
+        return
+    end
+
+    -- The player may have re-entered before this queued restoration runs.
+    -- Retain automatic ownership so a later exit can still restore expansion.
+    if Questie.db.profile.minimizeTrackerInInstances and (IsInInstance() or UnitIsGhost("player")) then
+        minimizedByInstance = true
+    elseif Questie.db.profile.minimizeTrackerInCombat and InCombatLockdown() then
+        minimizedByCombat = true
+    else
+        QuestieTracker:Expand()
+    end
+end
+
 ---@return boolean
 function TrackerVisibility.IsHidden()
     return hiddenByInstance or hiddenByCombat
@@ -60,9 +77,7 @@ function TrackerVisibility.HandleZoneChanged()
         if minimizedByInstance and (not UnitIsGhost("player")) then
             minimizedByInstance = false
             if Questie.db.profile.minimizeTrackerInInstances and (not Questie.db.char.isTrackerExpanded) then
-                QuestieCombatQueue:Queue(function()
-                    QuestieTracker:Expand()
-                end)
+                QuestieCombatQueue:Queue(ExpandAfterInstance)
             end
         end
 
@@ -84,9 +99,7 @@ function TrackerVisibility.OnMinimizeInInstancesChanged(enabled)
         end
     elseif minimizedByInstance then
         minimizedByInstance = false
-        QuestieCombatQueue:Queue(function()
-            QuestieTracker:Expand()
-        end)
+        QuestieCombatQueue:Queue(ExpandAfterInstance)
     end
 end
 

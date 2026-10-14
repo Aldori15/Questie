@@ -289,4 +289,93 @@ for _, entryPoint in ipairs({"HandleZoneChanged", "OnMinimizeInInstancesChanged"
         groups = groups + 1
     end
 end
+-- A queued restoration cannot expand the tracker after instance re-entry.
+-- Suppressing that restoration must retain ownership for the next real exit.
+for _, delayedByCombat in ipairs({false, true}) do
+    local s = setup({minimizeTrackerInInstances = true})
+    s.instance = true; s.tracker.HandleZoneChanged(); s.flush()
+    equal(s.char.isTrackerExpanded, false, "initial instance collapse applied")
+    equal(s.clicks, 1, "initial automatic collapse toggles once")
+    s.combat = delayedByCombat
+    if s.combat then s.tracker.HandleCombatStarted() end
+    s.instance = false; s.tracker.HandleZoneChanged()
+    if s.combat then s.flush() end
+    s.instance = true; s.tracker.HandleZoneChanged()
+    s.combat = false; s.tracker.HandleCombatEnded(); s.flush()
+    equal(s.char.isTrackerExpanded, false, "queued expansion respects instance re-entry")
+    equal(s.clicks, 1, "stale expansion does not toggle tracker")
+    s.instance = false; s.tracker.HandleZoneChanged(); s.flush()
+    equal(s.char.isTrackerExpanded, true, "later exit restores retained automatic collapse")
+    equal(s.clicks, 2, "retained ownership restores expansion exactly once")
+    groups = groups + 1
+end
+
+-- The settings path queues the same restoration. Re-enabling minimization
+-- before it executes keeps the collapse automatic, rather than making it manual.
+do
+    local s = setup({minimizeTrackerInInstances = true})
+    s.instance = true; s.tracker.OnMinimizeInInstancesChanged(true); s.flush()
+    s.profile.minimizeTrackerInInstances = false; s.tracker.OnMinimizeInInstancesChanged(false)
+    s.profile.minimizeTrackerInInstances = true; s.tracker.OnMinimizeInInstancesChanged(true)
+    s.flush()
+    equal(s.char.isTrackerExpanded, false, "queued setting restoration respects re-enabled policy")
+    equal(s.clicks, 1, "setting restoration avoids stale toggle")
+    s.instance = false; s.tracker.HandleZoneChanged(); s.flush()
+    equal(s.char.isTrackerExpanded, true, "exit restores collapse retained by settings policy")
+    equal(s.clicks, 2, "settings handoff restores expansion exactly once")
+    groups = groups + 1
+end
+
+-- A player who becomes a ghost while restoration is queued retains the existing
+-- instance minimization policy until resurrection outside the instance.
+do
+    local s = setup({minimizeTrackerInInstances = true})
+    s.instance = true; s.tracker.HandleZoneChanged(); s.flush()
+    s.instance = false; s.tracker.HandleZoneChanged()
+    s.ghost = true; s.flush()
+    equal(s.char.isTrackerExpanded, false, "queued expansion respects ghost policy")
+    s.ghost = false; s.tracker.HandleZoneChanged(); s.flush()
+    equal(s.char.isTrackerExpanded, true, "resurrection restores retained automatic collapse")
+    equal(s.clicks, 2, "ghost handoff avoids redundant toggles")
+    groups = groups + 1
+end
+
+for _, policyChange in ipairs({"trackerEnabled", "started"}) do
+    local s = setup({minimizeTrackerInInstances = true})
+    s.instance = true; s.tracker.HandleZoneChanged(); s.flush()
+    s.instance = false; s.tracker.HandleZoneChanged()
+    if policyChange == "started" then s.tracker.started = false
+    else s.profile[policyChange] = false end
+    s.flush()
+    equal(s.char.isTrackerExpanded, false, "queued expansion respects changed " .. policyChange)
+    equal(s.clicks, 1, "inactive tracker suppresses queued expansion")
+    groups = groups + 1
+end
+
+-- A manual collapse never acquires automatic ownership during these transitions.
+do
+    local s = setup({minimizeTrackerInInstances = true})
+    s.tracker:Collapse()
+    s.instance = true; s.tracker.HandleZoneChanged()
+    s.instance = false; s.tracker.HandleZoneChanged()
+    s.instance = true; s.tracker.HandleZoneChanged(); s.flush()
+    s.instance = false; s.tracker.HandleZoneChanged(); s.flush()
+    equal(s.char.isTrackerExpanded, false, "manual collapse survives exit and re-entry")
+    equal(s.clicks, 1, "manual collapse is not restored automatically")
+    groups = groups + 1
+end
+-- A stale restoration must not acquire ownership after expansion already
+-- happened, or undo a later manual collapse when the player resurrects.
+do
+    local s = setup({minimizeTrackerInInstances = true})
+    s.instance = true; s.tracker.HandleZoneChanged(); s.flush()
+    s.instance = false; s.tracker.HandleZoneChanged()
+    s.tracker:Expand()
+    s.ghost = true; s.flush()
+    s.tracker:Collapse()
+    s.ghost = false; s.tracker.HandleZoneChanged(); s.flush()
+    equal(s.char.isTrackerExpanded, false, "stale restoration does not own a later manual collapse")
+    equal(s.clicks, 3, "manual collapse after restored expansion is not toggled again")
+    groups = groups + 1
+end
 print("Tracker visibility regressions passed (" .. groups .. " groups)")
