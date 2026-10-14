@@ -13,6 +13,14 @@ local hiddenByInstance = false
 local minimizedByCombat = false
 local hiddenByCombat = false
 
+local function CollapseInInstance()
+    -- Combat can delay this work until the player leaves or changes settings.
+    if minimizedByInstance and QuestieTracker.started and Questie.db.profile.trackerEnabled
+        and Questie.db.profile.minimizeTrackerInInstances and IsInInstance() then
+        QuestieTracker:Collapse()
+    end
+end
+
 ---@return boolean
 function TrackerVisibility.IsHidden()
     return hiddenByInstance or hiddenByCombat
@@ -42,9 +50,7 @@ function TrackerVisibility.HandleZoneChanged()
         if Questie.db.profile.minimizeTrackerInInstances then
             if Questie.db.char.isTrackerExpanded then
                 minimizedByInstance = true
-                QuestieCombatQueue:Queue(function()
-                    QuestieTracker:Collapse()
-                end)
+                QuestieCombatQueue:Queue(CollapseInInstance)
             end
         elseif Questie.db.profile.hideTrackerInInstances then
             hiddenByInstance = true
@@ -74,9 +80,7 @@ function TrackerVisibility.OnMinimizeInInstancesChanged(enabled)
     if enabled then
         if QuestieTracker.started and IsInInstance() and Questie.db.char.isTrackerExpanded then
             minimizedByInstance = true
-            QuestieCombatQueue:Queue(function()
-                QuestieTracker:Collapse()
-            end)
+            QuestieCombatQueue:Queue(CollapseInInstance)
         end
     elseif minimizedByInstance then
         minimizedByInstance = false

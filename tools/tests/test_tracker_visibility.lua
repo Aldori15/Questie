@@ -245,4 +245,48 @@ do
     equal(count, 1, "visibility module registered exactly once")
     groups = groups + 1
 end
+-- Deferred instance collapses must use the policy at execution time, for both
+-- zone events and setting changes, rather than the context that queued them.
+for _, entryPoint in ipairs({"HandleZoneChanged", "OnMinimizeInInstancesChanged"}) do
+    local function queueCollapse(s)
+        s.instance = true
+        s.tracker[entryPoint](true)
+        equal(s.char.isTrackerExpanded, true, "instance collapse is queued: " .. entryPoint)
+    end
+    do
+        local s = setup({minimizeTrackerInInstances = true})
+        queueCollapse(s)
+        s.instance = false
+        s.tracker.HandleZoneChanged()
+        s.flush()
+        equal(s.char.isTrackerExpanded, true, "leaving before queued collapse keeps tracker expanded: " .. entryPoint)
+        equal(s.clicks, 0, "cancelled instance collapse does not toggle tracker: " .. entryPoint)
+        groups = groups + 1
+    end
+    do
+        local s = setup({minimizeTrackerInInstances = true})
+        s.combat = true
+        queueCollapse(s)
+        s.flush()
+        equal(s.char.isTrackerExpanded, true, "combat delays instance collapse: " .. entryPoint)
+        s.instance = false
+        s.tracker.HandleZoneChanged()
+        s.combat = false
+        s.tracker.HandleCombatEnded()
+        s.flush()
+        equal(s.char.isTrackerExpanded, true, "combat-delayed collapse cannot run after exit: " .. entryPoint)
+        equal(s.clicks, 0, "combat-delayed collapse makes no stale toggle: " .. entryPoint)
+        groups = groups + 1
+    end
+    for _, policyChange in ipairs({"minimizeTrackerInInstances", "trackerEnabled", "started"}) do
+        local s = setup({minimizeTrackerInInstances = true})
+        queueCollapse(s)
+        if policyChange == "started" then s.tracker.started = false
+        else s.profile[policyChange] = false end
+        s.flush()
+        equal(s.char.isTrackerExpanded, true, "queued collapse respects changed " .. policyChange .. ": " .. entryPoint)
+        equal(s.clicks, 0, "changed policy suppresses tracker toggle: " .. entryPoint)
+        groups = groups + 1
+    end
+end
 print("Tracker visibility regressions passed (" .. groups .. " groups)")
