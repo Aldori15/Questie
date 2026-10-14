@@ -318,3 +318,149 @@ verify(1, false, "database reinitialization replaces absent prerequisite")
 state.rewarded[777] = true
 verify(1, true, "new database prerequisite remains live")
 print("Quest eligibility: " .. comparisons .. " cached/uncached comparisons passed, including live state, correction edits and database replacement")
+
+-- Child discovery must precede availability filtering, regardless of pointer order.
+-- Model Troll Patrol's current child relationship and AzerothCore prerequisite.
+add(12563, {childQuests = {12541}})
+add(12541, {specialFlags = 1, parentQuest = 0, preQuestSingle = {12596}})
+add(61002, {childQuests = {61001}})
+add(61001, {questLevel = 10, parentQuest = 61002, requiredSkill = {164, 450}})
+compile()
+initialize()
+env.Questie.LOWLEVEL_RANGE, env.Questie.LOWLEVEL_OFFSET, env.Questie.LOWLEVEL_ALL = "range", "offset", "all"
+local profile = env.Questie.db.profile
+profile.lowLevelStyle = "default"
+profile.showAQWarEffortQuests, profile.showScourgeInvasionQuests, profile.showSunsReachQuests = true, true, true
+modules.ZoneDB.GetDungeons = function() return {} end
+modules.IsleOfQuelDanas = {GetHiddenQuests = function() return {} end}
+modules.QuestieServer.GetStateControlledQuests = function() return {} end
+modules.QuestLogCache.questLog_DO_NOT_MODIFY = {}
+modules.QuestieEvent.activeQuests = {}
+modules.QuestieQuestBlacklist.SunsReachQuests = {}
+local showRepeatable, jobs, drawn, scanOrder = true, {}, {}, {}
+modules.QuestieIconVisibility = {IsEnabledAnywhere = function(_, category)
+    return category ~= "repeatable" or showRepeatable
+end}
+modules.QuestieTooltips = {RemoveAvailableQuest = noop}
+modules.QuestieMap = {ForQuestFrames = function(_, id) return drawn[id] end,
+    UnloadQuestFrames = function(_, id) drawn[id] = nil end}
+modules.ThreadLib = {Thread = function(fn, _, _, callback)
+    jobs[#jobs + 1] = {thread = coroutine.create(fn), callback = callback}; return {}
+end}
+env.GetQuestGreenRange = function() return 5 end
+env.GetRealmName = function() return "Test realm" end
+env.time, env.date = os.time, os.date
+env.QuestieCompat.GetQuestResetTime = function() return 3600 end
+env.QuestieCompat.GetServerTime = function()
+    return 1791302400, {year = 2026, month = 10, day = 6, hour = 12, weekday = 3}
+end
+env.QuestieCompat.GetQuestLogQuestIds = function()
+    local ids = {}; for id in pairs(modules.QuestiePlayer.currentQuestlog) do ids[id] = true end; return ids
+end
+modules.QuestieLib.GetEffectiveQuestLevel = function(id)
+    return db.QueryQuestSingle(id, "questLevel"), db.QueryQuestSingle(id, "requiredLevel"),
+        db.QueryQuestSingle(id, "requiredMaxLevel") or 0
+end
+-- The draw fixture records membership; eligibility still uses the real compiled DB.
+db.GetQuest = function(id) return {Id = id, Starts = {}, tagInfoWasCached = true} end
+db.QuestPointers = {[12563] = true, [12541] = true, [61002] = true, [61001] = true}
+local normalPairs = pairs
+env.pairs = function(tbl)
+    if tbl ~= db.QuestPointers then return normalPairs(tbl) end
+    local index = 0
+    return function()
+        index = index + 1
+        local id = scanOrder[index]
+        if id then return id, tbl[id] end
+    end
+end
+assert(loadfile("Modules/Quest/AvailableQuests.lua", "t", env))()
+local available = modules.AvailableQuests
+available.DrawAvailableQuest = function(quest) drawn[quest.Id] = true end
+local player = modules.QuestiePlayer
+player.currentQuestlog = {[12563] = {}, [61002] = {}}
+env.Questie.db.char.complete[12596] = true
+state.profession = false -- Parent-active eligibility intentionally bypasses this requirement.
+local function calculateOrder(parentFirst)
+    scanOrder = parentFirst and {12563, 12541, 61002, 61001} or {12541, 12563, 61001, 61002}
+    available.CalculateAndDrawAll(nil, true)
+    local job = assert(table.remove(jobs, 1), "availability job submitted")
+    while coroutine.status(job.thread) ~= "dead" do
+        local ok, message = coroutine.resume(job.thread); assert(ok, message)
+    end
+    job.callback(true)
+end
+for _, parentFirst in ipairs({false, true}) do
+    showRepeatable = false
+    calculateOrder(parentFirst)
+    equal(drawn[12541], nil, "child respects repeatable display filter in either order")
+    equal(drawn[61001], true, "active parent retains level and profession eligibility exception")
+    showRepeatable = true
+    calculateOrder(parentFirst)
+    equal(drawn[12541], true, "enabled child appears in either order")
+    equal(drawn[12563], nil, "accepted parent remains excluded from available icons")
+
+    state.bridge[12541] = false
+    calculateOrder(parentFirst)
+    equal(drawn[12541], nil, "parent cannot bypass explicit server rejection")
+    state.bridge[12541] = nil
+    env.Questie.db.char.hidden[12541] = true
+    calculateOrder(parentFirst)
+    equal(drawn[12541], nil, "manually hidden child remains hidden")
+    env.Questie.db.char.hidden[12541] = nil
+    modules.QuestieCorrections.hiddenQuests[12541] = true
+    calculateOrder(parentFirst)
+    equal(drawn[12541], nil, "blacklisted child remains hidden")
+    modules.QuestieCorrections.hiddenQuests[12541] = nil
+    db.autoBlacklist[12541] = "skill"
+    calculateOrder(parentFirst)
+    equal(drawn[12541], nil, "automatically excluded child remains hidden")
+    db.autoBlacklist[12541] = nil
+    env.Questie.db.char.complete[12541] = true
+    calculateOrder(parentFirst)
+    equal(drawn[12541], nil, "completed child remains hidden")
+    env.Questie.db.char.complete[12541] = nil
+    env.Questie.db.char.complete[12596] = nil
+    calculateOrder(parentFirst)
+    equal(drawn[12541], nil, "missing child prerequisite blocks discovery")
+    env.Questie.db.char.complete[12596] = true
+
+    db.questDataOverrides[12541] = {[keys.exclusiveTo] = {12563}}
+    calculateOrder(parentFirst)
+    equal(drawn[12541], nil, "mutually exclusive child remains blocked")
+    db.questDataOverrides[12541] = {[keys.requiredRaces] = 2}
+    calculateOrder(parentFirst)
+    equal(drawn[12541], nil, "child race restriction remains enforced")
+    db.questDataOverrides[12541] = nil
+    db.autoBlacklist[12541] = nil
+
+    -- A child whose parentQuest field is cleared uses ordinary level bounds.
+    profile.lowLevelStyle, profile.minLevelFilter, profile.maxLevelFilter = "range", 75, 80
+    db.questDataOverrides[12541] = {[keys.questLevel] = 70}
+    available.ResetLevelRequirementCache()
+    calculateOrder(parentFirst)
+    equal(drawn[12541], nil, "child respects absolute level filtering")
+    equal(drawn[61001], true, "declared active parent retains its level exception")
+    db.questDataOverrides[12541] = nil
+    profile.lowLevelStyle = "default"
+    available.ResetLevelRequirementCache()
+    calculateOrder(parentFirst)
+    equal(drawn[12541], true, "child returns after restoring filters")
+end
+-- Child records supplied only by live corrections are not in compiled pointers.
+db.questDataOverrides[12563] = {[keys.childQuests] = {12541, 62001}}
+db.questDataOverrides[62001] = {[keys.name] = "Override-only child", [keys.questLevel] = 80,
+    [keys.requiredLevel] = 1, [keys.requiredRaces] = 0, [keys.parentQuest] = 12563,
+    [keys.specialFlags] = 1}
+calculateOrder(false)
+equal(drawn[62001], true, "eligible override-only child is still scanned")
+showRepeatable = false
+calculateOrder(true)
+equal(drawn[62001], nil, "override-only child respects display filters")
+showRepeatable = true
+db.questDataOverrides[12563], db.questDataOverrides[62001] = nil, nil
+player.currentQuestlog[61002] = nil
+calculateOrder(false)
+equal(db.activeChildQuests[61001], nil, "abandoning parent clears child eligibility shortcut")
+equal(drawn[61001], nil, "abandoned parent restores ordinary eligibility")
+print("Child availability: both scan orders, display/server filters, prerequisites and parent-active exceptions passed")

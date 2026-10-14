@@ -282,7 +282,7 @@ function _QuestieJourney.questsByZone:CategorizeQuests(quests)
                     end
                 -- elseif returnReason == DoableStates.BLACKLISTED then -- blacklisted quests -- already filtered earlier
                 elseif returnReason == DoableStates.PARENT_ACTIVE then -- parent quest active
-                    -- reused the logic from AvailableQuests.lua _DrawChildQuests
+                    -- Reuses the child eligibility checks from AvailableQuests.lua _MarkActiveChildQuests.
                     -- if this is modified, also make sure the changes are reflected in the other file(s)
                     local requiredRaces = QuestieDB.QueryQuestSingle(questId, "requiredRaces")
                     if (not Questie.db.char.complete[questId]) and ((not hiddenQuests[questId]) or hiddenQuests[questId] == HIDE_ON_MAP) and (QuestiePlayer.HasRequiredRace(requiredRaces)) then

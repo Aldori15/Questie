@@ -211,4 +211,29 @@ for _, clockAvailable in ipairs({false, true}) do
     s.finish(job)
     equal(s.drawn, 1030, "count fallback completes every quest")
 end
-print("Available quest budget: scan/draw slices, setup, nested removal, frame reuse, snapshot freshness, queued refreshes and count fallback passed")
+-- Discovering active children shares the same budget as the scan/draw passes.
+do
+    local s = setup(45)
+    local db, parents = s.modules.QuestieDB, s.modules.QuestiePlayer.currentQuestlog
+    local parentReads = 0
+    for id = 1, 40 do parents[id] = {} end
+    db.IsComplete = function() return 0 end
+    db.QueryQuestSingle = function(_, field)
+        if field == "childQuests" then
+            parentReads = parentReads + 1
+            s.now = s.now + 0.5
+            return {}
+        end
+    end
+    s.start()
+    local job = table.remove(s.jobs, 1)
+    equal(s.resume(job), false, "parent discovery yields on time budget")
+    assert(parentReads >= 6 and parentReads <= 7, "discovery is bounded before all parents are read")
+    equal(s.checked, 0, "availability checks wait until discovery is complete")
+    s.finish(job)
+    equal(parentReads, 40, "each parent is discovered once")
+    equal(s.checked, 5, "only candidates outside the log need eligibility checks")
+    equal(s.drawn, 5, "ordinary candidates still render")
+    s.assertSlices(3.5)
+end
+print("Available quest budget: scan/draw slices, setup, nested removal, frame reuse, snapshot freshness, queued refreshes, child discovery and count fallback passed")
