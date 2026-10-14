@@ -39,7 +39,7 @@ local TICKS_PER_YIELD = 30
 
 local AceGUI = LibStub("AceGUI-3.0");
 
-local _HandleTreeItemClick, _FindFirstSpawn
+local _HandleTreeItemSelected, _FindFirstSpawn
 local lastOpenSearch = "quest"
 local _selected = 0
 
@@ -143,7 +143,10 @@ local function AddLinkedParagraph(frame, linkType, lookup, header, query, addTom
             link:SetUserData("type", linkType)
             link:SetUserData("name", name)
             link:SetUserData("tooltipText", text)
-            link:SetCallback("OnClick", function() QuestieSearchResults:SetSearch(linkType, id) end)
+            link:SetCallback("OnClick", function()
+                _HideLinkedResultTooltip()
+                QuestieSearchResults:SetSearch(linkType, id)
+            end)
             if linkType == "quest" then
                 link:SetCallback("OnEnter", _QuestieJourney.ShowJourneyTooltip)
                 link:SetCallback("OnLeave", _QuestieJourney.HideJourneyTooltip)
@@ -702,7 +705,13 @@ function QuestieSearchResults:DrawResultTab(container, resultType)
     resultTree:SetFullHeight(true);
     resultTree.treeframe:SetWidth(415);
     resultTree:SetTree(results);
-    resultTree:SetCallback("OnClick", _HandleTreeItemClick)
+    -- Programmatic selection fires OnGroupSelected, without a mouse click.
+    resultTree:SetCallback("OnGroupSelected", _HandleTreeItemSelected)
+    resultTree:SetCallback("OnClick", function(_, _, selectedId)
+        if IsShiftKeyDown() and lastOpenSearch == "quest" then
+            ChatEdit_InsertLink(QuestieLink:GetQuestInsertStringById(tonumber(selectedId)))
+        end
+    end)
 
     resultFrame:AddChild(resultTree)
     container:AddChild(resultFrame);
@@ -712,14 +721,9 @@ function QuestieSearchResults:DrawResultTab(container, resultType)
     end
 end
 
-_HandleTreeItemClick = function(group, ...)
-    local treePath = {...}
-
+_HandleTreeItemSelected = function(group, _, value)
     -- This is either the questId, npcId, objectId or itemId
-    local selectedId = tonumber(treePath[2])
-    if IsShiftKeyDown() and lastOpenSearch == "quest" then
-        ChatEdit_InsertLink(QuestieLink:GetQuestInsertStringById(selectedId))
-    end
+    local selectedId = tonumber(value)
 
     -- get master frame and create scroll frame inside
     local master = group.frame.obj;

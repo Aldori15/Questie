@@ -8,6 +8,8 @@ local _QuestieJourney = QuestieJourney.private
 -------------------------
 ---@type QuestieJourneyUtils
 local QuestieJourneyUtils = QuestieLoader:ImportModule("QuestieJourneyUtils")
+---@type QuestieSearchResults
+local QuestieSearchResults = QuestieLoader:ImportModule("QuestieSearchResults")
 ---@type QuestieDB
 local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 ---@type QuestieReputation
@@ -99,7 +101,14 @@ local function _AddLinkedQuestParagraph(frame, lookup, header)
             questId = math.abs(questId)
             local linkedQuest = QuestieDB.GetQuest(questId)
             if linkedQuest then
-                group:AddChild(_QuestieJourney:GetInteractiveQuestLabel(linkedQuest))
+                local label = _QuestieJourney:GetInteractiveQuestLabel(linkedQuest)
+                label:SetCallback("OnClick", function()
+                    _QuestieJourney:HideJourneyTooltip()
+                    -- Search controls are created when the tab opens, including from zone/faction views.
+                    QuestieJourney.tabGroup:SelectTab("search")
+                    QuestieSearchResults:SetSearch("quest", questId)
+                end)
+                group:AddChild(label)
             end
         end
     end
