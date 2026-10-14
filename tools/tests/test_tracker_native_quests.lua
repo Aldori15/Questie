@@ -209,6 +209,7 @@ local queue, delayed, ready, progress = {}, {}, false, 0
 local renderedObjectives, renderedProgress, lastRender, forcedRenders = nil, nil, nil, 0
 module("QuestieCombatQueue").Queue = function(_, callback) queue[#queue + 1] = callback end
 env.QuestieCompat.C_Timer.After = function(_, callback) delayed[#delayed + 1] = callback end
+env.QuestieCompat.C_Timer.NewTimer = function() return {Cancel = noop} end
 env.Questie.Error = function(...) error("Unexpected native-quest error: " .. tostring(select(1, ...))) end
 env.CreateFrame = function() return {} end
 module("TrackerUtils").ClearTomTomTargetForQuest = noop

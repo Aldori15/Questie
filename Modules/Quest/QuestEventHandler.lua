@@ -75,6 +75,35 @@ local acoreLocationConditionUpdatePending = false
 local itemRegressionConfirmationPending = false
 local GetCursorInfo = GetCursorInfo
 
+local QUEST_LOG_RETRY_INITIAL_DELAY = 20
+local QUEST_LOG_RETRY_MAX_DELAY = 320
+local questLogRetryDelay = QUEST_LOG_RETRY_INITIAL_DELAY
+local questLogRetryTimer
+
+-- Events normally finish loading. One shared fallback also recovers when they stop.
+-- Repeated cache misses keep the existing deadline instead of postponing recovery.
+local function ScheduleQuestLogRetry()
+    if questLogRetryTimer then return end
+    local timer
+    timer = C_Timer.NewTimer(questLogRetryDelay, function()
+        if questLogRetryTimer ~= timer then return end
+        questLogRetryTimer = nil
+        questLogRetryDelay = math.min(questLogRetryDelay * 2, QUEST_LOG_RETRY_MAX_DELAY)
+        _QuestEventHandler:QuestLogUpdate()
+    end)
+    questLogRetryTimer = timer
+end
+
+local function ResetQuestLogRetryBackoff()
+    if questLogRetryDelay == QUEST_LOG_RETRY_INITIAL_DELAY then return end
+    questLogRetryDelay = QUEST_LOG_RETRY_INITIAL_DELAY
+    if questLogRetryTimer then
+        questLogRetryTimer:Cancel()
+        questLogRetryTimer = nil
+        ScheduleQuestLogRetry()
+    end
+end
+
 local nativeTrackerUpdateQueued = false
 -- Native quests have no map lifecycle callback to redraw once their objectives load.
 -- Coalesce requests in the combat queue and bypass the ordinary redraw throttle.
@@ -282,11 +311,14 @@ function _QuestEventHandler:QuestAccepted(questLogIndex, questId)
         end)
     end
 
-    questLog[questId] = {}
+    local data = {}
+    questLog[questId] = data
+    ResetQuestLogRetryBackoff()
 
     QuestieCombatQueue:Queue(function()
+        if questLog[questId] ~= data then return end
         QuestieLib:CacheItemNames(questId)
-        _QuestEventHandler:HandleQuestAccepted(questId)
+        _QuestEventHandler:HandleQuestAccepted(questId, data)
     end)
 
     BreadcrumbQuests.CheckQuestBreadcrumbs(questId)
@@ -294,27 +326,36 @@ function _QuestEventHandler:QuestAccepted(questLogIndex, questId)
 end
 
 ---@param questId number
+---@param expectedData table? @The acceptance lifecycle that queued this attempt.
 ---@return boolean true @if the function was successful, false otherwise
-function _QuestEventHandler:HandleQuestAccepted(questId)
-    if (not questLog[questId]) or (not GetQuestLogIndexByID(questId)) then
+function _QuestEventHandler:HandleQuestAccepted(questId, expectedData)
+    local data = questLog[questId]
+    if not data or (expectedData and data ~= expectedData) or data.state then return true end
+    local questLogIndex = GetQuestLogIndexByID(questId)
+    if not questLogIndex or questLogIndex <= 0 then
         Questie.Debug(Questie.DEBUG_INFO, "Quest was removed before accept handling completed. Skipping accept logic. quest:", questId)
         return true
     end
 
-    -- We first check the quest objectives and retry in the next QLU event if they are not correct yet
+    -- Retry on events or the shared fallback. Each lifecycle owns at most one queued attempt.
     local cacheMiss, _ = QuestLogCache.CheckForChanges({[questId] = true}, false)
     if cacheMiss then
         -- if cacheMiss, no need to check changes as only 1 questId
         Questie.Debug(Questie.DEBUG_INFO, "Objectives are not cached yet")
-        _QuestLogUpdateQueue:Insert(function()
-            return _QuestEventHandler:HandleQuestAccepted(questId)
-        end)
+        if not data.retryQueued then
+            data.retryQueued = true
+            _QuestLogUpdateQueue:Insert(function()
+                data.retryQueued = nil
+                return _QuestEventHandler:HandleQuestAccepted(questId, data)
+            end)
+        end
+        ScheduleQuestLogRetry()
 
         return false
     end
 
     Questie.Debug(Questie.DEBUG_INFO, "Objectives are correct. Calling accept logic. quest:", questId)
-    questLog[questId].state = QUEST_LOG_STATES.QUEST_ACCEPTED
+    data.state = QUEST_LOG_STATES.QUEST_ACCEPTED
     local hasDatabaseQuest = QuestieDB.HasQuestData(questId)
     if hasDatabaseQuest then QuestieQuest:SetObjectivesDirty(questId) end
 
@@ -439,11 +480,11 @@ end
 function _QuestEventHandler:QuestLogUpdate()
     Questie.Debug(Questie.DEBUG_DEVELOP, "[Quest Event] QUEST_LOG_UPDATE")
 
-    local continueQueuing = true
     -- Some of the other quest event didn't have the required information and ordered to wait for the next QLU.
-    -- We are now calling the function which the event added.
-    while continueQueuing and next(questLogUpdateQueue) do
-        continueQueuing = _QuestLogUpdateQueue:GetFirst()()
+    -- Attempt each existing callback once. A loading quest must not block ready quests behind it.
+    -- Failed attempts requeue themselves for a later event or fallback scan.
+    for _ = 1, #questLogUpdateQueue do
+        _QuestLogUpdateQueue:GetFirst()()
     end
 
     _QuestEventHandler:UpdateAllQuests()
@@ -473,15 +514,30 @@ end
 function _QuestEventHandler:UpdateAllQuests(confirmItemRegressions)
     Questie.Debug(Questie.DEBUG_INFO, "Running full questlog check")
     local questIdsToCheck = {}
+    local pendingAccept = false
 
     -- TODO replace with a ready table so no need to generate at each call
     for questId, data in pairs(questLog) do
         if data.state == QUEST_LOG_STATES.QUEST_ACCEPTED then
             questIdsToCheck[questId] = true
+        elseif not data.state then
+            local index = GetQuestLogIndexByID(questId)
+            if index and index > 0 then pendingAccept = true end
         end
     end
 
     local cacheMiss, changes = QuestLogCache.CheckForChanges(questIdsToCheck, true, confirmItemRegressions)
+
+    -- Accepted quests and pending accepts are checked separately; either may still be loading.
+    if cacheMiss or pendingAccept then
+        ScheduleQuestLogRetry()
+    else
+        if questLogRetryTimer then
+            questLogRetryTimer:Cancel()
+            questLogRetryTimer = nil
+        end
+        questLogRetryDelay = QUEST_LOG_RETRY_INITIAL_DELAY
+    end
 
     if next(changes) then
         local nativeChanged, mappedChanged = false, false
