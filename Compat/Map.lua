@@ -1893,35 +1893,39 @@ end
 
 -- Return coordinates in the actual player zone, even while browsing another map.
 function QuestieCompat.GetActualPlayerZonePosition()
-    local actualUiMapID = ResolveActualPlayerUiMapID()
-    if not actualUiMapID then
+    local resolvedUiMapID, resolvedX, resolvedY = QuestieCompat.GetCurrentPlayerPosition()
+    local targetUiMapID = ResolveActualPlayerUiMapID()
+    if not targetUiMapID then
         return nil, nil, nil
     end
 
-    local worldX = lastMinimapPlayerWorldX or lastStablePlayerWorldX
-    local worldY = lastMinimapPlayerWorldY or lastStablePlayerWorldY
-    if not worldX or not worldY then
-        worldX, worldY = QuestieCompat.GetCurrentPlayerMinimapWorldPosition()
-    end
-
-    local resolvedUiMapID, resolvedX, resolvedY = QuestieCompat.GetCurrentPlayerPosition()
-    local targetUiMapID = actualUiMapID
-
-    if worldX and worldY and QuestieCompat.HBD and QuestieCompat.HBD.GetZoneCoordinatesFromWorld then
-        local zoneX, zoneY = QuestieCompat.HBD:GetZoneCoordinatesFromWorld(worldX, worldY, targetUiMapID, true)
-        if IsValidZoneCoords(zoneX, zoneY) then
-            return targetUiMapID, zoneX, zoneY
-        end
-    end
-
-    if resolvedUiMapID and resolvedX and resolvedY and (resolvedX > 0 or resolvedY > 0) then
+    local targetUiData = QuestieCompat.UiMapData and QuestieCompat.UiMapData[targetUiMapID]
+    -- Prefer the current read over saved world coordinates, including movement
+    -- within a zone that has not changed the map-cache context.
+    if resolvedUiMapID and IsValidZoneCoords(resolvedX, resolvedY) and (resolvedX > 0 or resolvedY > 0) then
         if resolvedUiMapID == targetUiMapID then
             return targetUiMapID, resolvedX, resolvedY
         end
 
-        local translatedX, translatedY = TranslateZoneCoordinatesBetweenUiMaps(resolvedX, resolvedY, resolvedUiMapID, targetUiMapID)
-        if translatedX and translatedY then
-            return targetUiMapID, translatedX, translatedY
+        local resolvedUiData = QuestieCompat.UiMapData and QuestieCompat.UiMapData[resolvedUiMapID]
+        if AreUiMapsRelated(resolvedUiMapID, targetUiMapID) and resolvedUiData and targetUiData
+            and targetUiData.instance ~= nil and resolvedUiData.instance == targetUiData.instance then
+            local translatedX, translatedY = TranslateZoneCoordinatesBetweenUiMaps(resolvedX, resolvedY, resolvedUiMapID, targetUiMapID)
+            if IsValidZoneCoords(translatedX, translatedY) then
+                return targetUiMapID, translatedX, translatedY
+            end
+        end
+    end
+
+    local worldX, worldY, instanceID, worldUiMapID = QuestieCompat.GetCurrentPlayerMinimapWorldPosition()
+    -- A fallback can outlive a zone/instance transition. Validate its complete
+    -- context before converting it into coordinates on the actual player map.
+    if worldX and worldY and worldUiMapID and targetUiData and instanceID ~= nil
+        and instanceID == targetUiData.instance and AreUiMapsRelated(worldUiMapID, targetUiMapID)
+        and QuestieCompat.HBD and QuestieCompat.HBD.GetZoneCoordinatesFromWorld then
+        local zoneX, zoneY = QuestieCompat.HBD:GetZoneCoordinatesFromWorld(worldX, worldY, targetUiMapID, true)
+        if IsValidZoneCoords(zoneX, zoneY) then
+            return targetUiMapID, zoneX, zoneY
         end
     end
 

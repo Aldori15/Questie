@@ -264,4 +264,119 @@ do
     tests = tests + 1
 end
 
+-- Actual player coordinates must prefer current reads and validate the entire
+-- fallback context before converting world positions onto the player's map.
+do
+    local state = {actual = 1, resolved = 1, x = 0.4, y = 0.6,
+        worldX = 60, worldY = 50, worldInstance = 0, worldMap = 1}
+    local worldReads, conversions = 0, 0
+    local mapEnv = setmetatable({MIN_ZONE_COORD = -0.25, MAX_ZONE_COORD = 1.25}, {__index = _G})
+    local mapData = {
+        [1] = {100, 100, 100, 100, instance = 0},
+        [2] = {100, 100, 100, 100, instance = 0},
+        [3] = {100, 100, 100, 100, instance = 1},
+        [4] = {50, 50, 100, 100, parentMapID = 1, instance = 0},
+        [5] = {50, 50, 100, 100, parentMapID = 1, instance = 1},
+    }
+    mapEnv.ResolveActualPlayerUiMapID = function() return state.actual end
+    mapEnv.QuestieCompat = {
+        UiMapData = mapData,
+        GetCurrentPlayerPosition = function()
+            if state.actualAfterRead then state.actual = state.actualAfterRead end
+            return state.resolved, state.x, state.y
+        end,
+        GetCurrentPlayerMinimapWorldPosition = function()
+            worldReads = worldReads + 1
+            return state.worldX, state.worldY, state.worldInstance, state.worldMap
+        end,
+        HBD = {GetZoneCoordinatesFromWorld = function(_, x, y, id)
+            conversions = conversions + 1
+            local data = mapData[id]
+            return (data[3] - x) / data[1], (data[4] - y) / data[2]
+        end},
+    }
+    local mapSource = read("Compat/Map.lua")
+    local function mapChunk(declaration)
+        local pattern = declaration:gsub("(%W)", "%%%1") .. ".-\nend"
+        return assert(mapSource:match(pattern), "missing map production function: " .. declaration)
+    end
+    -- Saved coordinates are deliberately stale so the pre-fix function fails
+    -- the first assertion even though valid current coordinates are available.
+    local chunks = {"local lastMinimapPlayerWorldX, lastMinimapPlayerWorldY = 90, 80\n" ..
+        "local lastStablePlayerWorldX, lastStablePlayerWorldY = 80, 70"}
+    for _, declaration in ipairs({
+        "local function IsValidZoneCoords(x, y)",
+        "local function IsDescendantUiMap(childUiMapID, ancestorUiMapID)",
+        "local function AreUiMapsRelated(leftUiMapID, rightUiMapID)",
+        "local function TranslateZoneCoordinatesBetweenUiMaps(x, y, fromUiMapID, toUiMapID)",
+        "function QuestieCompat.GetActualPlayerZonePosition()",
+    }) do
+        chunks[#chunks + 1] = mapChunk(declaration)
+    end
+    compile(table.concat(chunks, "\n"), "@Compat/Map.lua:actual-position", mapEnv)()
+    local function check(expectedMap, expectedX, expectedY, label)
+        local map, x, y = mapEnv.QuestieCompat.GetActualPlayerZonePosition()
+        equal(map, expectedMap, label .. " map")
+        if expectedX == nil then
+            equal(x, nil, label .. " x")
+            equal(y, nil, label .. " y")
+        else
+            assert(x and math.abs(x - expectedX) < 0.000000001, label .. " x")
+            assert(y and math.abs(y - expectedY) < 0.000000001, label .. " y")
+        end
+    end
+    check(1, 0.4, 0.6, "fresh read wins over saved position")
+    state.x, state.y = 0.7, 0.8
+    check(1, 0.7, 0.8, "movement in unchanged map context stays current")
+    state.actual, state.resolved = 2, 2
+    check(2, 0.7, 0.8, "fresh position wins after zone transition")
+    state.actual, state.resolved = 3, 3
+    check(3, 0.7, 0.8, "fresh position wins after instance transition")
+    state.x, state.y = 0, 0.5
+    check(3, 0, 0.5, "valid map edge remains usable")
+    equal(worldReads, 0, "valid direct reads do not request world fallback")
+    equal(conversions, 0, "valid direct reads avoid world conversion")
+
+    state.actual, state.resolved, state.x, state.y = 4, 1, 0.2, 0.3
+    check(4, 0.4, 0.6, "fresh parent position translates to child")
+    state.actual, state.resolved, state.x, state.y = 1, 4, 0.4, 0.6
+    check(1, 0.2, 0.3, "fresh child position translates to parent")
+    equal(worldReads, 0, "valid related-map translation avoids world fallback")
+
+    state.resolved, state.x, state.y = 1, 0, 0
+    check(1, 0.4, 0.5, "matching-context fallback remains usable")
+    state.actual, state.resolved = 4, 4
+    state.worldX, state.worldY = 90, 80
+    check(4, 0.2, 0.4, "related parent fallback remains usable for child")
+
+    state.actual, state.resolved, state.x, state.y = 1, 2, 0.4, 0.6
+    state.worldMap = 2
+    local previousConversions = conversions
+    check(nil, nil, nil, "unrelated zone fallback is rejected even in same instance")
+    equal(conversions, previousConversions, "unrelated fallback is rejected before conversion")
+    state.resolved, state.x, state.y, state.worldMap = 1, 0, 0, 1
+    state.worldInstance = 1
+    check(nil, nil, nil, "fallback from another instance is rejected")
+    state.worldInstance, state.worldMap = 0, nil
+    check(nil, nil, nil, "fallback with unknown map is rejected")
+    state.worldInstance, state.worldMap = nil, 1
+    check(nil, nil, nil, "fallback with unknown instance is rejected")
+
+    state.actual, state.resolved, state.x, state.y = 1, 5, 0.4, 0.6
+    state.worldMap, state.worldInstance = 5, 1
+    check(nil, nil, nil, "related maps with different instances cannot translate")
+    state.actual, state.resolved, state.x, state.y = 1, 1, 1.5, 0.6
+    state.worldMap, state.worldInstance, state.worldX, state.worldY = 1, 0, 60, 50
+    check(1, 0.4, 0.5, "invalid current coordinates use valid fallback")
+    state.x, state.y, state.worldX, state.worldY = 0, 0, -100, -100
+    check(nil, nil, nil, "invalid converted fallback is rejected")
+    state.actual, state.resolved, state.x, state.y = nil, 1, 0.4, 0.6
+    state.actualAfterRead = 1
+    check(1, 0.4, 0.6, "current read can establish the actual map context")
+    state.actual, state.actualAfterRead = nil, nil
+    check(nil, nil, nil, "unknown actual map returns no position")
+    tests = tests + 1
+end
+
+
 print("Compatibility contract regression tests passed (" .. tests .. " groups)")
