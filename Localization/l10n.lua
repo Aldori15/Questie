@@ -152,23 +152,46 @@ function l10n:Initialize()
     ReleaseUnusedLookupLocales(l10n.objectLookup)
 end
 
-function l10n:BuildObjectNameCache()
+local function BuildObjectNameCache(iterationsPerCycle)
     if l10n._objectCacheBuilt then return end
-    l10n._objectCacheBuilt = true
     Questie.Debug(Questie.DEBUG_INFO, "[l10n:BuildObjectNameCache] Building object name reverse-lookup cache...")
+    local lookup = {}
+    local iterations = 0
     for id in pairs(QuestieDB.ObjectPointers) do
         local objName = QuestieDB.QueryObjectSingle(id, "name")
         if objName then
-            local existing = l10n.objectNameLookup[objName]
+            local existing = lookup[objName]
             if existing == nil then
-                l10n.objectNameLookup[objName] = id
+                lookup[objName] = id
             elseif type(existing) == "number" then
-                l10n.objectNameLookup[objName] = { existing, id }
+                lookup[objName] = { existing, id }
             else
                 existing[#existing + 1] = id
             end
         end
+        if iterationsPerCycle then
+            iterations = iterations + 1
+            if iterations == iterationsPerCycle then
+                coroutine.yield()
+                -- A synchronous tooltip lookup may have completed the cache while we waited.
+                if l10n._objectCacheBuilt then return end
+                iterations = 0
+            end
+        end
     end
+    -- Never expose incomplete name buckets or mark missing names before the scan finishes.
+    l10n.objectNameLookup = lookup
+    l10n._objectCacheBuilt = true
+end
+
+function l10n:BuildObjectNameCache()
+    BuildObjectNameCache()
+end
+
+---Build the cache in the existing initialization coroutine, yielding every 250 objects.
+---@async
+function l10n:BuildObjectNameCacheAsync()
+    BuildObjectNameCache(250)
 end
 
 function l10n:GetObjectNameLookup(name)

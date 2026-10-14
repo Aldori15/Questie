@@ -62,25 +62,16 @@ jobs:
             luac5.2 -p "$test"
           done
 
-      - name: Run compatibility and loader contracts on Lua 5.1
+      - name: Run Lua 5.1-compatible regression suites
         run: |
-          lua5.1 tools/tests/test_compat_contracts.lua
-          lua5.1 tools/tests/test_acore_data_loading.lua
-          lua5.1 tools/tests/test_compat_timers.lua
-          lua5.1 tools/tests/test_compat_tomtom.lua
-          lua5.1 tools/tests/test_compat_map_exploration.lua
-          lua5.1 tools/tests/test_compat_quest_resets.lua
-          lua5.1 tools/tests/test_quest_reward_completion.lua
-          lua5.1 tools/tests/test_module_loader.lua
-          lua5.1 tools/tests/test_options_335.lua
-          lua5.1 tools/tests/test_tracker_initialization.lua
-          lua5.1 tools/tests/test_tracker_nearest_quest_item.lua
-          lua5.1 tools/tests/test_tracker_quest_order.lua
-          lua5.1 tools/tests/test_tracker_objective_text.lua
-          lua5.1 tools/tests/test_tracker_achievements.lua
-          lua5.1 tools/tests/test_tracker_visibility.lua
-          lua5.1 tools/tests/test_tracker_waypoints.lua
-          lua5.1 tools/tests/test_stream_storage.lua
+          # Tests declare Lua 5.1 support in their first-line run instructions.
+          for test in tools/tests/test_*.lua; do
+            IFS= read -r header < "$test"
+            if [[ "$header" == *"Lua 5.1"* ]]; then
+              echo "Running $test (Lua 5.1)"
+              lua5.1 "$test"
+            fi
+          done
 
       - name: Run Lua regression suites
         run: |

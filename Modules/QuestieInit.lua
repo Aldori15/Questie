@@ -262,7 +262,7 @@ QuestieInit.Stages[1] = function() -- run as a coroutine
     QuestieDB:Initialize()
 
     Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage1] Object name cache building.")
-    l10n:BuildObjectNameCache()
+    l10n:BuildObjectNameCacheAsync()
 
     Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage1] Tutorial initializing.")
     coYield()
