@@ -142,7 +142,7 @@ equal(waypoints[#waypoints][6], nil, "default persistence preserved")
 local playerMap, playerX, playerY = 1001, 0.125, 0.375
 local worldX, worldY
 compat.GetCurrentPlayerPosition = function() return playerMap, playerX, playerY end
-compat.GetCurrentPlayerMinimapWorldPosition = function() return worldX, worldY end
+compat.GetCurrentPlayerMinimapWorldPosition = function() return worldX, worldY, 0, 1001 end
 local function text()
     return {writes = 0, GetText = function(self) return self.value end,
         SetText = function(self, value) self.value = value; self.writes = self.writes + 1 end}
@@ -201,7 +201,10 @@ compat.HBD = {GetZoneCoordinatesFromWorld = function(_, x, y, mapId, allowOutsid
     return 0.5, 0.25
 end}
 update(coords, 0.05)
-equal(coords.Player.value, "Player: 50.0, 25.0", "world-position conversion retained")
+equal(coords.Player.value, "Player: 12.5, 37.5", "valid current coordinates take priority over saved world position")
+playerMap, playerX, playerY = nil, nil, nil
+update(coords, 0.05)
+equal(coords.Player.value, "Player: 50.0, 25.0", "world-position conversion remains available when current position is missing")
 coords.visible = false
 local oldPlayerWrites = coords.Player.writes
 update(coords, 1)
