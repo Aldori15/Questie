@@ -44,6 +44,17 @@ end
 ---@return string
 function TrackerObjectiveText.GetQuestObjectiveText(objective, description)
     local profile = Questie.db.profile
+    local colorObjective = objective
+    if objective.NativeOnly and not objective.Completed and objective.Collected >= objective.Needed then
+        colorObjective = {Collected = 0, Needed = 1}
+    end
+    if objective.NativeOnly and (not profile.trimObjectiveText or not objective.HasCounter) then
+        local text = objective.NativeText
+        if objective.HasCounter then
+            text = text:gsub("%d+/%d+", tostring(objective.Collected) .. "/" .. tostring(objective.Needed), 1)
+        end
+        return QuestieLib:GetRGBForObjective(colorObjective) .. "- " .. text .. "|r"
+    end
     local progress = tostring(objective.Collected) .. "/" .. tostring(objective.Needed)
     if profile.showQuestPercent and type(objective.Collected) == "number" and type(objective.Needed) == "number" and objective.Needed > 0 then
         local progressColor = GetPercentColorHex(objective.Collected / objective.Needed)
@@ -53,7 +64,7 @@ function TrackerObjectiveText.GetQuestObjectiveText(objective, description)
         return white .. "- " .. description .. ": |r" .. progressColor .. progress .. "|r"
     end
 
-    local color = QuestieLib:GetRGBForObjective(objective)
+    local color = QuestieLib:GetRGBForObjective(colorObjective)
     if profile.showQuestProgressFirst then
         return color .. "- " .. progress .. " " .. description .. "|r"
     end

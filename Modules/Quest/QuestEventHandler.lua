@@ -75,6 +75,18 @@ local acoreLocationConditionUpdatePending = false
 local itemRegressionConfirmationPending = false
 local GetCursorInfo = GetCursorInfo
 
+local nativeTrackerUpdateQueued = false
+-- Native quests have no map lifecycle callback to redraw once their objectives load.
+-- Coalesce requests in the combat queue and bypass the ordinary redraw throttle.
+local function QueueNativeTrackerUpdate()
+    if nativeTrackerUpdateQueued then return end
+    nativeTrackerUpdateQueued = true
+    QuestieCombatQueue:Queue(function()
+        nativeTrackerUpdateQueued = false
+        QuestieTracker:Update(true)
+    end)
+end
+
 local function CacheRequiredItemConditionStates()
     QuestieDB:InitializeAzerothCoreAvailabilityConditionIndexes()
     for questId in pairs(QuestieDB.requiredItemConditionQuestIds) do
@@ -303,7 +315,8 @@ function _QuestEventHandler:HandleQuestAccepted(questId)
 
     Questie.Debug(Questie.DEBUG_INFO, "Objectives are correct. Calling accept logic. quest:", questId)
     questLog[questId].state = QUEST_LOG_STATES.QUEST_ACCEPTED
-    QuestieQuest:SetObjectivesDirty(questId)
+    local hasDatabaseQuest = QuestieDB.HasQuestData(questId)
+    if hasDatabaseQuest then QuestieQuest:SetObjectivesDirty(questId) end
 
     QuestieJourney:AcceptQuest(questId)
     QuestieAnnounce:AcceptedQuest(questId)
@@ -317,6 +330,8 @@ function _QuestEventHandler:HandleQuestAccepted(questId)
 
     -- The local player now has this quest, so stop drawing it as a party member's objective.
     QuestiePartyObjectives:ScheduleUpdate(questId)
+
+    if not hasDatabaseQuest then QueueNativeTrackerUpdate() end
 
     return true
 end
@@ -469,35 +484,43 @@ function _QuestEventHandler:UpdateAllQuests(confirmItemRegressions)
     local cacheMiss, changes = QuestLogCache.CheckForChanges(questIdsToCheck, true, confirmItemRegressions)
 
     if next(changes) then
-        for questId, objIds in pairs(changes) do
-            if (not QuestiePlayer.currentQuestlog[questId]) then
-                -- If quests are not in the cache right after login (e.g. the API is slow), they are not added to the player's quest log.
-                -- Add them to Questie's quest log state so they can be updated.
-                local quest = QuestieDB.GetQuest(questId)
-                if quest then
-                    Questie.Debug(Questie.DEBUG_INFO, "Quest:", questId, "is not in the player's quest log, but is in the QuestEventHandler quest log")
-                    QuestiePlayer.currentQuestlog[questId] = quest
-                else
-                    Questie.Error("Quest:", questId, "is not in the player's quest log and not in the QuestDB. Please report this on Github or Discord!")
+        local nativeChanged, mappedChanged = false, false
+        for questId in pairs(changes) do
+            if QuestieDB.HasQuestData(questId) then
+                mappedChanged = true
+                if (not QuestiePlayer.currentQuestlog[questId]) then
+                    -- Recover mapped quests whose data was unavailable during login.
+                    local quest = QuestieDB.GetQuest(questId)
+                    if quest then
+                        Questie.Debug(Questie.DEBUG_INFO, "Quest:", questId, "is not in the player's quest log, but is in the QuestEventHandler quest log")
+                        QuestiePlayer.currentQuestlog[questId] = quest
+                    else
+                        Questie.Error("Quest:", questId, "is not in the player's quest log and not in the QuestDB. Please report this on Github or Discord!")
+                    end
                 end
-            end
 
-            --Questie.Debug(Questie.DEBUG_INFO, "Quest:", questId, "objectives:", table.concat(objIds, ","), "will be updated")
-            Questie.Debug(Questie.DEBUG_INFO, "Quest:", questId, "will be updated")
-            QuestieQuest:SetObjectivesDirty(questId)
+                Questie.Debug(Questie.DEBUG_INFO, "Quest:", questId, "will be updated")
+                QuestieQuest:SetObjectivesDirty(questId)
 
-            QuestieNameplate:UpdateNameplate()
-            QuestieQuest:UpdateQuest(questId)
-        end
-        QuestieCombatQueue:Queue(function()
-            if confirmItemRegressions then
-                QuestieTracker:Update()
+                QuestieNameplate:UpdateNameplate()
+                QuestieQuest:UpdateQuest(questId)
             else
-                C_Timer.After(1.0, function()
-                    QuestieTracker:Update()
-                end)
+                -- Native membership and progress are valid without a database map object.
+                nativeChanged = true
             end
-        end)
+        end
+        if nativeChanged then QueueNativeTrackerUpdate() end
+        if mappedChanged then
+            QuestieCombatQueue:Queue(function()
+                if confirmItemRegressions then
+                    QuestieTracker:Update()
+                else
+                    C_Timer.After(1.0, function()
+                        QuestieTracker:Update()
+                    end)
+                end
+            end)
+        end
     else
         Questie.Debug(Questie.DEBUG_INFO, "Nothing to update")
     end

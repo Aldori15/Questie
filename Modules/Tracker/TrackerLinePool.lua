@@ -22,14 +22,13 @@ local TrackerQuestItemButtons = QuestieLoader:ImportModule("TrackerQuestItemButt
 -------------------------
 --Import Questie modules.
 -------------------------
----@type QuestieLink
-local QuestieLink = QuestieLoader:ImportModule("QuestieLink")
 ---@type QuestieMap
 local QuestieMap = QuestieLoader:ImportModule("QuestieMap")
 ---@type QuestieCombatQueue
 local QuestieCombatQueue = QuestieLoader:ImportModule("QuestieCombatQueue")
 ---@type QuestieLib
 local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
+local TrackerData = QuestieLoader:ImportModule("TrackerData")
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
 
@@ -816,7 +815,7 @@ TrackerLinePool.OnClickQuest = function(self, button)
         LibDropDown:CloseDropDownMenus()
     end
 
-    if TrackerUtils:IsBindTrue(Questie.db.profile.trackerbindSetTomTom, button) then
+    if not self.Quest.NativeOnly and TrackerUtils:IsBindTrue(Questie.db.profile.trackerbindSetTomTom, button) then
         local spawn, zone, name = QuestieMap:GetNearestQuestSpawn(self.Quest)
         if spawn then
             TrackerUtils:SetTomTomTarget(name, zone, spawn[1], spawn[2], self.Quest.Id)
@@ -825,7 +824,7 @@ TrackerLinePool.OnClickQuest = function(self, button)
         end
     elseif TrackerUtils:IsBindTrue(Questie.db.profile.trackerbindUntrack, button) then
         if (IsModifiedClick("CHATLINK") and ChatEdit_GetActiveWindow()) then
-            ChatEdit_InsertLink(QuestieLink:GetQuestInsertStringById(self.Quest.Id))
+            ChatEdit_InsertLink(TrackerData.GetQuestLink(self.Quest))
         else
             QuestieTracker:UntrackQuestId(self.Quest.Id)
             local questLogFrame = QuestLogExFrame or ClassicQuestLog or QuestLogFrame

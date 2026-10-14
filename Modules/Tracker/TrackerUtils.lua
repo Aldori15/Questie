@@ -85,6 +85,11 @@ function TrackerUtils:ShowQuestLog(quest)
         QuestieTracker:UntrackQuestId(quest.Id)
         return
     end
+    if quest.NativeOnly and questLogIndex > GetNumQuestLogEntries() then
+        ExpandQuestHeader(GetQuestSortIndex(questLogIndex))
+        questLogIndex = GetQuestLogIndexByID(quest.Id)
+        if not questLogIndex then return end
+    end
     SelectQuestLogEntry(questLogIndex)
 
     -- Scroll to the quest in the quest log
@@ -362,6 +367,14 @@ function TrackerUtils:GetUsableQuestItemIds(quest)
             seenQuestItems[itemId] = true
             tinsert(usableQuestItems, itemId)
         end
+    end
+
+    if quest.NativeOnly then
+        local itemId = quest.sourceItemId
+        if itemId and GetItemCount(itemId) > 0 and self:IsQuestItemUsable(itemId) then
+            tinsert(usableQuestItems, itemId)
+        end
+        return usableQuestItems
     end
 
     local sourceItemId = quest.sourceItemId

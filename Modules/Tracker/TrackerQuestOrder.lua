@@ -9,8 +9,7 @@ local TrackerUtils = QuestieLoader:ImportModule("TrackerUtils")
 local QuestieTracker = QuestieLoader:ImportModule("QuestieTracker")
 ---@type QuestieCombatQueue
 local QuestieCombatQueue = QuestieLoader:ImportModule("QuestieCombatQueue")
----@type QuestiePlayer
-local QuestiePlayer = QuestieLoader:ImportModule("QuestiePlayer")
+local TrackerData = QuestieLoader:ImportModule("TrackerData")
 ---@type QuestieMap
 local QuestieMap = QuestieLoader:ImportModule("QuestieMap")
 ---@type QuestieCoords
@@ -83,7 +82,7 @@ end
 ---@return AreaId|nil zone
 ---@return string|nil continent
 local function _GetNearestQuestSortData(quest)
-    if not quest then
+    if not quest or quest.NativeOnly then
         return nil, nil, nil
     end
 
@@ -154,6 +153,14 @@ local function _GetZoneName(zoneOrSort, questId)
     return zoneName or "Unknown Zone"
 end
 
+function TrackerQuestOrder.GetQuestGroupName(quest)
+    local mode = Questie.db.profile.trackerSortObjectives
+    if quest.NativeOnly and (mode == "byZone" or mode == "byZonePlayerProximity" or mode == "byZonePlayerProximityReversed") then
+        return quest.zoneName
+    end
+    return _GetZoneName(quest.zoneOrSort or 0, quest.Id)
+end
+
 local function _CollectQuestDetails()
     ---@type QuestId[]
     local sortedQuestIds = {}
@@ -161,25 +168,30 @@ local function _CollectQuestDetails()
     local questDetails = {}
 
     -- Update quest objectives
-    for questId, quest in pairs(QuestiePlayer.currentQuestlog) do
+    for questId, quest in pairs(TrackerData.Refresh()) do
         if quest then
             tinsert(sortedQuestIds, questId)
 
             local percent = 0
-            if quest:IsComplete() == 1 or (not next(quest.Objectives)) then
+            if quest:IsComplete() == 1 or ((not quest.NativeOnly) and (not next(quest.Objectives))) then
                 percent = 1
             else
                 local count = 0
                 for _, Objective in pairs(quest.Objectives) do
-                    percent = percent + (Objective.Collected / Objective.Needed)
+                    local needed = Objective.Needed or 0
+                    if quest.NativeOnly then
+                        percent = percent + (Objective.Completed and 1 or (needed > 0 and math.min((Objective.Collected or 0) / needed, 1) or 0))
+                    else
+                        percent = percent + (needed > 0 and (Objective.Collected or 0) / needed or (Objective.Completed and 1 or 0))
+                    end
                     count = count + 1
                 end
-                percent = percent / count
+                percent = count > 0 and percent / count or 0
             end
 
             questDetails[questId] = {
                 quest = quest,
-                zoneName = _GetZoneName(quest.zoneOrSort, questId),
+                zoneName = TrackerQuestOrder.GetQuestGroupName(quest),
                 questCompletePercent = percent,
             }
         end

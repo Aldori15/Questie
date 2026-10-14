@@ -109,12 +109,13 @@ QuestieCompat.C_QuestLog = {
 	-- Returns info for the objectives of a quest. (https://wowpedia.fandom.com/wiki/API_C_QuestLog.GetQuestObjectives)
 	GetQuestObjectives = function(questID, questLogIndex)
 		local questObjectives, objectiveIndex = {}, 1
+        local hasDatabaseQuest = QuestieDB.HasQuestData(questID)
         if questLogIndex then
 		    local numObjectives = GetNumQuestLeaderBoards(questLogIndex);
 		    for i = 1, numObjectives do
 		    	-- https://wowpedia.fandom.com/wiki/API_GetQuestLogLeaderBoard
 		    	local description, objectiveType, isCompleted = GetQuestLogLeaderBoard(i, questLogIndex);
-                if objectiveType ~= "log" then
+                if objectiveType ~= "log" or not hasDatabaseQuest then
 		    	    local objectiveName, numFulfilled, numRequired = parseQuestObjective(description)
                     objectiveName = normalizeObjectiveName(objectiveName)
                     -- GetQuestLogLeaderBoard randomly returns incorrect objective information.
@@ -145,8 +146,8 @@ QuestieCompat.C_QuestLog = {
 		    	    	numFulfilled = tonumber(numFulfilled) or (isCompleted and 1 or 0),
 		    	    	numRequired = tonumber(numRequired) or 1,
 		    	    })
-					-- "event" should always be last?
-					objectiveIndex = objectiveIndex + (objectiveType ~= "event" and 1 or 0)
+                    -- Preserve legacy database alignment; native-only quests keep client order.
+                    objectiveIndex = objectiveIndex + ((not hasDatabaseQuest or objectiveType ~= "event") and 1 or 0)
                 end
 		    end
         end

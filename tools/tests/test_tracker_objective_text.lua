@@ -26,6 +26,7 @@ env.QuestieLoader:CreateModule("QuestieDB").questTagIds = {
 }
 loadModule("Modules/Libs/QuestieLib.lua", env)
 loadModule("Modules/Tracker/TrackerObjectiveText.lua", env)
+loadModule("Modules/Tracker/TrackerData.lua", env)
 local formatter = env.QuestieLoader:ImportModule("TrackerObjectiveText")
 local library = env.QuestieLoader:ImportModule("QuestieLib")
 local profile = env.Questie.db.profile
@@ -293,6 +294,21 @@ do
         assert(rows[index + 1].label.text:find("4/3000", 1, true), "achievement progress rendered")
     end
     equal(finished, 8, "both achievement ordering settings complete layout")
+
+    -- Exercise the production renderer with a database-unknown action whose counter is full.
+    quest.NativeOnly, quest.name, quest.level = true, "Custom action quest", 61
+    quest.Objectives = {{Index = 1, NativeIndex = 1, NativeOnly = true, HasCounter = true,
+        Type = "object", Description = "Activate device", NativeText = "Activate device: 1/1",
+        Collected = 1, Needed = 1, Completed = false}}
+    profile.trimObjectiveText, profile.showQuestPercent, profile.hideCompletedQuestObjectives = false, false, true
+    library.PrintDifficultyColor = function(_, _, name) return name end
+    tracker:Update(true)
+    local nativeTitle, nativeObjective
+    for _, row in ipairs(rows) do
+        if row.mode == "quest" and row.label.text:find("Custom action quest", 1, true) then nativeTitle = true end
+        if row.mode == "objective" and row.label.text:find("Activate device: 1/1", 1, true) then nativeObjective = true end
+    end
+    assert(nativeTitle and nativeObjective, "Native title and unfinished full-counter objective survive real rendering")
     groups = groups + 1
 end
 print("Tracker objective-text regressions passed (" .. groups .. " groups)")

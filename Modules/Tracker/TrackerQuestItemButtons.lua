@@ -38,7 +38,7 @@ function TrackerQuestItemButtons.Initialize()
             btn:SetAlpha(0)
         end
 
-        btn.SetItem = function(self, questItemId, questId, size)
+        btn.SetItem = function(self, questItemId, questId, size, isNativeQuestItem)
             local validTexture
             self.itemId = nil
             self.itemName = nil
@@ -46,7 +46,7 @@ function TrackerQuestItemButtons.Initialize()
             for bag = -2, 4 do
                 for slot = 1, GetContainerNumSlots(bag) do
                     local texture, _, _, _, _, _, _, _, _, itemId = QuestieCompat.GetContainerItemInfo(bag, slot)
-                    if questItemId == itemId and QuestieDB.QueryItemSingle(itemId, "class") == 12 then
+                    if questItemId == itemId and (isNativeQuestItem or QuestieDB.QueryItemSingle(itemId, "class") == 12) then
                         validTexture = texture
                         self.itemId = questItemId
                         break
@@ -58,7 +58,7 @@ function TrackerQuestItemButtons.Initialize()
             if (not validTexture) then
                 for inventorySlot = 1, 19 do
                     local itemId = GetInventoryItemID("player", inventorySlot)
-                    if questItemId == itemId and QuestieDB.QueryItemSingle(itemId, "class") == 12 then
+                    if questItemId == itemId and (isNativeQuestItem or QuestieDB.QueryItemSingle(itemId, "class") == 12) then
                         validTexture = GetInventoryItemTexture("player", inventorySlot)
                         self.itemId = questItemId
                         break

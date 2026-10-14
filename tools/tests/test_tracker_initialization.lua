@@ -468,4 +468,11 @@ pool.HideUnusedButtons()
 equal(first:IsShown(), false, "collapsed tracker hides used buttons")
 equal(second:IsShown(), false, "collapsed tracker hides all buttons")
 
+-- A client-designated quest item remains usable when Questie lacks its item metadata.
+itemClasses[100] = nil
+bags[0] = {{id = 100, texture = "native-item"}}
+assert(first:SetItem(100, 900001, 24, true), "native quest item bypasses missing database class")
+equal(first.attributes.item1, "item:100", "native item uses the existing secure action")
+assert(not first:SetItem(100, 900001, 24), "ordinary items still require quest-item metadata")
+equal(first.attributes.item1, nil, "rejected item clears the previous secure action")
 print("Tracker quest-item button regressions passed")

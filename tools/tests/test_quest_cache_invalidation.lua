@@ -48,6 +48,7 @@ for id = 1, 6 do
         [q.startedBy] = {{npcId}}, [q.finishedBy] = {{npcId}}}
 end
 quests[4][q.startedBy], quests[4][q.finishedBy] = {{99}}, {{99}}
+quests[7] = {[q.preQuestSingle] = {1}} -- Correction-only record: pointer, but no base name.
 quests[2][q.extraObjectives] = {{nil, 1, "Find the event NPC", 0, {{"monster", npcId}}}}
 local npcs = {
     [npcId] = {[n.name] = "Silas Darkmoon", [n.spawns] = {[12] = {{10, 20}}}},
@@ -67,6 +68,12 @@ local thread = coroutine.create(function() db:Initialize() end)
 while coroutine.status(thread) ~= "dead" do
     local ok, message = coroutine.resume(thread); assert(ok, message)
 end
+assert(db.QuestPointers[7], "correction-only fixture has a real compiled pointer")
+equal(db.HasQuestData(7), false, "correction-only fixture is not usable database data")
+equal(db.GetQuest(7), nil, "map/lifecycle paths cannot construct correction-only quest objects")
+db.private.questCache[7] = {Id = 7, ObjectiveData = {}}
+equal(db.GetQuest(7), nil, "cached correction-only objects cannot bypass validity checks")
+db.private.questCache[7] = nil
 modules.QuestieQuest.private.objectiveSpawnListCallTable = {monster = function(id)
     local npc = db:GetNPC(id)
     return {{Id = id, Name = npc.name, Spawns = npc.spawns}}

@@ -215,6 +215,7 @@ Modules\Tracker\TrackerNearestQuestItem.lua
 Modules\Tracker\TrackerVisibility.lua
 Modules\Tracker\TrackerAchievements.lua
 Modules\Tracker\TrackerObjectiveText.lua
+Modules\Tracker\TrackerData.lua
 Modules\Tracker\QuestieTracker.lua
 Modules\Tracker\Sorter\Sorter.lua
 Modules\Tracker\Sorter\byComplete.lua

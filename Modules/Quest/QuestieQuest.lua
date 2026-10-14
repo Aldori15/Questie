@@ -818,12 +818,7 @@ function QuestieQuest:GetAllQuestIds()
 
     local yieldCounter = 0
     for questId, title in pairs(questTitles) do
-        if (not QuestieDB.QuestPointers[questId]) then
-            if not Questie._sessionWarnings[questId] then
-                Questie.Error(l10n("The quest %s is missing from Questie's database. Please report this on GitHub or Discord!", tostring(questId)))
-                Questie._sessionWarnings[questId] = true
-            end
-        else
+        if QuestieDB.HasQuestData(questId) then
             --Keep the object in the questlog to save searching
             local quest = QuestieDB.GetQuest(questId)
 
@@ -1009,12 +1004,7 @@ function QuestieQuest:GetAllQuestIdsNoObjectives()
     QuestiePlayer.currentQuestlog = {}
 
     for questId, data in pairs(QuestLogCache.questLog_DO_NOT_MODIFY) do -- DO NOT MODIFY THE RETURNED TABLE
-        if (not QuestieDB.QuestPointers[questId]) then
-            if not Questie._sessionWarnings[questId] then
-                Questie.Error(l10n("The quest %s is missing from Questie's database. Please report this on GitHub or Discord!", tostring(questId)))
-                Questie._sessionWarnings[questId] = true
-            end
-        else
+        if QuestieDB.HasQuestData(questId) then
             --Keep the object in the questlog to save searching
             local quest = QuestieDB.GetQuest(questId)
             if quest then

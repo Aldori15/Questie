@@ -53,6 +53,7 @@ local _QuestEventHandler = QuestEventHandler.private
 local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 ---@type QuestLogCache
 local QuestLogCache = QuestieLoader:ImportModule("QuestLogCache")
+local TrackerData = QuestieLoader:ImportModule("TrackerData")
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
 ---@type CommsVisibility
@@ -258,13 +259,13 @@ function QuestieTracker.Initialize()
             -- the Questie.db.char.AutoUntrackedQuests tables. They can get out of sync.
             if Questie.db.profile.autoTrackQuests and Questie.db.char.AutoUntrackedQuests then
                 for untrackedQuestId in pairs(Questie.db.char.AutoUntrackedQuests) do
-                    if not QuestiePlayer.currentQuestlog[untrackedQuestId] then
+                    if not TrackerData.ContainsQuest(untrackedQuestId) then
                         Questie.db.char.AutoUntrackedQuests[untrackedQuestId] = nil
                     end
                 end
             elseif Questie.db.char.TrackedQuests then
                 for trackedQuestId in pairs(Questie.db.char.TrackedQuests) do
-                    if not QuestiePlayer.currentQuestlog[trackedQuestId] then
+                    if not TrackerData.ContainsQuest(trackedQuestId) then
                         Questie.db.char.TrackedQuests[trackedQuestId] = nil
                     end
                 end
@@ -696,7 +697,8 @@ function QuestieTracker:Update(force)
 
             if (complete ~= 1 or Questie.db.profile.trackerShowCompleteQuests or timedQuest)
                 and (Questie.db.profile.autoTrackQuests and not Questie.db.char.AutoUntrackedQuests[questId])
-                or (not Questie.db.profile.autoTrackQuests and Questie.db.char.TrackedQuests[questId]) then
+                or ((complete ~= 1 or Questie.db.profile.trackerShowCompleteQuests or timedQuest)
+                    and not Questie.db.profile.autoTrackQuests and Questie.db.char.TrackedQuests[questId]) then
                 -- Add Quest Zones
                 if zoneCheck ~= zoneName then
                     firstQuestInZone = true
@@ -845,9 +847,9 @@ function QuestieTracker:Update(force)
 
                     if timedQuest then
                         local showTimedState = isMinimizable and (Questie.db.profile.collapseCompletedQuests or Questie.db.char.collapsedQuests[quest.Id] ~= nil)
-                        coloredQuestName = QuestieLib:GetColoredQuestName(quest.Id, Questie.db.profile.trackerShowQuestLevel, showTimedState, false)
+                        coloredQuestName = TrackerData.GetColoredQuestName(quest, Questie.db.profile.trackerShowQuestLevel, showTimedState, false)
                     else
-                        coloredQuestName = QuestieLib:GetColoredQuestName(quest.Id, Questie.db.profile.trackerShowQuestLevel, ((isMinimizable and Questie.db.profile.collapseCompletedQuests) or Questie.db.char.collapsedQuests[quest.Id] ~= nil), false)
+                        coloredQuestName = TrackerData.GetColoredQuestName(quest, Questie.db.profile.trackerShowQuestLevel, ((isMinimizable and Questie.db.profile.collapseCompletedQuests) or Questie.db.char.collapsedQuests[quest.Id] ~= nil), false)
                     end
 
                     line.label:SetText(TrackerObjectiveText.GetQuestTitleText(coloredQuestName, questDetails[quest.Id] and questDetails[quest.Id].questCompletePercent))
@@ -882,11 +884,11 @@ function QuestieTracker:Update(force)
 
                     local usableQIB = false
                     local sourceItemId = quest.sourceItemId
-                    if sourceItemId == nil then
+                    if sourceItemId == nil and not quest.NativeOnly then
                         sourceItemId = QuestieDB.QueryQuestSingle(quest.Id, "sourceItemId")
                     end
 
-                    local sourceItem = sourceItemId and sourceItemId > 0 and QuestieDB.QueryItemSingle(sourceItemId, "class") == 12 and GetItemCount(sourceItemId) > 0 and TrackerUtils:IsQuestItemUsable(sourceItemId)
+                    local sourceItem = sourceItemId and sourceItemId > 0 and (TrackerData.IsNativeQuestItem(quest, sourceItemId) or QuestieDB.QueryItemSingle(sourceItemId, "class") == 12) and GetItemCount(sourceItemId) > 0 and TrackerUtils:IsQuestItemUsable(sourceItemId)
                     local requiredItems = quest.requiredSourceItems
                     local requiredItem = false
                     if type(requiredItems) == "table" then
@@ -919,7 +921,7 @@ function QuestieTracker:Update(force)
                         button.line = line
 
                         -- Setup button and set attributes
-                        if button:SetItem(primaryQuestItemId, quest.Id, questItemButtonSize) then
+                        if button:SetItem(primaryQuestItemId, quest.Id, questItemButtonSize, TrackerData.IsNativeQuestItem(quest, primaryQuestItemId)) then
                             local height = 0
                             local frame = button.line
                             while frame and frame ~= trackerQuestFrame do
@@ -988,7 +990,7 @@ function QuestieTracker:Update(force)
                         altButton.line = line
 
                         -- Setup button and set attributes
-                        if altButton:SetItem(secondaryQuestItemId, quest.Id, questItemButtonSize) then
+                        if altButton:SetItem(secondaryQuestItemId, quest.Id, questItemButtonSize, TrackerData.IsNativeQuestItem(quest, secondaryQuestItemId)) then
                             local height = 0
                             local frame = altButton.line
 
@@ -1151,7 +1153,9 @@ function QuestieTracker:Update(force)
                         -- Add incomplete Quest Objectives
                         if complete == 0 and quest.isComplete ~= true then
                             for _, objective in pairs(quest.Objectives) do
-                                if (not Questie.db.profile.hideCompletedQuestObjectives or (Questie.db.profile.hideCompletedQuestObjectives and objective.Needed ~= objective.Collected)) then
+                                if not Questie.db.profile.hideCompletedQuestObjectives
+                                    or (quest.NativeOnly and not objective.Completed)
+                                    or ((not quest.NativeOnly) and objective.Needed ~= objective.Collected) then
                                     -- Get next line in linePool
                                     line = TrackerLinePool.GetNextLine()
 
@@ -1181,15 +1185,16 @@ function QuestieTracker:Update(force)
                                     if (objective.Completed ~= true or (objective.Completed == true and #quest.Objectives > 1) or questIsIncompleteButObjectiveIsComplete) then
                                         -- Quest objective objects can lag one update behind in 3.3.5 manual loot flow.
                                         -- Prefer latest values from QuestLogCache when available.
-                                        if cachedObjectives and objective.Index and cachedObjectives[objective.Index] then
-                                            local cachedObjective = cachedObjectives[objective.Index]
+                                        local nativeIndex = objective.NativeIndex or objective.Index
+                                        if cachedObjectives and nativeIndex and cachedObjectives[nativeIndex] then
+                                            local cachedObjective = cachedObjectives[nativeIndex]
                                             if type(cachedObjective.numFulfilled) == "number" then
                                                 objective.Collected = cachedObjective.numFulfilled
                                             end
                                             if type(cachedObjective.numRequired) == "number" then
                                                 objective.Needed = cachedObjective.numRequired
                                             end
-                                            if objective.Needed and objective.Collected then
+                                            if not quest.NativeOnly and objective.Needed and objective.Collected then
                                                 objective.Completed = (objective.Needed == objective.Collected and objective.Needed > 0) or objective.Completed
                                             end
                                         end
@@ -2019,7 +2024,7 @@ function QuestieTracker:HookBaseTracker()
         if not Questie.db.profile.autoTrackQuests then
             return Questie.db.char.TrackedQuests[questId or -1]
         else
-            return questId and QuestiePlayer.currentQuestlog[questId] and (not Questie.db.char.AutoUntrackedQuests[questId])
+            return questId and TrackerData.ContainsQuest(questId) and (not Questie.db.char.AutoUntrackedQuests[questId])
         end
     end
 
@@ -2027,11 +2032,12 @@ function QuestieTracker:HookBaseTracker()
     GetNumQuestWatches = function(isQuestie)
         local activeQuests = 0
         if isQuestie and Questie.db.profile.autoTrackQuests and Questie.db.char.AutoUntrackedQuests then
-            local autoUnTrackedQuests = 0
-            for _ in pairs(Questie.db.char.AutoUntrackedQuests) do
-                autoUnTrackedQuests = autoUnTrackedQuests + 1
+            for questId in pairs(QuestieCompat.GetQuestLogQuestIds()) do
+                if not Questie.db.char.AutoUntrackedQuests[questId] then
+                    activeQuests = activeQuests + 1
+                end
             end
-            return QuestLogCache.GetQuestCount() - autoUnTrackedQuests
+            return activeQuests
         elseif isQuestie and Questie.db.char.TrackedQuests then
             local autoTrackedQuests = 0
             for _ in pairs(Questie.db.char.TrackedQuests) do
@@ -2058,6 +2064,7 @@ function QuestieTracker:HookBaseTracker()
 end
 
 function QuestieTracker:RemoveQuest(questId)
+    TrackerData.RemoveQuest(questId)
     Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieTracker:RemoveQuest] - ", questId)
     if Questie.db.char.collapsedQuests then
         Questie.db.char.collapsedQuests[questId] = nil
@@ -2145,7 +2152,7 @@ function QuestieTracker:AQW_Insert(index, expire)
         questId = index
     end
 
-    if (not questId) or (questId <= 0) or (not QuestiePlayer.currentQuestlog[questId]) then
+    if (not questId) or (questId <= 0) or (not TrackerData.GetQuest(questId)) then
         -- AQW_Insert can fire before QUEST_ACCEPTED finishes populating Questie's quest log/cache
         return
     end
@@ -2186,11 +2193,11 @@ function QuestieTracker:AQW_Insert(index, expire)
         CommsVisibility:ScheduleSnapshot("TRACK_QUEST")
         AutoRoute.ScheduleUpdate()
 
-        local quest = QuestieDB.GetQuest(questId)
+        local quest = TrackerData.GetQuest(questId)
 
         if quest then
             -- Make sure quests or zones (re)added to the tracker isn't in a minimized state
-            local zoneId = quest.zoneOrSort
+            local zoneId = quest.NativeOnly and TrackerQuestOrder.GetQuestGroupName(quest) or quest.zoneOrSort
             if Questie.db.char.collapsedQuests[questId] == true then
                 Questie.db.char.collapsedQuests[questId] = nil
             end
@@ -2200,14 +2207,12 @@ function QuestieTracker:AQW_Insert(index, expire)
             end
 
             -- Unhide quest icons when retracking quests.
-            if Questie.db.profile.hideUntrackedQuestsMapIcons then
+            if not quest.NativeOnly and Questie.db.profile.hideUntrackedQuestsMapIcons then
                 ThreadLib.ThreadInstant(function()
                     QuestieQuest:ShowQuestIcons()
                     QuestieQuest:PopulateObjectiveNotes(quest)
                 end)
             end
-        else
-            Questie.Error("Missing quest " .. tostring(questId) .. "," .. tostring(expire) .. " during tracker update")
         end
     end
     QuestieCombatQueue:Queue(function()

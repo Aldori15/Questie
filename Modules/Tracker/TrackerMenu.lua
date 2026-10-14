@@ -18,14 +18,11 @@ local AutoRoute = QuestieLoader:ImportModule("AutoRoute")
 local QuestieQuest = QuestieLoader:ImportModule("QuestieQuest")
 ---@type QuestieMap
 local QuestieMap = QuestieLoader:ImportModule("QuestieMap")
----@type QuestieLink
-local QuestieLink = QuestieLoader:ImportModule("QuestieLink")
 ---@type QuestieCombatQueue
 local QuestieCombatQueue = QuestieLoader:ImportModule("QuestieCombatQueue")
 ---@type QuestieLib
 local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
----@type QuestieDB
-local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
+local TrackerData = QuestieLoader:ImportModule("TrackerData")
 
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
@@ -214,9 +211,9 @@ TrackerMenu.addLinkToChatOption = function(menu, quest)
             LibDropDown:CloseDropDownMenus()
 
             if (not ChatFrame1EditBox:IsVisible()) then
-                ChatFrame_OpenChat(QuestieLink:GetQuestInsertStringById(quest.Id))
+                ChatFrame_OpenChat(TrackerData.GetQuestLink(quest))
             else
-                ChatEdit_InsertLink(QuestieLink:GetQuestInsertStringById(quest.Id))
+                ChatEdit_InsertLink(TrackerData.GetQuestLink(quest))
             end
         end
     })
@@ -458,6 +455,21 @@ function TrackerMenu:GetMenuForQuest(quest)
     local menu = {}
     local subMenu = {}
 
+    if quest.NativeOnly then
+        tinsert(menu, {text = TrackerData.GetColoredQuestName(quest, Questie.db.profile.enableTooltipsQuestLevel, true), isTitle = true})
+        TrackerMenu.minMaxQuestOption(menu, quest)
+        TrackerMenu.addShowInQuestLogOption(menu, quest)
+        TrackerMenu.addLinkToChatOption(menu, quest)
+        TrackerMenu.addUntrackOption(menu, quest)
+        TrackerMenu.addAbandonedQuest(menu, quest)
+        tinsert(menu, {text = "|cFF39c0edWoWHead URL|r", func = function()
+            ShowWowheadURL("quest", quest.Id, quest.name)
+        end})
+        TrackerMenu.addLockUnlockOption(menu)
+        tinsert(menu, {text = l10n('Cancel'), func = function() end})
+        return menu
+    end
+
     for _, objective in pairs(quest.Objectives) do
         local objectiveMenu = {}
 
@@ -503,7 +515,7 @@ function TrackerMenu:GetMenuForQuest(quest)
     tinsert(menu, {
         text = "|cFF39c0edWoWHead URL|r",
         func = function()
-            ShowWowheadURL("quest", quest.Id, QuestieDB.GetQuest(quest.Id).name)
+            ShowWowheadURL("quest", quest.Id, quest.name)
         end
     })
 

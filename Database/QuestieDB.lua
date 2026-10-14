@@ -3586,12 +3586,25 @@ local function _CreateKillCreditObjective(objective)
 end
 
 ---@param questId QuestId
----@return Quest|nil @The quest object or nil if the quest is missing
+---@return boolean @Whether a named database quest exists
+---Correction-only records can have a pointer without a base quest name.
+---Treat those placeholders as unavailable database data for native tracking.
+function QuestieDB.HasQuestData(questId)
+    local name = QuestieDB.QuestPointers and QuestieDB.QuestPointers[questId]
+        and QuestieDB.QueryQuestSingle(questId, "name")
+    return type(name) == "string" and name:find("%S") ~= nil
+end
+
+---@param questId QuestId
+---@return Quest|nil @The quest object or nil if usable quest data is missing
 function QuestieDB.GetQuest(questId) -- /dump QuestieDB.GetQuest(867)
     if not questId then
         Questie.Debug(Questie.DEBUG_CRITICAL, "[QuestieDB.GetQuest] No questId.")
         return nil
     end
+    -- Map/lifecycle callers must not populate objectives from correction-only placeholders.
+    -- The tracker independently reads these quests from the native quest log.
+    if not QuestieDB.HasQuestData(questId) then return nil end
     if _QuestieDB.questCache[questId] then
         return _QuestieDB.questCache[questId];
     end

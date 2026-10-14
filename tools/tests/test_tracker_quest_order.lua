@@ -17,6 +17,7 @@ local files = {}
 for line in io.lines("Questie-335.toc") do
     local path = line:gsub("\\", "/"):match("^%s*(.-)%s*$")
     if path:match("^Modules/Tracker/Sorter/.*%.lua$")
+        or path == "Modules/Tracker/TrackerData.lua"
         or path == "Modules/Tracker/TrackerUtils.lua"
         or path == "Modules/Tracker/TrackerWaypoints.lua"
         or path == "Modules/Tracker/TrackerQuestOrder.lua" then
@@ -36,6 +37,7 @@ local function setup(mode, useCombatQueue)
         x = 0, y = 0, worldInstance = 1, positionAvailable = true, inInstance = false, nearestReads = 0}
     env.Questie = {db = {profile = {trackerSortObjectives = mode, trackerEnabled = true}, char = {}}, Debug = function() end}
     env.GetTime = function() return 0 end
+    env.GetNumQuestLogEntries = function() return 0 end
     env.debugstack = function() end
     env.QuestLogListScrollFrame = {ScrollBar = {}}
     env.IsInInstance = function() return s.inInstance end
@@ -45,7 +47,7 @@ local function setup(mode, useCombatQueue)
         [2000] = {mapType = 3, parentMapID = 2}, [2] = {mapType = 2, name = "Continent B"},
         [3000] = {mapType = 3, parentMapID = 3000, name = "Detached map"},
     }
-    env.QuestieCompat = {C_Map = {
+    env.QuestieCompat = {GetQuestLogTitle = function() end, C_Map = {
         GetBestMapForUnit = function() return s.playerMap or 1000 end,
         GetMapInfo = function(id) return maps[id] end,
         GetAreaInfo = function(id) return ({[200] = "Beta"})[id] end,
