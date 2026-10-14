@@ -2,9 +2,9 @@
 local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 ---@type QuestieQuest
 local QuestieQuest = QuestieLoader:ImportModule("QuestieQuest")
----@class QuestieTooltips
+---@type QuestieTooltips
 local QuestieTooltips = QuestieLoader:ImportModule("QuestieTooltips")
----@class QuestieNameplate
+---@type QuestieNameplate
 local QuestieNameplate = QuestieLoader:ImportModule("QuestieNameplate")
 
 local _QuestieNameplate = QuestieNameplate.private

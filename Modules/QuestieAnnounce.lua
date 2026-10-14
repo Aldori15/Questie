@@ -90,7 +90,7 @@ end
 ---@param questId QuestId
 ---@param objectiveText string
 ---@param objectiveProgress string
----@param isProgressUpdate bool
+---@param isProgressUpdate boolean
 function QuestieAnnounce:AnnounceObjectiveToChannel(questId, objectiveText, objectiveProgress, isProgressUpdate)
     local announceToggle = isProgressUpdate and Questie.db.profile.questAnnounceObjectiveProgress or Questie.db.profile.questAnnounceObjectives
     if _QuestieAnnounce:AnnounceEnabledAndPlayerInChannel() and announceToggle then

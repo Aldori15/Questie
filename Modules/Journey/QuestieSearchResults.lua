@@ -112,7 +112,7 @@ end
 ---@param lookup table Table of IDs (npc|object|quest|item)
 ---@param header string The text header to show above the links
 ---@param query function The function used to get link name from
----@param boolean addTomTomButton Whether to add a button for setting a TomTom target for the first spawn of each linked result, if available
+---@param addTomTomButton boolean Whether to add a button for setting a TomTom target for the first spawn of each linked result, if available
 local function AddLinkedParagraph(frame, linkType, lookup, header, query, addTomTomButton)
     if lookup and #lookup > 0 then
         local group = AceGUI:Create("InlineGroup");

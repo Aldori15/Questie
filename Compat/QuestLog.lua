@@ -10,7 +10,7 @@ local QuestieQuest = QuestieLoader:ImportModule("QuestieQuest")
 local QuestEventHandler = QuestieLoader:ImportModule("QuestEventHandler")
 ---@type QuestLogCache
 local QuestLogCache = QuestieLoader:ImportModule("QuestLogCache")
----@class AvailableQuests
+---@type AvailableQuests
 local AvailableQuests = QuestieLoader:ImportModule("AvailableQuests")
 ---@type MinimapIcon
 local MinimapIcon = QuestieLoader:ImportModule("MinimapIcon")

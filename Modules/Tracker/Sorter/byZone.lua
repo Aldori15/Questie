@@ -1,4 +1,4 @@
----@class Sorter
+---@type Sorter
 local Sorter = QuestieLoader:ImportModule("Sorter")
 
 --- Sorts the given questIds in place by zone, then by level, then by type suffix, then by ID.
