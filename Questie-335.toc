@@ -113,6 +113,7 @@ Modules\Libs\RamerDouglasPeucker.lua
 # Modules
 Modules\QuestieValidateGameCache.lua
 Modules\QuestieIconVisibility.lua
+Modules\Status\QuestieStatus.lua
 Modules\QuestieInit.lua
 Modules\MinimapIcon.lua
 Modules\QuestieProfessions.lua

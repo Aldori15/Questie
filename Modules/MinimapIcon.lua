@@ -18,10 +18,64 @@ local QuestieMenu = QuestieLoader:ImportModule("QuestieMenu")
 local QuestieCombatQueue = QuestieLoader:ImportModule("QuestieCombatQueue")
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
+---@type QuestieStatus
+local QuestieStatus = QuestieLoader:ImportModule("QuestieStatus")
 
 local _LibDBIcon = LibStub("LibDBIcon-1.0");
 
 local minimapButton
+local statusFrame
+local statusBadge
+local statusStyles = {
+    [QuestieStatus.Severity.Error] = {label = "Error", r = 1, g = 0.2, b = 0.2, texture = "Interface\\RaidFrame\\ReadyCheck-NotReady"},
+    [QuestieStatus.Severity.Warning] = {label = "Warning", r = 1, g = 0.82, b = 0, texture = "Interface\\DialogFrame\\UI-Dialog-Icon-AlertNew"},
+    [QuestieStatus.Severity.Info] = {label = "Information", r = 0.4, g = 0.75, b = 1, texture = QuestieLib.AddonPath .. "Icons\\green_plus.blp"},
+}
+
+local function UpdateStatusBadge()
+    local issue = QuestieStatus.GetBadgeIssue()
+    if not issue then
+        statusBadge:Hide()
+        statusFrame:Hide()
+        return
+    end
+    statusBadge:SetTexCoord(0, 1, 0, 1)
+    local texture = issue.icon and issue.icon.texture
+    if not texture or not statusBadge:SetTexture(texture) then
+        assert(statusBadge:SetTexture(statusStyles[issue.severity].texture), "Questie status texture could not be loaded")
+    end
+    statusBadge:Show()
+    statusFrame:Show()
+end
+
+local function InstallStatusBadge()
+    if not minimapButton then return end
+    if not statusBadge then
+        -- Button skins scan GetRegions() and stretch those textures into launcher icons.
+        -- A separate child keeps the badge above that artwork without intercepting input.
+        statusFrame = CreateFrame("Frame", nil, minimapButton)
+        statusFrame:SetFrameLevel(minimapButton:GetFrameLevel() + 2)
+        statusFrame:SetSize(12, 12)
+        statusFrame:SetPoint("CENTER", minimapButton, "TOPRIGHT", -2, -2)
+        statusFrame:EnableMouse(false)
+        statusBadge = statusFrame:CreateTexture(nil, "OVERLAY")
+        statusBadge:SetAllPoints(statusFrame)
+        statusBadge:Hide()
+        statusFrame:Hide()
+    end
+    QuestieStatus.SetOnChange(UpdateStatusBadge)
+end
+
+local function AddStatusLines(tooltip)
+    for _, issue in ipairs(QuestieStatus.GetIssues()) do
+        local style = statusStyles[issue.severity]
+        tooltip:AddLine(" ")
+        tooltip:AddLine(l10n(style.label) .. l10n(": ") .. l10n(issue.message, unpack(issue.args or {})),
+            style.r, style.g, style.b, true)
+        if issue.action then tooltip:AddLine(l10n(issue.action), 1, 1, 1, true) end
+    end
+end
+
 local MINIMAP_BUTTON_OFFSET = 10
 local minimapShapes = {
     ["ROUND"] = {true, true, true, true},
@@ -312,6 +366,7 @@ function MinimapIcon:SetShown(shown)
     end
 
     minimapButton.db = Questie.db.profile.minimap
+    InstallStatusBadge()
     self:ApplyButtonMode()
 end
 
@@ -340,6 +395,7 @@ function MinimapIcon:Init()
         ConfigureMinimapButtonPositioning()
         NormalizeMinimapButtonAppearance()
         MinimapIcon:ApplyButtonMode()
+        InstallStatusBadge()
     end
 end
 
@@ -407,6 +463,8 @@ function _MinimapIcon:CreateDataBrokerObject()
 
         OnTooltipShow = function (tooltip)
             tooltip:AddDoubleLine(Questie:Colorize("Questie", 'gold'), Questie:Colorize(QuestieLib:GetAddonVersionString(), 'gray'))
+            AddStatusLines(tooltip)
+            if not Questie.started then return end
             tooltip:AddLine(" ")
             tooltip:AddDoubleLine(Questie:Colorize(l10n('Left Click'), 'lightBlue'), Questie:Colorize(l10n('Toggle My Journey'), 'white'))
             tooltip:AddDoubleLine(Questie:Colorize(l10n('Right Click'), 'lightBlue'), Questie:Colorize(l10n('Toggle Menu'), 'white'))

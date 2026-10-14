@@ -6,6 +6,7 @@ local function noop() end
 local function setup(count)
     local env = setmetatable({}, {__index = _G})
     env._G = env
+    env.unpack = unpack or table.unpack
     local modules = {}
     env.QuestieLoader = {
         CreateModule = function(_, name)

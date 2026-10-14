@@ -156,7 +156,8 @@ do
         Debug = function(_, message, names) messages[#messages + 1] = {message, names} end}
     env.QuestieProfiler = {active = false}
     env._QuestieInit = {}
-    local callback = assert(read("Modules/QuestieInit.lua"):match("function _QuestieInit%.OnInitializationComplete%(%)\n.-\nend"))
+    env.ClearInitializingStatus = function() end
+    local callback = assert(read("Modules/QuestieInit.lua"):match("function _QuestieInit%.OnInitializationComplete%([^)]*%)\n.-\nend"))
     compile(callback, "@Modules/QuestieInit.lua", env)()
     loader:ImportModule("Misspelled")
     env._QuestieInit.OnInitializationComplete()

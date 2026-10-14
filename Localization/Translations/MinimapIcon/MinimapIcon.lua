@@ -136,6 +136,15 @@ local minimapIconLocales = {
     },
 }
 
+-- New status messages fall back to English until translations are supplied.
+for _, key in ipairs({
+    "Error", "Warning", "Information", "Initializing Questie...", "Questie could not start: %s",
+    "Reload the UI. If the problem persists, report this error.",
+    "Database validation reported problems.", "Recompile the database. If the problem persists, report the validation errors.",
+}) do
+    minimapIconLocales[key] = minimapIconLocales[key] or l10n.translations[key] or {enUS = true}
+end
+
 for k, v in pairs(minimapIconLocales) do
     l10n.translations[k] = v
 end

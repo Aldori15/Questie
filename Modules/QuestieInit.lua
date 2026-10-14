@@ -105,12 +105,50 @@ local QuestieAnnounce = QuestieLoader:ImportModule("QuestieAnnounce")
 local DropDB = QuestieLoader:ImportModule("DropDB")
 ---@type QuestLogCache
 local QuestLogCache = QuestieLoader:ImportModule("QuestLogCache")
+---@type QuestieStatus
+local QuestieStatus = QuestieLoader:ImportModule("QuestieStatus")
 
 --- COMPATIBILITY ---
 local C_Timer = QuestieCompat.C_Timer
 
 local coYield = coroutine.yield
 local databaseCompiledThisInitialization = false
+local startupFailed = false
+local startupTicker, optionsTicker, groupSyncTicker
+local startupComplete, optionsComplete = false, false
+
+local function StopStartup(id, report)
+    if startupFailed then return end
+    startupFailed = true
+    Questie.started = false
+    databaseCompiledThisInitialization = false
+    if startupTicker then startupTicker:Cancel(); startupTicker = nil end
+    if optionsTicker then optionsTicker:Cancel(); optionsTicker = nil end
+    if groupSyncTicker then groupSyncTicker:Cancel(); groupSyncTicker = nil end
+    QuestieStatus.Clear("startup.initializing")
+    QuestieStatus.Set(id, {
+        severity = QuestieStatus.Severity.Error,
+        message = "Questie could not start: %s",
+        args = {tostring(report)},
+        action = "Reload the UI. If the problem persists, report this error.",
+    })
+end
+
+local function ClearInitializingStatus()
+    if startupComplete and optionsComplete and not startupFailed then
+        QuestieStatus.Clear("startup.initializing")
+    end
+end
+
+local function OnOptionsInitialized(success, report)
+    optionsTicker = nil
+    if success == false then
+        StopStartup("startup.options", report)
+        return
+    end
+    optionsComplete = true
+    ClearInitializingStatus()
+end
 
 local function loadFullDatabase()
     print("\124cFF4DDBFF [1/9] " .. l10n("Loading database") .. "...")
@@ -175,9 +213,9 @@ QuestieInit.Stages[1] = function() -- run as a coroutine
 
     --? This was moved here because the lag that it creates is much less noticable here, while still initalizing correctly.
     Questie.Debug(Questie.DEBUG_CRITICAL, "[QuestieInit:Stage1] Starting QuestieOptions.Initialize Thread.")
-    ThreadLib.ThreadSimple(QuestieOptions.Initialize, 0, "QuestieOptions.Initialize")
-
     MinimapIcon:Init()
+    optionsTicker = ThreadLib.Thread(QuestieOptions.Initialize, 0, l10n("Error during initialization!"),
+        OnOptionsInitialized, "QuestieOptions.Initialize")
 
     HBDHooks:Init()
 
@@ -276,6 +314,11 @@ QuestieInit.Stages[1] = function() -- run as a coroutine
                 print("\124cFF4DDBFF Load and Validation complete.")
             else
                 Questie.Error("Load complete, but database validation failed.")
+                QuestieStatus.Set("startup.database-validation", {
+                    severity = QuestieStatus.Severity.Warning,
+                    message = "Database validation reported problems.",
+                    action = "Recompile the database. If the problem persists, report the validation errors.",
+                })
             end
         else
             print("\124cFF4DDBFF Validation skipped, load complete.")
@@ -428,6 +471,7 @@ QuestieInit.Stages[3] = function() -- run as a coroutine
         QuestieLoader:PopulateGlobals()
     end
 
+    if startupFailed then return end
     Questie.started = true
     QuestieQuest:ResumeLootedSpawns()
     AutoRoute.RestoreSavedWaypoint()
@@ -458,6 +502,7 @@ QuestieInit.Stages[3] = function() -- run as a coroutine
             syncTicker:Cancel()
         end
     end)
+    groupSyncTicker = syncTicker
 
     -- We only update this if Questie fully loads to make sure we don't update it on crashes/fast reloads
     QuestieLib.UpdateLastKnownDailyReset()
@@ -465,7 +510,9 @@ QuestieInit.Stages[3] = function() -- run as a coroutine
     -- We do this last because it will run for a while and we don't want to block the rest of the init
     Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage3] Drawing available quests.")
     coYield()
-    AvailableQuests.CalculateAndDrawAll()
+    AvailableQuests.CalculateAndDrawAll(function(success, report)
+        if success == false then StopStartup("startup.available-quests", report) end
+    end)
 
     Questie.Debug(Questie.DEBUG_INFO, "[QuestieInit:Stage3] Questie init done.")
 end
@@ -509,8 +556,7 @@ function QuestieInit:LoadDatabase(key)
         coYield()
         local func, err = loadstring(QuestieDB[key]) -- load the table from string (returns a function)
         if (not func) then
-            Questie.Error("Failed to load database: ", key, err)
-            return
+            error("Failed to load database " .. tostring(key) .. ": " .. tostring(err), 0)
         end
         QuestieDB[key] = func
         coYield()
@@ -529,12 +575,21 @@ end
 
 function _QuestieInit.StartStageCoroutine()
     for i = 1, #QuestieInit.Stages do
+        if startupFailed then return end
         QuestieInit.Stages[i]()
         Questie.Debug(Questie.DEBUG_INFO, "[QuestieInit:StartStageCoroutine] Stage " .. i .. " done.")
     end
 end
 
-function _QuestieInit.OnInitializationComplete()
+function _QuestieInit.OnInitializationComplete(success, report)
+    startupTicker = nil
+    if success == false then
+        StopStartup("startup.login", report)
+        return
+    end
+    if startupFailed then return end
+    startupComplete = true
+    ClearInitializingStatus()
     if Questie.db.profile.debugEnabled then
         local unresolvedImports = QuestieLoader:GetUnresolvedModuleImports()
         if #unresolvedImports > 0 then
@@ -563,8 +618,12 @@ end
 
 -- called by the PLAYER_LOGIN event handler
 function QuestieInit:Init()
+    if startupFailed then return end
     databaseCompiledThisInitialization = false
-    ThreadLib.Thread(_QuestieInit.StartStageCoroutine, Questie.db.profile.initDelay or 0, l10n("Error during initialization!"), _QuestieInit.OnInitializationComplete, "QuestieInit.StartStageCoroutine")
+    startupComplete, optionsComplete = false, false
+    QuestieStatus.Set("startup.initializing", {severity = QuestieStatus.Severity.Info, message = "Initializing Questie..."})
+    startupTicker = ThreadLib.Thread(_QuestieInit.StartStageCoroutine, Questie.db.profile.initDelay or 0,
+        l10n("Error during initialization!"), _QuestieInit.OnInitializationComplete, "QuestieInit.StartStageCoroutine")
 
     if Questie.db.profile.trackerEnabled then
         -- This needs to be called ASAP otherwise tracked Achievements in the Blizzard WatchFrame shows upon login
