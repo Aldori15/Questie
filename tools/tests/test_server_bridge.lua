@@ -2101,4 +2101,85 @@ do
     tests = tests + 1
 end
 
+-- Darkmoon location changes must refresh accepted quest markers,
+-- even when quest availability itself has not changed.
+do
+    local state = setup()
+    local server = state.server
+    local event = state.modules.QuestieEvent
+
+    local locationKey = "fallback"
+    local displayedX = 15
+    local redraws = 0
+
+    -- This checks integration routing only. The cache-invalidation suite checks
+    -- real compiled spawn data and production objective/finisher drawing.
+    local markerCoordinates = {
+        ["1"] = 50,
+        ["2"] = 51,
+        fallback = 15,
+    }
+
+    event.SetServerDarkmoonLocations = function(locations)
+        local key = locations and table.concat(locations, ",") or "fallback"
+        if key == locationKey then
+            return false
+        end
+        locationKey = key
+        return true, {[14823] = true}
+    end
+
+    state.modules.QuestieQuest = {
+        RefreshNPCSpawns = function(_, changedNpcs)
+            equal(changedNpcs[14823], true, "changed NPC IDs reach the targeted refresh")
+            redraws = redraws + 1
+            displayedX = markerCoordinates[locationKey]
+        end,
+    }
+
+    -- Isolate Darkmoon changes from phase and Wintergrasp updates.
+    server.GetPhaseVisibilityKey = function() return "unknown" end
+    server.GetWintergraspState = function() return nil end
+
+    local activeHoliday = 375
+    server.IsHolidayActive = function(_, holidayId)
+        return holidayId == activeHoliday
+    end
+
+    state.env.Questie.started = true
+
+    -- First live location.
+    state.refresh()
+    equal(locationKey, "1", "first Darkmoon location selected")
+    equal(displayedX, 50, "accepted quest marker follows first location")
+    equal(redraws, 1, "initial location refreshes accepted quest")
+
+    -- An identical update must not redraw.
+    state.refresh()
+    equal(redraws, 1, "unchanged location does not redraw")
+
+    -- Availability changes alone must not refresh accepted NPC markers.
+    state.profile.showScourgeInvasionQuests = true
+    state.modules.QuestieQuestBlacklist.ScourgeInvasionQuests[999] = true
+    server.IsScourgeInvasionActive = function() return true end
+    state.refresh()
+    equal(redraws, 1, "quest availability change does not redraw unchanged NPC locations")
+
+    -- Move to another location.
+    activeHoliday = 374
+    state.refresh()
+    equal(locationKey, "2", "second Darkmoon location selected")
+    equal(displayedX, 51, "accepted quest marker follows second location")
+    equal(redraws, 2, "location change triggers another redraw")
+
+    -- Restore calendar fallback when live event visibility is disabled.
+    state.profile.showEventQuests = false
+    state.refresh()
+    equal(locationKey, "fallback", "calendar fallback restored")
+    equal(displayedX, 15, "accepted quest marker returns to fallback")
+    equal(redraws, 3, "fallback refreshes accepted quest")
+
+    tests = tests + 1
+end
+
 print("Server bridge: " .. tests .. " regression groups passed")

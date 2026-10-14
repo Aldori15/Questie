@@ -161,7 +161,11 @@ function Integrations:Refresh()
         end
     end
     local changed = Event.SetServerQuestStates(states)
-    changed = Event.SetServerDarkmoonLocations(locations) or changed
+    local darkmoonChanged, changedNpcs = Event.SetServerDarkmoonLocations(locations)
+    if darkmoonChanged and Questie.started then
+        QuestieLoader:ImportModule("QuestieQuest"):RefreshNPCSpawns(changedNpcs)
+    end
+    changed = darkmoonChanged or changed
     changed = RefreshQuestStates() or changed
     changed = RefreshWintergraspSpawns() or changed
     changed = RefreshPhaseSpawns() or changed
