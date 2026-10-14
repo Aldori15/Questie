@@ -29,7 +29,7 @@ local function timerOnFinished(self)
 
     self.pendingChunks = self.chunksPerIteration
     local id = self.id
-    self.callback(id)
+    local success, callbackError = pcall(self.callback, id)
 
     -- Make sure timer wasn't cancelled during the callback and used again
     if id == self.id then
@@ -39,6 +39,12 @@ local function timerOnFinished(self)
                 timerCancel(id)
             end
         end
+    end
+
+    -- Finish iteration/cancellation bookkeeping even when the callback fails,
+    -- then preserve error reporting instead of repeating a failed one-shot.
+    if not success then
+        error(callbackError, 0)
     end
 end
 

@@ -176,4 +176,76 @@ do
     end
 end
 
-print("Compatibility timers: one-shots, tickers, cancellation, reuse and long intervals passed")
+-- A failed one-shot reports its original error and still stops exactly once.
+-- Its cancelled handle must not affect a timer that later reuses the animation.
+for _, method in ipairs({"NewTimer", "After"}) do
+    local timers, frame = harness()
+    local calls, originalError = 0, {}
+    local handle
+    handle = timers[method](1, function(id)
+        assert(id == handle, "failed callback receives its timer handle")
+        calls = calls + 1
+        error(originalError)
+    end)
+    local group = frame.lastPlayed
+    local success, reportedError = pcall(function() group:FinishCycle() end)
+    assert(not success and reportedError == originalError, "callback error remains observable and unchanged")
+    assert(calls == 1 and not group.playing and group.stops == 1, "failed one-shot is stopped")
+    group:FinishCycle()
+    handle:Cancel()
+    assert(calls == 1 and group.stops == 1, "failed one-shot cannot repeat or cancel twice")
+    local replacementCalls = 0
+    timers.NewTimer(2, function() replacementCalls = replacementCalls + 1 end)
+    assert(frame.lastPlayed == group and #frame.groups == 1, "failed animation returns to pool")
+    handle:Cancel()
+    assert(group.playing, "failed timer handle cannot cancel its replacement")
+    group:FinishCycle()
+    assert(replacementCalls == 1 and not group.playing, "replacement fires normally")
+end
+
+-- Cleanup after an error must not cancel or consume the replacement created
+-- inside a callback that cancels itself and reuses its animation immediately.
+for _, method in ipairs({"NewTimer", "After"}) do
+    local timers, frame = harness()
+    local originalError, replacement, calls = {}, nil, 0
+    timers[method](1, function(id)
+        id:Cancel()
+        replacement = timers.NewTicker(4, function() calls = calls + 1 end, 2)
+        error(originalError)
+    end)
+    local group = frame.lastPlayed
+    local success, reportedError = pcall(function() group:FinishCycle() end)
+    assert(not success and reportedError == originalError, "self-cancelling callback still reports its error")
+    assert(replacement and #frame.groups == 1 and group.playing and group.animation.duration == 4)
+    assert(group.stops == 1, "error cleanup does not stop the replacement")
+    group:FinishCycle()
+    assert(calls == 1 and group.playing, "replacement retains its first iteration")
+    group:FinishCycle()
+    assert(calls == 2 and not group.playing, "replacement retains its final iteration")
+end
+
+-- Finite tickers share the completion path; their failing final callback must
+-- still finish, while an indefinite ticker remains scheduled after an error.
+do
+    local timers, frame = harness()
+    local calls, originalError = 0, {}
+    timers.NewTicker(1, function()
+        calls = calls + 1
+        if calls == 2 then error(originalError) end
+    end, 2)
+    local group = frame.lastPlayed
+    group:FinishCycle()
+    assert(calls == 1 and group.playing, "finite ticker retains its next iteration")
+    local success, reportedError = pcall(function() group:FinishCycle() end)
+    assert(not success and reportedError == originalError)
+    group:FinishCycle()
+    assert(calls == 2 and not group.playing and group.stops == 1, "failed final iteration stops finite ticker")
+    local handle = timers.NewTicker(1, function() error(originalError) end)
+    group = frame.lastPlayed
+    success, reportedError = pcall(function() group:FinishCycle() end)
+    assert(not success and reportedError == originalError and group.playing, "indefinite ticker preserves repeating behavior")
+    handle:Cancel()
+    assert(not group.playing, "indefinite ticker remains cancellable after an error")
+end
+
+print("Compatibility timers: one-shots, tickers, callback errors, cancellation, reuse and long intervals passed")
