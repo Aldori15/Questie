@@ -31,7 +31,6 @@ local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 local l10n = QuestieLoader:ImportModule("l10n")
 
 --- COMPATIBILITY ---
-local C_Timer = QuestieCompat.C_Timer
 local GetQuestLogIndexByID = QuestieCompat.GetQuestLogIndexByID
 
 local LibDropDown = QuestieCompat.LibUIDropDownMenu or LibStub:GetLibrary("LibUIDropDownMenuQuestie-4.0")
@@ -378,55 +377,81 @@ TrackerMenu.addLockUnlockOption = function(menu)
     end
 end
 
--- Register the WoWHead Quest popup dialog
-StaticPopupDialogs["QUESTIE_WOWHEAD_URL"] = {
-    text = "WoWHead URL",
-    button2 = CLOSE,
-    hasEditBox = true,
-    editBoxWidth = 280,
-    EditBoxOnEnterPressed = function(self)
-        self:GetParent():Hide()
-    end,
-    EditBoxOnEscapePressed = function(self)
-        self:GetParent():Hide()
-    end,
-    OnShow = function(self)
-        local questID = self.text.text_arg1 or self.data
-        local quest_wow = QuestieDB.GetQuest(questID)
-        local name = quest_wow.name
+local wowheadDialog
 
-        -- self.text:SetText(self.text:GetText() .. "\n\n|cffff7f00" .. name .. "|r")
-        self.text:SetFont(GameFontNormal:GetFont(), 12)
-        -- self.text:SetText(self.text:GetText() .. "\n\n|c FFFFB9 00" .. name .. "|r")
-        self.text:SetText(self.text:GetText() .. Questie:Colorize("\n\n" .. name, "gold"))
+local function CreateWowheadDialog()
+    local popup = CreateFrame("Frame", "QuestieWowheadURLDialog", UIParent)
+    popup:Hide()
+    popup:SetPoint("TOP", UIParent, "TOP", 0, -135)
+    popup:SetFrameStrata("DIALOG")
+    popup:EnableMouse(true)
+    popup:SetClampedToScreen(true)
+    popup:SetBackdrop({
+        bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
+        edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
+        tile = true, tileSize = 32, edgeSize = 32,
+        insets = {left = 11, right = 12, top = 12, bottom = 11},
+    })
+    tinsert(UISpecialFrames, "QuestieWowheadURLDialog")
 
-        local langShort = string.sub(l10n:GetUILocale(), 1, 2) .. "."
-        if langShort == "en." then
-            langShort = ""
-        end
+    local title = popup:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    title:SetPoint("TOP", 0, -20)
+    title:SetText("WoWHead URL")
+    popup.label = popup:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    popup.label:SetPoint("TOP", title, "BOTTOM", 0, -14)
 
-        if langShort then
-            langShort = langShort:gsub("%.", "/") -- The Wotlk WoWHead URL differs to the other Classic URLs
-        end
-        local wowheadLink = "https://" .. "wowhead.com/wotlk/" .. langShort .. "quest=" .. questID
+    local editBox = CreateFrame("EditBox", nil, popup)
+    popup.editBox = editBox
+    editBox:SetPoint("TOP", popup.label, "BOTTOM", 0, -16)
+    editBox:SetHeight(32)
+    editBox:SetFontObject("GameFontHighlight")
+    editBox:SetAutoFocus(false)
+    editBox:SetMaxLetters(0)
+    editBox:SetTextInsets(10, 10, 0, 0)
+    -- A tiled backdrop scales with the field, unlike 3.3.5's two fixed StaticPopup caps.
+    editBox:SetBackdrop({
+        bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true, tileSize = 16, edgeSize = 16,
+        insets = {left = 4, right = 4, top = 4, bottom = 4},
+    })
+    editBox:SetBackdropColor(0, 0, 0, 1)
+    popup.measure = popup:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+    popup.measure:Hide()
 
-        self.editBox:SetText(wowheadLink)
-        self.editBox:SetFocus()
-        self.editBox:HighlightText()
+    local close = CreateFrame("Button", nil, popup, "UIPanelButtonTemplate")
+    close:SetSize(120, 24)
+    close:SetPoint("BOTTOM", 0, 18)
+    close:SetText(CLOSE)
+    close:SetScript("OnClick", function() popup:Hide() end)
+    editBox:SetScript("OnEnterPressed", function() popup:Hide() end)
+    editBox:SetScript("OnEscapePressed", function() popup:Hide() end)
+    -- Let the focused native edit box handle Ctrl+C. Dismiss manually on 3.3.5.
+    popup:SetScript("OnHide", function()
+        editBox:ClearFocus()
+    end)
+    return popup
+end
 
-        self.editBox:SetScript("OnKeyDown", function(_, key)
-            if key == "C" and IsControlKeyDown() then
-                C_Timer.After(0.1, function()
-                    self.editBox:GetParent():Hide()
-                    ActionStatus_DisplayMessage(l10n("Copied URL to clipboard"), true)
-                end)
-            end
-        end)
-    end,
-    whileDead = true,
-    hideOnEscape = true,
-    timeout = 0 -- 335
-}
+local function ShowWowheadURL(kind, id, name)
+    if not wowheadDialog then wowheadDialog = CreateWowheadDialog() end
+    local popup = wowheadDialog
+    popup:Hide()
+    local lang = string.sub(l10n:GetUILocale(), 1, 2)
+    local link = "https://wowhead.com/wotlk/" .. (lang == "en" and "" or lang .. "/") .. kind .. "=" .. id
+    popup.measure:SetText(link)
+    local width = math.max(360, math.ceil(popup.measure:GetStringWidth()) + 72)
+    popup:SetWidth(width)
+    popup.label:SetWidth(width - 48)
+    popup.label:SetText(name)
+    popup:SetHeight(148 + popup.label:GetStringHeight())
+    popup.editBox:SetWidth(width - 48)
+    popup.editBox:SetText(link)
+    popup:Show()
+    popup.editBox:SetFocus()
+    popup.editBox:SetCursorPosition(0)
+    popup.editBox:HighlightText()
+end
 
 -- Create Quest Menu
 function TrackerMenu:GetMenuForQuest(quest)
@@ -478,7 +503,7 @@ function TrackerMenu:GetMenuForQuest(quest)
     tinsert(menu, {
         text = "|cFF39c0edWoWHead URL|r",
         func = function()
-            StaticPopup_Show("QUESTIE_WOWHEAD_URL", quest.Id, nil, quest.Id)
+            ShowWowheadURL("quest", quest.Id, QuestieDB.GetQuest(quest.Id).name)
         end
     })
 
@@ -552,55 +577,6 @@ TrackerMenu.addUntrackAchieveOption = function(menu, achieve)
     })
 end
 
--- Register the WoWHead Achievement popup dialog
-StaticPopupDialogs["QUESTIE_WOWHEAD_AURL"] = {
-    text = "WoWHead URL",
-    button2 = CLOSE,
-    hasEditBox = true,
-    editBoxWidth = 280,
-    EditBoxOnEnterPressed = function(self)
-        self:GetParent():Hide()
-    end,
-    EditBoxOnEscapePressed = function(self)
-        self:GetParent():Hide()
-    end,
-    OnShow = function(self)
-        local achieveID = self.text.text_arg1 or self.data
-        local name = select(2, GetAchievementInfo(achieveID))
-
-        self.text:SetFont(GameFontNormal:GetFont(), 12)
-        self.text:SetText(self.text:GetText() .. Questie:Colorize("\n\n" .. name, "gold"))
-
-        local langShort = string.sub(l10n:GetUILocale(), 1, 2) .. "."
-        if langShort == "en." then
-            langShort = ""
-        end
-
-        local wowheadLink
-        if langShort then
-            langShort = langShort:gsub("%.", "/") -- The Wotlk wowhead URL differs to the other Classic URLs
-        end
-
-        wowheadLink = "https://" .. "wowhead.com/wotlk/" .. langShort .. "achievement=" .. achieveID
-
-        self.editBox:SetText(wowheadLink)
-        self.editBox:SetFocus()
-        self.editBox:HighlightText()
-
-        self.editBox:SetScript("OnKeyDown", function(_, key)
-            if key == "C" and IsControlKeyDown() then
-                C_Timer.After(0.1, function()
-                    self.editBox:GetParent():Hide()
-                    ActionStatus_DisplayMessage(l10n("Copied URL to clipboard"), true)
-                end)
-            end
-        end)
-    end,
-    whileDead = true,
-    hideOnEscape = true,
-    timeout = 0 -- 335
-}
-
 -- Create Achievement Menu
 function TrackerMenu:GetMenuForAchievement(achieve)
     local menu = {}
@@ -618,7 +594,7 @@ function TrackerMenu:GetMenuForAchievement(achieve)
     tinsert(menu, {
         text = "|cFF39c0edWoWHead URL|r",
         func = function()
-            StaticPopup_Show("QUESTIE_WOWHEAD_AURL", achieve.Id, nil, achieve.Id)
+            ShowWowheadURL("achievement", achieve.Id, select(2, GetAchievementInfo(achieve.Id)))
         end
     })
 
