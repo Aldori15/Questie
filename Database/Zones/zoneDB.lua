@@ -16,8 +16,6 @@ local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 local QuestieCorrections = QuestieLoader:ImportModule("QuestieCorrections")
 ---@type QuestieEvent
 local QuestieEvent = QuestieLoader:ImportModule("QuestieEvent")
----@type QuestieProfessions
-local QuestieProfessions = QuestieLoader:ImportModule("QuestieProfessions")
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
 
@@ -220,11 +218,7 @@ do
                 if QuestiePlayer.HasRequiredRace(QuestieDB.QueryQuestSingle(questId, "requiredRaces"))
                     and QuestiePlayer.HasRequiredClass(QuestieDB.QueryQuestSingle(questId, "requiredClasses")) then
 
-                    local zoneOrSort, requiredSkill = QuestieDB.QueryQuestSingle(questId, "zoneOrSort"), QuestieDB.QueryQuestSingle(questId, "requiredSkill")
-                    local requiredSkillId = requiredSkill and requiredSkill[1]
-                    local professionZoneId = requiredSkillId
-                        and requiredSkillId ~= QuestieProfessions.professionKeys.RIDING
-                        and QuestieProfessions:GetSortIdByProfessionId(requiredSkillId)
+                    local zoneOrSort = QuestieDB.QueryQuestSingle(questId, "zoneOrSort")
 
                     local eventSortKey = hiddenQuest and isCurrentExpansionEventQuest and _ZoneDB:GetEventSortKey(QuestieEvent:GetEventNameFor(questId))
                     if eventSortKey then
@@ -232,11 +226,6 @@ do
                             zoneMap[eventSortKey] = {}
                         end
                         zoneMap[eventSortKey][questId] = true
-                    elseif professionZoneId then
-                        if (not zoneMap[professionZoneId]) then
-                            zoneMap[professionZoneId] = {}
-                        end
-                        zoneMap[professionZoneId][questId] = true
                     elseif zoneOrSort and zoneOrSort > 0 then
                         local parentZoneId = ZoneDB:GetParentZoneId(zoneOrSort)
 
