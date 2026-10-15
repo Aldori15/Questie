@@ -236,4 +236,37 @@ do
     equal(s.drawn, 5, "ordinary candidates still render")
     s.assertSlices(3.5)
 end
-print("Available quest budget: scan/draw slices, setup, nested removal, frame reuse, snapshot freshness, queued refreshes, child discovery and count fallback passed")
+-- A compiled pointer can describe a correction-only record that GetQuest rejects.
+do
+    local s = setup(3)
+    local db = s.modules.QuestieDB
+    local getQuest = db.GetQuest
+    db.GetQuest = function(id) if id ~= 2 then return getQuest(id) end end
+    s.start(); s.drain()
+    equal(s.drawn, 2, "An unusable database quest does not abort drawing valid candidates")
+    assert(not next(s.modules.QuestieMap.questIdFrames[2] or {}), "No icons for a rejected database record")
+    s.start(); s.drain()
+    equal(s.drawn, 2, "Repeated scans leave invalid candidates excluded and valid frames reusable")
+
+    -- Data can become unavailable after a previous refresh created real frames.
+    db.GetQuest = getQuest; s.start(); s.drain()
+    equal(s.drawn, 3, "A restored quest becomes available normally")
+    db.GetQuest = function(id) if id ~= 2 then return getQuest(id) end end
+    s.start(); s.drain()
+    assert(not next(s.modules.QuestieMap.questIdFrames[2] or {}), "Stale frames are removed if their quest becomes invalid")
+    equal(s.drawn, 3, "Removing a stale candidate does not redraw unrelated quests")
+end
+
+-- A yielded scan must revalidate the quest object before starting its draw pass.
+do
+    local s = setup(40)
+    s.checkCost = 0.5
+    s.start()
+    local job = table.remove(s.jobs, 1)
+    equal(s.resume(job), false, "Scan yields before drawing")
+    local getQuest = s.modules.QuestieDB.GetQuest
+    s.modules.QuestieDB.GetQuest = function(id) if id ~= 1 then return getQuest(id) end end
+    s.finish(job)
+    equal(s.drawn, 39, "A missing quest after a yield cannot abort the remaining draw pass")
+end
+print("Available quest budget and invalid-record recovery tests passed")

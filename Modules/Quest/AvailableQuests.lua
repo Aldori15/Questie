@@ -1332,19 +1332,27 @@ _SyncAvailableQuestDisplay = function(previousAvailableQuests, nextAvailableQues
     questCount = 0
     local drawCount = 0
     for questId in pairs(nextAvailableQuests) do
-        local replaceSpawns = dirtySpawnVisibility[questId]
-        if replaceSpawns then
-            -- Consume before yielding so another visibility change stays dirty.
-            dirtySpawnVisibility[questId] = nil
-            _UnloadQuestFrames(questId, nil, "available", nil, yieldRefresh)
-            QuestieTooltips:RemoveAvailableQuest(questId)
-        end
-        local hasLiveFrames = _HasLiveAvailableQuestFrames(questId)
-        if replaceSpawns or (not previousAvailableQuests[questId]) or (not hasLiveFrames) then
-            _DrawAvailableQuest(questId)
-            drawCount = drawCount + 1
-        elseif shouldRestoreStartTooltips then
-            _RegisterQuestStartTooltips(QuestieDB.GetQuest(questId))
+        -- A pointer/eligibility result does not guarantee usable quest data. Corrections
+        -- can create nameless records, and data may have changed while this scan yielded.
+        local quest = QuestieDB.GetQuest(questId)
+        if not quest then
+            nextAvailableQuests[questId] = nil
+            AvailableQuests.RemoveAvailableQuest(questId, yieldRefresh)
+        else
+            local replaceSpawns = dirtySpawnVisibility[questId]
+            if replaceSpawns then
+                -- Consume before yielding so another visibility change stays dirty.
+                dirtySpawnVisibility[questId] = nil
+                _UnloadQuestFrames(questId, nil, "available", nil, yieldRefresh)
+                QuestieTooltips:RemoveAvailableQuest(questId)
+            end
+            local hasLiveFrames = _HasLiveAvailableQuestFrames(questId)
+            if replaceSpawns or (not previousAvailableQuests[questId]) or (not hasLiveFrames) then
+                _DrawAvailableQuest(quest)
+                drawCount = drawCount + 1
+            elseif shouldRestoreStartTooltips then
+                _RegisterQuestStartTooltips(quest)
+            end
         end
 
         questCount = questCount + 1
@@ -1494,11 +1502,10 @@ _MarkActiveChildQuests = function(questId, currentQuestlog, completedQuests, hid
     end
 end
 
----@param questId number
-_DrawAvailableQuest = function(questId)
-    local quest = QuestieDB.GetQuest(questId)
+---@param quest Quest @A validated database quest from the display reconciliation pass.
+_DrawAvailableQuest = function(quest)
     if (not quest.tagInfoWasCached) then
-        QuestieDB.GetQuestTagInfo(questId) -- cache to load in the tooltip
+        QuestieDB.GetQuestTagInfo(quest.Id) -- cache to load in the tooltip
 
         quest.tagInfoWasCached = true
     end
