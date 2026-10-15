@@ -1,4 +1,4 @@
----@class Sorter
+---@type Sorter
 local Sorter = QuestieLoader:ImportModule("Sorter")
 
 --- Sorts the given questIds in place by their completion status, with completed quests first.

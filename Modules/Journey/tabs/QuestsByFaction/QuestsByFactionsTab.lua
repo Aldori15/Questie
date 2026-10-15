@@ -44,7 +44,7 @@ function _QuestieJourney.questsByFaction:DrawTab(container)
     _QuestieJourney.questsByFaction:InitializeFactionQuestData()
     _QuestieJourney.questsByFaction:InitializeFactionData()
 
-    ---@class AceSimpleGroup
+    ---@type AceSimpleGroup
     treegroup = AceGUI:Create("SimpleGroup")
 
     local header = AceGUI:Create("Heading")

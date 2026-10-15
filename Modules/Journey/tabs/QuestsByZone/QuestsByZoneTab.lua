@@ -39,7 +39,7 @@ local contDropdown, zoneDropdown, treegroup
 
 -- function that draws 'Quests By Zone' tab
 function _QuestieJourney.questsByZone:DrawTab(container)
-    ---@class AceSimpleGroup
+    ---@type AceSimpleGroup
     treegroup = AceGUI:Create("SimpleGroup")
 
     local header = AceGUI:Create("Heading")
