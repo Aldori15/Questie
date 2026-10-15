@@ -20,7 +20,6 @@ local shouldRunAuto = true
 
 local _AllQuestWindowsClosed
 local _GetAutoAcceptSettings
-local _GetQuestGiverGuid
 local _GetStructuredActiveQuests
 local _GetStructuredAvailableQuests
 local _IsAllowedNPC
@@ -70,10 +69,6 @@ _GetAutoAcceptSettings = function()
     end
 
     return autoAccept
-end
-
-_GetQuestGiverGuid = function()
-    return UnitGUID("npc") or UnitGUID("questnpc") or UnitGUID("target")
 end
 
 _GetStructuredAvailableQuests = function()
@@ -127,11 +122,12 @@ _GetStructuredActiveQuests = function()
     return activeQuests
 end
 
-_IsAllowedNPC = function()
-    local npcGuid = _GetQuestGiverGuid()
+_IsAllowedNPC = function(unit)
+    local npcGuid = UnitGUID(unit)
     if npcGuid then
-        local _, _, _, _, _, npcIDStr = strsplit("-", npcGuid)
-        if npcIDStr then
+        local kind, _, _, _, _, npcIDStr = strsplit("-", npcGuid)
+        -- Object IDs have a separate namespace and cannot match NPC exclusions.
+        if kind == "Creature" or kind == "Vehicle" then
             local npcId = tonumber(npcIDStr)
             local disallowedNPCs = _QuestieAuto.disallowedNPCs or _QuestieAuto.disallowedNPC or {}
             if disallowedNPCs[npcId] then
@@ -144,8 +140,9 @@ _IsAllowedNPC = function()
 end
 
 _IsQuestAllowedToAccept = function(questId)
-    if (not questId) or questId <= 0 then
-        questId = GetQuestID(true)
+    -- A supplied zero is an unresolved list entry, not the displayed detail quest.
+    if not questId then
+        questId = GetQuestID(true, nil, "questnpc")
     end
 
     if questId and questId > 0 then
@@ -161,8 +158,8 @@ _IsQuestAllowedToAccept = function(questId)
 end
 
 _IsQuestAllowedToTurnIn = function(questId)
-    if (not questId) or questId <= 0 then
-        questId = GetQuestID(false)
+    if not questId then
+        questId = GetQuestID(false, nil, "questnpc")
     end
 
     if questId and questId > 0 then
@@ -249,7 +246,7 @@ function QuestieAuto.Reset()
 end
 
 function QuestieAuto.GOSSIP_SHOW()
-    if (not shouldRunAuto) or QuestieAuto.IsModifierHeld() or (not _IsAllowedNPC()) then
+    if (not shouldRunAuto) or QuestieAuto.IsModifierHeld() or (not _IsAllowedNPC("npc")) then
         shouldRunAuto = false
         return
     end
@@ -279,7 +276,7 @@ function QuestieAuto.GOSSIP_SHOW()
 end
 
 function QuestieAuto.QUEST_GREETING()
-    if (not shouldRunAuto) or QuestieAuto.IsModifierHeld() or (not _IsAllowedNPC()) then
+    if (not shouldRunAuto) or QuestieAuto.IsModifierHeld() or (not _IsAllowedNPC("npc")) then
         shouldRunAuto = false
         return
     end
@@ -308,11 +305,11 @@ end
 
 function QuestieAuto.QUEST_DETAIL()
     local autoAccept = _GetAutoAcceptSettings()
-    if (not shouldRunAuto) or (not autoAccept.enabled) or QuestieAuto.IsModifierHeld() or (not _IsAllowedNPC()) then
+    if (not shouldRunAuto) or (not autoAccept.enabled) or QuestieAuto.IsModifierHeld() or (not _IsAllowedNPC("questnpc")) then
         return
     end
 
-    local questNpcGuid = UnitGUID("questnpc") or _GetQuestGiverGuid()
+    local questNpcGuid = UnitGUID("questnpc")
     if autoAccept.rejectSharedInBattleground and UnitInBattleground("player") and questNpcGuid then
         local unitType = strsplit("-", questNpcGuid)
         if unitType == "Player" then
@@ -322,7 +319,7 @@ function QuestieAuto.QUEST_DETAIL()
         end
     end
 
-    local questId = GetQuestID(true)
+    local questId = GetQuestID(true, nil, "questnpc")
     if questId == 0 then
         AcceptQuest()
         return
@@ -334,7 +331,7 @@ function QuestieAuto.QUEST_DETAIL()
 end
 
 function QuestieAuto.QUEST_PROGRESS()
-    if (not shouldRunAuto) or (not Questie.db.profile.autocomplete) or QuestieAuto.IsModifierHeld() or (not IsQuestCompletable()) or (not _IsAllowedNPC()) or (not _IsQuestAllowedToTurnIn()) then
+    if (not shouldRunAuto) or (not Questie.db.profile.autocomplete) or QuestieAuto.IsModifierHeld() or (not IsQuestCompletable()) or (not _IsAllowedNPC("questnpc")) or (not _IsQuestAllowedToTurnIn()) then
         return
     end
 
@@ -350,7 +347,7 @@ function QuestieAuto.QUEST_ACCEPT_CONFIRM()
 end
 
 function QuestieAuto.QUEST_COMPLETE()
-    if (not shouldRunAuto) or (not Questie.db.profile.autocomplete) or QuestieAuto.IsModifierHeld() or GetNumQuestChoices() > 1 or (not _IsAllowedNPC()) or (not _IsQuestAllowedToTurnIn()) then
+    if (not shouldRunAuto) or (not Questie.db.profile.autocomplete) or QuestieAuto.IsModifierHeld() or GetNumQuestChoices() > 1 or (not _IsAllowedNPC("questnpc")) or (not _IsQuestAllowedToTurnIn()) then
         return
     end
 

@@ -977,41 +977,57 @@ local function _ShouldCacheUnavailableQuest(questId)
         and _CanNpcOfferQuestToPlayer(questId)
 end
 
+-- Read the actual dialog giver. A selected target may be unrelated to the offer.
+local function _GetDialogNPC(unit)
+    local guid = UnitGUID(unit)
+    if not guid then return end
+    local kind, _, _, _, _, npcId = strsplit("-", guid)
+    if kind == "Creature" or kind == "Vehicle" then return guid, tonumber(npcId) end
+    -- Keep readable object GUIDs for Wrath's title-based quest lookup.
+    return guid
+end
+
+local function _RestoreOfferedQuest(questId)
+    if not questId or questId <= 0 or not unavailableQuestsDeterminedByTalking[questId] then return end
+
+    -- An explicit offer disproves earlier talk-based observations at every giver.
+    -- Clear the fork's persisted reset buckets as well as its in-memory lookup.
+    local bucket = _GetUnavailableQuestBucketForQuest(_GetUnavailableQuestSyncState(), questId)
+    if bucket then
+        local npcIds = {}
+        for npcId, quests in pairs(bucket.byNpc) do
+            if quests[questId] then npcIds[#npcIds + 1] = npcId end
+        end
+        for _, npcId in ipairs(npcIds) do _ClearUnavailableQuestForToday(npcId, questId) end
+        bucket.byQuest[questId] = nil
+    end
+    unavailableQuestsDeterminedByTalking[questId] = nil
+    local quest = QuestieDB.GetQuest(questId)
+    if quest then
+        availableQuests[questId] = true
+        AvailableQuests.DrawAvailableQuest(quest)
+    end
+end
+
 --- Called on GOSSIP_SHOW to hide all quests that are not available from the NPC.
 function AvailableQuests.ValidateAvailableQuestsFromGossipShow()
     _GetUnavailableQuestsDeterminedByTalking()
 
-    local npcGuid = UnitGUID("target")
-    if (not npcGuid) then
+    local npcGuid, npcId = _GetDialogNPC("npc")
+    if npcGuid and lastNpcGuid == npcGuid then
         return
     end
-
-    local _, _, _, _, _, npcIDStr = strsplit("-", npcGuid)
-    if (not npcIDStr) then
-        return
-    end
-
-    local npcId = tonumber(npcIDStr)
-    if lastNpcGuid == npcGuid then
-        return
-    end
-
-    lastNpcGuid = npcGuid
 
     local availableQuestsInGossip = _GetStructuredAvailableQuestsInGossip(npcGuid)
 
     -- validate no quest is incorrectly hidden
     for _, gossipQuest in pairs(availableQuestsInGossip) do
-        local questId = gossipQuest.questID
-        if unavailableQuestsDeterminedByTalking[questId] then
-            _ClearUnavailableQuestForToday(npcId, questId)
-            local quest = QuestieDB.GetQuest(questId)
-            if quest then
-                availableQuests[questId] = true
-                AvailableQuests.DrawAvailableQuest(quest)
-            end
-        end
+        _RestoreOfferedQuest(gossipQuest.questID)
     end
+
+    -- Only an identified NPC's offer list can prove that its other quests are absent.
+    if not npcId then return end
+    lastNpcGuid = npcGuid
 
     -- Active quests are relevant, because the API can fire GOSSIP_SHOW before QUEST_ACCEPTED.
     -- So we need to check active quests to not hide them incorrectly for the day.
@@ -1048,39 +1064,22 @@ end
 function AvailableQuests.ValidateAvailableQuestsFromQuestDetail()
     _GetUnavailableQuestsDeterminedByTalking()
 
-    local npcGuid = UnitGUID("target")
-    if (not npcGuid) then
+    local npcGuid, npcId = _GetDialogNPC("questnpc")
+    if npcGuid and lastNpcGuid == npcGuid then
         return
     end
-
-    local _, _, _, _, _, npcIDStr = strsplit("-", npcGuid)
-    if (not npcIDStr) then
-        return
-    end
-
-    local npcId = tonumber(npcIDStr)
-    if lastNpcGuid == npcGuid then
-        return
-    end
-
-    lastNpcGuid = npcGuid
 
     -- Hide all quests but the current one
-    local availableQuestId = GetQuestID(true)
+    local availableQuestId = GetQuestID(true, nil, "questnpc")
     if availableQuestId == 0 then
         -- GetQuestID returns 0 when the dialog is closed. Nothing left to do for us
         return
     end
 
     -- validate quest is not incorrectly hidden
-    if unavailableQuestsDeterminedByTalking[availableQuestId] then
-        _ClearUnavailableQuestForToday(npcId, availableQuestId)
-        local quest = QuestieDB.GetQuest(availableQuestId)
-        if quest then
-            availableQuests[availableQuestId] = true
-            AvailableQuests.DrawAvailableQuest(quest)
-        end
-    end
+    _RestoreOfferedQuest(availableQuestId)
+    if not npcId then return end
+    lastNpcGuid = npcGuid
 
     local unavailableQuestsToBroadcast = {}
     for questId in pairs(availableQuestsByNpc[npcId] or {}) do
@@ -1100,22 +1099,10 @@ end
 function AvailableQuests.ValidateAvailableQuestsFromQuestGreeting()
     _GetUnavailableQuestsDeterminedByTalking()
 
-    local npcGuid = UnitGUID("target")
-    if (not npcGuid) then
+    local npcGuid, npcId = _GetDialogNPC("npc")
+    if npcGuid and lastNpcGuid == npcGuid then
         return
     end
-
-    local _, _, _, _, _, npcIDStr = strsplit("-", npcGuid)
-    if (not npcIDStr) then
-        return
-    end
-
-    local npcId = tonumber(npcIDStr)
-    if lastNpcGuid == npcGuid then
-        return
-    end
-
-    lastNpcGuid = npcGuid
 
     local availableQuestsInGreeting = {}
     local unresolvedQuestInGreeting = false
@@ -1147,19 +1134,13 @@ function AvailableQuests.ValidateAvailableQuestsFromQuestGreeting()
 
     -- validate no quest is incorrectly hidden
     for questId in pairs(availableQuestsInGreeting) do
-        if unavailableQuestsDeterminedByTalking[questId] then
-            _ClearUnavailableQuestForToday(npcId, questId)
-            local quest = QuestieDB.GetQuest(questId)
-            if quest then
-                availableQuests[questId] = true
-                AvailableQuests.DrawAvailableQuest(quest)
-            end
-        end
+        _RestoreOfferedQuest(questId)
     end
 
-    if unresolvedQuestInGreeting then
+    if not npcId or unresolvedQuestInGreeting then
         return
     end
+    lastNpcGuid = npcGuid
 
     local unavailableQuestsToBroadcast = {}
     for questId in pairs(availableQuestsByNpc[npcId] or {}) do

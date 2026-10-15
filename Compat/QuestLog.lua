@@ -533,9 +533,10 @@ end
 
 -- Returns the ID of the displayed quest at a quest giver.
 -- https://wowpedia.fandom.com/wiki/API_GetQuestID
-function QuestieCompat.GetQuestID(questStarter, title)
+---@param unit string? @Dialog giver token; defaults to npc for gossip/greeting callers.
+function QuestieCompat.GetQuestID(questStarter, title, unit)
     local title = title or GetTitleText()
-    local guid = QuestieCompat.UnitGUID("npc")
+    local guid = QuestieCompat.UnitGUID(unit or "npc")
 
 	return QuestieDB.GetQuestIDFromName(title, guid, questStarter)
 end
