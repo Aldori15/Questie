@@ -150,14 +150,19 @@ local function _GetLevelDifficultyRanges(questLevel, questMinLevel)
     local charLevel = UnitLevel("player")
     local red, orange, yellow, green, gray
 
-    -- Gray Level based on level range.
+    -- First player level where the quest is gray under native 3.3.5 rules.
+    -- GetQuestGreenRange is 4 below level 10, then 5/6/7 per decade and 8 at 40+.
     if questLevel ~= -1 then
-        if questLevel <= 5 then
+        if questLevel <= 4 then
             gray = questLevel + 5
-        elseif questLevel <= 39 then
-            gray = questLevel + math.ceil(questLevel / 10) + 5
+        elseif questLevel <= 13 then
+            gray = questLevel + 6
+        elseif questLevel <= 22 then
+            gray = questLevel + 7
+        elseif questLevel <= 31 then
+            gray = questLevel + 8
         else
-            gray = questLevel + math.ceil(questLevel / 5) + 1
+            gray = questLevel + 9
         end
     end
 

@@ -159,4 +159,41 @@ equal(rendered[#rendered].type, "npc", "item source immediately opens NPC detail
 equal(rendered[#rendered].id, 6, "item source opens the right NPC")
 equal(#chat, 1, "source navigation does not insert a chat link")
 
-print("Journey navigation regressions passed")
+-- Compare Journey's displayed threshold with the native 3.3.5 green ranges.
+-- The native helper indexes {4, 4, 5, 5, 6, 6, 7, 7, 8, ...} by player level / 5.
+local baseQuery = db.QueryQuestSingle
+local function difficultyText(questLevel, minLevel)
+    db.QueryQuestSingle = function(id, key)
+        if key == "questLevel" then return questLevel end
+        if key == "requiredLevel" then return minLevel end
+        return baseQuery(id, key)
+    end
+    local frame = create(nil, "SimpleGroup")
+    drawQuest(details, frame, {Id = 5, name = "Difficulty test"})
+    db.QueryQuestSingle = baseQuery
+    for _, child in ipairs(frame.children) do
+        if type(child.value) == "string" and child.value:find("Difficulty Range:", 1, true) then
+            return child.value
+        end
+    end
+    error("missing rendered difficulty range")
+end
+for questLevel = 1, 80 do
+    local gray = questLevel + 3
+    while true do
+        local greenRange = gray < 10 and 4 or gray < 20 and 5 or gray < 30 and 6 or gray < 40 and 7 or 8
+        if gray - questLevel > greenRange then break end
+        gray = gray + 1
+    end
+    local text = difficultyText(questLevel, 1)
+    equal(tonumber(text:match("|cFFC0C0C0%[(%d+)%]|r")), gray, "native gray threshold for quest level " .. questLevel)
+    equal(tonumber(text:match("|cFF40C040%[(%d+)%]|r")), questLevel + 3, "green threshold preserved")
+    equal(tonumber(text:match("|cFFFFFF00%[(%d+)%]|r")), math.max(1, questLevel - 2), "yellow threshold preserved")
+end
+equal(tonumber(difficultyText(5, 20):match("|cFFC0C0C0%[(%d+)%]|r")), 20, "minimum level still clamps gray threshold")
+local scaling = difficultyText(-1, 1)
+assert(not scaling:find("|cFFC0C0C0", 1, true), "scaling quests have no gray threshold")
+assert(scaling:find("|cFFFFFF00[1-80]|r", 1, true), "scaling quest follows player level")
+assert(difficultyText(-1, 85):find("|cFFFFFF00[85]|r", 1, true), "scaling quest respects a higher minimum level")
+
+print("Journey navigation and difficulty regressions passed")
