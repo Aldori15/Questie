@@ -106,7 +106,7 @@ function _QuestieJourney.questsByZone:ManageTree(container, zoneTree)
     zoneTreeFrame:SetFullWidth(true)
     zoneTreeFrame:SetFullHeight(true)
     zoneTreeFrame:EnableButtonTooltips(false)
-    zoneTreeFrame:SetTree(zoneTree)
+    zoneTreeFrame:SetTree(zoneTree or {})
 
     zoneTreeFrame.treeframe:SetWidth(220)
 

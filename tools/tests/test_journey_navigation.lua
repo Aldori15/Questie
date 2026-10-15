@@ -196,4 +196,35 @@ assert(not scaling:find("|cFFC0C0C0", 1, true), "scaling quests have no gray thr
 assert(scaling:find("|cFFFFFF00[1-80]|r", 1, true), "scaling quest follows player level")
 assert(difficultyText(-1, 85):find("|cFFFFFF00[85]|r", 1, true), "scaling quest respects a higher minimum level")
 
-print("Journey navigation and difficulty regressions passed")
+-- AceGUI is shared across addons. Newer TreeGroups leave pooled buttons visible
+-- when SetTree(nil) returns before the row-hiding pass; an empty table clears them.
+local pooledTree = {rows = {"Year 2026"}, treeframe = {SetWidth = noop},
+    SetFullWidth = noop, SetFullHeight = noop, EnableButtonTooltips = noop, SetCallback = noop}
+function pooledTree:SetTree(tree)
+    self.tree = tree
+    if tree then self.rows = tree end
+end
+env.LibStub = function() return {Create = function(_, kind)
+    equal(kind, "TreeGroup", "quest list acquires a pooled tree")
+    return pooledTree
+end} end
+journey.private.questsByZone = {}
+journey.private.lastZoneSelection = {}
+module("QuestieJourneyFactions").BuildFactionIntroductionOrder = function() return {} end
+loadModule("Modules/Journey/tabs/QuestsByZone/QuestsByZone.lua")
+loadModule("Modules/Journey/tabs/QuestsByFaction/QuestsByFactions.lua")
+for _, tab in ipairs({journey.private.questsByZone, journey.private.questsByFaction}) do
+    local container = create(nil, "SimpleGroup")
+    pooledTree.rows = {"Year 2026"}
+    tab:ManageTree(container, nil)
+    equal(#pooledTree.rows, 0, "unselected filter clears pooled Journey history")
+    local quests = {{value = "a", text = "Available quests"}}
+    tab:ManageTree(container, quests)
+    equal(pooledTree.rows, quests, "selecting a filter displays its quests")
+    tab:ManageTree(container, nil)
+    equal(#pooledTree.rows, 0, "changing filter clears the previous quest list")
+    tab:ManageTree(container, {})
+    equal(#pooledTree.rows, 0, "empty quest result remains blank")
+end
+
+print("Journey navigation, difficulty, and pooled-tree regressions passed")

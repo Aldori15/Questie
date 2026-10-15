@@ -343,7 +343,7 @@ function _QuestieJourney.questsByFaction:ManageTree(container, factionTree)
     factionTreeFrame:SetFullWidth(true)
     factionTreeFrame:SetFullHeight(true)
     factionTreeFrame:EnableButtonTooltips(false)
-    factionTreeFrame:SetTree(factionTree)
+    factionTreeFrame:SetTree(factionTree or {})
 
     factionTreeFrame.treeframe:SetWidth(415)
     factionTreeFrame:SetCallback("OnClick", function(group, ...)
