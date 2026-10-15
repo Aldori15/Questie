@@ -82,11 +82,3 @@ function BreadcrumbQuests.CheckQuestBreadcrumbs(questId)
         BreadcrumbQuests.AbandonQuest(questId, lastIncompleteBreadcrumbId)
     end
 end
-
---- Checks all existing quests in the quest log for incomplete breadcrumbs.
---- Called during login initialization since QUEST_ACCEPTED does not fire for quests already in the log.
-function BreadcrumbQuests.CheckAllQuestBreadcrumbs()
-    for questId in pairs(QuestiePlayer.currentQuestlog) do
-        BreadcrumbQuests.CheckQuestBreadcrumbs(questId)
-    end
-end
