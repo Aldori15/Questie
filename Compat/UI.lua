@@ -189,11 +189,44 @@ QuestieCompat.LibUIDropDownMenu = {
     end,
 }
 
-local function UpdateQuestieDropDownSeparator(info, level)
+function QuestieCompat.SetProfessionMenuButtonState(button, checked, automatic)
+    local name = button:GetName()
+    local check = _G[name .. "Check"]
+    local invisibleButton = _G[name .. "InvisibleButton"]
+    if automatic then
+        button:Disable()
+        invisibleButton:Show()
+    else
+        button:Enable()
+        invisibleButton:Hide()
+    end
+    check:SetDesaturated(automatic == true)
+    check:SetAlpha(automatic and 0.5 or 1)
+    if checked then
+        check:Show()
+        button:LockHighlight()
+    else
+        check:Hide()
+        button:UnlockHighlight()
+    end
+end
+
+local function UpdateQuestieDropDownButton(info, level)
     local listFrame = _G["DropDownList" .. (level or 1)]
     if not listFrame then return end
     local button = _G[listFrame:GetName() .. "Button" .. listFrame.numButtons]
     if not button then return end
+
+    -- Restore the native check before this pooled button belongs to another menu.
+    if button.questieProfessionMenu then
+        local check = _G[button:GetName() .. "Check"]
+        check:SetDesaturated(false)
+        check:SetAlpha(1)
+    end
+    button.questieProfessionMenu = info.questieProfession and info or nil
+    if button.questieProfessionMenu then
+        QuestieCompat.SetProfessionMenuButtonState(button, info.checked(), info.disabled)
+    end
 
     -- Native dropdown buttons are shared by every menu. Clear our line on reuse.
     local line = button.questieSeparator
@@ -213,7 +246,7 @@ local function UpdateQuestieDropDownSeparator(info, level)
 end
 
 if type(UIDropDownMenu_AddButton) == "function" then
-    hooksecurefunc("UIDropDownMenu_AddButton", UpdateQuestieDropDownSeparator)
+    hooksecurefunc("UIDropDownMenu_AddButton", UpdateQuestieDropDownButton)
 end
 
 local function GetDropDownFrameName(frame)

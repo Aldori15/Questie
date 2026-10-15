@@ -134,6 +134,18 @@ local townsfolkLocales = {
         ["esES"] = "Buzón",
         ["frFR"] = "Boîte aux lettres",
     },
+    ["Known Professions"] = {
+        ["enUS"] = true,
+        ["deDE"] = "Bekannte Berufe",
+        ["esES"] = "Profesiones conocidas",
+        ["esMX"] = "Profesiones conocidas",
+        ["frFR"] = "Métiers connus",
+        ["koKR"] = "배운 전문 기술",
+        ["ptBR"] = "Profissões conhecidas",
+        ["ruRU"] = "Известные профессии",
+        ["zhCN"] = "已学专业",
+        ["zhTW"] = "已學專業",
+    },
     ["Profession Trainers"] = {
         ["ptBR"] = "Instrutores de profissão",
         ["ruRU"] = "Учителя профессий",

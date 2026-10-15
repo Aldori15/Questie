@@ -99,7 +99,24 @@ local _townsfolk_texturemap = {
 QuestieMenu.private.townsfolk_texturemap = _townsfolk_texturemap
 
 local _spawned = {} -- used to check if we have already spawned an icon for this npc
+local _spawnTickers = {}
+local _trackedProfessions = {}
+local _professionMenuEntries = setmetatable({}, {__mode = "k"})
 local _availableRefreshTicker
+
+local function isTrackedAsKnownProfession(key)
+    if (not Questie.db.profile.townsfolkKnownProfessions)
+        or Questie.db.profile.townsfolkConfig[key]
+        or not (Questie.db.global.professionTrainers or {})[key] then
+        return false
+    end
+    local known = QuestieProfessions:HasProfessionAndSkillLevel({key})
+    return known == true
+end
+
+local function isTracked(key)
+    return Questie.db.profile.townsfolkConfig[key] == true or isTrackedAsKnownProfession(key)
+end
 
 ---@param id NpcId
 ---@param key string|number
@@ -175,6 +192,11 @@ local function toggle(key, forceRemove) -- /run QuestieLoader:ImportModule("Ques
         return
     end
 
+    if _spawnTickers[key] then
+        _spawnTickers[key]:Cancel()
+        _spawnTickers[key] = nil
+    end
+
     if Townsfolk:IsVendorCategory(key) or Questie.db.global.professionTrainers[key] then
         Townsfolk:EnsureVendorDataInitialized()
     end
@@ -189,9 +211,13 @@ local function toggle(key, forceRemove) -- /run QuestieLoader:ImportModule("Ques
         return
     end
 
+    local tracked = isTracked(key) and not forceRemove
+    if Questie.db.global.professionTrainers[key] then
+        _trackedProfessions[key] = tracked
+    end
     local icon = _townsfolk_texturemap[key] or ("Interface\\Minimap\\tracking\\" .. strlower(key))
     if key == "Mailbox" or key == "Meeting Stones" then -- object type townsfolk
-        if Questie.db.profile.townsfolkConfig[key] and (not forceRemove) then
+        if tracked then
             for _, id in pairs(ids) do
                 if key == "Meeting Stones" then
                     local dungeonName, levelRange = MeetingStones:GetLocalizedDungeonNameAndLevelRangeByObjectId(id)
@@ -209,7 +235,7 @@ local function toggle(key, forceRemove) -- /run QuestieLoader:ImportModule("Ques
             end
         end
     else
-        if Questie.db.profile.townsfolkConfig[key] and (not forceRemove) then
+        if tracked then
             local faction = UnitFactionGroup("Player")
             local timer
             local e = 1
@@ -243,10 +269,14 @@ local function toggle(key, forceRemove) -- /run QuestieLoader:ImportModule("Ques
                 if _DrawTownsfolkBatch(192) then
                     _FlushDrawQueue()
                     timer:Cancel()
+                    if _spawnTickers[key] == timer then
+                        _spawnTickers[key] = nil
+                    end
                     return
                 end
                 _FlushDrawQueue()
             end)
+            _spawnTickers[key] = timer
         else
             for _, id in pairs(ids) do
                 QuestieMap:UnloadManualFrames(id, key)
@@ -270,18 +300,59 @@ local function build(key)
     }
 end
 
-local function buildLocalized(key, localizedText)
+local function refreshProfessionButtons()
+    for info in pairs(_professionMenuEntries) do
+        info.disabled = info.arg1 and isTrackedAsKnownProfession(info.arg1) or false
+    end
+
+    for level = 1, UIDROPDOWNMENU_MAXLEVELS or 0 do
+        local listFrame = _G["DropDownList" .. level]
+        if listFrame and listFrame:IsShown() then
+            for index = 1, listFrame.numButtons or 0 do
+                local button = _G[listFrame:GetName() .. "Button" .. index]
+                local info = button and button.questieProfessionMenu
+                if info then
+                    QuestieCompat.SetProfessionMenuButtonState(button, info.checked(), info.disabled)
+                end
+            end
+        end
+    end
+end
+
+function QuestieMenu.RefreshKnownProfessionTrainers()
+    for key in pairs(Questie.db.global.professionTrainers or {}) do
+        -- Rank increases do not change trainer visibility or restart drawing.
+        if isTracked(key) ~= (_trackedProfessions[key] == true) then
+            toggle(key)
+        end
+    end
+    refreshProfessionButtons()
+end
+
+local function buildProfession(key, localizedText)
     local icon = _townsfolk_texturemap[key] or ("Interface\\Minimap\\tracking\\" .. strlower(key))
 
-    return {
+    local info = {
         text = localizedText,
-        func = function() Questie.db.profile.townsfolkConfig[key] = not Questie.db.profile.townsfolkConfig[key] toggle(key) end,
+        func = function()
+            -- Some addons forward icon clicks even when the native row is disabled.
+            if not isTrackedAsKnownProfession(key) then
+                Questie.db.profile.townsfolkConfig[key] = not Questie.db.profile.townsfolkConfig[key]
+                toggle(key)
+            end
+            refreshProfessionButtons()
+        end,
+        arg1 = key,
         icon = icon,
         notCheckable = false,
-        checked = function() return Questie.db.profile.townsfolkConfig[key] end,
+        checked = function() return isTracked(key) end,
+        disabled = isTrackedAsKnownProfession(key),
+        questieProfession = true,
         isNotRadio = true,
         keepShownOnClick = true
     }
+    _professionMenuEntries[info] = true
+    return info
 end
 
 local function _GetFindNearestIds(key)
@@ -516,6 +587,16 @@ function QuestieMenu:OnLogin(forceRemove) -- toggle all icons
         toggle(key)
     end
 
+    for key in pairs(Questie.db.global.professionTrainers or {}) do
+        if Questie.db.profile.townsfolkConfig[key] == nil and (isTracked(key) or _trackedProfessions[key]) then
+            if forceRemove then
+                toggle(key, forceRemove)
+            end
+            toggle(key)
+        end
+    end
+    refreshProfessionButtons()
+
     InstanceLocations:OnLogin(forceRemove)
 end
 
@@ -533,18 +614,7 @@ local secondaryProfessions = {
 
 function QuestieMenu.buildTailoringSubmenu()
     return {
-        {
-            text = l10n(QuestieProfessions:GetProfessionName(professionKeys.TAILORING)),
-            func = function()
-                Questie.db.profile.townsfolkConfig[professionKeys.TAILORING] = not Questie.db.profile.townsfolkConfig[professionKeys.TAILORING]
-                toggle(professionKeys.TAILORING)
-            end,
-            icon = _townsfolk_texturemap[professionKeys.TAILORING],
-            notCheckable = false,
-            checked = function() return Questie.db.profile.townsfolkConfig[professionKeys.TAILORING] end,
-            isNotRadio = true,
-            keepShownOnClick = true
-        },
+        buildProfession(professionKeys.TAILORING, l10n(QuestieProfessions:GetProfessionName(professionKeys.TAILORING))),
         {
             text = l10n("Moonwell"),
             func = function()
@@ -567,6 +637,22 @@ function QuestieMenu.buildProfessionMenu()
     local profMenuSorted = {}
     local secondaryProfMenuSorted = {}
     local profMenuData = {}
+    local knownProfessions = {
+        text = l10n("Known Professions"),
+        icon = _townsfolk_texturemap["Profession Trainers"],
+        func = function()
+            Questie.db.profile.townsfolkKnownProfessions = not Questie.db.profile.townsfolkKnownProfessions
+            QuestieMenu.RefreshKnownProfessionTrainers()
+        end,
+        checked = function() return Questie.db.profile.townsfolkKnownProfessions end,
+        notCheckable = false,
+        questieProfession = true,
+        isNotRadio = true,
+        keepShownOnClick = true,
+    }
+    _professionMenuEntries[knownProfessions] = true
+    tinsert(profMenu, knownProfessions)
+    tinsert(profMenu, div)
     for key, _ in pairs(Questie.db.global.professionTrainers) do
         local localizedKey = l10n(QuestieProfessions:GetProfessionName(key))
         if key == professionKeys.TAILORING then
@@ -579,7 +665,7 @@ function QuestieMenu.buildProfessionMenu()
                 notCheckable = true
             }
         else
-            profMenuData[localizedKey] = buildLocalized(key, localizedKey)
+            profMenuData[localizedKey] = buildProfession(key, localizedKey)
         end
         if secondaryProfessions[key] then
             tinsert(secondaryProfMenuSorted, localizedKey)

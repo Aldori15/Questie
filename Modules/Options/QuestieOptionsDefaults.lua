@@ -219,6 +219,7 @@ function QuestieOptionsDefaults:Load()
             TrackerWidth = 0,
             TrackerHeight = 0,
 
+            townsfolkKnownProfessions = false,
             townsfolkConfig = {
                 ["Repair"] = false,
                 ["Innkeeper"] = true,

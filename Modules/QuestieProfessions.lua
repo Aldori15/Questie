@@ -4,6 +4,8 @@ local QuestieProfessions = QuestieLoader:CreateModule("QuestieProfessions");
 local QuestieQuest = QuestieLoader:ImportModule("QuestieQuest");
 ---@type AvailableQuests
 local AvailableQuests = QuestieLoader:ImportModule("AvailableQuests")
+---@type QuestieMenu
+local QuestieMenu = QuestieLoader:ImportModule("QuestieMenu")
 
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n");
@@ -23,6 +25,9 @@ hooksecurefunc("AbandonSkill", function(skillIndex)
         if playerProfessions[professionTable[skillName]] then
             Questie.Debug(Questie.DEBUG_DEVELOP, "Unlearned profession: " .. skillName .. "(" .. professionTable[skillName] .. ")")
             playerProfessions[professionTable[skillName]] = nil
+            if Questie.db.profile.townsfolkKnownProfessions then
+                QuestieMenu.RefreshKnownProfessionTrainers()
+            end
             --? Reset all autoBlacklisted quests if a skill is abandoned
             QuestieQuest.ResetAutoblacklistCategory("skill")
             AvailableQuests.CalculateAndDrawAll()
@@ -93,6 +98,9 @@ function QuestieProfessions:Update()
         end
     end
     playerProfessions = temporaryPlayerProfessions
+    if Questie.db.profile.townsfolkKnownProfessions then
+        QuestieMenu.RefreshKnownProfessionTrainers()
+    end
     return hasProfessionUpdate, hasNewProfession
 end
 
