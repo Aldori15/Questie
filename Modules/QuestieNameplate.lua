@@ -6,19 +6,24 @@ local _QuestieNameplate = QuestieNameplate.private
 -------------------------
 ---@type QuestieTooltips
 local QuestieTooltips = QuestieLoader:ImportModule("QuestieTooltips")
+---@type QuestieDB
+local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 ---@type QuestieLib
 local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
 
 --- COMPATIBILITY ---
 local C_Timer = QuestieCompat.C_Timer
-local UnitGUID = QuestieCompat.UnitGUID
+local UnitGUID = UnitGUID -- Raw GUIDs distinguish individual Wrath nameplates.
+local QuestieUnitGUID = QuestieCompat.UnitGUID
 
-local activeGUIDs = {}
-local npFrames = {}
-local npUnusedFrames = {}
-local npFramesCount = 0
+local nameplateNameRegions = {}
+local objectiveKeysByName = {}
+local iconFrames = {}
+local unusedIconFrames = {}
+local initialized = false
 
 local activeTargetFrame
+local NAMEPLATE_BORDER_TEXTURE = "Interface\\Tooltips\\Nameplate-Border"
 local NAMEPLATE_TEXT_WIDTH = 260
 local NAMEPLATE_TEXT_FONT_SIZE = 10
 local NAMEPLATE_DEFAULT_X = -17
@@ -103,116 +108,202 @@ local function scheduleNameplateLayoutRefresh(frame)
     end)
 end
 
----@param token string
-function QuestieNameplate:NameplateCreated(token)
-    Questie.Debug(Questie.DEBUG_SPAM, "[QuestieNameplate:NameplateCreated]")
-    -- if nameplates are disabled, don't create new nameplates.
-    if (not Questie.db.profile.nameplateEnabled) then
-        return
+local function isNamePlate(frame)
+    if frame.UnitFrame  -- ElvUI
+    or frame.extended   -- TidyPlates
+    or frame.aloftData  -- Aloft
+    or frame.kui  -- Kui_Nameplate
+    then return true end
+
+    local _, borderRegion = frame:GetRegions()
+    if borderRegion and borderRegion:GetObjectType() == "Texture" then
+        return borderRegion:GetTexture() == NAMEPLATE_BORDER_TEXTURE
     end
 
-    -- to avoid memory issues
-    if npFramesCount >= 300 then
-        return
-    end
+    return false
+end
 
-    local unitGUID = UnitGUID(token)
-    local unitName, _ = UnitName(token)
-
-    if (not unitGUID) or (not unitName) then
-        return
-    end
-
-    local unitType, _, _, _, _, npcId, _ = strsplit("-", unitGUID)
-    if unitType ~= "Creature" and unitType ~= "Vehicle" then
-        -- We only draw name plates on NPCs/creatures and Vehicles (oddness with Chillmaw being a Vehicle?!?!) and skip players, pets, etc
-        return
-    end
-
-    local objectiveInfo = _QuestieNameplate.GetValidObjectiveInfo(QuestieTooltips.lookupByKey["m_" .. npcId])
-
-    if objectiveInfo then
-        activeGUIDs[unitGUID] = token
-
-        local f = _QuestieNameplate.GetFrame(unitGUID)
-        f.Icon:SetTexture(objectiveInfo.icon)
-        f.lastIcon = objectiveInfo.icon -- this is used to prevent updating the texture when it's already what it needs to be
-        _QuestieNameplate.SetTargetNameplateState(f, unitGUID == UnitGUID("target"))
-        if Questie.db.profile.nameplateObjectiveTextTargetOnly and unitGUID ~= UnitGUID("target") then
-            objectiveInfo.text = nil
+local function getGUID(unit)
+    if type(unit) == "string" then
+        return UnitGUID(unit)
+    elseif type(unit) == "table" then
+        if unit.guid then
+            return unit.guid
+        elseif type(unit.unit) == "string" then
+            return UnitGUID(unit.unit)
+        elseif type(unit.unitid) == "string" then
+            return UnitGUID(unit.unitid)
+        elseif type(unit.unitID) == "string" then
+            return UnitGUID(unit.unitID)
+        elseif type(unit.unitToken) == "string" then
+            return UnitGUID(unit.unitToken)
+        elseif unit.isTarget then
+            return UnitGUID("target")
+        elseif unit.isMouseover then
+            return UnitGUID("mouseover")
+        elseif type(unit.partyID) == "string" then
+            return UnitGUID(unit.partyID)
         end
-        _QuestieNameplate.SetObjectiveText(f, objectiveInfo.text)
-        f:Show()
     end
 end
 
----@param token string
-function QuestieNameplate:NameplateDestroyed(token)
-    Questie.Debug(Questie.DEBUG_SPAM, "[QuestieNameplate:NameplateDestroyed]")
+local function getGUIDFromCandidates(...)
+    for i = 1, select("#", ...) do
+        local guid = getGUID(select(i, ...))
+        if guid then return guid end
+    end
+end
 
-    if (not Questie.db.profile.nameplateEnabled) then
+local function getNameplateFrameGUID(frame)
+    local guid = getGUIDFromCandidates(frame.unit, frame.unitid, frame.unitID, frame.unitToken, frame.namePlateUnitToken)
+    if guid then return guid end
+
+    if frame.UnitFrame then
+        guid = getGUIDFromCandidates(frame.UnitFrame.unit, frame.UnitFrame.unitid, frame.UnitFrame.unitID, frame.UnitFrame.unitToken)
+        if guid then return guid end
+    end
+
+    if frame.unitFrame then
+        guid = getGUIDFromCandidates(frame.unitFrame.unit, frame.unitFrame.unitid, frame.unitFrame.unitID, frame.unitFrame.unitToken)
+        if guid then return guid end
+    end
+
+    if frame.extended then
+        guid = getGUIDFromCandidates(frame.extended.unit, frame.extended.unitid, frame.extended.unitID, frame.extended.unitToken)
+        if guid then return guid end
+    end
+
+    if frame.aloftData then
+        guid = getGUIDFromCandidates(frame.aloftData.unit, frame.aloftData.unitid, frame.aloftData.unitID, frame.aloftData.unitToken)
+        if guid then return guid end
+    end
+
+    if frame.kui then
+        return getGUIDFromCandidates(frame.kui.unit, frame.kui.unitid, frame.kui.unitID, frame.kui.unitToken)
+    end
+end
+
+local function isTargetNameplateFrame(frame)
+    local targetGUID = UnitGUID("target")
+    local frameGUID = getNameplateFrameGUID(frame)
+    if targetGUID and frameGUID then
+        return frameGUID == targetGUID
+    end
+
+    local targetName = UnitName("target")
+    local nameRegion = nameplateNameRegions[frame]
+    if (not targetName) or (not nameRegion) or nameRegion:GetText() ~= targetName then
+        return false
+    end
+
+    local visibleTargetNameplateCount = 0
+    local visibleTargetNameplate
+    for nameplateFrame, nameplateNameRegion in pairs(nameplateNameRegions) do
+        if nameplateFrame:IsShown() and nameplateNameRegion:GetText() == targetName then
+            visibleTargetNameplateCount = visibleTargetNameplateCount + 1
+            visibleTargetNameplate = nameplateFrame
+        end
+    end
+
+    if visibleTargetNameplateCount == 1 then
+        return frame == visibleTargetNameplate
+    end
+
+    -- 3.3.5 exposes no reliable nameplate frame <-> GUID mapping here.
+    -- If multiple visible nameplates share the target name, avoid showing text on all of them.
+    return false
+end
+
+-- Creation and progress updates use the same frame-based rendering path.
+local function refreshNameplate(nameplate)
+    local nameRegion = nameplateNameRegions[nameplate]
+    local name = nameRegion and nameRegion:GetText()
+    if not Questie.db.profile.nameplateEnabled or not nameplate:IsShown() or not name then
+        _QuestieNameplate.RemoveFrame(nameplate)
         return
     end
 
-    local unitGUID = UnitGUID(token)
-
-    if unitGUID and activeGUIDs[unitGUID] then
-        activeGUIDs[unitGUID] = nil
-        _QuestieNameplate.RemoveFrame(unitGUID)
+    local key = objectiveKeysByName[name]
+    local objectiveInfo = key and _QuestieNameplate.GetValidObjectiveInfo(QuestieTooltips.lookupByKey[key])
+    if not objectiveInfo then
+        _QuestieNameplate.RemoveFrame(nameplate)
+        return
     end
+
+    local frame = _QuestieNameplate.GetFrame(nameplate)
+    _QuestieNameplate.SetTargetNameplateState(frame, isTargetNameplateFrame(nameplate))
+    if frame.lastIcon ~= objectiveInfo.icon then
+        frame.Icon:SetTexture(objectiveInfo.icon)
+        frame.lastIcon = objectiveInfo.icon
+    end
+    local text = objectiveInfo.text
+    if Questie.db.profile.nameplateObjectiveTextTargetOnly and not frame.isTargetNameplate then
+        text = nil
+    end
+    if frame.lastText ~= text then
+        _QuestieNameplate.SetObjectiveText(frame, text)
+    else
+        _QuestieNameplate.ApplyFrameLayout(frame)
+    end
+    frame:Show()
 end
 
-function QuestieNameplate:UpdateNameplate()
-    Questie.Debug(Questie.DEBUG_SPAM, "[QuestieNameplate:UpdateNameplate]")
-
-    for guid, token in pairs(activeGUIDs) do
-
-        local unitName, _ = UnitName(token)
-        local _, _, _, _, _, npcId, _ = strsplit("-", guid)
-
-        if (not unitName) or (not npcId) then
-            activeGUIDs[guid] = nil
-            _QuestieNameplate.RemoveFrame(guid)
-        else
-            local objectiveInfo = _QuestieNameplate.GetValidObjectiveInfo(QuestieTooltips.lookupByKey["m_" .. npcId])
-
-            if objectiveInfo then
-                local frame = _QuestieNameplate.GetFrame(guid)
-                _QuestieNameplate.SetTargetNameplateState(frame, guid == UnitGUID("target"))
-                -- check if the texture needs to be changed
-                if frame.lastIcon ~= objectiveInfo.icon then
-                    frame.lastIcon = objectiveInfo.icon
-                    frame.Icon:SetTexture(objectiveInfo.icon)
-                end
-
-                if Questie.db.profile.nameplateObjectiveTextTargetOnly and guid ~= UnitGUID("target") then
-                    objectiveInfo.text = nil
-                end
-
-                if frame.lastText ~= objectiveInfo.text then
-                    _QuestieNameplate.SetObjectiveText(frame, objectiveInfo.text)
-                else
-                    _QuestieNameplate.ApplyFrameLayout(frame)
-                end
-            else
-                -- tooltip removed but we still have the frame active, remove it
-                activeGUIDs[guid] = nil
-                _QuestieNameplate.RemoveFrame(guid)
+local function scanWorldFrameChildren(...)
+    for index = 1, select("#", ...) do
+        local frame = select(index, ...)
+        if frame and not nameplateNameRegions[frame] and isNamePlate(frame) then
+            local nameRegion = select(7, frame:GetRegions())
+            if nameRegion then
+                nameplateNameRegions[frame] = nameRegion
+                frame:HookScript("OnShow", refreshNameplate)
+                -- The frame identity stays valid after its unit disappears or icons are disabled.
+                frame:HookScript("OnHide", _QuestieNameplate.RemoveFrame)
+                if frame:IsShown() then refreshNameplate(frame) end
             end
         end
     end
 end
 
+local function registerObjectiveNPC(_, questId, key)
+    if key:find("m_") then
+        local name = QuestieDB.QueryNPCSingle(tonumber(key:sub(3)), "name")
+        if name then objectiveKeysByName[name] = key end
+    end
+end
+
+-- Original Wrath discovers WorldFrame children; it has no modern nameplate unit-token events.
+function QuestieNameplate:Initialize()
+    if initialized then return end
+    initialized = true
+    if not Questie.db.profile.nameplateEnabled then return end
+
+    hooksecurefunc(QuestieTooltips, "RegisterObjectiveTooltip", registerObjectiveNPC)
+    local lastNumChildren
+    C_Timer.NewTicker(0.25, function()
+        if not next(objectiveKeysByName) then return end
+        local numChildren = WorldFrame:GetNumChildren()
+        if numChildren ~= lastNumChildren then
+            lastNumChildren = numChildren
+            scanWorldFrameChildren(WorldFrame:GetChildren())
+        end
+    end)
+end
+
+function QuestieNameplate:UpdateNameplate()
+    for frame in pairs(nameplateNameRegions) do
+        refreshNameplate(frame)
+    end
+end
+
 function QuestieNameplate:RedrawIcons()
-    for _, frame in pairs(npFrames) do
+    for _, frame in pairs(iconFrames) do
         _QuestieNameplate.ApplyFrameLayout(frame)
     end
 end
 
 function QuestieNameplate:HideCurrentFrames()
-    for guid, _ in pairs(activeGUIDs) do
-        activeGUIDs[guid] = nil
-        _QuestieNameplate.RemoveFrame(guid)
+    for nameplate in pairs(iconFrames) do
+        _QuestieNameplate.RemoveFrame(nameplate)
     end
 end
 
@@ -229,7 +320,7 @@ function QuestieNameplate:DrawTargetFrame()
         activeTargetFrame:Hide()
     end
 
-    local unitGUID = UnitGUID("target")
+    local unitGUID = QuestieUnitGUID("target")
     local unitName = UnitName("target")
 
     if (not unitName) or (not unitGUID) then
@@ -278,19 +369,18 @@ function QuestieNameplate:RedrawFrameIcon()
 end
 
 
----@param guid string
-function _QuestieNameplate.GetFrame(guid)
-    if npFrames[guid] then
-        return npFrames[guid]
+---@param nameplate Frame
+function _QuestieNameplate.GetFrame(nameplate)
+    if iconFrames[nameplate] then
+        return iconFrames[nameplate]
     end
 
-    local parent = guid
+    local parent = nameplate
 
-    local frame = tremove(npUnusedFrames)
+    local frame = tremove(unusedIconFrames)
 
     if (not frame) then
         frame = CreateFrame("Frame")
-        npFramesCount = npFramesCount + 1
     end
 
     frame:SetFrameStrata("LOW")
@@ -312,7 +402,7 @@ function _QuestieNameplate.GetFrame(guid)
     _QuestieNameplate.ApplyFrameLayout(frame)
     scheduleNameplateLayoutRefresh(frame)
 
-    npFrames[guid] = frame
+    iconFrames[nameplate] = frame
 
     return frame
 end
@@ -356,17 +446,17 @@ function _QuestieNameplate.GetTargetFrameIconFrame()
     return frame
 end
 
----@param guid string
-function _QuestieNameplate.RemoveFrame(guid)
-    if (not npFrames[guid]) then
-        return
-    end
+---@param nameplate Frame
+function _QuestieNameplate.RemoveFrame(nameplate)
+    local frame = iconFrames[nameplate]
+    if not frame then return end
 
-    table.insert(npUnusedFrames, npFrames[guid])
-    npFrames[guid].Icon:SetTexture(nil) -- fix for overlapping icons
-    _QuestieNameplate.SetObjectiveText(npFrames[guid], nil)
-    npFrames[guid]:Hide()
-    npFrames[guid] = nil
+    iconFrames[nameplate] = nil
+    frame.Icon:SetTexture(nil)
+    frame.lastIcon = nil
+    _QuestieNameplate.SetObjectiveText(frame, nil)
+    frame:Hide()
+    table.insert(unusedIconFrames, frame)
 end
 
 ---@param tooltips table<string, table>

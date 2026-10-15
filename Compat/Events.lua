@@ -49,8 +49,6 @@ function QuestieCompat.QuestieEventHandler_RegisterLateEvents()
     Questie:RegisterEvent("PARTY_MEMBERS_CHANGED", QuestieCompat.GroupRosterUpdate)
     Questie:RegisterBucketEvent("RAID_ROSTER_UPDATE", 1, QuestieCompat.GroupRosterUpdate)
 
-    QuestieCompat.RegisterNameplateCompatibilityEvents()
-
     -- Use loot events as additional sync points for tracker refreshes.
     Questie:RegisterEvent("LOOT_SLOT_CLEARED", QuestieCompat.LOOT_SLOT_CLEARED)
     Questie:RegisterEvent("LOOT_CLOSED", QuestieCompat.LOOT_CLOSED)

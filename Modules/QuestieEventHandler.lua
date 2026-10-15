@@ -278,8 +278,7 @@ function QuestieEventHandler:RegisterLateEvents()
     end
 
     -- Nameplate / Target Frame Objective Events
-    Questie:RegisterEvent("NAME_PLATE_UNIT_ADDED", QuestieNameplate.NameplateCreated)
-    Questie:RegisterEvent("NAME_PLATE_UNIT_REMOVED", QuestieNameplate.NameplateDestroyed)
+    QuestieNameplate:Initialize()
     Questie:RegisterEvent("PLAYER_TARGET_CHANGED", function(...)
         QuestieNameplate:UpdateNameplate()
         QuestieNameplate:DrawTargetFrame()
