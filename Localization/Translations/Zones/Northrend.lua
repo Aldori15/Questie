@@ -936,7 +936,7 @@ local northrendLocales = {
         ["frFR"] = "Sous-zone",
         ["esES"] = "Subzona",
         ["zhTW"] = "子區域",
-        ["zhCN"] = "Sub zone",
+        ["zhCN"] = "子区域",
     },
     ["Winter's Terrace"] = {
         ["ptBR"] = "Terraço do Inverno",

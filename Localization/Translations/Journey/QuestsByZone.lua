@@ -230,6 +230,18 @@ local questsByZoneLocales = {
         ["zhCN"] = false,
         ["zhTW"] = false,
     },
+    ["No Professions learned"] = {
+        ["enUS"] = true,
+        ["deDE"] = "Keine Berufe erlernt",
+        ["esES"] = "No has aprendido ninguna profesión",
+        ["esMX"] = "No has aprendido ninguna profesión",
+        ["frFR"] = "Aucun métier appris",
+        ["koKR"] = "배운 전문 기술 없음",
+        ["ptBR"] = "Nenhuma profissão aprendida",
+        ["ruRU"] = "Профессии не изучены",
+        ["zhCN"] = "尚未学习专业",
+        ["zhTW"] = "尚未學習專業",
+    },
 }
 
 for k, v in pairs(questsByZoneLocales) do

@@ -419,7 +419,7 @@ local dungeonLocales = {
         ["enUS"] = true,
         ["frFR"] = "Les Salles brisées",
         ["esES"] = "Las Salas Arrasadas",
-        ["zhTW"] = "地獄火堡壘",
+        ["zhTW"] = "破碎大廳",
         ["zhCN"] = "破碎大厅",
     },
     ["Blackrock Depths"] = {

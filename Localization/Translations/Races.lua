@@ -38,7 +38,7 @@ local raceLocales = {
         ["esES"] = "Enano",
         ["frFR"] = "Nain",
     },
-    ["Nightelf"] = {
+    ["Night Elf"] = {
         ["ptBR"] = "Elfo Noturno",
         ["ruRU"] = "Ночной эльф",
         ["deDE"] = "Nachtelf",

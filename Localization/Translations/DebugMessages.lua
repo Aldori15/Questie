@@ -580,6 +580,18 @@ local debugMessagesLocales = {
         ["zhTW"] = "Questie偵測到資料庫已損毀。在允許的情況下，你可以輸入\"/run ReloadUI()\"或\"/reload\"來啟動重新編譯程序。\n\n根據你的設定，該過程將會花費約1到2分鐘。",
     },
     -- End Debug Offers
+    ["Please wait a moment for Questie to finish loading"] = {
+        ["enUS"] = true,
+        ["deDE"] = "Bitte warte einen Moment bis Questie fertig geladen hat",
+        ["esES"] = "Por favor, espera un momento a que Questie termine de cargar.",
+        ["esMX"] = "Por favor, espera un momento a que Questie termine de cargar.",
+        ["frFR"] = "Veuillez patienter un instant pendant que Questie termine son chargement.",
+        ["koKR"] = "Questie 로드가 완료될 때까지 잠시 기다려 주세요.",
+        ["ptBR"] = "Por favor, aguarde um momento enquanto o Questie termina de carregar.",
+        ["ruRU"] = "Пожалуйста, подождите, пока Questie завершит загрузку.",
+        ["zhCN"] = "请稍等，等待 Questie 加载完成",
+        ["zhTW"] = "請稍候，讓 Questie 完成載入",
+    },
 }
 
 for k, v in pairs(debugMessagesLocales) do
