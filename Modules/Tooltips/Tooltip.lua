@@ -666,6 +666,9 @@ _InitObjectiveTexts = function(objectivesText, objectiveIndex, playerName)
 end
 
 function QuestieTooltips:Initialize()
+    _QuestieTooltips.InitializeSpellIdTooltip(GameTooltip)
+    _QuestieTooltips.InitializeSpellIdTooltip(ItemRefTooltip)
+
     -- For the clicked item frame.
     ItemRefTooltip:HookScript("OnTooltipSetItem", function(self)
         _QuestieTooltips.AddItemDataToTooltip(self)

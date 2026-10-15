@@ -18,6 +18,47 @@ local function _AreQuestieTooltipsEnabled()
     return Questie.db.profile.enabled and Questie.db.profile.enableTooltips
 end
 
+local function _AddSpellId(tooltip, spellId)
+    if (not _AreQuestieTooltipsEnabled()) or (not Questie.db.profile.enableTooltipsSpellID)
+        or type(spellId) ~= "number" or spellId <= 0 or tooltip.questieSpellID == spellId then
+        return
+    end
+
+    tooltip.questieSpellID = spellId
+    tooltip:AddDoubleLine(l10n("Spell ID"), tostring(spellId), 1, 0.82, 0, 1, 1, 1)
+    tooltip:Show()
+end
+
+local spellIdHooksInitialized = {}
+
+function _QuestieTooltips.InitializeSpellIdTooltip(tooltip)
+    if spellIdHooksInitialized[tooltip] then
+        return
+    end
+    spellIdHooksInitialized[tooltip] = true
+
+    tooltip:HookScript("OnTooltipCleared", function(self)
+        self.questieSpellID = nil
+    end)
+    tooltip:HookScript("OnTooltipSetSpell", function(self)
+        -- Original 3.3.5 returns name, rank, spellId (unlike current Classic).
+        local _, _, spellId = self:GetSpell()
+        _AddSpellId(self, spellId)
+    end)
+
+    -- Aura tooltips do not consistently fire OnTooltipSetSpell on 3.3.5.
+    for _, aura in ipairs({{"SetUnitAura", UnitAura}, {"SetUnitBuff", UnitBuff}, {"SetUnitDebuff", UnitDebuff}}) do
+        local getAura = aura[2]
+        hooksecurefunc(tooltip, aura[1], function(self, unit, index, filter)
+            if (not _AreQuestieTooltipsEnabled()) or (not Questie.db.profile.enableTooltipsSpellID) then
+                return
+            end
+            -- All three Wrath aura APIs return the spell ID as their eleventh value.
+            _AddSpellId(self, select(11, getAura(unit, index, filter)))
+        end)
+    end
+end
+
 function _QuestieTooltips:AddUnitDataToTooltip()
     if (self.IsForbidden and self:IsForbidden()) or (not _AreQuestieTooltipsEnabled()) then
         return

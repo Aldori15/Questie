@@ -331,6 +331,18 @@ function QuestieOptions.tabs.advanced:Initialize()
                     Questie.db.profile.enableTooltipsObjectID = value
                 end
             },
+            showSpellIDs = {
+                type = "toggle",
+                order = 5.045,
+                name = function() return l10n('Show Spell IDs'); end,
+                desc = function() return l10n('When this is checked, spell IDs will be shown in spell, buff and debuff tooltips.'); end,
+                disabled = function() return (not Questie.db.profile.enableTooltips); end,
+                width = "full",
+                get = function() return Questie.db.profile.enableTooltipsSpellID; end,
+                set = function (_, value)
+                    Questie.db.profile.enableTooltipsSpellID = value
+                end
+            },
             showQuestIDs = {
                 type = "toggle",
                 order = 5.05,
