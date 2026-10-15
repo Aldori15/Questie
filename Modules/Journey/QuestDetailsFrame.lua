@@ -69,7 +69,7 @@ end
 ---@param fullWidth boolean
 ---@return AceHeader
 local function _CreateHeading(text, fullWidth)
-    ---@class AceHeader
+    ---@type AceHeader
     local header = AceGUI:Create("Heading")
     header:SetFullWidth(fullWidth)
     header:SetText(text)
@@ -81,7 +81,7 @@ end
 ---@param fullWidth boolean
 ---@return AceLabel
 local function _CreateLabel(text, fullWidth)
-    ---@class AceLabel
+    ---@type AceLabel
     local label = AceGUI:Create("Label")
     label:SetFullWidth(fullWidth)
     label:SetText(text)
@@ -811,7 +811,7 @@ end
 ---@param quest Quest
 ---@return AceInteractiveLabel
 function _QuestieJourney:GetInteractiveQuestLabel(quest)
-    ---@class AceInteractiveLabel
+    ---@type AceInteractiveLabel
     local label = AceGUI:Create("InteractiveLabel")
     local questId = quest.Id
 

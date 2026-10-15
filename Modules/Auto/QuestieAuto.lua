@@ -3,7 +3,7 @@
 local QuestieAuto = QuestieLoader:CreateModule("QuestieAuto")
 QuestieAuto.private = QuestieAuto.private or {}
 
----@class QuestieAutoPrivate
+---@type QuestieAutoPrivate
 local _QuestieAuto = QuestieAuto.private
 
 ---@type QuestieDB

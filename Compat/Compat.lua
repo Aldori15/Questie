@@ -9,13 +9,13 @@ local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 local QuestieQuest = QuestieLoader:ImportModule("QuestieQuest")
 ---@type ZoneDB
 local ZoneDB = QuestieLoader:ImportModule("ZoneDB")
----@class QuestieCoords
+---@type QuestieCoords
 local QuestieCoords = QuestieLoader:ImportModule("QuestieCoords")
----@class QuestieMenu
+---@type QuestieMenu
 local QuestieMenu = QuestieLoader:ImportModule("QuestieMenu")
 ---@type QuestieCorrections
 local QuestieCorrections = QuestieLoader:ImportModule("QuestieCorrections")
----@class QuestieLink
+---@type QuestieLink
 local QuestieLink = QuestieLoader:ImportModule("QuestieLink")
 
 -- addon/folder name
