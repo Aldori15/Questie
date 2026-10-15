@@ -249,6 +249,7 @@ tracker.Update = function(_, force)
     renderedObjectives = display and #display.Objectives
     renderedProgress = display and display.Objectives[1] and display.Objectives[1].Collected
 end
+tracker.UpdateFromQuestLog = function(self) self:Update() end
 local function drain()
     while #queue > 0 do table.remove(queue, 1)() end
 end

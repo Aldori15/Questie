@@ -199,6 +199,7 @@ do
     local utils = loader:ImportModule("TrackerUtils")
     utils.GetCompletionText = noop
     utils.GetUsableQuestItemIds = function() return {} end
+    utils.GetQuestItemButtonState = function() return {}, false end
     utils.HasQuest = function() return true end
     utils.ShowVoiceOverPlayButtons = noop
     utils.UpdateVoiceOverPlayButtons = function() finished = finished + 1 end
@@ -208,6 +209,9 @@ do
         Objectives = {{Index = 1, Collected = 4, Needed = 8, Description = "Salvaged Metal"},
             {Index = 2, Collected = 0, Needed = 8, Description = "Salvaged Wood"}},
         IsComplete = function() return 0 end}
+    -- Revision detection is covered by test_tracker_layout_updates; isolate row rendering here.
+    loader:ImportModule("TrackerData").Refresh = function() return {[quest.Id] = quest} end
+    loader:ImportModule("TrackerData").GetLayoutRevision = function() return 0 end
     local title = "|cFFFFFF00[61] Waste Not, Want Not|r"
     local percent = 0.25
     loader:ImportModule("TrackerQuestOrder").GetSortedQuestIds = function()
@@ -241,15 +245,19 @@ do
     -- Inject native frame stand-ins without replacing the production redraw.
     local function upvalue(method, name, value)
         for index = 1, math.huge do
-            local actual = debug.getupvalue(method, index)
+            local actual, current = debug.getupvalue(method, index)
             assert(actual, "missing tracker fixture upvalue: " .. name)
-            if actual == name then debug.setupvalue(method, index, value); return end
+            if actual == name then
+                if value ~= nil then debug.setupvalue(method, index, value) end
+                return current
+            end
         end
     end
-    upvalue(tracker.Update, "trackerBaseFrame", base)
+    local update = upvalue(tracker.Update, "_Update")
+    upvalue(update, "trackerBaseFrame", base)
     upvalue(tracker.UpdateWidth, "trackerHeaderFrame", header)
     upvalue(tracker.UpdateWidth, "trackerQuestFrame", questFrame)
-    upvalue(tracker.Update, "isFirstRun", false)
+    upvalue(update, "isFirstRun", false)
     upvalue(tracker.UpdateFormatting, "allowFormattingUpdate", true)
     for _, enabled in ipairs({false, true, false, true}) do
         profile.showQuestPercent = enabled

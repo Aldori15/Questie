@@ -6,6 +6,7 @@ local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 local QuestLogCache = QuestieLoader:ImportModule("QuestLogCache")
 local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
 local QuestieLink = QuestieLoader:ImportModule("QuestieLink")
+local TrackerUtils = QuestieLoader:ImportModule("TrackerUtils")
 local l10n = QuestieLoader:ImportModule("l10n")
 
 -- Only tracker display records live here. Never insert native-only quests into
@@ -13,6 +14,71 @@ local l10n = QuestieLoader:ImportModule("l10n")
 local nativeQuests = {}
 local nativePreviewQuestId
 local counterTypes = {monster = true, item = true, object = true, reputation = true, killcredit = true, spell = true}
+local layoutSignatures = {}
+local layoutRevision = 0
+local layoutTimerCount, layoutPlayerLevel
+
+local function AppendSignature(parts, ...)
+    for index = 1, select("#", ...) do
+        local value = tostring((select(index, ...)))
+        -- Length-prefix fields so objective text cannot collide with separators.
+        parts[#parts + 1] = #value .. ":" .. value
+    end
+end
+
+local function AppendObjectives(parts, objectives, cached)
+    local indices = {}
+    for index in pairs(objectives or {}) do indices[#indices + 1] = index end
+    table.sort(indices)
+    AppendSignature(parts, #indices)
+    for _, index in ipairs(indices) do
+        local objective = objectives[index]
+        AppendSignature(parts, index, objective.Type, objective.Description, objective.NativeText,
+            objective.FullDescription, objective.HasCounter, objective.Collected, objective.Needed, objective.Completed)
+        local live = cached and cached[objective.NativeIndex or objective.Index or index]
+        if live then
+            AppendSignature(parts, live.text, live.raw_text, live.numFulfilled, live.numRequired, live.raw_finished)
+        else
+            AppendSignature(parts, nil)
+        end
+    end
+end
+
+---Compare display inputs for both database quests and native-only quests.
+---Explicit UI/settings updates bypass this optimization; countdown seconds do not affect layout.
+---@param quests table<QuestId, Quest> @The already refreshed display records, shared with quest ordering.
+---@return number
+function TrackerData.GetLayoutRevision(quests)
+    for id, quest in pairs(quests) do
+        local complete = quest:IsComplete()
+        local items, usableWhenComplete = TrackerUtils:GetQuestItemButtonState(quest, complete)
+        local parts = {}
+        AppendSignature(parts, quest.NativeOnly, quest.name, quest.level, quest.zoneName, quest.zoneOrSort,
+            complete, quest.isComplete, quest.isDaily, quest.objectivesLoaded,
+            not quest.NativeOnly and QuestieLib:GetQuestTypeSuffix(id) or "",
+            TrackerUtils:GetCompletionText(quest), table.concat(items, ","), usableWhenComplete)
+        local cached = QuestLogCache.questLog_DO_NOT_MODIFY[id]
+        AppendObjectives(parts, quest.Objectives, cached and cached.objectives)
+        local signature = table.concat(parts)
+        if signature ~= layoutSignatures[id] then
+            layoutSignatures[id] = signature
+            layoutRevision = layoutRevision + 1
+        end
+    end
+    for id in pairs(layoutSignatures) do
+        if not quests[id] then
+            layoutSignatures[id] = nil
+            layoutRevision = layoutRevision + 1
+        end
+    end
+    -- Wrath's quest timers have no quest ID. Count starts/stops, not their ticking values.
+    local timerCount, playerLevel = #{GetQuestTimers()}, QuestiePlayer.GetPlayerLevel()
+    if timerCount ~= layoutTimerCount or playerLevel ~= layoutPlayerLevel then
+        layoutTimerCount, layoutPlayerLevel = timerCount, playerLevel
+        layoutRevision = layoutRevision + 1
+    end
+    return layoutRevision
+end
 
 local function IsComplete(self)
     return self.completionState

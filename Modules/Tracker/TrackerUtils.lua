@@ -396,6 +396,34 @@ function TrackerUtils:GetUsableQuestItemIds(quest)
     return usableQuestItems
 end
 
+---Use the same item selection for layout and unchanged-data checks.
+---@param quest Quest
+---@param complete number
+---@return ItemId[] items
+---@return boolean usableWhenComplete
+function TrackerUtils:GetQuestItemButtonState(quest, complete)
+    local items = self:GetUsableQuestItemIds(quest)
+    local isComplete = quest.isComplete == true or #quest.Objectives == 0
+    if complete ~= 1 or not isComplete then return items, false end
+
+    local sourceItemId = quest.sourceItemId
+    if sourceItemId == nil and not quest.NativeOnly then
+        sourceItemId = QuestieDB.QueryQuestSingle(quest.Id, "sourceItemId")
+    end
+    local sourceItem = sourceItemId and sourceItemId > 0
+        and (quest.NativeOnly or QuestieDB.QueryItemSingle(sourceItemId, "class") == 12)
+        and GetItemCount(sourceItemId) > 0 and self:IsQuestItemUsable(sourceItemId)
+    if sourceItem then return items, true end
+
+    for _, itemId in pairs(quest.requiredSourceItems or {}) do
+        if itemId and QuestieDB.QueryItemSingle(itemId, "class") == 12
+            and GetItemCount(itemId) > 0 and self:IsQuestItemUsable(itemId) then
+            return items, true
+        end
+    end
+    return items, false
+end
+
 ---@param quest Quest
 ---@return string|nil completionText Quest Completion text string or nil
 function TrackerUtils:GetCompletionText(quest)

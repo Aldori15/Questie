@@ -49,6 +49,7 @@ local function harness()
     module("QuestLifecycle").AbandonQuest = noop
     module("QuestiePartyObjectives").ScheduleUpdate = noop
     module("QuestieTracker").Update = noop
+    module("QuestieTracker").UpdateFromQuestLog = noop
     module("QuestieQuest").SetObjectivesDirty = noop
     module("AutoRoute").RemoveFromRoute = noop
     module("AvailableQuests").ResetLastNpcGuid = noop

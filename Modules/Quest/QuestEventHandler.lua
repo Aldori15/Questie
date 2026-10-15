@@ -104,15 +104,22 @@ local function ResetQuestLogRetryBackoff()
     end
 end
 
-local nativeTrackerUpdateQueued = false
--- Native quests have no map lifecycle callback to redraw once their objectives load.
--- Coalesce requests in the combat queue and bypass the ordinary redraw throttle.
-local function QueueNativeTrackerUpdate()
-    if nativeTrackerUpdateQueued then return end
-    nativeTrackerUpdateQueued = true
+local trackerUpdateQueued = false
+local trackerUpdateForced = false
+-- Coalesce log checks and forced acceptance/native redraws. A forced request wins
+-- even when a no-change check already occupies the combat queue slot.
+local function QueueTrackerUpdate(force)
+    trackerUpdateForced = trackerUpdateForced or force == true
+    if trackerUpdateQueued then return end
+    trackerUpdateQueued = true
     QuestieCombatQueue:Queue(function()
-        nativeTrackerUpdateQueued = false
-        QuestieTracker:Update(true)
+        local forced = trackerUpdateForced
+        trackerUpdateQueued, trackerUpdateForced = false, false
+        if forced then
+            QuestieTracker:Update(true)
+        else
+            QuestieTracker:UpdateFromQuestLog()
+        end
     end)
 end
 
@@ -372,7 +379,7 @@ function _QuestEventHandler:HandleQuestAccepted(questId, expectedData)
     -- The local player now has this quest, so stop drawing it as a party member's objective.
     QuestiePartyObjectives:ScheduleUpdate(questId)
 
-    if not hasDatabaseQuest then QueueNativeTrackerUpdate() end
+    QueueTrackerUpdate(true)
 
     return true
 end
@@ -489,9 +496,7 @@ function _QuestEventHandler:QuestLogUpdate()
 
     _QuestEventHandler:UpdateAllQuests()
 
-    QuestieCombatQueue:Queue(function()
-        QuestieTracker:Update()
-    end)
+    QueueTrackerUpdate(false)
 end
 
 --- Fires whenever a quest objective progressed
@@ -565,7 +570,7 @@ function _QuestEventHandler:UpdateAllQuests(confirmItemRegressions)
                 nativeChanged = true
             end
         end
-        if nativeChanged then QueueNativeTrackerUpdate() end
+        if nativeChanged then QueueTrackerUpdate(true) end
         if mappedChanged then
             QuestieCombatQueue:Queue(function()
                 if confirmItemRegressions then

@@ -161,14 +161,14 @@ function TrackerQuestOrder.GetQuestGroupName(quest)
     return _GetZoneName(quest.zoneOrSort or 0, quest.Id)
 end
 
-local function _CollectQuestDetails()
+local function _CollectQuestDetails(quests)
     ---@type QuestId[]
     local sortedQuestIds = {}
     ---@type table<QuestId, QuestSortDetails>
     local questDetails = {}
 
     -- Update quest objectives
-    for questId, quest in pairs(TrackerData.Refresh()) do
+    for questId, quest in pairs(quests or TrackerData.Refresh()) do
         if quest then
             tinsert(sortedQuestIds, questId)
 
@@ -311,8 +311,8 @@ end
 
 ---@return QuestId[] sortedQuestIds
 ---@return table<QuestId, QuestSortDetails> questDetails
-function TrackerQuestOrder:GetSortedQuestIds()
-    local sortedQuestIds, questDetails = _CollectQuestDetails()
+function TrackerQuestOrder:GetSortedQuestIds(quests)
+    local sortedQuestIds, questDetails = _CollectQuestDetails(quests)
     local sortObj = Questie.db.profile.trackerSortObjectives
 
     if sortObj == "byZone" then

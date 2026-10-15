@@ -791,6 +791,7 @@ function QuestieOptions.tabs.tracker:Initialize()
                                     Questie.db.profile.alwaysShowTracker = value
                                     if (Questie.db.profile.alwaysShowTracker == true) and (Questie.db.char.isTrackerExpanded == false) then
                                         Questie.db.char.isTrackerExpanded = true
+                                        QuestieTracker:Update()
                                     end
                                     QuestieTracker:UpdateFormatting()
                                 end

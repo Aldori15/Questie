@@ -620,14 +620,16 @@ local function _UpdateLineWidth(line, objectiveMarginLeft)
     end
 end
 
-function QuestieTracker:Update(force)
+-- Only a completed layout is current. Explicit requests invalidate before throttling.
+local layoutRevision
+
+local function _Update(self, force, onlyIfChanged)
+    if not onlyIfChanged then layoutRevision = nil end
     -- Prevents calling the tracker too often, especially when the QuestieCombatQueue empties after combat ends
     local now = GetTime()
     if (not QuestieTracker.started) or InCombatLockdown() or ((not force) and (now - lastTrackerUpdate) < 0.1) then
         return
     end
-
-    lastTrackerUpdate = now
 
     -- Tracker has started but not enabled, hide the frames
     if (not Questie.db.profile.trackerEnabled or QuestieTracker.disableHooks == true) then
@@ -653,6 +655,12 @@ function QuestieTracker:Update(force)
         Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieTracker:Update]")
     end
 
+    local quests = TrackerData.Refresh()
+    local revision = TrackerData.GetLayoutRevision(quests)
+    if onlyIfChanged and revision == layoutRevision then return end
+    -- No-change checks must not throttle the next explicit update.
+    lastTrackerUpdate = now
+
     TrackerHeaderFrame:Update()
     TrackerQuestFrame:Update()
     TrackerBaseFrame:Update()
@@ -673,7 +681,7 @@ function QuestieTracker:Update(force)
 
     local line
 
-    local sortedQuestIds, questDetails = TrackerQuestOrder:GetSortedQuestIds()
+    local sortedQuestIds, questDetails = TrackerQuestOrder:GetSortedQuestIds(quests)
 
     local firstQuestInZone = false
     local zoneCheck
@@ -882,34 +890,9 @@ function QuestieTracker:Update(force)
                     -- Adds the AI_VoiceOver Play Buttons
                     line.playButton:SetPlayButton(questId)
 
-                    local usableQIB = false
-                    local sourceItemId = quest.sourceItemId
-                    if sourceItemId == nil and not quest.NativeOnly then
-                        sourceItemId = QuestieDB.QueryQuestSingle(quest.Id, "sourceItemId")
-                    end
-
-                    local sourceItem = sourceItemId and sourceItemId > 0 and (TrackerData.IsNativeQuestItem(quest, sourceItemId) or QuestieDB.QueryItemSingle(sourceItemId, "class") == 12) and GetItemCount(sourceItemId) > 0 and TrackerUtils:IsQuestItemUsable(sourceItemId)
-                    local requiredItems = quest.requiredSourceItems
-                    local requiredItem = false
-                    if type(requiredItems) == "table" then
-                        for _, itemId in pairs(requiredItems) do
-                            if itemId and QuestieDB.QueryItemSingle(itemId, "class") == 12 and GetItemCount(itemId) > 0 and TrackerUtils:IsQuestItemUsable(itemId) then
-                                requiredItem = true
-                                break
-                            end
-                        end
-                    end
-
-                    local usableQuestItems = TrackerUtils:GetUsableQuestItemIds(quest)
+                    local usableQuestItems, usableQIB = TrackerUtils:GetQuestItemButtonState(quest, complete)
                     local primaryQuestItemId = usableQuestItems[1]
                     local secondaryQuestItemId = usableQuestItems[2]
-                    local isComplete = (quest.isComplete ~= true and #quest.Objectives == 0) or quest.isComplete == true
-
-                    -- Occasionally a quest will be in a complete state and still have a usable Quest Item. Sometimes these usable
-                    -- items spawn an NPC that is needed to finish the quest. Or an item that teleports you to the quest finisher.
-                    if complete == 1 and isComplete and (sourceItem or requiredItem) then
-                        usableQIB = true
-                    end
 
                     -- Adds the primary Quest Item button
                     if ((complete ~= 1 and primaryQuestItemId) or usableQIB) and primaryQuestItemId then
@@ -1723,6 +1706,8 @@ function QuestieTracker:Update(force)
         QuestieTracker:UpdateFormatting()
     end
 
+    layoutRevision = revision
+
     -- First run clean up
     if isFirstRun then
         trackerBaseFrame:Hide()
@@ -1734,6 +1719,16 @@ function QuestieTracker:Update(force)
             end)
         end)
     end
+end
+
+---Explicit requests always lay out; true retains the legacy throttle bypass.
+function QuestieTracker:Update(force)
+    _Update(self, force, false)
+end
+
+---Quest-log events refresh data but only lay out when display inputs changed.
+function QuestieTracker:UpdateFromQuestLog()
+    _Update(self, false, true)
 end
 
 function QuestieTracker:UpdateFormatting()

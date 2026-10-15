@@ -66,6 +66,19 @@ local criteriaUpdateQueued
 local lastLevelRefreshAt = 0
 local lastLevelRefreshed = nil
 local lastPlayerEnteringWorldContext
+local trackerGeometryUpdateQueued = false
+
+local function RefreshTrackerGeometry()
+    if trackerGeometryUpdateQueued then return end
+    trackerGeometryUpdateQueued = true
+    -- Wait for the client to apply its new dimensions, then honor combat lockdown.
+    C_Timer.After(0, function()
+        QuestieCombatQueue:Queue(function()
+            trackerGeometryUpdateQueued = false
+            QuestieTracker:Update(true)
+        end)
+    end)
+end
 
 local function _RefreshAvailableAfterLevelChange(level)
     if (not level) or level <= 0 then return end
@@ -137,6 +150,14 @@ function QuestieEventHandler:RegisterEarlyEvents()
 end
 
 function QuestieEventHandler:RegisterLateEvents()
+    Questie:RegisterEvent("DISPLAY_SIZE_CHANGED", RefreshTrackerGeometry)
+    -- Original 3.3.5 has CVAR_UPDATE, but no UI_SCALE_CHANGED event.
+    Questie:RegisterEvent("CVAR_UPDATE", function(_, name)
+        name = string.lower(name or "")
+        if name == "uiscale" or name == "useuiscale" then
+            RefreshTrackerGeometry()
+        end
+    end)
     Questie:RegisterEvent("PLAYER_LEVEL_UP", _EventHandler.PlayerLevelUp)
     Questie:RegisterEvent("UNIT_LEVEL", _EventHandler.UnitLevel)
     Questie:RegisterEvent("PLAYER_REGEN_DISABLED", _EventHandler.PlayerRegenDisabled)
