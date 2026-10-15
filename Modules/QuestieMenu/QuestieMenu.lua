@@ -519,32 +519,11 @@ function QuestieMenu:OnLogin(forceRemove) -- toggle all icons
     InstanceLocations:OnLogin(forceRemove)
 end
 
-local div = { -- from libEasyMenu code
-    hasArrow = false,
-    dist = 0,
+local div = {
     isTitle = true,
-    isUninteractable = true,
     notCheckable = true,
-    iconOnly = true,
-    isSeparator = true,
-    icon = "Interface\\Common\\UI-TooltipDivider-Transparent",
-    tCoordLeft = 0,
-    tCoordRight = 1,
-    tCoordTop = 0,
-    tCoordBottom = 1,
-    tSizeX = 0,
-    tSizeY = 8,
-    tFitDropDownSizeX = true,
-    text="",
-    iconInfo = {
-        tCoordLeft = 0,
-        tCoordRight = 1,
-        tCoordTop = 0,
-        tCoordBottom = 1,
-        tSizeX = 0,
-        tSizeY = 8,
-        tFitDropDownSizeX = true
-    },
+    text = "",
+    questieSeparator = true,
 }
 local secondaryProfessions = {
     [professionKeys.FIRST_AID] = true,

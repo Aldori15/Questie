@@ -189,6 +189,33 @@ QuestieCompat.LibUIDropDownMenu = {
     end,
 }
 
+local function UpdateQuestieDropDownSeparator(info, level)
+    local listFrame = _G["DropDownList" .. (level or 1)]
+    if not listFrame then return end
+    local button = _G[listFrame:GetName() .. "Button" .. listFrame.numButtons]
+    if not button then return end
+
+    -- Native dropdown buttons are shared by every menu. Clear our line on reuse.
+    local line = button.questieSeparator
+    if info.questieSeparator then
+        if not line then
+            line = button:CreateTexture(nil, "OVERLAY")
+            line:SetTexture(0.5, 0.5, 0.5, 0.65)
+            line:SetHeight(1)
+            line:SetPoint("LEFT", button, "LEFT", 0, 0)
+            line:SetPoint("RIGHT", button, "RIGHT", -5, 0)
+            button.questieSeparator = line
+        end
+        line:Show()
+    elseif line then
+        line:Hide()
+    end
+end
+
+if type(UIDropDownMenu_AddButton) == "function" then
+    hooksecurefunc("UIDropDownMenu_AddButton", UpdateQuestieDropDownSeparator)
+end
+
 local function GetDropDownFrameName(frame)
     if not frame or type(frame.GetName) ~= "function" then return nil end
 
