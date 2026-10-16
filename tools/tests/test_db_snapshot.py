@@ -129,8 +129,11 @@ class SnapshotComparisonTests(unittest.TestCase):
 
     def test_capture_plan_follows_active_manifest_registration_order(self):
         paths, dependencies = snapshot.source_files(ADDON_ROOT)
-        self.assertLess(paths.index("Compat/Corrections.lua"), paths.index("Database/AzerothCore/AzerothCoreQuestCorrections.lua"))
-        self.assertLess(paths.index("Database/AzerothCore/AzerothCoreQuestCorrections.lua"), paths.index("Database/QuestieDB.lua"))
+        self.assertLess(paths.index("Compat/Corrections.lua"), paths.index("Database/AzerothCore/acoreQuestDB.lua"))
+        self.assertLess(paths.index("Database/AzerothCore/acoreQuestDB.lua"), paths.index("Database/QuestieDB.lua"))
+        for kind in ("Item", "Npc", "Object", "Quest"):
+            self.assertIn(f"Database/AzerothCore/acore{kind}DB.lua", paths)
+        self.assertNotIn("Database/AzerothCore/AzerothCoreQuestCorrections.lua", paths)
         self.assertIn("Database/Corrections/Automatic/itemStartFixes.lua", paths)
         self.assertIn("Database/Corrections/QuestieEvent.lua", paths)
         self.assertIn("Modules/QuestieInit.lua", dependencies)
