@@ -20,8 +20,6 @@ local QuestieItemBlacklist = QuestieLoader:ImportModule("QuestieItemBlacklist")
 
 ---@type QuestieQuestFixes
 local QuestieQuestFixes = QuestieLoader:ImportModule("QuestieQuestFixes")
----@type QuestieClassicQuestReputationFixes
-local QuestieClassicQuestReputationFixes = QuestieLoader:ImportModule("QuestieClassicQuestReputationFixes")
 ---@type QuestieNPCFixes
 local QuestieNPCFixes = QuestieLoader:ImportModule("QuestieNPCFixes")
 ---@type QuestieItemFixes
@@ -209,7 +207,6 @@ function QuestieCorrections:Initialize(validationTables)
     -- Older expansion corrections should not create incomplete records on newer clients.
     -- 335 uses the AzerothCore compatibility corrections as its current expansion data.
     -- Classic Corrections
-    _LoadCorrections("questData", QuestieClassicQuestReputationFixes:Load(), QuestieDB.questKeysReversed, validationTables, nil, true)
     _LoadCorrections("questData", QuestieQuestFixes:Load(), QuestieDB.questKeysReversed, validationTables, nil, true)
     _LoadCorrections("npcData", QuestieNPCFixes:Load(), QuestieDB.npcKeysReversed, validationTables, nil, true)
     _LoadCorrections("itemData", QuestieItemFixes:Load(), QuestieDB.itemKeysReversed, validationTables, nil, true)

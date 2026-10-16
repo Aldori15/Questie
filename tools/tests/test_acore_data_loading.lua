@@ -65,8 +65,16 @@ for _, name in ipairs({"quest", "npc", "item", "object"}) do
     db[name .. "Data"] = {}
     db[name .. "DataOverrides"] = {}
 end
+
+-- Real base rewards must survive without the retired Classic reputation layer.
+local baseQuestSource = read("Database/Wotlk/wotlkQuestDB.lua")
+for _, questId in ipairs({2, 6, 7}) do
+    local row = assert(baseQuestSource:match("\n%[" .. questId .. "%] = (%b{})"), "missing base quest: " .. questId)
+    db.questData[questId] = compile("return " .. row, "@base quest " .. questId)()
+end
+
 local function empty() return {} end
-for _, name in ipairs({"QuestieQuestFixes", "QuestieClassicQuestReputationFixes", "QuestieNPCFixes",
+for _, name in ipairs({"QuestieQuestFixes", "QuestieNPCFixes",
     "QuestieItemFixes", "QuestieObjectFixes", "QuestieTBCQuestFixes", "QuestieTBCNpcFixes",
     "QuestieTBCItemFixes", "QuestieTBCObjectFixes", "QuestieWotlkQuestFixes", "QuestieWotlkNpcFixes",
     "QuestieWotlkItemFixes", "QuestieWotlkObjectFixes", "QuestieItemStartFixes", "QuestieQuestBlacklist",
@@ -99,5 +107,8 @@ equal(db.questData[12541][db.questKeys.parentQuest], 0, "AzerothCore zero overri
 equal(db.npcData[1][db.npcKeys.maxLevel], 80, "AzerothCore NPC override wins")
 equal(db.itemData[25][db.itemKeys.npcDrops][1], 19994, "AzerothCore item override wins")
 equal(db.objectData[31][db.objectKeys.factionID], 84, "AzerothCore object override wins")
+equal(db.questData[2][db.questKeys.reputationReward][1][2], 250, "Sharptalon's Claw reputation stays correct")
+equal(db.questData[6][db.questKeys.reputationReward][1][2], 150, "Bounty on Garrick Padfoot reputation stays correct")
+equal(db.questData[7][db.questKeys.reputationReward][1][2], 250, "Kobold Camp Cleanup reputation stays correct")
 equal(env.QuestieCorrections.hiddenQuests[13240], false, "compatibility blacklist survives registration")
 print("AzerothCore data loading regression tests passed")
