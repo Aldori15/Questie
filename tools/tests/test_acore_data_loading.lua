@@ -1,4 +1,4 @@
--- PR #166 complete-base smoke test; run from addon root with Lua 5.1/5.2+.
+-- Load generated bases through the production loader; run from the addon root.
 local function read(path)
     local f = assert(io.open(path, "rb"))
     local source = f:read("*a"):gsub("\r\n", "\n"):gsub("^\239\187\191", "")
@@ -49,7 +49,6 @@ end
 for _, kind in ipairs({"quest", "npc", "item", "object"}) do
     load("Database/" .. kind .. "DB.lua")
 end
--- Same enum strategy as the original data-loading test.
 local function enum(declaration)
     local pattern = declaration:gsub("(%W)", "%%%1") .. " = %b{}"
     compile(assert(read("Database/QuestieDB.lua"):match(pattern), declaration), "@QuestieDB enum")()
@@ -64,10 +63,21 @@ modules.ZoneDB.zoneIDs = modules.ZoneDB.private.zoneIDs
 local db = env.QuestieDB
 for _, kind in ipairs({"quest", "npc", "object", "item"}) do
     local raw = assert(db[kind .. "Data"], kind .. " raw source missing")
-    assert(type(raw) == "string", kind .. " base should be a Lua source string")
-    db[kind .. "Data"] = compile(raw, "@acore " .. kind)()
+    assert(type(raw) == "table" and raw.__questieSourceChunks, kind .. " base should contain independent source chunks")
     db[kind .. "DataOverrides"] = {}
 end
+-- Use the production loader so source-chunk handling matches the client.
+env.QuestieInit = env.QuestieLoader:ImportModule("QuestieInit")
+env.coYield = coroutine.yield
+env.loadstring = function(source, label) return compile(source, label) end
+local baseLoader = assert(read("Modules/QuestieInit.lua"):match(
+    "(function QuestieInit:LoadDatabase%(key%).-)\nfunction _QuestieInit.StartStageCoroutine"))
+compile(baseLoader, "@QuestieInit base loader")()
+local thread = coroutine.create(function() env.QuestieInit:LoadBaseDB() end)
+repeat
+    local ok, err = coroutine.resume(thread)
+    assert(ok, err)
+until coroutine.status(thread) == "dead"
 local function noStatic() error("legacy static correction was applied", 2) end
 local function empty() return {} end
 for _, name in ipairs({"QuestieQuestFixes", "QuestieNPCFixes", "QuestieItemFixes", "QuestieObjectFixes",

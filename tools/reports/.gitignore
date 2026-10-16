@@ -7,3 +7,4 @@
 *.jsonl
 *.jsonl.gz
 questie-snapshot-*/
+db-migration-local/

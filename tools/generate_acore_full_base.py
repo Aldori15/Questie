@@ -1,11 +1,8 @@
 #!/usr/bin/env python3
-"""Stage complete Questie 3.3.5 static DBs from a verified effective-data snapshot.
+"""Export four static databases from a verified effective-data snapshot.
 
-Migration / provenance tool, NOT a replacement for independently regenerating
-AzerothCore source data. The input snapshot includes inherited/manual Questie
-values, and source confidence cannot be inferred from it. Never install the
-output as a live addon without the correction-loader migration and full parity
-checks. Only four STATIC data tables are converted, not dynamic overrides.
+Includes inherited/manual Questie values. This is a snapshot exporter; it does
+not regenerate data from AzerothCore source or include dynamic overrides.
 
 Usage:
  python tools/generate_acore_full_base.py --snapshot tools/reports/db-before.jsonl.gz \\
@@ -28,6 +25,38 @@ KINDS = {"itemData": "item", "npcData": "npc", "objectData": "object", "questDat
 FILES = {"item": "acoreItemDB.lua", "npc": "acoreNpcDB.lua", "object": "acoreObjectDB.lua", "quest": "acoreQuestDB.lua"}
 CONTEXTS = ["Alliance/isle-1", "Alliance/isle-9", "Horde/isle-1", "Horde/isle-9"]
 BASELINE_CONTEXT = CONTEXTS[0]
+# Bound both literal size and the source passed to each loadstring call: stock
+# 3.3.5 can reject large compiler allocations even after literals are split.
+MAX_LITERAL_BYTES = 1024 * 1024
+
+
+class LuaBlobWriter:
+    """Write independently compilable batches of complete database rows."""
+    def __init__(self, stream, field, limit=MAX_LITERAL_BYTES):
+        self.stream, self.limit = stream, limit
+        self.parts, self.size = [], len('return {\n}')
+        stream.write(f'QuestieDB.{field} = {{\n    __questieSourceChunks = true,\n')
+
+    def flush(self):
+        if self.parts:
+            self.stream.write('[====[\nreturn {\n' + ''.join(self.parts) + '}]====],\n')
+            self.parts, self.size = [], len('return {\n}')
+
+    def write(self, text):
+        if ']====]' in text:
+            raise ValueError('Long-bracket delimiter collision!')
+        for line in text.splitlines(keepends=True):
+            size = len(line.encode('utf-8'))
+            if size + len('return {\n}') > self.limit:
+                raise ValueError('One complete database row exceeds the source chunk limit')
+            if self.size + size > self.limit:
+                self.flush()
+            self.parts.append(line)
+            self.size += size
+
+    def finish(self):
+        self.flush()
+        self.stream.write('}\n')
 
 
 def open_snapshot(path):
@@ -146,7 +175,7 @@ def read_v5_metadata(path):
         return report, staged_ids
 
 
-def generate(snapshot, v5zip, output):
+def generate(snapshot, v5zip, output, report_path=None):
     metadata,schemas=read_verified_snapshot(snapshot, True)
     v5, staged_ids=read_v5_metadata(v5zip)
     output.mkdir(parents=True,exist_ok=True)
@@ -160,10 +189,11 @@ def generate(snapshot, v5zip, output):
     with tempfile.TemporaryDirectory(prefix='acore-full-',dir=output) as temp:
         temp=Path(temp)
         handles={kind: (temp/FILES[kind]).open('w',encoding='utf-8',newline='\n') for kind in FILES}
+        blobs={}
         try:
             for kind, stream in handles.items():
-                stream.write('-- GENERATED MIGRATION CANDIDATE: Questie effective static DB, not independent AC truth.\n')
-                stream.write('-- DO NOT INSTALL until correction migration, source review and parity checks pass.\n')
+                stream.write('-- Generated from the corrected Questie database snapshot.\n')
+                stream.write('-- Generator: tools/generate_acore_full_base.py\n')
                 stream.write('local QuestieDB = QuestieLoader:ImportModule("QuestieDB")\n\n')
                 stream.write(f'QuestieDB.{kind}Keys = {{\n')
                 for field,index in sorted(keys[kind].items(),key=lambda pair: pair[1]):
@@ -171,7 +201,7 @@ def generate(snapshot, v5zip, output):
                 stream.write('}\n\n')
                 # Use explicit Lua long bracket delimiter that cannot collide with data.
                 # The produced rows contain only JSON-derived typed scalars/tables.
-                stream.write(f'QuestieDB.{kind}Data = [====[return {{\n')
+                blobs[kind] = LuaBlobWriter(stream, kind + 'Data')
             for context in CONTEXTS:
                 with open_snapshot(snapshot) as stream:
                     next(stream)
@@ -183,7 +213,7 @@ def generate(snapshot, v5zip, output):
                         if type(id_) is not int:raise ValueError(f'Non-numeric {section} ID')
                         line_out=f'[{id_}]='+row_to_lua(rec['value'],keys[kind])+'\n'
                         if context==BASELINE_CONTEXT:
-                            handles[kind].write(line_out[:-1]+',\n')
+                            blobs[kind].write(line_out[:-1]+',\n')
                             counts[kind]+=1
                             snapshot_ids[kind].add(id_)
                             digests[(kind,id_)]=hashlib.sha256(line_out.encode('utf-8')).digest()
@@ -193,17 +223,15 @@ def generate(snapshot, v5zip, output):
             for kind,stream in handles.items():
                 if counts[kind]<100 or records.get(kind)!=counts[kind]:
                     raise ValueError(f'Incomplete {kind} data: {counts[kind]} / {records.get(kind)}')
-                stream.write('}]====]\n')
+                blobs[kind].finish()
         finally:
             for stream in handles.values():stream.close()
         for kind in FILES:
-            content=(temp/FILES[kind]).read_text(encoding='utf-8')
-            if ']====]' in content[:-7]:raise ValueError('Long-bracket delimiter collision!')
+            missing=staged_ids[kind]-snapshot_ids[kind]
+            if missing:raise ValueError(f'Staged v5 {kind} IDs missing from snapshot: {sorted(missing)[:20]}')
+        for kind in FILES:
             final_paths[kind]=str(output/FILES[kind])
             (temp/FILES[kind]).replace(output/FILES[kind])
-    for kind in FILES:
-        missing=staged_ids[kind]-snapshot_ids[kind]
-        if missing:raise ValueError(f'Staged v5 {kind} IDs missing from snapshot: {sorted(missing)[:20]}')
     new_ids={kind:sorted(snapshot_ids[kind]-staged_ids[kind]) for kind in FILES}
     report={
         'stage':'effective-snapshot-complete-base-staging',
@@ -221,7 +249,9 @@ def generate(snapshot, v5zip, output):
         'schemas':{kind:len(keys[kind]) for kind in FILES},
         'output_files':{kind:{'name':FILES[kind], 'sha256':hashlib.sha256((output/FILES[kind]).read_bytes()).hexdigest()} for kind in FILES},
     }
-    (output/'migration_report.json').write_text(json.dumps(report,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
+    report_path = report_path or Path(__file__).resolve().parent / 'reports/acore_full_base_migration.json'
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    report_path.write_text(json.dumps(report,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
     return report
 
 
@@ -230,10 +260,11 @@ def main():
     parser.add_argument('--snapshot',required=True,type=Path)
     parser.add_argument('--v5-zip',required=True,type=Path)
     parser.add_argument('--output',required=True,type=Path)
+    parser.add_argument('--report',type=Path,help='Migration report (default: tools/reports/acore_full_base_migration.json)')
     args=parser.parse_args()
-    report=generate(args.snapshot,args.v5_zip,args.output)
+    report=generate(args.snapshot,args.v5_zip,args.output,args.report)
     print('Generated:',report['records'])
     print('V5 held for review:',report['v5_held_for_review'])
-    print('STAGING ONLY. Preserve original base, all correction files and runtime loaders.')
+    print('Compare the exported data with the reference before installing it.')
 
 if __name__=='__main__':main()

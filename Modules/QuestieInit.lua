@@ -176,9 +176,12 @@ end
 
 ---Run the validator
 local function runValidator()
-    if type(QuestieDB.questData) == "string" or type(QuestieDB.npcData) == "string" or type(QuestieDB.objectData) == "string" or type(QuestieDB.itemData) == "string" then
-        Questie.Error("Cannot run the validator on string data, load database first")
-        return false
+    for _, key in ipairs({"questData", "npcData", "objectData", "itemData"}) do
+        local data = QuestieDB[key]
+        if type(data) == "string" or (type(data) == "table" and data.__questieSourceChunks) then
+            Questie.Error("Cannot run the validator on deferred source data, load database first")
+            return false
+        end
     end
     -- Run validator
     if Questie.db.profile.debugEnabled then
@@ -547,17 +550,40 @@ function QuestieInit.WaitForValidGameCache()
 end
 
 function QuestieInit:LoadDatabase(key)
-    if QuestieDB[key] then
-        coYield()
-        local func, err = loadstring(QuestieDB[key]) -- load the table from string (returns a function)
-        if (not func) then
-            error("Failed to load database " .. tostring(key) .. ": " .. tostring(err), 0)
-        end
-        QuestieDB[key] = func
-        coYield()
-        QuestieDB[key] = QuestieDB[key]()           -- execute the function (returns the table)
+    local source = QuestieDB[key]
+    if not source then
+        error("Missing base database " .. tostring(key) ..
+            "; check earlier Lua errors while loading Database/AzerothCore files", 0)
+    end
+    local sources
+    if type(source) == "string" then
+        sources = {source} -- Support the inherited single-source format as well.
+    elseif type(source) == "table" and source.__questieSourceChunks == true and #source > 0 then
+        sources = source
     else
-        Questie.Debug(Questie.DEBUG_DEVELOP, "Database is missing, this is likely do to era vs tbc: ", key)
+        error("Invalid base database source for " .. tostring(key), 0)
+    end
+
+    local data = {}
+    QuestieDB[key] = data
+    for index, chunkSource in ipairs(sources) do
+        coYield()
+        local func, err = loadstring(chunkSource, "@QuestieDB/" .. key .. "/chunk-" .. index)
+        if (not func) then
+            error("Failed to load database " .. tostring(key) .. " chunk " .. index .. ": " .. tostring(err), 0)
+        end
+        coYield()
+        local rows = func()
+        if type(rows) ~= "table" then
+            error("Invalid database result for " .. tostring(key) .. " chunk " .. index, 0)
+        end
+        for id, row in pairs(rows) do
+            if data[id] ~= nil then
+                error("Duplicate record " .. tostring(id) .. " in database " .. tostring(key), 0)
+            end
+            data[id] = row
+        end
+        sources[index] = nil -- Release each source after compiling its records.
     end
 end
 

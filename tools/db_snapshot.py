@@ -1,4 +1,15 @@
-"""Capture Questie's Lua correction pipeline and compare effective database snapshots."""
+"""Capture and compare Questie's effective database state.
+
+Usage: db_snapshot.py capture --output tools/reports/db-after.jsonl.gz
+       db_snapshot.py compare BEFORE AFTER --report tools/reports/db-differences.jsonl
+Set QUESTIE_TEST_LUA or pass capture --lua with a Lua executable.
+
+Captures cover the corrected tables, selected runtime overrides, both factions,
+and Quel'Danas phases 1/9 by default. They stop before localization, townsfolk,
+gathering-node removal, waypoint optimization, and binary compilation. XP/drop
+datasets and live client/server state are outside this comparison's scope.
+Equal snapshots establish preservation within that scope, not source accuracy.
+"""
 import argparse
 from collections import Counter
 from contextlib import contextmanager, ExitStack

@@ -1,5 +1,5 @@
--- GENERATED MIGRATION CANDIDATE: Questie effective static DB, not independent AC truth.
--- DO NOT INSTALL until correction migration, source review and parity checks pass.
+-- Generated from the corrected Questie database snapshot.
+-- Generator: tools/generate_acore_full_base.py
 local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 
 QuestieDB.questKeys = {
@@ -42,7 +42,10 @@ QuestieDB.questKeys = {
     ["requiredItemConditions"] = 37,
 }
 
-QuestieDB.questData = [====[return {
+QuestieDB.questData = {
+    __questieSourceChunks = true,
+[====[
+return {
 [1]={"The \"Chow\" Quest (123)aa",nil,nil,1,80,0,nil,{[1]="Speak to Kanrethad to restore your talents, weapon and mount."},nil,{[1]={[1]={[1]=20000}}},nil,{[1]=13929,[2]=13933,[3]=13950},nil,nil,nil,nil,151,nil,nil,nil,nil,nil,nil,nil,nil,{[1]={[1]=87,[2]=50},[2]={[1]=529,[2]=100}}},
 [2]={"Sharptalon's Claw",{[3]={[1]=16305}},{[1]={[1]=12696}},20,30,690,nil,{[1]="Bring Sharptalon's Claw to Senani Thunderheart at Splintertree Post, Ashenvale."},nil,nil,16305,nil,{[1]=6383},nil,{[1]=23,[2]=24},nil,331,nil,nil,nil,nil,nil,nil,nil,nil,{[1]={[1]=81,[2]=250}}},
 [5]={"Jitters' Growling Gut",{[1]={[1]=288}},{[1]={[1]=272}},17,20,1101,nil,{[1]="Speak with Chef Grual."},nil,nil,nil,nil,{[1]=163},nil,nil,nil,10,nil,nil,nil,nil,93,8,nil,nil,{[1]={[1]=72,[2]=25}},nil,{[1]=163}},
@@ -3781,6 +3784,9 @@ QuestieDB.questData = [====[return {
 [8623]={"Stormcaller's Diadem",{[1]={[1]=15502}},{[1]={[1]=15502}},60,60,0,64,{[1]="Bring Vek'lor's Diadem, 2 Idols of Rebirth, 5 Stone Scarabs and 5 Crystal Scarabs to Andorgos in Ahn'Qiraj.  You must also attain Friendly reputation with the Brood of Nozdormu to complete this quest."},nil,{[3]={[1]={[1]=20930},[2]={[1]=20878},[3]={[1]=20858},[4]={[1]=20862}},[4]={[1]=910,[2]=3000}},nil,nil,{},nil,nil,nil,3428,nil,nil,nil,nil,nil,8,0,nil,{[1]={[1]=910,[2]=500}}},
 [8624]={"Stormcaller's Leggings",{[1]={[1]=15503}},{[1]={[1]=15503}},60,60,0,64,{[1]="Bring the Skin of the Great Sandworm, 2 Idols of Strife, 5 Bronze Scarabs and 5 Ivory Scarabs to Kandrostrasz inside Ahn'Qiraj. You must also attain Friendly reputation with the Brood of Nozdormu to complete this quest."},nil,{[3]={[1]={[1]=20931},[2]={[1]=20881},[3]={[1]=20865},[4]={[1]=20861}},[4]={[1]=910,[2]=3000}},nil,nil,{},nil,nil,nil,3428,nil,nil,nil,nil,nil,8,0,nil,{[1]={[1]=910,[2]=500}}},
 [8625]={"Enigma Shoulderpads",{[1]={[1]=15502}},{[1]={[1]=15502}},60,60,0,128,{[1]="Bring the Qiraji Bindings of Dominance, 2 Idols of Death, 5 Stone Scarabs and 5 Bronze Scarabs to Andorgos in Ahn'Qiraj.  You must also attain Neutral reputation with the Brood of Nozdormu to complete this quest."},nil,{[3]={[1]={[1]=20932},[2]={[1]=20876},[3]={[1]=20858},[4]={[1]=20861}},[4]={[1]=910,[2]=0}},nil,nil,{},nil,nil,nil,3428,nil,nil,nil,nil,nil,8,0,nil,{[1]={[1]=910,[2]=500}}},
+}]====],
+[====[
+return {
 [8626]={"Striker's Footguards",{[1]={[1]=15503}},{[1]={[1]=15503}},60,60,0,4,{[1]="Bring the Qiraji Bindings of Command, 2 Idols of Life, 5 Stone Scarabs and 5 Bone Scarabs to Kandrostrasz in Ahn'Qiraj.  This quest also requires Neutral faction with the Brood of Nozdormu."},nil,{[3]={[1]={[1]=20928},[2]={[1]=20879},[3]={[1]=20858},[4]={[1]=20864}},[4]={[1]=910,[2]=0}},nil,nil,{},nil,nil,nil,3428,nil,nil,nil,nil,nil,8,0,nil,{[1]={[1]=910,[2]=500}}},
 [8627]={"Avenger's Breastplate",{[1]={[1]=15504}},{[1]={[1]=15504}},60,60,0,2,{[1]="Bring the the Carapace of the Old God, 2 Idols of the Sage, 5 Silver Scarabs and 5 Bone Scarabs to Vethsera inside Ahn'Qiraj.  You must also attain Honored reputation with the Brood of Nozdormu to complete this quest."},nil,{[3]={[1]={[1]=20929},[2]={[1]=20877},[3]={[1]=20860},[4]={[1]=20864}},[4]={[1]=910,[2]=9000}},nil,nil,{},nil,nil,nil,3428,nil,nil,nil,nil,nil,8,0,nil,{[1]={[1]=910,[2]=500}}},
 [8628]={"Avenger's Crown",{[1]={[1]=15502}},{[1]={[1]=15502}},60,60,0,2,{[1]="Bring Vek'lor's Diadem, 2 Idols of Rebirth, 5 Stone Scarabs and 5 Crystal Scarabs to Andorgos in Ahn'Qiraj.  You must also attain Friendly reputation with the Brood of Nozdormu to complete this quest."},nil,{[3]={[1]={[1]=20930},[2]={[1]=20878},[3]={[1]=20858},[4]={[1]=20862}},[4]={[1]=910,[2]=3000}},nil,nil,{},nil,nil,nil,3428,nil,nil,nil,nil,nil,8,0,nil,{[1]={[1]=910,[2]=500}}},
@@ -7049,6 +7055,9 @@ QuestieDB.questData = [====[return {
 [12009]={"Tua'kea's Crab Traps",{[1]={[1]=26245}},{[1]={[1]=26245}},71,72,0,nil,{[1]="Collect 8 of Tua'kea's Crab Traps and return them to him at Moa'ki Harbor."},nil,{[3]={[1]={[1]=35802}}},37265,nil,{[1]=11959},nil,nil,nil,65,nil,nil,nil,nil,nil,128,nil,nil,{[1]={[1]=1073,[2]=250}}},
 [12010]={"The Fate of Orlond",{[1]={[1]=26226}},{[1]={[1]=26514}},73,75,1101,nil,{[1]="Locate Surveyor Orlond within Thor Modan."},nil,nil,nil,nil,{[1]=12003},nil,nil,nil,394,nil,nil,nil,nil,12014,136},
 [12011]={"Signs of Big Watery Trouble",{[2]={[1]=188364}},{[1]={[1]=26245}},71,72,0,nil,{[1]="Inform Tua'kea at Moa'ki Harbor about the wrecked crab trap."},nil,nil,nil,nil,{[1]=11959},nil,nil,nil,65,nil,nil,nil,nil,12016,136,nil,nil,{[1]={[1]=1073,[2]=10}}},
+}]====],
+[====[
+return {
 [12012]={"Inform the Elder",{[1]={[1]=25324}},{[1]={[1]=26221}},16,-1,0,nil,{[1]="Travel to a capital city and speak to the Earthen Ring Elder."},nil,{[3]={[1]={[1]=35828}}},nil,nil,{[1]=11891},nil,nil,nil,-369,nil,nil,nil,{[1]=35828},nil,8},
 [12013]={"End Arcanimus",{[1]={[1]=26501}},{[1]={[1]=26501}},71,73,0,nil,{[1]="Destroy Arcanimus and then return to Ethenial Moonshadow at Moonrest Gardens."},nil,{[1]={[1]={[1]=26370}}},nil,nil,{[1]=12006},nil,nil,nil,65,nil,nil,nil,nil,nil,136},
 [12014]={"Steady as a Rock?",{[1]={[1]=26514}},{[1]={[1]=26226}},73,75,1101,nil,{[1]="Retreive the Portable Seismograph and use it to take stability readings in Thor Modan, then return to Brugar Stoneshear at the Westfall Brigade Encampment."},nil,{[3]={[1]={[1]=35819},[2]={[1]=35837}}},0,nil,{[1]=12010},nil,nil,nil,394,nil,nil,nil,nil,nil,136},
@@ -9130,4 +9139,5 @@ QuestieDB.questData = [====[return {
 [26012]={"Trouble at Wyrmrest",{[1]={[1]=16128}},{[1]={[1]=27990}},80,82,0,nil,{[1]="Speak with Krasus at Wyrmrest Temple in Dragonblight."},nil,nil,nil,nil,nil,nil,nil,{},4987,nil,nil,nil,nil,26013,136},
 [26013]={"Assault on the Sanctum",{[1]={[1]=27990}},{[1]={[1]=40429}},80,82,0,nil,{[1]="Investigate the Ruby Sanctum beneath Wyrmrest Temple."},nil,nil,nil,nil,{},nil,nil,nil,4987,nil,nil,nil,nil,26034,136},
 [26034]={"The Twilight Destroyer",{[1]={[1]=40429}},{[1]={[1]=27990}},80,82,0,nil,{[1]="Defeat Halion and repel the invasion of the Ruby Sanctum."},nil,{[1]={[1]={[1]=39863}}},nil,nil,{},nil,nil,nil,4987,nil,nil,nil,nil,nil,200},
-}]====]
+}]====],
+}

@@ -204,13 +204,8 @@ end
 
 ---@param validationTables table? Only used by the CI validation scripts to validate the corrections against the original database values and find irrelevant corrections
 function QuestieCorrections:Initialize(validationTables)
-    -- PR #166: the acore*DB.lua bases contain the complete corrected static
-    -- database captured after the former Classic/TBC/WotLK, Compat and AC
-    -- correction layers. Reapplying those patches would change their values.
-    -- Faction overrides/blacklists still initialize in MinimalInit() below,
-    -- on both fresh compile and cached startup. Keep the old fix modules loaded
-    -- for those runtime methods until Manual335 migration is complete.
-    -- This step does not change required-race inference or other derived data.
+    -- Static corrections are included in the generated base databases.
+    -- MinimalInit retains faction overrides and blacklists on fresh and cached startup.
 
     local patchCount = 0
     QuestieDB.requiredItemConditionQuestIds = {}
