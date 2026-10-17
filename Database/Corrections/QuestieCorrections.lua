@@ -20,8 +20,6 @@ local QuestieItemBlacklist = QuestieLoader:ImportModule("QuestieItemBlacklist")
 
 ---@type QuestieQuestFixes
 local QuestieQuestFixes = QuestieLoader:ImportModule("QuestieQuestFixes")
----@type QuestieClassicQuestReputationFixes
-local QuestieClassicQuestReputationFixes = QuestieLoader:ImportModule("QuestieClassicQuestReputationFixes")
 ---@type QuestieNPCFixes
 local QuestieNPCFixes = QuestieLoader:ImportModule("QuestieNPCFixes")
 ---@type QuestieItemFixes
@@ -49,9 +47,6 @@ local QuestieWotlkObjectFixes = QuestieLoader:ImportModule("QuestieWotlkObjectFi
 
 ---@type IsleOfQuelDanas
 local IsleOfQuelDanas = QuestieLoader:ImportModule("IsleOfQuelDanas")
-
---- Automatic corrections
-local QuestieItemStartFixes = QuestieLoader:ImportModule("QuestieItemStartFixes")
 
 --[[
     This file load the corrections of the database files.
@@ -206,33 +201,8 @@ end
 
 ---@param validationTables table? Only used by the CI validation scripts to validate the corrections against the original database values and find irrelevant corrections
 function QuestieCorrections:Initialize(validationTables)
-    -- Older expansion corrections should not create incomplete records on newer clients.
-    -- 335 uses the AzerothCore compatibility corrections as its current expansion data.
-    -- Classic Corrections
-    _LoadCorrections("questData", QuestieClassicQuestReputationFixes:Load(), QuestieDB.questKeysReversed, validationTables, nil, true)
-    _LoadCorrections("questData", QuestieQuestFixes:Load(), QuestieDB.questKeysReversed, validationTables, nil, true)
-    _LoadCorrections("npcData", QuestieNPCFixes:Load(), QuestieDB.npcKeysReversed, validationTables, nil, true)
-    _LoadCorrections("itemData", QuestieItemFixes:Load(), QuestieDB.itemKeysReversed, validationTables, nil, true)
-    _LoadCorrections("objectData", QuestieObjectFixes:Load(), QuestieDB.objectKeysReversed, validationTables, nil, true)
-
-    _LoadCorrections("questData", QuestieTBCQuestFixes:Load(), QuestieDB.questKeysReversed, validationTables, nil, true)
-    _LoadCorrections("npcData", QuestieTBCNpcFixes:Load(), QuestieDB.npcKeysReversed, validationTables, nil, true)
-    _LoadCorrections("itemData", QuestieTBCItemFixes:Load(), QuestieDB.itemKeysReversed, validationTables, nil, true)
-    _LoadCorrections("objectData", QuestieTBCObjectFixes:Load(), QuestieDB.objectKeysReversed, validationTables, nil, true)
-
-    _LoadCorrections("questData", QuestieWotlkQuestFixes:Load(), QuestieDB.questKeysReversed, validationTables)
-    _LoadCorrections("npcData", QuestieWotlkNpcFixes:LoadAutomatics(), QuestieDB.npcKeysReversed, validationTables)
-    _LoadCorrections("npcData", QuestieWotlkNpcFixes:Load(), QuestieDB.npcKeysReversed, validationTables)
-    _LoadCorrections("npcData", QuestieWotlkNpcFixes:LoadReverseLinkFixes(), QuestieDB.npcKeysReversed, validationTables)
-    _LoadCorrections("itemData", QuestieWotlkItemFixes:Load(), QuestieDB.itemKeysReversed, validationTables)
-    _LoadCorrections("itemData", QuestieWotlkItemFixes:LoadReverseStartQuestFixes(), QuestieDB.itemKeysReversed, validationTables)
-    _LoadCorrections("objectData", QuestieWotlkObjectFixes:Load(), QuestieDB.objectKeysReversed, validationTables)
-    _LoadCorrections("objectData", QuestieWotlkObjectFixes:LoadReverseLinkFixes(), QuestieDB.objectKeysReversed, validationTables)
-
-    --- Corrections that apply to all versions
-    _LoadCorrections("itemData", QuestieItemStartFixes:LoadAutomaticQuestStarts(), QuestieDB.itemKeysReversed, validationTables, true, true)
-
-    QuestieCompat.LoadCorrections(_LoadCorrections, validationTables)
+    -- Static corrections are included in the generated base databases.
+    -- MinimalInit retains faction overrides and blacklists on fresh and cached startup.
 
     local patchCount = 0
     QuestieDB.requiredItemConditionQuestIds = {}

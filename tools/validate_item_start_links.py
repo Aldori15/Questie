@@ -397,7 +397,6 @@ def main():
             "Database/Corrections/classicItemFixes.lua",
             "Database/Corrections/tbcItemFixes.lua",
             "Database/Corrections/wotlkItemFixes.lua",
-            "Database/Corrections/Automatic/itemStartFixes.lua",
         ],
     )
     parser.add_argument("--report", help="Optional path to write the full JSON report")

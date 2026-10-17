@@ -42,10 +42,10 @@ Database\Zones\zoneTables.lua
 Database\Zones\zoneDB.lua
 
 # Databases
-Database\Wotlk\wotlkItemDB.lua
-Database\Wotlk\wotlkNpcDB.lua
-Database\Wotlk\wotlkObjectDB.lua
-Database\Wotlk\wotlkQuestDB.lua
+Database\AzerothCore\acoreItemDB.lua
+Database\AzerothCore\acoreNpcDB.lua
+Database\AzerothCore\acoreObjectDB.lua
+Database\AzerothCore\acoreQuestDB.lua
 Database\QuestieDB.lua
 Database\questDB.lua
 Database\objectDB.lua
@@ -60,10 +60,6 @@ Database\Corrections\QuestieItemBlacklist.lua
 Database\Corrections\QuestieNPCBlacklist.lua
 Database\Corrections\QuestieQuestBlacklist.lua
 Database\Corrections\QuestieEvent.lua
-
-# Automatic General Corrections
-Database\Corrections\Automatic\itemStartFixes.lua
-Database\Corrections\Automatic\classicQuestReputationFixes.lua
 
 # Classic Corrections
 Database\Corrections\classicQuestFixes.lua

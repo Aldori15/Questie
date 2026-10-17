@@ -55,7 +55,15 @@ class AcoreDataPathTests(unittest.TestCase):
         self.assertLess(entries.index(manifest), entries.index("Database/Corrections/QuestieCorrections.lua"))
         scripts = [node.attrib["file"] for node in ET.parse(ADDON_ROOT / manifest).getroot()
                    if "file" in node.attrib]
-        self.assertEqual(scripts, DATA_FILES)
+        self.assertEqual(scripts, DATA_FILES[:2])
+        # The original correction generators remain maintenance tools, not live layers.
+        for kind in ("Item", "Npc", "Object", "Quest"):
+            base = f"Database/AzerothCore/acore{kind}DB.lua"
+            self.assertIn(base, entries)
+            self.assertTrue((ADDON_ROOT / base).is_file())
+        for original in ("Item", "Npc", "Object", "Quest"):
+            self.assertNotIn(f"Database/AzerothCore/AzerothCore{original}Corrections.lua",
+                             [f"Database/AzerothCore/{name}" for name in scripts])
         compat_files = [node.attrib["file"] for node in ET.parse(ADDON_ROOT / "Compat/Compat.xml").getroot()
                         if "file" in node.attrib]
         self.assertFalse(set(DATA_FILES).intersection(compat_files))

@@ -1,6 +1,7 @@
 import argparse
 import ast
 import json
+import math
 import re
 import sys
 from collections import defaultdict
@@ -15,6 +16,7 @@ if str(TOOLS_DIR) not in sys.path:
 
 from validate_acore_quest_metadata import (  # noqa: E402
     extract_sql_columns,
+    load_acore_sql_table,
     parse_sql_value,
     split_sql_rows,
     split_sql_statements,
@@ -27,9 +29,7 @@ ITEM_CORRECTION_FILES = [
     "Database/Corrections/classicItemFixes.lua",
     "Database/Corrections/tbcItemFixes.lua",
     "Database/Corrections/wotlkItemFixes.lua",
-    "Database/Corrections/Automatic/itemStartFixes.lua",
 ]
-ITEM_START_FIXES_FILE = "Database/Corrections/Automatic/itemStartFixes.lua"
 
 STATIC_FIELD_MAP = {
     "name": "name",
@@ -403,7 +403,6 @@ def load_lua_item_corrections(path, item_keys):
         "QuestieTBCItemFixes:Load",
         "QuestieWotlkItemFixes:Load",
         "QuestieWotlkItemFixes:LoadReverseStartQuestFixes",
-        "QuestieItemStartFixes:LoadAutomaticQuestStarts",
     ):
         tables.extend(extract_function_return_tables(text, function_name))
 
@@ -439,10 +438,7 @@ def load_effective_questie_items(repo_root, item_keys):
         if not path.exists():
             continue
         corrections = load_lua_item_corrections(path, item_keys)
-        if relative_path.endswith("itemStartFixes.lua"):
-            apply_corrections(items, corrections, no_overwrites=True, no_new_entries=True)
-        else:
-            apply_corrections(items, corrections)
+        apply_corrections(items, corrections)
     return items
 
 
@@ -937,16 +933,26 @@ def apply_multirow_update(statement, table_name, rows, sql_context=None):
     return 0
 
 
-def add_item_sources_from_loot(rows, reference_index, source_to_object_ids=None, object_primary_items=None):
+def record_source_issue(diagnostics, kind, value):
+    if diagnostics is not None:
+        diagnostics.setdefault(kind, set()).add(int(value))
+
+
+def add_item_sources_from_loot(rows, reference_index, source_to_object_ids=None, object_primary_items=None, diagnostics=None):
     object_primary_items = object_primary_items or set()
     per_item = defaultdict(set)
     grouped = defaultdict(list)
     for row in rows:
         grouped[int(row["Entry"])].append(row)
 
+    reference_cache = {}
     for source_id, source_rows in grouped.items():
-        source_ids = source_to_object_ids.get(source_id, {source_id}) if source_to_object_ids else {source_id}
-        item_chances = resolve_loot_row_chances(source_rows, reference_index)
+        source_ids = {source_id} if source_to_object_ids is None else source_to_object_ids.get(source_id, ())
+        if not source_ids:
+            record_source_issue(diagnostics, "unmappedLootSourceEntries", source_id)
+            continue
+        item_chances = resolve_loot_row_chances(source_rows, reference_index, reference_cache=reference_cache,
+                                               diagnostics=diagnostics)
         for item_id, chance in item_chances.items():
             if item_id in object_primary_items and chance <= LOW_CHANCE_CREATURE_DROP_THRESHOLD:
                 continue
@@ -959,41 +965,106 @@ def resolve_loot_rows(rows, reference_index, seen=None):
     return set(resolve_loot_row_chances(rows, reference_index, seen))
 
 
-def resolve_loot_row_chances(rows, reference_index, seen=None, quest_required_only=False):
-    seen = seen or set()
-    item_chances = defaultdict(float)
-    for row in rows:
-        chance = float(row.get("Chance") or 0)
-        if chance <= 0:
-            continue
-        if quest_required_only and int(row.get("QuestRequired") or 0) != 1:
-            continue
-        reference = int(row.get("Reference") or 0)
-        item_id = int(row.get("Item") or 0)
-        if reference > 0:
-            if reference in seen:
+def resolve_loot_row_chances(rows, reference_index, seen=None, quest_required_only=False,
+                             reference_cache=None, diagnostics=None):
+    """Base at-least-once chances, unioned over loot modes (no rates/scripts).
+
+    Match LootGroup::Roll: explicit entries consume the group roll first, then
+    zero-chance entries share its remainder. Filter quest results AFTER rolling
+    so non-quest siblings still contribute to the selection denominator.
+    """
+    reference_cache = reference_cache if reference_cache is not None else {}
+
+    def combine(first, second):
+        return first + second - first * second / 100.0
+
+    def repeated(chance, count):
+        if chance >= 100:
+            return 100.0
+        return -100.0 * math.expm1(count * math.log1p(-chance / 100.0))
+
+    def outcomes(row, mode, active):
+        reference = abs(int(row.get("Reference") or 0))
+        if not reference:
+            item_id = int(row.get("Item") or 0)
+            if item_id > 0 and (not quest_required_only or int(row.get("QuestRequired") or 0) == 1):
+                return {item_id: 100.0}
+            return {}
+        if reference in active:
+            record_source_issue(diagnostics, "lootReferenceCycles", reference)
+            return {}
+        if reference not in reference_index:
+            record_source_issue(diagnostics, "missingLootReferences", reference)
+            return {}
+        count = max(0, int(row.get("MaxCount", 1) or 0))
+        if count == 0:
+            return {}
+        # Include the active path: a cycle-pruned result must not leak into a
+        # later traversal that reaches the same reference through another path.
+        key = reference, mode, quest_required_only, active
+        if key not in reference_cache:
+            reference_cache[key] = resolve_mode(reference_index[reference], mode, active | {reference})
+        return {item_id: repeated(chance, count)
+                for item_id, chance in reference_cache[key].items()}
+
+    def resolve_mode(template, mode, active):
+        resolved, groups = defaultdict(float), defaultdict(list)
+        for row in template:
+            if not (int(row.get("LootMode", 1) or 0) & mode):
                 continue
-            multiplier = chance / 100.0
-            for referenced_item_id, referenced_chance in resolve_loot_row_chances(
-                reference_index.get(reference, []),
-                reference_index,
-                seen | {reference},
-                quest_required_only,
-            ).items():
-                item_chances[referenced_item_id] += referenced_chance * multiplier
-        elif item_id > 0:
-            item_chances[item_id] += chance
-    return item_chances
+            group = int(row.get("GroupId") or 0)
+            chance = float(row.get("Chance") or 0)
+            if group > 0 and chance >= 0:
+                groups[group].append(row)
+            elif group == 0 and chance > 0:
+                for item_id, nested_chance in outcomes(row, mode, active).items():
+                    resolved[item_id] = combine(resolved[item_id], min(100.0, chance) * nested_chance / 100.0)
+        for group_rows in groups.values():
+            remaining, selections, equal_rows = 100.0, [], []
+            for row in group_rows:
+                chance = float(row.get("Chance") or 0)
+                if chance > 0:
+                    selected = min(remaining, chance)
+                    remaining -= selected
+                    selections.append((row, selected))
+                else:
+                    equal_rows.append(row)
+            if equal_rows and remaining > 0:
+                selections.extend((row, remaining / len(equal_rows)) for row in equal_rows)
+            grouped_results = defaultdict(float)
+            for row, selected in selections:
+                if selected <= 0:
+                    continue
+                for item_id, nested_chance in outcomes(row, mode, active).items():
+                    grouped_results[item_id] += selected * nested_chance / 100.0
+            for item_id, chance in grouped_results.items():
+                resolved[item_id] = combine(resolved[item_id], min(100.0, chance))
+        return dict(resolved)
+
+    mask = 0
+    for row in rows:
+        mask |= max(0, int(row.get("LootMode", 1) or 0))
+    resolved, mode = {}, 1
+    while mask:
+        if mask & mode:
+            for item_id, chance in resolve_mode(rows, mode, frozenset(seen or ())).items():
+                if chance > 0:
+                    resolved[item_id] = max(resolved.get(item_id, 0), chance)
+            mask &= ~mode
+        mode <<= 1
+    return resolved
 
 
-def build_object_primary_item_ids(gameobject_loot_rows, reference_index):
+def build_object_primary_item_ids(gameobject_loot_rows, reference_index, diagnostics=None):
     object_primary_items = set()
     grouped = defaultdict(list)
     for row in gameobject_loot_rows:
         grouped[int(row["Entry"])].append(row)
 
+    reference_cache = {}
     for source_rows in grouped.values():
-        for item_id, chance in resolve_loot_row_chances(source_rows, reference_index, quest_required_only=True).items():
+        for item_id, chance in resolve_loot_row_chances(source_rows, reference_index, quest_required_only=True,
+                                                       reference_cache=reference_cache, diagnostics=diagnostics).items():
             if chance >= OBJECT_LOOT_PRIMARY_CHANCE:
                 object_primary_items.add(item_id)
 
@@ -1021,30 +1092,104 @@ def build_creature_loot_source_map(creature_template_rows):
     return source_map
 
 
-def add_item_sources_from_spellclick(npc_spellclick_rows, spell_rows):
+def add_item_sources_from_spellclick(npc_spellclick_rows, spell_rows, valid_item_ids=None,
+                                      valid_npc_ids=None, diagnostics=None):
     per_item = defaultdict(set)
     for row in npc_spellclick_rows:
         npc_id = int(row.get("npc_entry") or 0)
         spell_id = int(row.get("spell_id") or 0)
         if not npc_id or not spell_id:
             continue
+        if valid_npc_ids is not None and npc_id not in valid_npc_ids:
+            record_source_issue(diagnostics, "unknownSpellclickNpcIds", npc_id)
+            continue
 
         spell = spell_rows.get(spell_id)
         if not spell:
+            record_source_issue(diagnostics, "missingSpellclickSpellIds", spell_id)
             continue
 
         for index in range(1, 4):
             item_id = int(spell.get(f"EffectItemType_{index}") or 0)
-            if item_id > 0:
-                per_item[item_id].add(npc_id)
+            if item_id <= 0:
+                continue
+            if int(spell.get(f"Effect_{index}") or 0) not in {24, 157}:  # CREATE_ITEM / CREATE_ITEM_2
+                record_source_issue(diagnostics, "nonCreationSpellclickItemValues", item_id)
+                continue
+            if valid_item_ids is not None and item_id not in valid_item_ids:
+                record_source_issue(diagnostics, "unknownSpellclickItemIds", item_id)
+                continue
+            per_item[item_id].add(npc_id)
     return per_item
+
+
+def build_item_vendor_sources(rows, valid_item_ids, valid_vendor_ids, diagnostics=None):
+    """Expand npc_vendor references while retaining the original seller ID."""
+    by_vendor, result, cache = defaultdict(list), defaultdict(set), {}
+    for row in rows:
+        by_vendor[int(row.get("entry") or 0)].append(row)
+
+    def resolve(vendor, active):
+        if vendor in active:
+            record_source_issue(diagnostics, "vendorReferenceCycles", vendor)
+            return set()
+        if vendor not in by_vendor:
+            record_source_issue(diagnostics, "missingVendorReferences", vendor)
+            return set()
+        key = vendor, active
+        if key not in cache:
+            items = set()
+            for row in by_vendor[vendor]:
+                item_id = int(row.get("item") or 0)
+                if item_id < 0:
+                    items.update(resolve(-item_id, active | {vendor}))
+                elif item_id in valid_item_ids:
+                    items.add(item_id)
+                elif item_id:
+                    record_source_issue(diagnostics, "unknownVendorItemIds", item_id)
+            cache[key] = items
+        return cache[key]
+
+    for vendor in sorted(by_vendor):
+        if vendor not in valid_vendor_ids:
+            record_source_issue(diagnostics, "nonCreatureVendorEntries", vendor)
+            continue
+        for item_id in resolve(vendor, frozenset()):
+            result[item_id].add(vendor)
+    return result
+
+
+def validate_loot_items(rows, valid_item_ids, diagnostics):
+    valid = []
+    for row in rows:
+        item_id = int(row.get("Item") or 0)
+        reference = int(row.get("Reference") or 0)
+        group = int(row.get("GroupId") or 0)
+        minimum = int(row.get("MinCount", 1) or 0)
+        maximum = int(row.get("MaxCount", 1) or 0)
+        if not 0 <= group < 128 or minimum < 1 or (not reference and maximum < minimum):
+            record_source_issue(diagnostics, "invalidLootEntryIds", row.get("Entry") or 0)
+            continue
+        if reference or item_id in valid_item_ids:
+            valid.append(row)
+        else:
+            record_source_issue(diagnostics, "unknownLootItemIds", item_id)
+    return valid
+
+
+def known_item_reference(item_id, valid_item_ids, diagnostics, kind):
+    if item_id > 0 and item_id in valid_item_ids:
+        return True
+    if item_id:
+        record_source_issue(diagnostics, kind, item_id)
+    return False
 
 
 def build_creature_guid_to_entry(creature_rows):
     mapping = {}
     for row in creature_rows.values():
         guid = row.get("guid")
-        entry = row.get("id") or row.get("entry")
+        entry = row.get("id") or row.get("entry") or row.get("id1")
         if guid and entry:
             mapping[int(guid)] = int(entry)
     return mapping
@@ -1061,7 +1206,45 @@ def build_spawned_entry_ids(rows, entry_columns):
     return spawned_entry_ids
 
 
-def build_acore_items(source_root, include_modules=False):
+def load_item_source_spells(source_root, sql_spells, spell_ids, spell_sql=None, spell_table="spell"):
+    """Load the six numeric effect fields used for direct item creation.
+
+    Match DBCStores/DBCDatabaseLoader: SQL records replace DBC numeric values,
+    including zeros. String inheritance is irrelevant to these six fields.
+    """
+    fields = [f"{prefix}_{index}" for prefix in ("Effect", "EffectItemType") for index in range(1, 4)]
+
+    def normalize(row):
+        return {field: int(row.get(field, row.get(field.replace("_", ""), 0)) or 0) for field in fields}
+
+    spells = {}
+    coverage = {"exportProvided": spell_sql is not None, "requestedSpellIds": len(spell_ids),
+                "exportRowsLoaded": 0, "sqlRowsLoaded": len(sql_spells), "exportIdsOverriddenBySql": 0}
+    if spell_sql is not None:
+        spell_sql = Path(spell_sql)
+        if not spell_sql.is_file():
+            raise ValueError(f"Spell SQL export not found: {spell_sql}")
+        if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", spell_table):
+            raise ValueError("Spell export table must be a simple SQL table name")
+        columns = extract_sql_columns(spell_sql, spell_table)
+        if "ID" not in columns or any(field not in columns and field.replace("_", "") not in columns for field in fields):
+            raise ValueError("Spell export must contain ID, Effect1..3 and EffectItemType1..3 (underscored names also accepted)")
+        exported = load_acore_sql_table(Path(source_root), spell_table, base_file_override=spell_sql,
+                                       key_column="ID", wanted_keys=set(spell_ids))
+        for spell_id, row in exported.items():
+            if any(field not in row and field.replace("_", "") not in row for field in fields):
+                raise ValueError(f"Incomplete numeric effect fields in exported spell {spell_id}")
+            spells[int(spell_id)] = normalize(row)
+        coverage["exportRowsLoaded"] = len(spells)
+        coverage["exportIdsOverriddenBySql"] = len(set(spells) & set(sql_spells))
+    # Replace each record rather than merging nonzero values: SQL zero is authoritative.
+    spells.update({spell_id: normalize(row) for spell_id, row in sql_spells.items()})
+    coverage["resolvedRequestedSpellIds"] = len(set(spell_ids) & set(spells))
+    coverage["missingRequestedSpellIds"] = len(set(spell_ids) - set(spells))
+    return spells, coverage
+
+
+def build_acore_items(source_root, include_modules=False, spell_sql=None, spell_table="spell"):
     source_root = Path(source_root)
     item_rows, skipped_item_template = load_keyed_table(source_root, "item_template", "entry", include_modules)
     quest_rows, skipped_quest_template = load_keyed_table(source_root, "quest_template", "ID", include_modules)
@@ -1077,15 +1260,30 @@ def build_acore_items(source_root, include_modules=False):
     npc_vendor_rows, skipped_npc_vendor = load_row_table(source_root, "npc_vendor", ("entry", "item", "ExtendedCost"), include_modules)
     event_vendor_rows, skipped_event_vendor = load_row_table(source_root, "game_event_npc_vendor", ("eventEntry", "guid", "item"), include_modules)
     npc_spellclick_rows, skipped_npc_spellclick = load_row_table(source_root, "npc_spellclick_spells", ("npc_entry", "spell_id"), include_modules)
+    spell_ids = {int(row["spell_id"]) for row in npc_spellclick_rows if int(row.get("spell_id") or 0) > 0}
+    spell_rows, spell_coverage = load_item_source_spells(source_root, spell_rows, spell_ids, spell_sql, spell_table)
 
+    diagnostics = {}
+    valid_item_ids = {item_id for item_id in item_rows if item_id > 0}
+    for item_id in set(item_rows) - valid_item_ids:
+        record_source_issue(diagnostics, "invalidTemplateItemIds", item_id)
+    valid_npc_ids = {npc_id for npc_id in creature_template_rows if npc_id > 0}
+    reference_rows = validate_loot_items(reference_rows, valid_item_ids, diagnostics)
+    creature_loot_rows = validate_loot_items(creature_loot_rows, valid_item_ids, diagnostics)
+    gameobject_loot_rows = validate_loot_items(gameobject_loot_rows, valid_item_ids, diagnostics)
+    item_loot_rows = validate_loot_items(item_loot_rows, valid_item_ids, diagnostics)
     reference_index = defaultdict(list)
     for row in reference_rows:
         reference_index[int(row["Entry"])].append(row)
-    object_primary_items = build_object_primary_item_ids(gameobject_loot_rows, reference_index)
+    gameobject_loot_source_map = build_gameobject_loot_source_map(gameobject_template_rows)
+    mapped_object_loot_rows = [row for row in gameobject_loot_rows if int(row["Entry"]) in gameobject_loot_source_map]
+    object_primary_items = build_object_primary_item_ids(mapped_object_loot_rows, reference_index, diagnostics)
     creature_loot_source_map = build_creature_loot_source_map(creature_template_rows)
 
     acore_items = {}
     for item_id, row in item_rows.items():
+        if item_id not in valid_item_ids:
+            continue
         item = {}
         for field, column in STATIC_FIELD_MAP.items():
             value = row.get(column)
@@ -1105,32 +1303,45 @@ def build_acore_items(source_root, include_modules=False):
                 reference_index,
                 source_to_object_ids=creature_loot_source_map,
                 object_primary_items=object_primary_items,
+                diagnostics=diagnostics,
             ),
         ),
-        ("objectDrops", add_item_sources_from_loot(gameobject_loot_rows, reference_index, build_gameobject_loot_source_map(gameobject_template_rows))),
-        ("itemDrops", add_item_sources_from_loot(item_loot_rows, reference_index)),
+        ("objectDrops", add_item_sources_from_loot(gameobject_loot_rows, reference_index,
+                                                  gameobject_loot_source_map, diagnostics=diagnostics)),
+        ("itemDrops", add_item_sources_from_loot(item_loot_rows, reference_index, diagnostics=diagnostics)),
     ):
         for item_id, source_ids in per_item.items():
-            acore_items.setdefault(item_id, {})[field] = sorted(source_ids)
+            if not known_item_reference(item_id, valid_item_ids, diagnostics, "unknownLootItemIds"):
+                continue
+            if field == "itemDrops":
+                for container in source_ids - valid_item_ids:
+                    record_source_issue(diagnostics, "unknownItemLootContainers", container)
+                source_ids = source_ids & valid_item_ids
+            if source_ids:
+                acore_items[item_id][field] = sorted(source_ids)
 
-    for item_id, source_ids in add_item_sources_from_spellclick(npc_spellclick_rows, spell_rows).items():
-        existing_sources = set(acore_items.setdefault(item_id, {}).get("npcDrops") or [])
+    for item_id, source_ids in add_item_sources_from_spellclick(npc_spellclick_rows, spell_rows, valid_item_ids,
+                                                               valid_npc_ids, diagnostics).items():
+        existing_sources = set(acore_items[item_id].get("npcDrops") or [])
         existing_sources.update(source_ids)
         acore_items[item_id]["npcDrops"] = sorted(existing_sources)
 
-    for row in npc_vendor_rows:
-        item_id = int(row.get("item") or 0)
-        vendor_id = int(row.get("entry") or 0)
-        if item_id and vendor_id:
-            acore_items.setdefault(item_id, {}).setdefault("vendors", set()).add(vendor_id)
+    for item_id, vendor_ids in build_item_vendor_sources(npc_vendor_rows, valid_item_ids, valid_npc_ids, diagnostics).items():
+        acore_items[item_id].setdefault("vendors", set()).update(vendor_ids)
 
     creature_guid_to_entry = build_creature_guid_to_entry(creature_rows)
     for row in event_vendor_rows:
         item_id = int(row.get("item") or 0)
         guid = int(row.get("guid") or 0)
         vendor_id = creature_guid_to_entry.get(guid)
-        if item_id and vendor_id:
-            acore_items.setdefault(item_id, {}).setdefault("vendors", set()).add(vendor_id)
+        if not known_item_reference(item_id, valid_item_ids, diagnostics, "unknownEventVendorItemIds"):
+            continue
+        if not vendor_id:
+            record_source_issue(diagnostics, "unmappedEventVendorGuids", guid)
+        elif vendor_id not in valid_npc_ids:
+            record_source_issue(diagnostics, "unknownEventVendorNpcIds", vendor_id)
+        else:
+            acore_items[item_id].setdefault("vendors", set()).add(vendor_id)
 
     for item in acore_items.values():
         if isinstance(item.get("vendors"), set):
@@ -1140,8 +1351,8 @@ def build_acore_items(source_root, include_modules=False):
         quest_id = int(quest_id)
         for column in ("RewardItem1", "RewardItem2", "RewardItem3", "RewardItem4"):
             item_id = int(row.get(column) or 0)
-            if item_id:
-                acore_items.setdefault(item_id, {}).setdefault("questRewards", set()).add(quest_id)
+            if known_item_reference(item_id, valid_item_ids, diagnostics, "unknownQuestItemIds"):
+                acore_items[item_id].setdefault("questRewards", set()).add(quest_id)
         for column in (
             "RewardChoiceItemID1",
             "RewardChoiceItemID2",
@@ -1151,8 +1362,8 @@ def build_acore_items(source_root, include_modules=False):
             "RewardChoiceItemID6",
         ):
             item_id = int(row.get(column) or 0)
-            if item_id:
-                acore_items.setdefault(item_id, {}).setdefault("questRewards", set()).add(quest_id)
+            if known_item_reference(item_id, valid_item_ids, diagnostics, "unknownQuestItemIds"):
+                acore_items[item_id].setdefault("questRewards", set()).add(quest_id)
         for column in (
             "StartItem",
             "ItemDrop1",
@@ -1167,13 +1378,13 @@ def build_acore_items(source_root, include_modules=False):
             "RequiredItemId6",
         ):
             item_id = int(row.get(column) or 0)
-            if item_id:
-                acore_items.setdefault(item_id, {}).setdefault("relatedQuests", set()).add(quest_id)
+            if known_item_reference(item_id, valid_item_ids, diagnostics, "unknownQuestItemIds"):
+                acore_items[item_id].setdefault("relatedQuests", set()).add(quest_id)
                 # Mark items that appear in quest_template.StartItem so we can
                 # treat them as quest items even when item_template.class
                 # differs in AzerothCore's item_template.
                 if column == "StartItem":
-                    acore_items.setdefault(item_id, {})["isStartItem"] = True
+                    acore_items[item_id]["isStartItem"] = True
 
     for item in acore_items.values():
         for field in ("questRewards", "relatedQuests"):
@@ -1198,6 +1409,8 @@ def build_acore_items(source_root, include_modules=False):
     source_context = {
         "spawnedCreatureIds": build_spawned_entry_ids(creature_rows, ("id", "entry", "id1", "id2", "id3")),
         "gameObjectTemplateIds": set(gameobject_template_rows),
+        "sourceDiagnostics": {key: sorted(values) for key, values in sorted(diagnostics.items())},
+        "spellCoverage": spell_coverage,
     }
     return acore_items, skipped_mutations, source_context
 
@@ -1419,28 +1632,9 @@ def find_differences(
     return corrections
 
 
-def load_item_start_fix_items(repo_root, item_keys):
-    path = repo_root / ITEM_START_FIXES_FILE
-    if not path.exists():
-        return {}
-    return load_lua_item_corrections(path, item_keys)
-
-
-def find_missing_startquest_items(questie_items, acore_items, item_start_fix_items):
-    item_ids = set()
-    for item_id, acore in acore_items.items():
-        start_quest = normalize_scalar("startQuest", acore.get("startQuest"))
-        if start_quest <= 0 or item_id in questie_items:
-            continue
-
-        current_start_quest = normalize_scalar(
-            "startQuest",
-            item_start_fix_items.get(item_id, {}).get("startQuest"),
-        )
-        if current_start_quest != start_quest:
-            item_ids.add(item_id)
-
-    return item_ids
+def find_missing_startquest_items(questie_items, acore_items):
+    return {item_id for item_id, acore in acore_items.items()
+            if item_id not in questie_items and normalize_scalar("startQuest", acore.get("startQuest")) > 0}
 
 
 def lua_quote(value):
@@ -1569,6 +1763,8 @@ def main():
     parser.add_argument("--report", default=Path("tools/reports/acore_item_corrections.md"), type=Path)
     parser.add_argument("--preservation-report", default=Path("tools/reports/acore_item_preservations.json"), type=Path)
     parser.add_argument("--include-modules", action="store_true", help="Also scan SQL under AzerothCore modules/. This can be slow.")
+    parser.add_argument("--spell-sql", type=Path, help="Optional full Spell.dbc SQL export, before AzerothCore SQL overrides")
+    parser.add_argument("--spell-table", default="spell", help="Table in --spell-sql (default: spell)")
     parser.add_argument(
         "--fields",
         nargs="+",
@@ -1580,22 +1776,20 @@ def main():
     args = parser.parse_args()
 
     repo_root = args.repo_root.resolve()
+    if (repo_root / "Database/AzerothCore/acoreItemDB.lua").is_file():
+        parser.error("Complete AzerothCore item base detected. Use tools/generate_acore_item_base.py generate; legacy item corrections are no longer loaded.")
     item_keys = parse_item_keys(repo_root / "Database/Wotlk/wotlkItemDB.lua")
     # Load the base Questie WotLK item DB (before applying local correction files)
     questie_base_items = load_questie_items(repo_root / "Database/Wotlk/wotlkItemDB.lua", item_keys)
     # Load the effective Questie items after applying classic/tbc/wotlk corrections
     questie_items = load_effective_questie_items(repo_root, item_keys)
-    item_start_fix_items = load_item_start_fix_items(repo_root, item_keys)
-    acore_items, skipped_mutations, source_context = build_acore_items(args.acore_source, args.include_modules)
-    missing_startquest_items = find_missing_startquest_items(questie_items, acore_items, item_start_fix_items)
-    comparison_items = dict(questie_items)
-    for item_id in missing_startquest_items:
-        if item_id in item_start_fix_items:
-            comparison_items[item_id] = item_start_fix_items[item_id]
+    acore_items, skipped_mutations, source_context = build_acore_items(
+        args.acore_source, args.include_modules, args.spell_sql, args.spell_table)
+    missing_startquest_items = find_missing_startquest_items(questie_items, acore_items)
 
     preservations = []
     corrections = find_differences(
-        comparison_items,
+        questie_items,
         acore_items,
         args.fields,
         args.include_missing_items,
@@ -1615,6 +1809,8 @@ def main():
     skipped = {table: count for table, count in skipped_mutations.items() if count}
     if skipped:
         print(f"Skipped complex SQL mutations: {skipped}")
+    if source_context.get("sourceDiagnostics"):
+        print("Source validation diagnostics: " + str({key: len(values) for key, values in source_context["sourceDiagnostics"].items()}))
 
 
 if __name__ == "__main__":

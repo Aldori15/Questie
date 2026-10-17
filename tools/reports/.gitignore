@@ -2,3 +2,9 @@
 *.lua
 *.md
 !.gitignore
+
+# Local database comparison artifacts; keep the harness and tests in source control.
+*.jsonl
+*.jsonl.gz
+questie-snapshot-*/
+db-migration-local/
