@@ -48,9 +48,6 @@ local QuestieWotlkObjectFixes = QuestieLoader:ImportModule("QuestieWotlkObjectFi
 ---@type IsleOfQuelDanas
 local IsleOfQuelDanas = QuestieLoader:ImportModule("IsleOfQuelDanas")
 
---- Automatic corrections
-local QuestieItemStartFixes = QuestieLoader:ImportModule("QuestieItemStartFixes")
-
 --[[
     This file load the corrections of the database files.
 

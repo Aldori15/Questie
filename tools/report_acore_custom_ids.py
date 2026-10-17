@@ -18,7 +18,7 @@ DEFAULT_BASE_DB = {
     "quest": REPO_ROOT / "Database" / "Wotlk" / "wotlkQuestDB.lua",
     "npc": REPO_ROOT / "Database" / "Wotlk" / "wotlkNpcDB.lua",
     "object": REPO_ROOT / "Database" / "Wotlk" / "wotlkObjectDB.lua",
-    "item": REPO_ROOT / "Database" / "Wotlk" / "wotlkItemDB.lua",
+    "item": REPO_ROOT / "Database" / "AzerothCore" / "acoreItemDB.lua",
 }
 
 DEFAULT_ACORE_CORRECTIONS = {
@@ -27,7 +27,6 @@ DEFAULT_ACORE_CORRECTIONS = {
     "object": REPO_ROOT / "Database" / "AzerothCore" / "AzerothCoreObjectCorrections.lua",
     "item": REPO_ROOT / "Database" / "AzerothCore" / "AzerothCoreItemCorrections.lua",
 }
-DEFAULT_ITEM_START_FIXES = REPO_ROOT / "Database" / "Corrections" / "Automatic" / "itemStartFixes.lua"
 
 QUEST_ENTRY_RE = re.compile(r"^\[(\d+)\]\s*=\s*(\{.*\})$", re.DOTALL)
 QUEST_FIELD_RE = re.compile(
@@ -251,7 +250,6 @@ def main():
         "item": load_correction_ids(DEFAULT_ACORE_CORRECTIONS["item"], ["return {"]),
     }
     supported_ids = {kind: set(ids) for kind, ids in correction_ids.items()}
-    supported_ids["item"].update(load_correction_ids(DEFAULT_ITEM_START_FIXES, ["return {"]))
 
     correction_report = {}
     for kind in sorted(base_ids):

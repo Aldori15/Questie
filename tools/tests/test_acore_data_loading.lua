@@ -83,10 +83,10 @@ local function empty() return {} end
 for _, name in ipairs({"QuestieQuestFixes", "QuestieNPCFixes", "QuestieItemFixes", "QuestieObjectFixes",
     "QuestieTBCQuestFixes", "QuestieTBCNpcFixes", "QuestieTBCItemFixes", "QuestieTBCObjectFixes",
     "QuestieWotlkQuestFixes", "QuestieWotlkNpcFixes", "QuestieWotlkItemFixes", "QuestieWotlkObjectFixes",
-    "QuestieItemStartFixes", "QuestieQuestBlacklist", "QuestieNPCBlacklist", "QuestieItemBlacklist"}) do
+    "QuestieQuestBlacklist", "QuestieNPCBlacklist", "QuestieItemBlacklist"}) do
     local mod = env.QuestieLoader:ImportModule(name)
     for _, method in ipairs({"Load", "LoadAutomatics", "LoadReverseLinkFixes",
-        "LoadReverseStartQuestFixes", "LoadAutomaticQuestStarts"}) do
+        "LoadReverseStartQuestFixes"}) do
         mod[method] = noStatic
     end
 

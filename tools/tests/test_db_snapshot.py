@@ -134,7 +134,7 @@ class SnapshotComparisonTests(unittest.TestCase):
         for kind in ("Item", "Npc", "Object", "Quest"):
             self.assertIn(f"Database/AzerothCore/acore{kind}DB.lua", paths)
         self.assertNotIn("Database/AzerothCore/AzerothCoreQuestCorrections.lua", paths)
-        self.assertIn("Database/Corrections/Automatic/itemStartFixes.lua", paths)
+        self.assertNotIn("Database/Corrections/Automatic/itemStartFixes.lua", paths)
         self.assertIn("Database/Corrections/QuestieEvent.lua", paths)
         self.assertIn("Modules/QuestieInit.lua", dependencies)
         self.assertNotIn("Database/compiler.lua", paths)
