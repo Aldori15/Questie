@@ -594,12 +594,13 @@ def parse_insert_sql_value(token, context=None):
     value = token.strip()
     if not value or value.upper() == "NULL":
         return None
+    # Quoted text is literal SQL data, even when it contains @ or leading zeros.
+    if value[0] in {"'", '"'} and value[-1] == value[0]:
+        return ast.literal_eval(value)
     if "@" in value and not context:
         raise ValueError("SQL variables are not supported in bulk inserts")
     value = replace_sql_variables(value, context)
     value = re.sub(r"(?<![\w.])0+([1-9]\d*)\b", r"\1", value)
-    if value[0] in {"'", '"'} and value[-1] == value[0]:
-        return ast.literal_eval(value)
     if re.fullmatch(r"-?\d+", value):
         return int(value)
     if re.fullmatch(r"-?(?:\d+\.\d*|\d*\.\d+)", value):
@@ -672,7 +673,7 @@ def split_where_clauses(where_clause):
             index += 1
             continue
 
-        if depth == 0:
+        if depth == 0 and (index == 0 or not (where_clause[index - 1].isalnum() or where_clause[index - 1] == "_")):
             token = re.match(r"\b(AND|BETWEEN|OR)\b", where_clause[index:], re.IGNORECASE)
             if token:
                 value = token.group(1).upper()
@@ -730,7 +731,7 @@ def split_or_clauses(where_clause):
             index += 1
             continue
 
-        if depth == 0:
+        if depth == 0 and (index == 0 or not (where_clause[index - 1].isalnum() or where_clause[index - 1] == "_")):
             token = re.match(r"\bOR\b", where_clause[index:], re.IGNORECASE)
             if token:
                 clauses.append(where_clause[start:index].strip())
@@ -787,35 +788,28 @@ def split_update_statement(statement, table_name):
 
 
 def parse_where_constraints(where_clause, context=None):
+    where_clause = strip_wrapping_parentheses(where_clause)
+    # SQL AND binds more tightly than OR; BETWEEN's AND is not a boolean split.
+    or_clauses = split_or_clauses(where_clause)
+    if or_clauses:
+        branches = [parse_where_constraints(clause, context) for clause in or_clauses]
+        return None if any(branch is None for branch in branches) else {"__or_0": ("or", branches)}
     constraints = {}
-    clauses = split_where_clauses(strip_wrapping_parentheses(where_clause))
+    clauses = split_where_clauses(where_clause)
     if clauses is None:
         return None
+    if len(clauses) > 1:
+        branches = [parse_where_constraints(clause, context) for clause in clauses]
+        return None if any(branch is None for branch in branches) else {"__and_0": ("and", branches)}
     for raw_clause in clauses:
         clause = strip_wrapping_parentheses(raw_clause)
-        if re.search(r"\s+OR\s+", clause, re.IGNORECASE):
-            or_clauses = split_or_clauses(clause)
-            if not or_clauses:
-                return None
-            or_constraints = []
-            for or_clause in or_clauses:
-                parsed = parse_where_constraints(or_clause, context)
-                if parsed is None:
-                    return None
-                or_constraints.append(parsed)
-            constraints[f"__or_{len(constraints)}"] = ("or", or_constraints)
-            continue
-
-        match = re.match(r"`?([A-Za-z0-9_]+)`?\s*IN\s*\(([^)]+)\)", clause, re.IGNORECASE | re.DOTALL)
+        match = re.fullmatch(r"`?([A-Za-z0-9_]+)`?\s*IN\s*\((.*)\)\s*", clause, re.IGNORECASE | re.DOTALL)
         if match:
             values = set()
             for token in split_sql_values(match.group(2)):
                 token = token.strip()
-                if "@" in token and not context:
-                    return None
-                token = replace_sql_variables(token, context)
                 try:
-                    values.add(parse_sql_value(token))
+                    values.add(parse_insert_sql_value(token, context))
                 except Exception:
                     return None
             constraints[match.group(1).lower()] = values
@@ -823,10 +817,9 @@ def parse_where_constraints(where_clause, context=None):
 
         match = re.match(r"`?([A-Za-z0-9_]+)`?\s+BETWEEN\s+(.+?)\s+AND\s+(.+)$", clause, re.IGNORECASE | re.DOTALL)
         if match:
-            low = replace_sql_variables(match.group(2).strip(), context)
-            high = replace_sql_variables(match.group(3).strip(), context)
             try:
-                constraints[match.group(1).lower()] = ("between", parse_sql_value(low), parse_sql_value(high))
+                constraints[match.group(1).lower()] = ("between", parse_insert_sql_value(match.group(2), context),
+                                                     parse_insert_sql_value(match.group(3), context))
             except Exception:
                 return None
             continue
@@ -834,11 +827,8 @@ def parse_where_constraints(where_clause, context=None):
         match = re.match(r"`?([A-Za-z0-9_]+)`?\s*=\s*(.+)$", clause, re.IGNORECASE | re.DOTALL)
         if match:
             token = match.group(2).strip()
-            if "@" in token and not context:
-                return None
-            token = replace_sql_variables(token, context)
             try:
-                constraints[match.group(1).lower()] = {parse_sql_value(token)}
+                constraints[match.group(1).lower()] = {parse_insert_sql_value(token, context)}
             except Exception:
                 return None
             continue
@@ -860,6 +850,10 @@ def row_matches_constraints(row, constraints):
     for column, values in constraints.items():
         if isinstance(values, tuple) and values and values[0] == "or":
             if not any(row_matches_constraints(row, sub_constraints) for sub_constraints in values[1]):
+                return False
+            continue
+        if isinstance(values, tuple) and values and values[0] == "and":
+            if not all(row_matches_constraints(row, sub_constraints) for sub_constraints in values[1]):
                 return False
             continue
         if isinstance(values, tuple) and values and values[0] == "expr":

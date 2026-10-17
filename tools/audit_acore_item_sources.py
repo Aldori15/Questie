@@ -74,7 +74,7 @@ def write_json(path, value):
         candidate.replace(path)
 
 
-def read_items(path, root):
+def read_static_records(path, root, kind):
     items, counts, overrides, schema = {}, Counter(), {}, None
     with snapshot.open_snapshot(path, "r") as stream:
         metadata = snapshot.read_header(stream)["metadata"]
@@ -85,28 +85,34 @@ def read_items(path, root):
             raise ValueError("Snapshot lacks source hashes")
         for name, digest in hashes.items():
             if snapshot.file_hash(root / name) != digest:
-                raise ValueError(f"Stale snapshot: {name}; capture a new item-audit snapshot")
+                raise ValueError(f"Stale snapshot: {name}; capture a fresh snapshot")
         first = min(metadata["contexts"])
         for record in snapshot.read_records(stream, metadata["contexts"]):
             context, section, item_id, value = (record[k] for k in ("context", "section", "id", "value"))
-            if section == "itemData":
+            if section == kind + "Data":
                 if type(item_id) is not int or not isinstance(value, dict):
-                    raise ValueError("Invalid item record")
+                    raise ValueError(f"Invalid {kind} record")
                 counts[context] += 1
                 if context == first:
                     items[item_id] = value
                 elif item_id not in items or not same_value(items[item_id], value):
-                    raise ValueError(f"Static item {item_id} differs between contexts; audit it separately")
-            elif section == "schemas/item" and item_id == "keys":
+                    raise ValueError(f"Static {kind} {item_id} differs between contexts; audit it separately")
+            elif section == "schemas/" + kind and item_id == "keys":
                 if schema is not None and not same_value(schema, value):
-                    raise ValueError("Item schema differs between contexts")
+                    raise ValueError(f"{kind} schema differs between contexts")
                 schema = value
-            elif section.startswith("overrides/") and section.endswith("/item"):
+            elif section.startswith("overrides/") and section.endswith("/" + kind):
                 overrides.setdefault(context, {}).setdefault(section, {})[item_id] = value
     if not items or schema is None or any(counts[c] != len(items) for c in metadata["contexts"]):
-        raise ValueError("Snapshot is missing item records or schema in a context")
+        raise ValueError(f"Snapshot is missing {kind} records or schema in a context")
+    if not all(isinstance(key, str) and key.startswith("s:") and type(index) is int for key, index in schema.items()) or sorted(schema.values()) != list(range(1, len(schema) + 1)):
+        raise ValueError(f"Invalid {kind} schema slots")
     fields = [key[2:] for key, _ in sorted(schema.items(), key=lambda pair: pair[1])]
     return items, fields, overrides, metadata
+
+
+def read_items(path, root):
+    return read_static_records(path, root, "item")
 
 
 def source_signature(source, scope, spell_sql=None, spell_table="spell"):

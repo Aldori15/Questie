@@ -79,6 +79,9 @@ def make_manifest(items, source, metadata, snapshot_sha, signature):
         canonical = source_record(raw, include_lists=False)
         if "classOverride" in entry:
             canonical["s:class"] = entry["classOverride"]["value"]
+        if not audit.same_value(current["s:name"], canonical["s:name"]):
+            entry["nameOverride"] = {"value": current["s:name"], "expectedSource": raw["name"]}
+            canonical["s:name"] = current["s:name"]
         for field in FIELDS:
             if field in audit.source_reader.LIST_FIELDS:
                 continue
@@ -137,7 +140,7 @@ def validate_manifest(manifest):
     if any(type(n) is not int or n < 0 for n in limits["sourceLinks"].values()):
         raise ValueError("Invalid source-link limits")
     for key, entry in manifest["entries"].items():
-        if set(entry) - {"reason", "addSources", "classOverride", "representations"} or not entry.get("reason"):
+        if set(entry) - {"reason", "addSources", "classOverride", "nameOverride", "representations"} or not entry.get("reason"):
             raise ValueError(f"Invalid compatibility entry: {key}")
         for field, values in entry.get("addSources", {}).items():
             if field not in SOURCE_FIELDS or not isinstance(values, list) or not values or not all(positive_id(i) for i in values) or values != sorted(set(values)):
@@ -146,6 +149,10 @@ def validate_manifest(manifest):
             override = entry["classOverride"]
             if set(override) != {"value", "expectedSource"} or any(type(v) is not int or v < 0 for v in override.values()):
                 raise ValueError(f"Invalid class override for item {key}")
+        if "nameOverride" in entry:
+            override = entry["nameOverride"]
+            if set(override) != {"value", "expectedSource"} or any(not isinstance(v, str) for v in override.values()):
+                raise ValueError(f"Invalid name override for item {key}")
         for field, representation in entry.get("representations", {}).items():
             if field not in FIELDS or field in audit.source_reader.LIST_FIELDS or not isinstance(representation, dict):
                 raise ValueError(f"Invalid scalar representation for item {key}")
@@ -207,6 +214,11 @@ def build_records(source, manifest):
             if raw["class"] != override["expectedSource"]:
                 raise ValueError(f"Source class changed for item {item_id}; review its explicit compatibility override")
             row["s:class"] = override["value"]
+        if "nameOverride" in entry:
+            override = entry["nameOverride"]
+            if raw["name"] != override["expectedSource"]:
+                raise ValueError(f"Source name changed for item {item_id}; review its explicit compatibility override")
+            row["s:name"] = override["value"]
         for field, representation in entry.get("representations", {}).items():
             expected = representation.get("value", audit.ABSENT)
             current = row.get("s:" + field, audit.ABSENT)

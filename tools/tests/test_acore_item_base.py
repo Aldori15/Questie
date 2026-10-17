@@ -22,6 +22,14 @@ def bootstrap(items, source):
 
 
 class ItemBaseTests(unittest.TestCase):
+    def test_name_compatibility_preserves_spelling_and_guards_future_source_changes(self):
+        source = {1: item(name="Prototype 01")}
+        before = {1: exporter.source_record(item(name="Prototype 1"))}
+        manifest = bootstrap(before, source)
+        self.assertEqual(exporter.build_records(source, manifest)[0], before)
+        with self.assertRaisesRegex(ValueError, "Source name changed"):
+            exporter.build_records({1: item(name="Renamed Prototype")}, manifest)
+
     def test_bootstrap_keeps_only_compatibility_data_and_explicit_scope(self):
         source = {1: item(npcDrops=[100], startQuest=10), 2: item(npcDrops=[300]), 3: item()}
         before = {1: exporter.source_record(source[1]), 2: {"s:npcDrops": {"n:1": 999}}}
