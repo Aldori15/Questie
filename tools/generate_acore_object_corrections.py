@@ -33,6 +33,7 @@ from generate_acore_npc_corrections import (  # noqa: E402
     add_acore_spawn_visibility,
     extract_balanced_braces,
     find_map_difficulty_dbc,
+    index_geometry_origins,
     format_zone_ref,
     load_map_difficulty_masks,
     load_rows_from_sql_file,
@@ -251,6 +252,7 @@ def build_acore_objects(
     gameobject_sql=None,
     map_difficulty_dbc=None,
     wdm_root=None,
+    provenance=None,
 ):
     source_root = Path(source_root)
     map_difficulty_dbc = find_map_difficulty_dbc(source_root, map_difficulty_dbc)
@@ -293,6 +295,7 @@ def build_acore_objects(
             ends_by_entry[entry].add(quest)
 
     spawns_by_entry = defaultdict(lambda: defaultdict(list))
+    spawn_origins = defaultdict(lambda: defaultdict(list))
     spawn_zone_counts = defaultdict(lambda: defaultdict(int))
     seen_spawn_entries = set()
     unmapped_spawn_entries = set()
@@ -306,9 +309,11 @@ def build_acore_objects(
         seen_spawn_entries.add(entry)
         zone_id, point = resolve_coordinate_zone(row, zone_maps)
         if zone_id and point:
-            spawns_by_entry[entry][zone_id].append(
-                add_acore_spawn_visibility(point, row, map_difficulty_masks)
-            )
+            visible_point = add_acore_spawn_visibility(point, row, map_difficulty_masks)
+            spawns_by_entry[entry][zone_id].append(visible_point)
+            guid = int(row.get("guid") or 0)
+            if provenance is not None and guid:
+                spawn_origins[entry][zone_id].append((visible_point, f"gameobject:{guid}"))
             spawn_zone_counts[entry][zone_id] += 1
         else:
             unmapped_spawn_entries.add(entry)
@@ -338,6 +343,9 @@ def build_acore_objects(
         obj["factionID"] = int((addon or {}).get("faction") or 0)
 
         acore_objects[object_id] = obj
+
+    if provenance is not None:
+        provenance.update(index_geometry_origins(acore_objects, spawn_origins, {}, map_difficulty_masks))
 
     skipped_mutations = {
         "gameobject_template": skipped_template,
