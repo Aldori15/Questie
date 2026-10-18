@@ -1228,6 +1228,54 @@ def is_friendly_to(template, other):
     return False
 
 
+def spawn_origin_matches(point, result, difficulty_masks):
+    """Match only the reader's explicit deduplication rules, never proximity."""
+    coordinate = [round(float(point[0]), 2), round(float(point[1]), 2)]
+    if coordinate != result[:2]:
+        return False
+    phase = lambda value: int(value[2] or 0) if len(value) >= 3 else 0
+    if phase(point) != phase(result):
+        return False
+    if len(result) >= 7:
+        return (len(point) == len(result) and point[4:] == result[4:]
+                and int(point[3]) & int(result[3]) == int(point[3]))
+    if len(result) >= 5:
+        return (len(point) == 5 and point[4] == result[4]
+                and int(point[3]) & int(result[3]) == int(point[3]))
+    return len(point) < 5 or (len(point) == 5 and
+        int(point[3]) & int(difficulty_masks.get(int(point[4]), 0)) == int(point[3]))
+
+
+def index_geometry_origins(npcs, spawn_origins, path_origins, difficulty_masks):
+    result = {}
+    for npc_id, npc in npcs.items():
+        fields = {}
+        for field, origins in (("spawns", spawn_origins), ("waypoints", path_origins)):
+            zones = {}
+            for zone, values in npc.get(field, {}).items():
+                candidates = origins.get(npc_id, {}).get(zone, [])
+                indexed = {}
+                # Bucket by coordinate to avoid a quadratic scan over large zones.
+                buckets = defaultdict(list)
+                for value, identity in candidates:
+                    key = tuple(round(float(v), 2) for v in value[:2]) if field == "spawns" else tuple(value[0])
+                    buckets[key].append((value, identity))
+                for index, value in enumerate(values, 1):
+                    key = tuple(value[:2]) if field == "spawns" else tuple(value[0])
+                    matches = {identity for original, identity in buckets.get(key, [])
+                               if (spawn_origin_matches(original, value, difficulty_masks)
+                                   if field == "spawns" else original == value)}
+                    if matches:
+                        indexed[f"n:{index}"] = sorted(matches)
+                if indexed:
+                    zones[f"n:{zone}"] = indexed
+            if zones:
+                fields[field] = zones
+        if fields:
+            result[str(npc_id)] = fields
+    return result
+
+
 def build_acore_npcs(
     source_root,
     include_modules=False,
@@ -1237,6 +1285,7 @@ def build_acore_npcs(
     map_difficulty_dbc=None,
     wdm_root=None,
     questie_npcs=None,
+    provenance=None,
 ):
     source_root = Path(source_root)
     map_difficulty_dbc = find_map_difficulty_dbc(source_root, map_difficulty_dbc)
@@ -1305,6 +1354,8 @@ def build_acore_npcs(
     seen_spawn_entries = set()
     guid_to_creature = {}
     creatures_by_entry = defaultdict(list)
+    spawn_origins = defaultdict(lambda: defaultdict(list))
+    path_origins = defaultdict(lambda: defaultdict(list))
     map_stats = defaultdict(int)
     zone_maps = parse_zone_maps(Path(repo_root or ".").resolve(), wdm_root)
     multispawns_by_guid = defaultdict(set)
@@ -1334,12 +1385,22 @@ def build_acore_npcs(
                 if entry in questgiver_entries:
                     visible_point = add_acore_spawn_identity(visible_point, row)
                 spawns_by_entry[entry][zone_id].append(visible_point)
+                if provenance is not None and guid:
+                    spawn_origins[entry][zone_id].append((visible_point, f"creature:{guid}:entry:{entry}"))
                 spawn_zone_counts[entry][zone_id] += 1
             else:
                 unmapped_spawn_entries.add(entry)
                 map_stats["unmapped_spawns"] += 1
 
     scripted_spawns = load_wintergrasp_scripted_spawns(source_root, repo_root or ".", zone_maps)
+    if provenance is not None:
+        # Script visibility can replace coincident SQL rows. Until script table
+        # identities are exposed, do not misattribute those markers to a GUID.
+        for entry, zones in scripted_spawns.items():
+            for zone, points in zones.items():
+                replaced = {tuple(point[:2]) for point in points}
+                spawn_origins[entry][zone] = [(point, identity) for point, identity in spawn_origins[entry][zone]
+                                              if tuple(point[:2]) not in replaced]
     merge_scripted_spawn_locations(spawns_by_entry, scripted_spawns)
     for entry, zones in scripted_spawns.items():
         seen_spawn_entries.add(entry)
@@ -1366,7 +1427,7 @@ def build_acore_npcs(
     seen_waypoint_entries = set()
     bad_waypoint_entries = set()
 
-    def add_waypoint_path(entries, creature_candidates, path_rows):
+    def add_waypoint_path(entries, creature_candidates, path_rows, identity):
         entries = tuple(sorted(set(entries)))
         if not entries or not creature_candidates or not path_rows:
             return False
@@ -1394,6 +1455,9 @@ def build_acore_npcs(
             if path_zone_id and len(path_points) >= 2:
                 for entry in entries:
                     waypoints_by_entry[entry][path_zone_id].append(path_points)
+                    if provenance is not None:
+                        origin = f"{identity}:map-spawn:{int(creature.get('guid') or 0)}:entry:{entry}"
+                        path_origins[entry][path_zone_id].append((unique_consecutive_points(path_points), origin))
                 return True
 
         map_stats["unmapped_waypoints"] += 1
@@ -1409,7 +1473,7 @@ def build_acore_npcs(
         entries = get_creature_entries(creature, multispawns_by_guid)
         if not entries:
             continue
-        add_waypoint_path(entries, (creature,), path_rows)
+        add_waypoint_path(entries, (creature,), path_rows, f"waypoint_data:{path_id}:addon:{guid}")
 
     seen_smart_waypoint_assignments = set()
     for script_row in smart_script_rows:
@@ -1436,7 +1500,7 @@ def build_acore_npcs(
         if assignment_key in seen_smart_waypoint_assignments:
             continue
         seen_smart_waypoint_assignments.add(assignment_key)
-        add_waypoint_path(entries, creature_candidates, path_rows)
+        add_waypoint_path(entries, creature_candidates, path_rows, f"waypoints:{path_id}:smart:{source_entry_or_guid}")
 
     acore_npcs = {}
     for npc_id, row in template_rows.items():
@@ -1495,6 +1559,10 @@ def build_acore_npcs(
         npc["friendlyToFaction"] = parse_friendly_to_faction(row.get("faction"), faction_template_rows)
 
         acore_npcs[int(npc_id)] = npc
+
+    if provenance is not None:
+        # Generation-only information. Never add it to an addon row or Lua output.
+        provenance.update(index_geometry_origins(acore_npcs, spawn_origins, path_origins, map_difficulty_masks))
 
     skipped_mutations = {
         "creature_template": skipped_creature_template,

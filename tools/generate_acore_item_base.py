@@ -1,14 +1,14 @@
-"""Generate an item-base candidate from AzerothCore and explicit compatibility data.
+"""Regenerate acoreItemDB.lua from current AzerothCore source and compatibility.
 
-bootstrap reads a verified snapshot once to freeze item scope, selected source
-links, representations, class exceptions and partial records. generate needs no inherited base,
-correction Lua, snapshot or migration zip; --compare-snapshot is review only.
-All Lua outputs stay in tools/reports until the candidate has been reviewed.
+Normal use: --acore-source PATH --spell-sql PATH. No archive or old source is
+needed. --output can select a local report candidate instead of the live file.
+bootstrap is a one-time migration helper; --compare-snapshot verifies migration.
 """
 import argparse
 from collections import Counter
 import copy
 import json
+import sys
 from pathlib import Path
 
 import audit_acore_item_sources as audit
@@ -22,6 +22,33 @@ KEYS = {"s:" + field: index for index, field in enumerate(FIELDS, 1)}
 REQUIRED_SCALARS = {"name", "itemLevel", "requiredLevel", "ammoType", "class", "subClass"}
 SOURCE_FIELDS = {"npcDrops", "objectDrops"}
 DEFAULT_MANIFEST = Path("tools/data/acore_item_compatibility.json")
+
+
+def upgrade_manifest(manifest, source):
+    """Convert migration selections to reusable exclusions, once during refactor."""
+    if manifest["version"] == 3:
+        result = copy.deepcopy(manifest)
+        result.setdefault("excludedItemIds", sorted(set(source) - set(result["itemIds"])))
+        return result
+    validate_manifest(manifest)
+    manifest = copy.deepcopy(manifest)
+    pools, lookup, exclusions = {}, {}, {}
+    for item_id in manifest["itemIds"]:
+        key = str(item_id)
+        if key in manifest["partialRecords"]:
+            continue
+        for field in sorted(audit.source_reader.LIST_FIELDS):
+            selected = unpack_selection(manifest["sourceSelections"].get(key, {}).get(field, []))
+            excluded = tuple(sorted(set(source[item_id].get(field, [])) - set(selected.values())))
+            if excluded:
+                if excluded not in lookup:
+                    token = str(len(pools) + 1)
+                    lookup[excluded], pools[token] = token, list(excluded)
+                exclusions.setdefault(key, {})[field] = lookup[excluded]
+    manifest.update(version=3, excludedSourceSets=pools, sourceExclusions=exclusions,
+                    excludedItemIds=sorted(set(source) - set(manifest["itemIds"])))
+    manifest["scopePolicy"] = "Refresh included items from current source; preserve explicit exclusions and compatibility values."
+    return manifest
 
 
 def positive_id(value):
@@ -108,12 +135,24 @@ def make_manifest(items, source, metadata, snapshot_sha, signature):
 
 
 def validate_manifest(manifest):
-    if manifest.get("format") != "questie-acore-item-compatibility" or manifest.get("version") != 2:
-        raise ValueError("Unsupported item compatibility manifest; rebuild it once with bootstrap --force for exact parity")
+    if manifest.get("format") != "questie-acore-item-compatibility" or manifest.get("version") not in (2, 3):
+        raise ValueError("Unsupported item compatibility manifest format/version")
     ids = manifest.get("itemIds")
     if not isinstance(ids, list) or not ids or not all(positive_id(i) for i in ids) or ids != sorted(set(ids)):
         raise ValueError("Manifest itemIds must be sorted unique positive integers")
     scope = set(ids)
+    scope_keys = {str(i) for i in scope}
+    if manifest["version"] == 3:
+        excluded_ids = manifest.get("excludedItemIds")
+        if not isinstance(excluded_ids, list) or not all(positive_id(i) for i in excluded_ids) or excluded_ids != sorted(set(excluded_ids)) or set(excluded_ids) & scope:
+            raise ValueError("Invalid excluded item IDs")
+        pools = manifest.get("excludedSourceSets", {})
+        for values in pools.values():
+            if not isinstance(values, list) or not all(positive_id(v) for v in values) or values != sorted(set(values)):
+                raise ValueError("Invalid excluded source set")
+        for key, fields in manifest.get("sourceExclusions", {}).items():
+            if key not in scope_keys or not set(fields) <= audit.source_reader.LIST_FIELDS or any(token not in pools for token in fields.values()):
+                raise ValueError("Invalid source exclusion reference")
     for section in ("entries", "partialRecords", "sourceSelections"):
         if not isinstance(manifest.get(section), dict):
             raise ValueError(f"Missing manifest {section}")
@@ -185,6 +224,8 @@ def source_record(raw, include_lists=True):
 
 def build_records(source, manifest):
     validate_manifest(manifest)
+    if manifest["version"] == 3:
+        return build_current_records(source, manifest)
     records, redundant = {}, []
     for item_id in manifest["itemIds"]:
         if item_id not in source:
@@ -232,6 +273,61 @@ def build_records(source, manifest):
     for field, count in link_counts(records).items():
         if count > manifest["limits"]["sourceLinks"][field]:
             raise ValueError(f"Source-link budget exceeded for {field}; review scope before increasing the limit")
+    return records, redundant
+
+
+def build_current_records(source, manifest):
+    records, redundant = {}, []
+    pools = {key: set(values) for key, values in manifest["excludedSourceSets"].items()}
+    scope = set(manifest["itemIds"]) | (set(source) - set(manifest["excludedItemIds"]))
+    for item_id in sorted(scope):
+        key = str(item_id)
+        if key in manifest["partialRecords"]:
+            records[item_id] = copy.deepcopy(manifest["partialRecords"][key])
+            continue
+        if item_id not in source:
+            continue  # Deleted source templates disappear in the normal git diff.
+        raw = source[item_id]
+        row = source_record(raw, include_lists=False)
+        entry = manifest["entries"].get(key, {})
+        selections = manifest["sourceSelections"].get(key, {})
+        for field in sorted(audit.source_reader.LIST_FIELDS):
+            supplements = set(entry.get("addSources", {}).get(field, []))
+            direct = set(raw.get(field, []))
+            excluded = pools.get(manifest["sourceExclusions"].get(key, {}).get(field), set())
+            allowed = (direct - excluded) | supplements
+            selected = unpack_selection(selections.get(field, []))
+            result = {index: value for index, value in selected.items() if value in allowed}
+            remaining = sorted(allowed - set(result.values()))
+            index = max((int(k[2:]) for k in selected), default=0)
+            for value in remaining:
+                index += 1
+                result[f"n:{index}"] = value
+            if set(selected) == {f"n:{i}" for i in range(1, len(selected) + 1)}:
+                result = {f"n:{i}": value for i, (_, value) in enumerate(
+                    sorted(result.items(), key=lambda pair: int(pair[0][2:])), 1)}
+            if field in selections or result:
+                row["s:" + field] = result
+            if direct & supplements:
+                redundant.append({"itemId": item_id, "field": field, "sourceIds": sorted(direct & supplements)})
+        for field, override_name in (("name", "nameOverride"), ("class", "classOverride")):
+            override = entry.get(override_name)
+            if override and audit.same_value(raw.get(field), override["expectedSource"]):
+                row["s:" + field] = override["value"]
+        for field, representation in entry.get("representations", {}).items():
+            expected = representation.get("value", audit.ABSENT)
+            if audit.normalized(field, expected) == audit.normalized(field, row.get("s:" + field, audit.ABSENT)):
+                if representation["present"]:
+                    row["s:" + field] = copy.deepcopy(expected)
+                else:
+                    row.pop("s:" + field, None)
+        records[item_id] = row
+    for field, count in link_counts(records).items():
+        previous = manifest["limits"]["sourceLinks"][field]
+        if count > previous + max(64, previous // 20):
+            raise ValueError(f"Unexpected growth in {field}; review relationship scope before raising its limit")
+    if len(records) < len(manifest["itemIds"]) * 0.95:
+        raise ValueError("Unexpected removal of more than 5% of item records; check source completeness")
     return records, redundant
 
 
@@ -322,7 +418,8 @@ def write_manifest(path, manifest):
 
 def output_path(path, directory, suffix):
     path = (ROOT / path).resolve()
-    if not path.is_relative_to(ROOT / directory) or path.suffix != suffix:
+    production = (ROOT / "Database/AzerothCore/acoreItemDB.lua").resolve()
+    if (not path.is_relative_to(ROOT / directory) and not (directory == "tools/reports" and path == production)) or path.suffix != suffix:
         raise ValueError(f"Output must be a {suffix} file under {directory}")
     return path
 
@@ -337,13 +434,16 @@ def main(argv=None):
         command.add_argument("--spell-table", default="spell")
         command.add_argument("--source-cache", type=Path, default=Path("tools/reports/acore_item_source_model_full.json"))
         command.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
-        command.add_argument("--force", action="store_true", help="Replace an existing output")
+        command.add_argument("--force", action="store_true", help="Overwrite a migration manifest; normal generation overwrites its output")
     commands.choices["bootstrap"].add_argument("--snapshot", type=Path, required=True)
     generate = commands.choices["generate"]
     generate.add_argument("--compare-snapshot", type=Path, help="Review only; never used to construct candidate records")
-    generate.add_argument("--output", type=Path, default=Path("tools/reports/acore-item-candidate/acoreItemDB.lua"))
+    generate.add_argument("--output", type=Path, default=Path("Database/AzerothCore/acoreItemDB.lua"), help="Default: Database/AzerothCore/acoreItemDB.lua")
     generate.add_argument("--report", type=Path, default=Path("tools/reports/acore_item_base_candidate.json"))
-    args = parser.parse_args(argv)
+    arguments = list(sys.argv[1:] if argv is None else argv)
+    if arguments and arguments[0].startswith("-"):
+        arguments.insert(0, "generate")
+    args = parser.parse_args(arguments)
     root, spell = args.acore_source.resolve(), args.spell_sql.resolve()
     cache = audit.local_output(ROOT, args.source_cache)
     manifest_path = output_path(args.manifest, "tools/data", ".json")
@@ -359,10 +459,12 @@ def main(argv=None):
         inputs.add(manifest_path)
     if len(set(targets)) != len(targets) or any(path in inputs for path in targets):
         raise ValueError("Outputs must use different paths from inputs and the source cache")
-    if any(path.exists() for path in targets) and not args.force:
+    if args.command == "bootstrap" and any(path.exists() for path in targets) and not args.force:
         raise ValueError("Output already exists; review it or explicitly use --force")
     signature = audit.source_signature(root, "full", spell, args.spell_table)
     saved = audit.load_source(root, "full", signature, cache, spell_sql=spell, spell_table=args.spell_table)
+    if any(saved.get("sourceDiagnostics", {}).values()) or saved.get("spellCoverage", {}).get("missingRequestedSpellIds", 0):
+        raise ValueError("Unresolved item source diagnostics or spell IDs; check source inputs")
     source = {int(key): row for key, row in saved["items"].items()}
     if set(source) != set(saved["templateIds"]):
         raise ValueError("Source model must contain exactly the valid item templates")
@@ -373,7 +475,7 @@ def main(argv=None):
         if tuple(fields) != FIELDS:
             raise ValueError("Snapshot item schema does not match the exporter")
     if args.command == "bootstrap":
-        manifest = validate_manifest(make_manifest(reference, source, metadata, baseline_digest, signature))
+        manifest = validate_manifest(upgrade_manifest(make_manifest(reference, source, metadata, baseline_digest, signature), source))
         records, _ = build_records(source, manifest)
         comparison = compare_candidate(reference, records)
         if comparison["unexpectedChanges"]:
@@ -392,7 +494,7 @@ def main(argv=None):
                    "excludedSourceItemIds": sorted(set(source) - set(records)), "redundantSupplements": redundant,
                    "comparisonSnapshotSha256": baseline_digest, "comparison": comparison,
                    "sourceLinks": link_counts(records), "maxOutputBytes": manifest["limits"]["maxOutputBytes"],
-                   "filteredSourceLinks": {field: sum(len(set(source[item_id].get(field, [])) -
+                   "filteredSourceLinks": {field: sum(len(set(source.get(item_id, {}).get(field, [])) -
                                                               set(records[item_id].get("s:" + field, {}).values()))
                                                        for item_id in records)
                                            for field in sorted(audit.source_reader.LIST_FIELDS)}}

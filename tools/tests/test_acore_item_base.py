@@ -128,12 +128,16 @@ class ItemBaseTests(unittest.TestCase):
                 self.assertEqual(report["items"], 1)
                 self.assertEqual(report["excludedSourceItemIds"], [2])
                 self.assertIsNone(report["comparison"])
-                with self.assertRaisesRegex(ValueError, "already exists"):
-                    exporter.main(["generate", *arguments])
+                # Normal generation writes production directly and can be rerun.
+                output = directory / "Database/AzerothCore/acoreItemDB.lua"
+                self.assertTrue(output.exists())
+                self.assertEqual(exporter.main(arguments), 0)
 
-    def test_live_database_paths_are_rejected(self):
+    def test_only_the_intended_production_database_path_is_allowed(self):
+        self.assertEqual(exporter.output_path(Path("Database/AzerothCore/acoreItemDB.lua"), "tools/reports", ".lua"),
+                         (ADDON_ROOT / "Database/AzerothCore/acoreItemDB.lua").resolve())
         with self.assertRaises(ValueError):
-            exporter.output_path(Path("Database/AzerothCore/acoreItemDB.lua"), "tools/reports", ".lua")
+            exporter.output_path(Path("Database/AzerothCore/acoreNpcDB.lua"), "tools/reports", ".lua")
 
     def test_parity_keeps_field_presence_order_duplicates_and_sparse_source_keys(self):
         source = {1: item(npcDrops=[100, 200, 300], vendors=[400])}
@@ -173,7 +177,7 @@ class ItemBaseTests(unittest.TestCase):
     def test_version_one_expansion_manifest_is_rejected(self):
         manifest = bootstrap({1: exporter.source_record(item())}, {1: item()})
         manifest["version"] = 1
-        with self.assertRaisesRegex(ValueError, "bootstrap --force"):
+        with self.assertRaisesRegex(ValueError, "Unsupported item compatibility"):
             exporter.build_records({1: item()}, manifest)
 
     def test_source_link_and_serialized_size_budgets_reject_expansion(self):
@@ -185,6 +189,45 @@ class ItemBaseTests(unittest.TestCase):
             exporter.build_records(source, manifest)
         with self.assertRaisesRegex(ValueError, "baseline size budget"):
             exporter.enforce_size(manifest["limits"]["maxOutputBytes"] + 1, manifest)
+
+    def test_current_source_updates_without_old_models_or_archives(self):
+        old = {1: item(npcDrops=[10, 20], vendors=[30], itemLevel=1)}
+        before = {1: exporter.source_record(item(npcDrops=[10], vendors=[30], itemLevel=1))}
+        manifest = exporter.upgrade_manifest(bootstrap(before, old), old)
+        self.assertEqual(exporter.build_records(old, manifest)[0], before)
+        # 20 was deliberately excluded; new source 40 is a genuine addition.
+        fresh = {1: item(npcDrops=[20, 40], vendors=[50], itemLevel=2)}
+        records, _ = exporter.build_records(fresh, manifest)
+        self.assertEqual(set(records[1]["s:npcDrops"].values()), {40})
+        self.assertEqual(set(records[1]["s:vendors"].values()), {50})
+        self.assertEqual(records[1]["s:itemLevel"], 2)
+        self.assertEqual(manifest["sourceSelections"]["1"]["npcDrops"], [10])
+
+    def test_current_source_supersedes_conditional_scalar_compatibility(self):
+        source = {1: item(name="Prototype 01", flags=0, **{"class": 0})}
+        before = {1: exporter.source_record(item(name="Prototype 1", flags=0, **{"class": 12}))}
+        before[1].pop("s:flags", None)
+        manifest = exporter.upgrade_manifest(bootstrap(before, source), source)
+        self.assertEqual(exporter.build_records(source, manifest)[0], before)
+        fresh = {1: item(name="Renamed", flags=1, **{"class": 4})}
+        result = exporter.build_records(fresh, manifest)[0][1]
+        self.assertEqual((result["s:name"], result["s:flags"], result["s:class"]), ("Renamed", 1, 4))
+
+    def test_exclusion_sets_are_shared_and_new_relationship_fields_are_generated(self):
+        raw = {1: item(npcDrops=[10, 20]), 2: item(npcDrops=[10, 20])}
+        before = {key: exporter.source_record(item(npcDrops=[10])) for key in raw}
+        manifest = exporter.upgrade_manifest(bootstrap(before, raw), raw)
+        self.assertEqual(len(manifest["excludedSourceSets"]), 1)
+        fresh = copy.deepcopy(raw)
+        fresh[1]["questRewards"] = [99]
+        result = exporter.build_records(fresh, manifest)[0]
+        self.assertEqual(result[1]["s:questRewards"], {"n:1": 99})
+
+    def test_new_templates_are_generated_while_known_omissions_stay_excluded(self):
+        original = {1: item(), 2: item()}
+        manifest = exporter.upgrade_manifest(bootstrap({1: exporter.source_record(original[1])}, original), original)
+        fresh = {**original, 3: item(name="New item")}
+        self.assertEqual(set(exporter.build_records(fresh, manifest)[0]), {1, 3})
 
     def test_compact_manifest_roundtrips_all_selection_types(self):
         source = {1: item(npcDrops=[100, 200])}

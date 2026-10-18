@@ -3,6 +3,7 @@ import contextlib
 import copy
 import io
 import json
+from pathlib import Path
 import subprocess
 import unittest
 from unittest.mock import patch
@@ -131,8 +132,9 @@ class NpcBaseTests(unittest.TestCase):
                 manifest_path = directory / exporter.DEFAULT_MANIFEST
                 manifest = json.loads(manifest_path.read_text())
                 self.assertEqual(exporter.build_records(source, manifest), before)
-                output = directory / "tools/reports/acore-npc-candidate/acoreNpcDB.lua"
+                output = directory / "Database/AzerothCore/acoreNpcDB.lua"
                 existing = output.read_bytes()
+                self.assertEqual(exporter.main(args), 0)
                 manifest["limits"]["maxOutputBytes"] = 1
                 exporter.write_manifest(manifest_path, manifest)
                 with self.assertRaisesRegex(ValueError, "size budget"):
@@ -141,6 +143,92 @@ class NpcBaseTests(unittest.TestCase):
                 saved["diagnostics"] = {"skippedSqlMutations": [{"statement": "unsupported"}]}
                 with self.assertRaisesRegex(ValueError, "source diagnostics"):
                     exporter.main(["generate", "--force", *args])
+
+    def test_current_geometry_follows_moves_additions_removals_and_source_reordering(self):
+        old = {1: npc(spawns=audit.typed({210: [[10, 20, None, 3, 571], [30, 40], [50, 60]]}))}
+        before = {1: npc(spawns=audit.typed({210: [[10, 20, None, 3, 571], [30, 40], [70, 80]]}))}
+        origins = {"1": {"spawns": {"n:210": {"n:1": ["guid:1"], "n:2": ["guid:2"], "n:3": ["guid:3"]}}}}
+        manifest = exporter.upgrade_manifest(bootstrap(before, old), old, origins)
+        self.assertEqual(exporter.build_records(old, manifest, origins), before)
+        fresh = {1: npc(spawns=audit.typed({210: [[50, 60], [90, 95]], 12: [[11, 21, None, 1, 571]]}))}
+        new_origins = {"1": {"spawns": {"n:210": {"n:1": ["guid:3"], "n:2": ["guid:4"]}, "n:12": {"n:1": ["guid:1"]}}}}
+        result = exporter.build_records(fresh, manifest, new_origins)[1]["s:spawns"]
+        self.assertEqual(result["n:12"]["n:1"], audit.typed([11, 21, None, 1, 571]))
+        self.assertNotIn("n:3", result["n:12"]["n:1"])
+        self.assertEqual(list(result["n:210"].values()), [audit.typed([70, 80]), audit.typed([90, 95])])
+        # The removed GUID 2 disappears; deliberately excluded GUID 3 stays out.
+        with self.assertRaisesRegex(ValueError, "identities"):
+            exporter.build_records(fresh, manifest)
+
+    def test_current_relations_and_previously_absent_fields_follow_fresh_source(self):
+        old = {1: npc(questStarts=audit.typed([10, 20]), questEnds={}, npcFlags=0)}
+        before = {1: npc(questStarts=audit.typed([10]))}
+        manifest = exporter.upgrade_manifest(bootstrap(before, old), old, {})
+        self.assertEqual(exporter.build_records(old, manifest, {}), before)
+        fresh = {1: npc(questStarts=audit.typed([20, 30]), questEnds=audit.typed([40]), npcFlags=2)}
+        result = exporter.build_records(fresh, manifest, {})[1]
+        self.assertEqual(result["s:questStarts"], {"n:1": 30})
+        self.assertEqual(result["s:questEnds"], {"n:1": 40})
+        self.assertEqual(result["s:npcFlags"], 2)
+
+    def test_current_source_zone_and_name_update_but_display_health_remains_explicit(self):
+        old = {1: npc(name="Prototype 01", zoneID=210, minLevelHealth=70)}
+        before = {1: npc(name="Prototype 1", zoneID=777, minLevelHealth=100)}
+        manifest = exporter.upgrade_manifest(bootstrap(before, old), old, {})
+        self.assertEqual(exporter.build_records(old, manifest, {}), before)
+        fresh = {1: npc(name="Renamed", zoneID=12, minLevelHealth=5)}
+        result = exporter.build_records(fresh, manifest, {})[1]
+        self.assertEqual((result["s:name"], result["s:zoneID"], result["s:minLevelHealth"]), ("Renamed", 12, 100))
+
+    def test_current_path_identity_uses_fresh_point_order_without_an_old_cache(self):
+        old = {1: npc(waypoints=audit.typed({210: [[[10, 20], [30, 40]]]}))}
+        origins = {"1": {"waypoints": {"n:210": {"n:1": ["path:1"]}}}}
+        manifest = exporter.upgrade_manifest(bootstrap(old, old), old, origins)
+        fresh = {1: npc(waypoints=audit.typed({210: [[[11, 21], [25, 35], [30, 40]]]}))}
+        self.assertEqual(exporter.build_records(fresh, manifest, origins), fresh)
+
+    def test_new_npcs_are_generated_while_known_omissions_stay_excluded(self):
+        original = {1: npc(), 2: npc()}
+        manifest = exporter.upgrade_manifest(bootstrap({1: original[1]}, original), original, {})
+        fresh = {**original, 3: npc(name="New NPC", minLevelHealth=100)}
+        result = exporter.build_records(fresh, manifest, {})
+        self.assertEqual(set(result), {1, 3})
+        self.assertEqual(result[3]["s:name"], "New NPC")
+        self.assertNotIn("s:minLevelHealth", result[3])
+
+    def test_coincident_spawns_can_split_without_losing_either_source(self):
+        old = {1: npc(spawns=audit.typed({210: [[10, 20]]}))}
+        origins = {"1": {"spawns": {"n:210": {"n:1": ["guid:1", "guid:2"]}}}}
+        manifest = exporter.upgrade_manifest(bootstrap(old, old), old, origins)
+        fresh = {1: npc(spawns=audit.typed({210: [[11, 21], [10, 20]]}))}
+        new_origins = {"1": {"spawns": {"n:210": {"n:1": ["guid:1"], "n:2": ["guid:2"]}}}}
+        self.assertEqual(exporter.build_records(fresh, manifest, new_origins), fresh)
+
+    def test_identity_collection_does_not_change_reader_output(self):
+        reader = audit.reader
+        creature = {"guid": 99, "id1": 1, "map": 571, "position_x": 10, "position_y": 20}
+        keyed = {"creature_template": {1: {"name": "NPC", "minlevel": 1, "maxlevel": 1}},
+                 "factiontemplate_dbc": {}, "creature_addon": {99: {"path_id": 88}}}
+        rows = {"creature": [creature], "creature_queststarter": [{"id": 1, "quest": 100}],
+                "waypoint_data": [{"id": 88, "point": 1, "position_x": 10, "position_y": 20},
+                                  {"id": 88, "point": 2, "position_x": 30, "position_y": 40}]}
+        with patch.object(reader, "find_map_difficulty_dbc", return_value=Path("unused.dbc")), \
+             patch.object(reader, "load_map_difficulty_masks", return_value={571: 1}), \
+             patch.object(reader, "load_keyed_table", side_effect=lambda root, table, *args: (keyed.get(table, {}), 0)), \
+             patch.object(reader, "load_row_table", side_effect=lambda root, table, *args: (rows.get(table, []), 0)), \
+             patch.object(reader, "load_creature_multispawn_rows", return_value=([], 0)), \
+             patch.object(reader, "load_filtered_row_table", return_value=([], 0)), \
+             patch.object(reader, "parse_zone_maps", return_value={}), \
+             patch.object(reader, "resolve_coordinate_zone", side_effect=lambda row, maps:
+                          (210, [row["position_x"], row["position_y"]])), \
+             patch.object(reader, "load_wintergrasp_scripted_spawns", return_value={}):
+            before = reader.build_acore_npcs(ADDON_ROOT)
+            provenance = {}
+            after = reader.build_acore_npcs(ADDON_ROOT, provenance=provenance)
+        self.assertEqual(before, after)
+        self.assertEqual(provenance["1"]["spawns"]["n:210"]["n:1"], ["creature:99:entry:1"])
+        self.assertEqual(provenance["1"]["waypoints"]["n:210"]["n:1"],
+                         ["waypoint_data:88:addon:99:map-spawn:99:entry:1"])
 
     def test_generated_candidate_loads_in_the_production_loader(self):
         try:

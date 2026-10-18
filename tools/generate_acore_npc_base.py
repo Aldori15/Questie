@@ -1,14 +1,15 @@
-"""Build an NPC-base candidate from AC source and explicit compatibility policy.
+"""Regenerate acoreNpcDB.lua from current AC source, exports and compatibility.
 
-bootstrap reads the verified baseline once. generate does not read legacy bases,
-correction Lua or a snapshot to construct records. Geometry is selected in its
-existing order; unknown points, source-only NPCs and new quest links stay out.
+No archive, previous checkout, source cache or snapshot is required for updates.
+--output can select a local report candidate instead of the live file.
+bootstrap is a one-time migration helper; --compare-snapshot verifies migration.
 """
 import argparse
 import copy
 import hashlib
 import json
 import math
+import sys
 from pathlib import Path
 
 import audit_acore_item_sources as shared
@@ -24,6 +25,234 @@ DISPLAY_FIELDS = {"minLevelHealth", "maxLevelHealth", "zoneID"}
 GEOMETRY_FIELDS = {"spawns", "waypoints"}
 RELATION_FIELDS = {"questStarts", "questEnds"}
 DEFAULT_MANIFEST = Path("tools/data/acore_npc_compatibility.json")
+
+
+def identity_key(identity):
+    # Bindings live inside one NPC record, so its entry need not be repeated.
+    parts = identity.split(":")
+    if len(parts) == 4 and parts[0] == "creature" and parts[2] == "entry":
+        return "c:" + parts[1]
+    if len(parts) == 8 and parts[0] in {"waypoint_data", "waypoints"}:
+        return ("d:" if parts[0] == "waypoint_data" else "w:") + ":".join(parts[i] for i in (1, 3, 5))
+    return identity
+
+
+def binding_ids(binding):
+    return [binding] if isinstance(binding, str) else binding if isinstance(binding, list) else []
+
+
+def geometry_units(source, origins):
+    if not isinstance(source, dict):
+        return []
+    return [(zone, key, value, [identity_key(i) for i in origins.get(zone, {}).get(key, [])])
+            for zone, units in source.items() for key, value in units.items()]
+
+
+def refreshable_geometry(recipe, source, origins):
+    """Store source identities and intentional omissions, not source list indices."""
+    if recipe is not None and "wholeValue" in recipe:
+        return {"value": copy.deepcopy(recipe["wholeValue"])}
+    slots, selected = {}, set()
+    if recipe is not None:
+        desired = decode_geometry(recipe, source)
+        for zone, selection in recipe["zones"].items():
+            output = slots.setdefault(zone, {})
+            keys = selection.get("keys", [f"n:{i}" for i in range(1, len(selection["refs"]) + 1)])
+            for key, ref in zip(keys, selection["refs"]):
+                value = desired[zone][key]
+                if ref:
+                    source_key = f"n:{ref}"
+                    identities = [identity_key(i) for i in origins.get(zone, {}).get(source_key, [])]
+                    output[key] = (identities[0] if len(identities) == 1 else identities) if identities else {"hash": value_hash(value)}
+                    selected.add((zone, source_key))
+                else:
+                    output[key] = {"value": copy.deepcopy(value)}
+    selected_ids = {identity_key(i) for zone, key in selected for i in origins.get(zone, {}).get(key, [])}
+    selected_values = {(zone, value_hash(source[zone][key])) for zone, key in selected}
+    excluded_ids, excluded_values = set(), set()
+    for zone, key, value, identities in geometry_units(source, origins):
+        if (zone, key) not in selected:
+            if identities:
+                excluded_ids.update(set(identities) - selected_ids)
+            else:
+                # Equivalent duplicate paths must not exclude selected copies.
+                chosen = (zone, value_hash(value)) in selected_values
+                if not chosen:
+                    excluded_values.add(zone + "/" + value_hash(value))
+    policy = {"slots": slots}
+    if excluded_ids:
+        policy["excludeIds"] = sorted(excluded_ids)
+    if excluded_values:
+        policy["excludeValues"] = sorted(excluded_values)
+    return policy
+
+
+def upgrade_manifest(manifest, source, provenance):
+    """One-time conversion while the frozen source still matches the migration."""
+    if manifest["version"] == 2:
+        result = copy.deepcopy(manifest)
+        result.setdefault("excludedNpcIds", sorted(set(source) - {int(key) for key in result["scope"]}))
+        return result
+    validate_manifest(manifest)
+    manifest = copy.deepcopy(manifest)
+    geometry, relation_exclusions, zones = {}, {}, {}
+    for key in manifest["scope"]:
+        if key in manifest["extraRecords"]:
+            continue
+        raw = source[int(key)]
+        for field in sorted(GEOMETRY_FIELDS):
+            policy = refreshable_geometry(
+                manifest["geometry"].get(key, {}).get(field), raw.get("s:" + field, shared.ABSENT),
+                provenance.get(key, {}).get(field, {}))
+            if policy != {"slots": {}}:
+                geometry.setdefault(key, {})[field] = policy
+        for field in sorted(RELATION_FIELDS):
+            selected = manifest["relations"].get(key, {}).get(field, {})
+            excluded = sorted(set(raw.get("s:" + field, {}).values()) - set(selected.values()))
+            if excluded:
+                relation_exclusions.setdefault(key, {})[field] = excluded
+        display = manifest["displayValues"].get(key, {})
+        zone = raw.get("s:zoneID", shared.ABSENT)
+        if "zoneID" in display and not shared.same_value(display["zoneID"], zone):
+            zones[key] = {"value": display["zoneID"], "expectedSource": value_hash(zone)}
+    manifest.update(version=2, geometry=geometry, relationExclusions=relation_exclusions, zoneOverrides=zones,
+                    excludedNpcIds=sorted(set(source) - {int(key) for key in manifest["scope"]}))
+    manifest["policy"] = "Refresh scoped NPCs from current source; preserve explicit geometry exclusions and legacy display values."
+    return manifest
+
+
+def current_geometry(policy, source, origins):
+    if "value" in policy:
+        return copy.deepcopy(policy["value"])
+    if source is shared.ABSENT and any(binding_ids(binding) or "hash" in binding
+            for slots in policy["slots"].values() for binding in slots.values()):
+        raise ValueError("Previously mapped NPC geometry is unavailable; check coordinate/export coverage")
+    excluded_ids, excluded_values = set(policy.get("excludeIds", [])), set(policy.get("excludeValues", []))
+    units = [unit for unit in geometry_units(source, origins)
+             if (not unit[3] or not set(unit[3]) <= excluded_ids)
+             and unit[0] + "/" + value_hash(unit[2]) not in excluded_values]
+    by_id, by_hash = {}, {}
+    for index, (zone, _, value, identities) in enumerate(units):
+        for identity in identities:
+            by_id.setdefault(identity, []).append(index)
+        by_hash.setdefault((zone, value_hash(value)), []).append(index)
+    result, used = {}, set()
+    binding_counts = {}
+    for slots in policy["slots"].values():
+        for binding in slots.values():
+            ids = tuple(binding_ids(binding))
+            if ids:
+                binding_counts[ids] = binding_counts.get(ids, 0) + 1
+
+    def put(zone, key, value):
+        target = result.setdefault(zone, {})
+        if key is None or key in target:
+            key = f"n:{max((int(i[2:]) for i in target), default=0) + 1}"
+        target[key] = copy.deepcopy(value)
+
+    for zone, slots in policy["slots"].items():
+        if not slots:
+            result.setdefault(zone, {})
+        for key, binding in slots.items():
+            if isinstance(binding, dict) and "value" in binding:
+                put(zone, key, binding["value"])
+                used.update(by_hash.get((zone, value_hash(binding["value"])), []))
+                continue
+            candidates = []
+            identities = binding_ids(binding)
+            if identities:
+                for identity in identities:
+                    matches = by_id.get(identity, [])
+                    if len({(units[i][0], value_hash(units[i][2])) for i in matches}) > 1:
+                        raise ValueError(f"Ambiguous NPC geometry identity: {identity}")
+                    candidates.extend(matches)
+            else:
+                candidates = by_hash.get((zone, binding["hash"]), [])
+            # Identical duplicate paths retain their original selected copies.
+            distinct = {}
+            for index in candidates:
+                target_zone, _, value, _ = units[index]
+                distinct.setdefault((target_zone, value_hash(value)), index)
+            if len(distinct) > 1 and binding_counts.get(tuple(identities), 0) > 1:
+                raise ValueError("Previously identical paths split across a shared source identity; resolve their bindings")
+            for number, index in enumerate(distinct.values()):
+                target_zone, _, value, _ = units[index]
+                put(target_zone, key if number == 0 else None, value)
+            used.update(candidates)
+    for index, (zone, _, value, _) in enumerate(units):
+        if index not in used:
+            put(zone, None, value)
+    for zone, points in list(result.items()):
+        original = policy["slots"].get(zone, {})
+        if set(original) == {f"n:{i}" for i in range(1, len(original) + 1)}:
+            result[zone] = {f"n:{i}": value for i, (_, value) in enumerate(
+                sorted(points.items(), key=lambda pair: int(pair[0][2:])), 1)}
+    return result
+
+
+def build_current_records(source, manifest, provenance):
+    result = {}
+    scope = {int(key) for key in manifest["scope"]} | (set(source) - set(manifest["excludedNpcIds"]))
+    for npc_id in sorted(scope):
+        key = str(npc_id)
+        if key in manifest["extraRecords"]:
+            if npc_id in source:
+                raise ValueError(f"Supplemental NPC {npc_id} now has a source template; resolve this ID collision")
+            result[npc_id] = copy.deepcopy(manifest["extraRecords"][key])
+            continue
+        if npc_id not in source:
+            continue
+        raw, row = source[npc_id], {}
+        mask = manifest["scope"].get(key)
+        if mask is None:
+            mask = sum(1 << (KEYS["s:" + field] - 1) for field in FIELDS
+                       if "s:" + field in raw and field not in {"minLevelHealth", "maxLevelHealth"})
+        for field in FIELDS:
+            typed_key = "s:" + field
+            present = bool(mask & (1 << (KEYS[typed_key] - 1)))
+            value = raw.get(typed_key, shared.ABSENT)
+            if field in GEOMETRY_FIELDS:
+                policy = manifest["geometry"].get(key, {}).get(field, {"slots": {}})
+                try:
+                    value = current_geometry(policy, value, provenance.get(key, {}).get(field, {}))
+                except ValueError as exc:
+                    raise ValueError(f"NPC {npc_id} {field}: {exc}") from exc
+            elif field in RELATION_FIELDS:
+                if value is shared.ABSENT:
+                    if present:
+                        raise ValueError(f"NPC {npc_id} has unavailable {field} source data")
+                    continue
+                allowed = set(value.values()) - set(manifest["relationExclusions"].get(key, {}).get(field, []))
+                selected = manifest["relations"].get(key, {}).get(field, {})
+                value = {i: quest for i, quest in selected.items() if quest in allowed}
+                index = max((int(i[2:]) for i in selected), default=0)
+                for quest in sorted(allowed - set(value.values())):
+                    index += 1
+                    value[f"n:{index}"] = quest
+                if set(selected) == {f"n:{i}" for i in range(1, len(selected) + 1)}:
+                    value = {f"n:{i}": quest for i, (_, quest) in enumerate(
+                        sorted(value.items(), key=lambda pair: int(pair[0][2:])), 1)}
+            elif field in {"minLevelHealth", "maxLevelHealth"}:
+                value = manifest["displayValues"].get(key, {}).get(field, shared.ABSENT)
+            elif field == "zoneID":
+                override = manifest["zoneOverrides"].get(key)
+                if override and value_hash(value) == override["expectedSource"]:
+                    value = override["value"]
+            else:
+                override = manifest["overrides"].get(key, {}).get(field)
+                if override and value_hash(value) == override["expectedSource"]:
+                    value = override["value"]
+            if value is shared.ABSENT:
+                if present:
+                    raise ValueError(f"Missing source or explicit compatibility field {field} for NPC {npc_id}")
+                continue
+            if present or value not in (0, "", {}):
+                row[typed_key] = copy.deepcopy(value)
+        row_to_lua(row, KEYS)
+        result[npc_id] = row
+    if len(result) < len(manifest["scope"]) * 0.95:
+        raise ValueError("Unexpected removal of more than 5% of NPC records; check source completeness")
+    return result
 
 
 def value_hash(value):
@@ -132,11 +361,15 @@ def make_manifest(records, source, metadata, snapshot_sha, signature):
 
 
 def validate_manifest(manifest):
-    if manifest.get("format") != "questie-acore-npc-compatibility" or manifest.get("version") != 1:
+    if manifest.get("format") != "questie-acore-npc-compatibility" or manifest.get("version") not in (1, 2):
         raise ValueError("Unsupported NPC compatibility manifest")
     scope = manifest.get("scope")
     if not isinstance(scope, dict) or not scope:
         raise ValueError("Missing explicit NPC scope")
+    if manifest["version"] == 2:
+        excluded = manifest.get("excludedNpcIds")
+        if not isinstance(excluded, list) or not all(type(i) is int and i > 0 for i in excluded) or excluded != sorted(set(excluded)) or set(excluded) & {int(k) for k in scope}:
+            raise ValueError("Invalid excluded NPC IDs")
     for key, mask in scope.items():
         if not key.isdigit() or int(key) < 1 or str(int(key)) != key or type(mask) is not int or mask < 1 or mask >= 1 << len(FIELDS):
             raise ValueError("Invalid NPC scope ID or field mask")
@@ -149,7 +382,7 @@ def validate_manifest(manifest):
         for key, values in entries.items():
             if not isinstance(values, dict) or not set(values) <= fields:
                 raise ValueError(f"Invalid {section} fields for NPC {key}")
-            if any(not scope[key] & (1 << (KEYS["s:" + field] - 1)) for field in values):
+            if any(not scope[key] & (1 << (KEYS["s:" + field] - 1)) for field in values) and not (manifest["version"] == 2 and section == "geometry"):
                 raise ValueError(f"Compatibility field outside scope for NPC {key}")
     extra = manifest.get("extraRecords")
     if not isinstance(extra, dict) or not set(extra) <= set(scope):
@@ -162,8 +395,13 @@ def validate_manifest(manifest):
     return manifest
 
 
-def build_records(source, manifest):
+def build_records(source, manifest, provenance=None):
     validate_manifest(manifest)
+    if manifest["version"] == 2:
+        if provenance is None and any(binding_ids(binding) for row in manifest["geometry"].values()
+                for policy in row.values() for slots in policy.get("slots", {}).values() for binding in slots.values()):
+            raise ValueError("Fresh NPC source identities are required; refresh the source model")
+        return build_current_records(source, manifest, provenance or {})
     result = {}
     for key, mask in manifest["scope"].items():
         npc_id = int(key)
@@ -271,7 +509,8 @@ def write_manifest(path, manifest):
 
 def local_path(path, directory, suffix):
     path = (ROOT / path).resolve()
-    if not path.is_relative_to(ROOT / directory) or path.suffix != suffix:
+    production = (ROOT / "Database/AzerothCore/acoreNpcDB.lua").resolve()
+    if (not path.is_relative_to(ROOT / directory) and not (directory == "tools/reports" and path == production)) or path.suffix != suffix:
         raise ValueError(f"Output must be {suffix} under {directory}")
     return path
 
@@ -288,12 +527,15 @@ def main(argv=None):
         child.add_argument("--map-difficulty-dbc", type=Path)
         child.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
         child.add_argument("--source-cache", type=Path, default=Path("tools/reports/acore_npc_source_model.json"))
-        child.add_argument("--force", action="store_true")
+        child.add_argument("--force", action="store_true", help="Overwrite a migration manifest; normal generation overwrites its output")
     commands.choices["bootstrap"].add_argument("--snapshot", type=Path, required=True)
-    commands.choices["generate"].add_argument("--compare-snapshot", type=Path)
-    commands.choices["generate"].add_argument("--output", type=Path, default=Path("tools/reports/acore-npc-candidate/acoreNpcDB.lua"))
+    commands.choices["generate"].add_argument("--compare-snapshot", type=Path, help="Optional migration parity check")
+    commands.choices["generate"].add_argument("--output", type=Path, default=Path("Database/AzerothCore/acoreNpcDB.lua"), help="Default: Database/AzerothCore/acoreNpcDB.lua")
     commands.choices["generate"].add_argument("--report", type=Path, default=Path("tools/reports/acore_npc_base_candidate.json"))
-    args = parser.parse_args(argv)
+    arguments = list(sys.argv[1:] if argv is None else argv)
+    if arguments and arguments[0].startswith("-"):
+        arguments.insert(0, "generate")
+    args = parser.parse_args(arguments)
     source, creature, multispawn, wdm = (p.resolve() for p in (args.acore_source, args.creature_sql, args.creature_multispawn_sql, args.wdm_root))
     difficulty = audit.reader.find_map_difficulty_dbc(source, args.map_difficulty_dbc).resolve()
     cache = shared.local_output(ROOT, args.source_cache)
@@ -305,7 +547,7 @@ def main(argv=None):
         inputs.add(manifest_path)
     if len(set(targets)) != len(targets) or any(p in inputs for p in targets):
         raise ValueError("Output paths must differ from inputs and each other")
-    if not args.force and any(p.exists() for p in targets):
+    if args.command == "bootstrap" and not args.force and any(p.exists() for p in targets):
         raise ValueError("Output already exists; review it or explicitly use --force")
     signature = audit.source_signature(source, ROOT, creature, multispawn, difficulty, wdm)
     saved = audit.load_source(source, ROOT, creature, multispawn, difficulty, wdm, signature, cache)
@@ -319,12 +561,12 @@ def main(argv=None):
         if tuple(fields) != FIELDS:
             raise ValueError("Unexpected NPC schema")
     if args.command == "bootstrap":
-        manifest = make_manifest(baseline, model, metadata, snapshot_sha, signature)
-        records = build_records(model, manifest)
+        manifest = upgrade_manifest(make_manifest(baseline, model, metadata, snapshot_sha, signature), model, saved.get("geometryProvenance", {}))
+        records = build_records(model, manifest, saved.get("geometryProvenance"))
     else:
         manifest_sha = db_snapshot.file_hash(manifest_path)
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        records = build_records(model, manifest)
+        records = build_records(model, manifest, saved.get("geometryProvenance"))
     comparison = compare_records(baseline, records) if baseline is not None else None
     if comparison and not comparison["exactParity"]:
         if args.command == "generate":

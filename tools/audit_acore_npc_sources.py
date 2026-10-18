@@ -44,7 +44,7 @@ def source_signature(source, repo, creature, multispawn, difficulty, wdm):
                 wdm / "patch-enUS-M extracted/DBFilesClient/DungeonMap.csv",
                 wdm / "patch-enUS-M extracted/DBFilesClient/DungeonMapChunk.csv"]
     revision = subprocess.run(["git", "-C", str(source), "rev-parse", "HEAD"], capture_output=True, text=True)
-    return {"version": 1, "includeModules": False, "sourceRoot": str(source), "repoRoot": str(repo),
+    return {"version": 2, "includeModules": False, "sourceRoot": str(source), "repoRoot": str(repo),
             "sourceRevision": revision.stdout.strip() if revision.returncode == 0 else None,
             "sourceFiles": {str(p.relative_to(source)): db_snapshot.file_hash(p) for p in sorted(paths)},
             "externalFiles": {str(p): db_snapshot.file_hash(p) for p in external},
@@ -54,6 +54,8 @@ def source_signature(source, repo, creature, multispawn, difficulty, wdm):
 
 def model_digest(saved):
     payload = {key: saved[key] for key in ("npcs", "tableCoverage", "diagnostics", "readerStats")}
+    if "geometryProvenance" in saved:
+        payload["geometryProvenance"] = saved["geometryProvenance"]
     return hashlib.sha256(json.dumps(payload, sort_keys=True, ensure_ascii=True, allow_nan=False,
                                      separators=(",", ":")).encode()).hexdigest()
 
@@ -122,12 +124,13 @@ def load_source(source, repo, creature, multispawn, difficulty, wdm, signature, 
     for name, (original, _) in mutation_functions.items():
         setattr(sql_reader, name, trace_mutation(name, original))
         setattr(reader, name, getattr(sql_reader, name))
+    provenance = {}
     try:
         # Baseline NPCs are deliberately NOT passed as the reader's fallback.
         # Missing transport/scripted coverage must remain visible in the audit.
         npcs, stats = reader.build_acore_npcs(source, repo_root=repo, creature_sql=creature,
                                              creature_multispawn_sql=multispawn, map_difficulty_dbc=difficulty,
-                                             wdm_root=wdm)
+                                             wdm_root=wdm, provenance=provenance)
     finally:
         sql_reader.load_row_table, reader.load_row_table = original_rows, npc_rows
         reader.load_rows_from_sql_file, reader.load_filtered_row_table = original_external, original_filtered
@@ -138,6 +141,7 @@ def load_source(source, repo, creature, multispawn, difficulty, wdm, signature, 
     if source_signature(source, repo, creature, multispawn, difficulty, wdm) != signature:
         raise ValueError("NPC source inputs changed during extraction")
     saved = {"signature": signature,
+             "geometryProvenance": provenance,
              "npcs": {str(i): {"s:" + field: typed(v) for field, v in row.items() if v is not None}
                       for i, row in sorted(npcs.items())},
              "tableCoverage": coverage, "readerStats": stats,
