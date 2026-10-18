@@ -1,5 +1,5 @@
--- Generated from the corrected Questie database snapshot.
--- Generator: tools/generate_acore_full_base.py
+-- Generated from AzerothCore source and explicit Questie compatibility data.
+-- Generator: tools/generate_acore_quest_base.py
 local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 
 QuestieDB.questKeys = {

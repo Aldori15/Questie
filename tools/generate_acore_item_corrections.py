@@ -468,7 +468,7 @@ def load_sql_statements(path_text):
     return raw_text, tuple(split_sql_statements(strip_sql_comments(raw_text)))
 
 
-def load_row_table(source_root, table_name, key_columns, include_modules=False):
+def load_row_table(source_root, table_name, key_columns, include_modules=False, column_defaults=None):
     source_root = Path(source_root)
     base_file = source_root / "data/sql/base/db_world" / f"{table_name}.sql"
     columns = extract_sql_columns(base_file, table_name)
@@ -488,7 +488,8 @@ def load_row_table(source_root, table_name, key_columns, include_modules=False):
             if not statement_targets_table(statement, table_name):
                 continue
             if upper.startswith(("INSERT", "REPLACE")):
-                skipped_mutations += apply_multirow_insert(statement, table_name, columns, rows, key_columns, sql_context)
+                skipped_mutations += apply_multirow_insert(statement, table_name, columns, rows, key_columns, sql_context,
+                                                          column_defaults=column_defaults)
             elif upper.startswith("DELETE"):
                 skipped_mutations += apply_multirow_delete(statement, table_name, rows, sql_context)
             elif upper.startswith("UPDATE"):
@@ -549,6 +550,7 @@ def apply_multirow_insert(
     key_columns,
     sql_context=None,
     row_filter=None,
+    column_defaults=None,
 ):
     match = re.search(
         rf"(?:INSERT(?:\s+IGNORE)?\s+INTO|REPLACE\s+INTO)\s+`?{re.escape(table_name)}`?(?:\s*\((?P<columns>.*?)\))?\s*VALUES\s*(?P<values>.*)$",
@@ -570,7 +572,7 @@ def apply_multirow_insert(
         if len(values) != len(columns):
             skipped += 1
             continue
-        row = {}
+        row = dict(column_defaults or {})
         try:
             for column, raw_value in zip(columns, values):
                 row[column] = parse_insert_sql_value(raw_value, sql_context)
@@ -803,6 +805,27 @@ def parse_where_constraints(where_clause, context=None):
         return None if any(branch is None for branch in branches) else {"__and_0": ("and", branches)}
     for raw_clause in clauses:
         clause = strip_wrapping_parentheses(raw_clause)
+        match = re.fullmatch(r"\((?P<columns>[^()]+)\)\s+IN\s*\((?P<values>.*)\)", clause, re.IGNORECASE | re.DOTALL)
+        if match:
+            columns = [column.strip().strip("`").lower() for column in split_sql_values(match.group("columns"))]
+            if len(columns) < 2 or any(not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", column) for column in columns):
+                return None
+            values = set()
+            for token in split_sql_values(match.group("values")):
+                token = token.strip()
+                if not token.startswith("(") or not token.endswith(")"):
+                    return None
+                try:
+                    parts = tuple(parse_insert_sql_value(part, context) for part in split_sql_values(token[1:-1]))
+                    if len(parts) != len(columns) or any(part is None for part in parts):
+                        return None
+                    values.add(parts)
+                except Exception:
+                    return None
+            if not values:
+                return None
+            constraints[f"__tuple_{len(constraints)}"] = ("tuple_in", columns, values)
+            continue
         match = re.fullmatch(r"`?([A-Za-z0-9_]+)`?\s*IN\s*\((.*)\)\s*", clause, re.IGNORECASE | re.DOTALL)
         if match:
             values = set()
@@ -848,6 +871,10 @@ def parse_where_constraints(where_clause, context=None):
 def row_matches_constraints(row, constraints):
     lower_row = {key.lower(): value for key, value in row.items()}
     for column, values in constraints.items():
+        if isinstance(values, tuple) and values and values[0] == "tuple_in":
+            if tuple(lower_row.get(name) for name in values[1]) not in values[2]:
+                return False
+            continue
         if isinstance(values, tuple) and values and values[0] == "or":
             if not any(row_matches_constraints(row, sub_constraints) for sub_constraints in values[1]):
                 return False

@@ -84,6 +84,54 @@ class SqlPredicateTests(unittest.TestCase):
             self.assertEqual(skipped, 0)
             self.assertEqual(rows, [{"id": 1020, "point": 1}])
 
+    def test_tuple_in_preserves_pairs_and_outer_source_type_filter(self):
+        entries = [(4, 11524, 11614), (4, 11525, 11615), (4, 11524, 11615), (1, 11524, 11614)]
+        rows = {key: dict(zip(("SourceTypeOrReferenceId", "SourceGroup", "SourceEntry"), key)) for key in entries}
+        statement = "DELETE FROM conditions WHERE SourceTypeOrReferenceId=4 AND (`SourceGroup`,`SourceEntry`) IN ((11524,11614),(11525,11615))"
+        self.assertEqual(reader.apply_multirow_delete(statement, "conditions", rows), 0)
+        self.assertEqual(set(rows), {(4, 11524, 11615), (1, 11524, 11614)})
+        constraints = reader.parse_where_constraints("(SourceGroup,SourceEntry) IN ((@base+01,2)) OR SourceEntry=99", {"@base": 100})
+        self.assertTrue(reader.row_matches_constraints({"SourceGroup": 101, "SourceEntry": 2}, constraints))
+        self.assertTrue(reader.row_matches_constraints({"SourceGroup": 0, "SourceEntry": 99}, constraints))
+
+    def test_invalid_tuple_predicates_are_reported_without_deleting_rows(self):
+        for clause in ("(a,b) IN ((1))", "(a,b) IN ((1,2,3))", "(a,b) IN ((1,NULL))",
+                       "(a,b) IN (SELECT a,b FROM other)", "(a,b) IN ()", "(a,b) IN ((@missing,2))"):
+            self.assertIsNone(reader.parse_where_constraints(clause), clause)
+
+    def test_condition_insert_defaults_fill_omitted_keys_but_not_explicit_null(self):
+        columns = ["SourceTypeOrReferenceId", "SourceGroup", "SourceEntry", "SourceId", "ElseGroup",
+                   "ConditionTypeOrReference", "ConditionTarget", "ConditionValue1", "ConditionValue2", "ConditionValue3"]
+        defaults = dict.fromkeys(columns, 0)
+        rows = {}
+        statement = "INSERT INTO conditions (`SourceTypeOrReferenceId`,`SourceGroup`,`SourceEntry`,`ConditionTypeOrReference`,`ConditionValue1`,`Comment`) VALUES (4,13970,11514,2,11511,'Arthas\\\' Tears - requires Cenarion Beacon')"
+        self.assertEqual(reader.apply_multirow_insert(statement, "conditions", columns, rows, tuple(columns), column_defaults=defaults), 0)
+        key = (4, 13970, 11514, 0, 0, 2, 0, 11511, 0, 0)
+        self.assertIn(key, rows)
+        self.assertEqual(rows[key]["Comment"], "Arthas' Tears - requires Cenarion Beacon")
+        null_statement = "INSERT INTO conditions (`SourceTypeOrReferenceId`,`SourceId`) VALUES (4,NULL)"
+        self.assertEqual(reader.apply_multirow_insert(null_statement, "conditions", columns, rows, tuple(columns), column_defaults=defaults), 1)
+        self.assertEqual(len(rows), 1)
+        self.assertTrue(all(value == 0 for value in defaults.values()))
+
+    def test_table_replay_uses_opt_in_defaults_and_replaces_the_same_condition_key(self):
+        with db_snapshot.temporary_directory(ADDON_ROOT / "tools/reports") as directory:
+            base = directory / "data/sql/base/db_world"
+            updates = directory / "data/sql/updates/db_world"
+            base.mkdir(parents=True)
+            updates.mkdir(parents=True)
+            (base / "conditions.sql").write_text(
+                "CREATE TABLE `conditions` (\n`SourceEntry` INT,\n`SourceId` INT,\n`ElseGroup` INT,\n`Comment` TEXT\n) ENGINE=InnoDB;\n"
+                "INSERT INTO conditions VALUES (100,0,0,'old');", encoding="utf-8")
+            (updates / "update.sql").write_text(
+                "INSERT INTO conditions (`SourceEntry`,`ElseGroup`,`Comment`) VALUES (100,0,'replacement'),(100,1,'alternative');",
+                encoding="utf-8")
+            rows, skipped = reader.load_row_table(directory, "conditions", ("SourceEntry", "SourceId", "ElseGroup"),
+                                                  column_defaults={"SourceId": 0})
+            self.assertEqual(skipped, 0)
+            self.assertEqual({(r["SourceId"], r["ElseGroup"], r["Comment"]) for r in rows},
+                             {(0, 0, "replacement"), (0, 1, "alternative")})
+
 
 if __name__ == "__main__":
     unittest.main()
