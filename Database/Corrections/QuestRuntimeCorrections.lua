@@ -7,6 +7,24 @@ local QuestieCorrections = QuestieLoader:ImportModule("QuestieCorrections")
 QuestieCorrections.itemObjectiveFirst[503] = true
 QuestieCorrections.itemObjectiveFirst[5088] = true
 
+QuestieCorrections.killCreditObjectiveFirst[10503] = true
+QuestieCorrections.killCreditObjectiveFirst[11652] = true
+QuestieCorrections.killCreditObjectiveFirst[12100] = true
+QuestieCorrections.killCreditObjectiveFirst[12546] = true
+QuestieCorrections.killCreditObjectiveFirst[12561] = true
+QuestieCorrections.killCreditObjectiveFirst[12762] = true
+QuestieCorrections.killCreditObjectiveFirst[12779] = true
+QuestieCorrections.killCreditObjectiveFirst[12919] = true
+QuestieCorrections.killCreditObjectiveFirst[13086] = true
+QuestieCorrections.killCreditObjectiveFirst[13373] = true
+QuestieCorrections.killCreditObjectiveFirst[13376] = true
+QuestieCorrections.killCreditObjectiveFirst[13380] = true
+QuestieCorrections.killCreditObjectiveFirst[13382] = true
+QuestieCorrections.killCreditObjectiveFirst[13404] = true
+QuestieCorrections.killCreditObjectiveFirst[13406] = true
+QuestieCorrections.killCreditObjectiveFirst[24498] = true
+QuestieCorrections.killCreditObjectiveFirst[24507] = true
+
 -- Hoverable entities that directly drive coordinate-only triggerEnd objectives
 QuestieCorrections.triggerEndTooltipTargets[155] = {{"monster",467}} -- The Defias Traitor
 QuestieCorrections.triggerEndTooltipTargets[219] = {{"monster",349}} -- Corporal Keeshan
@@ -73,10 +91,6 @@ QuestieCorrections.triggerEndTooltipTargets[6566] = {{"monster",4949}} -- Thrall
 QuestieCorrections.triggerEndTooltipTargets[6627] = {{"monster",4489}} -- Braug Dimspirit
 QuestieCorrections.triggerEndTooltipTargets[6628] = {{"monster",4488}} -- Parqual Fintallas
 QuestieCorrections.triggerEndTooltipTargets[7046] = {{"monster",13716}} -- Celebras the Redeemed
-
-QuestieCorrections.killCreditObjectiveFirst[10503] = true -- The Bladespire Threat
-
--- Hoverable entities that directly drive coordinate-only triggerEnd objectives
 QuestieCorrections.triggerEndTooltipTargets[9212] = {{"monster",16295}} -- Ranger Lilatha
 QuestieCorrections.triggerEndTooltipTargets[9375] = {{"monster",16993}} -- Wounded Blood Elf Pilgrim
 QuestieCorrections.triggerEndTooltipTargets[9446] = {{"monster",17238}} -- Anchorite Truuen
@@ -103,25 +117,6 @@ QuestieCorrections.triggerEndTooltipTargets[10922] = {{"monster",22458}} -- Chie
 QuestieCorrections.triggerEndTooltipTargets[10985] = {{"monster",22990}} -- Akama
 QuestieCorrections.triggerEndTooltipTargets[11082] = {{"monster",23309}} -- Murkblood Overseer
 QuestieCorrections.triggerEndTooltipTargets[11085] = {{"monster",23383}} -- Skyguard Prisoner
-
-QuestieCorrections.killCreditObjectiveFirst[11652] = true
-QuestieCorrections.killCreditObjectiveFirst[12100] = true
-QuestieCorrections.killCreditObjectiveFirst[12546] = true
-QuestieCorrections.killCreditObjectiveFirst[12561] = true
-QuestieCorrections.killCreditObjectiveFirst[12762] = true
-QuestieCorrections.killCreditObjectiveFirst[12779] = true
-QuestieCorrections.killCreditObjectiveFirst[12919] = true
-QuestieCorrections.killCreditObjectiveFirst[13086] = true
-QuestieCorrections.killCreditObjectiveFirst[13373] = true
-QuestieCorrections.killCreditObjectiveFirst[13376] = true
-QuestieCorrections.killCreditObjectiveFirst[13380] = true
-QuestieCorrections.killCreditObjectiveFirst[13382] = true
-QuestieCorrections.killCreditObjectiveFirst[13404] = true
-QuestieCorrections.killCreditObjectiveFirst[13406] = true
-QuestieCorrections.killCreditObjectiveFirst[24498] = true
-QuestieCorrections.killCreditObjectiveFirst[24507] = true
-
--- Hoverable entities that directly drive coordinate-only triggerEnd objectives
 QuestieCorrections.triggerEndTooltipTargets[11241] = {{"monster",23784}} -- Apothecary Hanes
 QuestieCorrections.triggerEndTooltipTargets[11436] = {{"monster",27924}} -- Dragonflayer Harpoon
 QuestieCorrections.triggerEndTooltipTargets[11570] = {{"monster",25208}} -- Lurgglbr
@@ -155,178 +150,9 @@ QuestieCorrections.objectiveTooltipHints[8309] = {
     [180453] = "Inside Hive'Regal. Enter the hive cave to the NE to reach the crystal.",
 }
 
-local function classicFactionFixes()
-    local questKeys = QuestieDB.questKeys
-    local raceIDs = QuestieDB.raceKeys
-
-    local questFixesHorde = {
-        [687] = {
-            [questKeys.startedBy] = {{2787}},
-        },
-        [737] = {
-            [questKeys.startedBy] = {{2934}},
-        },
-        [1198] = {
-            [questKeys.nextQuestInChain] = 0,
-        },
-        [1718] = {
-            [questKeys.startedBy] = {{3041,3354,4595,7315}},
-        },
-        [1947] = { -- Journey to the Marsh
-            [questKeys.startedBy] = {{3048,4568,5885}},
-        },
-        [1953] = {
-            [questKeys.startedBy] = {{3048,4568,5885}},
-        },
-        [2861] = {
-            [questKeys.startedBy] = {{4568,5885}},
-        },
-        [2954] = { -- The Stone Watcher
-            [questKeys.nextQuestInChain] = 2967,
-        },
-        [3741] = {
-            [questKeys.reputationReward] = {}, -- doable as horde, but no SW reputation for horde side
-        },
-        [5021] = { -- Better Late Than Never
-            [questKeys.nextQuestInChain] = 5023,
-        },
-        [5050] = {
-            [questKeys.startedBy] = {{8403}},
-        },
-        [6681] = { -- The Manor, Ravenholdt
-            [questKeys.startedBy] = {{3327,3328,3401,4582,4583,4584},nil,{17126}}, -- #7244
-        },
-        [6981] = {
-            [questKeys.nextQuestInChain] = 3369,
-        },
-        [7562] = { -- Mor'zul Bloodbringer
-            [questKeys.startedBy] = {{5753,5815}},
-            [questKeys.requiredRaces] = raceIDs.NONE,
-        },
-        [8254] = { -- Cenarion Aid
-            [questKeys.startedBy] = {{6018}},
-        },
-        [8928] = {
-            [questKeys.nextQuestInChain] = 8978,
-        },
-        [8996] = {
-            [questKeys.nextQuestInChain] = 8998,
-        },
-        [9388] = {
-            [questKeys.startedBy] = {{16818}},
-        },
-        [9389] = {
-            [questKeys.startedBy] = {{16818}},
-        },
-    }
-
-    local questFixesAlliance = {
-        [687] = {
-            [questKeys.startedBy] = {{2786}},
-        },
-        [737] = {
-            [questKeys.startedBy] = {{2786}},
-        },
-        [1198] = {
-            [questKeys.breadcrumbForQuestId] = 1200,
-        },
-        [1718] = {
-            [questKeys.startedBy] = {{5113,5479,7315}},
-        },
-        [1947] = { -- Journey to the Marsh
-            [questKeys.startedBy] = {{5144,5497}},
-        },
-        [1953] = {
-            [questKeys.startedBy] = {{5144,5497}},
-        },
-        [2861] = {
-            [questKeys.startedBy] = {{5144,5497}},
-        },
-        [2954] = { -- The Stone Watcher
-            [questKeys.nextQuestInChain] = 2977,
-        },
-        [5021] = { -- Better Late Than Never
-            [questKeys.nextQuestInChain] = 5022,
-        },
-        [5050] = {
-            [questKeys.startedBy] = {{3520}},
-        },
-        [6681] = { -- The Manor, Ravenholdt
-            [questKeys.startedBy] = {{332,918,4214,4215,4163,5165,5166,5167},nil,{17126}}, -- #7244
-        },
-        [6981] = {
-            [questKeys.nextQuestInChain] = 3370,
-        },
-        [7562] = {
-            [questKeys.startedBy] = {{5520,6382}},
-            [questKeys.requiredRaces] = raceIDs.NONE,
-        },
-        [8254] = { -- Cenarion Aid
-            [questKeys.startedBy] = {{5489,11406}},
-        },
-        [8928] = {
-            [questKeys.nextQuestInChain] = 8977,
-        },
-        [8996] = {
-            [questKeys.nextQuestInChain] = 8997,
-        },
-        [9388] = {
-            [questKeys.startedBy] = {{16817}},
-        },
-        [9389] = {
-            [questKeys.startedBy] = {{16817}},
-        },
-    }
-
-    if UnitFactionGroup("Player") == "Horde" then
-        return questFixesHorde
-    else
-        return questFixesAlliance
-    end
-end
-
-local function tbcFactionFixes()
-    local questKeys = QuestieDB.questKeys
-    local raceIDs = QuestieDB.raceKeys
-
-    local questFixesHorde = {
-        [1947] = { -- Journey to the Marsh
-            [questKeys.startedBy] = {{3048,4568,5885,16652}},
-        },
-        [1953] = { -- Return to the Marsh
-            [questKeys.startedBy] = {{3048,4568,5885,16652}},
-        },
-        [2861] = { -- Tabetha's Task
-            [questKeys.startedBy] = {{4568,5885,16651}}
-        },
-        [4738] = { -- In Search of Menara Voidrender
-            [questKeys.startedBy] = {{16646}},
-        },
-    }
-
-    local questFixesAlliance = {
-        [1947] = { -- Journey to the Marsh
-            [questKeys.startedBy] = {{5144,5497,17513}},
-        },
-        [1953] = { -- Return to the Marsh
-            [questKeys.startedBy] = {{5144,5497,17513}},
-        },
-        [2861] = { -- Tabetha's Task
-            [questKeys.startedBy] = {{5144,5497,17514}}
-        },
-        [4738] = { -- In Search of Menara Voidrender
-            [questKeys.startedBy] = {{461}},
-        },
-    }
-
-    if UnitFactionGroup("Player") == "Horde" then
-        return questFixesHorde
-    else
-        return questFixesAlliance
-    end
-end
-
 function QuestRuntimeCorrections:ApplyFactionFixes(overrides, addOverride)
-    addOverride(overrides, classicFactionFixes())
-    addOverride(overrides, tbcFactionFixes())
+    if type(QuestieDB.questFactionSelections) ~= "table" then
+        error("Missing generated quest faction selections; regenerate acoreQuestDB.lua", 0)
+    end
+    addOverride(overrides, QuestieDB.questFactionSelections)
 end

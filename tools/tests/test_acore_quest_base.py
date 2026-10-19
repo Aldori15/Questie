@@ -3,6 +3,7 @@ import contextlib
 import copy
 import io
 import json
+import subprocess
 import unittest
 from unittest.mock import patch
 
@@ -29,6 +30,83 @@ def bootstrap(before, source):
 
 
 class QuestBaseTests(unittest.TestCase):
+    def test_chain_routing_refreshes_children_and_rejects_ambiguity(self):
+        source = {2954: quest(), 2967: quest(requiredRaces=690, preQuestSingle=typed([2954])),
+                  2977: quest(requiredRaces=1101, preQuestSingle=typed([2954]))}
+        selected = exporter.build_chain_selections(source, source)
+        self.assertEqual(selected["Alliance"][2954]["s:nextQuestInChain"], 2977)
+        self.assertEqual(selected["Horde"][2954]["s:nextQuestInChain"], 2967)
+        source[10001] = source.pop(2977)
+        self.assertEqual(exporter.build_chain_selections(source, source)["Alliance"][2954]["s:nextQuestInChain"], 10001)
+        source[10002] = quest(requiredRaces=1101, preQuestSingle=typed([2954]))
+        with self.assertRaisesRegex(ValueError, "ambiguous Alliance"):
+            exporter.build_chain_selections(source, source)
+        source[2954]["s:nextQuestInChain"] = 10001
+        selected = exporter.build_chain_selections(source, source)
+        self.assertEqual(selected["Alliance"][2954]["s:nextQuestInChain"], 10001)
+        self.assertEqual(selected["Horde"][2954]["s:nextQuestInChain"], 0)
+
+    def test_script_letter_starters_refresh_and_preserve_item_starter(self):
+        source = {6681: quest(startedBy=typed({3: [17126]}))}
+        selections = exporter.build_starter_selections(source, source,
+                                                       {"918": 1, "3327": 2, "900001": 3},
+                                                       {"6681": [918, 3327, 900001]})
+        self.assertEqual(selections["Alliance"][6681]["s:startedBy"], typed({1: [918, 900001], 3: [17126]}))
+        self.assertEqual(selections["Horde"][6681]["s:startedBy"], typed({1: [3327, 900001], 3: [17126]}))
+        self.assertEqual(source[6681]["s:startedBy"], typed({3: [17126]}))
+
+    def test_audited_trainer_quests_keep_neutral_starters_and_source_race_mask(self):
+        source = {7562: quest(requiredRaces=595, startedBy=typed({1: [5520, 5753, 23535]})),
+                  8254: quest(startedBy=typed({1: [4090, 5489]}))}
+        records = exporter.build_records(source, bootstrap(source, source))
+        selections = exporter.build_starter_selections(source, records,
+                                                       {"5520": 1, "5753": 2, "23535": 3, "4090": 2, "5489": 1})
+        self.assertEqual(records[7562]["s:requiredRaces"], 595)
+        self.assertEqual(selections["Alliance"][7562], {"s:startedBy": typed({1: [5520, 23535]})})
+        self.assertEqual(selections["Horde"][7562], {"s:startedBy": typed({1: [5753, 23535]})})
+        self.assertEqual(selections["Alliance"][8254], {"s:startedBy": typed({1: [5489]})})
+        self.assertEqual(selections["Horde"][8254], {"s:startedBy": typed({1: [4090]})})
+
+    def test_faction_starters_refresh_without_inherited_trainer_lists(self):
+        source = {1947: quest(startedBy=typed({1: [5497, 5885], 2: [123], 3: [456]})),
+                  6681: quest(startedBy=typed({3: [17126]}))}
+        result = exporter.build_starter_selections(source, source, {"5497": 1, "5885": 2})
+        self.assertEqual(result["Alliance"][1947]["s:startedBy"], typed({1: [5497], 2: [123], 3: [456]}))
+        self.assertEqual(result["Horde"][1947]["s:startedBy"], typed({1: [5885], 2: [123], 3: [456]}))
+        self.assertNotIn(6681, result["Alliance"])
+        fresh = {1947: quest(startedBy=typed({1: [5885, 900001]}))}
+        result = exporter.build_starter_selections(fresh, fresh, {"5885": 2, "900001": 3})
+        self.assertEqual(result["Alliance"][1947]["s:startedBy"], typed({1: [900001]}))
+        self.assertEqual(result["Horde"][1947]["s:startedBy"], typed({1: [5885, 900001]}))
+        with self.assertRaisesRegex(ValueError, "NPC 900001: missing"):
+            exporter.build_starter_selections(fresh, fresh, {"5885": 2})
+
+    def test_empty_faction_starters_suppress_opposite_team_without_affecting_shared_row(self):
+        source = {1947: quest(startedBy=typed({1: [5497]}))}
+        selections = exporter.build_starter_selections(source, source, {"5497": 1})
+        self.assertEqual(selections["Horde"][1947]["s:startedBy"], {})
+        self.assertEqual(source[1947]["s:startedBy"], typed({1: [5497]}))
+        output = io.StringIO()
+        exporter.write_stream(output, source, selections)
+        self.assertEqual(len(output.getvalue().encode()), exporter.candidate_size(source, selections))
+
+    def test_generated_base_selects_correct_faction_in_lua(self):
+        try:
+            lua = db_snapshot.lua_executable()
+        except ValueError:
+            self.skipTest("Lua unavailable")
+        source = {1947: quest(startedBy=typed({1: [5497, 5885]}))}
+        selections = exporter.build_starter_selections(source, source, {"5497": 1, "5885": 2})
+        output = io.StringIO()
+        exporter.write_stream(output, source, selections)
+        for faction, npc in (("Alliance", 5497), ("Horde", 5885)):
+            script = ('local db = {}\nQuestieLoader = {ImportModule = function() return db end}\n'
+                      f'UnitFactionGroup = function() return "{faction}" end\n' + output.getvalue()
+                      + f'\nassert(db.questFactionSelections[1947][db.questKeys.startedBy][1][1] == {npc})\n'
+                      + 'assert(db.questData.__questieSourceChunks)\n')
+            result = subprocess.run([lua, "-"], input=script, capture_output=True, text=True, encoding="utf-8")
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
     def test_exact_parity_retains_all_schema_slots_and_unsupported_helpers(self):
         source = {1: quest()}
         before = copy.deepcopy(source)

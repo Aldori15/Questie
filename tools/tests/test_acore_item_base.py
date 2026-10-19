@@ -1,5 +1,6 @@
 """Source item export must preserve explicit compatibility without legacy inputs."""
 import copy
+import io
 import json
 from pathlib import Path
 import subprocess
@@ -22,6 +23,25 @@ def bootstrap(items, source):
 
 
 class ItemBaseTests(unittest.TestCase):
+    def test_salvage_selections_refresh_from_source_including_new_neutral_objects(self):
+        source = {25911: item(objectDrops=[182799, 182936])}
+        records = {key: exporter.source_record(value) for key, value in source.items()}
+        teams = {"182799": 1, "182936": 2}
+        result = exporter.build_faction_selections(source, records, teams)
+        self.assertEqual(result["Alliance"][25911]["s:objectDrops"], {"n:1": 182799})
+        self.assertEqual(result["Horde"][25911]["s:objectDrops"], {"n:1": 182936})
+        source[25911]["objectDrops"] = [182936, 900001]
+        teams["900001"] = 3
+        result = exporter.build_faction_selections(source, records, teams)
+        self.assertEqual(result["Alliance"][25911]["s:objectDrops"], {"n:1": 900001})
+        self.assertEqual(result["Horde"][25911]["s:objectDrops"], {"n:1": 182936, "n:2": 900001})
+        output = io.StringIO()
+        exporter.write_candidate_stream(output, records, result)
+        self.assertIn("QuestieDB.itemFactionSelections", output.getvalue())
+        self.assertEqual(len(output.getvalue().encode()), exporter.candidate_size(records, result))
+        with self.assertRaisesRegex(ValueError, "missing faction access"):
+            exporter.build_faction_selections(source, records, {})
+
     def test_name_compatibility_preserves_spelling_and_guards_future_source_changes(self):
         source = {1: item(name="Prototype 01")}
         before = {1: exporter.source_record(item(name="Prototype 1"))}

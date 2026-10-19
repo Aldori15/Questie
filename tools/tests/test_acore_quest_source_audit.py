@@ -10,6 +10,107 @@ import db_snapshot
 
 
 class QuestSourceAuditTests(unittest.TestCase):
+    def test_faction_reputation_matches_first_template_and_refreshes_rewards(self):
+        rows = [{"ID": 12, "Faction": 72, "EnemyGroup": 0}, {"ID": 11, "Faction": 72, "EnemyGroup": 4}]
+        quests = {3741: {"reputationReward": ((72, 250), (999, 50))}}
+        result = audit.faction_reputation_rewards(quests, lambda table: rows, set())["3741"]
+        self.assertEqual(result["Alliance"], audit.typed([(72, 250), (999, 50)]))
+        self.assertEqual(result["Horde"], audit.typed([(999, 50)]))
+        rows[1]["EnemyGroup"] = 0
+        result = audit.faction_reputation_rewards(quests, lambda table: rows, set())["3741"]
+        self.assertEqual(result["Horde"], audit.typed([(72, 250), (999, 50)]))
+        self.assertEqual(audit.faction_reputation_rewards(quests, lambda table: rows, {3741}), {})
+
+    def test_letter_extraction_verifies_spell_item_and_sql_overrides(self):
+        with db_snapshot.temporary_directory(ADDON_ROOT / "tools/reports") as directory:
+            spell = (directory / "spell.sql").resolve()
+            fixtures = {table: [] for table in audit.TABLE_KEYS}
+            fixtures.update({"quest_template": [{"ID": 6681}],
+                             "creature_template": [{"entry": 918, "faction": 1}],
+                             "factiontemplate_dbc": [
+                                 {"ID": i, "Faction": i, "FactionGroup": group, "EnemyGroup": enemy}
+                                 for group, enemy, ids in ((3, 4, (1, 3, 4, 115, 1629)),
+                                                          (5, 2, (2, 5, 6, 116, 1610))) for i in ids],
+                             "conditions": [{"SourceTypeOrReferenceId": 15, "SourceGroup": 100, "SourceEntry": 4,
+                                             "ConditionTypeOrReference": 9, "ConditionValue1": 6681}],
+                             "smart_scripts": [{"entryorguid": 918, "source_type": 0, "id": 0, "event_type": 62,
+                                                "event_param1": 100, "event_param2": 4, "action_type": 11,
+                                                "action_param1": 21100, "target_type": 7}]})
+
+            def derive(root, **kwargs):
+                audit.metadata_reader.load_acore_sql_table(root, "spell", spell, wanted_keys=set())
+                return {6681: {field: audit.metadata_reader.default_field_value(field)
+                               for field in audit.metadata_reader.FIELD_ORDER}}
+
+            with patch.object(audit.sql_reader, "load_row_table", side_effect=lambda root, table, *args, **kwargs: (fixtures[table], 0)), \
+                 patch.object(audit.metadata_reader, "derive_acore_metadata", side_effect=derive), \
+                 patch.object(audit.metadata_reader, "load_acore_sql_table", return_value={21100: {"ID": 21100, "Effect1": 24, "EffectItemType1": 17126}}), \
+                 patch.object(audit.metadata_reader, "load_module_created_quest_ids", return_value=set()), \
+                 patch.object(audit, "source_signature", return_value={}):
+                cache = directory / "cache.json"
+                saved = audit.load_source(ADDON_ROOT, spell, "spell", {}, cache)
+                self.assertEqual(saved["scriptQuestStarters"], {"6681": [918]})
+                self.assertEqual(saved["starterTeams"]["918"], 1)
+                fixtures["spell_dbc"] = [{"ID": 21100, "EffectItemType1": 0}]
+                before = cache.read_bytes()
+                with self.assertRaisesRegex(ValueError, "no longer creates item17126"):
+                    audit.load_source(ADDON_ROOT, spell, "spell", {}, cache, refresh=True)
+                self.assertEqual(cache.read_bytes(), before)
+
+    def test_letter_helpers_require_gossip_condition_and_follow_linked_actions(self):
+        tables = {"conditions": [{"SourceTypeOrReferenceId": 15, "SourceGroup": 100,
+                                  "SourceEntry": 4, "ConditionTypeOrReference": 9, "ConditionValue1": 6681}],
+                  "smart_scripts": [
+                      {"entryorguid": 918, "source_type": 0, "id": 0, "event_type": 62,
+                       "event_param1": 100, "event_param2": 4, "link": 1},
+                      {"entryorguid": 918, "source_type": 0, "id": 1, "event_type": 61,
+                       "action_type": 11, "action_param1": 21100, "target_type": 7},
+                      {"entryorguid": 332, "source_type": 0, "id": 0, "event_type": 0,
+                       "action_type": 11, "action_param1": 21100, "target_type": 7}]}
+        self.assertEqual(audit.script_quest_starters(lambda table: tables[table], {6681: {}}), {"6681": [918]})
+        tables["smart_scripts"][0]["link"] = 99
+        with self.assertRaisesRegex(ValueError, "missing linked"):
+            audit.script_quest_starters(lambda table: tables[table], {6681: {}})
+        tables["smart_scripts"][0]["link"] = 1
+        tables["smart_scripts"][1]["link"] = 1
+        with self.assertRaisesRegex(ValueError, "cyclic"):
+            audit.script_quest_starters(lambda table: tables[table], {6681: {}})
+        tables["conditions"] = []
+        with self.assertRaisesRegex(ValueError, "unavailable"):
+            audit.script_quest_starters(lambda table: tables[table], {6681: {}})
+
+    def test_starter_teams_use_hostility_and_keep_neutral_sources(self):
+        relations = {1947: {"start": {"creature": {11, 12, 13}}},
+                     6681: {"start": {"creature": {99}}}}
+        tables = {"creature_template": [{"entry": n, "faction": n} for n in (11, 12, 13)],
+                  "factiontemplate_dbc": [{"ID": 11, "EnemyGroup": 4},
+                                         {"ID": 12, "EnemyGroup": 2},
+                                         {"ID": 13, "EnemyGroup": 0}]}
+        players = [{"ID": n, "Faction": n, "FactionGroup": group}
+                   for group, ids in ((3, (1, 3, 4, 115, 1629)), (5, (2, 5, 6, 116, 1610))) for n in ids]
+        tables["factiontemplate_dbc"] = players + tables["factiontemplate_dbc"]
+        self.assertEqual(audit.starter_teams(relations, lambda table: tables[table]),
+                         {"11": 1, "12": 2, "13": 3})
+        tables["factiontemplate_dbc"].pop()
+        with self.assertRaisesRegex(ValueError, "NPC 13: missing"):
+            audit.starter_teams(relations, lambda table: tables[table])
+        tables["factiontemplate_dbc"].append({"ID": 13, "EnemyGroup": 6})
+        with self.assertRaisesRegex(ValueError, "NPC 13: hostile to both"):
+            audit.starter_teams(relations, lambda table: tables[table])
+        tables["factiontemplate_dbc"][-1]["EnemyGroup"] = 1
+        with self.assertRaisesRegex(ValueError, "NPC 13: hostile to both"):
+            audit.starter_teams(relations, lambda table: tables[table])
+        tables["factiontemplate_dbc"][-1].update(EnemyGroup=0, Enemies_1=1)
+        with self.assertRaisesRegex(ValueError, "NPC 13: race-specific hostility within Alliance"):
+            audit.starter_teams(relations, lambda table: tables[table])
+
+    def test_starter_cache_checksum_covers_faction_access(self):
+        saved = {"quests": {}, "tableCoverage": {}, "diagnostics": {}, "disabledQuestIds": [],
+                 "moduleQuestIds": [], "spellCoverage": {}, "starterTeams": {"5497": 1}}
+        digest = audit.model_digest(saved)
+        saved["starterTeams"]["5497"] = 2
+        self.assertNotEqual(audit.model_digest(saved), digest)
+
     def test_all_schema_fields_are_accounted_for_without_claiming_helper_coverage(self):
         self.assertEqual(len(audit.FIELDS), 37)
         self.assertEqual(len(audit.SOURCE_FIELDS), 28)

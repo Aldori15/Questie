@@ -28,6 +28,7 @@ env.bit = {band = function() return 0 end}
 env.QuestieCompat = {}
 env.Questie = {db = {profile = {isleOfQuelDanasPhase = 1}}}
 env.QuestieDB = env.QuestieLoader:ImportModule("QuestieDB")
+env.UnitFactionGroup = function() return "Alliance" end
 env.QuestieProfessions = env.QuestieLoader:ImportModule("QuestieProfessions")
 env.QuestieCorrections = env.QuestieLoader:ImportModule("QuestieCorrections")
 local registry = assert(read("Compat/Compat.lua"):match(

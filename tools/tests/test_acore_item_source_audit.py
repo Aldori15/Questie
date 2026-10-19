@@ -10,6 +10,20 @@ import db_snapshot
 
 
 class ItemSourceAuditTests(unittest.TestCase):
+    def test_salvage_object_teams_follow_source_factions_and_keep_neutral_sources(self):
+        items = {25911: {"objectDrops": [182799, 182936, 900001]}}
+        addons = [{"entry": 182799, "faction": 101}, {"entry": 182936, "faction": 102}]
+        factions = [{"ID": 101, "EnemyGroup": 4}, {"ID": 102, "EnemyGroup": 2}]
+        self.assertEqual(audit.object_source_teams(items, addons, factions), {"182799": 1, "182936": 2, "900001": 3})
+        factions[0]["EnemyGroup"] = 0
+        self.assertEqual(audit.object_source_teams(items, addons, factions)["182799"], 3)
+        factions[0].update(EnemyGroup=4, Friend_1=1)
+        with self.assertRaisesRegex(ValueError, "special faction relations"):
+            audit.object_source_teams(items, addons, factions)
+        addons[0]["faction"] = 999
+        with self.assertRaisesRegex(ValueError, "missing faction template"):
+            audit.object_source_teams(items, addons, factions)
+
     def snapshot_fixture(self, path, different_horde=False):
         metadata = {"contexts": ["Alliance/isle-1", "Horde/isle-1"], "locale": "enUS",
                     "scope": "post-corrections-pre-localization-v1",

@@ -12,7 +12,7 @@ from pathlib import Path
 import audit_acore_item_sources as shared
 import audit_acore_quest_sources as audit
 import db_snapshot
-from generate_acore_full_base import LuaBlobWriter, lua_quote, row_to_lua
+from generate_acore_full_base import LuaBlobWriter, lua_quote, lua_value, row_to_lua
 from generate_acore_npc_base import value_hash, write_manifest
 
 
@@ -234,7 +234,60 @@ def compare_records(before, after):
     return {"exactParity": not differences, "changedRecords": len(differences), "differences": differences}
 
 
-def write_stream(stream, records):
+def build_starter_selections(source, records, teams, script_starters=None):
+    """Generate faction views from raw relations, never the retired trainer lists."""
+    selections = {"Alliance": {}, "Horde": {}}
+    script_starters = script_starters or {}
+    scope = audit.FACTION_STARTER_QUESTS | {int(key) for key in script_starters}
+    for quest_id in sorted(scope & set(records) & set(source)):
+        raw = copy.deepcopy(source[quest_id]["s:startedBy"])
+        givers = script_starters.get(str(quest_id), [])
+        if givers:
+            raw["n:1"] = audit.typed(sorted(set(raw.get("n:1", {}).values()) | set(givers)))
+        for faction, bit in (("Alliance", 1), ("Horde", 2)):
+            relation = copy.deepcopy(raw)
+            npcs = raw.get("n:1", {})
+            if not id_list(npcs):
+                raise ValueError(f"Quest {quest_id}: invalid source starter list")
+            selected = []
+            for _, npc in sorted(npcs.items(), key=lambda pair: int(pair[0][2:])):
+                mask = teams.get(str(npc))
+                if type(mask) is not int or mask not in (1, 2, 3):
+                    raise ValueError(f"Quest {quest_id} starter NPC {npc}: missing faction selection")
+                if mask & bit:
+                    selected.append(npc)
+            if selected:
+                relation["n:1"] = audit.typed(selected)
+            else:
+                relation.pop("n:1", None)
+            # Empty selections deliberately suppress the other team's starters.
+            selections[faction][quest_id] = {"s:startedBy": relation}
+    return selections
+
+
+def build_chain_selections(source, records, excluded=()):
+    """Route the audited neutral chains using current child prerequisites/races."""
+    result = {"Alliance": {}, "Horde": {}}
+    active = set(source) - set(excluded)
+    for parent in sorted({2954, 5021, 6981, 8928, 8996} & set(records) & active):
+        direct = source[parent].get("s:nextQuestInChain", 0)
+        children = {direct} if direct else {child for child in active
+                    if parent in source[child].get("s:preQuestSingle", {}).values()}
+        for team, mask in (("Alliance", 1101), ("Horde", 690)):
+            eligible = []
+            for child in sorted(children & active):
+                races = source[child].get("s:requiredRaces", 0)
+                if not races or races & mask:
+                    if child not in records:
+                        raise ValueError(f"Quest {parent}: {team} child {child} is excluded from the base; review chain routing")
+                    eligible.append(child)
+            if len(eligible) > 1:
+                raise ValueError(f"Quest {parent}: ambiguous {team} successors {eligible}; review chain routing")
+            result[team][parent] = {"s:nextQuestInChain": eligible[0] if eligible else 0}
+    return result
+
+
+def write_stream(stream, records, starter_selections=None):
     stream.write('-- Generated from AzerothCore source and explicit Questie compatibility data.\n')
     stream.write('-- Generator: tools/generate_acore_quest_base.py\n')
     stream.write('local QuestieDB = QuestieLoader:ImportModule("QuestieDB")\n\nQuestieDB.questKeys = {\n')
@@ -245,16 +298,23 @@ def write_stream(stream, records):
     for quest_id, row in sorted(records.items()):
         writer.write(f'[{quest_id}]={row_to_lua(row, KEYS)},\n')
     writer.finish()
+    if starter_selections is not None:
+        stream.write('\n-- Source-derived faction views; quest records above remain shared.\n')
+        stream.write('QuestieDB.questFactionSelections = (UnitFactionGroup("player") == "Horde") and {\n')
+        for faction, ending in (("Horde", '} or {\n'), ("Alliance", '}\n')):
+            for quest_id, fields in sorted(starter_selections[faction].items()):
+                stream.write(f'    [{quest_id}] = {lua_value({"n:" + str(KEYS[field]): value for field, value in fields.items()})},\n')
+            stream.write(ending)
 
 
-def candidate_size(records):
+def candidate_size(records, starter_selections=None):
     class ByteCounter:
         size = 0
 
         def write(self, value):
             self.size += len(value.encode("utf-8"))
     counter = ByteCounter()
-    write_stream(counter, records)
+    write_stream(counter, records, starter_selections)
     return counter.size
 
 
@@ -278,7 +338,8 @@ def main(argv=None):
         child.add_argument("--source-cache", type=Path, default=Path("tools/reports/acore_quest_source_model.json"))
         child.add_argument("--force", action="store_true", help="Overwrite a one-time migration manifest")
     commands.choices["bootstrap"].add_argument("--snapshot", type=Path, required=True)
-    commands.choices["generate"].add_argument("--compare-snapshot", type=Path)
+    commands.choices["generate"].add_argument("--compare-snapshot", type=Path,
+                                             help="Compare shared quest rows; review generated faction selections separately")
     commands.choices["generate"].add_argument("--output", type=Path, default=Path("Database/AzerothCore/acoreQuestDB.lua"))
     commands.choices["generate"].add_argument("--report", type=Path, default=Path("tools/reports/acore_quest_base_candidate.json"))
     arguments = list(sys.argv[1:] if argv is None else argv)
@@ -314,13 +375,24 @@ def main(argv=None):
         manifest_sha = db_snapshot.file_hash(manifest_path)
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     records = build_records(model, manifest)
+    starter_selections = build_starter_selections(model, records, saved.get("starterTeams", {}),
+                                                saved.get("scriptQuestStarters", {}))
+    starter_ids = sorted(starter_selections["Alliance"])
+    chain_selections = build_chain_selections(model, records, set(saved.get("disabledQuestIds", [])) | set(saved.get("moduleQuestIds", [])))
+    for team in starter_selections:
+        for quest_id, fields in chain_selections[team].items():
+            starter_selections[team].setdefault(quest_id, {}).update(fields)
+        for key, rewards in saved.get("factionReputationRewards", {}).items():
+            quest_id = int(key)
+            if quest_id in records and not shared.same_value(records[quest_id].get("s:reputationReward", {}), rewards[team]):
+                starter_selections[team].setdefault(quest_id, {})["s:reputationReward"] = rewards[team]
     comparison = compare_records(baseline, records) if baseline is not None else None
     if comparison and not comparison["exactParity"]:
         if args.command == "generate":
             shared.write_json(targets[1], {"comparison": comparison})
         ids = [row["questId"] for row in comparison["differences"][:20]]
         raise ValueError(f"Quest candidate differs from baseline ({comparison['changedRecords']} records; IDs {ids}); no candidate or manifest published")
-    if candidate_size(records) > manifest["limits"]["maxOutputBytes"]:
+    if candidate_size(records, starter_selections) > manifest["limits"]["maxOutputBytes"]:
         raise ValueError("Quest candidate exceeds its baseline size budget")
     if audit.source_signature(source, spell, args.spell_table) != signature:
         raise ValueError("Quest source inputs changed during generation")
@@ -328,7 +400,9 @@ def main(argv=None):
             db_snapshot.file_hash(ROOT / name) != digest for name, digest in metadata["sources"].items())):
         raise ValueError("Snapshot or addon changed during generation")
     summary = {"quests": len(records), "exactParity": comparison["exactParity"] if comparison else None,
-               "changedRecords": comparison["changedRecords"] if comparison else None}
+               "changedRecords": comparison["changedRecords"] if comparison else None,
+               "parityScope": "shared quest rows; faction selections require runtime snapshot review",
+               "factionStarterQuests": starter_ids, "factionChainQuests": sorted(chain_selections["Alliance"])}
     if args.command == "bootstrap":
         write_manifest(manifest_path, manifest)
         summary.update({"manifest": str(manifest_path), "extraRecords": len(manifest["extraRecords"]),
@@ -342,13 +416,14 @@ def main(argv=None):
         with db_snapshot.temporary_directory(output.parent) as directory:
             candidate = directory / "acoreQuestDB.lua"
             with candidate.open("w", encoding="utf-8", newline="\n") as stream:
-                write_stream(stream, records)
+                write_stream(stream, records, starter_selections)
             if candidate.stat().st_size > manifest["limits"]["maxOutputBytes"]:
                 raise ValueError("Serialized quest candidate exceeds size budget")
             shared.write_json(report, {"sourceInputs": signature, "manifestSha256": manifest_sha,
                                       "comparisonSnapshotSha256": snapshot_sha, "comparison": comparison,
                                       "outputSha256": db_snapshot.file_hash(candidate), "outputBytes": candidate.stat().st_size,
                                       "maxOutputBytes": manifest["limits"]["maxOutputBytes"], "counts": summary,
+                                      "factionSelections": starter_selections,
                                       "excludedSourceQuestIds": sorted(set(model) - set(records))})
             candidate.replace(output)
         summary.update({"output": str(output), "report": str(report), "outputMiB": round(output.stat().st_size / 1048576, 2)})

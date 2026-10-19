@@ -27,10 +27,15 @@ FIELDS = ("name", "startedBy", "finishedBy", "requiredLevel", "questLevel", "req
           "requiredSpecialization", "requiredMaxLevel", "availableUntilCompleted",
           "availableStartingWith", "requiredRanks", "disabledByQuest", "requiredItemConditions")
 SOURCE_FIELDS = set(metadata_reader.FIELD_ORDER) | {"startedBy", "finishedBy", "zoneOrSort"}
+# Ordinary starter lists audited for the first faction migration. Scripted
+# letter distributors, event quests and disputed eligibility rules stay separate.
+FACTION_STARTER_QUESTS = frozenset({687, 737, 1718, 1947, 1953, 2861, 5050, 7562, 8254})
 TABLE_KEYS = {
     "quest_template": ("ID",), "quest_template_addon": ("ID",), "item_template": ("entry",),
     "spell_dbc": ("ID",), "conditions": metadata_reader.CONDITION_KEY_COLUMNS,
     "disables": ("sourceType", "entry"),
+    "creature_template": ("entry",), "factiontemplate_dbc": ("ID",),
+    "smart_scripts": ("entryorguid", "source_type", "id", "link"),
     **{table: (("eventEntry", "id", "quest") if table.startswith("game_event_") else ("id", "quest"))
        for table in relation_reader.TARGET_TABLES},
 }
@@ -51,17 +56,23 @@ def source_signature(source, spell_sql, spell_table):
         paths.update(p.resolve() for p in root.rglob("*.sql"))
     revision = subprocess.run(["git", "-C", str(source), "rev-parse", "HEAD"], capture_output=True, text=True)
     readers = ("generate_acore_item_corrections.py", "validate_acore_quest_metadata.py", "validate_acore_quest_relations.py")
-    return {"version": 1, "sourceRoot": str(source), "includeModules": False,
+    return {"version": 3, "sourceRoot": str(source), "includeModules": False,
             "sourceRevision": revision.stdout.strip() if revision.returncode == 0 else None,
             "sourceFiles": {str(p.relative_to(source)): db_snapshot.file_hash(p) for p in sorted(paths)},
             "spellExport": {"path": str(spell_sql), "sha256": db_snapshot.file_hash(spell_sql), "table": spell_table},
             "readers": {name: db_snapshot.file_hash(ROOT / "tools" / name) for name in readers},
             "extractor": hashlib.sha256((inspect.getsource(load_source) + inspect.getsource(typed)
-                                         + inspect.getsource(build_relations) + inspect.getsource(missing_spell_references)).encode()).hexdigest()}
+                                         + inspect.getsource(build_relations) + inspect.getsource(missing_spell_references)
+                                         + inspect.getsource(starter_teams) + inspect.getsource(script_quest_starters)
+                                         + inspect.getsource(faction_reputation_rewards)
+                                         + repr(sorted(FACTION_STARTER_QUESTS))).encode()).hexdigest()}
 
 
 def model_digest(saved):
     payload = {key: saved[key] for key in ("quests", "tableCoverage", "diagnostics", "disabledQuestIds", "moduleQuestIds", "spellCoverage")}
+    payload["starterTeams"] = saved.get("starterTeams", {})
+    payload["scriptQuestStarters"] = saved.get("scriptQuestStarters", {})
+    payload["factionReputationRewards"] = saved.get("factionReputationRewards", {})
     return hashlib.sha256(json.dumps(payload, sort_keys=True, ensure_ascii=True, allow_nan=False,
                                      separators=(",", ":")).encode()).hexdigest()
 
@@ -80,6 +91,114 @@ def build_relations(rows, module_ids, disabled_ids):
         quest = int(row.get("startquest") or row.get("StartQuest") or 0)
         if quest > 0 and quest not in excluded:
             result.setdefault(quest, relation_reader.empty_relation())["start"]["item"].add(int(row["entry"]))
+    return result
+
+
+def script_quest_starters(rows, templates):
+    """Locate Ravenholdt letter distributors through their gossip action chains.
+
+    Spell21100 creates item17126, which starts quest6681. This explicit script
+    interpretation supplies map helpers, not additional server quest relations.
+    """
+    if 6681 not in templates:
+        return {}
+    scripts = [row for row in rows("smart_scripts") if int(row.get("source_type") or 0) == 0]
+    by_npc = {}
+    for row in scripts:
+        by_npc.setdefault(int(row["entryorguid"]), {})[int(row["id"])] = row
+    menus = {(int(row["SourceGroup"]), int(row["SourceEntry"])) for row in rows("conditions")
+             if int(row.get("SourceTypeOrReferenceId") or 0) == 15
+             and int(row.get("ConditionTypeOrReference") or 0) in (8, 9, 28)
+             and int(row.get("ConditionValue1") or 0) == 6681}
+    givers = set()
+    for npc, actions in by_npc.items():
+        if npc <= 0:
+            continue
+        for root in actions.values():
+            if int(root.get("event_type") or 0) != 62 or (
+                    int(root.get("event_param1") or 0), int(root.get("event_param2") or 0)) not in menus:
+                continue
+            action, visited = root, set()
+            while action is not None:
+                identifier = int(action["id"])
+                if identifier in visited:
+                    raise ValueError(f"Quest6681 letter NPC {npc}: cyclic gossip action chain")
+                visited.add(identifier)
+                if (int(action.get("action_type") or 0) == 11 and int(action.get("action_param1") or 0) == 21100
+                        and int(action.get("target_type") or 0) == 7):
+                    givers.add(npc)
+                link = int(action.get("link") or 0)
+                if link and link not in actions:
+                    raise ValueError(f"Quest6681 letter NPC {npc}: missing linked gossip action {link}")
+                action = actions.get(link) if link else None
+    if not givers:
+        raise ValueError("Quest6681 letter distributors are unavailable; review current SmartAI/gossip rules")
+    return {"6681": sorted(givers)}
+
+
+def faction_reputation_rewards(derived, rows, excluded):
+    """Mirror Player::RewardReputation for the audited Hilary exception.
+
+    The core picks the first template by ID for each reputation faction, then
+    skips a reward if its EnemyGroup contains that player's team. New/changed
+    rewards refresh here rather than being hidden by a permanent empty table.
+    """
+    if 3741 not in derived or 3741 in excluded:
+        return {}
+    first = {}
+    for row in sorted(rows("factiontemplate_dbc"), key=lambda value: int(value["ID"])):
+        first.setdefault(int(row.get("Faction") or 0), int(row.get("EnemyGroup") or 0))
+    rewards = derived[3741]["reputationReward"]
+    return {"3741": {team: typed([reward for reward in rewards if not first.get(int(reward[0]), 0) & mask])
+                     for team, mask in (("Alliance", 2), ("Horde", 4))}}
+
+
+def starter_teams(relations, rows, script_starters=None):
+    """Filter only explicit opposite-team hostility, not neutral reputation.
+
+    Match AC FactionTemplateEntry::IsHostileTo, including explicit relations.
+    This is a faction map selection, not a replacement for quest eligibility,
+    player reputation, conditions or scripted item-distribution helpers.
+    """
+    wanted = {npc for quest in FACTION_STARTER_QUESTS
+              for npc in relations.get(quest, {}).get("start", {}).get("creature", ())}
+    wanted.update(npc for givers in (script_starters or {}).values() for npc in givers)
+    if not wanted:
+        return {}
+    creatures = {int(row["entry"]): row for row in rows("creature_template")}
+    factions = {int(row["ID"]): row for row in rows("factiontemplate_dbc")}
+    # The same player-race templates used by the NPC source reader. Differing
+    # hostility within one team needs race-specific handling, not an approximation.
+    player_templates = {"Alliance": (1, 3, 4, 115, 1629), "Horde": (2, 5, 6, 116, 1610)}
+    for anchors in player_templates.values():
+        if any(anchor not in factions for anchor in anchors):
+            raise ValueError("Quest starters: missing player faction templates")
+
+    def hostile(template, player):
+        faction = int(player.get("Faction") or 0)
+        if faction:
+            if any(int(template.get(f"Enemies_{i}") or 0) == faction for i in range(1, 5)):
+                return True
+            if any(int(template.get(f"Friend_{i}") or 0) == faction for i in range(1, 5)):
+                return False
+        return bool(int(template["EnemyGroup"]) & int(player["FactionGroup"]))
+
+    result = {}
+    for npc in sorted(wanted):
+        template = creatures.get(npc)
+        faction = factions.get(int(template.get("faction") or 0)) if template else None
+        if faction is None or "EnemyGroup" not in faction:
+            raise ValueError(f"Quest starter NPC {npc}: missing source faction hostility data")
+        teams = 0
+        for team, bit in (("Alliance", 1), ("Horde", 2)):
+            reactions = {hostile(faction, factions[anchor]) for anchor in player_templates[team]}
+            if len(reactions) != 1:
+                raise ValueError(f"Quest starter NPC {npc}: race-specific hostility within {team}; review eligibility")
+            if reactions == {False}:
+                teams |= bit
+        if not teams:
+            raise ValueError(f"Quest starter NPC {npc}: hostile to both teams; review scripted eligibility")
+        result[str(npc)] = teams
     return result
 
 
@@ -117,6 +236,7 @@ def load_source(source, spell_sql, spell_table, signature, cache, refresh=False)
             return saved
     tables, coverage, skipped_statements = {}, {}, []
     spell_coverage = {}
+    script_spell_items = {}
     original_rows, original_statements = sql_reader.load_row_table, sql_reader.load_sql_statements
     original_table = metadata_reader.load_acore_sql_table
     current_file = {"path": None}
@@ -159,6 +279,8 @@ def load_source(source, spell_sql, spell_table, signature, cache, refresh=False)
         if base_file_override is not None:
             if Path(base_file_override).resolve() != spell_sql or table != spell_table:
                 raise ValueError("Unexpected quest audit SQL export")
+            if wanted_keys is not None and any(int(row["ID"]) == 6681 for row in rows("quest_template")):
+                wanted_keys = set(wanted_keys) | {21100}
             exported = original_table(root, table, base_file_override, key_column=key_column, wanted_keys=wanted_keys)
             sql_spells = {int(row["ID"]): row for row in rows("spell_dbc")}
             # Numeric SQL spell overrides, including zeros, supersede the DBC.
@@ -166,6 +288,10 @@ def load_source(source, spell_sql, spell_table, signature, cache, refresh=False)
                 if wanted_keys is None or spell_id in wanted_keys:
                     exported[spell_id] = {**exported.get(spell_id, {}), **row}
             wanted = set(wanted_keys or ())
+            spell = exported.get(21100, {})
+            script_spell_items[21100] = sorted({metadata_reader.get_numbered_spell_field(spell, "EffectItemType", i)
+                                               for i in range(1, 4)
+                                               if metadata_reader.get_numbered_spell_field(spell, "Effect", i) in (24, 157)})
             spell_coverage.update({"requestedSpellIds": len(wanted), "resolvedRequestedSpellIds": len(wanted & set(exported)),
                                    "missingRequestedSpellIds": sorted(wanted - set(exported)), "sqlRows": len(sql_spells)})
             return exported
@@ -182,6 +308,13 @@ def load_source(source, spell_sql, spell_table, signature, cache, refresh=False)
         disabled_ids = {int(row["entry"]) for row in rows("disables") if int(row.get("sourceType") or 0) == 1}
         relations = build_relations(rows, module_ids, disabled_ids)
         templates = {int(row["ID"]): row for row in rows("quest_template")}
+        eligible_templates = {key: row for key, row in templates.items() if key not in disabled_ids and key not in module_ids}
+        if 6681 in eligible_templates and 17126 not in script_spell_items.get(21100, []):
+            raise ValueError("Quest6681: spell21100 no longer creates item17126; review letter-distribution helpers")
+        script_starters = script_quest_starters(rows, eligible_templates)
+        faction_rewards = faction_reputation_rewards(derived, rows, disabled_ids | module_ids)
+        spell_coverage["scriptItemSpells"] = {str(key): value for key, value in script_spell_items.items() if value}
+        teams = starter_teams(relations, rows, script_starters)
         spell_coverage["missingSpellReferences"] = missing_spell_references(
             spell_coverage.get("missingRequestedSpellIds", []), rows("item_template"), list(templates.values()))
     quests = {}
@@ -204,7 +337,9 @@ def load_source(source, spell_sql, spell_table, signature, cache, refresh=False)
     unresolved_source_spells = [row["spellId"] for row in spell_coverage["missingSpellReferences"] if row["requiredSourceItemQuestIds"]]
     saved = {"signature": signature, "quests": quests, "tableCoverage": coverage,
              "diagnostics": {"skippedSqlMutations": skipped_statements, "missingRequiredSourceItemSpellIds": unresolved_source_spells},
-             "disabledQuestIds": sorted(disabled_ids), "moduleQuestIds": sorted(module_ids), "spellCoverage": spell_coverage}
+             "disabledQuestIds": sorted(disabled_ids), "moduleQuestIds": sorted(module_ids), "spellCoverage": spell_coverage,
+             "starterTeams": teams, "scriptQuestStarters": script_starters,
+             "factionReputationRewards": faction_rewards}
     saved["modelSha256"] = model_digest(saved)
     shared.write_json(cache, saved)
     return saved

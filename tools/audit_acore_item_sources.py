@@ -21,8 +21,8 @@ import generate_acore_item_corrections as source_reader
 ROOT = Path(__file__).resolve().parents[1]
 TABLES = ("item_template", "quest_template", "gameobject_template", "creature_template", "creature", "spell_dbc",
           "reference_loot_template", "creature_loot_template", "gameobject_loot_template", "item_loot_template",
-          "npc_vendor", "game_event_npc_vendor", "npc_spellclick_spells")
-CACHE_VERSION = 3
+          "npc_vendor", "game_event_npc_vendor", "npc_spellclick_spells", "gameobject_template_addon", "factiontemplate_dbc")
+CACHE_VERSION = 4
 ABSENT = object()
 
 
@@ -126,7 +126,7 @@ def source_signature(source, scope, spell_sql=None, spell_table="spell"):
                             "table": spell_table} if spell_sql is not None else None,
             "sourceRevision": revision.stdout.strip() if revision.returncode == 0 else None,
             "sql": {str(path.relative_to(source)): snapshot.file_hash(path) for path in sorted(paths)},
-            "extractor": hashlib.sha256(inspect.getsource(load_source).encode("utf-8")).hexdigest(),
+            "extractor": hashlib.sha256((inspect.getsource(load_source) + inspect.getsource(object_source_teams)).encode("utf-8")).hexdigest(),
             "readers": {name: snapshot.file_hash(ROOT / "tools" / name) for name in
                         ("generate_acore_item_corrections.py", "validate_acore_quest_metadata.py")}}
 
@@ -135,8 +135,35 @@ def model_digest(saved):
     payload = {key: saved[key] for key in ("items", "templateIds", "tableCoverage")}
     payload["sourceDiagnostics"] = saved.get("sourceDiagnostics", {})
     payload["spellCoverage"] = saved.get("spellCoverage", {})
+    payload["objectSourceTeams"] = saved.get("objectSourceTeams", {})
     return hashlib.sha256(json.dumps(payload, sort_keys=True, ensure_ascii=True, allow_nan=False,
                                      separators=(",", ":")).encode("utf-8")).hexdigest()
+
+
+def object_source_teams(items, addons, factions):
+    """Match GO quest activation for the audited salvage-item sources.
+
+    Ordinary neutral chests remain usable by both teams. Special explicit
+    faction relations require review rather than guessing a team-wide result.
+    """
+    objects = {value for item in (25911, 25912) for value in items.get(item, {}).get("objectDrops", [])}
+    addons = {int(row["entry"]): row for row in addons}
+    factions = {int(row["ID"]): row for row in factions}
+    result = {}
+    for object_id in sorted(objects):
+        faction_id = int(addons.get(object_id, {}).get("faction") or 0)
+        faction = factions.get(faction_id)
+        if faction_id and faction is None:
+            raise ValueError(f"Item source object {object_id}: missing faction template {faction_id}")
+        enemies = int((faction or {}).get("EnemyGroup") or 0)
+        if not enemies & 6:
+            teams = 3  # ActivateToQuest bypasses hostility filtering here.
+        else:
+            if any(int(faction.get(prefix + str(i)) or 0) for prefix in ("Enemies_", "Friend_") for i in range(1, 5)):
+                raise ValueError(f"Item source object {object_id}: special faction relations require review")
+            teams = (0 if enemies & 3 else 1) | (0 if enemies & 5 else 2)
+        result[str(object_id)] = teams
+    return result
 
 
 def load_source(source, scope, signature, cache, refresh=False, spell_sql=None, spell_table="spell"):
@@ -148,6 +175,7 @@ def load_source(source, scope, signature, cache, refresh=False, spell_sql=None, 
             print(f"Using validated source cache: {cache}", flush=True)
             return saved
     coverage, template_ids, diagnostics, spell_coverage = {}, [], {}, {}
+    object_teams = {}
     original = source_reader.load_row_table
 
     def inventory_rows(source_root, table, keys, include_modules=False):
@@ -169,6 +197,12 @@ def load_source(source, scope, signature, cache, refresh=False, spell_sql=None, 
             items, _, context = source_reader.build_acore_items(source, spell_sql=spell_sql, spell_table=spell_table)
             diagnostics = context.get("sourceDiagnostics", {})
             spell_coverage = context.get("spellCoverage", {})
+            if any(key in items for key in (25911, 25912)):
+                addons, skipped_addons = source_reader.load_row_table(source, "gameobject_template_addon", ("entry",))
+                factions, skipped_factions = source_reader.load_row_table(source, "factiontemplate_dbc", ("ID",))
+                if skipped_addons or skipped_factions:
+                    raise ValueError("Item object faction SQL replay skipped mutations; review source coverage")
+                object_teams = object_source_teams(items, addons, factions)
         else:
             rows, _ = source_reader.load_keyed_table(source, "item_template", "entry")
             items = {item_id: {"name": row.get("name"), "startQuest": int(row.get("startquest") or 0)}
@@ -179,7 +213,7 @@ def load_source(source, scope, signature, cache, refresh=False, spell_sql=None, 
         raise ValueError("Source inputs changed during extraction; report/cache were not published")
     saved = {"signature": signature, "items": {str(key): row for key, row in sorted(items.items())},
              "templateIds": template_ids, "tableCoverage": coverage, "sourceDiagnostics": diagnostics,
-             "spellCoverage": spell_coverage}
+             "spellCoverage": spell_coverage, "objectSourceTeams": object_teams}
     saved["modelSha256"] = model_digest(saved)
     write_json(cache, saved)
     return saved

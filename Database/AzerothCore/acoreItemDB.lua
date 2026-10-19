@@ -36794,3 +36794,12 @@ return {
 [56806]={"Mini Thor",nil,nil,nil,nil,nil,134250560,nil,20,0,0,15,2},
 }]====],
 }
+
+-- Source-derived quest activation filters for salvage objects.
+QuestieDB.itemFactionSelections = (UnitFactionGroup("player") == "Horde") and {
+    [25911] = {[3]={[1]=182936}},
+    [25912] = {[3]={[1]=182937,[2]=182938}},
+} or {
+    [25911] = {[3]={[1]=182799}},
+    [25912] = {[3]={[1]=182797,[2]=182798}},
+}

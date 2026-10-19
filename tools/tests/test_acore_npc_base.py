@@ -23,6 +23,23 @@ def bootstrap(before, source):
 
 
 class NpcBaseTests(unittest.TestCase):
+    def test_scripted_placements_refresh_preserve_phase_and_drop_parent_identity(self):
+        points = audit.typed({12: [[1, 2, 0, 1, 0, 4, 12, 98765]]})
+        source = {6492: npc(spawns=points), 32823: npc(spawns=points)}
+        selected = exporter.scripted_spawn_sources(source, source)
+        self.assertEqual(selected[6492]["n:12"]["n:1"]["n:6"], 4)
+        self.assertNotIn("n:8", selected[6492]["n:12"]["n:1"])
+        self.assertEqual(points["n:12"]["n:1"]["n:8"], 98765)
+        source[6492]["s:spawns"] = audit.typed({12: [[3, 4], [5, 6]]})
+        self.assertEqual(len(exporter.scripted_spawn_sources(source, source)[6492]["n:12"]), 2)
+        output = io.StringIO()
+        exporter.write_stream(output, source, selected)
+        self.assertIn("QuestieDB.scriptedSpawnSources", output.getvalue())
+        self.assertEqual(len(output.getvalue().encode()), exporter.candidate_size(source, selected))
+        source[6492]["s:spawns"] = {}
+        with self.assertRaisesRegex(ValueError, "Missing scripted spawn source geometry"):
+            exporter.scripted_spawn_sources(source, source)
+
     def test_source_backed_geometry_reorders_points_and_preserves_sparse_metadata(self):
         raw = audit.typed({210: [[10, 20, None, 3, 571, 100, 200, 1], [30, 40]]})
         desired = {"n:210": {"n:2": raw["n:210"]["n:2"], "n:7": raw["n:210"]["n:1"]}}

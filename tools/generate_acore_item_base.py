@@ -13,7 +13,7 @@ from pathlib import Path
 
 import audit_acore_item_sources as audit
 import db_snapshot
-from generate_acore_full_base import LuaBlobWriter, lua_quote, row_to_lua
+from generate_acore_full_base import LuaBlobWriter, lua_quote, lua_value, row_to_lua
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -357,12 +357,27 @@ def compare_candidate(before, after):
             "exactParity": not counts, "normalizedParity": not any(row["kind"] != "representationOnly" for row in differences)}
 
 
-def write_candidate(path, records):
+def build_faction_selections(source, records, teams):
+    result = {"Alliance": {}, "Horde": {}}
+    for item in sorted({25911, 25912} & set(source) & set(records)):
+        for team, bit in (("Alliance", 1), ("Horde", 2)):
+            selected = []
+            for object_id in source[item].get("objectDrops", []):
+                mask = teams.get(str(object_id))
+                if type(mask) is not int or mask not in (0, 1, 2, 3):
+                    raise ValueError(f"Item {item} source object {object_id}: missing faction access data")
+                if mask & bit:
+                    selected.append(object_id)
+            result[team][item] = {"s:objectDrops": {f"n:{i}": value for i, value in enumerate(selected, 1)}}
+    return result
+
+
+def write_candidate(path, records, faction_selections=None):
     with path.open("w", encoding="utf-8", newline="\n") as stream:
-        write_candidate_stream(stream, records)
+        write_candidate_stream(stream, records, faction_selections)
 
 
-def write_candidate_stream(stream, records):
+def write_candidate_stream(stream, records, faction_selections=None):
     stream.write('-- Generated from AzerothCore source and explicit Questie compatibility data.\n')
     stream.write('-- Generator: tools/generate_acore_item_base.py\n')
     stream.write('local QuestieDB = QuestieLoader:ImportModule("QuestieDB")\n\nQuestieDB.itemKeys = {\n')
@@ -373,9 +388,16 @@ def write_candidate_stream(stream, records):
     for item_id, row in sorted(records.items()):
         writer.write(f'[{item_id}]={row_to_lua(row, KEYS)},\n')
     writer.finish()
+    if faction_selections is not None:
+        stream.write('\n-- Source-derived quest activation filters for salvage objects.\n')
+        stream.write('QuestieDB.itemFactionSelections = (UnitFactionGroup("player") == "Horde") and {\n')
+        for team, ending in (("Horde", '} or {\n'), ("Alliance", '}\n')):
+            for item, fields in sorted(faction_selections[team].items()):
+                stream.write(f'    [{item}] = {lua_value({"n:" + str(KEYS[field]): value for field, value in fields.items()})},\n')
+            stream.write(ending)
 
 
-def candidate_size(records):
+def candidate_size(records, faction_selections=None):
     class ByteCounter:
         size = 0
 
@@ -383,7 +405,7 @@ def candidate_size(records):
             self.size += len(text.encode("utf-8"))
 
     counter = ByteCounter()
-    write_candidate_stream(counter, records)
+    write_candidate_stream(counter, records, faction_selections)
     return counter.size
 
 
@@ -489,10 +511,12 @@ def main(argv=None):
         manifest_digest = db_snapshot.file_hash(manifest_path)
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         records, redundant = build_records(source, manifest)
+        faction_selections = build_faction_selections(source, records, saved.get("objectSourceTeams", {}))
         comparison = compare_candidate(reference, records) if reference is not None else None
         payload = {"sourceInputs": signature, "manifestSha256": manifest_digest, "items": len(records),
                    "excludedSourceItemIds": sorted(set(source) - set(records)), "redundantSupplements": redundant,
                    "comparisonSnapshotSha256": baseline_digest, "comparison": comparison,
+                   "factionSelections": faction_selections,
                    "sourceLinks": link_counts(records), "maxOutputBytes": manifest["limits"]["maxOutputBytes"],
                    "filteredSourceLinks": {field: sum(len(set(source.get(item_id, {}).get(field, [])) -
                                                               set(records[item_id].get("s:" + field, {}).values()))
@@ -505,6 +529,8 @@ def main(argv=None):
                    "excludedSourceItems": len(payload["excludedSourceItemIds"]),
                    "differences": comparison["counts"] if comparison else "not compared",
                    "exactParity": comparison["exactParity"] if comparison else None}
+        summary["parityScope"] = "shared item rows; faction selections require runtime snapshot review"
+        summary["factionItems"] = sorted(faction_selections["Alliance"])
         if db_snapshot.file_hash(manifest_path) != manifest_digest:
             raise ValueError("Compatibility manifest changed during generation")
     if audit.source_signature(root, "full", spell, args.spell_table) != signature:
@@ -518,7 +544,7 @@ def main(argv=None):
         output.parent.mkdir(parents=True, exist_ok=True)
         with db_snapshot.temporary_directory(output.parent) as directory:
             candidate = directory / "acoreItemDB.lua"
-            write_candidate(candidate, records)
+            write_candidate(candidate, records, faction_selections)
             enforce_size(candidate.stat().st_size, manifest)
             payload["outputBytes"] = candidate.stat().st_size
             summary["outputMiB"] = round(candidate.stat().st_size / (1024 * 1024), 2)

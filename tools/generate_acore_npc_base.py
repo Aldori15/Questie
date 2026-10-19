@@ -15,7 +15,7 @@ from pathlib import Path
 import audit_acore_item_sources as shared
 import audit_acore_npc_sources as audit
 import db_snapshot
-from generate_acore_full_base import LuaBlobWriter, lua_quote, row_to_lua
+from generate_acore_full_base import LuaBlobWriter, lua_quote, lua_value, row_to_lua
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -462,7 +462,34 @@ def compare_records(before, after):
     return {"exactParity": not differences, "differences": differences, "changedRecords": len(differences)}
 
 
-def write_stream(stream, records):
+def scripted_spawn_sources(source, records):
+    """Small source-backed proxies needed even when source chunks stay unloaded.
+
+    Rift Spawn creates the coffer at itself (SmartAI/spell9010); Bountiful Tables
+    award Spirit of Sharing credit (C++/spell61849). Store source geometry once
+    for these helpers instead of maintaining independent coordinate lists.
+    """
+    result = {}
+    for npc in (6492, 32823):
+        if npc not in source or npc not in records:
+            if len(records) > 1000:
+                raise ValueError(f"Missing scripted spawn source NPC {npc}")
+            continue
+        points = source[npc].get("s:spawns")
+        if not isinstance(points, dict) or not points:
+            raise ValueError(f"Missing scripted spawn source geometry for NPC {npc}")
+        result[npc] = copy.deepcopy(points)
+        for zone in result[npc].values():
+            for point in zone.values():
+                if any(not key.startswith("n:") or not key[2:].isdigit() or int(key[2:]) > 8 for key in point):
+                    raise ValueError(f"Unknown scripted spawn source coordinate schema for NPC {npc}")
+                # A child/credit helper shares placement/phase, not its parent's
+                # DB spawn GUID. Preserve slots1-7; never impersonate that NPC.
+                point.pop("n:8", None)
+    return result
+
+
+def write_stream(stream, records, scripted_spawns=None):
     stream.write('-- Generated from AzerothCore source and explicit Questie compatibility data.\n')
     stream.write('-- Generator: tools/generate_acore_npc_base.py\n')
     stream.write('local QuestieDB = QuestieLoader:ImportModule("QuestieDB")\n\nQuestieDB.npcKeys = {\n')
@@ -473,16 +500,19 @@ def write_stream(stream, records):
     for npc_id, row in sorted(records.items()):
         writer.write(f'[{npc_id}]={row_to_lua(row, KEYS)},\n')
     writer.finish()
+    if scripted_spawns is not None:
+        stream.write('\n-- Source geometry for scripted map helpers on fresh and cached startup.\n')
+        stream.write('QuestieDB.scriptedSpawnSources = ' + lua_value({"n:" + str(k): v for k, v in scripted_spawns.items()}) + '\n')
 
 
-def candidate_size(records):
+def candidate_size(records, scripted_spawns=None):
     class Counter:
         size = 0
 
         def write(self, value):
             self.size += len(value.encode("utf-8"))
     counter = Counter()
-    write_stream(counter, records)
+    write_stream(counter, records, scripted_spawns)
     return counter.size
 
 
@@ -567,12 +597,13 @@ def main(argv=None):
         manifest_sha = db_snapshot.file_hash(manifest_path)
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         records = build_records(model, manifest, saved.get("geometryProvenance"))
+    scripted_spawns = scripted_spawn_sources(model, records)
     comparison = compare_records(baseline, records) if baseline is not None else None
     if comparison and not comparison["exactParity"]:
         if args.command == "generate":
             shared.write_json(targets[1], {"comparison": comparison})
         raise ValueError("NPC candidate differs from baseline; no candidate or manifest published")
-    if candidate_size(records) > manifest["limits"]["maxOutputBytes"]:
+    if candidate_size(records, scripted_spawns) > manifest["limits"]["maxOutputBytes"]:
         raise ValueError("NPC candidate exceeds its baseline size budget")
     if audit.source_signature(source, ROOT, creature, multispawn, difficulty, wdm) != signature:
         raise ValueError("NPC source inputs changed during generation")
@@ -581,6 +612,8 @@ def main(argv=None):
         raise ValueError("Snapshot or addon inputs changed during generation")
     summary = {"npcs": len(records), "exactParity": comparison["exactParity"] if comparison else None,
                "changedRecords": comparison["changedRecords"] if comparison else None,
+               "parityScope": "shared NPC rows; scripted map helpers require runtime snapshot review",
+               "scriptedSpawnSourceIds": sorted(scripted_spawns),
                "geometry": audit.geometry_inventory(records)}
     if args.command == "bootstrap":
         write_manifest(manifest_path, manifest)
@@ -593,7 +626,7 @@ def main(argv=None):
         with db_snapshot.temporary_directory(output.parent) as directory:
             candidate = directory / "acoreNpcDB.lua"
             with candidate.open("w", encoding="utf-8", newline="\n") as stream:
-                write_stream(stream, records)
+                write_stream(stream, records, scripted_spawns)
             if candidate.stat().st_size > manifest["limits"]["maxOutputBytes"]:
                 raise ValueError("Serialized NPC candidate exceeds size budget")
             shared.write_json(report, {"sourceInputs": signature, "manifestSha256": manifest_sha,
