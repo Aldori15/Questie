@@ -18,6 +18,7 @@ QUEST_FIX_FILES = (
     Path("Database/Corrections/tbcQuestFixes.lua"),
     Path("Database/Corrections/wotlkQuestFixes.lua"),
 )
+RUNTIME_QUEST_FILES = (Path("Database/Corrections/QuestRuntimeCorrections.lua"),)
 
 QUEST_ROW_RE = re.compile(r"^\s{8}\[(\d+)\]\s*=\s*\{")
 TOOLTIP_TARGET_RE = re.compile(
@@ -103,7 +104,7 @@ def load_trigger_ends(addon_root):
 
 def load_configured_targets(addon_root):
     configured = {}
-    for relative_path in QUEST_FIX_FILES:
+    for relative_path in RUNTIME_QUEST_FILES:
         path = addon_root / relative_path
         for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
             match = TOOLTIP_TARGET_RE.search(line)

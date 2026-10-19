@@ -69,8 +69,8 @@ _QuestieEvent.initializeAttempts = 0
 local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 ---@type QuestieCorrections
 local QuestieCorrections = QuestieLoader:ImportModule("QuestieCorrections")
----@type QuestieWotlkNpcFixes
-local QuestieWotlkNpcFixes = QuestieLoader:ImportModule("QuestieWotlkNpcFixes")
+---@type NPCRuntimeCorrections
+local NPCRuntimeCorrections = QuestieLoader:ImportModule("NPCRuntimeCorrections")
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
 
@@ -185,7 +185,7 @@ function QuestieEvent.IsQuestVisibleForExpansion(hideQuest)
 end
 
 local function DarkmoonNpcFixes(location)
-    return QuestieWotlkNpcFixes:LoadDarkmoonFixes(location)
+    return NPCRuntimeCorrections:LoadDarkmoonFixes(location)
 end
 
 local function SameDarkmoonSpawnData(left, right)

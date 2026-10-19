@@ -5,12 +5,8 @@ local QuestieCorrections = QuestieLoader:CreateModule("QuestieCorrections")
 local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 ---@type ZoneDB
 local ZoneDB = QuestieLoader:ImportModule("ZoneDB")
----@type QuestieLib
-local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
 ---@type RamerDouglasPeucker
 local RamerDouglasPeucker = QuestieLoader:ImportModule("RamerDouglasPeucker")
----@type QuestieEvent
-local QuestieEvent = QuestieLoader:ImportModule("QuestieEvent")
 ---@type QuestieQuestBlacklist
 local QuestieQuestBlacklist = QuestieLoader:ImportModule("QuestieQuestBlacklist")
 ---@type QuestieNPCBlacklist
@@ -18,49 +14,20 @@ local QuestieNPCBlacklist = QuestieLoader:ImportModule("QuestieNPCBlacklist")
 ---@type QuestieItemBlacklist
 local QuestieItemBlacklist = QuestieLoader:ImportModule("QuestieItemBlacklist")
 
----@type QuestieQuestFixes
-local QuestieQuestFixes = QuestieLoader:ImportModule("QuestieQuestFixes")
----@type QuestieNPCFixes
-local QuestieNPCFixes = QuestieLoader:ImportModule("QuestieNPCFixes")
----@type QuestieItemFixes
-local QuestieItemFixes = QuestieLoader:ImportModule("QuestieItemFixes")
----@type QuestieObjectFixes
-local QuestieObjectFixes = QuestieLoader:ImportModule("QuestieObjectFixes")
-
----@type QuestieTBCQuestFixes
-local QuestieTBCQuestFixes = QuestieLoader:ImportModule("QuestieTBCQuestFixes")
----@type QuestieTBCNpcFixes
-local QuestieTBCNpcFixes = QuestieLoader:ImportModule("QuestieTBCNpcFixes")
----@type QuestieTBCItemFixes
-local QuestieTBCItemFixes = QuestieLoader:ImportModule("QuestieTBCItemFixes")
----@type QuestieTBCObjectFixes
-local QuestieTBCObjectFixes = QuestieLoader:ImportModule("QuestieTBCObjectFixes")
-
----@type QuestieWotlkQuestFixes
-local QuestieWotlkQuestFixes = QuestieLoader:ImportModule("QuestieWotlkQuestFixes")
----@type QuestieWotlkNpcFixes
-local QuestieWotlkNpcFixes = QuestieLoader:ImportModule("QuestieWotlkNpcFixes")
----@type QuestieWotlkItemFixes
-local QuestieWotlkItemFixes = QuestieLoader:ImportModule("QuestieWotlkItemFixes")
----@type QuestieWotlkObjectFixes
-local QuestieWotlkObjectFixes = QuestieLoader:ImportModule("QuestieWotlkObjectFixes")
+---@type ItemRuntimeCorrections
+local ItemRuntimeCorrections = QuestieLoader:ImportModule("ItemRuntimeCorrections")
+---@type NPCRuntimeCorrections
+local NPCRuntimeCorrections = QuestieLoader:ImportModule("NPCRuntimeCorrections")
+---@type ObjectRuntimeCorrections
+local ObjectRuntimeCorrections = QuestieLoader:ImportModule("ObjectRuntimeCorrections")
+---@type QuestRuntimeCorrections
+local QuestRuntimeCorrections = QuestieLoader:ImportModule("QuestRuntimeCorrections")
 
 ---@type IsleOfQuelDanas
 local IsleOfQuelDanas = QuestieLoader:ImportModule("IsleOfQuelDanas")
 
---[[
-    This file load the corrections of the database files.
-
-    It is a separate file so we can upstream those changes easier to cmangos and can still
-    update the database files with a script.
-
-    Most of the corrections can be done by accessing a specific key instead of copying the
-    whole object over and change it.
-    You can find the keys at the beginning of each file (e.g. 'questKeys' are at the beginning of 'questDB.lua').
-
-    Further information on how to use this can be found at the wiki
-    https://github.com/Questie/Questie/wiki/Corrections
---]]
+-- Static data belongs to the generated bases. This module initializes runtime
+-- faction overrides, blacklists, race inference and waypoint optimization.
 
 -- flags that can be used in corrections (currently only blacklists)
 QuestieCorrections.TBC_ONLY = 1 -- Hide only in TBC
@@ -69,7 +36,7 @@ QuestieCorrections.WOTLK_ONLY = 3 -- Hide only in Wotlk
 QuestieCorrections.TBC_AND_WOTLK = 4 -- Hide in TBC and Wotlk
 QuestieCorrections.CLASSIC_AND_TBC = 7 -- Hide in both Classic and TBC
 
-QuestieCorrections.killCreditObjectiveFirst = {} -- Only used for TBC quests
+QuestieCorrections.killCreditObjectiveFirst = {}
 QuestieCorrections.itemObjectiveFirst = {}
 QuestieCorrections.questTooltipHints = {}
 QuestieCorrections.objectiveTooltipHints = {}
@@ -122,22 +89,10 @@ do
 
     function QuestieCorrections:MinimalInit() -- db already compiled
 
-        -- Classic Era Corrections
-        addOverride(QuestieDB.itemDataOverrides, QuestieItemFixes:LoadFactionFixes())
-        addOverride(QuestieDB.npcDataOverrides, QuestieNPCFixes:LoadFactionFixes())
-        addOverride(QuestieDB.objectDataOverrides, QuestieObjectFixes:LoadFactionFixes())
-        addOverride(QuestieDB.questDataOverrides, QuestieQuestFixes:LoadFactionFixes())
-
-        -- TBC Corrections
-        addOverride(QuestieDB.itemDataOverrides, QuestieTBCItemFixes:LoadFactionFixes())
-        addOverride(QuestieDB.npcDataOverrides, QuestieTBCNpcFixes:LoadFactionFixes())
-        addOverride(QuestieDB.objectDataOverrides, QuestieTBCObjectFixes:LoadFactionFixes())
-        addOverride(QuestieDB.questDataOverrides, QuestieTBCQuestFixes:LoadFactionFixes())
-
-        -- WOTLK Corrections
-        addOverride(QuestieDB.npcDataOverrides, QuestieWotlkNpcFixes:LoadFactionFixes())
-        addOverride(QuestieDB.itemDataOverrides, QuestieWotlkItemFixes:LoadFactionFixes())
-        addOverride(QuestieDB.objectDataOverrides, QuestieWotlkObjectFixes:LoadFactionFixes())
+        ItemRuntimeCorrections:ApplyFactionFixes(QuestieDB.itemDataOverrides, addOverride)
+        NPCRuntimeCorrections:ApplyFactionFixes(QuestieDB.npcDataOverrides, addOverride)
+        ObjectRuntimeCorrections:ApplyFactionFixes(QuestieDB.objectDataOverrides, addOverride)
+        QuestRuntimeCorrections:ApplyFactionFixes(QuestieDB.questDataOverrides, addOverride)
 
         QuestieCorrections.questItemBlacklist = filterExpansion(QuestieItemBlacklist:Load())
         QuestieCorrections.questNPCBlacklist = filterExpansion(QuestieNPCBlacklist:Load())
@@ -167,44 +122,11 @@ do
     end
 end
 
----@param databaseTableName string The name of the QuestieDB field that should be manipulated (e.g. "itemData", "questData")
----@param corrections table All corrections for the given databaseTableName (e.g. all quest corrections)
----@param reversedKeys table The reverted QuestieDB keys for the given databaseTableName (e.g. QuestieDB.questKeys)
----@param validationTables table Only used by the CI validation scripts to validate the corrections against the original database values and find irrelevant corrections
----@param noOverwrites true? Do not overwrite existing values
----@param noNewEntries true? Do not create new entries in the database
-local _LoadCorrections = function(databaseTableName, corrections, reversedKeys, validationTables, noOverwrites, noNewEntries)
-    for id, data in pairs(corrections) do
-        for key, value in pairs(data) do
-            -- Create missing ids unless new entries are disabled and the correction has no name.
-            -- Named corrections can define genuinely missing records.
-            if not QuestieDB[databaseTableName][id] and (not noNewEntries or data[1] ~= nil) then
-                QuestieDB[databaseTableName][id] = {}
-            end
-            if validationTables and QuestieDB[databaseTableName][id] then
-                if value and QuestieLib.equals(QuestieDB[databaseTableName][id][key], value) and validationTables[databaseTableName][id] and
-                    QuestieLib.equals(validationTables[databaseTableName][id][key], value) then
-                    Questie.Warning("Correction of " ..
-                                    databaseTableName .. " " .. tostring(id) .. "." .. reversedKeys[key] .. " matches base DB! Value:" .. tostring(value))
-                end
-            end
-            if QuestieDB[databaseTableName][id] then
-                if noOverwrites and QuestieDB[databaseTableName][id][key] == nil then
-                    QuestieDB[databaseTableName][id][key] = value
-                elseif not noOverwrites then
-                    QuestieDB[databaseTableName][id][key] = value
-                end
-            end
-        end
-    end
-end
-
 ---@param validationTables table? Only used by the CI validation scripts to validate the corrections against the original database values and find irrelevant corrections
 function QuestieCorrections:Initialize(validationTables)
     -- Static corrections are included in the generated base databases.
     -- MinimalInit retains faction overrides and blacklists on fresh and cached startup.
 
-    local patchCount = 0
     QuestieDB.requiredItemConditionQuestIds = {}
     for questId, quest in pairs(QuestieDB.questData) do
         local requiredItemConditions = quest[QuestieDB.questKeys.requiredItemConditions]
@@ -238,7 +160,6 @@ function QuestieCorrections:Initialize(validationTables)
                     end
                 end
                 if canAlliance ~= canHorde then
-                    patchCount = patchCount + 1
                     if canAlliance then
                         quest[QuestieDB.questKeys.requiredRaces] = QuestieDB.raceKeys.ALL_ALLIANCE
                     else

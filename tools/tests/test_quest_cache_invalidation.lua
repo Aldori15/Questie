@@ -81,7 +81,7 @@ end}
 -- A calendar override is the fallback restored when the bridge loses its live state.
 local calendarSpawns = {[12] = {{15, 25}}}
 db.npcDataOverrides[npcId] = {[n.spawns] = calendarSpawns}
-modules.QuestieWotlkNpcFixes = {LoadDarkmoonFixes = function(_, location)
+modules.NPCRuntimeCorrections = {LoadDarkmoonFixes = function(_, location)
     return {[npcId] = {[n.spawns] = {[location == 0 and 215 or 12] = {{50 + location, 60}}}},
         [99] = {[n.spawns] = {[12] = {{30, 40}}}}}
 end}
@@ -308,8 +308,8 @@ verifyCoordinates(12, 15)
 -- Even a different bridge location key must not redraw identical coordinates.
 move({1})
 verifyCoordinates(12, 51)
-local loadFixes = modules.QuestieWotlkNpcFixes.LoadDarkmoonFixes
-modules.QuestieWotlkNpcFixes.LoadDarkmoonFixes = function() return loadFixes(nil, 1) end
+local loadFixes = modules.NPCRuntimeCorrections.LoadDarkmoonFixes
+modules.NPCRuntimeCorrections.LoadDarkmoonFixes = function() return loadFixes(nil, 1) end
 unchangedCache, redrawCount = objective.AlreadySpawned, unloads[1]
 local changed, ids = event.SetServerDarkmoonLocations({2})
 equal(changed, false, "different location key with identical spawns is unchanged")
@@ -321,7 +321,7 @@ local oldNPC = db:GetNPC(npcId)
 local metadataOnlyFixes = loadFixes(nil, 1)
 local newZoneID = (db.QueryNPCSingle(npcId, "zoneID") or 12) + 1
 metadataOnlyFixes[npcId][n.zoneID] = newZoneID
-modules.QuestieWotlkNpcFixes.LoadDarkmoonFixes = function() return metadataOnlyFixes end
+modules.NPCRuntimeCorrections.LoadDarkmoonFixes = function() return metadataOnlyFixes end
 changed, ids = event.SetServerDarkmoonLocations({3})
 equal(changed, true, "zone metadata alone reports a change")
 equal(ids[npcId], true, "zone metadata change reports affected NPC")
@@ -340,7 +340,7 @@ equal(next(ids), nil, "identical zone metadata reports no changed NPCs")
 equal(db:GetNPC(npcId), updatedNPC, "identical zone metadata preserves NPC cache")
 equal(objective.AlreadySpawned, unchangedCache, "identical zone metadata preserves drawing cache")
 equal(unloads[1], redrawCount, "identical zone metadata does not redraw")
-modules.QuestieWotlkNpcFixes.LoadDarkmoonFixes = loadFixes
+modules.NPCRuntimeCorrections.LoadDarkmoonFixes = loadFixes
 showObjectives = false
 move({0})
 verifyCoordinates(215, 50)

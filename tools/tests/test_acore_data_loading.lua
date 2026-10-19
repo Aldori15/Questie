@@ -80,10 +80,12 @@ repeat
 until coroutine.status(thread) == "dead"
 local function noStatic() error("legacy static correction was applied", 2) end
 local function empty() return {} end
-for _, name in ipairs({"QuestieQuestFixes", "QuestieNPCFixes", "QuestieItemFixes", "QuestieObjectFixes",
-    "QuestieTBCQuestFixes", "QuestieTBCNpcFixes", "QuestieTBCItemFixes", "QuestieTBCObjectFixes",
-    "QuestieWotlkQuestFixes", "QuestieWotlkNpcFixes", "QuestieWotlkItemFixes", "QuestieWotlkObjectFixes",
-    "QuestieQuestBlacklist", "QuestieNPCBlacklist", "QuestieItemBlacklist"}) do
+for _, name in ipairs({"ItemRuntimeCorrections", "NPCRuntimeCorrections",
+    "ObjectRuntimeCorrections", "QuestRuntimeCorrections"}) do
+    local mod = env.QuestieLoader:ImportModule(name)
+    mod.ApplyFactionFixes = empty
+end
+for _, name in ipairs({"QuestieQuestBlacklist", "QuestieNPCBlacklist", "QuestieItemBlacklist"}) do
     local mod = env.QuestieLoader:ImportModule(name)
     for _, method in ipairs({"Load", "LoadAutomatics", "LoadReverseLinkFixes",
         "LoadReverseStartQuestFixes"}) do
@@ -98,7 +100,6 @@ for _, name in ipairs({"QuestieQuestFixes", "QuestieNPCFixes", "QuestieItemFixes
         mod.Load = empty
     end
 
-    mod.LoadFactionFixes = empty
     mod.LoadAutoBlacklistWotlk = empty
 end
 -- MinimalInit receives blank static blacklist modules and the real Compat
