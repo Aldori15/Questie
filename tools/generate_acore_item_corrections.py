@@ -1,3 +1,4 @@
+from questie_base import base_text, parse_keys, return_table
 import argparse
 import ast
 import json
@@ -25,11 +26,7 @@ from validate_acore_quest_metadata import (  # noqa: E402
 )
 
 
-ITEM_CORRECTION_FILES = [
-    "Database/Corrections/classicItemFixes.lua",
-    "Database/Corrections/tbcItemFixes.lua",
-    "Database/Corrections/wotlkItemFixes.lua",
-]
+ITEM_CORRECTION_FILES = []
 
 STATIC_FIELD_MAP = {
     "name": "name",
@@ -107,17 +104,7 @@ def strip_lua_comments(text):
 
 
 def extract_lua_long_return_table(text, marker):
-    marker_index = text.find(marker)
-    if marker_index == -1:
-        raise ValueError(f"Could not find marker {marker!r}")
-    start = text.find("[[return", marker_index)
-    if start == -1:
-        raise ValueError(f"Could not find long return table after {marker!r}")
-    open_brace = text.find("{", start)
-    end = text.find("}]]", open_brace)
-    if open_brace == -1 or end == -1:
-        raise ValueError(f"Could not extract long return table after {marker!r}")
-    return text[open_brace : end + 1]
+    return return_table(text, marker)
 
 
 def extract_function_return_tables(text, function_name):
@@ -366,12 +353,7 @@ class LuaParser:
 
 
 def parse_item_keys(item_db_path):
-    text = item_db_path.read_text(encoding="utf-8")
-    key_block = extract_balanced_braces(text, text.find("{", text.find("QuestieDB.itemKeys")))
-    keys = {}
-    for name, value in re.findall(r"\['([^']+)'\]\s*=\s*(\d+)", key_block):
-        keys[name] = int(value)
-    return keys
+    return parse_keys(item_db_path, "item")
 
 
 def load_questie_items(item_db_path, item_keys):
@@ -432,7 +414,7 @@ def apply_corrections(items, corrections, no_overwrites=False, no_new_entries=Fa
 
 
 def load_effective_questie_items(repo_root, item_keys):
-    items = load_questie_items(repo_root / "Database/Wotlk/wotlkItemDB.lua", item_keys)
+    items = load_questie_items(repo_root / "Database/AzerothCore/acoreItemDB.lua", item_keys)
     for relative_path in ITEM_CORRECTION_FILES:
         path = repo_root / relative_path
         if not path.exists():
@@ -1624,9 +1606,8 @@ def find_differences(
                     continue
 
                 # If the field is 'class' and Questie's value differs from the
-                # base wotlkItemDB value (i.e. it was changed by an existing
-                # manual correction file such as tbcItemFixes.lua or
-                # wotlkItemFixes.lua), prefer preserving that manual fix rather
+                # original base value (i.e. changed by an explicit compatibility
+                # override), prefer preserving that manual fix rather
                 # than overwriting it with AzerothCore's value. This avoids the
                 # generator undoing intentional quest-item class corrections
                 # which can break runtime behavior like tracker item buttons.
@@ -1777,61 +1758,8 @@ def write_preservation_report(preservations, report_path):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate Questie itemData corrections from AzerothCore 3.3.5 SQL data.")
-    parser.add_argument("--acore-source", default=r"P:\AC\source", type=Path)
-    parser.add_argument("--repo-root", default=Path("."), type=Path)
-    parser.add_argument("--output", default=Path("Database/AzerothCore/AzerothCoreItemCorrections.lua"), type=Path)
-    parser.add_argument("--report", default=Path("tools/reports/acore_item_corrections.md"), type=Path)
-    parser.add_argument("--preservation-report", default=Path("tools/reports/acore_item_preservations.json"), type=Path)
-    parser.add_argument("--include-modules", action="store_true", help="Also scan SQL under AzerothCore modules/. This can be slow.")
-    parser.add_argument("--spell-sql", type=Path, help="Optional full Spell.dbc SQL export, before AzerothCore SQL overrides")
-    parser.add_argument("--spell-table", default="spell", help="Table in --spell-sql (default: spell)")
-    parser.add_argument(
-        "--fields",
-        nargs="+",
-        default=FIELD_ORDER,
-        choices=FIELD_ORDER,
-        help="Questie item fields to compare and generate.",
-    )
-    parser.add_argument("--include-missing-items", action="store_true", help="Generate corrections for item IDs missing from Questie.")
-    args = parser.parse_args()
-
-    repo_root = args.repo_root.resolve()
-    if (repo_root / "Database/AzerothCore/acoreItemDB.lua").is_file():
-        parser.error("Complete AzerothCore item base detected. Use tools/generate_acore_item_base.py generate; legacy item corrections are no longer loaded.")
-    item_keys = parse_item_keys(repo_root / "Database/Wotlk/wotlkItemDB.lua")
-    # Load the base Questie WotLK item DB (before applying local correction files)
-    questie_base_items = load_questie_items(repo_root / "Database/Wotlk/wotlkItemDB.lua", item_keys)
-    # Load the effective Questie items after applying classic/tbc/wotlk corrections
-    questie_items = load_effective_questie_items(repo_root, item_keys)
-    acore_items, skipped_mutations, source_context = build_acore_items(
-        args.acore_source, args.include_modules, args.spell_sql, args.spell_table)
-    missing_startquest_items = find_missing_startquest_items(questie_items, acore_items)
-
-    preservations = []
-    corrections = find_differences(
-        questie_items,
-        acore_items,
-        args.fields,
-        args.include_missing_items,
-        questie_base_items,
-        extra_item_ids=missing_startquest_items,
-        startquest_only_ids=missing_startquest_items if not args.include_missing_items else None,
-        preservations=preservations,
-        source_context=source_context,
-    )
-
-    write_corrections_module(corrections, repo_root / args.output)
-    write_report(corrections, skipped_mutations, repo_root / args.report)
-    write_preservation_report(preservations, repo_root / args.preservation_report)
-
-    print(f"Wrote {len(corrections)} item corrections to {repo_root / args.output}")
-    print(f"Recorded {len(preservations)} preserved differences in {repo_root / args.preservation_report}")
-    skipped = {table: count for table, count in skipped_mutations.items() if count}
-    if skipped:
-        print(f"Skipped complex SQL mutations: {skipped}")
-    if source_context.get("sourceDiagnostics"):
-        print("Source validation diagnostics: " + str({key: len(values) for key, values in source_context["sourceDiagnostics"].items()}))
+    raise SystemExit("Correction layers are retired. Use tools/generate_acore_item_base.py; "
+                     "this module retains shared source-reading helpers.")
 
 
 if __name__ == "__main__":

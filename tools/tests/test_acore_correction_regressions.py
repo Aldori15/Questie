@@ -446,17 +446,14 @@ const WintergraspObjectPositionData WGOutsideNPC[WG_MAX_OUTSIDE_NPC] = {
         self.assertEqual([], result[0])
         self.assertEqual("preserveQuestieEventObjectiveSlot", result[3][0]["reason"])
 
-    def test_tbc_trigger_end_corrections_are_loaded_as_event_slots(self):
-        addon_root = ADDON_ROOT
-        constants = quest_validator.load_constants(addon_root)
-        corrections = quest_validator.load_questie_correction_file(
-            addon_root / "Database/Corrections/tbcQuestFixes.lua",
-            constants,
-        )
+    def test_base_trigger_ends_are_loaded_as_event_slots(self):
+        constants = quest_validator.load_constants(ADDON_ROOT)
+        metadata = quest_validator.load_questie_base_metadata(
+            ADDON_ROOT / "Database/AzerothCore/acoreQuestDB.lua",
+            constants["quest_keys"], constants)
+        self.assertTrue(metadata[9889]["_hasTriggerEnd"])
+        self.assertTrue(metadata[10887]["_hasTriggerEnd"])
 
-        self.assertTrue(corrections[9889]["_hasTriggerEnd"])
-        self.assertNotIn("objectives", corrections[9889])
-        self.assertTrue(corrections[10887]["_hasTriggerEnd"])
 
     def test_direct_trigger_end_tooltip_targets_are_complete_and_classified(self):
         addon_root = ADDON_ROOT

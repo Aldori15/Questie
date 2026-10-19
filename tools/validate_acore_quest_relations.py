@@ -1,3 +1,4 @@
+from questie_base import base_text, LuaTableParser
 import argparse
 import json
 import re
@@ -132,102 +133,6 @@ QUEST_ENTRY_RE = re.compile(r"^\[(\d+)\]\s*=\s*(\{.*\})$", re.DOTALL)
 QUEST_FIELD_RE = re.compile(r"^\[(questKeys\.(?:startedBy|finishedBy))\]\s*=\s*(.+)$", re.DOTALL)
 
 
-class LuaTableParser:
-    def __init__(self, text: str):
-        self.text = text
-        self.length = len(text)
-        self.index = 0
-
-    def parse(self):
-        value = self._parse_value()
-        self._skip_ws()
-        return value
-
-    def _skip_ws(self):
-        while self.index < self.length and self.text[self.index] in " \t\r\n":
-            self.index += 1
-
-    def _peek(self):
-        return self.text[self.index] if self.index < self.length else ""
-
-    def _parse_value(self):
-        self._skip_ws()
-        char = self._peek()
-        if char == "{":
-            return self._parse_table()
-        if char == '"':
-            return self._parse_string()
-        if char == "-" or char.isdigit():
-            return self._parse_number()
-        if self.text.startswith("nil", self.index):
-            self.index += 3
-            return None
-        if self.text.startswith("true", self.index):
-            self.index += 4
-            return True
-        if self.text.startswith("false", self.index):
-            self.index += 5
-            return False
-        raise ValueError(f"Unsupported Lua token near: {self.text[self.index:self.index + 32]!r}")
-
-    def _parse_table(self):
-        assert self._peek() == "{"
-        self.index += 1
-        items = []
-
-        while True:
-            self._skip_ws()
-            if self._peek() == "}":
-                self.index += 1
-                return items
-
-            items.append(self._parse_value())
-            self._skip_ws()
-
-            char = self._peek()
-            if char == ",":
-                self.index += 1
-                continue
-            if char == "}":
-                self.index += 1
-                return items
-            raise ValueError(f"Unexpected character in Lua table: {char!r}")
-
-    def _parse_string(self):
-        assert self._peek() == '"'
-        self.index += 1
-        chars = []
-
-        while self.index < self.length:
-            char = self.text[self.index]
-            self.index += 1
-            if char == "\\":
-                if self.index >= self.length:
-                    break
-                escaped = self.text[self.index]
-                self.index += 1
-                escape_map = {
-                    "n": "\n",
-                    "r": "\r",
-                    "t": "\t",
-                    '"': '"',
-                    "\\": "\\",
-                }
-                chars.append(escape_map.get(escaped, escaped))
-                continue
-            if char == '"':
-                return "".join(chars)
-            chars.append(char)
-
-        raise ValueError("Unterminated Lua string")
-
-    def _parse_number(self):
-        start = self.index
-        if self._peek() == "-":
-            self.index += 1
-        while self.index < self.length and self.text[self.index].isdigit():
-            self.index += 1
-        return int(self.text[start:self.index])
 
 
 def parse_number_list(value: str):
@@ -602,7 +507,7 @@ def extract_relation_sources(value):
 def load_questie_relations(quest_db_path: Path):
     per_quest = {}
 
-    for raw_line in quest_db_path.read_text(encoding="utf-8").splitlines():
+    for raw_line in base_text(quest_db_path).splitlines():
         line = raw_line.strip()
         if not line.startswith("["):
             continue
@@ -613,8 +518,7 @@ def load_questie_relations(quest_db_path: Path):
 
         quest_id = int(quest_id_match.group(1))
         fields = split_top_level_lua_table(quest_id_match.group(2))
-        if len(fields) < 3:
-            continue
+        fields += ["nil"] * max(0, 3 - len(fields))
 
         per_quest[quest_id] = {
             "start": extract_relation_sources(LuaTableParser(fields[1]).parse() if fields[1] != "nil" else None),
@@ -777,9 +681,9 @@ def build_summary(mismatches):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Validate Questie WotLK quest starter/finisher data against AzerothCore SQL.")
+    parser = argparse.ArgumentParser(description="Validate shared quest starter/finisher data against AzerothCore SQL.")
     parser.add_argument("--acore-source", default=r"P:\AC\source", help="Path to the AzerothCore source tree")
-    parser.add_argument("--quest-db", default="Database/Wotlk/wotlkQuestDB.lua", help="Path to the Questie WotLK quest DB")
+    parser.add_argument("--quest-db", default="Database/AzerothCore/acoreQuestDB.lua", help="Path to the shared AzerothCore quest DB")
     parser.add_argument(
         "--quest-template-sql",
         help="Optional HeidiSQL export for quest_template; sibling relation exports and item_template.sql will be used when present",
@@ -787,11 +691,7 @@ def main():
     parser.add_argument(
         "--quest-fixes",
         nargs="*",
-        default=[
-            "Database/Corrections/classicQuestFixes.lua",
-            "Database/Corrections/tbcQuestFixes.lua",
-            "Database/Corrections/wotlkQuestFixes.lua",
-        ],
+        default=[],
         help="Quest correction files to merge before comparison",
     )
     parser.add_argument("--limit", type=int, default=20, help="How many mismatches to print")

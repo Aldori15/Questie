@@ -1,6 +1,4 @@
 """Exercise source semantics that can lose or invent item acquisition links."""
-import contextlib
-import io
 import unittest
 from unittest.mock import patch
 
@@ -13,15 +11,13 @@ def loot(item=0, chance=100, group=0, reference=0, **fields):
 
 
 class ItemSourceTests(unittest.TestCase):
-    def test_legacy_correction_command_rejects_complete_base_before_reading_sql(self):
-        errors = io.StringIO()
-        with patch("sys.argv", ["generate_acore_item_corrections.py", "--repo-root", str(ADDON_ROOT)]), \
-             patch.object(reader, "build_acore_items", side_effect=AssertionError("Unexpected SQL scan")), \
-             contextlib.redirect_stderr(errors):
+    def test_retired_correction_command_stops_before_reading_sql(self):
+        with patch.object(reader, "build_acore_items") as build_items:
             with self.assertRaises(SystemExit) as result:
                 reader.main()
-        self.assertEqual(result.exception.code, 2)
-        self.assertIn("generate_acore_item_base.py generate", errors.getvalue())
+        build_items.assert_not_called()
+        self.assertIn("Correction layers are retired", str(result.exception.code))
+        self.assertIn("tools/generate_acore_item_base.py", str(result.exception.code))
 
     def test_equal_chance_rows_share_the_remaining_group_probability(self):
         rows = [loot(1, 20, 1), loot(2, 0, 1), loot(3, 0, 1)]

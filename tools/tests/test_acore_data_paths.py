@@ -13,10 +13,6 @@ DATA_DIR = Path("Database/AzerothCore")
 DATA_FILES = [
     "AzerothCoreReputationRates.lua",
     "AzerothCoreQuestAvailabilityConditions.lua",
-    "AzerothCoreQuestCorrections.lua",
-    "AzerothCoreItemCorrections.lua",
-    "AzerothCoreNPCCorrections.lua",
-    "AzerothCoreObjectCorrections.lua",
 ]
 
 
@@ -31,7 +27,7 @@ def parser_defaults(module_name):
     # Inspect defaults without running SQL readers or writing generated data.
     # get_default avoids validating required arguments such as --acore-source.
     def capture_defaults(parser, *args, **kwargs):
-        for name in ("output", "item_corrections"):
+        for name in ("output", "quest_db", "npc_db", "object_db", "item_db", "quest_fixes", "npc_fixes", "object_fixes", "item_fixes"):
             defaults[name] = parser.get_default(name)
         raise ParserCaptured
 
@@ -56,7 +52,7 @@ class AcoreDataPathTests(unittest.TestCase):
         scripts = [node.attrib["file"] for node in ET.parse(ADDON_ROOT / manifest).getroot()
                    if "file" in node.attrib]
         self.assertEqual(scripts, DATA_FILES[:2])
-        # The original correction generators remain maintenance tools, not live layers.
+        # Complete bases are the only shared database sources.
         for kind in ("Item", "Npc", "Object", "Quest"):
             base = f"Database/AzerothCore/acore{kind}DB.lua"
             self.assertIn(base, entries)
@@ -75,29 +71,38 @@ class AcoreDataPathTests(unittest.TestCase):
         for generator, filename in (
             ("reputation_rates", DATA_FILES[0]),
             ("quest_availability_conditions", DATA_FILES[1]),
-            ("quest_corrections", DATA_FILES[2]),
-            ("item_corrections", DATA_FILES[3]),
-            ("npc_corrections", DATA_FILES[4]),
-            ("object_corrections", DATA_FILES[5]),
         ):
             with self.subTest(generator=generator):
                 self.assertEqual(Path(parser_defaults("generate_acore_" + generator)["output"]),
                                  DATA_DIR / filename)
 
-    def test_maintenance_readers_follow_the_move(self):
-        for module_name in ("convert_required_races", "convert_special_flags"):
-            self.assertEqual(importlib.import_module(module_name).DEFAULT_SOURCE,
-                             ADDON_ROOT / DATA_DIR / DATA_FILES[2])
-        report = importlib.import_module("report_acore_custom_ids")
-        for path in report.DEFAULT_ACORE_CORRECTIONS.values():
-            self.assertEqual(path.parent, ADDON_ROOT / DATA_DIR)
-            self.assertTrue(path.is_file())
-        reverse_links = importlib.import_module("validate_reverse_quest_links")
-        for path in reverse_links.ACORE_QUEST_FIXES + reverse_links.ACORE_NPC_FIXES + reverse_links.ACORE_OBJECT_FIXES:
-            self.assertEqual(Path(path).parent, DATA_DIR)
-            self.assertTrue((ADDON_ROOT / path).is_file())
-        self.assertEqual(Path(parser_defaults("generate_acore_object_identity_corrections")["item_corrections"]),
-                         DATA_DIR / DATA_FILES[3])
+    def test_maintenance_readers_use_complete_bases_without_correction_layers(self):
+        for module_name, kinds in (
+            ("validate_acore_quest_metadata", ("quest",)),
+            ("validate_acore_quest_relations", ("quest",)),
+            ("validate_item_start_links", ("quest", "item")),
+            ("validate_reverse_quest_links", ("quest", "npc", "object")),
+            ("generate_acore_creature_drops", ("item",)),
+        ):
+            defaults = parser_defaults(module_name)
+            for kind in kinds:
+                filename = {"quest": "Quest", "npc": "Npc", "object": "Object", "item": "Item"}[kind]
+                self.assertEqual(Path(defaults[kind + "_db"]), DATA_DIR / ("acore" + filename + "DB.lua"))
+                if defaults.get(kind + "_fixes") is not None:
+                    self.assertEqual(defaults[kind + "_fixes"], [])
+
+    def test_retired_database_files_are_absent(self):
+        self.assertFalse((ADDON_ROOT / "Database/Wotlk").exists())
+        for expansion in ("classic", "tbc", "wotlk"):
+            for kind in ("Quest", "NPC", "Object", "Item"):
+                self.assertFalse((ADDON_ROOT / "Database/Corrections" / (expansion + kind + "Fixes.lua")).exists())
+        for kind in ("Quest", "NPC", "Object", "Item"):
+            self.assertFalse((ADDON_ROOT / DATA_DIR / ("AzerothCore" + kind + "Corrections.lua")).exists())
+
+    def test_shared_source_helpers_cannot_write_retired_correction_outputs(self):
+        for kind in ("item", "npc", "object"):
+            with self.subTest(kind=kind), self.assertRaisesRegex(SystemExit, "generate_acore_" + kind + "_base.py"):
+                importlib.import_module("generate_acore_" + kind + "_corrections").main()
 
 
 if __name__ == "__main__":

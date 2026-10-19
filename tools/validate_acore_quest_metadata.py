@@ -1,3 +1,4 @@
+from questie_base import base_text
 import argparse
 import ast
 import json
@@ -6,11 +7,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 
-QUESTIE_FIX_FILES = [
-    "Database/Corrections/classicQuestFixes.lua",
-    "Database/Corrections/tbcQuestFixes.lua",
-    "Database/Corrections/wotlkQuestFixes.lua",
-]
+QUESTIE_FIX_FILES = []
 
 EXCLUDED_MODULE_NAMES = {
     "mod-individual-progression",
@@ -225,7 +222,7 @@ def infer_acore_required_races(acore_metadata, acore_relations, creature_faction
 # Quests where AC omits PrevQuestID even though a real prerequisite chain
 # exists (the gate is enforced by server-side C++ scripts, not SQL).
 _PRE_QUEST_SINGLE_CHAIN_PRESERVE = {
-    # Shadow Vault questline (Icecrown) — hub quests are gated by NPC scripts
+    # Shadow Vault questline (Icecrown) - hub quests are gated by NPC scripts
     12806,  # prereq 12982
     12992,  # prereq 12951
     13069,  # prereq 12982
@@ -773,7 +770,19 @@ def parse_lua_value(token, constants):
     if not value:
         return None
     if value.startswith("{") and value.endswith("}"):
-        return [parse_lua_value(item, constants) for item in split_top_level_lua_table(value)]
+        entries = {}
+        next_index = 1
+        for item in split_top_level_lua_table(value):
+            match = re.match(r"^\[(.*?)\]\s*=\s*(.*)$", item, re.DOTALL)
+            if match:
+                key = safe_eval_scalar(match.group(1), constants)
+                if type(key) is not int or key < 1:
+                    raise ValueError(f"Expected a positive array index: {item}")
+                entries[key] = parse_lua_value(match.group(2), constants)
+            else:
+                entries[next_index] = parse_lua_value(item, constants)
+                next_index += 1
+        return [entries.get(index) for index in range(1, max(entries, default=0) + 1)]
     return safe_eval_scalar(value, constants)
 
 
@@ -1980,7 +1989,7 @@ def extract_return_table(lua_text):
 
 def load_questie_base_metadata(quest_db_path, quest_keys, constants):
     data = {}
-    text = quest_db_path.read_text(encoding="utf-8")
+    text = base_text(quest_db_path)
 
     for raw_line in text.splitlines():
         line = raw_line.strip()
@@ -2025,7 +2034,7 @@ def load_questie_base_list_field(quest_db_path, quest_keys, constants, field_nam
     if field_index is None:
         return data
 
-    text = quest_db_path.read_text(encoding="utf-8")
+    text = base_text(quest_db_path)
     for raw_line in text.splitlines():
         line = raw_line.strip()
         match = QUEST_ROW_RE.match(line)
@@ -3830,7 +3839,7 @@ def main():
 
     parser = argparse.ArgumentParser(description="Validate Questie metadata against AzerothCore quest SQL.")
     parser.add_argument("--acore-source", default=r"P:\AC\source", help="Path to the AzerothCore source tree")
-    parser.add_argument("--quest-db", default="Database/Wotlk/wotlkQuestDB.lua", help="Path to the Questie WotLK quest DB")
+    parser.add_argument("--quest-db", default="Database/AzerothCore/acoreQuestDB.lua", help="Path to the shared AzerothCore quest DB")
     parser.add_argument("--quest-template-sql", help="Optional HeidiSQL export for quest_template")
     parser.add_argument("--quest-template-addon-sql", help="Optional HeidiSQL export for quest_template_addon")
     parser.add_argument("--spell-sql", help="Optional Spell.dbc SQL export used to infer crafted/created quest source items")

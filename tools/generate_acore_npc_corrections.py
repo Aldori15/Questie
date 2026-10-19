@@ -1,3 +1,4 @@
+from questie_base import base_text, parse_keys, return_table
 import argparse
 import ast
 import csv
@@ -38,18 +39,7 @@ from generate_acore_item_corrections import (  # noqa: E402
 )
 
 
-NPC_CORRECTION_FILES = [
-    ("Database/Corrections/classicNPCFixes.lua", ("QuestieNPCFixes:Load",)),
-    ("Database/Corrections/tbcNPCFixes.lua", ("QuestieTBCNpcFixes:Load",)),
-    (
-        "Database/Corrections/wotlkNPCFixes.lua",
-        (
-            "QuestieWotlkNpcFixes:LoadAutomatics",
-            "QuestieWotlkNpcFixes:Load",
-            "QuestieWotlkNpcFixes:LoadReverseLinkFixes",
-        ),
-    ),
-]
+NPC_CORRECTION_FILES = []
 
 # AzerothCore stores the TBC starting zones on map 530, but the 3.3.5 client
 # map rectangles used by Questie place those same zones in Eastern Kingdoms or
@@ -484,9 +474,7 @@ class LuaParser:
 
 
 def parse_npc_keys(npc_db_path):
-    text = npc_db_path.read_text(encoding="utf-8")
-    key_block = extract_balanced_braces(text, text.find("{", text.find("QuestieDB.npcKeys")))
-    return {name: int(value) for name, value in re.findall(r"\['([^']+)'\]\s*=\s*(\d+)", key_block)}
+    return parse_keys(npc_db_path, "npc")
 
 
 def load_questie_npcs(npc_db_path, npc_keys):
@@ -717,7 +705,7 @@ def apply_corrections(npcs, corrections):
 
 
 def load_effective_questie_npcs(repo_root, npc_keys, fields):
-    npcs = load_questie_npcs(repo_root / "Database/Wotlk/wotlkNpcDB.lua", npc_keys)
+    npcs = load_questie_npcs(repo_root / "Database/AzerothCore/acoreNpcDB.lua", npc_keys)
     zone_constants = parse_zone_id_constants(repo_root)
     zone_constants.update({f"phases.{name}": value for name, value in parse_spawn_phase_constants(repo_root).items()})
     for relative_path, function_names in NPC_CORRECTION_FILES:
@@ -1769,16 +1757,11 @@ def collect_quest_referenced_ids(repo_root, candidate_ids):
     if not candidate_ids:
         return set()
 
-    paths = [
-        repo_root / "Database/Wotlk/wotlkQuestDB.lua",
-        repo_root / "Database/Corrections/classicQuestFixes.lua",
-        repo_root / "Database/Corrections/tbcQuestFixes.lua",
-        repo_root / "Database/Corrections/wotlkQuestFixes.lua",
-    ]
+    paths = [repo_root / "Database/AzerothCore/acoreQuestDB.lua"]
     texts = []
     for path in paths:
         if path.exists():
-            texts.append(strip_lua_comments(path.read_text(encoding="utf-8")))
+            texts.append(strip_lua_comments(base_text(path)))
     quest_text = "\n".join(texts)
 
     referenced_numbers = {
@@ -1791,7 +1774,7 @@ def collect_quest_referenced_ids(repo_root, candidate_ids):
         if int(candidate_id) in referenced_numbers:
             referenced_ids.add(int(candidate_id))
 
-    item_db_path = repo_root / "Database/Wotlk/wotlkItemDB.lua"
+    item_db_path = repo_root / "Database/AzerothCore/acoreItemDB.lua"
     if item_db_path.exists():
         item_keys = parse_item_keys(item_db_path)
         questie_items = load_effective_questie_items(repo_root, item_keys)
@@ -2024,81 +2007,8 @@ def write_report(corrections, skipped_mutations, fields, report_path):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate NPC corrections from AzerothCore SQL and scripted Wintergrasp spawns.")
-    parser.add_argument("--acore-source", default=r"P:\AC\source", type=Path)
-    parser.add_argument("--repo-root", default=Path("."), type=Path)
-    parser.add_argument("--output", default=Path("Database/AzerothCore/AzerothCoreNPCCorrections.lua"), type=Path)
-    parser.add_argument("--report", default=Path("tools/reports/acore_npc_corrections.md"), type=Path)
-    parser.add_argument(
-        "--wdm-root",
-        default=DEFAULT_WDM_ROOT,
-        type=Path,
-        help="WDM export root containing DungeonMap.csv and DungeonMapChunk.csv.",
-    )
-    parser.add_argument("--include-modules", action="store_true", help="Also scan SQL under AzerothCore modules/. This can be slow.")
-    parser.add_argument("--creature-sql", type=Path, help="Optional final creature table SQL export to use instead of AzerothCore source creature.sql.")
-    parser.add_argument(
-        "--map-difficulty-dbc",
-        type=Path,
-        help="MapDifficulty.dbc used by the server. Auto-detected from the AzerothCore build when omitted.",
-    )
-    parser.add_argument(
-        "--creature-multispawn-sql",
-        type=Path,
-        help="Optional final creature_multispawn SQL export. Auto-detected next to --creature-sql when omitted.",
-    )
-    parser.add_argument(
-        "--fields",
-        nargs="+",
-        default=DEFAULT_FIELD_ORDER,
-        choices=FIELD_ORDER,
-        help="Questie NPC fields to compare and generate.",
-    )
-    parser.add_argument("--include-missing-npcs", action="store_true", help="Generate corrections for NPC IDs missing from Questie.")
-    args = parser.parse_args()
-
-    repo_root = args.repo_root.resolve()
-    npc_keys = parse_npc_keys(repo_root / "Database/Wotlk/wotlkNpcDB.lua")
-    unknown_fields = [field for field in args.fields if field not in npc_keys]
-    if unknown_fields:
-        raise ValueError(f"Unknown npcKeys fields: {unknown_fields}")
-
-    questie_npcs = load_effective_questie_npcs(repo_root, npc_keys, set(args.fields))
-    acore_npcs, skipped_mutations = build_acore_npcs(
-        args.acore_source,
-        args.include_modules,
-        repo_root,
-        args.creature_sql,
-        args.creature_multispawn_sql,
-        args.map_difficulty_dbc,
-        args.wdm_root,
-        questie_npcs,
-    )
-    candidate_spawn_ids = {
-        npc_id
-        for npc_id, npc_fields in questie_npcs.items()
-        if normalize_value("spawns", npc_fields.get("spawns")) != ()
-        and normalize_value("spawns", acore_npcs.get(npc_id, {}).get("spawns")) == ()
-    }
-    preserve_spawn_ids = collect_quest_referenced_ids(repo_root, candidate_spawn_ids)
-    zone_maps = parse_zone_maps(repo_root, args.wdm_root)
-    corrections = find_differences(
-        questie_npcs,
-        acore_npcs,
-        args.fields,
-        args.include_missing_npcs,
-        preserve_spawn_ids,
-        wdm_instance_zone_ids(zone_maps),
-    )
-    zone_names = parse_zone_id_names(repo_root, zone_maps)
-
-    write_corrections_module(corrections, repo_root / args.output, zone_names)
-    write_report(corrections, skipped_mutations, set(args.fields), repo_root / args.report)
-
-    print(f"Wrote {len(corrections)} NPC corrections to {repo_root / args.output}")
-    skipped = {table: count for table, count in skipped_mutations.items() if count}
-    if skipped:
-        print(f"Skipped complex SQL mutations: {skipped}")
+    raise SystemExit("Correction layers are retired. Use tools/generate_acore_npc_base.py; "
+                     "this module retains shared source-reading helpers.")
 
 
 if __name__ == "__main__":

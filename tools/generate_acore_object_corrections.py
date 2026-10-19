@@ -1,3 +1,4 @@
+from questie_base import base_text, parse_keys, return_table
 import argparse
 import ast
 import re
@@ -47,17 +48,7 @@ from generate_acore_npc_corrections import (  # noqa: E402
 )
 
 
-OBJECT_CORRECTION_FILES = [
-    ("Database/Corrections/classicObjectFixes.lua", ("QuestieObjectFixes:Load",)),
-    ("Database/Corrections/tbcObjectFixes.lua", ("QuestieTBCObjectFixes:Load",)),
-    (
-        "Database/Corrections/wotlkObjectFixes.lua",
-        (
-            "QuestieWotlkObjectFixes:Load",
-            "QuestieWotlkObjectFixes:LoadReverseLinkFixes",
-        ),
-    ),
-]
+OBJECT_CORRECTION_FILES = []
 
 LIST_FIELDS = {"questStarts", "questEnds"}
 NESTED_FIELDS = {"spawns"}
@@ -77,9 +68,7 @@ QUEST_REQUIRED_ITEM_COLUMNS = tuple(f"RequiredItemId{index}" for index in range(
 
 
 def parse_object_keys(object_db_path):
-    text = object_db_path.read_text(encoding="utf-8")
-    key_block = extract_balanced_braces(text, text.find("{", text.find("QuestieDB.objectKeys")))
-    return {name: int(value) for name, value in re.findall(r"\['([^']+)'\]\s*=\s*(\d+)", key_block)}
+    return parse_keys(object_db_path, "object")
 
 
 def load_questie_objects(object_db_path, object_keys):
@@ -203,7 +192,7 @@ def apply_corrections(objects, corrections):
 
 
 def load_effective_questie_objects(repo_root, object_keys, fields):
-    objects = load_questie_objects(repo_root / "Database/Wotlk/wotlkObjectDB.lua", object_keys)
+    objects = load_questie_objects(repo_root / "Database/AzerothCore/acoreObjectDB.lua", object_keys)
     zone_constants = parse_zone_id_constants(repo_root)
     for relative_path, function_names in OBJECT_CORRECTION_FILES:
         path = repo_root / relative_path
@@ -400,16 +389,11 @@ def collect_quest_referenced_ids(repo_root, candidate_ids):
     if not candidate_ids:
         return set()
 
-    paths = [
-        repo_root / "Database/Wotlk/wotlkQuestDB.lua",
-        repo_root / "Database/Corrections/classicQuestFixes.lua",
-        repo_root / "Database/Corrections/tbcQuestFixes.lua",
-        repo_root / "Database/Corrections/wotlkQuestFixes.lua",
-    ]
+    paths = [repo_root / "Database/AzerothCore/acoreQuestDB.lua"]
     texts = []
     for path in paths:
         if path.exists():
-            texts.append(strip_lua_comments(path.read_text(encoding="utf-8")))
+            texts.append(strip_lua_comments(base_text(path)))
     quest_text = "\n".join(texts)
 
     referenced_ids = set()
@@ -648,94 +632,8 @@ def write_report(corrections, skipped_mutations, fields, report_path):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate Questie objectData corrections from AzerothCore 3.3.5 SQL data.")
-    parser.add_argument("--acore-source", default=r"P:\AC\source", type=Path)
-    parser.add_argument("--repo-root", default=Path("."), type=Path)
-    parser.add_argument("--output", default=Path("Database/AzerothCore/AzerothCoreObjectCorrections.lua"), type=Path)
-    parser.add_argument("--report", default=Path("tools/reports/acore_object_corrections.md"), type=Path)
-    parser.add_argument(
-        "--wdm-root",
-        default=Path(r"E:\downloads\WDM stuff"),
-        type=Path,
-        help="WDM export root containing DungeonMap.csv and DungeonMapChunk.csv.",
-    )
-    parser.add_argument("--include-modules", action="store_true", help="Also scan SQL under AzerothCore modules/. This can be slow.")
-    parser.add_argument("--gameobject-sql", type=Path, help="Optional final gameobject table SQL export to use instead of AzerothCore source gameobject.sql.")
-    parser.add_argument(
-        "--map-difficulty-dbc",
-        type=Path,
-        help="MapDifficulty.dbc used by the server. Auto-detected from the AzerothCore build when omitted.",
-    )
-    parser.add_argument(
-        "--fields",
-        nargs="+",
-        default=FIELD_ORDER,
-        choices=FIELD_ORDER,
-        help="Questie object fields to compare and generate.",
-    )
-    parser.add_argument("--include-missing-objects", action="store_true", help="Generate corrections for object IDs missing from Questie.")
-    args = parser.parse_args()
-
-    repo_root = args.repo_root.resolve()
-    object_keys = parse_object_keys(repo_root / "Database/Wotlk/wotlkObjectDB.lua")
-    item_keys = parse_item_keys(repo_root / "Database/Wotlk/wotlkItemDB.lua")
-    unknown_fields = [field for field in args.fields if field not in object_keys]
-    if unknown_fields:
-        raise ValueError(f"Unknown objectKeys fields: {unknown_fields}")
-
-    questie_objects = load_effective_questie_objects(repo_root, object_keys, set(args.fields))
-    questie_items = load_effective_questie_items(repo_root, item_keys)
-    acore_objects, skipped_mutations, item_object_source_ids = build_acore_objects(
-        args.acore_source,
-        args.include_modules,
-        repo_root,
-        args.gameobject_sql,
-        args.map_difficulty_dbc,
-        args.wdm_root,
-    )
-    required_quest_item_ids, skipped_quest_template = collect_acore_required_quest_item_ids(
-        args.acore_source,
-        args.include_modules,
-    )
-    skipped_mutations["quest_template:required_item_object_sources"] = skipped_quest_template
-    candidate_spawn_ids = {
-        object_id
-        for object_id, object_fields in questie_objects.items()
-        if object_id in acore_objects
-        if normalize_value("spawns", object_fields.get("spawns")) != ()
-        and normalize_value("spawns", acore_objects.get(object_id, {}).get("spawns")) == ()
-    }
-    preserve_spawn_ids = collect_quest_referenced_ids(repo_root, candidate_spawn_ids)
-    preserve_spawn_ids.update(
-        collect_indirect_quest_item_object_source_ids(
-            questie_items,
-            required_quest_item_ids,
-            candidate_spawn_ids,
-        )
-    )
-    zone_maps = parse_zone_maps(repo_root, args.wdm_root)
-    corrections = find_differences(
-        questie_objects,
-        acore_objects,
-        args.fields,
-        args.include_missing_objects,
-        preserve_spawn_ids,
-        None,
-        wdm_instance_zone_ids(zone_maps),
-    )
-    add_missing_object_identity_corrections(corrections, questie_objects, acore_objects, item_object_source_ids)
-    zone_names = parse_zone_id_names(repo_root, zone_maps)
-
-    write_corrections_module(corrections, repo_root / args.output, zone_names)
-    write_report(corrections, skipped_mutations, set(args.fields), repo_root / args.report)
-
-    print(f"Wrote {len(corrections)} object corrections to {repo_root / args.output}")
-    skipped = {table: count for table, count in skipped_mutations.items() if count and not table.startswith("mapping:")}
-    if skipped:
-        print(f"Skipped complex SQL mutations: {skipped}")
-    mapping = {table: count for table, count in skipped_mutations.items() if count and table.startswith("mapping:")}
-    if mapping:
-        print(f"Unmapped coordinate rows: {mapping}")
+    raise SystemExit("Correction layers are retired. Use tools/generate_acore_object_base.py; "
+                     "this module retains shared source-reading helpers.")
 
 
 if __name__ == "__main__":
