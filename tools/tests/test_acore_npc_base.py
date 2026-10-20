@@ -291,6 +291,70 @@ class NpcBaseTests(unittest.TestCase):
         self.assertEqual(exporter.build_records(moved, manifest, origins), moved)
         self.assertEqual(exporter.build_records(removed, manifest, {}), removed)
 
+    def test_template_paths_obey_guid_precedence_and_each_multispawn_template(self):
+        reader = audit.reader
+        creature = {"guid": 99, "id1": 1, "id2": 2, "map": 571, "position_x": 10, "position_y": 20}
+        keyed = {"creature_template": {i: {"name": "NPC", "minlevel": 1, "maxlevel": 1} for i in range(1, 5)},
+                 "factiontemplate_dbc": {}, "creature_addon": {},
+                 "creature_template_addon": {1: {"path_id": 77}, 2: {"path_id": 66}, 3: {"path_id": 55}}}
+        destination = {"id": 77, "point": 1, "position_x": 30, "position_y": 40}
+        rows = {"creature": [creature], "waypoint_data": [destination,
+                {"id": 66, "point": 1, "position_x": 50, "position_y": 60},
+                {"id": 55, "point": 1, "position_x": 70, "position_y": 80},
+                {"id": 88, "point": 1, "position_x": 90, "position_y": 95}]}
+
+        def build():
+            origins = {}
+            actual, stats = reader.build_acore_npcs(ADDON_ROOT, provenance=origins)
+            return actual, origins, stats
+
+        with patch.object(reader, "find_map_difficulty_dbc", return_value=Path("unused.dbc")), \
+             patch.object(reader, "load_map_difficulty_masks", return_value={571: 1}), \
+             patch.object(reader, "load_keyed_table", side_effect=lambda root, table, *args: (keyed.get(table, {}), 0)), \
+             patch.object(reader, "load_row_table", side_effect=lambda root, table, *args: (rows.get(table, []), 0)), \
+             patch.object(reader, "load_creature_multispawn_rows", return_value=(
+                 [{"spawnId": 99, "entry": 3}, {"spawnId": 99, "entry": 4}], 0)), \
+             patch.object(reader, "load_filtered_row_table", return_value=([], 0)), \
+             patch.object(reader, "parse_zone_maps", return_value={}), \
+             patch.object(reader, "resolve_coordinate_zone", side_effect=lambda row, maps:
+                          (210, [row["position_x"], row["position_y"]])), \
+             patch.object(reader, "load_wintergrasp_scripted_spawns", return_value={}):
+            actual, origins, stats = build()
+            self.assertEqual(stats["creature_template_addon"], 0)
+            for entry, point in [(1, [30, 40]), (2, [50, 60]), (3, [70, 80])]:
+                self.assertEqual(actual[entry]["waypoints"], {210: [[point]]})
+            self.assertEqual(actual[4]["waypoints"], {})
+            origin = "waypoint_data:77:template-addon:1:map-spawn:99:entry:1"
+            self.assertEqual(origins["1"]["waypoints"]["n:210"]["n:1"], [origin])
+            # A template entry can numerically equal a GUID. Keep its binding
+            # distinct from a real GUID addon instead of aliasing identities.
+            self.assertNotEqual(exporter.identity_key(origin), exporter.identity_key(
+                "waypoint_data:77:addon:1:map-spawn:99:entry:1"))
+
+            source = {i: {"s:" + field: audit.typed(value) for field, value in record.items()}
+                      for i, record in actual.items()}
+            manifest = exporter.upgrade_manifest(bootstrap(source, source), source, origins)
+            # Routine generation follows future path moves and deletions; it
+            # needs neither a new bootstrap nor an archived source checkout.
+            destination.update(position_x=35, position_y=45)
+            del keyed["creature_template_addon"][2]
+            fresh, fresh_origins, _ = build()
+            fresh = {i: {"s:" + field: audit.typed(value) for field, value in record.items()}
+                     for i, record in fresh.items()}
+            self.assertEqual(exporter.build_records(fresh, manifest, fresh_origins), fresh)
+            self.assertEqual(fresh[1]["s:waypoints"], audit.typed({210: [[[35, 45]]]}))
+            self.assertEqual(fresh[2]["s:waypoints"], {})
+
+            # GUID addons apply to all possible entries at that spawn and
+            # override template paths, including an explicitly absent path.
+            for addon, expected in [({"path_id": 88}, {210: [[[90, 95]]]}),
+                                    ({"path_id": 0}, {}), ({}, {}), ({"path_id": 999}, {})]:
+                with self.subTest(guidAddon=addon):
+                    keyed["creature_addon"][99] = addon
+                    actual, _, _ = build()
+                    for entry in range(1, 5):
+                        self.assertEqual(actual[entry]["waypoints"], expected)
+
     def test_generated_candidate_loads_in_the_production_loader(self):
         try:
             lua = db_snapshot.lua_executable()

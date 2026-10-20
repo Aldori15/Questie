@@ -33,7 +33,8 @@ def identity_key(identity):
     if len(parts) == 4 and parts[0] == "creature" and parts[2] == "entry":
         return "c:" + parts[1]
     if len(parts) == 8 and parts[0] in {"waypoint_data", "waypoints"}:
-        return ("d:" if parts[0] == "waypoint_data" else "w:") + ":".join(parts[i] for i in (1, 3, 5))
+        kind = "w:" if parts[0] == "waypoints" else "t:" if parts[2] == "template-addon" else "d:"
+        return kind + ":".join(parts[i] for i in (1, 3, 5))
     return identity
 
 

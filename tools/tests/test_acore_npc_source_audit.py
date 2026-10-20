@@ -117,6 +117,41 @@ class NpcSourceAuditTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "missing footer"):
                 shared.read_static_records(path, ADDON_ROOT, "npc")
 
+    def test_template_addon_base_and_update_changes_invalidate_source_cache(self):
+        with db_snapshot.temporary_directory(ADDON_ROOT / "tools/reports") as directory:
+            source = directory / "source"
+            base = source / "data/sql/base/db_world"
+            base.mkdir(parents=True)
+            for table in audit.TABLES:
+                (base / (table + ".sql")).write_text("-- fixture\n", encoding="utf-8")
+            addon = base / "creature_template_addon.sql"
+            addon.write_text("-- path_id 77\n", encoding="utf-8")
+            update = source / "addon-update.sql"
+            update.write_text("-- path_id 88\n", encoding="utf-8")
+            header = source / "src/server/game/Battlefield/Zones/BattlefieldWG.h"
+            header.parent.mkdir(parents=True)
+            header.write_text("// fixture\n", encoding="utf-8")
+            wdm = directory / "patch-enUS-M extracted/DBFilesClient"
+            wdm.mkdir(parents=True)
+            for name in ["DungeonMap.csv", "DungeonMapChunk.csv"]:
+                (wdm / name).write_text("fixture\n", encoding="utf-8")
+
+            def files(root, table):
+                return [base / (table + ".sql")] + ([update] if table == "creature_template_addon" else [])
+
+            with patch.object(audit.sql_reader, "source_sql_files", side_effect=files):
+                args = source, ADDON_ROOT, addon, addon, addon, directory
+                original = audit.source_signature(*args)
+                relative = str(addon.relative_to(source))
+                self.assertIn(relative, original["sourceFiles"])
+                addon.write_text("-- path_id 99\n", encoding="utf-8")
+                changed_base = audit.source_signature(*args)
+                self.assertNotEqual(original["sourceFiles"][relative], changed_base["sourceFiles"][relative])
+                update.write_text("-- path_id 100\n", encoding="utf-8")
+                changed_update = audit.source_signature(*args)
+                self.assertNotEqual(changed_base["sourceFiles"]["addon-update.sql"],
+                                    changed_update["sourceFiles"]["addon-update.sql"])
+
     def test_source_cache_requires_intact_geometry_and_metadata(self):
         with db_snapshot.temporary_directory(ADDON_ROOT / "tools/reports") as directory:
             cache = directory / "cache.json"

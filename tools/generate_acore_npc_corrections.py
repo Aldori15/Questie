@@ -1317,6 +1317,7 @@ def build_acore_npcs(
     questgiver_entries = starts_by_entry.keys() | ends_by_entry.keys()
     faction_template_rows, skipped_faction_template = load_keyed_table(source_root, "factiontemplate_dbc", "ID", include_modules)
     creature_addon_rows, skipped_creature_addon = load_keyed_table(source_root, "creature_addon", "guid", include_modules)
+    template_addon_rows, skipped_template_addon = load_keyed_table(source_root, "creature_template_addon", "entry", include_modules)
     waypoint_rows, skipped_waypoint = load_row_table(source_root, "waypoint_data", ("id", "point"), include_modules)
     escort_waypoint_rows, skipped_escort_waypoint = load_row_table(
         source_root,
@@ -1455,16 +1456,23 @@ def build_acore_npcs(
         bad_waypoint_entries.update(entries)
         return False
 
-    for guid, addon in creature_addon_rows.items():
-        creature = guid_to_creature.get(int(guid))
-        path_id = int(addon.get("path_id") or 0)
-        path_rows = waypoint_by_path.get(path_id)
-        if not creature or not path_id or not path_rows:
-            continue
+    for guid, creature in guid_to_creature.items():
         entries = get_creature_entries(creature, multispawns_by_guid)
-        if not entries:
-            continue
-        add_waypoint_path(entries, (creature,), path_rows, f"waypoint_data:{path_id}:addon:{guid}")
+        addon = creature_addon_rows.get(guid)
+        if addon is not None:
+            # Creature::GetCreatureAddon returns the entire GUID addon first,
+            # even when its path_id is zero. Do not fall back field by field.
+            assignments = [(entries, addon, f"addon:{guid}")]
+        else:
+            # A multispawn can choose different templates at the same GUID.
+            # Each alternative inherits only its own template's addon path.
+            assignments = [((entry,), template_addon_rows[entry], f"template-addon:{entry}")
+                           for entry in entries if entry in template_addon_rows]
+        for path_entries, path_addon, origin in assignments:
+            path_id = int(path_addon.get("path_id") or 0)
+            path_rows = waypoint_by_path.get(path_id)
+            if path_id and path_rows:
+                add_waypoint_path(path_entries, (creature,), path_rows, f"waypoint_data:{path_id}:{origin}")
 
     seen_smart_waypoint_assignments = set()
     for script_row in smart_script_rows:
@@ -1564,6 +1572,7 @@ def build_acore_npcs(
         "creature_questender": skipped_ender,
         "factiontemplate_dbc": skipped_faction_template,
         "creature_addon": skipped_creature_addon,
+        "creature_template_addon": skipped_template_addon,
         "waypoint_data": skipped_waypoint,
         "waypoints": skipped_escort_waypoint,
         "smart_scripts": skipped_smart_scripts,
