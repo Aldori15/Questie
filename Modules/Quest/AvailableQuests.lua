@@ -459,7 +459,7 @@ function AvailableQuests.InvalidateSpawnVisibility()
     -- During a refresh these two buffers contain the current and previous sets.
     for _, quests in ipairs({availableQuests, nextAvailableQuests}) do
         for questId in pairs(quests) do
-            local quest = QuestieDB.GetQuest(questId)
+            local quest = QuestieDB.GetQuestStartInfo(questId)
             for _, npcId in ipairs(quest and quest.Starts and quest.Starts.NPC or {}) do
                 local npc = QuestieDB:GetNPC(npcId)
                 if npc and Phasing.HasDynamicSpawns(npc.spawns) then
@@ -781,7 +781,7 @@ end
 function AvailableQuests.RemoveAvailableQuest(questId, yieldRefresh)
     dirtySpawnVisibility[questId] = nil
     availableQuests[questId] = nil
-    _RemoveQuestFromNpcAvailability(questId, QuestieDB.GetQuest(questId))
+    _RemoveQuestFromNpcAvailability(questId, QuestieDB.GetQuestStartInfo(questId))
     _UnloadQuestFrames(questId, nil, "available", nil, yieldRefresh)
     QuestieTooltips:RemoveAvailableQuest(questId)
 end
@@ -790,7 +790,7 @@ end
 ---@param onComplete function? Optional callback invoked after the starter/finisher frames are unloaded.
 function AvailableQuests.RemoveQuest(questId, onComplete)
     availableQuests[questId] = nil
-    _RemoveQuestFromNpcAvailability(questId, QuestieDB.GetQuest(questId))
+    _RemoveQuestFromNpcAvailability(questId, QuestieDB.GetQuestStartInfo(questId))
     QuestieTooltips:RemoveQuest(questId)
     _UnloadQuestFrames(questId, nil, nil, onComplete)
 end
@@ -1002,7 +1002,7 @@ local function _RestoreOfferedQuest(questId)
         bucket.byQuest[questId] = nil
     end
     unavailableQuestsDeterminedByTalking[questId] = nil
-    local quest = QuestieDB.GetQuest(questId)
+    local quest = QuestieDB.GetQuestStartInfo(questId)
     if quest then
         availableQuests[questId] = true
         AvailableQuests.DrawAvailableQuest(quest)
@@ -1334,7 +1334,7 @@ _SyncAvailableQuestDisplay = function(previousAvailableQuests, nextAvailableQues
     for questId in pairs(nextAvailableQuests) do
         -- A pointer/eligibility result does not guarantee usable quest data. Corrections
         -- can create nameless records, and data may have changed while this scan yielded.
-        local quest = QuestieDB.GetQuest(questId)
+        local quest = QuestieDB.GetQuestStartInfo(questId)
         if not quest then
             nextAvailableQuests[questId] = nil
             AvailableQuests.RemoveAvailableQuest(questId, yieldRefresh)

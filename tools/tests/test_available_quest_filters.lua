@@ -46,6 +46,7 @@ local db = modules.QuestieDB
 db.questData = {}
 db.QueryQuestSingle = function(id, field) return data[id] and data[id][field] end
 db.GetQuest = function(id) return {Id = id, Starts = {}, tagInfoWasCached = true} end
+db.GetQuestStartInfo = function(id) return db.GetQuest(id) end
 db.IsDoable = function() return true end
 db.IsComplete = function() return 0 end
 db.SetUnavailableQuestChecker = noop

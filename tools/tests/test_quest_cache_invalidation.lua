@@ -50,6 +50,9 @@ end
 quests[4][q.startedBy], quests[4][q.finishedBy] = {{99}}, {{99}}
 quests[7] = {[q.preQuestSingle] = {1}} -- Correction-only record: pointer, but no base name.
 quests[2][q.extraObjectives] = {{nil, 1, "Find the event NPC", 0, {{"monster", npcId}}}}
+quests[2][q.objectivesText] = {"Find the fair"}
+quests[2][q.specialFlags] = db.specialFlags.REPEATABLE
+quests[2][q.startedBy] = {{npcId}, {npcId}, {100}}
 local npcs = {
     [npcId] = {[n.name] = "Silas Darkmoon", [n.spawns] = {[12] = {{10, 20}}}},
     [99] = {[n.name] = "Unrelated NPC", [n.spawns] = {[12] = {{30, 40}}}},
@@ -74,6 +77,11 @@ equal(db.GetQuest(7), nil, "map/lifecycle paths cannot construct correction-only
 db.private.questCache[7] = {Id = 7, ObjectiveData = {}}
 equal(db.GetQuest(7), nil, "cached correction-only objects cannot bypass validity checks")
 db.private.questCache[7] = nil
+equal(db.GetQuestStartInfo(nil), nil, "starter lookup rejects a missing ID")
+equal(db.GetQuestStartInfo(999), nil, "starter lookup rejects unknown quests")
+db.private.questStartCache[7] = {Id = 7}
+equal(db.GetQuestStartInfo(7), nil, "cached starter cannot bypass nameless-record validation")
+db.private.questStartCache[7] = nil
 modules.QuestieQuest.private.objectiveSpawnListCallTable = {monster = function(id)
     local npc = db:GetNPC(id)
     return {{Id = id, Name = npc.name, Spawns = npc.spawns}}
@@ -94,6 +102,23 @@ local source = file:read("*a"):gsub("\r\n", "\n"); file:close()
 env.QuestiePlayer = player
 local guardSource = assert(source:match("(local function _IsCurrentObjectiveDraw.-\nend)"))
 local canDraw = assert(load(guardSource .. "\nreturn _IsCurrentObjectiveDraw", "@QuestieQuest.lua", "t", env))()
+local starter = db.GetQuestStartInfo(2)
+equal(starter.Id, 2, "starter quest ID")
+equal(starter.name, "Fixture quest 2", "starter name")
+equal(starter.Starts.NPC[1], npcId, "NPC starter")
+equal(starter.Starts.GameObject[1], npcId, "object starter")
+equal(starter.Starts.Item[1], 100, "item starter")
+equal(starter.Description[1], "Find the fair", "starter tooltip description")
+equal(starter.level, 10, "starter effective level")
+equal(starter.requiredLevel, 1, "starter required level")
+equal(starter.IsRepeatable, true, "starter repeatable icon flag")
+equal(db.GetQuestStartInfo(2), starter, "starter data is reused")
+equal(starter.SpecialObjectives, nil, "starter data does not build special objectives")
+equal(starter.Objectives, nil, "starter data does not build objectives")
+equal(db.private.questCache[2], nil, "starter lookup does not create a full quest")
+equal(next(db.private.npcCache), nil, "starter lookup does not read objective NPC spawns")
+equal(db.GetQuestStartInfo(4).IsRepeatable, db.GetQuest(4).IsRepeatable,
+    "non-repeatable starter matches full quest behavior")
 local active, ready = db.GetQuest(1), db.GetQuest(3)
 player.currentQuestlog[1], player.currentQuestlog[3] = active, ready
 local spawnCache = {existingFrame = true}
@@ -103,11 +128,19 @@ active.SpecialObjectives[1] = {Description = "Live special objective", AlreadySp
 active.WasComplete = false
 local objectives, special = active.Objectives, active.SpecialObjectives
 local preview = db.GetQuest(2)
+equal(preview.Description[1], starter.Description[1], "full and starter descriptions match")
+equal(preview.IsRepeatable, starter.IsRepeatable, "full and starter icon flags match")
+equal(db.private.questStartCache[2], nil, "full quest replaces its starter cache entry")
+equal(db.GetQuestStartInfo(2), preview, "starter lookup reuses a cached full quest")
+assert(preview.SpecialObjectives[1].spawnList, "full quest still builds objective spawns")
+local beforeStarter = db.GetQuestStartInfo(5)
 local beforeNPC, unrelatedNPC = db:GetNPC(npcId), db:GetNPC(99)
 equal(canDraw(active, objective, spawnCache), true, "objective drawable before refresh")
 
 equal(event.SetServerDarkmoonLocations({0}), true, "live Darkmoon location received")
+assert(db.GetQuestStartInfo(5) ~= beforeStarter, "NPC invalidation clears lightweight previews too")
 equal(db.GetQuest(1), active, "refresh preserves accepted quest identity")
+equal(db.GetQuestStartInfo(1), active, "starter lookup preserves accepted quest identity")
 equal(db.GetQuest(3), ready, "refresh preserves ready-to-turn-in quest identity")
 equal(db.GetQuest(1).Objectives, objectives, "refresh preserves objective collection")
 equal(db.GetQuest(1).SpecialObjectives, special, "refresh preserves special objective collection")

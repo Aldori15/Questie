@@ -85,6 +85,7 @@ local function harness()
     db.SetUnavailableQuestChecker = noop
     db.IsAzerothCoreAvailabilityConditionFulfilled = function(_, id) return id ~= 13 end
     db.GetQuest = function(id) return names[id] and {Id = id, Starts = {}} end
+    db.GetQuestStartInfo = function(id) return db.GetQuest(id) end
     module("QuestiePlayer").currentQuestlog = {[15] = {}}
     module("QuestiePlayer").GetPlayerLevel = function() return 80 end
     module("QuestieLib").GetEffectiveQuestLevel = function(id) return 1, id == 14 and 90 or 1 end

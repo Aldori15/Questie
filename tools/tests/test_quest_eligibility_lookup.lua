@@ -363,6 +363,7 @@ modules.QuestieLib.GetEffectiveQuestLevel = function(id)
 end
 -- The draw fixture records membership; eligibility still uses the real compiled DB.
 db.GetQuest = function(id) return {Id = id, Starts = {}, tagInfoWasCached = true} end
+db.GetQuestStartInfo = function(id) return db.GetQuest(id) end
 db.QuestPointers = {[12563] = true, [12541] = true, [61002] = true, [61001] = true}
 local normalPairs = pairs
 env.pairs = function(tbl)

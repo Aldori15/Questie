@@ -44,6 +44,7 @@ local function setup(count, clockAvailable)
         IsDailyQuest = function() return false end, IsWeeklyQuest = function() return false end, IsMonthlyQuest = function() return false end,
         GetQuest = function(id) return {Id = id, Starts = {}, tagInfoWasCached = true} end,
         QueryQuestSingle = function() end}
+    modules.QuestieDB.GetQuestStartInfo = function(id) return modules.QuestieDB.GetQuest(id) end
     for id = 1, count do modules.QuestieDB.questData[id] = true end
     modules.ThreadLib = {Thread = function(fn, _, _, callback)
         state.jobs[#state.jobs + 1] = {thread = coroutine.create(fn), callback = callback}
