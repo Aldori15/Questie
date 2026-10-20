@@ -32,9 +32,10 @@ def identity_key(identity):
     parts = identity.split(":")
     if len(parts) == 4 and parts[0] == "creature" and parts[2] == "entry":
         return "c:" + parts[1]
-    if len(parts) == 8 and parts[0] in {"waypoint_data", "waypoints"}:
+    if (len(parts) == 8 or len(parts) == 10 and parts[8] == "segment") and parts[0] in {"waypoint_data", "waypoints"}:
         kind = "w:" if parts[0] == "waypoints" else "t:" if parts[2] == "template-addon" else "d:"
-        return kind + ":".join(parts[i] for i in (1, 3, 5))
+        key = kind + ":".join(parts[i] for i in (1, 3, 5))
+        return key + ":segment:" + parts[9] if len(parts) == 10 else key
     return identity
 
 
@@ -130,7 +131,8 @@ def current_geometry(policy, source, origins):
         raise ValueError("Previously mapped NPC geometry is unavailable; check coordinate/export coverage")
     excluded_ids, excluded_values = set(policy.get("excludeIds", [])), set(policy.get("excludeValues", []))
     units = [unit for unit in geometry_units(source, origins)
-             if (not unit[3] or not set(unit[3]) <= excluded_ids)
+             if (not unit[3] or not all(identity in excluded_ids or identity.split(":segment:")[0] in excluded_ids
+                                        for identity in unit[3]))
              and unit[0] + "/" + value_hash(unit[2]) not in excluded_values]
     by_id, by_hash = {}, {}
     for index, (zone, _, value, identities) in enumerate(units):

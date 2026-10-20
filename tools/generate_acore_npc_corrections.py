@@ -1264,6 +1264,46 @@ def index_geometry_origins(npcs, spawn_origins, path_origins, difficulty_masks):
     return result
 
 
+def project_waypoint_path(creature, path_rows, zone_maps):
+    """Project consecutive map/floor sections without bridging separate visits."""
+    base_zone, _ = resolve_coordinate_zone(creature, zone_maps)
+    preferred_zone = base_zone
+    sections = []
+    for index, point_row in enumerate(path_rows, 1):
+        if point_row.get("position_x") is None or point_row.get("position_y") is None:
+            return None
+        point_source = dict(creature)
+        # GUID-specific floor overrides describe the static spawn, not a moving
+        # waypoint. Resolve each waypoint using its own height, including zero.
+        point_source.pop("guid", None)
+        for column in ("position_x", "position_y", "position_z"):
+            if point_row.get(column) is not None:
+                point_source[column] = point_row[column]
+        if preferred_zone and preferred_zone != base_zone:
+            # Map rectangles overlap. Keep the current map while it still fits
+            # instead of jumping between overlapping maps at each waypoint.
+            point_source.update(areaId=0, areaid=0, zoneId=preferred_zone, zoneid=0)
+        zone, point = resolve_coordinate_zone(point_source, zone_maps)
+        if not zone or not point:
+            # Do not skip an unknown point and connect the positions around it.
+            return None
+        if not sections or sections[-1][0] != zone:
+            first_point = int(point_row.get("point") or point_row.get("pointid") or index)
+            sections.append((zone, first_point, []))
+        sections[-1][2].append(point)
+        preferred_zone = zone
+    # Addon tables can contain dormant/stale path links, and SmartAI can use a
+    # path only for a summoned copy located elsewhere. A static spawn's map is
+    # not evidence for those remote placements. Keep that coverage unavailable
+    # until a matching placement is known, rather than importing an unrelated
+    # route merely because its coordinates fit some other map rectangle.
+    # Floors of the same mapped dungeon remain valid regardless of spawn floor.
+    if int(creature.get("map") or 0) not in zone_maps.get("instance_to_zone", {}):
+        if base_zone is None or not any(zone == base_zone for zone, _, _ in sections):
+            return None
+    return sections
+
+
 def build_acore_npcs(
     source_root,
     include_modules=False,
@@ -1423,34 +1463,20 @@ def build_acore_npcs(
 
         seen_waypoint_entries.update(entries)
         for creature in creature_candidates:
-            base_zone_id, _ = resolve_coordinate_zone(creature, zone_maps)
-            path_points = []
-            path_zone_id = base_zone_id
-            for point_row in path_rows:
-                point_source = dict(creature)
-                point_source["position_x"] = point_row.get("position_x")
-                point_source["position_y"] = point_row.get("position_y")
-                zone_id, point = resolve_coordinate_zone(point_source, zone_maps)
-                if not zone_id or not point:
-                    path_points = []
-                    break
-                if path_zone_id is None:
-                    path_zone_id = zone_id
-                if zone_id != path_zone_id:
-                    path_points = []
-                    break
-                path_points.append(point)
-
-            # A single waypoint can be a movement destination or an action point.
-            # Keep the source position; do not replace it with an inherited patrol
-            # or invent an extra point merely to make a drawable line.
-            if path_zone_id and path_points:
+            sections = project_waypoint_path(creature, path_rows, zone_maps)
+            if not sections:
+                continue
+            for zone, first_point, points in sections:
                 for entry in entries:
-                    waypoints_by_entry[entry][path_zone_id].append(path_points)
+                    # Keep single destinations too; separate visits to a zone
+                    # must remain separate paths, even if a visit has one point.
+                    waypoints_by_entry[entry][zone].append(points)
                     if provenance is not None:
                         origin = f"{identity}:map-spawn:{int(creature.get('guid') or 0)}:entry:{entry}"
-                        path_origins[entry][path_zone_id].append((unique_consecutive_points(path_points), origin))
-                return True
+                        if len(sections) > 1:
+                            origin += f":segment:{first_point}"
+                        path_origins[entry][zone].append((unique_consecutive_points(points), origin))
+            return True
 
         map_stats["unmapped_waypoints"] += 1
         bad_waypoint_entries.update(entries)
