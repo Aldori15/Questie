@@ -16,7 +16,7 @@ def quest(**fields):
     reader = exporter.audit.metadata_reader
     row = {"s:" + field: exporter.audit.typed(reader.default_field_value(field)) for field in reader.FIELD_ORDER}
     row.update({"s:name": "Quest", "s:requiredLevel": 1, "s:questLevel": 2,
-                "s:objectives": {}, "s:startedBy": {}, "s:finishedBy": {}, "s:zoneOrSort": 0})
+                "s:objectives": {}, "s:startedBy": {}, "s:finishedBy": {}, "s:zoneOrSort": 0, "s:childQuests": {}})
     row.update({"s:" + field: value for field, value in fields.items()})
     return row
 
@@ -30,6 +30,42 @@ def bootstrap(before, source):
 
 
 class QuestBaseTests(unittest.TestCase):
+    def test_child_relations_follow_source_without_baseline_exceptions(self):
+        def source(rows):
+            for key, children in exporter.audit.derive_child_quests(rows).items():
+                rows[int(key)]["s:childQuests"] = children
+            return rows
+
+        raw = source({1: quest(), 2: quest(parentQuest=1), 3: quest(parentQuest=1), 4: quest(parentQuest=1)})
+        before = copy.deepcopy(raw)
+        before[1]["s:childQuests"] = typed([3, 2, 90])
+        manifest = bootstrap(before, raw)
+        self.assertEqual(exporter.build_records(raw, manifest)[1]["s:childQuests"], typed([2, 3, 4]))
+        self.assertNotIn("childQuests", manifest["legacyFields"].get("1", {}))
+        self.assertNotIn("childQuests", manifest["lists"].get("1", {}))
+        fresh = source({1: quest(), 2: quest(), 3: quest(parentQuest=1),
+                        4: quest(parentQuest=1), 5: quest(parentQuest=1)})
+        fresh[1]["s:childQuests"] = typed([90])  # Do not trust stale cached reverse links.
+        result = exporter.build_records(fresh, manifest)
+        self.assertEqual(result[1]["s:childQuests"], typed([3, 4, 5]))
+
+    def test_child_relations_reject_compatibility_overrides(self):
+        raw = {1: quest()}
+        manifest = bootstrap(raw, raw)
+        manifest["lists"]["1"] = {"childQuests": exporter.make_list_policy(typed([90]), {})}
+        with self.assertRaisesRegex(ValueError, "Invalid lists fields"):
+            exporter.build_records(raw, manifest)
+
+    def test_absent_child_lists_stay_absent_until_source_children_exist(self):
+        raw = {1: quest()}
+        before = copy.deepcopy(raw)
+        del before[1]["s:childQuests"]
+        manifest = bootstrap(before, raw)
+        self.assertEqual(exporter.build_records(raw, manifest), before)
+        raw[1]["s:childQuests"] = typed([2])
+        raw[2] = quest(parentQuest=1)
+        self.assertEqual(exporter.build_records(raw, manifest)[1]["s:childQuests"], typed([2]))
+
     def test_chain_routing_refreshes_children_and_rejects_ambiguity(self):
         source = {2954: quest(), 2967: quest(requiredRaces=690, preQuestSingle=typed([2954])),
                   2977: quest(requiredRaces=1101, preQuestSingle=typed([2954]))}

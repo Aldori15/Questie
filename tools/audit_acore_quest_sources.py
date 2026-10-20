@@ -26,7 +26,9 @@ FIELDS = ("name", "startedBy", "finishedBy", "requiredLevel", "questLevel", "req
           "breadcrumbForQuestId", "breadcrumbs", "extraObjectives", "requiredSpell",
           "requiredSpecialization", "requiredMaxLevel", "availableUntilCompleted",
           "availableStartingWith", "requiredRanks", "disabledByQuest", "requiredItemConditions")
-SOURCE_FIELDS = set(metadata_reader.FIELD_ORDER) | {"startedBy", "finishedBy", "zoneOrSort"}
+SOURCE_FIELDS = set(metadata_reader.FIELD_ORDER) | {"startedBy", "finishedBy", "zoneOrSort", "childQuests"}
+PRESERVED_FIELDS = ("triggerEnd", "childQuests", "inGroupWith", "extraObjectives", "requiredSpecialization",
+                    "availableUntilCompleted", "availableStartingWith", "requiredRanks", "disabledByQuest")
 # Ordinary starter lists audited for the first faction migration. Scripted
 # letter distributors, event quests and disputed eligibility rules stay separate.
 FACTION_STARTER_QUESTS = frozenset({687, 737, 1718, 1947, 1953, 2861, 5050, 7562, 8254})
@@ -56,7 +58,7 @@ def source_signature(source, spell_sql, spell_table):
         paths.update(p.resolve() for p in root.rglob("*.sql"))
     revision = subprocess.run(["git", "-C", str(source), "rev-parse", "HEAD"], capture_output=True, text=True)
     readers = ("generate_acore_item_corrections.py", "validate_acore_quest_metadata.py", "validate_acore_quest_relations.py")
-    return {"version": 3, "sourceRoot": str(source), "includeModules": False,
+    return {"version": 4, "sourceRoot": str(source), "includeModules": False,
             "sourceRevision": revision.stdout.strip() if revision.returncode == 0 else None,
             "sourceFiles": {str(p.relative_to(source)): db_snapshot.file_hash(p) for p in sorted(paths)},
             "spellExport": {"path": str(spell_sql), "sha256": db_snapshot.file_hash(spell_sql), "table": spell_table},
@@ -65,6 +67,7 @@ def source_signature(source, spell_sql, spell_table):
                                          + inspect.getsource(build_relations) + inspect.getsource(missing_spell_references)
                                          + inspect.getsource(starter_teams) + inspect.getsource(script_quest_starters)
                                          + inspect.getsource(faction_reputation_rewards)
+                                         + inspect.getsource(derive_child_quests)
                                          + repr(sorted(FACTION_STARTER_QUESTS))).encode()).hexdigest()}
 
 
@@ -75,6 +78,34 @@ def model_digest(saved):
     payload["factionReputationRewards"] = saved.get("factionReputationRewards", {})
     return hashlib.sha256(json.dumps(payload, sort_keys=True, ensure_ascii=True, allow_nan=False,
                                      separators=(",", ":")).encode()).hexdigest()
+
+
+def derive_child_quests(quests):
+    """Reverse source parentQuest links (negative PrevQuestID), not ordinary chains.
+
+    Questie's lifecycle uses childQuests for quests available while a parent is
+    active. A positive completed prerequisite or NextQuestID is not that relation.
+    """
+    children = {int(key): [] for key in quests}
+    for key, row in quests.items():
+        quest_id = int(key)
+        parent = row.get("s:parentQuest", 0)
+        if type(parent) is not int or parent < 0 or parent == quest_id:
+            raise ValueError(f"Quest {quest_id}: invalid active parent {parent}")
+        if parent in children:
+            children[parent].append(quest_id)
+    return {str(key): typed(sorted(values)) for key, values in children.items()}
+
+
+def preserved_field_inventory(records):
+    """Report actual usage; an absent model column is not proof of impossibility."""
+    result = {}
+    for field in PRESERVED_FIELDS:
+        present = {quest: row["s:" + field] for quest, row in records.items() if "s:" + field in row}
+        populated = [quest for quest, value in present.items() if value not in (None, False, 0, {}, [])]
+        result[field] = {"presentRecords": len(present), "populatedRecords": len(populated),
+                         "questIds": sorted(populated), "sourceDerived": field in SOURCE_FIELDS}
+    return result
 
 
 def build_relations(rows, module_ids, disabled_ids):
@@ -332,6 +363,8 @@ def load_source(source, spell_sql, spell_table, signature, cache, refresh=False)
         if quest_id in templates:
             row["s:zoneOrSort"] = int(templates[quest_id].get("QuestSortID") or 0)
         quests[str(quest_id)] = row
+    for key, children in derive_child_quests(quests).items():
+        quests[key]["s:childQuests"] = children
     if source_signature(source, spell_sql, spell_table) != signature:
         raise ValueError("Quest source inputs changed during extraction")
     unresolved_source_spells = [row["spellId"] for row in spell_coverage["missingSpellReferences"] if row["requiredSourceItemQuestIds"]]
@@ -351,7 +384,7 @@ def empty_table(value):
 
 def representation_only(field, actual, expected):
     kind = metadata_reader.FIELD_KIND.get(field)
-    if field in {"startedBy", "finishedBy"} or kind not in ("int", "string", None):
+    if field in {"startedBy", "finishedBy", "childQuests"} or kind not in ("int", "string", None):
         return (actual is shared.ABSENT or actual is False or empty_table(actual)) and empty_table(expected)
     if kind == "string":
         return actual is shared.ABSENT and expected == ""
@@ -417,6 +450,7 @@ def main(argv=None):
             "counts": {"snapshotQuests": len(baseline), "sourceQuests": len(model), "schemaFields": len(fields),
                        "sourceFields": len(SOURCE_FIELDS), "unsupportedFields": len(set(fields) - SOURCE_FIELDS)},
             "unsupportedFields": [field for field in fields if field not in SOURCE_FIELDS],
+            "preservedFieldAudit": preserved_field_inventory(baseline),
             "fields": compare_fields(baseline, model, fields), "runtimeOverrides": overrides,
             "snapshotOnlyIds": sorted(set(baseline) - set(model)), "sourceOnlyIds": sorted(set(model) - set(baseline)),
             **{key: saved[key] for key in ("tableCoverage", "diagnostics", "disabledQuestIds", "moduleQuestIds", "spellCoverage")},
@@ -438,6 +472,8 @@ def main(argv=None):
                                 for key, value in saved["spellCoverage"].items()}
     summary["fields"] = {field: row["counts"] for field, row in data["fields"].items()}
     summary["diagnostics"] = {key: len(value) for key, value in data["diagnostics"].items()}
+    summary["preservedFieldAudit"] = {field: {k: v for k, v in row.items() if k != "questIds"}
+                                      for field, row in data["preservedFieldAudit"].items()}
     summary.update({"snapshotOnlyQuests": len(data["snapshotOnlyIds"]), "sourceOnlyQuests": len(data["sourceOnlyIds"]),
                     "disabledQuests": len(data["disabledQuestIds"]), "moduleQuests": len(data["moduleQuestIds"])})
     print(json.dumps(summary, indent=2))

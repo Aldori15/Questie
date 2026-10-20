@@ -10,6 +10,25 @@ import db_snapshot
 
 
 class QuestSourceAuditTests(unittest.TestCase):
+    def test_children_reverse_only_active_parent_links(self):
+        quests = {"1": {"s:parentQuest": 0}, "2": {"s:parentQuest": 1},
+                  "3": {"s:preQuestSingle": audit.typed([1])},
+                  "4": {"s:nextQuestInChain": 1}, "5": {"s:parentQuest": 99}}
+        self.assertEqual(audit.derive_child_quests(quests),
+                         {"1": audit.typed([2]), "2": {}, "3": {}, "4": {}, "5": {}})
+        quests["1"]["s:parentQuest"] = 1
+        with self.assertRaisesRegex(ValueError, "invalid active parent"):
+            audit.derive_child_quests(quests)
+
+    def test_preserved_inventory_distinguishes_empty_and_absent_fields(self):
+        rows = {1: {"s:childQuests": {}, "s:requiredSpecialization": 0},
+                2: {"s:childQuests": audit.typed([3]), "s:triggerEnd": audit.typed(["Explore"])}}
+        report = audit.preserved_field_inventory(rows)
+        self.assertEqual(report["childQuests"], {"presentRecords": 2, "populatedRecords": 1,
+                                              "questIds": [2], "sourceDerived": True})
+        self.assertEqual(report["requiredRanks"]["presentRecords"], 0)
+        self.assertEqual(report["requiredSpecialization"]["populatedRecords"], 0)
+
     def test_faction_reputation_matches_first_template_and_refreshes_rewards(self):
         rows = [{"ID": 12, "Faction": 72, "EnemyGroup": 0}, {"ID": 11, "Faction": 72, "EnemyGroup": 4}]
         quests = {3741: {"reputationReward": ((72, 250), (999, 50))}}
@@ -113,9 +132,9 @@ class QuestSourceAuditTests(unittest.TestCase):
 
     def test_all_schema_fields_are_accounted_for_without_claiming_helper_coverage(self):
         self.assertEqual(len(audit.FIELDS), 37)
-        self.assertEqual(len(audit.SOURCE_FIELDS), 28)
+        self.assertEqual(len(audit.SOURCE_FIELDS), 29)
         self.assertEqual(set(audit.FIELDS) - audit.SOURCE_FIELDS,
-                         {"triggerEnd", "childQuests", "inGroupWith", "extraObjectives", "requiredSpecialization",
+                         {"triggerEnd", "inGroupWith", "extraObjectives", "requiredSpecialization",
                           "availableUntilCompleted", "availableStartingWith", "requiredRanks", "disabledByQuest"})
 
     def test_tuple_typing_preserves_objective_slots_and_zero_false_values(self):
