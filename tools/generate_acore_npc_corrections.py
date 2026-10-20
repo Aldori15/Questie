@@ -1440,7 +1440,10 @@ def build_acore_npcs(
                     break
                 path_points.append(point)
 
-            if path_zone_id and len(path_points) >= 2:
+            # A single waypoint can be a movement destination or an action point.
+            # Keep the source position; do not replace it with an inherited patrol
+            # or invent an extra point merely to make a drawable line.
+            if path_zone_id and path_points:
                 for entry in entries:
                     waypoints_by_entry[entry][path_zone_id].append(path_points)
                     if provenance is not None:

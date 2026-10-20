@@ -247,12 +247,57 @@ class NpcBaseTests(unittest.TestCase):
         self.assertEqual(provenance["1"]["waypoints"]["n:210"]["n:1"],
                          ["waypoint_data:88:addon:99:map-spawn:99:entry:1"])
 
+    def test_single_waypoint_destinations_keep_source_identity_and_refresh(self):
+        reader = audit.reader
+        creature = {"guid": 99, "id1": 1, "map": 571, "position_x": 10, "position_y": 20}
+        destination = {"id": 88, "point": 1, "position_x": 30, "position_y": 40}
+        keyed = {"creature_template": {1: {"name": "NPC", "minlevel": 1, "maxlevel": 1}},
+                 "factiontemplate_dbc": {}, "creature_addon": {99: {"path_id": 88}}}
+        rows = {"creature": [creature], "waypoint_data": [destination],
+                "waypoints": [{"entry": 77, "pointid": 1, "position_x": 50, "position_y": 60}]}
+        smart = [{"source_type": 0, "entryorguid": 1, "action_type": 53, "action_param2": 77}]
+        with patch.object(reader, "find_map_difficulty_dbc", return_value=Path("unused.dbc")), \
+             patch.object(reader, "load_map_difficulty_masks", return_value={571: 1}), \
+             patch.object(reader, "load_keyed_table", side_effect=lambda root, table, *args: (keyed.get(table, {}), 0)), \
+             patch.object(reader, "load_row_table", side_effect=lambda root, table, *args: (rows.get(table, []), 0)), \
+             patch.object(reader, "load_creature_multispawn_rows", return_value=([], 0)), \
+             patch.object(reader, "load_filtered_row_table", return_value=(smart, 0)), \
+             patch.object(reader, "parse_zone_maps", return_value={}), \
+             patch.object(reader, "resolve_coordinate_zone", side_effect=lambda row, maps:
+                          (210, [row["position_x"], row["position_y"]])), \
+             patch.object(reader, "load_wintergrasp_scripted_spawns", return_value={}):
+            origins = {}
+            actual, _ = reader.build_acore_npcs(ADDON_ROOT, provenance=origins)
+            self.assertEqual(actual[1]["waypoints"], {210: [[[30, 40]], [[50, 60]]]})
+            self.assertEqual(origins["1"]["waypoints"]["n:210"]["n:1"],
+                             ["waypoint_data:88:addon:99:map-spawn:99:entry:1"])
+            self.assertEqual(origins["1"]["waypoints"]["n:210"]["n:2"],
+                             ["waypoints:77:smart:1:map-spawn:99:entry:1"])
+            # An action point at the spawn is still one point, not a fake patrol.
+            destination.update(position_x=10, position_y=20)
+            stationary, _ = reader.build_acore_npcs(ADDON_ROOT)
+            self.assertEqual(stationary[1]["waypoints"][210][0], [[10, 20]])
+
+        source = {1: npc(waypoints=audit.typed(actual[1]["waypoints"]))}
+        manifest = exporter.upgrade_manifest(bootstrap(source, source), source, origins)
+        moved = copy.deepcopy(source)
+        moved[1]["s:waypoints"]["n:210"]["n:1"] = audit.typed([[35, 45]])
+        self.assertEqual(exporter.build_records(moved, manifest, origins), moved)
+        removed = {1: npc(waypoints={})}
+        self.assertEqual(exporter.build_records(removed, manifest, {}), removed)
+        # Once inherited routes are removed, future paths need no replacement
+        # compatibility data: their destinations come straight from AC.
+        del manifest["geometry"]["1"]["waypoints"]
+        self.assertEqual(exporter.build_records(moved, manifest, origins), moved)
+        self.assertEqual(exporter.build_records(removed, manifest, {}), removed)
+
     def test_generated_candidate_loads_in_the_production_loader(self):
         try:
             lua = db_snapshot.lua_executable()
         except ValueError:
             self.skipTest("Lua unavailable")
-        source = {1: npc(spawns=audit.typed({210: [[10, 20, None, 3, 571]]}))}
+        source = {1: npc(spawns=audit.typed({210: [[10, 20, None, 3, 571]]}),
+                         waypoints=audit.typed({210: [[[30, 40]]]}))}
         before = {1: {**source[1], "s:minLevelHealth": 123}}
         records = exporter.build_records(source, bootstrap(before, source))
         with db_snapshot.temporary_directory(ADDON_ROOT / "tools/reports") as directory:
@@ -261,6 +306,9 @@ class NpcBaseTests(unittest.TestCase):
                 exporter.write_stream(stream, records)
             init = (ADDON_ROOT / "Modules/QuestieInit.lua").read_text(encoding="utf-8")
             loader = init[init.index("function QuestieInit:LoadDatabase(key)"):init.index("function _QuestieInit.StartStageCoroutine()")]
+            pool = (ADDON_ROOT / "Modules/FramePool/QuestieFramePool.lua").read_text(encoding="utf-8")
+            start = pool.index("function QuestieFramePool:CreateWaypoints(")
+            draw_waypoints = pool[start:pool.index("\nend", start) + len("\nend")]
             path = directory / "test.lua"
             path.write_text('QuestieDB={}; QuestieInit={}; loadstring=loadstring or load; coYield=coroutine.yield\n'
                             'QuestieLoader={ImportModule=function() return QuestieDB end}\n' + loader +
@@ -269,7 +317,64 @@ class NpcBaseTests(unittest.TestCase):
                             'repeat local ok,err=coroutine.resume(thread); assert(ok,err) until coroutine.status(thread)=="dead"\n'
                             'assert(QuestieDB.npcKeys.spawns==7 and QuestieDB.npcData[1][2]==123)\n'
                             'local point=QuestieDB.npcData[1][7][210][1]\n'
-                            'assert(point[1]==10 and point[2]==20 and point[3]==nil and point[4]==3 and point[5]==571)\n', encoding="utf-8")
+                            'assert(point[1]==10 and point[2]==20 and point[3]==nil and point[4]==3 and point[5]==571)\n'
+                            'local paths=QuestieDB.npcData[1][QuestieDB.npcKeys.waypoints][210]\n'
+                            'assert(#paths==1 and #paths[1]==1 and paths[1][1][1]==30 and paths[1][1][2]==40)\n'
+                            'QuestieFramePool={CreateLine=function() error("A destination must not create a patrol line") end}\n'
+                            'tinsert=table.insert\n' + draw_waypoints +
+                            '\nassert(#QuestieFramePool:CreateWaypoints({},paths)==0)\n', encoding="utf-8")
+            result = subprocess.run([lua, str(path)], capture_output=True, text=True, encoding="utf-8")
+            self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_single_destinations_do_not_hide_a_real_hostile_patrol(self):
+        try:
+            lua = db_snapshot.lua_executable()
+        except ValueError:
+            self.skipTest("Lua unavailable")
+        source = (ADDON_ROOT / "Modules/Quest/QuestieQuest.lua").read_text(encoding="utf-8")
+        start = source.index("_DrawObjectiveWaypoints = function(")
+        draw = source[start:source.index("\nend", start) + len("\nend")]
+        source = (ADDON_ROOT / "Modules/FramePool/QuestieFramePool.lua").read_text(encoding="utf-8")
+        start = source.index("function QuestieFramePool:CreateWaypoints(")
+        create_lines = source[start:source.index("\nend", start) + len("\nend")]
+        setup = '''
+local lineCount = 0
+tinsert = table.insert
+TICKS_PER_YIELD = 100
+Questie = {Debug = function() end}
+QuestieFramePool = {CreateLine = function()
+    lineCount = lineCount + 1
+    return {}
+end}
+QuestieMap = {DrawWaypoints = function(_, icon, paths, zone)
+    QuestieFramePool:CreateWaypoints(icon, paths, nil, nil, zone)
+end}
+_IsCurrentObjectiveDraw = function() return true end
+_HasEarlierObjectiveForNPC = function() return false end
+_HasVisibleSpawnInZone = function(points) return points and #points > 0 end
+'''
+        cases = '''
+local patrol, destination = {{10,20},{30,40}}, {{50,60}}
+local function npc(paths, hostile)
+    return {Id=1, Hostile=hostile, Spawns={[12]={{10,20}}}, Waypoints={[12]=paths}}
+end
+local function check(sources, expected, label)
+    lineCount = 0
+    local objective = {spawnList=sources, AlreadySpawned={}}
+    _DrawObjectiveWaypoints({}, objective, {}, {[12]={{}}})
+    assert(lineCount == expected, label .. ": expected " .. expected .. ", got " .. lineCount)
+end
+check({npc({patrol},true)},1,"one hostile patrol")
+check({npc({patrol,destination},true)},1,"same-NPC destination must not hide patrol")
+check({npc({patrol},true),npc({destination},true)},1,"other-NPC destination must not hide patrol")
+check({npc({destination},true)},0,"single destination draws no line")
+check({npc({patrol,patrol,destination},true)},0,"multiple hostile patrols remain suppressed")
+check({npc({patrol},true),npc({patrol,destination},true)},0,"hostile population filter remains")
+check({npc({patrol,patrol,destination},false)},2,"friendly patrol behavior is unchanged")
+'''
+        with db_snapshot.temporary_directory(ADDON_ROOT / "tools/reports") as directory:
+            path = directory / "test.lua"
+            path.write_text(setup + create_lines + "\n" + draw + "\n" + cases, encoding="utf-8")
             result = subprocess.run([lua, str(path)], capture_output=True, text=True, encoding="utf-8")
             self.assertEqual(result.returncode, 0, result.stderr)
 

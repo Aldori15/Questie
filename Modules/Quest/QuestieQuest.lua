@@ -1987,7 +1987,13 @@ _DrawObjectiveWaypoints = function(quest, objective, icon, iconPerZone)
     for _, spawnData in pairs(objective.spawnList) do
         if spawnData.Hostile and spawnData.Waypoints then
             for zone, waypoints in pairs(spawnData.Waypoints) do
-                hostileRouteCountPerZone[zone] = (hostileRouteCountPerZone[zone] or 0) + #waypoints
+                for _, path in ipairs(waypoints) do
+                    -- Single destinations cannot draw a patrol line and must not
+                    -- hide another source's actual patrol in this zone.
+                    if #path > 1 then
+                        hostileRouteCountPerZone[zone] = (hostileRouteCountPerZone[zone] or 0) + 1
+                    end
+                end
             end
         end
     end
