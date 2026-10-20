@@ -227,9 +227,20 @@ class QuestBaseTests(unittest.TestCase):
         self.assertEqual(exporter.build_records(fresh, manifest)[1]["s:reputationReward"], typed([(81, -350)]))
         self.assertEqual(exporter.build_records(fresh, manifest)[1]["s:requiredMinRep"], typed([72, 3000]))
 
-    def test_conditional_name_race_and_zone_exceptions_refresh_when_source_changes(self):
+    def test_titles_follow_source_without_legacy_renames(self):
+        source = {1: quest(name=" AC title ")}
+        manifest = bootstrap({1: quest(name="Later retail rename")}, source)
+        self.assertNotIn("name", manifest["overrides"].get("1", {}))
+        self.assertEqual(exporter.build_records(source, manifest)[1]["s:name"], "AC title")
+        source[1]["s:name"] = "Updated AC title"
+        self.assertEqual(exporter.build_records(source, manifest)[1]["s:name"], "Updated AC title")
+        manifest["overrides"]["1"] = {"name": {"value": "Stale title", "expectedSource": "hash"}}
+        with self.assertRaisesRegex(ValueError, "Invalid overrides fields"):
+            exporter.build_records(source, manifest)
+
+    def test_conditional_race_and_zone_exceptions_refresh_when_source_changes(self):
         source = {1: quest(name="Source name", requiredRaces=0, zoneOrSort=-81)}
-        before = {1: quest(name="Legacy name", requiredRaces=690, zoneOrSort=210)}
+        before = {1: quest(name="Source name", requiredRaces=690, zoneOrSort=210)}
         manifest = bootstrap(before, source)
         self.assertEqual(exporter.build_records(source, manifest), before)
         fresh = {1: quest(name="New source name", requiredRaces=1101, zoneOrSort=12)}

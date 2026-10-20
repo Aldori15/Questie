@@ -23,6 +23,21 @@ def bootstrap(items, source):
 
 
 class ItemBaseTests(unittest.TestCase):
+    def test_vendor_only_sources_cannot_be_preserved_as_npc_drops(self):
+        source = {1: item(vendors=[100])}
+        before = {1: exporter.source_record(item(vendors=[100], npcDrops=[100]))}
+        manifest = exporter.upgrade_manifest(bootstrap(before, source), source)
+        with self.assertRaisesRegex(ValueError, "Vendor-only NPCs"):
+            exporter.build_records(source, manifest)
+        # A vendor can still be a real loot source when AC explicitly lists both.
+        actual_loot = {1: item(vendors=[100], npcDrops=[100])}
+        records, _ = exporter.build_records(actual_loot, manifest)
+        self.assertEqual(records[1]["s:npcDrops"], {"n:1": 100})
+        del manifest["entries"]["1"]["addSources"]
+        records, _ = exporter.build_records(source, manifest)
+        self.assertEqual(records[1]["s:npcDrops"], {})
+        self.assertEqual(records[1]["s:vendors"], {"n:1": 100})
+
     def test_salvage_selections_refresh_from_source_including_new_neutral_objects(self):
         source = {25911: item(objectDrops=[182799, 182936])}
         records = {key: exporter.source_record(value) for key, value in source.items()}

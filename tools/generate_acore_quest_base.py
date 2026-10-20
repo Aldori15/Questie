@@ -97,8 +97,8 @@ def make_manifest(records, source, metadata, snapshot_sha, signature):
             if field in LEGACY_FIELDS:
                 if actual is not shared.ABSENT:
                     legacy.setdefault(key, {})[field] = copy.deepcopy(actual)
-            elif field == "childQuests":
-                # Active-parent relations come from AC, never baseline exceptions.
+            elif field in {"name", "childQuests"}:
+                # Titles and active-parent relations come from AC, never baseline exceptions.
                 continue
             elif field in ID_LIST_FIELDS:
                 if expected is shared.ABSENT:
@@ -145,7 +145,7 @@ def validate_manifest(manifest):
     if not isinstance(excluded, list) or not all(type(i) is int and i > 0 for i in excluded) or excluded != sorted(set(excluded)) or set(excluded) & {int(k) for k in scope}:
         raise ValueError("Invalid excluded quest IDs")
     sections = {"legacyFields": LEGACY_FIELDS, "lists": ID_LIST_FIELDS, "relations": RELATION_FIELDS,
-                "overrides": set(FIELDS) - LEGACY_FIELDS - ID_LIST_FIELDS - RELATION_FIELDS - {"childQuests"}}
+                "overrides": set(FIELDS) - LEGACY_FIELDS - ID_LIST_FIELDS - RELATION_FIELDS - {"name", "childQuests"}}
     for section in (*sections, "extraRecords"):
         if not isinstance(manifest.get(section), dict) or not set(manifest[section]) <= set(scope):
             raise ValueError(f"Invalid {section} IDs")
@@ -204,6 +204,10 @@ def build_records(source, manifest):
             value = raw.get(typed_key, shared.ABSENT)
             if field in LEGACY_FIELDS:
                 value = manifest["legacyFields"].get(key, {}).get(field, shared.ABSENT)
+            elif field == "name":
+                if not isinstance(value, str):
+                    raise ValueError(f"Missing source title for quest {quest_id}")
+                value = value.strip()
             elif field == "childQuests":
                 value = children[key]
             elif field in ID_LIST_FIELDS:

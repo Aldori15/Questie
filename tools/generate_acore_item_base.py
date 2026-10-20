@@ -294,6 +294,10 @@ def build_current_records(source, manifest):
         for field in sorted(audit.source_reader.LIST_FIELDS):
             supplements = set(entry.get("addSources", {}).get(field, []))
             direct = set(raw.get(field, []))
+            if field == "npcDrops":
+                vendor_only = supplements & set(raw.get("vendors", [])) - direct
+                if vendor_only:
+                    raise ValueError(f"Vendor-only NPCs listed as supplemental drops for item {item_id}: {sorted(vendor_only)}")
             excluded = pools.get(manifest["sourceExclusions"].get(key, {}).get(field), set())
             allowed = (direct - excluded) | supplements
             selected = unpack_selection(selections.get(field, []))
