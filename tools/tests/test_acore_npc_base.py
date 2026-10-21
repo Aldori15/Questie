@@ -26,14 +26,20 @@ class NpcBaseTests(unittest.TestCase):
     def test_direct_generation_reports_reviewed_mapping_gaps_and_publishes_deterministically(self):
         with db_snapshot.temporary_directory(ADDON_ROOT / "tools/reports") as directory:
             (directory / "tools/data").mkdir(parents=True)
-            source = {1: npc(name="NPC 01")}
-            before = {1: npc(name="NPC 01", spawns=audit.typed({12: [[10, 20]]}))}
+            source = {1: npc(name="NPC 01", waypoints={})}
+            before = {1: npc(name="NPC 01", waypoints={}, spawns=audit.typed({12: [[10, 20]]}))}
             provenance = {"1": {"spawnCoverage": {
                 "unmappedGuids": [99], "mapped": audit.typed({12: [[31, 41]]}),
                 "origins": {"n:12": {"n:1": ["creature:100:entry:1"]}},
             }}}
             manifest = exporter.upgrade_manifest(bootstrap(before, source), source, provenance)
             manifest["geometry"]["1"]["spawns"] = {"slots": {}, "reviewedUnmappedGuids": [99]}
+            manifest["geometry"]["1"]["waypoints"] = {"slots": {}, "sourceScripted": True}
+            provenance["scriptedGeometry"] = {"version": 1, "entries": {"1": {
+                "spawns": {}, "waypoints": audit.typed({12: [[[31, 41]]]}),
+                "origins": {"waypoints": {"n:12": {"n:1": ["smart-path:fixture"]}}},
+                "failures": {"spawns": [], "waypoints": []},
+            }}}
             (directory / "tools/data/acore_npc_compatibility.json").write_text(json.dumps(manifest), encoding="utf-8")
             saved = {"npcs": {str(k): v for k, v in source.items()},
                      "geometryProvenance": provenance, "diagnostics": {}}
@@ -52,6 +58,7 @@ class NpcBaseTests(unittest.TestCase):
                     contents = output.read_bytes()
                     summary = json.loads(report.read_text(encoding="utf-8"))
                     self.assertEqual(summary["counts"]["reviewedUnmappedSpawnPlacements"], 1)
+                    self.assertEqual(summary["counts"]["scriptedGeometryIds"], [1])
                     self.assertEqual(summary["reviewedUnmappedSpawns"], {"1": [99]})
                     self.assertEqual(summary["outputSha256"], db_snapshot.file_hash(output))
                     self.assertEqual(summary["outputBytes"], len(contents))

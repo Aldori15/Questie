@@ -134,6 +134,36 @@ def validate_spawn_review(policy):
         raise ValueError("Invalid reviewed unmapped spawn GUIDs; use source geometry without supplements")
 
 
+def add_scripted_geometry(policy, source, origins, packet, entry, field):
+    if "sourceScripted" not in policy:
+        return source, origins
+    if set(policy) != {"slots", "sourceScripted"} or policy["slots"] != {} or policy["sourceScripted"] is not True:
+        raise ValueError("Scripted geometry requires a pure source policy")
+    if not isinstance(packet, dict) or packet.get("version") != 1 or not isinstance(packet.get("entries"), dict):
+        raise ValueError("Missing scripted geometry coverage; refresh the source model")
+    if not isinstance(source, dict):
+        raise ValueError("Static geometry has an unresolved mapping gap; review it separately")
+    extra = packet["entries"].get(str(entry), {"spawns": {}, "waypoints": {}, "origins": {},
+                                             "failures": {"spawns": [], "waypoints": []}})
+    failures = extra["failures"]["spawns"] + (extra["failures"]["waypoints"] if field == "waypoints" else [])
+    if failures:
+        raise ValueError(f"Scripted geometry requires review: {failures[:3]}")
+    result, result_origins = copy.deepcopy(source), copy.deepcopy(origins)
+    for zone, units in extra[field].items():
+        target = result.setdefault(zone, {})
+        target_origins = result_origins.setdefault(zone, {})
+        for key, value in units.items():
+            identities = extra["origins"].get(field, {}).get(zone, {}).get(key)
+            if not identities:
+                raise ValueError("Scripted geometry lacks source identities")
+            selected = next((k for k, v in target.items() if shared.same_value(value, v)), None)
+            if selected is None:
+                selected = f"n:{max((int(k[2:]) for k in target), default=0) + 1}"
+                target[selected] = copy.deepcopy(value)
+            target_origins[selected] = sorted(set(target_origins.get(selected, [])) | set(identities))
+    return result, result_origins
+
+
 def current_geometry(policy, source, origins, coverage=None):
     if "reviewedUnmappedGuids" in policy:
         validate_spawn_review(policy)
@@ -244,7 +274,9 @@ def build_current_records(source, manifest, provenance):
             if field in GEOMETRY_FIELDS:
                 policy = manifest["geometry"].get(key, {}).get(field, {"slots": {}})
                 try:
-                    value = current_geometry(policy, value, provenance.get(key, {}).get(field, {}),
+                    value, origins = add_scripted_geometry(policy, value, provenance.get(key, {}).get(field, {}),
+                                                          provenance.get("scriptedGeometry"), npc_id, field)
+                    value = current_geometry(policy, value, origins,
                                              provenance.get(key, {}).get("spawnCoverage") if field == "spawns" else None)
                 except ValueError as exc:
                     raise ValueError(f"NPC {npc_id} {field}: {exc}") from exc
@@ -417,6 +449,10 @@ def validate_manifest(manifest):
                 raise ValueError(f"Compatibility field outside scope for NPC {key}")
             if section == "geometry":
                 for field, policy in values.items():
+                    if "sourceScripted" in policy:
+                        if (manifest["version"] != 2 or set(policy) != {"slots", "sourceScripted"}
+                                or policy["slots"] != {} or policy["sourceScripted"] is not True):
+                            raise ValueError("Scripted geometry requires a current pure source policy")
                     if "reviewedUnmappedGuids" in policy:
                         if manifest["version"] != 2 or field != "spawns":
                             raise ValueError("Unmapped spawn review requires current spawn geometry")
@@ -655,6 +691,8 @@ def main(argv=None):
                "changedRecords": comparison["changedRecords"] if comparison else None,
                "parityScope": "shared NPC rows; scripted map helpers require runtime snapshot review",
                "scriptedSpawnSourceIds": sorted(scripted_spawns),
+               "scriptedGeometryIds": sorted(int(key) for key, fields in manifest["geometry"].items()
+                                             if any(policy.get("sourceScripted") for policy in fields.values())),
                "reviewedUnmappedSpawnPlacements": sum(map(len, reviewed_gaps.values())),
                "geometry": audit.geometry_inventory(records)}
     if args.command == "bootstrap":

@@ -24,7 +24,8 @@ TABLES = ("creature_template", "creature_queststarter", "game_event_creature_que
 ANCHORS = {1, 3, 4, 115, 1629, 2, 5, 6, 116, 1610}
 REPO_INPUTS = ("Database/Zones/zoneTables.lua", "Compat/UiMapData.lua", "Modules/Phasing.lua",
                "Modules/Network/QuestieServer.lua", "tools/generate_acore_npc_corrections.py",
-               "tools/generate_acore_item_corrections.py", "tools/validate_acore_quest_metadata.py")
+               "tools/generate_acore_item_corrections.py", "tools/validate_acore_quest_metadata.py",
+               "tools/acore_scripted_geometry.py")
 
 
 def typed(value):
@@ -116,7 +117,7 @@ def load_source(source, repo, creature, multispawn, difficulty, wdm, signature, 
     def filtered(root, table, keys, row_filter, include_modules=False):
         print(f"Reading filtered {table}...", flush=True)
         values, skipped = original_filtered(root, table, keys, row_filter, include_modules)
-        return inventory(table, values, skipped, "AzerothCore SQL; escort actions only")
+        return inventory(table, values, skipped, "AzerothCore SQL; SmartAI geometry and caller context")
 
     sql_reader.load_row_table = reader.load_row_table = rows
     reader.load_rows_from_sql_file, reader.load_filtered_row_table = external, filtered

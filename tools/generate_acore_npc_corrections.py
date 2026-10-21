@@ -1389,10 +1389,9 @@ def build_acore_npcs(
         source_root,
         "smart_scripts",
         SMART_SCRIPT_KEY_COLUMNS,
-        lambda row: (
-            int(row.get("source_type") or 0) == SMART_SOURCE_TYPE_CREATURE
-            and int(row.get("action_type") or 0) == SMART_ACTION_ESCORT_START
-        ),
+        # Summoned copies need their real caller/map context. Keep all actions
+        # so timed-list callers and phase/map mutations can be checked too.
+        lambda row: True,
         include_modules,
     )
 
@@ -1612,6 +1611,10 @@ def build_acore_npcs(
         provenance.update(index_geometry_origins(acore_npcs, spawn_origins, path_origins, map_difficulty_masks))
         index_partial_spawn_coverage(provenance, spawns_by_entry, spawn_origins,
                                      unmapped_spawn_guids, map_difficulty_masks)
+        import acore_scripted_geometry
+        provenance["scriptedGeometry"] = acore_scripted_geometry.collect(
+            smart_script_rows, creatures_by_entry, guid_to_creature, template_rows,
+            zone_maps, escort_waypoint_by_path)
 
     skipped_mutations = {
         "creature_template": skipped_creature_template,
