@@ -1264,6 +1264,26 @@ def index_geometry_origins(npcs, spawn_origins, path_origins, difficulty_masks):
     return result
 
 
+def index_partial_spawn_coverage(provenance, spawns, origins, unmapped_guids, difficulty_masks):
+    """Expose incomplete mapping for explicit review, without declaring it complete."""
+    def typed(value):
+        if isinstance(value, list):
+            return {f"n:{i}": typed(v) for i, v in enumerate(value, 1) if v is not None}
+        if isinstance(value, dict):
+            return {f"n:{key}": typed(v) for key, v in value.items()}
+        return value
+
+    partial = {entry: {"spawns": sort_coordinate_table(spawns.get(entry, {}), difficulty_masks)}
+               for entry in unmapped_guids}
+    indexed = index_geometry_origins(partial, origins, {}, difficulty_masks)
+    for entry, row in partial.items():
+        provenance.setdefault(str(entry), {})["spawnCoverage"] = {
+            "unmappedGuids": sorted(unmapped_guids[entry]),
+            "mapped": typed(row["spawns"]),
+            "origins": indexed.get(str(entry), {}).get("spawns", {}),
+        }
+
+
 def project_waypoint_path(creature, path_rows, zone_maps):
     """Project consecutive map/floor sections without bridging separate visits."""
     base_zone, _ = resolve_coordinate_zone(creature, zone_maps)
@@ -1380,6 +1400,7 @@ def build_acore_npcs(
     spawns_by_entry = defaultdict(lambda: defaultdict(list))
     spawn_zone_counts = defaultdict(lambda: defaultdict(int))
     unmapped_spawn_entries = set()
+    unmapped_spawn_guids = defaultdict(set)
     seen_spawn_entries = set()
     guid_to_creature = {}
     creatures_by_entry = defaultdict(list)
@@ -1419,6 +1440,7 @@ def build_acore_npcs(
                 spawn_zone_counts[entry][zone_id] += 1
             else:
                 unmapped_spawn_entries.add(entry)
+                unmapped_spawn_guids[entry].add(guid)
                 map_stats["unmapped_spawns"] += 1
 
     scripted_spawns = load_wintergrasp_scripted_spawns(source_root, repo_root or ".", zone_maps)
@@ -1588,6 +1610,8 @@ def build_acore_npcs(
     if provenance is not None:
         # Generation-only information. Never add it to an addon row or Lua output.
         provenance.update(index_geometry_origins(acore_npcs, spawn_origins, path_origins, map_difficulty_masks))
+        index_partial_spawn_coverage(provenance, spawns_by_entry, spawn_origins,
+                                     unmapped_spawn_guids, map_difficulty_masks)
 
     skipped_mutations = {
         "creature_template": skipped_creature_template,

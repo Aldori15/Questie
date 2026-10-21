@@ -35,6 +35,7 @@ from generate_acore_npc_corrections import (  # noqa: E402
     extract_balanced_braces,
     find_map_difficulty_dbc,
     index_geometry_origins,
+    index_partial_spawn_coverage,
     format_zone_ref,
     load_map_difficulty_masks,
     load_rows_from_sql_file,
@@ -288,6 +289,7 @@ def build_acore_objects(
     spawn_zone_counts = defaultdict(lambda: defaultdict(int))
     seen_spawn_entries = set()
     unmapped_spawn_entries = set()
+    unmapped_spawn_guids = defaultdict(set)
     map_stats = defaultdict(int)
     zone_maps = parse_zone_maps(Path(repo_root or ".").resolve(), wdm_root)
 
@@ -306,6 +308,7 @@ def build_acore_objects(
             spawn_zone_counts[entry][zone_id] += 1
         else:
             unmapped_spawn_entries.add(entry)
+            unmapped_spawn_guids[entry].add(int(row.get("guid") or 0))
             map_stats["unmapped_spawns"] += 1
 
     acore_objects = {}
@@ -335,6 +338,8 @@ def build_acore_objects(
 
     if provenance is not None:
         provenance.update(index_geometry_origins(acore_objects, spawn_origins, {}, map_difficulty_masks))
+        index_partial_spawn_coverage(provenance, spawns_by_entry, spawn_origins,
+                                     unmapped_spawn_guids, map_difficulty_masks)
 
     skipped_mutations = {
         "gameobject_template": skipped_template,

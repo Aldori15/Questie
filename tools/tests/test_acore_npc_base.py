@@ -23,6 +23,93 @@ def bootstrap(before, source):
 
 
 class NpcBaseTests(unittest.TestCase):
+    def test_direct_generation_reports_reviewed_mapping_gaps_and_publishes_deterministically(self):
+        with db_snapshot.temporary_directory(ADDON_ROOT / "tools/reports") as directory:
+            (directory / "tools/data").mkdir(parents=True)
+            source = {1: npc(name="NPC 01")}
+            before = {1: npc(name="NPC 01", spawns=audit.typed({12: [[10, 20]]}))}
+            provenance = {"1": {"spawnCoverage": {
+                "unmappedGuids": [99], "mapped": audit.typed({12: [[31, 41]]}),
+                "origins": {"n:12": {"n:1": ["creature:100:entry:1"]}},
+            }}}
+            manifest = exporter.upgrade_manifest(bootstrap(before, source), source, provenance)
+            manifest["geometry"]["1"]["spawns"] = {"slots": {}, "reviewedUnmappedGuids": [99]}
+            (directory / "tools/data/acore_npc_compatibility.json").write_text(json.dumps(manifest), encoding="utf-8")
+            saved = {"npcs": {str(k): v for k, v in source.items()},
+                     "geometryProvenance": provenance, "diagnostics": {}}
+            arguments = ["--creature-sql", str(directory / "creature.sql"),
+                         "--creature-multispawn-sql", str(directory / "creature_multispawn.sql")]
+            with patch.object(exporter, "ROOT", directory), \
+                 patch.object(audit.reader, "find_map_difficulty_dbc", return_value=directory / "MapDifficulty.dbc"), \
+                 patch.object(audit, "source_signature", return_value={}), \
+                 patch.object(audit, "load_source", return_value=saved), \
+                 contextlib.redirect_stdout(io.StringIO()):
+                previous = None
+                for _ in range(2):
+                    self.assertEqual(exporter.main(arguments), 0)
+                    output = directory / "Database/AzerothCore/acoreNpcDB.lua"
+                    report = directory / "tools/reports/acore_npc_base_candidate.json"
+                    contents = output.read_bytes()
+                    summary = json.loads(report.read_text(encoding="utf-8"))
+                    self.assertEqual(summary["counts"]["reviewedUnmappedSpawnPlacements"], 1)
+                    self.assertEqual(summary["reviewedUnmappedSpawns"], {"1": [99]})
+                    self.assertEqual(summary["outputSha256"], db_snapshot.file_hash(output))
+                    self.assertEqual(summary["outputBytes"], len(contents))
+                    self.assertIn(b'NPC 01', contents)
+                    self.assertIn(b'31', contents)
+                    self.assertNotIn(b'spawnCoverage', contents)
+                    if previous is not None:
+                        self.assertEqual(contents, previous)
+                    previous = contents
+                previous_report = report.read_bytes()
+                provenance["1"]["spawnCoverage"]["unmappedGuids"].append(101)
+                with self.assertRaisesRegex(ValueError, "New unmapped spawn GUIDs.*101"):
+                    exporter.main(arguments)
+                self.assertEqual(output.read_bytes(), previous)
+                self.assertEqual(report.read_bytes(), previous_report)
+
+    def test_partial_spawn_review_keeps_multispawn_identity_and_visibility(self):
+        reader = audit.reader
+        placements = [{"guid": guid, "id1": 1, "map": 571, "position_x": x,
+                       "position_y": 20, "phaseMask": 4, "spawnMask": 3, "zoneId": 210, "areaId": 4500}
+                      for guid, x in ((99, 10), (100, -1))]
+        keyed = {"creature_template": {i: {"name": "NPC", "minlevel": 1, "maxlevel": 1} for i in (1, 2)}}
+        rows = {"creature": placements, "creature_queststarter": [{"id": 1, "quest": 1000}]}
+        with patch.object(reader, "find_map_difficulty_dbc", return_value=Path("unused.dbc")), \
+             patch.object(reader, "load_map_difficulty_masks", return_value={571: 1}), \
+             patch.object(reader, "load_keyed_table", side_effect=lambda root, table, *args: (keyed.get(table, {}), 0)), \
+             patch.object(reader, "load_row_table", side_effect=lambda root, table, *args: (rows.get(table, []), 0)), \
+             patch.object(reader, "load_creature_multispawn_rows", return_value=([
+                 {"spawnId": guid, "entry": 2} for guid in (99, 100)], 0)), \
+             patch.object(reader, "load_filtered_row_table", return_value=([], 0)), \
+             patch.object(reader, "load_server_phase_profiles", return_value=({571: {210: True}}, {}, {})), \
+             patch.object(reader, "parse_zone_maps", return_value={}), \
+             patch.object(reader, "resolve_coordinate_zone", side_effect=lambda row, maps:
+                          (210, [row["position_x"], row["position_y"]]) if row["position_x"] >= 0 else (None, None)), \
+             patch.object(reader, "load_wintergrasp_scripted_spawns", return_value={}):
+            provenance = {}
+            records, _ = reader.build_acore_npcs(ADDON_ROOT, provenance=provenance)
+        source = {i: {"s:" + field: audit.typed(value) for field, value in row.items()} for i, row in records.items()}
+        before = {i: {**row, "s:spawns": audit.typed({210: [[50, 60]]})} for i, row in source.items()}
+        manifest = exporter.upgrade_manifest(bootstrap(before, source), source, provenance)
+        for entry in (1, 2):
+            self.assertNotIn("s:spawns", source[entry])
+            coverage = provenance[str(entry)]["spawnCoverage"]
+            self.assertEqual(coverage["unmappedGuids"], [100])
+            self.assertEqual(coverage["origins"]["n:210"]["n:1"], [f"creature:99:entry:{entry}"])
+            point = coverage["mapped"]["n:210"]["n:1"]
+            self.assertEqual(point["n:6"], 4)
+            self.assertEqual(point["n:4"], 3)
+            if entry == 1:
+                self.assertEqual(point["n:8"], 99)
+            manifest["geometry"][str(entry)]["spawns"] = {"slots": {}, "reviewedUnmappedGuids": [100]}
+        result = exporter.build_records(source, manifest, provenance)
+        for entry in (1, 2):
+            self.assertEqual(result[entry]["s:spawns"], provenance[str(entry)]["spawnCoverage"]["mapped"])
+        provenance["1"]["spawnCoverage"]["unmappedGuids"].append(101)
+        with self.assertRaisesRegex(ValueError, "NPC 1 spawns: New unmapped.*101"):
+            exporter.build_records(source, manifest, provenance)
+
     def test_scripted_placements_refresh_preserve_phase_and_drop_parent_identity(self):
         points = audit.typed({12: [[1, 2, 0, 1, 0, 4, 12, 98765]]})
         source = {6492: npc(spawns=points), 32823: npc(spawns=points)}

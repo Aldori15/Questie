@@ -3,6 +3,7 @@ import contextlib
 import copy
 import io
 import json
+from pathlib import Path
 import unittest
 from unittest.mock import patch
 
@@ -30,6 +31,73 @@ def bootstrap(before, source, provenance=None):
 
 
 class ObjectBaseTests(unittest.TestCase):
+    def test_reviewed_mapping_gap_uses_actual_source_and_requires_review_of_new_gaps(self):
+        reader = audit.reader
+        # Two real Copper Vein placements: Tirisfal maps; the Veiled Sea point
+        # falls outside the client's mapped rectangles. Do not invent a marker.
+        placements = [
+            {"guid": 201640, "id": 1731, "map": 0, "zoneId": 85, "areaId": 152,
+             "position_x": 1572.09, "position_y": -687.518, "position_z": 57.2998,
+             "spawnMask": 1, "phaseMask": 1},
+            {"guid": 210259, "id": 1731, "map": 530, "zoneId": 3479, "areaId": 3479,
+             "position_x": -5182.48, "position_y": -10724.9, "position_z": -12.0711,
+             "spawnMask": 1, "phaseMask": 1},
+        ]
+        with patch.object(reader, "find_map_difficulty_dbc", return_value=Path("unused.dbc")), \
+             patch.object(reader, "load_map_difficulty_masks", return_value={0: 1, 530: 1}), \
+             patch.object(reader, "load_keyed_table", side_effect=lambda root, table, *args:
+                          ({1731: {"name": "Copper Vein"}} if table == "gameobject_template" else {}, 0)), \
+             patch.object(reader, "load_rows_from_optional_sql_file", return_value=(placements, 0)), \
+             patch.object(reader, "load_row_table", return_value=([], 0)), \
+             patch.object(reader, "collect_item_object_source_ids", return_value=(set(), {})):
+            provenance = {}
+            records, _, _ = reader.build_acore_objects(ADDON_ROOT, repo_root=ADDON_ROOT, provenance=provenance)
+        self.assertNotIn("spawns", records[1731])
+        raw = {i: {"s:" + field: typed(value) for field, value in row.items()} for i, row in records.items()}
+        # JSON round trip exercises the exact cache representation too.
+        provenance = json.loads(json.dumps(provenance))
+        coverage = provenance["1731"]["spawnCoverage"]
+        self.assertEqual(coverage["unmappedGuids"], [210259])
+        self.assertEqual(coverage["origins"]["n:85"]["n:1"], ["gameobject:201640"])
+        self.assertEqual(coverage["mapped"]["n:85"]["n:1"]["n:6"], 1)
+        self.assertEqual(coverage["mapped"]["n:85"]["n:1"]["n:7"], 152)
+        before = {1731: {**raw[1731], "s:spawns": typed({85: [[10, 20]]})}}
+        manifest = bootstrap(before, raw, provenance)
+        self.assertEqual(exporter.build_records(raw, manifest, provenance), before)
+        manifest["geometry"]["1731"] = {"slots": {}, "reviewedUnmappedGuids": [210259]}
+        self.assertEqual(exporter.build_records(raw, manifest, provenance)[1731]["s:spawns"], coverage["mapped"])
+
+        # Mapped placements move, disappear or arrive without an old baseline.
+        coverage["mapped"] = typed({12: [[31, 41, 4], [50, 60]]})
+        coverage["origins"] = {"n:12": {"n:1": ["gameobject:201640"], "n:2": ["gameobject:300000"]}}
+        self.assertEqual(exporter.build_records(raw, manifest, provenance)[1731]["s:spawns"], coverage["mapped"])
+        coverage["unmappedGuids"].append(400000)
+        with self.assertRaisesRegex(ValueError, "New unmapped spawn GUIDs.*400000"):
+            exporter.build_records(raw, manifest, provenance)
+        coverage["unmappedGuids"] = [210259]
+        with self.assertRaisesRegex(ValueError, "refresh the source model"):
+            exporter.build_records(raw, manifest, {})
+        coverage["origins"] = {}
+        with self.assertRaisesRegex(ValueError, "lacks source identities"):
+            exporter.build_records(raw, manifest, provenance)
+        # If AC or client mapping fixes the previously unmapped point, it flows
+        # in automatically; this is not a permanent source-GUID exclusion.
+        resolved = {1731: {**raw[1731], "s:spawns": typed({12: [[10, 20], [30, 40]]})}}
+        self.assertEqual(exporter.build_records(resolved, manifest, {})[1731]["s:spawns"], resolved[1731]["s:spawns"])
+
+    def test_reviewed_mapping_policy_rejects_hidden_supplements_and_invalid_guids(self):
+        source = {1: obj()}
+        manifest = bootstrap(source, source)
+        for guids in ([], [True], [0], [-1], [2, 1], [1, 1], "1"):
+            with self.subTest(guids=guids):
+                manifest["geometry"]["1"] = {"slots": {}, "reviewedUnmappedGuids": guids}
+                with self.assertRaisesRegex(ValueError, "Invalid reviewed"):
+                    exporter.build_records(source, manifest, {})
+        manifest["geometry"]["1"] = {"slots": {"n:12": {"n:1": {"value": typed([10, 20])}}},
+                                      "reviewedUnmappedGuids": [1]}
+        with self.assertRaisesRegex(ValueError, "without supplements"):
+            exporter.build_records(source, manifest, {})
+
     def test_exact_parity_keeps_presence_sparse_slots_order_and_supplements(self):
         source = {1: obj(spawns=typed({210: [[10, 20, None, 3, 571], [30, 40]]}))}
         before = {1: {"s:name": "Chest", "s:spawns": {"n:210": {

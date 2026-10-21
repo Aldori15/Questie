@@ -123,7 +123,34 @@ def upgrade_manifest(manifest, source, provenance):
     return manifest
 
 
-def current_geometry(policy, source, origins):
+def validate_spawn_review(policy):
+    if "reviewedUnmappedGuids" not in policy:
+        return
+    guids = policy["reviewedUnmappedGuids"]
+    if (set(policy) != {"slots", "reviewedUnmappedGuids"} or policy["slots"] != {}
+            or not isinstance(guids, list) or not guids
+            or any(type(guid) is not int or guid <= 0 for guid in guids)
+            or guids != sorted(set(guids))):
+        raise ValueError("Invalid reviewed unmapped spawn GUIDs; use source geometry without supplements")
+
+
+def current_geometry(policy, source, origins, coverage=None):
+    if "reviewedUnmappedGuids" in policy:
+        validate_spawn_review(policy)
+        if source is shared.ABSENT:
+            if (not isinstance(coverage, dict) or not coverage.get("unmappedGuids")
+                    or not isinstance(coverage.get("mapped"), dict)
+                    or not isinstance(coverage.get("origins"), dict)):
+                raise ValueError("Missing partial spawn coverage; refresh the source model")
+            guids = coverage["unmappedGuids"]
+            if any(type(guid) is not int or guid <= 0 for guid in guids):
+                raise ValueError("Unmapped source placement lacks a valid GUID")
+            unreviewed = set(guids) - set(policy["reviewedUnmappedGuids"])
+            if unreviewed:
+                raise ValueError(f"New unmapped spawn GUIDs require review: {sorted(unreviewed)}")
+            source, origins = coverage["mapped"], coverage["origins"]
+            if any(not identities for _, _, _, identities in geometry_units(source, origins)):
+                raise ValueError("Partial spawn coverage lacks source identities")
     if "value" in policy:
         return copy.deepcopy(policy["value"])
     if source is shared.ABSENT and any(binding_ids(binding) or "hash" in binding
@@ -217,7 +244,8 @@ def build_current_records(source, manifest, provenance):
             if field in GEOMETRY_FIELDS:
                 policy = manifest["geometry"].get(key, {}).get(field, {"slots": {}})
                 try:
-                    value = current_geometry(policy, value, provenance.get(key, {}).get(field, {}))
+                    value = current_geometry(policy, value, provenance.get(key, {}).get(field, {}),
+                                             provenance.get(key, {}).get("spawnCoverage") if field == "spawns" else None)
                 except ValueError as exc:
                     raise ValueError(f"NPC {npc_id} {field}: {exc}") from exc
             elif field in RELATION_FIELDS:
@@ -387,6 +415,12 @@ def validate_manifest(manifest):
                 raise ValueError(f"Invalid {section} fields for NPC {key}")
             if any(not scope[key] & (1 << (KEYS["s:" + field] - 1)) for field in values) and not (manifest["version"] == 2 and section == "geometry"):
                 raise ValueError(f"Compatibility field outside scope for NPC {key}")
+            if section == "geometry":
+                for field, policy in values.items():
+                    if "reviewedUnmappedGuids" in policy:
+                        if manifest["version"] != 2 or field != "spawns":
+                            raise ValueError("Unmapped spawn review requires current spawn geometry")
+                        validate_spawn_review(policy)
     extra = manifest.get("extraRecords")
     if not isinstance(extra, dict) or not set(extra) <= set(scope):
         raise ValueError("Invalid extra NPC records")
@@ -587,6 +621,7 @@ def main(argv=None):
     if any(saved["diagnostics"].values()):
         raise ValueError("NPC source diagnostics require review before generation")
     model = {int(key): value for key, value in saved["npcs"].items()}
+    provenance = saved.get("geometryProvenance")
     baseline = metadata = snapshot_sha = None
     if snapshot_path:
         snapshot_sha = db_snapshot.file_hash(snapshot_path)
@@ -594,12 +629,12 @@ def main(argv=None):
         if tuple(fields) != FIELDS:
             raise ValueError("Unexpected NPC schema")
     if args.command == "bootstrap":
-        manifest = upgrade_manifest(make_manifest(baseline, model, metadata, snapshot_sha, signature), model, saved.get("geometryProvenance", {}))
-        records = build_records(model, manifest, saved.get("geometryProvenance"))
+        manifest = upgrade_manifest(make_manifest(baseline, model, metadata, snapshot_sha, signature), model, provenance or {})
+        records = build_records(model, manifest, provenance)
     else:
         manifest_sha = db_snapshot.file_hash(manifest_path)
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        records = build_records(model, manifest, saved.get("geometryProvenance"))
+        records = build_records(model, manifest, provenance)
     scripted_spawns = scripted_spawn_sources(model, records)
     comparison = compare_records(baseline, records) if baseline is not None else None
     if comparison and not comparison["exactParity"]:
@@ -613,10 +648,14 @@ def main(argv=None):
     if snapshot_path and (db_snapshot.file_hash(snapshot_path) != snapshot_sha or any(
             db_snapshot.file_hash(ROOT / name) != digest for name, digest in metadata["sources"].items())):
         raise ValueError("Snapshot or addon inputs changed during generation")
+    reviewed_gaps = {key: provenance.get(key, {}).get("spawnCoverage", {}).get("unmappedGuids", [])
+                     for key, fields in manifest["geometry"].items()
+                     if "reviewedUnmappedGuids" in fields.get("spawns", {})}
     summary = {"npcs": len(records), "exactParity": comparison["exactParity"] if comparison else None,
                "changedRecords": comparison["changedRecords"] if comparison else None,
                "parityScope": "shared NPC rows; scripted map helpers require runtime snapshot review",
                "scriptedSpawnSourceIds": sorted(scripted_spawns),
+               "reviewedUnmappedSpawnPlacements": sum(map(len, reviewed_gaps.values())),
                "geometry": audit.geometry_inventory(records)}
     if args.command == "bootstrap":
         write_manifest(manifest_path, manifest)
@@ -636,6 +675,7 @@ def main(argv=None):
                                       "comparisonSnapshotSha256": snapshot_sha, "comparison": comparison,
                                       "outputSha256": db_snapshot.file_hash(candidate), "outputBytes": candidate.stat().st_size,
                                       "maxOutputBytes": manifest["limits"]["maxOutputBytes"], "counts": summary,
+                                      "reviewedUnmappedSpawns": reviewed_gaps,
                                       "excludedSourceNpcIds": sorted(set(model) - set(records))})
             candidate.replace(output)
         summary.update({"output": str(output), "report": str(report), "outputMiB": round(output.stat().st_size / 1048576, 2)})

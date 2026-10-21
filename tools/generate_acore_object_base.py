@@ -110,6 +110,7 @@ def validate_manifest(manifest):
     for policy in manifest["geometry"].values():
         if not isinstance(policy, dict):
             raise ValueError("Invalid object geometry policy")
+        geometry.validate_spawn_review(policy)
         if "value" in policy:
             continue
         if not isinstance(policy.get("slots"), dict):
@@ -155,7 +156,8 @@ def build_records(source, manifest, provenance=None):
             if field == "spawns":
                 try:
                     value = geometry.current_geometry(manifest["geometry"].get(key, {"slots": {}}), value,
-                                                      provenance.get(key, {}).get(field, {}))
+                                                      provenance.get(key, {}).get(field, {}),
+                                                      provenance.get(key, {}).get("spawnCoverage"))
                 except ValueError as exc:
                     raise ValueError(f"Object {object_id} spawns: {str(exc).replace('NPC', 'object')}") from exc
             elif field in RELATIONS:
@@ -298,9 +300,12 @@ def main(argv=None):
     if snapshot_path and (db_snapshot.file_hash(snapshot_path) != snapshot_sha or any(
             db_snapshot.file_hash(ROOT / name) != digest for name, digest in metadata["sources"].items())):
         raise ValueError("Snapshot or addon changed during generation")
+    reviewed_gaps = {key: provenance.get(key, {}).get("spawnCoverage", {}).get("unmappedGuids", [])
+                     for key, policy in manifest["geometry"].items() if "reviewedUnmappedGuids" in policy}
     summary = {"objects": len(records), "exactParity": comparison["exactParity"] if comparison else None,
                "changedRecords": comparison["changedRecords"] if comparison else None,
-               "geometry": audit.geometry.geometry_inventory(records)["spawns"]}
+               "geometry": audit.geometry.geometry_inventory(records)["spawns"],
+               "reviewedUnmappedSpawnPlacements": sum(map(len, reviewed_gaps.values()))}
     if args.command == "bootstrap":
         geometry.write_manifest(manifest_path, manifest)
         summary.update({"manifest": str(manifest_path), "extraRecords": len(manifest["extraRecords"]),
@@ -320,6 +325,7 @@ def main(argv=None):
                                       "comparisonSnapshotSha256": snapshot_sha, "comparison": comparison,
                                       "outputSha256": db_snapshot.file_hash(candidate), "outputBytes": candidate.stat().st_size,
                                       "maxOutputBytes": manifest["limits"]["maxOutputBytes"], "counts": summary,
+                                      "reviewedUnmappedSpawns": reviewed_gaps,
                                       "excludedSourceObjectIds": sorted(set(model) - set(records))})
             candidate.replace(output)
         summary.update({"output": str(output), "report": str(report), "outputMiB": round(output.stat().st_size / 1048576, 2)})
