@@ -143,6 +143,54 @@ def validate_waypoint_review(policy):
         raise ValueError("Invalid reviewed unmapped waypoint paths; use source geometry without supplements")
 
 
+def validate_source_geometry_policy(manifest, kind="npc"):
+    """A completed accuracy audit must not silently regain inherited markers."""
+    policy = manifest.get("geometryPolicy")
+    if policy is None:
+        return
+    if policy != "verified-source-only-v1":
+        raise ValueError("Unknown geometry accuracy policy")
+    review = manifest.get("geometryAudit", {})
+    if (not isinstance(review, dict) or review.get("version") != 1
+            or not isinstance(review.get("reviewedFields"), dict)):
+        raise ValueError("Missing geometry accuracy review inventory")
+    allowed_fields = {"spawns", "waypoints"} if kind == "npc" else {"spawns"}
+    for entry, fields in review["reviewedFields"].items():
+        if (entry not in manifest["scope"] or not isinstance(fields, list) or not fields
+                or any(field not in allowed_fields for field in fields) or len(fields) != len(set(fields))):
+            raise ValueError("Invalid geometry accuracy review inventory")
+    for entry, record in manifest["geometry"].items():
+        policies = record.values() if kind == "npc" else (record,)
+        for recipe in policies:
+            if "value" in recipe or any(isinstance(binding, dict) and "value" in binding
+                    for slots in recipe.get("slots", {}).values() for binding in slots.values()):
+                raise ValueError(f"Inherited {kind} geometry is prohibited after the accuracy audit: {entry}")
+    for entry, row in manifest["extraRecords"].items():
+        if any(row.get("s:" + field) for field in ("spawns", "waypoints")):
+            raise ValueError(f"Unverified supplemental {kind} geometry is prohibited: {entry}")
+
+
+def geometry_audit_report(records, manifest, provenance, kind="npc"):
+    """Report omissions separately from the source data shipped to the addon."""
+    review = manifest.get("geometryAudit", {})
+    gaps = {}
+    for entry, fields in review.get("reviewedFields", {}).items():
+        record = records.get(int(entry), {})
+        for field in fields:
+            coverage = provenance.get(entry, {}).get("spawnCoverage" if field == "spawns" else "waypointCoverage", {})
+            absent = not geometry_units(record.get("s:" + field, {}), {})
+            missing = coverage.get("unmappedGuids") if field == "spawns" else coverage.get("unmappedPaths")
+            if absent or missing:
+                detail = {"reason": "No verified mapped source geometry" if absent else "Some source placements remain unmappable"}
+                if missing:
+                    detail["unmappedGuids" if field == "spawns" else "unmappedPaths"] = missing
+                if entry in manifest["extraRecords"]:
+                    detail["reason"] = "Client helper or supplemental record without verified AC coordinates"
+                gaps.setdefault(entry, {"name": record.get("s:name"), "fields": {}})["fields"][field] = detail
+    return {"policy": manifest.get("geometryPolicy"), "reviewedRecords": len(review.get("reviewedFields", {})),
+            "coverageGapRecords": len(gaps), "coverageGaps": gaps}
+
+
 def add_scripted_geometry(policy, source, origins, packet, entry, field):
     if "sourceScripted" not in policy:
         return source, origins
@@ -150,6 +198,8 @@ def add_scripted_geometry(policy, source, origins, packet, entry, field):
         raise ValueError("Scripted geometry requires a pure source policy")
     if not isinstance(packet, dict) or packet.get("version") != 1 or not isinstance(packet.get("entries"), dict):
         raise ValueError("Missing scripted geometry coverage; refresh the source model")
+    if packet.get("failures"):
+        raise ValueError(f"Scripted geometry source extraction requires review: {packet['failures']}")
     if not isinstance(source, dict):
         raise ValueError("Static geometry has an unresolved mapping gap; review it separately")
     extra = packet["entries"].get(str(entry), {"spawns": {}, "waypoints": {}, "origins": {},
@@ -299,8 +349,17 @@ def build_current_records(source, manifest, provenance):
             if field in GEOMETRY_FIELDS:
                 policy = manifest["geometry"].get(key, {}).get(field, {"slots": {}})
                 try:
+                    if manifest.get("geometryPolicy") and value is shared.ABSENT:
+                        review_key = "reviewedUnmappedGuids" if field == "spawns" else "reviewedUnmappedPaths"
+                        if review_key not in policy:
+                            raise ValueError("Unmapped source geometry requires explicit coverage review")
                     value, origins = add_scripted_geometry(policy, value, provenance.get(key, {}).get(field, {}),
                                                           provenance.get("scriptedGeometry"), npc_id, field)
+                    if "sourceCpp" in policy:
+                        if set(policy) != {"slots", "sourceCpp"} or policy["slots"] != {} or policy["sourceCpp"] is not True:
+                            raise ValueError("C++ geometry requires a pure source policy")
+                        value, origins = add_scripted_geometry({"slots": {}, "sourceScripted": True}, value, origins,
+                                                              provenance.get("cppGeometry"), npc_id, field)
                     value = current_geometry(policy, value, origins,
                                              provenance.get(key, {}).get("spawnCoverage" if field == "spawns" else "waypointCoverage"))
                 except ValueError as exc:
@@ -478,6 +537,10 @@ def validate_manifest(manifest):
                         if (manifest["version"] != 2 or set(policy) != {"slots", "sourceScripted"}
                                 or policy["slots"] != {} or policy["sourceScripted"] is not True):
                             raise ValueError("Scripted geometry requires a current pure source policy")
+                    if "sourceCpp" in policy:
+                        if (manifest["version"] != 2 or set(policy) != {"slots", "sourceCpp"}
+                                or policy["slots"] != {} or policy["sourceCpp"] is not True):
+                            raise ValueError("C++ geometry requires a current pure source policy")
                     if "reviewedUnmappedGuids" in policy:
                         if manifest["version"] != 2 or field != "spawns":
                             raise ValueError("Unmapped spawn review requires current spawn geometry")
@@ -494,6 +557,7 @@ def validate_manifest(manifest):
     limits = manifest.get("limits", {})
     if type(limits.get("maxOutputBytes")) is not int or limits["maxOutputBytes"] < 1 or set(limits.get("geometry", {})) != GEOMETRY_FIELDS:
         raise ValueError("Missing NPC output/geometry limits")
+    validate_source_geometry_policy(manifest)
     return manifest
 
 
@@ -591,7 +655,7 @@ def scripted_spawn_sources(source, records):
     return result
 
 
-def write_stream(stream, records, scripted_spawns=None):
+def write_stream(stream, records, scripted_spawns=None, runtime_geometry=None):
     stream.write('-- Generated from AzerothCore source and explicit Questie compatibility data.\n')
     stream.write('-- Generator: tools/generate_acore_npc_base.py\n')
     stream.write('local QuestieDB = QuestieLoader:ImportModule("QuestieDB")\n\nQuestieDB.npcKeys = {\n')
@@ -605,16 +669,28 @@ def write_stream(stream, records, scripted_spawns=None):
     if scripted_spawns is not None:
         stream.write('\n-- Source geometry for scripted map helpers on fresh and cached startup.\n')
         stream.write('QuestieDB.scriptedSpawnSources = ' + lua_value({"n:" + str(k): v for k, v in scripted_spawns.items()}) + '\n')
+    if runtime_geometry is not None:
+        if runtime_geometry.get("version") != 1:
+            raise ValueError("Unknown runtime geometry source packet")
+        def fields(rows):
+            return {"n:" + key: {"n:" + str(KEYS[field]): value for field, value in row.items()}
+                    for key, row in rows.items()}
+        stream.write('\n-- Source event summons and active-fair placements; also loaded on cached startup.\n')
+        factions = runtime_geometry["faction"]
+        stream.write('QuestieDB.npcFactionGeometry = (UnitFactionGroup("player") == "Horde") and '
+                     + lua_value(fields(factions["Horde"])) + ' or ' + lua_value(fields(factions["Alliance"])) + '\n')
+        stream.write('QuestieDB.darkmoonGeometry = ' + lua_value({"n:" + k: fields(v)
+                     for k, v in runtime_geometry["darkmoon"].items()}) + '\n')
 
 
-def candidate_size(records, scripted_spawns=None):
+def candidate_size(records, scripted_spawns=None, runtime_geometry=None):
     class Counter:
         size = 0
 
         def write(self, value):
             self.size += len(value.encode("utf-8"))
     counter = Counter()
-    write_stream(counter, records, scripted_spawns)
+    write_stream(counter, records, scripted_spawns, runtime_geometry)
     return counter.size
 
 
@@ -701,12 +777,18 @@ def main(argv=None):
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         records = build_records(model, manifest, provenance)
     scripted_spawns = scripted_spawn_sources(model, records)
+    runtime_geometry = (provenance or {}).get("runtimeGeometry")
+    if len(records) > 1000 and runtime_geometry is None:
+        raise ValueError("Missing runtime geometry source coverage; refresh the source model")
+    if runtime_geometry is not None:
+        import acore_runtime_geometry
+        runtime_geometry = acore_runtime_geometry.select_darkmoon_waypoints(runtime_geometry, model, provenance)
     comparison = compare_records(baseline, records) if baseline is not None else None
     if comparison and not comparison["exactParity"]:
         if args.command == "generate":
             shared.write_json(targets[1], {"comparison": comparison})
         raise ValueError("NPC candidate differs from baseline; no candidate or manifest published")
-    if candidate_size(records, scripted_spawns) > manifest["limits"]["maxOutputBytes"]:
+    if candidate_size(records, scripted_spawns, runtime_geometry) > manifest["limits"]["maxOutputBytes"]:
         raise ValueError("NPC candidate exceeds its baseline size budget")
     if audit.source_signature(source, ROOT, creature, multispawn, difficulty, wdm) != signature:
         raise ValueError("NPC source inputs changed during generation")
@@ -719,6 +801,7 @@ def main(argv=None):
     reviewed_paths = {key: provenance.get(key, {}).get("waypointCoverage", {}).get("unmappedPaths", [])
                       for key, fields in manifest["geometry"].items()
                       if "reviewedUnmappedPaths" in fields.get("waypoints", {})}
+    geometry_review = geometry_audit_report(records, manifest, provenance)
     summary = {"npcs": len(records), "exactParity": comparison["exactParity"] if comparison else None,
                "changedRecords": comparison["changedRecords"] if comparison else None,
                "parityScope": "shared NPC rows; scripted map helpers require runtime snapshot review",
@@ -727,6 +810,9 @@ def main(argv=None):
                                              if any(policy.get("sourceScripted") for policy in fields.values())),
                "reviewedUnmappedSpawnPlacements": sum(map(len, reviewed_gaps.values())),
                "reviewedUnmappedWaypointPaths": sum(map(len, reviewed_paths.values())),
+               "geometryCoverageGaps": geometry_review["coverageGapRecords"],
+               "cppGeometryIds": sorted(int(key) for key, fields in manifest["geometry"].items()
+                                        if any(policy.get("sourceCpp") for policy in fields.values())),
                "geometry": audit.geometry_inventory(records)}
     if args.command == "bootstrap":
         write_manifest(manifest_path, manifest)
@@ -739,7 +825,7 @@ def main(argv=None):
         with db_snapshot.temporary_directory(output.parent) as directory:
             candidate = directory / "acoreNpcDB.lua"
             with candidate.open("w", encoding="utf-8", newline="\n") as stream:
-                write_stream(stream, records, scripted_spawns)
+                write_stream(stream, records, scripted_spawns, runtime_geometry)
             if candidate.stat().st_size > manifest["limits"]["maxOutputBytes"]:
                 raise ValueError("Serialized NPC candidate exceeds size budget")
             shared.write_json(report, {"sourceInputs": signature, "manifestSha256": manifest_sha,
@@ -748,6 +834,8 @@ def main(argv=None):
                                       "maxOutputBytes": manifest["limits"]["maxOutputBytes"], "counts": summary,
                                       "reviewedUnmappedSpawns": reviewed_gaps,
                                       "reviewedUnmappedWaypoints": reviewed_paths,
+                                      "geometryAudit": geometry_review,
+                                      "runtimeGeometryOmissions": runtime_geometry.get("runtimeOmissions", []) if runtime_geometry else [],
                                       "excludedSourceNpcIds": sorted(set(model) - set(records))})
             candidate.replace(output)
         summary.update({"output": str(output), "report": str(report), "outputMiB": round(output.stat().st_size / 1048576, 2)})

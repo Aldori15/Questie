@@ -10,6 +10,20 @@ import db_snapshot
 
 
 class ObjectSourceAuditTests(unittest.TestCase):
+    def test_lantern_child_identity_uses_authoritative_spell_overrides_in_either_schema(self):
+        exported = [{"ID": 44255, "Effect1": 32, "EffectTriggerSpell1": 44231},
+                    {"ID": 44231, "Effect1": 76, "EffectMiscValue1": 186887}]
+        binding = audit.reader.lantern_spell_binding
+        self.assertEqual(binding(exported, []), {44255: 186887})
+        overrides = [{"ID": 44255, "Effect_1": 32, "EffectTriggerSpell_1": 44231},
+                     {"ID": 44231, "Effect_1": 76, "EffectMiscValue_1": 186887}]
+        self.assertEqual(binding(exported, overrides), {44255: 186887})
+        overrides[1]["EffectMiscValue_1"] = 900001
+        self.assertEqual(binding(exported, overrides), {})
+        self.assertEqual(binding(exported[:1], []), {})
+        exported[0]["EffectTriggerSpell1"] = 900002
+        self.assertEqual(binding(exported, []), {})
+
     def test_geometry_preserves_precision_sparse_metadata_and_duplicate_points(self):
         spawn = audit.geometry.typed({210: [[10.123456, 20, None, 3, 571, 100, 200, 1], [30, 40]]})
         baseline = {1: {"s:spawns": spawn}}

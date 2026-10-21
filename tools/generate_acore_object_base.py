@@ -13,7 +13,7 @@ import audit_acore_item_sources as shared
 import audit_acore_object_sources as audit
 import db_snapshot
 import generate_acore_npc_base as geometry
-from generate_acore_full_base import LuaBlobWriter, lua_quote, row_to_lua
+from generate_acore_full_base import LuaBlobWriter, lua_quote, lua_value, row_to_lua
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -111,6 +111,12 @@ def validate_manifest(manifest):
         if not isinstance(policy, dict):
             raise ValueError("Invalid object geometry policy")
         geometry.validate_spawn_review(policy)
+        if "sourceScripted" in policy and (set(policy) != {"slots", "sourceScripted"}
+                or policy["slots"] != {} or policy["sourceScripted"] is not True):
+            raise ValueError("Scripted object geometry requires a pure source policy")
+        if "sourceCpp" in policy and (set(policy) != {"slots", "sourceCpp"}
+                or policy["slots"] != {} or policy["sourceCpp"] is not True):
+            raise ValueError("C++ object geometry requires a pure source policy")
         if "value" in policy:
             continue
         if not isinstance(policy.get("slots"), dict):
@@ -127,6 +133,7 @@ def validate_manifest(manifest):
     limits = manifest.get("limits", {})
     if any(type(limits.get(key)) is not int or limits[key] < 1 for key in ("maxOutputBytes", "maxSpawnPoints")):
         raise ValueError("Missing object output limits")
+    geometry.validate_source_geometry_policy(manifest, "object")
     return manifest
 
 
@@ -155,8 +162,17 @@ def build_records(source, manifest, provenance=None):
             value = raw.get(typed_key, shared.ABSENT)
             if field == "spawns":
                 try:
-                    value = geometry.current_geometry(manifest["geometry"].get(key, {"slots": {}}), value,
-                                                      provenance.get(key, {}).get(field, {}),
+                    policy = manifest["geometry"].get(key, {"slots": {}})
+                    if policy.get("sourceScripted") and provenance.get("scriptedGeometry", {}).get("actorContextAvailable") is not True:
+                        raise ValueError("Scripted object actor context is unavailable; supply creature exports and refresh the source model")
+                    if manifest.get("geometryPolicy") and value is shared.ABSENT and "reviewedUnmappedGuids" not in policy:
+                        raise ValueError("Unmapped source geometry requires explicit coverage review")
+                    value, origins = geometry.add_scripted_geometry(policy, value, provenance.get(key, {}).get(field, {}),
+                                                                   provenance.get("scriptedGeometry"), object_id, field)
+                    if policy.get("sourceCpp"):
+                        value, origins = geometry.add_scripted_geometry({"slots": {}, "sourceScripted": True}, value, origins,
+                                                                       provenance.get("cppGeometry"), object_id, field)
+                    value = geometry.current_geometry(policy, value, origins,
                                                       provenance.get(key, {}).get("spawnCoverage"))
                 except ValueError as exc:
                     raise ValueError(f"Object {object_id} spawns: {str(exc).replace('NPC', 'object')}") from exc
@@ -202,7 +218,22 @@ def compare_records(before, after):
     return {"exactParity": not differences, "changedRecords": len(differences), "differences": differences}
 
 
-def write_stream(stream, records):
+def faction_geometry(provenance, records):
+    if len(records) < 1000:
+        return None
+    data = provenance.get("cppGeometry", {}).get("entries", {}).get("186887")
+    if not data or data["failures"]["spawns"]:
+        raise ValueError("Missing verified Lantern source geometry; refresh the source model")
+    points = data["spawns"]
+    zones = {"Alliance": (12, 1, 3524), "Horde": (14, 85, 3430)}
+    if set(points) != {"n:" + str(zone) for values in zones.values() for zone in values}:
+        raise ValueError("Lantern faction map coverage changed; review the source")
+    return {team: {"n:186887": {"n:" + str(KEYS["s:spawns"]): {
+                "n:" + str(zone): points["n:" + str(zone)] for zone in values}}}
+            for team, values in zones.items()}
+
+
+def write_stream(stream, records, faction_sources=None):
     stream.write('-- Generated from AzerothCore source and explicit Questie compatibility data.\n')
     stream.write('-- Generator: tools/generate_acore_object_base.py\n')
     stream.write('local QuestieDB = QuestieLoader:ImportModule("QuestieDB")\n\nQuestieDB.objectKeys = {\n')
@@ -213,16 +244,20 @@ def write_stream(stream, records):
     for object_id, row in sorted(records.items()):
         writer.write(f'[{object_id}]={row_to_lua(row, KEYS)},\n')
     writer.finish()
+    if faction_sources is not None:
+        stream.write('\n-- Fixed Lantern spell destinations selected for the player faction.\n')
+        stream.write('QuestieDB.objectFactionGeometry = (UnitFactionGroup("player") == "Horde") and '
+                     + lua_value(faction_sources["Horde"]) + ' or ' + lua_value(faction_sources["Alliance"]) + '\n')
 
 
-def candidate_size(records):
+def candidate_size(records, faction_sources=None):
     class ByteCounter:
         size = 0
 
         def write(self, value):
             self.size += len(value.encode("utf-8"))
     counter = ByteCounter()
-    write_stream(counter, records)
+    write_stream(counter, records, faction_sources)
     return counter.size
 
 
@@ -241,6 +276,9 @@ def main(argv=None):
         child = commands.add_parser(name)
         child.add_argument("--acore-source", type=Path, default=Path("P:/AC/source"))
         child.add_argument("--gameobject-sql", type=Path, required=True)
+        child.add_argument("--creature-sql", type=Path, help="Creature export for scripted object actor context")
+        child.add_argument("--creature-multispawn-sql", type=Path)
+        child.add_argument("--spell-sql", type=Path, help="Exported spell table for scripted object identity checks")
         child.add_argument("--map-difficulty-dbc", type=Path)
         child.add_argument("--wdm-root", type=Path, default=audit.coordinate_reader.DEFAULT_WDM_ROOT)
         child.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
@@ -255,20 +293,37 @@ def main(argv=None):
         arguments.insert(0, "generate")
     args = parser.parse_args(arguments)
     source, gameobject, wdm = (p.resolve() for p in (args.acore_source, args.gameobject_sql, args.wdm_root))
+    context_inputs = {}
+    if args.spell_sql:
+        context_inputs["spell"] = args.spell_sql.resolve()
+    if args.creature_multispawn_sql and not args.creature_sql:
+        raise ValueError("Creature multispawn context requires --creature-sql")
+    if args.creature_sql:
+        context_inputs["creature"] = args.creature_sql.resolve()
+        context_inputs["multispawn"] = (args.creature_multispawn_sql.resolve() if args.creature_multispawn_sql
+                                         else audit.coordinate_reader.find_sibling_creature_multispawn_sql(args.creature_sql))
+        if not context_inputs["multispawn"]:
+            raise ValueError("Scripted object context requires a creature multispawn export")
     difficulty = audit.coordinate_reader.find_map_difficulty_dbc(source, args.map_difficulty_dbc).resolve()
     cache = shared.local_output(ROOT, args.source_cache)
     manifest_path = local_path(args.manifest, "tools/data", ".json")
+    if args.command == "generate":
+        planned = json.loads(manifest_path.read_text(encoding="utf-8"))
+        if planned.get("geometry", {}).get("186887", {}).get("sourceCpp") and (
+                not args.creature_sql or not args.spell_sql):
+            raise ValueError("Verified Lantern geometry requires --creature-sql, --creature-multispawn-sql and --spell-sql")
     snapshot_path = args.snapshot if args.command == "bootstrap" else args.compare_snapshot
     targets = [manifest_path] if args.command == "bootstrap" else [local_path(args.output, "tools/reports", ".lua"), shared.local_output(ROOT, args.report)]
     inputs = {cache, gameobject, difficulty, *([snapshot_path.resolve()] if snapshot_path else [])}
+    inputs.update(context_inputs.values())
     if args.command == "generate":
         inputs.add(manifest_path)
     if len(set(targets)) != len(targets) or any(p in inputs for p in targets):
         raise ValueError("Output paths must differ from inputs and each other")
     if args.command == "bootstrap" and manifest_path.exists() and not args.force:
         raise ValueError("Manifest already exists; review it or explicitly use --force")
-    signature = audit.source_signature(source, ROOT, gameobject, difficulty, wdm)
-    saved = audit.load_source(source, ROOT, gameobject, difficulty, wdm, signature, cache)
+    signature = audit.source_signature(source, ROOT, gameobject, difficulty, wdm, **context_inputs)
+    saved = audit.load_source(source, ROOT, gameobject, difficulty, wdm, signature, cache, **context_inputs)
     if any(saved["diagnostics"].values()) or any(row["skippedMutations"] for row in saved["tableCoverage"].values()):
         raise ValueError("Object SQL diagnostics require review before generation")
     model = {int(key): row for key, row in saved["objects"].items()}
@@ -287,25 +342,30 @@ def main(argv=None):
         manifest_sha = db_snapshot.file_hash(manifest_path)
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     records = build_records(model, manifest, provenance)
+    faction_sources = faction_geometry(provenance, records)
     comparison = compare_records(baseline, records) if baseline is not None else None
     if comparison and not comparison["exactParity"]:
         if args.command == "generate":
             shared.write_json(targets[1], {"comparison": comparison})
         ids = [row["objectId"] for row in comparison["differences"][:20]]
         raise ValueError(f"Object candidate differs from baseline ({comparison['changedRecords']} records; IDs {ids}); no candidate or manifest published")
-    if candidate_size(records) > manifest["limits"]["maxOutputBytes"]:
+    if candidate_size(records, faction_sources) > manifest["limits"]["maxOutputBytes"]:
         raise ValueError("Object candidate exceeds its baseline size budget")
-    if audit.source_signature(source, ROOT, gameobject, difficulty, wdm) != signature:
+    if audit.source_signature(source, ROOT, gameobject, difficulty, wdm, **context_inputs) != signature:
         raise ValueError("Object source inputs changed during generation")
     if snapshot_path and (db_snapshot.file_hash(snapshot_path) != snapshot_sha or any(
             db_snapshot.file_hash(ROOT / name) != digest for name, digest in metadata["sources"].items())):
         raise ValueError("Snapshot or addon changed during generation")
     reviewed_gaps = {key: provenance.get(key, {}).get("spawnCoverage", {}).get("unmappedGuids", [])
                      for key, policy in manifest["geometry"].items() if "reviewedUnmappedGuids" in policy}
+    geometry_review = geometry.geometry_audit_report(records, manifest, provenance, "object")
     summary = {"objects": len(records), "exactParity": comparison["exactParity"] if comparison else None,
                "changedRecords": comparison["changedRecords"] if comparison else None,
                "geometry": audit.geometry.geometry_inventory(records)["spawns"],
-               "reviewedUnmappedSpawnPlacements": sum(map(len, reviewed_gaps.values()))}
+               "reviewedUnmappedSpawnPlacements": sum(map(len, reviewed_gaps.values())),
+               "geometryCoverageGaps": geometry_review["coverageGapRecords"],
+               "scriptedGeometryIds": sorted(int(key) for key, policy in manifest["geometry"].items() if policy.get("sourceScripted")),
+               "cppGeometryIds": sorted(int(key) for key, policy in manifest["geometry"].items() if policy.get("sourceCpp"))}
     if args.command == "bootstrap":
         geometry.write_manifest(manifest_path, manifest)
         summary.update({"manifest": str(manifest_path), "extraRecords": len(manifest["extraRecords"]),
@@ -318,7 +378,7 @@ def main(argv=None):
         with db_snapshot.temporary_directory(output.parent) as directory:
             candidate = directory / "acoreObjectDB.lua"
             with candidate.open("w", encoding="utf-8", newline="\n") as stream:
-                write_stream(stream, records)
+                write_stream(stream, records, faction_sources)
             if candidate.stat().st_size > manifest["limits"]["maxOutputBytes"]:
                 raise ValueError("Serialized object candidate exceeds size budget")
             shared.write_json(report, {"sourceInputs": signature, "manifestSha256": manifest_sha,
@@ -326,6 +386,7 @@ def main(argv=None):
                                       "outputSha256": db_snapshot.file_hash(candidate), "outputBytes": candidate.stat().st_size,
                                       "maxOutputBytes": manifest["limits"]["maxOutputBytes"], "counts": summary,
                                       "reviewedUnmappedSpawns": reviewed_gaps,
+                                      "geometryAudit": geometry_review,
                                       "excludedSourceObjectIds": sorted(set(model) - set(records))})
             candidate.replace(output)
         summary.update({"output": str(output), "report": str(report), "outputMiB": round(output.stat().st_size / 1048576, 2)})

@@ -3,7 +3,7 @@ local ItemRuntimeCorrections = QuestieLoader:CreateModule("ItemRuntimeCorrection
 
 local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 
--- NPC acquisition guides for quest/script interactions, not ordinary loot drops.
+-- Item acquisition sources for faction quest and script interactions.
 local function factionFixes()
     local itemKeys = QuestieDB.itemKeys
 
@@ -30,8 +30,11 @@ end
 
 function ItemRuntimeCorrections:ApplyFactionFixes(overrides, addOverride)
     addOverride(overrides, factionFixes())
-    if type(QuestieDB.itemFactionSelections) ~= "table" then
+
+    local factionSelections = QuestieDB.itemFactionSelections
+    if type(factionSelections) ~= "table" then
         error("Missing generated item faction selections; regenerate acoreItemDB.lua", 0)
     end
-    addOverride(overrides, QuestieDB.itemFactionSelections)
+
+    addOverride(overrides, factionSelections)
 end

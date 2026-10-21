@@ -860,6 +860,16 @@ def parse_zone_maps(repo_root, wdm_root=None):
         if isinstance(instance, int):
             ui_by_instance[instance].append(ui_id)
 
+    # The client packs the blood elf and draenei zones onto maps 0/1, while
+    # AzerothCore stores their world positions on map 530. Their native AC
+    # rectangles already supply the required transform; include those zones
+    # in map 530's fallback search as well as their client map search. This
+    # also covers sea/subzone IDs without a directly mapped UI rectangle.
+    for map_id, zone_id in ACORE_WORLD_RECT_OVERRIDES:
+        ui_id = special_to_ui.get(zone_id) or area_to_ui.get(zone_id) or wdm_floor_zone_to_ui.get(zone_id)
+        if ui_id in ui_map_data and ui_id not in ui_by_instance[map_id]:
+            ui_by_instance[map_id].append(ui_id)
+
     return {
         "area_to_ui": area_to_ui,
         "special_to_ui": special_to_ui,
@@ -1052,7 +1062,7 @@ def resolve_coordinate_zone(row, zone_maps):
     return None, None
 
 
-def load_rows_from_sql_file(sql_path, table_name, key_columns, default_columns=None):
+def load_rows_from_sql_file(sql_path, table_name, key_columns, default_columns=None, row_filter=None):
     columns = list(default_columns or extract_sql_columns(sql_path, table_name))
     rows = {}
     skipped_mutations = 0
@@ -1068,12 +1078,13 @@ def load_rows_from_sql_file(sql_path, table_name, key_columns, default_columns=N
         if not statement_targets_table(statement, table_name):
             continue
         if upper.startswith(("INSERT", "REPLACE")):
-            skipped_mutations += apply_multirow_insert(statement, table_name, columns, rows, key_columns, sql_context)
+            skipped_mutations += apply_multirow_insert(statement, table_name, columns, rows, key_columns, sql_context,
+                                                       row_filter=row_filter)
 
     return list(rows.values()), skipped_mutations
 
 
-def load_filtered_row_table(source_root, table_name, key_columns, row_filter, include_modules=False):
+def load_filtered_row_table(source_root, table_name, key_columns, row_filter, include_modules=False, ignore_statement=None):
     """Replay one AC table while retaining only rows used by this generator."""
     source_root = Path(source_root)
     base_file = source_root / "data/sql/base/db_world" / f"{table_name}.sql"
@@ -1092,6 +1103,8 @@ def load_filtered_row_table(source_root, table_name, key_columns, row_filter, in
                 apply_variable_set(statement, sql_context)
                 continue
             if not statement_targets_table(statement, table_name):
+                continue
+            if ignore_statement is not None and ignore_statement(statement):
                 continue
             if upper.startswith(("INSERT", "REPLACE")):
                 skipped_mutations += apply_multirow_insert(
@@ -1640,6 +1653,44 @@ def build_acore_npcs(
         provenance["scriptedGeometry"] = acore_scripted_geometry.collect(
             smart_script_rows, creatures_by_entry, guid_to_creature, template_rows,
             zone_maps, escort_waypoint_by_path)
+        import acore_cpp_geometry
+        provenance["cppGeometry"] = acore_cpp_geometry.collect(source_root, zone_maps)
+        if any(template_rows.get(entry, {}).get("ScriptName") != "npc_hor_leader_second" for entry in (37554, 36955)):
+            data = provenance["cppGeometry"]["entries"]["36955"]
+            for field in ("spawns", "waypoints"):
+                data["failures"][field].append({"source": "creature_template:37554",
+                                              "reasons": ["HoR leader script binding changed"]})
+
+        # Runtime selectors must use the same source as the static rows. In
+        # particular, Darkmoon setup spawns are not active-fair placements.
+        import acore_runtime_geometry
+        if len(template_rows) > 1000:
+            event_rows, event_skips = load_filtered_row_table(
+                source_root, "event_scripts",
+                ("id", "delay", "command", "datalong", "datalong2", "dataint", "x", "y", "z", "o"),
+                lambda row: int(row.get("command") or 0) == 10
+                and int(row.get("datalong") or 0) in (5676, 5677, 12138), include_modules)
+            selected = [row for row in creature_rows
+                        if get_primary_creature_entry(row) in acore_runtime_geometry.DARKMOON_NPCS]
+            guids = {int(row["guid"]) for row in selected}
+            memberships, membership_skips = load_filtered_row_table(
+                source_root, "game_event_creature", ("eventEntry", "guid"),
+                lambda row: int(row.get("guid") or 0) in guids, include_modules,
+                ignore_statement=acore_runtime_geometry.ignore_unrelated_membership_statement)
+            if event_skips or membership_skips:
+                raise ValueError("Runtime event geometry has unsupported SQL mutations")
+
+            def project_runtime_point(row, maps):
+                zone, point = resolve_coordinate_zone(row, maps)
+                if zone is None or point is None:
+                    return None, None
+                point = add_acore_spawn_visibility(point, row, map_difficulty_masks)
+                if get_primary_creature_entry(row) in questgiver_entries:
+                    point = add_acore_spawn_identity(point, row)
+                return zone, point
+
+            provenance["runtimeGeometry"] = acore_runtime_geometry.collect(
+                event_rows, selected, memberships, zone_maps, project_runtime_point)
 
     skipped_mutations = {
         "creature_template": skipped_creature_template,

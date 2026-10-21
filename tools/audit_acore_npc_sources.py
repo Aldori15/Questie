@@ -16,16 +16,18 @@ import audit_acore_item_sources as shared
 import db_snapshot
 import generate_acore_item_corrections as sql_reader
 import generate_acore_npc_corrections as reader
+import acore_cpp_geometry
 
 
 ROOT = Path(__file__).resolve().parents[1]
 TABLES = ("creature_template", "creature_queststarter", "game_event_creature_quest", "creature_questender",
-          "factiontemplate_dbc", "creature_addon", "creature_template_addon", "waypoint_data", "waypoints", "smart_scripts")
+          "factiontemplate_dbc", "creature_addon", "creature_template_addon", "waypoint_data", "waypoints", "smart_scripts",
+          "event_scripts", "game_event_creature")
 ANCHORS = {1, 3, 4, 115, 1629, 2, 5, 6, 116, 1610}
 REPO_INPUTS = ("Database/Zones/zoneTables.lua", "Compat/UiMapData.lua", "Modules/Phasing.lua",
                "Modules/Network/QuestieServer.lua", "tools/generate_acore_npc_corrections.py",
                "tools/generate_acore_item_corrections.py", "tools/validate_acore_quest_metadata.py",
-               "tools/acore_scripted_geometry.py")
+               "tools/acore_scripted_geometry.py", "tools/acore_cpp_geometry.py", "tools/acore_runtime_geometry.py")
 
 
 def typed(value):
@@ -41,6 +43,7 @@ def source_signature(source, repo, creature, multispawn, difficulty, wdm):
     paths = {p.resolve() for table in TABLES for p in sql_reader.source_sql_files(source, table)}
     paths.update(source / "data/sql/base/db_world" / f"{table}.sql" for table in TABLES)
     paths.add(source / "src/server/game/Battlefield/Zones/BattlefieldWG.h")
+    paths.update(source / name for name in acore_cpp_geometry.SOURCE_FILES)
     external = [creature, multispawn, difficulty,
                 wdm / "patch-enUS-M extracted/DBFilesClient/DungeonMap.csv",
                 wdm / "patch-enUS-M extracted/DBFilesClient/DungeonMapChunk.csv"]
@@ -114,9 +117,9 @@ def load_source(source, repo, creature, multispawn, difficulty, wdm, signature, 
         values, skipped = original_external(path, table, keys, default_columns)
         return inventory(table, values, skipped, "Explicit SQL export")
 
-    def filtered(root, table, keys, row_filter, include_modules=False):
+    def filtered(root, table, keys, row_filter, include_modules=False, **kwargs):
         print(f"Reading filtered {table}...", flush=True)
-        values, skipped = original_filtered(root, table, keys, row_filter, include_modules)
+        values, skipped = original_filtered(root, table, keys, row_filter, include_modules, **kwargs)
         return inventory(table, values, skipped, "AzerothCore SQL; SmartAI geometry and caller context")
 
     sql_reader.load_row_table = reader.load_row_table = rows

@@ -24,6 +24,13 @@ modules.QuestieDB.scriptedSpawnSources = {
     [6492] = {STORMWIND_CITY = {{51.32,92.34,0,1,0,2,1519}}, UNDERCITY = {{53.29,74.56,0,1,0,2,1497}}},
     [32823] = {[12] = {{9,8,0,1,0,7,12}}},
 }
+modules.QuestieDB.darkmoonGeometry = {}
+for location, zone in ipairs({215, 12, 3519}) do
+    modules.QuestieDB.darkmoonGeometry[location] = {[10445] = {
+        spawns = {[zone] = {{({36.9, 41.72, 34.57})[location], 40}}},
+        waypoints = {}, zoneID = zone,
+    }}
+end
 modules.ZoneDB = {zoneIDs = setmetatable({ELWYNN_FOREST = 12, MULGORE = 215, TEROKKAR_FOREST = 3519},
     {__index = function(_, key) return key end})}
 modules.QuestieCorrections = {itemObjectiveFirst = {}, killCreditObjectiveFirst = {},
@@ -50,12 +57,18 @@ local function apply(kind)
             for key, value in pairs(fields) do target[id][key] = value end
         end
     end)
-    assert(calls == (kind == "Quest" and 1 or 2), kind .. " faction application should be consolidated")
+    assert(calls == (kind == "Quest" and 1 or kind == "Object" and 3 or 2), kind .. " faction application should be consolidated")
     assert(next(result), kind .. " faction overrides missing")
     return result
 end
 for _, current in ipairs({"Alliance", "Horde"}) do
     faction = current
+    modules.QuestieDB.npcFactionGeometry = {[5676] = {
+        zoneID = current == "Horde" and "ORGRIMMAR" or "STORMWIND_CITY",
+        spawns = current == "Horde" and {GHOSTLANDS = {{27.0,15.24}}, UNDERCITY = {{86.65,27.08}}}
+            or {STORMWIND_CITY = {{39.09,84.36}}},
+    }}
+    modules.QuestieDB.objectFactionGeometry = {[186887] = {spawns = {[12] = {{9, 8}}}}}
     -- Simulate the selected view emitted by the base generator. Deliberately
     -- use an ID absent from the historical lists to catch stale-list fallback.
     modules.QuestieDB.questFactionSelections = {[1947] = {startedBy = {{900001}}}}
@@ -94,6 +107,8 @@ for _, current in ipairs({"Alliance", "Horde"}) do
         assert(npcs[5676].spawns.UNDERCITY[1][1] == 86.65, "Voidwalker guide disagrees with its summon event")
     end
     assert(npcs[6492].spawns == nil, "source Rift Spawn coordinates were replaced")
+    assert(npcs[12144] == nil and npcs[13778] == nil, "unverified fixed NPC markers returned")
+    assert(objects[186887].spawns[12][1][1] == 9, "Lantern ignored generated source geometry")
     assert(npcs[23537] == nil and npcs[26221] == nil and npcs[38340] == nil,
         "source holiday positions/visibility were replaced")
     assert(npcs[16788] == nil, "obsolete Flamekeeper placements returned")

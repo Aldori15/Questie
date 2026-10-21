@@ -22,10 +22,15 @@ def script_key(row):
     return ":".join(str(number(row, key)) for key in ("source_type", "entryorguid", "id", "link"))
 
 
-def collect(scripts, creatures_by_entry, guid_to_creature, templates, zone_maps, escort_paths):
+def collect(scripts, creatures_by_entry, guid_to_creature, templates, zone_maps, escort_paths,
+            object_templates=None, summon_action=12):
     import generate_acore_npc_corrections as reader
 
-    groups, callers = defaultdict(list), defaultdict(list)
+    if summon_action not in (12, 50):
+        raise ValueError("Unsupported summon action")
+    children = templates if summon_action == 12 else (object_templates or {})
+
+    groups, callers, self_calls = defaultdict(list), defaultdict(list), defaultdict(set)
     for row in scripts:
         groups[number(row, "source_type"), number(row, "entryorguid")].append(row)
     timed = {owner for kind, owner in groups if kind == 9}
@@ -38,6 +43,8 @@ def collect(scripts, creatures_by_entry, guid_to_creature, templates, zone_maps,
                      if action == 88 else set())
             for target in lists & timed:
                 callers[9, target].append((node, number(row, "target_type")))
+                if number(row, "target_type") == 1:
+                    self_calls[node].add((9, target))
 
     memo = {}
 
@@ -70,6 +77,14 @@ def collect(scripts, creatures_by_entry, guid_to_creature, templates, zone_maps,
             context_mutators.update(owners)
     entries = {}
 
+    def child_changes_context(node, visiting=frozenset()):
+        if node in visiting:
+            return True  # A cyclic child list also needs explicit review.
+        if any(number(row, "action_type") in (44, 62) and number(row, "target_type") == 1
+               for row in groups.get(node, ())):
+            return True
+        return any(child_changes_context(target, visiting | {node}) for target in self_calls[node])
+
     def entry_data(entry):
         return entries.setdefault(entry, {"spawns": defaultdict(list), "waypoints": defaultdict(list),
                                           "spawnOrigins": defaultdict(list), "pathOrigins": defaultdict(list),
@@ -77,19 +92,21 @@ def collect(scripts, creatures_by_entry, guid_to_creature, templates, zone_maps,
 
     placements = defaultdict(list)
     for row in scripts:
-        if number(row, "action_type") != 12:
+        if number(row, "action_type") != summon_action:
             continue
         entry, identity = number(row, "action_param1"), "smart-summon:" + script_key(row)
-        if not entry or entry not in templates:
+        if not entry or entry not in children:
             continue
         data = entry_data(entry)
         roots, errors = actors((number(row, "source_type"), number(row, "entryorguid")))
         errors = set(errors)
-        if number(row, "target_type") != 8 or number(row, "action_param6"):
+        if number(row, "target_type") != 8 or (summon_action == 12 and number(row, "action_param6")):
             errors.add("summon is not an absolute position with ordinary ownership")
         if any(row.get("target_" + axis) is None for axis in ("x", "y", "z")):
             errors.add("missing summon XYZ")
-        if (0, entry) in context_mutators or templates[entry].get("ScriptName"):
+        child_kind = 0 if summon_action == 12 else 1
+        child_mutates = child_changes_context((child_kind, entry))
+        if child_mutates or (summon_action == 12 and (0, entry) in context_mutators) or children[entry].get("ScriptName"):
             errors.add("summoned template has a phase/map mutator or custom script")
         maps, zones = set(), set()
         for actor in roots:
@@ -105,6 +122,8 @@ def collect(scripts, creatures_by_entry, guid_to_creature, templates, zone_maps,
             if actor in context_mutators:
                 errors.add(f"actor changes phase/map: {actor}")
             for spawn in candidates:
+                if spawn.get("ScriptName"):
+                    errors.add("actor placement has a custom script")
                 if spawn.get("map") is None or number(spawn, "phaseMask") != 1:
                     errors.add("actor map/ordinary phase is unavailable")
                 else:
@@ -134,7 +153,7 @@ def collect(scripts, creatures_by_entry, guid_to_creature, templates, zone_maps,
         placements[entry].append((point_source, identity))
 
     for row in scripts:
-        if number(row, "action_type") != 53:
+        if summon_action != 12 or number(row, "action_type") != 53:
             continue
         owners, ownership_errors = actors((number(row, "source_type"), number(row, "entryorguid")))
         for _, entry in owners:

@@ -151,6 +151,65 @@ class ScriptedGeometryTests(unittest.TestCase):
         self.assertEqual(len(identities["n:12"]["n:1"]), 2)
         self.assertEqual(identities["n:40"]["n:1"], ["creature:200:entry:20"])
 
+    def object_fixture(self):
+        rows, creatures, templates, _ = self.fixture()
+        rows = rows[:3]
+        rows[2]["action_type"] = 50
+        return rows, creatures, templates, {20: {"AIName": "SmartGameObjectAI", "ScriptName": ""}}
+
+    def collect_objects(self, rows, creatures, templates, objects):
+        with patch.object(reader, "resolve_coordinate_zone", side_effect=lambda row, maps:
+                          (12, [row["position_x"], row["position_y"]])):
+            return scripts.collect(rows, creatures, {11: creatures[10][0]}, templates,
+                                   {"instance_to_zone": {}}, {}, object_templates=objects, summon_action=50)
+
+    def test_object_child_namespace_does_not_borrow_npc_phase_rules_or_paths(self):
+        fixture = self.object_fixture()
+        rows, creatures, templates, objects = fixture
+        templates[20]["ScriptName"] = "unrelated_npc_script"
+        rows += [action(0, 20, 0, 44, 4), action(0, 20, 1, 53, 1, 7)]
+        packet = self.collect_objects(*fixture)
+        child = packet["entries"]["20"]
+        self.assertEqual(child["spawns"], audit.typed({12: [[30, 40]]}))
+        self.assertEqual(child["waypoints"], {})
+        self.assertFalse(child["failures"]["spawns"])
+        self.assertFalse(child["failures"]["waypoints"])
+        rows.append(action(1, 20, 0, 44, 4))
+        self.assertTrue(self.collect_objects(*fixture)["entries"]["20"]["failures"]["spawns"])
+
+    def test_object_source_moves_and_deletion_do_not_restore_inherited_positions(self):
+        fixture = self.object_fixture()
+        self.assertEqual(self.collect_objects(*fixture)["entries"]["20"]["spawns"], audit.typed({12: [[30, 40]]}))
+        fixture[0][2]["target_x"] = 45
+        self.assertEqual(self.collect_objects(*fixture)["entries"]["20"]["spawns"], audit.typed({12: [[45, 40]]}))
+        fixture[0].pop()
+        self.assertEqual(self.collect_objects(*fixture)["entries"], {})
+
+    def test_object_actor_map_script_and_relative_summon_fail_explicitly(self):
+        for mutation in (
+                lambda rows, creatures, templates, objects: templates[10].update(ScriptName="custom_actor"),
+                lambda rows, creatures, templates, objects: creatures[10].append(dict(creatures[10][0], map=1)),
+                lambda rows, creatures, templates, objects: rows[2].update(target_type=1),
+                lambda rows, creatures, templates, objects: objects[20].update(ScriptName="custom_object")):
+            fixture = self.object_fixture()
+            mutation(*fixture)
+            child = self.collect_objects(*fixture)["entries"]["20"]
+            with self.subTest(mutation=mutation):
+                self.assertEqual(child["spawns"], {})
+                self.assertTrue(child["failures"]["spawns"])
+
+    def test_object_child_timed_phase_teleport_and_cycles_require_review(self):
+        for tail in ([action(9, 777, 0, 44, 4)],
+                     [action(9, 777, 0, 62, 1)],
+                     [action(9, 777, 0, 80, 888), action(9, 888, 0, 80, 777)]):
+            fixture = self.object_fixture()
+            fixture[0].append(action(1, 20, 1, 80, 777))
+            fixture[0].extend(tail)
+            child = self.collect_objects(*fixture)["entries"]["20"]
+            with self.subTest(tail=tail):
+                self.assertEqual(child["spawns"], {})
+                self.assertTrue(child["failures"]["spawns"])
+
 
 if __name__ == "__main__":
     unittest.main()

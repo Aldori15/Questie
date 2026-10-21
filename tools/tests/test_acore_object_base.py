@@ -33,14 +33,15 @@ def bootstrap(before, source, provenance=None):
 class ObjectBaseTests(unittest.TestCase):
     def test_reviewed_mapping_gap_uses_actual_source_and_requires_review_of_new_gaps(self):
         reader = audit.reader
-        # Two real Copper Vein placements: Tirisfal maps; the Veiled Sea point
-        # falls outside the client's mapped rectangles. Do not invent a marker.
+        # A real Tirisfal placement plus deliberately synthetic coordinates far
+        # outside every map. Native-map recovery now maps the former Azuremyst
+        # example, so it is no longer a valid negative mapping fixture.
         placements = [
             {"guid": 201640, "id": 1731, "map": 0, "zoneId": 85, "areaId": 152,
              "position_x": 1572.09, "position_y": -687.518, "position_z": 57.2998,
              "spawnMask": 1, "phaseMask": 1},
             {"guid": 210259, "id": 1731, "map": 530, "zoneId": 3479, "areaId": 3479,
-             "position_x": -5182.48, "position_y": -10724.9, "position_z": -12.0711,
+             "position_x": 1e9, "position_y": -1e9, "position_z": -12.0711,
              "spawnMask": 1, "phaseMask": 1},
         ]
         with patch.object(reader, "find_map_difficulty_dbc", return_value=Path("unused.dbc")), \
@@ -256,6 +257,74 @@ class ObjectBaseTests(unittest.TestCase):
             self.assertIn('QuestieDB.objectKeys', output)
             self.assertIn('QuestieDB.objectData', output)
             self.assertIn('Barrel 01', output)
+
+    def test_scripted_object_cli_forwards_context_reports_gaps_and_rejects_missing_context_atomically(self):
+        with db_snapshot.temporary_directory(ADDON_ROOT / "tools/reports") as directory:
+            manifest_path = directory / "tools/data/acore_object_compatibility.json"
+            manifest_path.parent.mkdir(parents=True)
+            source = {1: obj(name="Source summon"), 2: obj(name="Unmapped helper")}
+            manifest = bootstrap(source, source)
+            manifest["geometry"]["1"] = {"slots": {}, "sourceScripted": True}
+            manifest["geometryPolicy"] = "verified-source-only-v1"
+            manifest["geometryAudit"] = {"version": 1, "reviewedFields": {"1": ["spawns"], "2": ["spawns"]}}
+            manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+            packet = {"version": 1, "actorContextAvailable": True, "entries": {
+                "1": {"spawns": typed({12: [[30, 40]]}), "waypoints": {},
+                      "origins": {"spawns": {"n:12": {"n:1": ["smart-summon:0:10:1:0:map:0"]}}},
+                      "failures": {"spawns": [], "waypoints": []}}}}
+            saved = {"objects": {str(k): v for k, v in source.items()},
+                     "geometryProvenance": {"scriptedGeometry": packet}, "diagnostics": {}, "tableCoverage": {}}
+            creature, multispawn = directory / "creature.sql", directory / "creature_multispawn.sql"
+            spell = directory / "spell.sql"
+            output = directory / "Database/AzerothCore/acoreObjectDB.lua"
+            report = directory / "tools/reports/acore_object_base_candidate.json"
+            args = ["--gameobject-sql", str(directory / "gameobject.sql"),
+                    "--creature-sql", str(creature), "--creature-multispawn-sql", str(multispawn), "--spell-sql", str(spell)]
+            with patch.object(exporter, "ROOT", directory), \
+                 patch.object(exporter.audit.coordinate_reader, "find_map_difficulty_dbc", return_value=directory / "MapDifficulty.dbc"), \
+                 patch.object(exporter.audit, "source_signature", return_value={}) as signature, \
+                 patch.object(exporter.audit, "load_source", return_value=saved) as load, \
+                 contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(exporter.main(args), 0)
+                self.assertEqual(load.call_args.kwargs, {"creature": creature.resolve(), "multispawn": multispawn.resolve(), "spell": spell.resolve()})
+                self.assertTrue(all(call.kwargs == load.call_args.kwargs for call in signature.call_args_list))
+                generated, review = output.read_bytes(), json.loads(report.read_text(encoding="utf-8"))
+                self.assertEqual(review["geometryAudit"]["coverageGapRecords"], 1)
+                self.assertEqual(set(review["geometryAudit"]["coverageGaps"]), {"2"})
+                self.assertNotIn(b"coverageGaps", generated)
+                self.assertNotIn(b"reviewedFields", generated)
+                self.assertIn(b"[1]=30", generated)
+                packet["actorContextAvailable"] = False
+                for invocation in (args, ["--gameobject-sql", str(directory / "gameobject.sql")]):
+                    with self.subTest(invocation=invocation), self.assertRaisesRegex(ValueError, "actor context is unavailable"):
+                        exporter.main(invocation)
+                    self.assertEqual(output.read_bytes(), generated)
+                    self.assertEqual(json.loads(report.read_text(encoding="utf-8")), review)
+
+    def test_object_cache_extraction_tracks_supplied_actor_exports_and_smart_rows(self):
+        with db_snapshot.temporary_directory(ADDON_ROOT / "tools/reports") as directory:
+            creature, multispawn = directory / "creature.sql", directory / "creature_multispawn.sql"
+            exports = {"creature": [{"guid": 100, "id": 10}],
+                       "creature_multispawn": [{"spawnId": 100, "entry": 20}]}
+            def build(source, **kwargs):
+                self.assertEqual(kwargs["creature_sql"], creature)
+                self.assertEqual(kwargs["creature_multispawn_sql"], multispawn)
+                audit.reader.load_rows_from_sql_file(creature, "creature", ("guid",))
+                audit.reader.load_rows_from_sql_file(multispawn, "creature_multispawn", ("spawnId", "entry"))
+                audit.reader.load_filtered_row_table(source, "smart_scripts", ("entryorguid",), lambda row: True)
+                kwargs["provenance"]["scriptedGeometry"] = {"version": 1, "entries": {}, "actorContextAvailable": True}
+                return {1: {"name": "Object"}}, {}, set()
+            with patch.object(audit, "source_signature", return_value={}), \
+                 patch.object(audit.reader, "build_acore_objects", side_effect=build), \
+                 patch.object(audit.reader, "load_rows_from_sql_file", side_effect=lambda path, table, keys, *a: (exports[table], 0)), \
+                 patch.object(audit.reader, "load_filtered_row_table", return_value=([{"entryorguid": 10}], 0)), \
+                 contextlib.redirect_stdout(io.StringIO()):
+                saved = audit.load_source(directory, directory, directory / "gameobject.sql", directory / "MapDifficulty.dbc",
+                                          directory, {}, directory / "cache.json", creature=creature, multispawn=multispawn)
+            self.assertEqual(set(saved["tableCoverage"]), {"creature", "creature_multispawn", "smart_scripts"})
+            self.assertTrue(all(row["rows"] == 1 and row["skippedMutations"] == 0 for row in saved["tableCoverage"].values()))
+            self.assertTrue(saved["geometryProvenance"]["scriptedGeometry"]["actorContextAvailable"])
+            self.assertEqual(saved["modelSha256"], audit.model_digest(saved))
 
 
 if __name__ == "__main__":

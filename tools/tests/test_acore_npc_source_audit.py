@@ -11,6 +11,31 @@ import db_snapshot
 
 
 class NpcSourceAuditTests(unittest.TestCase):
+    def test_native_outland_islands_resolve_sea_spawns_and_future_coordinates(self):
+        zones = audit.reader.parse_zone_maps(ADDON_ROOT)
+        # Cowlen's actual AC spawn is in The Veiled Sea (3479), which has no
+        # UI map of its own. Azuremyst's client rectangle belongs to map 1.
+        row = {"guid": 84415, "map": 530, "zoneId": 3479, "areaId": 3479,
+               "position_x": -5357.79, "position_y": -11175.3, "position_z": 6.43216}
+        self.assertEqual(audit.reader.resolve_coordinate_zone(row, zones), (3524, [16.59, 94.46]))
+        # A future source relocation must use its new XYZ, without depending
+        # on the reviewed spawn GUID or inheriting its previous guide point.
+        row.update(guid=999999, position_x=-5347.79, position_y=-11165.3)
+        self.assertEqual(audit.reader.resolve_coordinate_zone(row, zones), (3524, [16.34, 94.09]))
+
+    def test_native_island_fallback_keeps_client_maps_and_explicit_city_priority(self):
+        zones = audit.reader.parse_zone_maps(ADDON_ROOT)
+        for map_id, zone_id in audit.reader.ACORE_WORLD_RECT_OVERRIDES:
+            ui = audit.reader.zone_to_ui(zone_id, zones)
+            self.assertIn(ui, zones["ui_by_instance"][map_id])
+            self.assertEqual(zones["ui_by_instance"][map_id].count(ui), 1)
+            self.assertIn(ui, zones["ui_by_instance"][zones["ui_map_data"][ui]["instance"]])
+        # Native island fallback must not displace a source-backed city hint
+        # with a broader outdoor rectangle that also contains its coordinates.
+        perry = {"map": 530, "zoneId": 3703, "position_x": -1747.62,
+                 "position_y": 5126.94, "position_z": -35.788}
+        self.assertEqual(audit.reader.resolve_coordinate_zone(perry, zones), (3703, [77.19, 31.43]))
+
     def test_source_typing_preserves_sparse_phase_and_visibility_slots(self):
         value = {210: [[12.123456, 34.5, None, 3, 571, 100, 200, 1]]}
         result = audit.typed(value)["n:210"]["n:1"]
@@ -129,6 +154,10 @@ class NpcSourceAuditTests(unittest.TestCase):
             update = source / "addon-update.sql"
             update.write_text("-- path_id 88\n", encoding="utf-8")
             header = source / "src/server/game/Battlefield/Zones/BattlefieldWG.h"
+            for name in audit.acore_cpp_geometry.SOURCE_FILES:
+                cpp_input = source / name
+                cpp_input.parent.mkdir(parents=True, exist_ok=True)
+                cpp_input.write_text("// fixture source\n", encoding="utf-8")
             header.parent.mkdir(parents=True)
             header.write_text("// fixture\n", encoding="utf-8")
             wdm = directory / "patch-enUS-M extracted/DBFilesClient"

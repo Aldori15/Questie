@@ -34,10 +34,12 @@ from generate_acore_npc_corrections import (  # noqa: E402
     add_acore_spawn_visibility,
     extract_balanced_braces,
     find_map_difficulty_dbc,
+    get_creature_entries,
     index_geometry_origins,
     index_partial_spawn_coverage,
     format_zone_ref,
     load_map_difficulty_masks,
+    load_filtered_row_table,
     load_rows_from_sql_file,
     merge_entrance_spawn_placeholders,
     parse_zone_id_constants,
@@ -235,6 +237,21 @@ def collect_item_object_source_ids(source_root, gameobject_template_rows, includ
     return source_ids, skipped_mutations
 
 
+def lantern_spell_binding(spell_rows, overrides):
+    """Verify the child identity; destination targeting is guarded in C++."""
+    spells = {int(row["ID"]): row for row in spell_rows}
+    spells.update({int(row["ID"]): row for row in overrides})
+
+    def effect(row, field):
+        return int(row.get(field + "_1", row.get(field + "1", 0)) or 0)
+
+    first, second = spells.get(44255, {}), spells.get(44231, {})
+    if (effect(first, "Effect") == 32 and effect(first, "EffectTriggerSpell") == 44231
+            and effect(second, "Effect") == 76 and effect(second, "EffectMiscValue") == 186887):
+        return {44255: 186887}
+    return {}
+
+
 def build_acore_objects(
     source_root,
     include_modules=False,
@@ -243,6 +260,9 @@ def build_acore_objects(
     map_difficulty_dbc=None,
     wdm_root=None,
     provenance=None,
+    creature_sql=None,
+    creature_multispawn_sql=None,
+    spell_sql=None,
 ):
     source_root = Path(source_root)
     map_difficulty_dbc = find_map_difficulty_dbc(source_root, map_difficulty_dbc)
@@ -341,6 +361,62 @@ def build_acore_objects(
         index_partial_spawn_coverage(provenance, spawns_by_entry, spawn_origins,
                                      unmapped_spawn_guids, map_difficulty_masks)
 
+    scripted_skips = {}
+    if creature_multispawn_sql is not None and creature_sql is None:
+        raise ValueError("Object summon context requires --creature-sql with --creature-multispawn-sql")
+    scripted_geometry = {"version": 1, "entries": {}}
+    actors_by_entry = defaultdict(list)
+    actor_templates = {}
+    spell_bindings = {}
+    if spell_sql is not None:
+        spell_rows, spell_skips = load_rows_from_sql_file(
+            Path(spell_sql), "spell", ("ID",), row_filter=lambda row: int(row.get("ID") or 0) in (44255, 44231))
+        overrides, override_skips = load_filtered_row_table(
+            source_root, "spell_dbc", ("ID",), lambda row: int(row.get("ID") or 0) in (44255, 44231), include_modules)
+        if not spell_skips and not override_skips:
+            spell_bindings = lantern_spell_binding(spell_rows, overrides)
+        scripted_skips.update({"spell": spell_skips, "spell_dbc": override_skips})
+    if creature_sql is not None:
+        import acore_scripted_geometry
+
+        actor_templates, skipped_actor_templates = load_keyed_table(
+            source_root, "creature_template", "entry", include_modules)
+        smart_rows, skipped_smart = load_filtered_row_table(
+            source_root, "smart_scripts", ("entryorguid", "source_type", "id", "link"),
+            lambda row: True, include_modules)
+        creature_rows, skipped_creatures = load_rows_from_sql_file(
+            Path(creature_sql), "creature", ("guid",))
+        multispawn_rows, skipped_multispawns = (load_rows_from_sql_file(
+            Path(creature_multispawn_sql), "creature_multispawn", ("spawnId", "entry"))
+            if creature_multispawn_sql is not None else ([], 0))
+        multispawns = defaultdict(set)
+        for row in multispawn_rows:
+            multispawns[int(row.get("spawnId") or 0)].add(int(row.get("entry") or 0))
+        actors_by_entry = defaultdict(list)
+        actors_by_guid = {}
+        for row in creature_rows:
+            actors_by_guid[int(row.get("guid") or 0)] = row
+            for entry in get_creature_entries(row, multispawns):
+                actors_by_entry[entry].append(row)
+        scripted_geometry = acore_scripted_geometry.collect(
+            smart_rows, actors_by_entry, actors_by_guid, actor_templates, zone_maps, {},
+            object_templates=template_rows, summon_action=50)
+        scripted_skips.update({"creature_template": skipped_actor_templates, "smart_scripts": skipped_smart,
+                              "creature": skipped_creatures, "creature_multispawn": skipped_multispawns})
+    if provenance is not None:
+        scripted_geometry["actorContextAvailable"] = creature_sql is not None
+        provenance["scriptedGeometry"] = scripted_geometry
+        import acore_cpp_geometry
+        provenance["cppGeometry"] = acore_cpp_geometry.collect_objects(
+            source_root, zone_maps, actor_spawns=actors_by_entry, actor_templates=actor_templates,
+            spell_object_bindings=spell_bindings)
+        for identifier, bindings in acore_cpp_geometry.OBJECT_TEMPLATE_BINDINGS.items():
+            if creature_sql is None or any(actor_templates.get(actor, {}).get("ScriptName") != script
+                                            for actor, script in bindings.items()):
+                data = provenance["cppGeometry"]["entries"][str(identifier)]
+                data["failures"]["spawns"].append({"source": "creature_template",
+                    "reasons": ["C++ object actor context or script binding is unavailable; refresh using creature exports"]})
+
     skipped_mutations = {
         "gameobject_template": skipped_template,
         "gameobject_template_addon": skipped_template_addon,
@@ -349,6 +425,7 @@ def build_acore_objects(
         "game_event_gameobject_quest": skipped_event_starter,
         "gameobject_questender": skipped_ender,
         **skipped_item_object_sources,
+        **scripted_skips,
         **{f"mapping:{key}": value for key, value in map_stats.items()},
     }
     return acore_objects, skipped_mutations, item_object_source_ids
