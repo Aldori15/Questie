@@ -1284,6 +1284,26 @@ def index_partial_spawn_coverage(provenance, spawns, origins, unmapped_guids, di
         }
 
 
+def index_partial_waypoint_coverage(provenance, waypoints, origins, unmapped_paths):
+    """Keep verified paths available for an explicit review of failed links."""
+    def typed(value):
+        if isinstance(value, list):
+            return {f"n:{i}": typed(v) for i, v in enumerate(value, 1) if v is not None}
+        if isinstance(value, dict):
+            return {f"n:{key}": typed(v) for key, v in value.items()}
+        return value
+
+    partial = {entry: {"waypoints": sort_waypoint_table(waypoints.get(entry, {}))}
+               for entry in unmapped_paths}
+    indexed = index_geometry_origins(partial, {}, origins, {})
+    for entry, row in partial.items():
+        provenance.setdefault(str(entry), {})["waypointCoverage"] = {
+            "unmappedPaths": sorted(unmapped_paths[entry]),
+            "mapped": typed(row["waypoints"]),
+            "origins": indexed.get(str(entry), {}).get("waypoints", {}),
+        }
+
+
 def project_waypoint_path(creature, path_rows, zone_maps):
     """Project consecutive map/floor sections without bridging separate visits."""
     base_zone, _ = resolve_coordinate_zone(creature, zone_maps)
@@ -1476,6 +1496,7 @@ def build_acore_npcs(
     waypoints_by_entry = defaultdict(lambda: defaultdict(list))
     seen_waypoint_entries = set()
     bad_waypoint_entries = set()
+    unmapped_waypoint_paths = defaultdict(set)
 
     def add_waypoint_path(entries, creature_candidates, path_rows, identity):
         entries = tuple(sorted(set(entries)))
@@ -1501,6 +1522,8 @@ def build_acore_npcs(
 
         map_stats["unmapped_waypoints"] += 1
         bad_waypoint_entries.update(entries)
+        for entry in entries:
+            unmapped_waypoint_paths[entry].add(f"{identity}:entry:{entry}")
         return False
 
     for guid, creature in guid_to_creature.items():
@@ -1611,6 +1634,8 @@ def build_acore_npcs(
         provenance.update(index_geometry_origins(acore_npcs, spawn_origins, path_origins, map_difficulty_masks))
         index_partial_spawn_coverage(provenance, spawns_by_entry, spawn_origins,
                                      unmapped_spawn_guids, map_difficulty_masks)
+        index_partial_waypoint_coverage(provenance, waypoints_by_entry, path_origins,
+                                        unmapped_waypoint_paths)
         import acore_scripted_geometry
         provenance["scriptedGeometry"] = acore_scripted_geometry.collect(
             smart_script_rows, creatures_by_entry, guid_to_creature, template_rows,

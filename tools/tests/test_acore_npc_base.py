@@ -26,8 +26,9 @@ class NpcBaseTests(unittest.TestCase):
     def test_direct_generation_reports_reviewed_mapping_gaps_and_publishes_deterministically(self):
         with db_snapshot.temporary_directory(ADDON_ROOT / "tools/reports") as directory:
             (directory / "tools/data").mkdir(parents=True)
-            source = {1: npc(name="NPC 01", waypoints={})}
-            before = {1: npc(name="NPC 01", waypoints={}, spawns=audit.typed({12: [[10, 20]]}))}
+            source = {1: npc(name="NPC 01", waypoints={}), 2: npc(spawns={})}
+            before = {1: npc(name="NPC 01", waypoints={}, spawns=audit.typed({12: [[10, 20]]})),
+                      2: npc(spawns={}, waypoints=audit.typed({12: [[[50, 60]]]}))}
             provenance = {"1": {"spawnCoverage": {
                 "unmappedGuids": [99], "mapped": audit.typed({12: [[31, 41]]}),
                 "origins": {"n:12": {"n:1": ["creature:100:entry:1"]}},
@@ -40,6 +41,12 @@ class NpcBaseTests(unittest.TestCase):
                 "origins": {"waypoints": {"n:12": {"n:1": ["smart-path:fixture"]}}},
                 "failures": {"spawns": [], "waypoints": []},
             }}}
+            provenance["2"] = {"waypointCoverage": {
+                "unmappedPaths": ["waypoint_data:88:addon:100:entry:2"],
+                "mapped": audit.typed({12: [[[10, 20], [15, 25]]]}),
+                "origins": {"n:12": {"n:1": ["waypoint_data:77:addon:99:map-spawn:99:entry:2"]}},
+            }}
+            manifest["geometry"]["2"]["waypoints"] = {"slots": {}, "reviewedUnmappedPaths": ["waypoint_data:88:addon:100:entry:2"]}
             (directory / "tools/data/acore_npc_compatibility.json").write_text(json.dumps(manifest), encoding="utf-8")
             saved = {"npcs": {str(k): v for k, v in source.items()},
                      "geometryProvenance": provenance, "diagnostics": {}}
@@ -60,11 +67,14 @@ class NpcBaseTests(unittest.TestCase):
                     self.assertEqual(summary["counts"]["reviewedUnmappedSpawnPlacements"], 1)
                     self.assertEqual(summary["counts"]["scriptedGeometryIds"], [1])
                     self.assertEqual(summary["reviewedUnmappedSpawns"], {"1": [99]})
+                    self.assertEqual(summary["counts"]["reviewedUnmappedWaypointPaths"], 1)
+                    self.assertEqual(summary["reviewedUnmappedWaypoints"], {"2": ["waypoint_data:88:addon:100:entry:2"]})
                     self.assertEqual(summary["outputSha256"], db_snapshot.file_hash(output))
                     self.assertEqual(summary["outputBytes"], len(contents))
                     self.assertIn(b'NPC 01', contents)
                     self.assertIn(b'31', contents)
                     self.assertNotIn(b'spawnCoverage', contents)
+                    self.assertNotIn(b'waypointCoverage', contents)
                     if previous is not None:
                         self.assertEqual(contents, previous)
                     previous = contents
@@ -74,6 +84,68 @@ class NpcBaseTests(unittest.TestCase):
                     exporter.main(arguments)
                 self.assertEqual(output.read_bytes(), previous)
                 self.assertEqual(report.read_bytes(), previous_report)
+                provenance["1"]["spawnCoverage"]["unmappedGuids"].pop()
+                provenance["2"]["waypointCoverage"]["unmappedPaths"].append("waypoint_data:89:addon:101:entry:2")
+                with self.assertRaisesRegex(ValueError, "New unmapped waypoint paths.*101"):
+                    exporter.main(arguments)
+                self.assertEqual(output.read_bytes(), previous)
+                self.assertEqual(report.read_bytes(), previous_report)
+
+    def test_reviewed_failed_path_keeps_other_source_routes_and_recovers_repaired_link(self):
+        reader = audit.reader
+        creatures = [{"guid": guid, "id": 1, "map": 0, "position_x": 0, "position_y": 0}
+                     for guid in (99, 100)]
+        keyed = {"creature_template": {1: {"name": "NPC"}},
+                 "creature_addon": {99: {"path_id": 77}, 100: {"path_id": 88}}}
+        points = [{"id": 77, "point": 1, "position_x": 10, "position_y": 20},
+                  {"id": 77, "point": 2, "position_x": 30, "position_y": 40},
+                  {"id": 88, "point": 1, "position_x": -1, "position_y": 50}]
+        tables = {"creature": creatures, "waypoint_data": points}
+        def build():
+            with patch.object(reader, "find_map_difficulty_dbc", return_value=Path("unused.dbc")), \
+                 patch.object(reader, "load_map_difficulty_masks", return_value={}), \
+                 patch.object(reader, "load_keyed_table", side_effect=lambda root, table, *args: (keyed.get(table, {}), 0)), \
+                 patch.object(reader, "load_row_table", side_effect=lambda root, table, *args: (tables.get(table, []), 0)), \
+                 patch.object(reader, "load_creature_multispawn_rows", return_value=([], 0)), \
+                 patch.object(reader, "load_filtered_row_table", return_value=([], 0)), \
+                 patch.object(reader, "parse_zone_maps", return_value={}), \
+                 patch.object(reader, "resolve_coordinate_zone", side_effect=lambda row, maps:
+                              (12, [row["position_x"], row["position_y"]]) if row["position_x"] >= 0 else (None, None)), \
+                 patch.object(reader, "load_wintergrasp_scripted_spawns", return_value={}):
+                provenance = {}
+                raw, _ = reader.build_acore_npcs(ADDON_ROOT, provenance=provenance)
+                return {i: {"s:" + k: audit.typed(v) for k, v in r.items()} for i, r in raw.items()}, provenance
+        source, provenance = build()
+        self.assertNotIn("s:waypoints", source[1])
+        coverage = provenance["1"]["waypointCoverage"]
+        self.assertEqual(coverage["unmappedPaths"], ["waypoint_data:88:addon:100:entry:1"])
+        self.assertEqual(coverage["mapped"], audit.typed({12: [[[10, 20], [30, 40]]]}))
+        self.assertEqual(coverage["origins"]["n:12"]["n:1"], ["waypoint_data:77:addon:99:map-spawn:99:entry:1"])
+        before = {1: {**source[1], "s:waypoints": audit.typed({12: [[[90, 90], [99, 99]]]})}}
+        manifest = exporter.upgrade_manifest(bootstrap(before, source), source, provenance)
+        manifest["geometry"]["1"]["waypoints"] = {"slots": {}, "reviewedUnmappedPaths": coverage["unmappedPaths"]}
+        result = exporter.build_records(source, manifest, provenance)
+        self.assertEqual(result[1]["s:waypoints"], coverage["mapped"])
+        points[0]["position_x"] = 11
+        fresh, fresh_provenance = build()
+        self.assertEqual(exporter.build_records(fresh, manifest, fresh_provenance)[1]["s:waypoints"],
+                         audit.typed({12: [[[11, 20], [30, 40]]]}))
+        points[2]["position_x"] = 50
+        repaired, repaired_provenance = build()
+        self.assertEqual(exporter.build_records(repaired, manifest, repaired_provenance)[1]["s:waypoints"],
+                         audit.typed({12: [[[11, 20], [30, 40]], [[50, 50]]]}))
+
+    def test_partial_path_review_rejects_supplements_missing_metadata_and_missing_identities(self):
+        policy = {"slots": {}, "reviewedUnmappedPaths": ["waypoint_data:88:addon:100:entry:1"]}
+        coverage = {"unmappedPaths": policy["reviewedUnmappedPaths"],
+                    "mapped": audit.typed({12: [[[10, 20]]]}), "origins": {}}
+        with self.assertRaisesRegex(ValueError, "Missing partial waypoint coverage"):
+            exporter.current_geometry(policy, exporter.shared.ABSENT, {})
+        with self.assertRaisesRegex(ValueError, "lacks source identities"):
+            exporter.current_geometry(policy, exporter.shared.ABSENT, {}, coverage)
+        policy["slots"] = {"n:12": {"n:1": {"value": audit.typed([[90, 90]])}}}
+        with self.assertRaisesRegex(ValueError, "without supplements"):
+            exporter.current_geometry(policy, {}, {}, coverage)
 
     def test_partial_spawn_review_keeps_multispawn_identity_and_visibility(self):
         reader = audit.reader

@@ -134,6 +134,15 @@ def validate_spawn_review(policy):
         raise ValueError("Invalid reviewed unmapped spawn GUIDs; use source geometry without supplements")
 
 
+def validate_waypoint_review(policy):
+    paths = policy.get("reviewedUnmappedPaths")
+    if (set(policy) != {"slots", "reviewedUnmappedPaths"} or policy["slots"] != {}
+            or not isinstance(paths, list) or not paths
+            or any(not isinstance(path, str) or not path for path in paths)
+            or paths != sorted(set(paths))):
+        raise ValueError("Invalid reviewed unmapped waypoint paths; use source geometry without supplements")
+
+
 def add_scripted_geometry(policy, source, origins, packet, entry, field):
     if "sourceScripted" not in policy:
         return source, origins
@@ -165,6 +174,22 @@ def add_scripted_geometry(policy, source, origins, packet, entry, field):
 
 
 def current_geometry(policy, source, origins, coverage=None):
+    if "reviewedUnmappedPaths" in policy:
+        validate_waypoint_review(policy)
+        if source is shared.ABSENT:
+            if (not isinstance(coverage, dict) or not coverage.get("unmappedPaths")
+                    or not isinstance(coverage.get("mapped"), dict)
+                    or not isinstance(coverage.get("origins"), dict)):
+                raise ValueError("Missing partial waypoint coverage; refresh the source model")
+            paths = coverage["unmappedPaths"]
+            if any(not isinstance(path, str) or not path for path in paths):
+                raise ValueError("Unmapped waypoint assignment lacks a source identity")
+            unreviewed = set(paths) - set(policy["reviewedUnmappedPaths"])
+            if unreviewed:
+                raise ValueError(f"New unmapped waypoint paths require review: {sorted(unreviewed)}")
+            source, origins = coverage["mapped"], coverage["origins"]
+            if any(not identities for _, _, _, identities in geometry_units(source, origins)):
+                raise ValueError("Partial waypoint coverage lacks source identities")
     if "reviewedUnmappedGuids" in policy:
         validate_spawn_review(policy)
         if source is shared.ABSENT:
@@ -277,7 +302,7 @@ def build_current_records(source, manifest, provenance):
                     value, origins = add_scripted_geometry(policy, value, provenance.get(key, {}).get(field, {}),
                                                           provenance.get("scriptedGeometry"), npc_id, field)
                     value = current_geometry(policy, value, origins,
-                                             provenance.get(key, {}).get("spawnCoverage") if field == "spawns" else None)
+                                             provenance.get(key, {}).get("spawnCoverage" if field == "spawns" else "waypointCoverage"))
                 except ValueError as exc:
                     raise ValueError(f"NPC {npc_id} {field}: {exc}") from exc
             elif field in RELATION_FIELDS:
@@ -457,6 +482,10 @@ def validate_manifest(manifest):
                         if manifest["version"] != 2 or field != "spawns":
                             raise ValueError("Unmapped spawn review requires current spawn geometry")
                         validate_spawn_review(policy)
+                    if "reviewedUnmappedPaths" in policy:
+                        if manifest["version"] != 2 or field != "waypoints":
+                            raise ValueError("Unmapped path review requires current waypoint geometry")
+                        validate_waypoint_review(policy)
     extra = manifest.get("extraRecords")
     if not isinstance(extra, dict) or not set(extra) <= set(scope):
         raise ValueError("Invalid extra NPC records")
@@ -687,6 +716,9 @@ def main(argv=None):
     reviewed_gaps = {key: provenance.get(key, {}).get("spawnCoverage", {}).get("unmappedGuids", [])
                      for key, fields in manifest["geometry"].items()
                      if "reviewedUnmappedGuids" in fields.get("spawns", {})}
+    reviewed_paths = {key: provenance.get(key, {}).get("waypointCoverage", {}).get("unmappedPaths", [])
+                      for key, fields in manifest["geometry"].items()
+                      if "reviewedUnmappedPaths" in fields.get("waypoints", {})}
     summary = {"npcs": len(records), "exactParity": comparison["exactParity"] if comparison else None,
                "changedRecords": comparison["changedRecords"] if comparison else None,
                "parityScope": "shared NPC rows; scripted map helpers require runtime snapshot review",
@@ -694,6 +726,7 @@ def main(argv=None):
                "scriptedGeometryIds": sorted(int(key) for key, fields in manifest["geometry"].items()
                                              if any(policy.get("sourceScripted") for policy in fields.values())),
                "reviewedUnmappedSpawnPlacements": sum(map(len, reviewed_gaps.values())),
+               "reviewedUnmappedWaypointPaths": sum(map(len, reviewed_paths.values())),
                "geometry": audit.geometry_inventory(records)}
     if args.command == "bootstrap":
         write_manifest(manifest_path, manifest)
@@ -714,6 +747,7 @@ def main(argv=None):
                                       "outputSha256": db_snapshot.file_hash(candidate), "outputBytes": candidate.stat().st_size,
                                       "maxOutputBytes": manifest["limits"]["maxOutputBytes"], "counts": summary,
                                       "reviewedUnmappedSpawns": reviewed_gaps,
+                                      "reviewedUnmappedWaypoints": reviewed_paths,
                                       "excludedSourceNpcIds": sorted(set(model) - set(records))})
             candidate.replace(output)
         summary.update({"output": str(output), "report": str(report), "outputMiB": round(output.stat().st_size / 1048576, 2)})
