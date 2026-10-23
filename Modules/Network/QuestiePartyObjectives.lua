@@ -260,13 +260,13 @@ local function _DrawQuest(questId, generation)
         local objType, objId
         if objData then
             objType = objData.Type
-            objId = objData.Id
+            objId = objData.Id or objData.RootId
         else
             objType = typeCharToFull[remoteObjective.type]
             objId = remoteObjective.id
         end
 
-        if objType and objId then
+        if objType and (objId or objType == "event") then
             local cachedSpawnList = spawnListCache[questId] and spawnListCache[questId][objectiveIndex]
             -- When the objective's live API type (first char, from comms) differs from the
             -- database's compiled type (kill-credit, events, invisible "bunny" NPCs), the id/type
@@ -285,6 +285,7 @@ local function _DrawQuest(questId, generation)
                 Description = description,
                 FullDescription = (not useApiObjectiveText) and _GetFullDescription(objType, description) or nil,
                 Icon = objData and objData.Icon,
+                Coordinates = objData and objData.Coordinates,
                 Completed = false,
                 spawnList = cachedSpawnList or {},
                 AlreadySpawned = {},
