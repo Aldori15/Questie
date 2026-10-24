@@ -16,7 +16,8 @@ def quest(**fields):
     reader = exporter.audit.metadata_reader
     row = {"s:" + field: exporter.audit.typed(reader.default_field_value(field)) for field in reader.FIELD_ORDER}
     row.update({"s:name": "Quest", "s:requiredLevel": 1, "s:questLevel": 2,
-                "s:objectives": {}, "s:startedBy": {}, "s:finishedBy": {}, "s:zoneOrSort": 0, "s:childQuests": {}})
+                "s:objectives": {}, "s:startedBy": {}, "s:finishedBy": {}, "s:zoneOrSort": 0, "s:childQuests": {},
+                "s:inGroupWith": {}, "s:availableUntilCompleted": 0})
     row.update({"s:" + field: value for field, value in fields.items()})
     return row
 
@@ -30,6 +31,19 @@ def bootstrap(before, source):
 
 
 class QuestBaseTests(unittest.TestCase):
+    def test_verified_objective_views_require_current_credit_sources(self):
+        source = {1: quest(objectives=typed({1: [[10]]}))}
+        before = {1: quest(objectives=typed({1: [[20]]}))}
+        manifest = bootstrap(before, source)
+        manifest["accuracyPolicy"] = "verified-source-fields-v1"
+        proof = {"10": [["monster", 20]]}
+        self.assertEqual(exporter.build_records(source, manifest, proof)[1]["s:objectives"], before[1]["s:objectives"])
+        with self.assertRaisesRegex(ValueError, "objective display proof changed"):
+            exporter.build_records(source, manifest, {})
+        manifest["legacyFields"] = {"1": {"extraObjectives": {}}}
+        with self.assertRaisesRegex(ValueError, "inherited helpers"):
+            exporter.validate_manifest(manifest)
+
     def test_child_relations_follow_source_without_baseline_exceptions(self):
         def source(rows):
             for key, children in exporter.audit.derive_child_quests(rows).items():
@@ -148,6 +162,8 @@ class QuestBaseTests(unittest.TestCase):
         before = copy.deepcopy(source)
         for field in exporter.LEGACY_FIELDS:
             before[1]["s:" + field] = typed({2: "Display helper", 5: [10, 20]})
+        before[1]["s:triggerEnd"] = typed(["Explore", {12: [[10, 20]]}])
+        before[1]["s:extraObjectives"] = typed([{2: 3, 3: "Guide", 5: [["object", 10]]}])
         manifest = bootstrap(before, source)
         result = exporter.build_records(source, manifest)
         self.assertEqual(result, before)
@@ -332,6 +348,10 @@ class QuestBaseTests(unittest.TestCase):
 
     def test_diagnostics_stop_generation_before_replacing_existing_output(self):
         with db_snapshot.temporary_directory(ADDON_ROOT / "tools/reports") as directory:
+            manifest_path = directory / "tools/data/acore_quest_compatibility.json"
+            manifest_path.parent.mkdir(parents=True)
+            source = {1: quest()}
+            manifest_path.write_text(json.dumps(bootstrap(source, source)), encoding="utf-8")
             output = directory / "Database/AzerothCore/acoreQuestDB.lua"
             output.parent.mkdir(parents=True)
             output.write_text("unchanged", encoding="utf-8")

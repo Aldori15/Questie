@@ -7,6 +7,7 @@ bootstrap is a one-time migration helper; --compare-snapshot verifies migration.
 import argparse
 from collections import Counter
 import copy
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -135,6 +136,13 @@ def make_manifest(items, source, metadata, snapshot_sha, signature):
 
 
 def validate_manifest(manifest):
+    if "questCoveragePolicy" in manifest and manifest["questCoveragePolicy"] != "active-source-quest-items-v1":
+        raise ValueError("Unsupported quest item coverage policy")
+    if "accuracyPolicy" in manifest:
+        if manifest["accuracyPolicy"] != "verified-source-fields-v1" or manifest.get("partialRecords"):
+            raise ValueError("Verified item fields cannot contain partial legacy records")
+        if any(set(row) & {"addSources", "classOverride", "nameOverride"} for row in manifest.get("entries", {}).values()):
+            raise ValueError("Verified items require source-derived acquisition and class policies")
     if manifest.get("format") != "questie-acore-item-compatibility" or manifest.get("version") not in (2, 3):
         raise ValueError("Unsupported item compatibility manifest format/version")
     ids = manifest.get("itemIds")
@@ -179,8 +187,11 @@ def validate_manifest(manifest):
     if any(type(n) is not int or n < 0 for n in limits["sourceLinks"].values()):
         raise ValueError("Invalid source-link limits")
     for key, entry in manifest["entries"].items():
-        if set(entry) - {"reason", "addSources", "classOverride", "nameOverride", "representations"} or not entry.get("reason"):
+        if set(entry) - {"reason", "addSources", "classOverride", "nameOverride", "representations", "sourceAcquisition", "questUseClass"} or not entry.get("reason"):
             raise ValueError(f"Invalid compatibility entry: {key}")
+        for policy in ("sourceAcquisition", "questUseClass"):
+            if policy in entry and (manifest["version"] != 3 or entry[policy] is not True):
+                raise ValueError(f"Invalid source-derived item policy: {key}")
         for field, values in entry.get("addSources", {}).items():
             if field not in SOURCE_FIELDS or not isinstance(values, list) or not values or not all(positive_id(i) for i in values) or values != sorted(set(values)):
                 raise ValueError(f"Invalid additive source list for item {key}")
@@ -280,6 +291,10 @@ def build_current_records(source, manifest):
     records, redundant = {}, []
     pools = {key: set(values) for key, values in manifest["excludedSourceSets"].items()}
     scope = set(manifest["itemIds"]) | (set(source) - set(manifest["excludedItemIds"]))
+    if manifest.get("questCoveragePolicy"):
+        if any("questRelevant" not in row for row in source.values()):
+            raise ValueError("Quest item coverage requires a fresh validated source model")
+        scope.update(item for item, row in source.items() if row["questRelevant"])
     for item_id in sorted(scope):
         key = str(item_id)
         if key in manifest["partialRecords"]:
@@ -293,12 +308,18 @@ def build_current_records(source, manifest):
         selections = manifest["sourceSelections"].get(key, {})
         for field in sorted(audit.source_reader.LIST_FIELDS):
             supplements = set(entry.get("addSources", {}).get(field, []))
+            if entry.get("sourceAcquisition"):
+                if "indirectSources" not in raw:
+                    raise ValueError("Source acquisition policies require a fresh validated item source model")
+                supplements.update(raw["indirectSources"].get(field, []))
             direct = set(raw.get(field, []))
             if field == "npcDrops":
-                vendor_only = supplements & set(raw.get("vendors", [])) - direct
+                vendor_only = set(entry.get("addSources", {}).get(field, [])) & set(raw.get("vendors", [])) - direct
                 if vendor_only:
                     raise ValueError(f"Vendor-only NPCs listed as supplemental drops for item {item_id}: {sorted(vendor_only)}")
             excluded = pools.get(manifest["sourceExclusions"].get(key, {}).get(field), set())
+            if manifest.get("questCoveragePolicy") and raw["questRelevant"]:
+                excluded = set()
             allowed = (direct - excluded) | supplements
             selected = unpack_selection(selections.get(field, []))
             result = {index: value for index, value in selected.items() if value in allowed}
@@ -318,6 +339,10 @@ def build_current_records(source, manifest):
             override = entry.get(override_name)
             if override and audit.same_value(raw.get(field), override["expectedSource"]):
                 row["s:" + field] = override["value"]
+        if entry.get("questUseClass"):
+            if "questUseClass" not in raw:
+                raise ValueError("Quest-use classification requires a fresh validated item source model")
+            row["s:class"] = raw["questUseClass"]
         for field, representation in entry.get("representations", {}).items():
             expected = representation.get("value", audit.ABSENT)
             if audit.normalized(field, expected) == audit.normalized(field, row.get("s:" + field, audit.ABSENT)):
@@ -333,6 +358,23 @@ def build_current_records(source, manifest):
     if len(records) < len(manifest["itemIds"]) * 0.95:
         raise ValueError("Unexpected removal of more than 5% of item records; check source completeness")
     return records, redundant
+
+
+def review_spell_coverage(saved, manifest, signature):
+    """Permit only reviewed missing effects tied to the exact audited inputs."""
+    missing = saved.get("spellCoverage", {}).get("missingRequestedSpellIds", 0)
+    if not missing:
+        return []
+    review = manifest.get("unresolvedSpellReview", {})
+    ids = review.get("spellIds", [])
+    source_hash = hashlib.sha256(json.dumps(signature, sort_keys=True, ensure_ascii=True,
+                                            allow_nan=False, separators=(",", ":")).encode()).hexdigest()
+    if (manifest.get("accuracyPolicy") != "verified-source-fields-v1" or review.get("expectedSource") != source_hash
+            or not review.get("reason") or len(ids) != missing or ids != sorted(set(ids))
+            or saved.get("spellCoverage", {}).get("missingRequestedSpellIdList") != ids
+            or not all(positive_id(value) for value in ids)):
+        raise ValueError("Unresolved item spell IDs require a review against the current source inputs")
+    return ids
 
 
 def compare_candidate(before, after):
@@ -489,8 +531,8 @@ def main(argv=None):
         raise ValueError("Output already exists; review it or explicitly use --force")
     signature = audit.source_signature(root, "full", spell, args.spell_table)
     saved = audit.load_source(root, "full", signature, cache, spell_sql=spell, spell_table=args.spell_table)
-    if any(saved.get("sourceDiagnostics", {}).values()) or saved.get("spellCoverage", {}).get("missingRequestedSpellIds", 0):
-        raise ValueError("Unresolved item source diagnostics or spell IDs; check source inputs")
+    if any(saved.get("sourceDiagnostics", {}).values()) or any(row["skippedMutations"] for row in saved.get("tableCoverage", {}).values()):
+        raise ValueError("Unresolved item SQL/source diagnostics; check source inputs")
     source = {int(key): row for key, row in saved["items"].items()}
     if set(source) != set(saved["templateIds"]):
         raise ValueError("Source model must contain exactly the valid item templates")
@@ -502,6 +544,7 @@ def main(argv=None):
             raise ValueError("Snapshot item schema does not match the exporter")
     if args.command == "bootstrap":
         manifest = validate_manifest(upgrade_manifest(make_manifest(reference, source, metadata, baseline_digest, signature), source))
+        review_spell_coverage(saved, manifest, signature)
         records, _ = build_records(source, manifest)
         comparison = compare_candidate(reference, records)
         if comparison["unexpectedChanges"]:
@@ -514,10 +557,13 @@ def main(argv=None):
     else:
         manifest_digest = db_snapshot.file_hash(manifest_path)
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        reviewed_spells = review_spell_coverage(saved, manifest, signature)
         records, redundant = build_records(source, manifest)
         faction_selections = build_faction_selections(source, records, saved.get("objectSourceTeams", {}))
         comparison = compare_candidate(reference, records) if reference is not None else None
         payload = {"sourceInputs": signature, "manifestSha256": manifest_digest, "items": len(records),
+                   "spellCoverage": saved.get("spellCoverage", {}), "reviewedUnresolvedSpellIds": reviewed_spells,
+                    "acquisitionCoverage": saved.get("acquisitionCoverage", {}),
                    "excludedSourceItemIds": sorted(set(source) - set(records)), "redundantSupplements": redundant,
                    "comparisonSnapshotSha256": baseline_digest, "comparison": comparison,
                    "factionSelections": faction_selections,

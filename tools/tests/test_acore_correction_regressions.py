@@ -446,25 +446,28 @@ const WintergraspObjectPositionData WGOutsideNPC[WG_MAX_OUTSIDE_NPC] = {
         self.assertEqual([], result[0])
         self.assertEqual("preserveQuestieEventObjectiveSlot", result[3][0]["reason"])
 
-    def test_base_trigger_ends_are_loaded_as_event_slots(self):
+    def test_omitting_unverified_guides_keeps_source_event_requirements(self):
         constants = quest_validator.load_constants(ADDON_ROOT)
         metadata = quest_validator.load_questie_base_metadata(
             ADDON_ROOT / "Database/AzerothCore/acoreQuestDB.lua",
             constants["quest_keys"], constants)
-        self.assertTrue(metadata[9889]["_hasTriggerEnd"])
-        self.assertTrue(metadata[10887]["_hasTriggerEnd"])
+        for quest_id in (9889, 10887):
+            self.assertFalse(metadata[quest_id]["_hasTriggerEnd"])
+            self.assertTrue(metadata[quest_id]["specialFlags"]
+                            & quest_validator.QUEST_SPECIAL_FLAGS_EXPLORATION_OR_EVENT)
 
 
-    def test_direct_trigger_end_tooltip_targets_are_complete_and_classified(self):
-        addon_root = ADDON_ROOT
-        trigger_ends = trigger_end_audit.load_trigger_ends(addon_root)
-        targets = trigger_end_audit.load_configured_targets(addon_root)
-
-        self.assertEqual(109, len(targets))
-        self.assertEqual([("monster", 18262)], targets[9889]["targets"])
-        self.assertEqual([("monster", 22377)], targets[10887]["targets"])
-        self.assertLessEqual(set(targets), set(trigger_ends))
-        self.assertTrue(set(targets).isdisjoint(trigger_end_audit.REVIEW_REASONS))
+    def test_source_area_guide_and_event_actors_survive_independently(self):
+        trigger_ends = trigger_end_audit.load_trigger_ends(ADDON_ROOT)
+        self.assertIn(25, trigger_ends)
+        self.assertIn("gazebo", trigger_ends[25]["text"])
+        text = (ADDON_ROOT / "Database/AzerothCore/acoreQuestDB.lua").read_text(encoding="utf-8")
+        block = text.split("QuestieDB.questEventTooltipTargets = {", 1)[1].split("\n}", 1)[0]
+        constants = quest_validator.load_constants(ADDON_ROOT)
+        targets = quest_validator.parse_lua_value("{" + block + "}", constants)
+        self.assertIn(["monster", 467], targets[155 - 1])
+        # Escort completion is source-backed even without an area-trigger marker.
+        self.assertIn(["monster", 1379], targets[309 - 1])
 
     def test_does_not_preserve_waypoints_without_ac_path_evidence(self):
         questie = {17528: {"waypoints": {3525: [[[38.43, 82.02], [36.51, 71.61]]]}}}

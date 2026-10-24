@@ -16,13 +16,18 @@ import subprocess
 
 import db_snapshot as snapshot
 import generate_acore_item_corrections as source_reader
+import acore_item_compatibility as compatibility
+import acore_item_spell_acquisitions as spell_acquisitions
 
 
 ROOT = Path(__file__).resolve().parents[1]
 TABLES = ("item_template", "quest_template", "gameobject_template", "creature_template", "creature", "spell_dbc",
           "reference_loot_template", "creature_loot_template", "gameobject_loot_template", "item_loot_template",
-          "npc_vendor", "game_event_npc_vendor", "npc_spellclick_spells", "gameobject_template_addon", "factiontemplate_dbc")
-CACHE_VERSION = 4
+          "npc_vendor", "game_event_npc_vendor", "npc_spellclick_spells", "gameobject_template_addon", "factiontemplate_dbc",
+          "smart_scripts", "conditions", "creature_questender", "gameobject_questender", "disables",
+          "pickpocketing_loot_template", "skinning_loot_template", "spell_script_names", "spell_scripts",
+          "creature_queststarter", "gameobject_queststarter", "spell_linked_spell")
+CACHE_VERSION = 9
 ABSENT = object()
 
 
@@ -120,6 +125,16 @@ def source_signature(source, scope, spell_sql=None, spell_table="spell"):
     paths = {path.resolve() for table in tables for path in source_reader.source_sql_files(source, table)}
     required = {source / "data/sql/base/db_world" / f"{table}.sql" for table in tables}
     paths.update(required)
+    if scope == "full":
+        paths.update(source / name for name in compatibility.CPP_SOURCE_FILES)
+        paths.update(source / name for name in spell_acquisitions.CORE_SOURCE_FILES)
+        paths.update(source / name for name in (
+            "src/server/game/AI/SmartScripts/SmartScript.cpp", "src/server/game/AI/SmartScripts/SmartScriptMgr.h",
+            "src/server/game/Spells/SpellInfo.cpp", "src/server/game/Spells/Spell.cpp", "src/server/game/Spells/SpellEffects.cpp",
+            "src/server/game/Globals/ObjectMgr.h", "src/server/game/Scripting/MapScripts.cpp",
+            "src/server/game/Entities/GameObject/GameObject.h", "src/server/game/Entities/Player/Player.cpp",
+            "src/server/game/AI/SmartScripts/SmartAI.cpp",
+            "src/server/game/Entities/GameObject/GameObject.cpp", "src/server/game/Handlers/QuestHandler.cpp"))
     revision = subprocess.run(["git", "-C", str(source), "rev-parse", "HEAD"], capture_output=True, text=True)
     return {"version": CACHE_VERSION, "scope": scope, "sourceRoot": str(source), "includeModules": False,
             "spellExport": {"path": str(Path(spell_sql).resolve()), "sha256": snapshot.file_hash(spell_sql),
@@ -128,7 +143,8 @@ def source_signature(source, scope, spell_sql=None, spell_table="spell"):
             "sql": {str(path.relative_to(source)): snapshot.file_hash(path) for path in sorted(paths)},
             "extractor": hashlib.sha256((inspect.getsource(load_source) + inspect.getsource(object_source_teams)).encode("utf-8")).hexdigest(),
             "readers": {name: snapshot.file_hash(ROOT / "tools" / name) for name in
-                        ("generate_acore_item_corrections.py", "validate_acore_quest_metadata.py")}}
+                        ("generate_acore_item_corrections.py", "validate_acore_quest_metadata.py", "acore_item_compatibility.py",
+                          "acore_item_spell_acquisitions.py", "acore_quest_compatibility.py")}}
 
 
 def model_digest(saved):
@@ -136,6 +152,7 @@ def model_digest(saved):
     payload["sourceDiagnostics"] = saved.get("sourceDiagnostics", {})
     payload["spellCoverage"] = saved.get("spellCoverage", {})
     payload["objectSourceTeams"] = saved.get("objectSourceTeams", {})
+    payload["acquisitionCoverage"] = saved.get("acquisitionCoverage", {})
     return hashlib.sha256(json.dumps(payload, sort_keys=True, ensure_ascii=True, allow_nan=False,
                                      separators=(",", ":")).encode("utf-8")).hexdigest()
 
@@ -175,13 +192,13 @@ def load_source(source, scope, signature, cache, refresh=False, spell_sql=None, 
             print(f"Using validated source cache: {cache}", flush=True)
             return saved
     coverage, template_ids, diagnostics, spell_coverage = {}, [], {}, {}
-    object_teams = {}
+    object_teams, acquisition_coverage = {}, {}
     original = source_reader.load_row_table
 
-    def inventory_rows(source_root, table, keys, include_modules=False):
+    def inventory_rows(source_root, table, keys, include_modules=False, **kwargs):
         nonlocal template_ids
         print(f"Reading {table}...", flush=True)
-        rows, skipped = original(source_root, table, keys, include_modules)
+        rows, skipped = original(source_root, table, keys, include_modules, **kwargs)
         coverage[table] = {"rows": len(rows), "skippedMutations": skipped}
         if table == "item_template":
             template_ids = sorted(int(row["entry"]) for row in rows)
@@ -197,6 +214,7 @@ def load_source(source, scope, signature, cache, refresh=False, spell_sql=None, 
             items, _, context = source_reader.build_acore_items(source, spell_sql=spell_sql, spell_table=spell_table)
             diagnostics = context.get("sourceDiagnostics", {})
             spell_coverage = context.get("spellCoverage", {})
+            acquisition_coverage = context.get("acquisitionCoverage", {})
             if any(key in items for key in (25911, 25912)):
                 addons, skipped_addons = source_reader.load_row_table(source, "gameobject_template_addon", ("entry",))
                 factions, skipped_factions = source_reader.load_row_table(source, "factiontemplate_dbc", ("ID",))
@@ -213,7 +231,8 @@ def load_source(source, scope, signature, cache, refresh=False, spell_sql=None, 
         raise ValueError("Source inputs changed during extraction; report/cache were not published")
     saved = {"signature": signature, "items": {str(key): row for key, row in sorted(items.items())},
              "templateIds": template_ids, "tableCoverage": coverage, "sourceDiagnostics": diagnostics,
-             "spellCoverage": spell_coverage, "objectSourceTeams": object_teams}
+             "spellCoverage": spell_coverage, "objectSourceTeams": object_teams,
+             "acquisitionCoverage": acquisition_coverage}
     saved["modelSha256"] = model_digest(saved)
     write_json(cache, saved)
     return saved

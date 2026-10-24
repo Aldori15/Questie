@@ -70,6 +70,11 @@ def make_manifest(records, source, provenance, metadata, snapshot_sha, signature
 
 
 def validate_manifest(manifest):
+    if "accuracyPolicy" in manifest:
+        if manifest["accuracyPolicy"] != "verified-source-fields-v1" or manifest.get("extraRecords") or manifest.get("overrides"):
+            raise ValueError("Verified object fields cannot contain inherited records or scalar overrides")
+        if manifest.get("zonePolicy") != "verified-geometry-v1":
+            raise ValueError("Verified object fields require a current source zone policy")
     if manifest.get("format") != "questie-acore-object-compatibility" or manifest.get("version") != 1:
         raise ValueError("Unsupported object compatibility manifest")
     scope = manifest.get("scope")
@@ -139,6 +144,9 @@ def validate_manifest(manifest):
 
 def build_records(source, manifest, provenance=None):
     validate_manifest(manifest)
+    if "zonePolicy" in manifest:
+        if manifest["zonePolicy"] != "verified-geometry-v1" or any("zoneID" in row for row in manifest["overrides"].values()):
+            raise ValueError("Source-derived object zones cannot retain legacy zone overrides")
     if provenance is None and any(geometry.binding_ids(binding) for policy in manifest["geometry"].values()
                                  for slots in policy.get("slots", {}).values() for binding in slots.values()):
         raise ValueError("Fresh object source identities are required")
@@ -188,6 +196,9 @@ def build_records(source, manifest, provenance=None):
                     value[f"n:{index}"] = quest
                 if set(selected) == {f"n:{i}" for i in range(1, len(selected) + 1)}:
                     value = {f"n:{i}": quest for i, (_, quest) in enumerate(sorted(value.items(), key=lambda pair: int(pair[0][2:])), 1)}
+            elif field == "zoneID" and manifest.get("zonePolicy"):
+                value = geometry.source_display_zone(value, row.get("s:spawns"), source_zones=
+                                                     provenance.get("sourceZones", {}).get("entries", {}).get(key))
             else:
                 override = manifest["overrides"].get(key, {}).get(field)
                 if override and geometry.value_hash(value) == override["expectedSource"]:

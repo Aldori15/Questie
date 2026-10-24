@@ -341,7 +341,7 @@ def build_current_records(source, manifest, provenance):
         mask = manifest["scope"].get(key)
         if mask is None:
             mask = sum(1 << (KEYS["s:" + field] - 1) for field in FIELDS
-                       if "s:" + field in raw and field not in {"minLevelHealth", "maxLevelHealth"})
+                       if "s:" + field in raw and (manifest.get("healthPolicy") or field not in {"minLevelHealth", "maxLevelHealth"}))
         for field in FIELDS:
             typed_key = "s:" + field
             present = bool(mask & (1 << (KEYS[typed_key] - 1)))
@@ -380,11 +380,20 @@ def build_current_records(source, manifest, provenance):
                     value = {f"n:{i}": quest for i, (_, quest) in enumerate(
                         sorted(value.items(), key=lambda pair: int(pair[0][2:])), 1)}
             elif field in {"minLevelHealth", "maxLevelHealth"}:
-                value = manifest["displayValues"].get(key, {}).get(field, shared.ABSENT)
+                if manifest.get("healthPolicy"):
+                    if provenance.get("defaultHealth", {}).get("policy") != manifest["healthPolicy"]:
+                        raise ValueError("Source-derived NPC health requires a fresh validated source model")
+                    value = raw.get(typed_key, shared.ABSENT)
+                else:
+                    value = manifest["displayValues"].get(key, {}).get(field, shared.ABSENT)
             elif field == "zoneID":
-                override = manifest["zoneOverrides"].get(key)
-                if override and value_hash(value) == override["expectedSource"]:
-                    value = override["value"]
+                if manifest.get("zonePolicy"):
+                    value = source_display_zone(value, row.get("s:spawns"), row.get("s:waypoints"),
+                                                provenance.get("sourceZones", {}).get("entries", {}).get(key))
+                else:
+                    override = manifest["zoneOverrides"].get(key)
+                    if override and value_hash(value) == override["expectedSource"]:
+                        value = override["value"]
             else:
                 override = manifest["overrides"].get(key, {}).get(field)
                 if override and value_hash(value) == override["expectedSource"]:
@@ -400,6 +409,25 @@ def build_current_records(source, manifest, provenance):
     if len(result) < len(manifest["scope"]) * 0.95:
         raise ValueError("Unexpected removal of more than 5% of NPC records; check source completeness")
     return result
+
+
+def source_display_zone(raw_zone, spawns, waypoints=None, source_zones=None):
+    """Prefer verified geometry, then independently proved source zone identity."""
+    counts = {int(zone[2:]): len(points) for zone, points in (spawns or {}).items() if points}
+    if not counts:
+        counts = {int(zone[2:]): sum(len(path) for path in paths.values())
+                  for zone, paths in (waypoints or {}).items() if paths}
+    if not counts:
+        zones = (source_zones or {}).get("zones", [])
+        if any(type(zone) is not int or zone <= 0 for zone in zones):
+            raise ValueError("Invalid source zone provenance")
+        zones = set(zones)
+        if raw_zone in zones:
+            return raw_zone
+        return next(iter(zones)) if len(zones) == 1 else 0
+    if raw_zone in counts:
+        return raw_zone
+    return max(counts, key=lambda zone: (counts[zone], -zone))
 
 
 def value_hash(value):
@@ -508,9 +536,21 @@ def make_manifest(records, source, metadata, snapshot_sha, signature):
 
 
 def validate_manifest(manifest):
+    if "accuracyPolicy" in manifest:
+        if manifest["accuracyPolicy"] != "verified-source-fields-v1" or manifest.get("extraRecords") or manifest.get("overrides"):
+            raise ValueError("Verified NPC fields cannot contain inherited records or scalar overrides")
+        if (manifest.get("healthPolicy") != "acore-template-default-rates-v1" or manifest.get("displayValues")
+                or manifest.get("zonePolicy") != "verified-geometry-v1" or manifest.get("zoneOverrides")):
+            raise ValueError("Verified NPC fields require current source health and zone policies")
     if manifest.get("format") != "questie-acore-npc-compatibility" or manifest.get("version") not in (1, 2):
         raise ValueError("Unsupported NPC compatibility manifest")
     scope = manifest.get("scope")
+    if "healthPolicy" in manifest:
+        if manifest["healthPolicy"] != "acore-template-default-rates-v1" or manifest.get("displayValues"):
+            raise ValueError("Source-derived NPC health cannot retain legacy display values")
+    if "zonePolicy" in manifest:
+        if manifest["zonePolicy"] != "verified-geometry-v1" or manifest.get("zoneOverrides"):
+            raise ValueError("Source-derived NPC zones cannot retain legacy zone overrides")
     if not isinstance(scope, dict) or not scope:
         raise ValueError("Missing explicit NPC scope")
     if manifest["version"] == 2:

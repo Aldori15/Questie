@@ -103,6 +103,51 @@ def _function(text, name):
     raise ValueError("unterminated C++ function: " + name)
 
 
+def collect_source_zones(source_root):
+    """Keep AV's proven instance zones even without projected map markers."""
+    root = Path(source_root)
+    packet = {"version": 1, "entries": {}, "failures": []}
+    try:
+        header = (root / (AV + "BattlegroundAV.h")).read_text(encoding="utf-8")
+        script = (root / (AV + "BattlegroundAV.cpp")).read_text(encoding="utf-8")
+        areas = (root / SOURCE_FILES[-1]).read_text(encoding="utf-8")
+        map_id = _integer(areas, "MAP_ALTERAC_VALLEY")
+        zone = _integer(areas, "AREA_ALTERAC_VALLEY")
+        if (map_id, zone) != (30, 2597):
+            raise ValueError("Alterac Valley map or area identity changed")
+        _require(script, "Creature* BattlegroundAV::AddAVCreature(uint16 cinfoid, uint16 type)")
+        _require(script, """if (type >= AV_CPLACE_MAX) {
+            type -= AV_CPLACE_MAX;
+            cinfoid = uint16(BG_AV_StaticCreaturePos[type][4]);
+            creature = AddCreature(BG_AV_StaticCreatureInfo[cinfoid],
+                type + AV_CPLACE_MAX, BG_AV_StaticCreaturePos[type][0],
+                BG_AV_StaticCreaturePos[type][1], BG_AV_StaticCreaturePos[type][2],
+                BG_AV_StaticCreaturePos[type][3]);
+            isStatic = true;
+        }""")
+        _require(script, "for (i = 0; i < AV_STATICCPLACE_MAX; i++) AddAVCreature(0, i + AV_CPLACE_MAX);")
+        infos = _numbers(_body(header, "BG_AV_StaticCreatureInfo"))
+        rows = _rows(header, "BG_AV_StaticCreaturePos", 5)
+        declared = re.search(r"\bBG_AV_StaticCreatureInfo\s*\[\s*(\d+)\s*\]", _clean(header))
+        if not declared or len(infos) != int(declared[1]) or len(rows) != _integer(header, "AV_STATICCPLACE_MAX"):
+            raise ValueError("AV static creature array counts changed incompatibly")
+        if any(entry != int(entry) or entry < 1 for entry in infos):
+            raise ValueError("AV static creature template identity is invalid")
+        entries = {}
+        for index, row in enumerate(rows):
+            entry_index = int(row[4])
+            if row[4] != entry_index or not 0 <= entry_index < len(infos):
+                raise ValueError("AV static creature position index is invalid")
+            entry = str(int(infos[entry_index]))
+            data = entries.setdefault(entry, {"zones": [zone], "origins": {str(zone): []}})
+            data["origins"][str(zone)].append(
+                f"cpp-zone:av:map:{map_id}:BG_AV_StaticCreaturePos:{index}:info:{entry_index}")
+        packet["entries"] = entries
+    except (OSError, ValueError) as error:
+        packet["failures"].append({"source": "cpp-zone:av", "reasons": [str(error)]})
+    return packet
+
+
 def collect(source_root, zone_maps):
     import generate_acore_npc_corrections as reader
     from acore_scripted_geometry import typed

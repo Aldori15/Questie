@@ -15,6 +15,12 @@ import db_snapshot
 import generate_acore_item_corrections as sql_reader
 import validate_acore_quest_metadata as metadata_reader
 import validate_acore_quest_relations as relation_reader
+import acore_quest_compatibility as compatibility
+import acore_quest_guides as guides
+import acore_quest_cpp_events as cpp_events
+import acore_quest_cpp_credits as cpp_credits
+import acore_quest_script_events as script_events
+import generate_acore_npc_corrections as coordinates
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,7 +32,7 @@ FIELDS = ("name", "startedBy", "finishedBy", "requiredLevel", "questLevel", "req
           "breadcrumbForQuestId", "breadcrumbs", "extraObjectives", "requiredSpell",
           "requiredSpecialization", "requiredMaxLevel", "availableUntilCompleted",
           "availableStartingWith", "requiredRanks", "disabledByQuest", "requiredItemConditions")
-SOURCE_FIELDS = set(metadata_reader.FIELD_ORDER) | {"startedBy", "finishedBy", "zoneOrSort", "childQuests"}
+SOURCE_FIELDS = set(metadata_reader.FIELD_ORDER) | {"startedBy", "finishedBy", "zoneOrSort", "childQuests", "inGroupWith", "availableUntilCompleted", "triggerEnd", "extraObjectives"}
 PRESERVED_FIELDS = ("triggerEnd", "childQuests", "inGroupWith", "extraObjectives", "requiredSpecialization",
                     "availableUntilCompleted", "availableStartingWith", "requiredRanks", "disabledByQuest")
 # Ordinary starter lists audited for the first faction migration. Scripted
@@ -36,8 +42,14 @@ TABLE_KEYS = {
     "quest_template": ("ID",), "quest_template_addon": ("ID",), "item_template": ("entry",),
     "spell_dbc": ("ID",), "conditions": metadata_reader.CONDITION_KEY_COLUMNS,
     "disables": ("sourceType", "entry"),
-    "creature_template": ("entry",), "factiontemplate_dbc": ("ID",),
+    "creature_template": ("entry",), "gameobject_template": ("entry",), "factiontemplate_dbc": ("ID",),
     "smart_scripts": ("entryorguid", "source_type", "id", "link"),
+    "areatrigger_involvedrelation": ("id", "quest"), "areatrigger": ("entry",),
+    "areatrigger_scripts": ("entry",),
+    "reference_loot_template": ("Entry", "Item"), "gameobject_loot_template": ("Entry", "Item"),
+    "waypoints": ("entry", "pointid"),
+    "creature": ("guid",),
+    "npc_spellclick_spells": ("npc_entry", "spell_id"),
     **{table: (("eventEntry", "id", "quest") if table.startswith("game_event_") else ("id", "quest"))
        for table in relation_reader.TARGET_TABLES},
 }
@@ -51,19 +63,48 @@ def typed(value):
     return value
 
 
-def source_signature(source, spell_sql, spell_table):
+def guide_spell_fields(row):
+    """Keep effect, focus and reagent inputs needed by source-derived guides."""
+    result = {f"{prefix}{i}": int(metadata_reader.get_numbered_spell_field(row, prefix, i) or 0)
+              for prefix in ("Effect", "EffectMiscValue", "EffectTriggerSpell", "EffectItemType", "EffectApplyAuraName",
+                             "EffectImplicitTargetA", "EffectImplicitTargetB") for i in range(1, 4)}
+    result.update({f"Reagent{i}": int(metadata_reader.get_numbered_spell_field(row, "Reagent", i) or 0)
+                   for i in range(1, 9)})
+    result["RequiresSpellFocus"] = int(row.get("RequiresSpellFocus") or 0)
+    return result
+
+
+def source_signature(source, spell_sql, spell_table, tool_candidates=None):
     paths = {p.resolve() for table in TABLE_KEYS for p in sql_reader.source_sql_files(source, table)}
     paths.update(source / "data/sql/base/db_world" / f"{table}.sql" for table in TABLE_KEYS)
+    paths.update(source / name for name in (
+        "src/server/game/AI/SmartScripts/SmartScript.cpp", "src/server/game/AI/SmartScripts/SmartScriptMgr.h",
+        "src/server/game/Spells/SpellInfo.cpp", "src/server/game/Spells/Spell.cpp", "src/server/game/Spells/SpellEffects.cpp",
+        "src/server/game/Entities/Player/PlayerQuest.cpp", "src/server/game/Handlers/QuestHandler.cpp"))
+    paths.add(source / "src/server/game/Handlers/MiscHandler.cpp")
+    paths.add(source / "src/server/game/AI/SmartScripts/SmartAI.cpp")
+    paths.update(source / path for path in script_events.CORE_SOURCE_FILES)
+    paths.update(source / path for path in cpp_credits.CORE_SOURCE_FILES)
+    paths.update(source / path for path in getattr(guides, "CORE_SOURCE_FILES", ()))
+    paths.update(cpp_events.source_files(source))
     for root in metadata_reader.get_excluded_module_sql_roots(source):
         paths.update(p.resolve() for p in root.rglob("*.sql"))
     revision = subprocess.run(["git", "-C", str(source), "rev-parse", "HEAD"], capture_output=True, text=True)
-    readers = ("generate_acore_item_corrections.py", "validate_acore_quest_metadata.py", "validate_acore_quest_relations.py")
-    return {"version": 4, "sourceRoot": str(source), "includeModules": False,
+    readers = ("generate_acore_item_corrections.py", "validate_acore_quest_metadata.py", "validate_acore_quest_relations.py",
+               "acore_quest_compatibility.py", "acore_quest_guides.py", "acore_quest_cpp_events.py",
+               "acore_quest_script_events.py",
+               "acore_quest_cpp_credits.py",
+               "acore_item_compatibility.py",
+               "generate_acore_npc_corrections.py")
+    return {"version": 7, "sourceRoot": str(source), "includeModules": False,
+            "toolCandidates": tool_candidates or {},
             "sourceRevision": revision.stdout.strip() if revision.returncode == 0 else None,
             "sourceFiles": {str(p.relative_to(source)): db_snapshot.file_hash(p) for p in sorted(paths)},
             "spellExport": {"path": str(spell_sql), "sha256": db_snapshot.file_hash(spell_sql), "table": spell_table},
             "readers": {name: db_snapshot.file_hash(ROOT / "tools" / name) for name in readers},
-            "extractor": hashlib.sha256((inspect.getsource(load_source) + inspect.getsource(typed)
+            "mapInputs": {name: db_snapshot.file_hash(ROOT / name)
+                          for name in ("Database/Zones/zoneTables.lua", "Compat/UiMapData.lua")},
+            "extractor": hashlib.sha256((inspect.getsource(load_source) + inspect.getsource(guide_spell_fields) + inspect.getsource(typed)
                                          + inspect.getsource(build_relations) + inspect.getsource(missing_spell_references)
                                          + inspect.getsource(starter_teams) + inspect.getsource(script_quest_starters)
                                          + inspect.getsource(faction_reputation_rewards)
@@ -76,6 +117,14 @@ def model_digest(saved):
     payload["starterTeams"] = saved.get("starterTeams", {})
     payload["scriptQuestStarters"] = saved.get("scriptQuestStarters", {})
     payload["factionReputationRewards"] = saved.get("factionReputationRewards", {})
+    if "objectiveCreditSources" in saved:
+        payload["objectiveCreditSources"] = saved["objectiveCreditSources"]
+    if "objectiveEventSources" in saved:
+        payload["objectiveEventSources"] = saved["objectiveEventSources"]
+    if "questGuides" in saved:
+        payload["questGuides"] = saved["questGuides"]
+    if "objectiveSpellSources" in saved:
+        payload["objectiveSpellSources"] = saved["objectiveSpellSources"]
     return hashlib.sha256(json.dumps(payload, sort_keys=True, ensure_ascii=True, allow_nan=False,
                                      separators=(",", ":")).encode()).hexdigest()
 
@@ -257,7 +306,7 @@ def missing_spell_references(missing_ids, items, quests):
     return references
 
 
-def load_source(source, spell_sql, spell_table, signature, cache, refresh=False):
+def load_source(source, spell_sql, spell_table, signature, cache, refresh=False, tool_candidates=None):
     if cache.exists() and not refresh:
         saved = json.loads(cache.read_text(encoding="utf-8"))
         if saved.get("signature") == signature:
@@ -268,6 +317,7 @@ def load_source(source, spell_sql, spell_table, signature, cache, refresh=False)
     tables, coverage, skipped_statements = {}, {}, []
     spell_coverage = {}
     script_spell_items = {}
+    complete_spells = {}
     original_rows, original_statements = sql_reader.load_row_table, sql_reader.load_sql_statements
     original_table = metadata_reader.load_acore_sql_table
     current_file = {"path": None}
@@ -312,12 +362,13 @@ def load_source(source, spell_sql, spell_table, signature, cache, refresh=False)
                 raise ValueError("Unexpected quest audit SQL export")
             if wanted_keys is not None and any(int(row["ID"]) == 6681 for row in rows("quest_template")):
                 wanted_keys = set(wanted_keys) | {21100}
-            exported = original_table(root, table, base_file_override, key_column=key_column, wanted_keys=wanted_keys)
+            exported = original_table(root, table, base_file_override, key_column=key_column)
             sql_spells = {int(row["ID"]): row for row in rows("spell_dbc")}
             # Numeric SQL spell overrides, including zeros, supersede the DBC.
             for spell_id, row in sql_spells.items():
-                if wanted_keys is None or spell_id in wanted_keys:
-                    exported[spell_id] = {**exported.get(spell_id, {}), **row}
+                exported[spell_id] = {**exported.get(spell_id, {}), **row}
+            for spell_id, spell_row in exported.items():
+                complete_spells[spell_id] = guide_spell_fields(spell_row)
             wanted = set(wanted_keys or ())
             spell = exported.get(21100, {})
             script_spell_items[21100] = sorted({metadata_reader.get_numbered_spell_field(spell, "EffectItemType", i)
@@ -325,7 +376,7 @@ def load_source(source, spell_sql, spell_table, signature, cache, refresh=False)
                                                if metadata_reader.get_numbered_spell_field(spell, "Effect", i) in (24, 157)})
             spell_coverage.update({"requestedSpellIds": len(wanted), "resolvedRequestedSpellIds": len(wanted & set(exported)),
                                    "missingRequestedSpellIds": sorted(wanted - set(exported)), "sqlRows": len(sql_spells)})
-            return exported
+            return {key: value for key, value in exported.items() if wanted_keys is None or key in wanted}
         return {int(row[key_column]): copy.deepcopy(row) for row in rows(table)}
 
     with ExitStack() as stack:
@@ -348,7 +399,55 @@ def load_source(source, spell_sql, spell_table, signature, cache, refresh=False)
         teams = starter_teams(relations, rows, script_starters)
         spell_coverage["missingSpellReferences"] = missing_spell_references(
             spell_coverage.get("missingRequestedSpellIds", []), rows("item_template"), list(templates.values()))
-    quests = {}
+        escort_paths = {int(row["entry"]) for row in rows("waypoints")}
+        credit_sources = compatibility.build_credit_sources(
+            rows("creature_template"), rows("gameobject_template"), rows("smart_scripts"), complete_spells,
+            creature_spawns=rows("creature"), escort_paths=escort_paths)
+        cpp_credit_proofs = cpp_credits.collect(source, rows("creature_template"), rows("gameobject_template"))
+        for credit, actors in cpp_credit_proofs["credits"].items():
+            credit_sources[credit] = [list(actor) for actor in sorted(
+                {tuple(actor) for actor in credit_sources.get(credit, ())} | {tuple(actor) for actor in actors})]
+        event_sources = compatibility.build_event_sources(
+            rows("creature_template"), rows("gameobject_template"), rows("smart_scripts"),
+            creature_spawns=rows("creature"), escort_paths=escort_paths)
+        scripted = script_events.collect(rows("creature_template"), rows("smart_scripts"), complete_spells,
+                                         quest_templates=templates, creature_spawns=rows("creature"))
+        for destination, additions in ((credit_sources, scripted["credits"]), (event_sources, scripted["events"])):
+            for identity, actors in additions.items():
+                destination[identity] = [list(actor) for actor in sorted(
+                    {tuple(actor) for actor in destination.get(identity, ())} | {tuple(actor) for actor in actors})]
+        cpp = cpp_events.collect(source, rows("creature_template"), rows("gameobject_template"))
+        for quest, actors in cpp["events"].items():
+            event_sources[quest] = [list(actor) for actor in sorted(
+                {tuple(actor) for actor in event_sources.get(quest, ())} | {tuple(actor) for actor in actors})]
+        groups = compatibility.derive_in_group_with(derived, rows("quest_template_addon"))
+        availability = compatibility.source_available_until_completed(rows("conditions"))
+        zone_maps = coordinates.parse_zone_maps(ROOT)
+
+        def project_trigger(trigger, quest):
+            placement = {"map": int(trigger["map"]), "position_x": float(trigger["x"]),
+                         "position_y": float(trigger["y"]), "position_z": float(trigger["z"]),
+                         "zoneId": max(0, int(quest.get("QuestSortID") or 0))}
+            return coordinates.resolve_coordinate_zone(placement, zone_maps)
+
+        area_guides = guides.derive_area_guide_packet(
+            eligible_templates, rows("areatrigger_involvedrelation"), rows("areatrigger"), project_trigger,
+            rows("areatrigger_scripts"), smart_scripts=rows("smart_scripts"))
+        references = {}
+        for loot in rows("reference_loot_template"):
+            references.setdefault(int(loot["Entry"]), []).append(loot)
+        object_templates = {int(row["entry"]): row for row in rows("gameobject_template")}
+        container_items = sql_reader.add_item_sources_from_loot(
+            rows("gameobject_loot_template"), references,
+            sql_reader.build_gameobject_loot_source_map(object_templates))
+        container_sources = {str(item): {"objectDrops": sorted(actors)} for item, actors in container_items.items()}
+        item_templates = {int(row["entry"]): row for row in rows("item_template")}
+        extra_guides = guides.derive_extra_guide_packet(
+            eligible_templates, item_templates, object_templates, complete_spells, rows("conditions"),
+            rows("smart_scripts"), container_sources, rows("creature_template"),
+            npc_spellclick_rows=rows("npc_spellclick_spells"), quest_relations=relations)
+        tool_index = compatibility.build_required_tool_index(item_templates, complete_spells)
+    quests, tool_evidence = {}, {}
     for quest_id, fields in sorted(derived.items()):
         row = {}
         for field in metadata_reader.FIELD_ORDER:
@@ -362,17 +461,38 @@ def load_source(source, spell_sql, spell_table, signature, cache, refresh=False)
                                       if kind in relation[side] and relation[side][kind]})
         if quest_id in templates:
             row["s:zoneOrSort"] = int(templates[quest_id].get("QuestSortID") or 0)
+            row["s:objectives"] = compatibility.source_objectives_with_reputation(row["s:objectives"], templates[quest_id])
+        row["s:inGroupWith"] = groups[str(quest_id)]
+        row["s:availableUntilCompleted"] = availability.get(str(quest_id), 0)
+        if quest_id in area_guides["guides"]:
+            row["s:triggerEnd"] = area_guides["guides"][quest_id]
+        if quest_id in extra_guides["guides"]:
+            row["s:extraObjectives"] = extra_guides["guides"][quest_id]
+        if quest_id in templates:
+            tool_proof = compatibility.derive_required_tool_items(
+                templates[quest_id], item_templates, complete_spells,
+                (tool_candidates or {}).get(str(quest_id), ()), index=tool_index, with_reasons=True)
+            row["s:requiredSourceItems"] = typed(tool_proof["items"])
+            if tool_proof["reasons"]:
+                tool_evidence[str(quest_id)] = tool_proof
         quests[str(quest_id)] = row
     for key, children in derive_child_quests(quests).items():
         quests[key]["s:childQuests"] = children
-    if source_signature(source, spell_sql, spell_table) != signature:
+    if source_signature(source, spell_sql, spell_table, tool_candidates) != signature:
         raise ValueError("Quest source inputs changed during extraction")
     unresolved_source_spells = [row["spellId"] for row in spell_coverage["missingSpellReferences"] if row["requiredSourceItemQuestIds"]]
     saved = {"signature": signature, "quests": quests, "tableCoverage": coverage,
              "diagnostics": {"skippedSqlMutations": skipped_statements, "missingRequiredSourceItemSpellIds": unresolved_source_spells},
              "disabledQuestIds": sorted(disabled_ids), "moduleQuestIds": sorted(module_ids), "spellCoverage": spell_coverage,
              "starterTeams": teams, "scriptQuestStarters": script_starters,
-             "factionReputationRewards": faction_rewards}
+             "factionReputationRewards": faction_rewards, "objectiveCreditSources": credit_sources,
+              "objectiveEventSources": event_sources,
+              "questGuides": {"version": 1, "area": area_guides, "extra": extra_guides,
+                               "cppEvents": cpp, "cppCredits": cpp_credit_proofs,
+                               "scriptEvents": scripted, "requiredTools": tool_evidence},
+              "objectiveSpellSources": {str(key): row for key, row in complete_spells.items()
+                                        if any(metadata_reader.get_numbered_spell_field(row, "Effect", i) == 16
+                                               for i in (1, 2, 3))}}
     saved["modelSha256"] = model_digest(saved)
     shared.write_json(cache, saved)
     return saved
@@ -384,7 +504,7 @@ def empty_table(value):
 
 def representation_only(field, actual, expected):
     kind = metadata_reader.FIELD_KIND.get(field)
-    if field in {"startedBy", "finishedBy", "childQuests"} or kind not in ("int", "string", None):
+    if field in {"startedBy", "finishedBy", "childQuests", "inGroupWith"} or kind not in ("int", "string", None):
         return (actual is shared.ABSENT or actual is False or empty_table(actual)) and empty_table(expected)
     if kind == "string":
         return actual is shared.ABSENT and expected == ""

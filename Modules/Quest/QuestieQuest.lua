@@ -960,23 +960,20 @@ end
 -- This checks and manually adds quest item tooltips for requiredSourceItems
 local function _AddRequiredSourceItemObjective(quest)
     if quest.requiredSourceItems then
+        local objectives = (QuestieDB.QueryQuestSingle(quest.Id, "objectives") or {})[3]
         for index, requiredSourceItemId in pairs(quest.requiredSourceItems) do
-            -- Save the itemObjective table from the quests objectives table
-            local objectives = QuestieDB.QueryQuestSingle(quest.Id, "objectives")[3]
-
-            -- Look for an itemObjective Id that matches a requiredSourceItem Id - if found exit
+            local alreadyTracked = quest.sourceItemId == requiredSourceItemId
             if objectives then
-                for _, itemObjectiveIndex in pairs(objectives) do
-                    for _, itemObjectiveId in pairs(itemObjectiveIndex) do
-                        if itemObjectiveId == requiredSourceItemId or quest.sourceItemId == requiredSourceItemId then
-                            Questie.Debug(Questie.DEBUG_INFO, "[QuestieQuest:_AddRequiredSourceItemObjective] This item is already part of a quest objective.")
-                            return
-                        end
+                for _, itemObjective in pairs(objectives) do
+                    if itemObjective[1] == requiredSourceItemId then
+                        alreadyTracked = true
+                        break
                     end
                 end
             end
 
-            local item = QuestieDB.QueryItemSingle(requiredSourceItemId, "name")
+            -- Skip only this item; later tools still need their quest tooltips.
+            local item = not alreadyTracked and QuestieDB.QueryItemSingle(requiredSourceItemId, "name")
 
             if item then
                 Questie.Debug(Questie.DEBUG_INFO, "[QuestieQuest:_AddRequiredSourceItemObjective] Adding Source Item Id for:", requiredSourceItemId)
@@ -2090,28 +2087,34 @@ function QuestieQuest:PopulateQuestLogInfo(quest)
 
     for objectiveIndex, objective in pairs(questObjectives) do
         if objective.type and string.len(objective.type) > 1 then
-            if (not quest.ObjectiveData) or (not quest.ObjectiveData[objectiveIndex]) then
-                Questie.Error(l10n("Missing objective data for quest "), quest.Id, " - ", objective.text)
-            else
-                if not quest.Objectives[objectiveIndex] then
-                    quest.Objectives[objectiveIndex] = {
-                        Id = quest.ObjectiveData[objectiveIndex].Id,
-                        Index = objectiveIndex,
-                        questId = quest.Id,
-                        _lastUpdate = 0,
-                        Description = objective.text,
-                        FullDescription = QuestieLib.GetFullObjectiveText(objective.raw_text),
-                        spawnList = {},
-                        AlreadySpawned = {},
-                        Update = _QuestieQuest.ObjectiveUpdate,
-                        Coordinates = quest.ObjectiveData[objectiveIndex].Coordinates, -- Only for type "event"
-                        RequiredRepValue = quest.ObjectiveData[objectiveIndex].RequiredRepValue,
-                        Icon = quest.ObjectiveData[objectiveIndex].Icon
-                    }
-                end
-
-                quest.Objectives[objectiveIndex]:Update()
+            quest.ObjectiveData = quest.ObjectiveData or {}
+            if not quest.ObjectiveData[objectiveIndex] then
+                -- Keep authoritative quest-log progress when no verified map
+                -- target exists. The event adapter accepts an empty location map.
+                quest.ObjectiveData[objectiveIndex] = {
+                    Type = "event",
+                    Coordinates = {},
+                    TooltipTargets = objective.type == "event" and QuestieDB.questEventTooltipTargets and QuestieDB.questEventTooltipTargets[quest.Id],
+                }
             end
+            if not quest.Objectives[objectiveIndex] then
+                quest.Objectives[objectiveIndex] = {
+                    Id = quest.ObjectiveData[objectiveIndex].Id,
+                    Index = objectiveIndex,
+                    questId = quest.Id,
+                    _lastUpdate = 0,
+                    Description = objective.text,
+                    FullDescription = QuestieLib.GetFullObjectiveText(objective.raw_text),
+                    spawnList = {},
+                    AlreadySpawned = {},
+                    Update = _QuestieQuest.ObjectiveUpdate,
+                    Coordinates = quest.ObjectiveData[objectiveIndex].Coordinates, -- Only for type "event"
+                    RequiredRepValue = quest.ObjectiveData[objectiveIndex].RequiredRepValue,
+                    Icon = quest.ObjectiveData[objectiveIndex].Icon
+                }
+            end
+
+            quest.Objectives[objectiveIndex]:Update()
         end
 
         if (not quest.Objectives[objectiveIndex]) or (not quest.Objectives[objectiveIndex].Id) then
@@ -2146,10 +2149,11 @@ function QuestieQuest:PopulateQuestLogInfo(quest)
         end
     end
 
-    if #quest.Objectives == 0 and #quest.SpecialObjectives == 0 and ((quest.triggerEnd and #quest.triggerEnd > 0) or (quest.Finisher and quest.Finisher.Id ~= nil)) then
-        -- Some quests when picked up will be flagged isComplete == 0 but the quest.Objective table or quest.SpecialObjectives table is nil. This
-        -- check assumes the Quest should have been flagged questLogEngtry.isComplete == 1. We're specifically looking for a quest.triggerEnd or
-        -- a quest.Finisher.Id because this might throw an error if there is nothing to populate when we call QuestieQuest:AddFinisher().
+    local requiresEvent = bit.band(quest.specialFlags or 0, 2) ~= 0
+    if not requiresEvent and not next(questObjectives) and #quest.Objectives == 0 and #quest.SpecialObjectives == 0
+        and ((quest.triggerEnd and #quest.triggerEnd > 0) or (quest.Finisher and quest.Finisher.Id ~= nil)) then
+        -- Delivery quests can lack the client's completion flag. Missing map
+        -- guidance or an unfinished server event does not establish completion.
         quest.isComplete = true
         AvailableQuests.RemoveQuest(quest.Id, function()
             QuestieQuest:AddFinisher(quest)

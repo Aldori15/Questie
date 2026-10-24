@@ -46,6 +46,7 @@ from generate_acore_npc_corrections import (  # noqa: E402
     parse_zone_id_names,
     parse_zone_maps,
     resolve_coordinate_zone,
+    source_zone_candidates,
     sort_coordinate_table,
     wdm_instance_zone_ids,
 )
@@ -312,12 +313,15 @@ def build_acore_objects(
     unmapped_spawn_guids = defaultdict(set)
     map_stats = defaultdict(int)
     zone_maps = parse_zone_maps(Path(repo_root or ".").resolve(), wdm_root)
+    source_zones = defaultdict(lambda: defaultdict(set))
 
     for row in gameobject_rows:
         entry = int(row.get("id") or row.get("entry") or 0)
         if not entry:
             continue
         seen_spawn_entries.add(entry)
+        for zone in source_zone_candidates(row, zone_maps):
+            source_zones[entry][zone].add(f"gameobject:{int(row.get('guid') or 0)}")
         zone_id, point = resolve_coordinate_zone(row, zone_maps)
         if zone_id and point:
             visible_point = add_acore_spawn_visibility(point, row, map_difficulty_masks)
@@ -358,6 +362,10 @@ def build_acore_objects(
 
     if provenance is not None:
         provenance.update(index_geometry_origins(acore_objects, spawn_origins, {}, map_difficulty_masks))
+        provenance["sourceZones"] = {"version": 1, "entries": {
+            str(entry): {"zones": sorted(zones), "origins": {
+                str(zone): sorted(origins) for zone, origins in sorted(zones.items())}}
+            for entry, zones in sorted(source_zones.items())}, "failures": []}
         index_partial_spawn_coverage(provenance, spawns_by_entry, spawn_origins,
                                      unmapped_spawn_guids, map_difficulty_masks)
 

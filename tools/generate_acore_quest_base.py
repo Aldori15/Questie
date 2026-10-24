@@ -135,6 +135,15 @@ def make_manifest(records, source, metadata, snapshot_sha, signature):
 def validate_manifest(manifest):
     if manifest.get("format") != "questie-acore-quest-compatibility" or manifest.get("version") != 1:
         raise ValueError("Unsupported quest compatibility manifest")
+    if "accuracyPolicy" in manifest:
+        if manifest["accuracyPolicy"] != "verified-source-fields-v1":
+            raise ValueError("Unsupported quest accuracy policy")
+        if any(manifest.get(section) for section in ("legacyFields", "extraRecords", "relations")):
+            raise ValueError("Verified quest fields cannot contain inherited helpers or relations")
+        if any(set(row) - {"objectives"} for row in manifest.get("overrides", {}).values()):
+            raise ValueError("Verified quest fields permit only source-proven objective displays")
+        if any(policy.get("supplements") or policy.get("excluded") for row in manifest.get("lists", {}).values() for policy in row.values()):
+            raise ValueError("Verified quest lists cannot change source membership")
     scope = manifest.get("scope")
     if not isinstance(scope, dict) or not scope:
         raise ValueError("Missing quest scope")
@@ -144,6 +153,11 @@ def validate_manifest(manifest):
     excluded = manifest.get("excludedQuestIds")
     if not isinstance(excluded, list) or not all(type(i) is int and i > 0 for i in excluded) or excluded != sorted(set(excluded)) or set(excluded) & {int(k) for k in scope}:
         raise ValueError("Invalid excluded quest IDs")
+    for quest, candidates in manifest.get("sourceToolCandidates", {}).items():
+        if (quest not in scope or not isinstance(candidates, list)
+                or any(type(item) is not int or item < 1 for item in candidates)
+                or candidates != sorted(set(candidates))):
+            raise ValueError("Invalid source-verified quest tool candidates")
     sections = {"legacyFields": LEGACY_FIELDS, "lists": ID_LIST_FIELDS, "relations": RELATION_FIELDS,
                 "overrides": set(FIELDS) - LEGACY_FIELDS - ID_LIST_FIELDS - RELATION_FIELDS - {"name", "childQuests"}}
     for section in (*sections, "extraRecords"):
@@ -182,7 +196,7 @@ def validate_manifest(manifest):
     return manifest
 
 
-def build_records(source, manifest):
+def build_records(source, manifest, credit_sources=None, event_sources=None, spell_sources=None):
     validate_manifest(manifest)
     children = audit.derive_child_quests(source)
     result = {}
@@ -217,6 +231,12 @@ def build_records(source, manifest):
             else:
                 override = manifest["overrides"].get(key, {}).get(field)
                 if override:
+                    if field == "objectives" and manifest.get("accuracyPolicy"):
+                        valid, reason = audit.compatibility.verify_objective_display(
+                            value, override.get("value"), credit_sources or {}, (event_sources or {}).get(key, ()),
+                            quest_id=quest_id, spells=spell_sources or {})
+                        if not valid:
+                            raise ValueError(f"Quest {quest_id}: objective display proof changed ({reason}); review the current source")
                     if value_hash(value) == override["expectedSource"]:
                         value = shared.ABSENT if override.get("omit") else override["value"]
                     elif override.get("reviewOnChange"):
@@ -297,7 +317,7 @@ def build_chain_selections(source, records, excluded=()):
     return result
 
 
-def write_stream(stream, records, starter_selections=None):
+def write_stream(stream, records, starter_selections=None, event_tooltips=None):
     stream.write('-- Generated from AzerothCore source and explicit Questie compatibility data.\n')
     stream.write('-- Generator: tools/generate_acore_quest_base.py\n')
     stream.write('local QuestieDB = QuestieLoader:ImportModule("QuestieDB")\n\nQuestieDB.questKeys = {\n')
@@ -308,6 +328,13 @@ def write_stream(stream, records, starter_selections=None):
     for quest_id, row in sorted(records.items()):
         writer.write(f'[{quest_id}]={row_to_lua(row, KEYS)},\n')
     writer.finish()
+    if event_tooltips is not None:
+        stream.write('\n-- Event actors verified against current AC scripts.\n')
+        stream.write('QuestieDB.questEventTooltipTargets = {\n')
+        for quest_id, actors in sorted(event_tooltips.items()):
+            if quest_id in records and actors:
+                stream.write(f'    [{quest_id}] = {lua_value(audit.typed(actors))},\n')
+        stream.write('}\n')
     if starter_selections is not None:
         stream.write('\n-- Source-derived faction views; quest records above remain shared.\n')
         stream.write('QuestieDB.questFactionSelections = (UnitFactionGroup("player") == "Horde") and {\n')
@@ -317,14 +344,14 @@ def write_stream(stream, records, starter_selections=None):
             stream.write(ending)
 
 
-def candidate_size(records, starter_selections=None):
+def candidate_size(records, starter_selections=None, event_tooltips=None):
     class ByteCounter:
         size = 0
 
         def write(self, value):
             self.size += len(value.encode("utf-8"))
     counter = ByteCounter()
-    write_stream(counter, records, starter_selections)
+    write_stream(counter, records, starter_selections, event_tooltips)
     return counter.size
 
 
@@ -368,8 +395,14 @@ def main(argv=None):
         raise ValueError("Output paths must differ from inputs and each other")
     if args.command == "bootstrap" and manifest_path.exists() and not args.force:
         raise ValueError("Manifest already exists; review it or explicitly use --force")
-    signature = audit.source_signature(source, spell, args.spell_table)
-    saved = audit.load_source(source, spell, args.spell_table, signature, cache)
+    tool_candidates = {}
+    if args.command == "generate":
+        manifest_sha = db_snapshot.file_hash(manifest_path)
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        validate_manifest(manifest)
+        tool_candidates = manifest.get("sourceToolCandidates", {})
+    signature = audit.source_signature(source, spell, args.spell_table, tool_candidates)
+    saved = audit.load_source(source, spell, args.spell_table, signature, cache, tool_candidates=tool_candidates)
     if any(saved["diagnostics"].values()) or any(row["skippedMutations"] for row in saved["tableCoverage"].values()):
         raise ValueError("Quest source diagnostics require review before generation")
     model = {int(key): row for key, row in saved["quests"].items()}
@@ -382,9 +415,12 @@ def main(argv=None):
     if args.command == "bootstrap":
         manifest = make_manifest(baseline, model, metadata, snapshot_sha, signature)
     else:
-        manifest_sha = db_snapshot.file_hash(manifest_path)
+        if db_snapshot.file_hash(manifest_path) != manifest_sha:
+            raise ValueError("Quest compatibility manifest changed during source extraction")
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    records = build_records(model, manifest)
+    records = build_records(model, manifest, saved.get("objectiveCreditSources"), saved.get("objectiveEventSources"),
+                            saved.get("objectiveSpellSources"))
+    event_tooltips = {int(key): actors for key, actors in saved.get("objectiveEventSources", {}).items()}
     starter_selections = build_starter_selections(model, records, saved.get("starterTeams", {}),
                                                 saved.get("scriptQuestStarters", {}))
     starter_ids = sorted(starter_selections["Alliance"])
@@ -402,9 +438,9 @@ def main(argv=None):
             shared.write_json(targets[1], {"comparison": comparison})
         ids = [row["questId"] for row in comparison["differences"][:20]]
         raise ValueError(f"Quest candidate differs from baseline ({comparison['changedRecords']} records; IDs {ids}); no candidate or manifest published")
-    if candidate_size(records, starter_selections) > manifest["limits"]["maxOutputBytes"]:
+    if candidate_size(records, starter_selections, event_tooltips) > manifest["limits"]["maxOutputBytes"]:
         raise ValueError("Quest candidate exceeds its baseline size budget")
-    if audit.source_signature(source, spell, args.spell_table) != signature:
+    if audit.source_signature(source, spell, args.spell_table, tool_candidates) != signature:
         raise ValueError("Quest source inputs changed during generation")
     if snapshot_path and (db_snapshot.file_hash(snapshot_path) != snapshot_sha or any(
             db_snapshot.file_hash(ROOT / name) != digest for name, digest in metadata["sources"].items())):
@@ -426,7 +462,7 @@ def main(argv=None):
         with db_snapshot.temporary_directory(output.parent) as directory:
             candidate = directory / "acoreQuestDB.lua"
             with candidate.open("w", encoding="utf-8", newline="\n") as stream:
-                write_stream(stream, records, starter_selections)
+                write_stream(stream, records, starter_selections, event_tooltips)
             if candidate.stat().st_size > manifest["limits"]["maxOutputBytes"]:
                 raise ValueError("Serialized quest candidate exceeds size budget")
             shared.write_json(report, {"sourceInputs": signature, "manifestSha256": manifest_sha,
@@ -434,6 +470,7 @@ def main(argv=None):
                                       "outputSha256": db_snapshot.file_hash(candidate), "outputBytes": candidate.stat().st_size,
                                       "maxOutputBytes": manifest["limits"]["maxOutputBytes"], "counts": summary,
                                       "factionSelections": starter_selections,
+                                       "guideCoverage": saved.get("questGuides", {}),
                                       "excludedSourceQuestIds": sorted(set(model) - set(records))})
             candidate.replace(output)
         summary.update({"output": str(output), "report": str(report), "outputMiB": round(output.stat().st_size / 1048576, 2)})

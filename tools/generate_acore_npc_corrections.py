@@ -6,6 +6,7 @@ import math
 import re
 import struct
 import sys
+import acore_npc_health
 from collections import defaultdict
 from functools import lru_cache
 from pathlib import Path
@@ -971,6 +972,32 @@ def resolve_wdm_instance_floor(x, y, z, map_id, zone_maps):
     return zone_id, point
 
 
+def source_zone_candidates(row, zone_maps):
+    """Read geographic source metadata without requiring a map transform."""
+    for field in ("zoneId", "areaId"):
+        value = int(row.get(field) or row.get(field.lower()) or 0)
+        if field == "areaId":
+            value = ACORE_AREA_ID_OVERRIDES.get(value, value)
+        ui = (zone_maps.get("special_to_ui", {}).get(value)
+              or zone_maps.get("area_to_ui", {}).get(value)
+              or zone_maps.get("wdm_floor_zone_to_ui", {}).get(value))
+        if ui is not None:
+            return [int(zone_maps.get("ui_to_zone", {}).get(ui, value))]
+    map_id = int(row.get("map") or 0)
+    zone = zone_maps.get("instance_to_zone", {}).get(map_id)
+    if zone:
+        return [int(zone)]
+    # A continent is not itself a preferred geographic zone. Other source maps
+    # can identify a single instance zone even when its XY transform is absent.
+    if map_id not in (0, 1, 530, 571):
+        zones = {int(zone_maps["ui_to_zone"][ui])
+                 for ui in zone_maps.get("ui_by_instance", {}).get(map_id, [])
+                 if ui in zone_maps.get("ui_to_zone", {})}
+        if len(zones) == 1:
+            return sorted(zones)
+    return []
+
+
 def resolve_coordinate_zone(row, zone_maps):
     candidates = []
     guid = int(row.get("guid") or 0)
@@ -1372,6 +1399,12 @@ def build_acore_npcs(
     map_difficulty_dbc = find_map_difficulty_dbc(source_root, map_difficulty_dbc)
     map_difficulty_masks = load_map_difficulty_masks(map_difficulty_dbc)
     template_rows, skipped_creature_template = load_keyed_table(source_root, "creature_template", "entry", include_modules)
+    acore_npc_health.validate_source(source_root)
+    health_rows, skipped_health = load_row_table(source_root, "creature_classlevelstats", ("level", "class"), include_modules)
+    template_health, health_diagnostics = acore_npc_health.collect(
+        ({"entry": entry, **row} for entry, row in template_rows.items()), health_rows)
+    if provenance is not None:
+        provenance["defaultHealth"] = {"policy": "acore-template-default-rates-v1", "diagnostics": health_diagnostics}
     if creature_sql:
         creature_rows, skipped_creature = load_rows_from_sql_file(Path(creature_sql), "creature", ("guid",))
     else:
@@ -1428,7 +1461,6 @@ def build_acore_npcs(
         include_modules,
     )
 
-    health_by_entry = defaultdict(list)
     spawns_by_entry = defaultdict(lambda: defaultdict(list))
     spawn_zone_counts = defaultdict(lambda: defaultdict(int))
     unmapped_spawn_entries = set()
@@ -1437,6 +1469,7 @@ def build_acore_npcs(
     guid_to_creature = {}
     creatures_by_entry = defaultdict(list)
     spawn_origins = defaultdict(lambda: defaultdict(list))
+    source_zone_origins = defaultdict(lambda: defaultdict(set))
     path_origins = defaultdict(lambda: defaultdict(list))
     map_stats = defaultdict(int)
     zone_maps = parse_zone_maps(Path(repo_root or ".").resolve(), wdm_root)
@@ -1452,16 +1485,19 @@ def build_acore_npcs(
         primary_entry = get_primary_creature_entry(row)
         entries = get_creature_entries(row, multispawns_by_guid)
         guid = int(row.get("guid") or 0)
+        source_zones = source_zone_candidates(row, zone_maps)
         if guid:
             guid_to_creature[guid] = row
-        health = int(row.get("curhealth") or 0)
-        if primary_entry and health:
-            health_by_entry[primary_entry].append(health)
         if entries:
             zone_id, point = resolve_coordinate_zone(row, zone_maps)
         for entry in entries:
             creatures_by_entry[entry].append(row)
             seen_spawn_entries.add(entry)
+            for source_zone in source_zones:
+                source_zone_origins[entry][source_zone].add(
+                    f"creature:{guid}:map:{int(row.get('map') or 0)}:"
+                    f"zone:{int(row.get('zoneId') or row.get('zoneid') or 0)}:"
+                    f"area:{int(row.get('areaId') or row.get('areaid') or 0)}")
             if zone_id and point:
                 visible_point = add_acore_spawn_visibility(point, row, map_difficulty_masks)
                 if entry in questgiver_entries:
@@ -1598,10 +1634,7 @@ def build_acore_npcs(
             else:
                 npc[field] = int(value or 0)
 
-        health_values = health_by_entry.get(int(npc_id))
-        if health_values:
-            npc["minLevelHealth"] = min(health_values)
-            npc["maxLevelHealth"] = max(health_values)
+        npc.update(template_health[int(npc_id)])
 
         if int(npc_id) in unmapped_spawn_entries:
             transport_spawns = [spawn for spawn in creatures_by_entry.get(int(npc_id), [])
@@ -1655,6 +1688,17 @@ def build_acore_npcs(
             zone_maps, escort_waypoint_by_path)
         import acore_cpp_geometry
         provenance["cppGeometry"] = acore_cpp_geometry.collect(source_root, zone_maps)
+        cpp_zones = acore_cpp_geometry.collect_source_zones(source_root)
+        for key, data in cpp_zones["entries"].items():
+            if int(key) not in acore_npcs:
+                continue
+            for zone in data["zones"]:
+                source_zone_origins[int(key)][zone].update(data["origins"][str(zone)])
+        provenance["sourceZones"] = {"version": 1, "entries": {
+            str(entry): {"zones": sorted(zones), "origins": {
+                str(zone): sorted(origins) for zone, origins in sorted(zones.items())}}
+            for entry, zones in sorted(source_zone_origins.items())},
+            "failures": cpp_zones["failures"]}
         if any(template_rows.get(entry, {}).get("ScriptName") != "npc_hor_leader_second" for entry in (37554, 36955)):
             data = provenance["cppGeometry"]["entries"]["36955"]
             for field in ("spawns", "waypoints"):
@@ -1694,6 +1738,7 @@ def build_acore_npcs(
 
     skipped_mutations = {
         "creature_template": skipped_creature_template,
+        "creature_classlevelstats": skipped_health,
         "creature": skipped_creature,
         "creature_multispawn": skipped_creature_multispawn,
         "creature_queststarter": skipped_starter,

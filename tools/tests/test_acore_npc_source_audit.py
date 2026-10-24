@@ -154,7 +154,7 @@ class NpcSourceAuditTests(unittest.TestCase):
             update = source / "addon-update.sql"
             update.write_text("-- path_id 88\n", encoding="utf-8")
             header = source / "src/server/game/Battlefield/Zones/BattlefieldWG.h"
-            for name in audit.acore_cpp_geometry.SOURCE_FILES:
+            for name in set(audit.acore_cpp_geometry.SOURCE_FILES) | set(audit.acore_npc_health.SOURCE_FILES):
                 cpp_input = source / name
                 cpp_input.parent.mkdir(parents=True, exist_ok=True)
                 cpp_input.write_text("// fixture source\n", encoding="utf-8")

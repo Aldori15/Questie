@@ -17,17 +17,19 @@ import db_snapshot
 import generate_acore_item_corrections as sql_reader
 import generate_acore_npc_corrections as reader
 import acore_cpp_geometry
+import acore_npc_health
 
 
 ROOT = Path(__file__).resolve().parents[1]
-TABLES = ("creature_template", "creature_queststarter", "game_event_creature_quest", "creature_questender",
+TABLES = ("creature_template", "creature_classlevelstats", "creature_queststarter", "game_event_creature_quest", "creature_questender",
           "factiontemplate_dbc", "creature_addon", "creature_template_addon", "waypoint_data", "waypoints", "smart_scripts",
           "event_scripts", "game_event_creature")
 ANCHORS = {1, 3, 4, 115, 1629, 2, 5, 6, 116, 1610}
 REPO_INPUTS = ("Database/Zones/zoneTables.lua", "Compat/UiMapData.lua", "Modules/Phasing.lua",
                "Modules/Network/QuestieServer.lua", "tools/generate_acore_npc_corrections.py",
                "tools/generate_acore_item_corrections.py", "tools/validate_acore_quest_metadata.py",
-               "tools/acore_scripted_geometry.py", "tools/acore_cpp_geometry.py", "tools/acore_runtime_geometry.py")
+               "tools/acore_scripted_geometry.py", "tools/acore_cpp_geometry.py", "tools/acore_runtime_geometry.py",
+               "tools/acore_npc_health.py")
 
 
 def typed(value):
@@ -44,6 +46,7 @@ def source_signature(source, repo, creature, multispawn, difficulty, wdm):
     paths.update(source / "data/sql/base/db_world" / f"{table}.sql" for table in TABLES)
     paths.add(source / "src/server/game/Battlefield/Zones/BattlefieldWG.h")
     paths.update(source / name for name in acore_cpp_geometry.SOURCE_FILES)
+    paths.update(source / name for name in acore_npc_health.SOURCE_FILES)
     external = [creature, multispawn, difficulty,
                 wdm / "patch-enUS-M extracted/DBFilesClient/DungeonMap.csv",
                 wdm / "patch-enUS-M extracted/DBFilesClient/DungeonMapChunk.csv"]
@@ -298,7 +301,7 @@ def main(argv=None):
                    "diagnostics": saved["diagnostics"], "runtimeOverrides": overrides,
                    "limitations": ["Audit only: no records, spawns or waypoints are approved additions/removals.",
                                    "Existing gunship/entrance/display fallbacks are not source inputs; omissions need explicit supplements.",
-                                   "Health reflects exported curhealth where available, not a complete server health calculation.",
+                                   "Health uses AC's default template calculation before scripts and custom server HP rates.",
                                    "Friendliness currently uses SQL factiontemplate_dbc, not the full client FactionTemplate.dbc.",
                                    "Coordinates, path order, phases, difficulty masks and identity slots are compared without rounding or dropping metadata.",
                                    "Player conditions, arbitrary scripts, modules and pending SQL updates are outside this source model."]}

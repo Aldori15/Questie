@@ -24,6 +24,7 @@ modules.QuestieDB.scriptedSpawnSources = {
     [6492] = {STORMWIND_CITY = {{51.32,92.34,0,1,0,2,1519}}, UNDERCITY = {{53.29,74.56,0,1,0,2,1497}}},
     [32823] = {[12] = {{9,8,0,1,0,7,12}}},
 }
+modules.QuestieDB.questEventTooltipTargets = {[155] = {{"monster", 467}}, [8149] = {{"object", 180500}}}
 modules.QuestieDB.darkmoonGeometry = {}
 for location, zone in ipairs({215, 12, 3519}) do
     modules.QuestieDB.darkmoonGeometry[location] = {[10445] = {
@@ -50,6 +51,9 @@ for _, kind in ipairs({"Item", "NPC", "Object", "Quest"}) do
 end
 local function apply(kind)
     local result, calls = {}, 0
+    if kind == "Quest" then
+        modules.QuestRuntimeCorrections:LoadEventTooltipTargets()
+    end
     modules[kind .. "RuntimeCorrections"]:ApplyFactionFixes(result, function(target, incoming)
         calls = calls + 1
         for id, fields in pairs(incoming) do
@@ -78,6 +82,8 @@ for _, current in ipairs({"Alliance", "Horde"}) do
     local npcs = apply("NPC")
     local objects = apply("Object")
     local quests = apply("Quest")
+    assert(modules.QuestieCorrections.triggerEndTooltipTargets == modules.QuestieDB.questEventTooltipTargets,
+        "verified event actors were discarded because no map coordinates were supplied")
     assert(items[49698].npcDrops[1] == (current == "Horde" and 36669 or 36670))
     local cofferZone = current == "Horde" and "UNDERCITY" or "STORMWIND_CITY"
     assert(objects[103574].zoneID == cofferZone, "consolidation lost a coffer field")
@@ -127,6 +133,17 @@ for _, current in ipairs({"Alliance", "Horde"}) do
     npcs[5676].zoneID = -1
     assert(apply("NPC")[5676].zoneID ~= -1, "runtime tables leaked between initializations")
 end
+local eventTargets = modules.QuestieDB.questEventTooltipTargets
+modules.QuestieDB.questEventTooltipTargets = {[999] = {{"monster", 900001}}}
+apply("Quest")
+assert(modules.QuestieCorrections.triggerEndTooltipTargets[999][1][2] == 900001
+    and modules.QuestieCorrections.triggerEndTooltipTargets[155] == nil,
+    "event actor registrations leaked between generated views")
+modules.QuestieDB.questEventTooltipTargets = nil
+apply("Quest")
+assert(next(modules.QuestieCorrections.triggerEndTooltipTargets) == nil, "absent event metadata retained stale actors")
+modules.QuestieDB.questEventTooltipTargets = eventTargets
+apply("Quest")
 modules.QuestieDB.questFactionSelections = nil
 local ok, failure = pcall(apply, "Quest")
 assert(not ok and tostring(failure):find("regenerate acoreQuestDB.lua", 1, true), "missing generated selections went unnoticed")
@@ -136,10 +153,11 @@ assert(not ok and tostring(failure):find("regenerate acoreNpcDB.lua", 1, true), 
 local helpers = modules.QuestieCorrections
 assert(helpers.itemObjectiveFirst[503] and helpers.itemObjectiveFirst[5088])
 assert(helpers.killCreditObjectiveFirst[10503] and helpers.killCreditObjectiveFirst[24507])
-for questId, npcId in pairs({[155] = 467, [9212] = 16295, [11241] = 23784}) do
-    local target = helpers.triggerEndTooltipTargets[questId][1]
-    assert(target[1] == "monster" and target[2] == npcId, "triggerEnd tooltip target lost")
-end
+assert(helpers.triggerEndTooltipTargets[155][1][1] == "monster"
+    and helpers.triggerEndTooltipTargets[155][1][2] == 467
+    and helpers.triggerEndTooltipTargets[8149][1][1] == "object"
+    and helpers.triggerEndTooltipTargets[8149][1][2] == 180500,
+    "verified NPC/object event tooltips require independent coordinate support")
 assert(helpers.questTooltipHints[12020]:find("Dark Iron", 1, true))
 assert(helpers.objectiveTooltipHints[8306][15215]:find("Hive", 1, true))
 for _, location in ipairs({1, 2, 3}) do
@@ -150,5 +168,37 @@ for _, location in ipairs({1, 2, 3}) do
     local point = npc.spawns[zone][1]
     local expected = ({36.9, 41.72, 34.57})[location]
     assert(point[1] == expected, "Darkmoon location changed")
+end
+-- Exercise the actual initializer's availability inference in isolation.
+local initialize = assert(read("Database/Corrections/QuestieCorrections.lua"):match(
+    "(function QuestieCorrections:Initialize.-)\nlocal WAYPOINT_MIN_DISTANCE"))
+initialize = 'local QuestieDB = QuestieLoader:ImportModule("QuestieDB")\n'
+    .. 'local QuestieCorrections = QuestieLoader:ImportModule("QuestieCorrections")\n' .. initialize
+local initializeChunk
+if setfenv then initializeChunk = setfenv(assert(loadstring(initialize)), env)
+else initializeChunk = assert(load(initialize, "Initialize", "t", env)) end
+initializeChunk()
+modules.QuestieCorrections.MinimalInit = function() end
+modules.QuestieDB.raceKeys.ALL_ALLIANCE = 1101
+modules.QuestieDB.raceKeys.ALL_HORDE = 690
+modules.QuestieDB.npcData = {[1] = {friendlyToFaction = "A"}, [2] = {friendlyToFaction = "H"}, [3] = {friendlyToFaction = "AH"}}
+modules.QuestieDB.questData = {
+    [1] = {startedBy = {{1}}, finishedBy = {{1}}, requiredRaces = 0},
+    [2] = {startedBy = {{1}}, finishedBy = {{2}}, requiredRaces = 0},
+    [3] = {startedBy = {{99}}, requiredRaces = 0},
+    [4] = {startedBy = {{1}, nil, {100}}, requiredRaces = 0},
+    [5] = {startedBy = {{1}}, finishedBy = {{3}}, requiredRaces = 0},
+    [6] = {startedBy = {{1}}, requiredRaces = 77},
+    [7] = {startedBy = {{2}}, requiredRaces = 0},
+    [8] = {startedBy = {nil, {100}}, requiredRaces = 0},
+    [9] = {startedBy = {{1}}, finishedBy = {nil, {100}}, requiredRaces = 0},
+    [10] = {startedBy = {{1, 99}}, requiredRaces = 0},
+}
+modules.QuestieCorrections:Initialize()
+local quests = modules.QuestieDB.questData
+assert(quests[1].requiredRaces == 1101 and quests[7].requiredRaces == 690)
+assert(quests[6].requiredRaces == 77, "AC's explicit race mask was replaced")
+for _, id in ipairs({2, 3, 4, 5, 8, 9, 10}) do
+    assert(quests[id].requiredRaces == 0, "Uncertain endpoints became a race restriction: " .. id)
 end
 print("Runtime correction consolidation tests passed")

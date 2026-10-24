@@ -55,6 +55,16 @@ class ItemSourceTests(unittest.TestCase):
         self.assertEqual(reader.resolve_loot_row_chances(rows, {}), {1: 100, 2: 100})
         self.assertEqual(reader.resolve_loot_rows([loot(reference=10, LootMode=1)], {10: [loot(1, LootMode=2)]}), set())
 
+    def test_source_combined_boss_mode_reaches_default_mode_reference_items(self):
+        rows = [loot(reference=10, LootMode=8)]
+        references = {10: [loot(1, LootMode=1)]}
+        self.assertEqual(reader.resolve_loot_rows(rows, references), set())
+        self.assertEqual(reader.resolve_loot_row_chances(rows, references, loot_modes=[1, 9]), {1: 100})
+        self.assertEqual(reader.resolve_loot_row_chances(rows, references, loot_modes=[1]), {})
+        self.assertEqual(reader.resolve_loot_row_chances(rows, references, loot_modes=[8]), {})
+        with self.assertRaisesRegex(ValueError, "Invalid source-defined"):
+            reader.resolve_loot_row_chances(rows, references, loot_modes=[0])
+
     def test_reference_cycles_are_reported_without_losing_acyclic_siblings(self):
         references = {10: [loot(1), loot(reference=20)], 20: [loot(2), loot(reference=10)]}
         issues, cache = {}, {}
@@ -88,6 +98,43 @@ class ItemSourceTests(unittest.TestCase):
         rows = [loot(1, MinCount=0), loot(1, MinCount=2, MaxCount=1), loot(1, group=128)]
         self.assertEqual(reader.validate_loot_items(rows, {1}, issues), [])
         self.assertEqual(issues["invalidLootEntryIds"], {100})
+
+    def test_interaction_loot_uses_its_template_binding_and_resolves_references(self):
+        creatures = {10: {"entry": 10, "lootid": 200, "pickpocketloot": 100},
+                     20: {"entry": 20, "skinloot": 300}, 30: {"entry": 30}}
+        references = {400: [loot(1)]}
+        for column, entry, actor in (("pickpocketloot", 100, 10), ("skinloot", 300, 20)):
+            with self.subTest(column=column):
+                mapping = reader.build_creature_loot_source_map(creatures, column)
+                rows = [loot(reference=400, Entry=entry), loot(2, Entry=999)]
+                self.assertEqual(dict(reader.add_item_sources_from_loot(rows, references, mapping)), {1: {actor}})
+        self.assertEqual(dict(reader.build_creature_loot_source_map(creatures)), {200: {10}})
+
+    def test_interaction_loot_is_an_acquisition_without_becoming_corpse_loot(self):
+        keyed = {"item_template": {1: {"entry": 1, "name": "Key"}},
+                 "creature_template": {10: {"entry": 10, "pickpocketloot": 100}},
+                 "quest_template": {55: {"RequiredItemId1": 1}}}
+        tables = {"pickpocketing_loot_template": [loot(1)]}
+        with patch.object(reader, "load_keyed_table", side_effect=lambda root, table, key, modules=False: (keyed.get(table, {}), 0)), \
+             patch.object(reader, "load_row_table", side_effect=lambda root, table, keys, modules=False, **kwargs: (tables.get(table, []), 0)):
+            items, _, context = reader.build_acore_items(ADDON_ROOT)
+        self.assertEqual(items[1]["indirectSources"], {"npcDrops": [10]})
+        self.assertNotIn("npcDrops", items[1])
+        self.assertNotIn("missingLootReferences", context["sourceDiagnostics"])
+
+    def test_start_item_provider_requires_active_quest_and_real_starter_template(self):
+        keyed = {"item_template": {1: {"entry": 1, "name": "Stave"}},
+                 "creature_template": {10: {"entry": 10}},
+                 "gameobject_template": {20: {"entry": 20}},
+                 "quest_template": {55: {"StartItem": 1}, 56: {"StartItem": 1}}}
+        tables = {"creature_queststarter": [{"id": 10, "quest": 55}, {"id": 999, "quest": 55}],
+                  "gameobject_queststarter": [{"id": 20, "quest": 56}],
+                  "disables": [{"sourceType": 1, "entry": 56}]}
+        with patch.object(reader, "load_keyed_table", side_effect=lambda root, table, key, modules=False: (keyed.get(table, {}), 0)), \
+             patch.object(reader, "load_row_table", side_effect=lambda root, table, keys, modules=False, **kwargs: (tables.get(table, []), 0)):
+            items, _, _ = reader.build_acore_items(ADDON_ROOT)
+        self.assertEqual(items[1]["indirectSources"], {"npcDrops": [10]})
+        self.assertNotIn("npcDrops", items[1])
 
     def test_vendor_references_keep_original_sellers_and_allow_reference_only_lists(self):
         rows = [{"entry": 500, "item": 1}, {"entry": 10, "item": -500}, {"entry": 20, "item": -10}]
@@ -123,7 +170,7 @@ class ItemSourceTests(unittest.TestCase):
 
     def test_full_model_never_creates_partial_records_from_invalid_relations(self):
         keyed = {
-            "item_template": {1: {"entry": 1, "name": "Item"}, 2: {"entry": 2, "name": "Container"}},
+            "item_template": {1: {"entry": 1, "name": "Item", "startquest": 404}, 2: {"entry": 2, "name": "Container"}},
             "quest_template": {10: {"StartItem": 888, "RewardItem1": 999, "RequiredItemId1": 1}},
             "creature_template": {10: {"entry": 10, "lootid": 100}, 20: {"entry": 20}},
             "gameobject_template": {55: {"entry": 55, "type": 3, "Data1": 900}},
@@ -140,9 +187,10 @@ class ItemSourceTests(unittest.TestCase):
             "npc_spellclick_spells": [{"npc_entry": 10, "spell_id": 100}],
         }
         with patch.object(reader, "load_keyed_table", side_effect=lambda root, table, key, modules=False: (keyed.get(table, {}), 0)), \
-             patch.object(reader, "load_row_table", side_effect=lambda root, table, keys, modules=False: (tables.get(table, []), 0)):
+             patch.object(reader, "load_row_table", side_effect=lambda root, table, keys, modules=False, **kwargs: (tables.get(table, []), 0)):
             items, _, context = reader.build_acore_items(ADDON_ROOT)
         self.assertEqual(set(items), {1, 2})
+        self.assertNotIn("startQuest", items[1], "An absent quest template cannot be offered by this item")
         self.assertEqual(items[1]["npcDrops"], [10])
         self.assertEqual(items[1]["objectDrops"], [55])
         self.assertEqual(items[1]["itemDrops"], [2])

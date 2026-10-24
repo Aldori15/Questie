@@ -941,7 +941,8 @@ def record_source_issue(diagnostics, kind, value):
         diagnostics.setdefault(kind, set()).add(int(value))
 
 
-def add_item_sources_from_loot(rows, reference_index, source_to_object_ids=None, object_primary_items=None, diagnostics=None):
+def add_item_sources_from_loot(rows, reference_index, source_to_object_ids=None, object_primary_items=None, diagnostics=None,
+                               loot_modes=None):
     object_primary_items = object_primary_items or set()
     per_item = defaultdict(set)
     grouped = defaultdict(list)
@@ -955,7 +956,7 @@ def add_item_sources_from_loot(rows, reference_index, source_to_object_ids=None,
             record_source_issue(diagnostics, "unmappedLootSourceEntries", source_id)
             continue
         item_chances = resolve_loot_row_chances(source_rows, reference_index, reference_cache=reference_cache,
-                                               diagnostics=diagnostics)
+                                               diagnostics=diagnostics, loot_modes=loot_modes)
         for item_id, chance in item_chances.items():
             if item_id in object_primary_items and chance <= LOW_CHANCE_CREATURE_DROP_THRESHOLD:
                 continue
@@ -969,7 +970,7 @@ def resolve_loot_rows(rows, reference_index, seen=None):
 
 
 def resolve_loot_row_chances(rows, reference_index, seen=None, quest_required_only=False,
-                             reference_cache=None, diagnostics=None):
+                             reference_cache=None, diagnostics=None, loot_modes=None):
     """Base at-least-once chances, unioned over loot modes (no rates/scripts).
 
     Match LootGroup::Roll: explicit entries consume the group roll first, then
@@ -1047,14 +1048,17 @@ def resolve_loot_row_chances(rows, reference_index, seen=None, quest_required_on
     mask = 0
     for row in rows:
         mask |= max(0, int(row.get("LootMode", 1) or 0))
-    resolved, mode = {}, 1
-    while mask:
-        if mask & mode:
-            for item_id, chance in resolve_mode(rows, mode, frozenset(seen or ())).items():
-                if chance > 0:
-                    resolved[item_id] = max(resolved.get(item_id, 0), chance)
-            mask &= ~mode
-        mode <<= 1
+    if loot_modes is None:
+        modes = [1 << bit for bit in range(mask.bit_length()) if mask & (1 << bit)]
+    else:
+        modes = sorted(set(loot_modes))
+        if any(type(mode) is not int or not 0 < mode <= 65535 for mode in modes):
+            raise ValueError("Invalid source-defined loot mode")
+    resolved = {}
+    for mode in modes:
+        for item_id, chance in resolve_mode(rows, mode, frozenset(seen or ())).items():
+            if chance > 0:
+                resolved[item_id] = max(resolved.get(item_id, 0), chance)
     return resolved
 
 
@@ -1086,10 +1090,12 @@ def build_gameobject_loot_source_map(gameobject_template_rows):
     return source_map
 
 
-def build_creature_loot_source_map(creature_template_rows):
+def build_creature_loot_source_map(creature_template_rows, loot_column="lootid"):
+    if loot_column not in {"lootid", "pickpocketloot", "skinloot"}:
+        raise ValueError("Unsupported creature loot template column: " + loot_column)
     source_map = defaultdict(set)
     for row in creature_template_rows.values():
-        loot_id = int(row.get("lootid") or 0)
+        loot_id = int(row.get(loot_column) or 0)
         if loot_id > 0:
             source_map[loot_id].add(int(row["entry"]))
     return source_map
@@ -1209,18 +1215,27 @@ def build_spawned_entry_ids(rows, entry_columns):
     return spawned_entry_ids
 
 
-def load_item_source_spells(source_root, sql_spells, spell_ids, spell_sql=None, spell_table="spell"):
-    """Load the six numeric effect fields used for direct item creation.
+def load_item_source_spells(source_root, sql_spells, spell_ids, spell_sql=None, spell_table="spell",
+                            follow_triggers=False, trigger_roots=None):
+    """Load numeric effect inputs for direct and bounded triggered acquisitions.
 
     Match DBCStores/DBCDatabaseLoader: SQL records replace DBC numeric values,
-    including zeros. String inheritance is irrelevant to these six fields.
+    including zeros. Trigger discovery uses the overlaid records so a SQL zero
+    can remove a DBC trigger instead of accidentally retaining its old grant.
     """
     fields = [f"{prefix}_{index}" for prefix in ("Effect", "EffectItemType") for index in range(1, 4)]
 
-    def normalize(row):
-        return {field: int(row.get(field, row.get(field.replace("_", ""), 0)) or 0) for field in fields}
+    trigger_fields = [f"{prefix}_{index}" for prefix in ("EffectTriggerSpell", "EffectBasePoints", "EffectDieSides")
+                      for index in range(1, 4)] + ["AttributesEx"]
 
-    spells = {}
+    def normalize(row):
+        return {field: int(row.get(field, row.get(field.replace("_", ""), 0)) or 0)
+                for field in fields + ["RequiresSpellFocus"] +
+                [f"EffectApplyAuraName_{index}" for index in range(1, 4)] +
+                [f"EffectImplicitTarget{side}_{index}" for side in ("A", "B") for index in range(1, 4)] + trigger_fields}
+
+    spells, exported_ids = {}, set()
+    requested = set(spell_ids)
     coverage = {"exportProvided": spell_sql is not None, "requestedSpellIds": len(spell_ids),
                 "exportRowsLoaded": 0, "sqlRowsLoaded": len(sql_spells), "exportIdsOverriddenBySql": 0}
     if spell_sql is not None:
@@ -1232,18 +1247,46 @@ def load_item_source_spells(source_root, sql_spells, spell_ids, spell_sql=None, 
         columns = extract_sql_columns(spell_sql, spell_table)
         if "ID" not in columns or any(field not in columns and field.replace("_", "") not in columns for field in fields):
             raise ValueError("Spell export must contain ID, Effect1..3 and EffectItemType1..3 (underscored names also accepted)")
+        extended_fields = trigger_fields + ["RequiresSpellFocus"] + [
+            f"{prefix}_{i}" for prefix in ("EffectApplyAuraName", "EffectImplicitTargetA", "EffectImplicitTargetB")
+            for i in range(1, 4)]
+        if follow_triggers and any(field not in columns and field.replace("_", "") not in columns
+                                   for field in extended_fields):
+            raise ValueError("Triggered acquisitions require complete trigger, aura and channel fields in the spell export")
         exported = load_acore_sql_table(Path(source_root), spell_table, base_file_override=spell_sql,
-                                       key_column="ID", wanted_keys=set(spell_ids))
+                                       key_column="ID", wanted_keys=None if follow_triggers else requested)
         for spell_id, row in exported.items():
             if any(field not in row and field.replace("_", "") not in row for field in fields):
                 raise ValueError(f"Incomplete numeric effect fields in exported spell {spell_id}")
             spells[int(spell_id)] = normalize(row)
-        coverage["exportRowsLoaded"] = len(spells)
-        coverage["exportIdsOverriddenBySql"] = len(set(spells) & set(sql_spells))
+        exported_ids = set(spells)
     # Replace each record rather than merging nonzero values: SQL zero is authoritative.
     spells.update({spell_id: normalize(row) for spell_id, row in sql_spells.items()})
-    coverage["resolvedRequestedSpellIds"] = len(set(spell_ids) & set(spells))
-    coverage["missingRequestedSpellIds"] = len(set(spell_ids) - set(spells))
+    if follow_triggers:
+        pending = list(requested if trigger_roots is None else set(trigger_roots))
+        visited = set()
+        while pending:
+            current = pending.pop()
+            if current in visited:
+                continue
+            visited.add(current)
+            row = spells.get(current, {})
+            for slot in range(1, 4):
+                effect = int(row.get(f"Effect_{slot}") or 0)
+                if effect != 64 and not (effect == 6 and int(row.get(f"EffectApplyAuraName_{slot}") or 0) == 23):
+                    continue
+                child = int(row.get(f"EffectTriggerSpell_{slot}") or 0)
+                if child > 0:
+                    requested.add(child)
+                    if child not in visited:
+                        pending.append(child)
+        spells = {key: row for key, row in spells.items() if key in requested or key in sql_spells}
+    coverage["requestedSpellIds"] = len(requested)
+    coverage["exportRowsLoaded"] = len(exported_ids & requested)
+    coverage["exportIdsOverriddenBySql"] = len(exported_ids & requested & set(sql_spells))
+    coverage["resolvedRequestedSpellIds"] = len(requested & set(spells))
+    coverage["missingRequestedSpellIds"] = len(requested - set(spells))
+    coverage["missingRequestedSpellIdList"] = sorted(requested - set(spells))
     return spells, coverage
 
 
@@ -1258,13 +1301,56 @@ def build_acore_items(source_root, include_modules=False, spell_sql=None, spell_
 
     reference_rows, skipped_reference = load_row_table(source_root, "reference_loot_template", ("Entry", "Item"), include_modules)
     creature_loot_rows, skipped_creature_loot = load_row_table(source_root, "creature_loot_template", ("Entry", "Item"), include_modules)
+    pickpocket_rows, skipped_pickpocket = load_row_table(source_root, "pickpocketing_loot_template", ("Entry", "Item"), include_modules)
+    skinning_rows, skipped_skinning = load_row_table(source_root, "skinning_loot_template", ("Entry", "Item"), include_modules)
     gameobject_loot_rows, skipped_gameobject_loot = load_row_table(source_root, "gameobject_loot_template", ("Entry", "Item"), include_modules)
     item_loot_rows, skipped_item_loot = load_row_table(source_root, "item_loot_template", ("Entry", "Item"), include_modules)
     npc_vendor_rows, skipped_npc_vendor = load_row_table(source_root, "npc_vendor", ("entry", "item", "ExtendedCost"), include_modules)
     event_vendor_rows, skipped_event_vendor = load_row_table(source_root, "game_event_npc_vendor", ("eventEntry", "guid", "item"), include_modules)
     npc_spellclick_rows, skipped_npc_spellclick = load_row_table(source_root, "npc_spellclick_spells", ("npc_entry", "spell_id"), include_modules)
+    smart_rows, skipped_smart = load_row_table(source_root, "smart_scripts", ("entryorguid", "source_type", "id", "link"), include_modules)
+    spell_script_rows, skipped_spell_scripts = load_row_table(source_root, "spell_script_names", ("spell_id", "ScriptName"), include_modules)
+    spell_command_rows, skipped_spell_commands = load_row_table(
+        source_root, "spell_scripts", ("id", "effIndex", "delay", "command", "datalong", "datalong2", "dataint", "x", "y", "z", "o"), include_modules)
+    spell_link_rows, skipped_spell_links = load_row_table(
+        source_root, "spell_linked_spell", ("spell_trigger", "spell_effect", "type"), include_modules)
+    ender_rows, skipped_enders = load_row_table(source_root, "creature_questender", ("id", "quest"), include_modules)
+    object_ender_rows, skipped_object_enders = load_row_table(source_root, "gameobject_questender", ("id", "quest"), include_modules)
+    starter_rows, skipped_starters = load_row_table(source_root, "creature_queststarter", ("id", "quest"), include_modules)
+    object_starter_rows, skipped_object_starters = load_row_table(source_root, "gameobject_queststarter", ("id", "quest"), include_modules)
+    disabled_rows, skipped_disabled = load_row_table(source_root, "disables", ("sourceType", "entry"), include_modules)
+    active_quests = set(quest_rows) - {int(row["entry"]) for row in disabled_rows if int(row.get("sourceType") or 0) == 1}
+    from validate_acore_quest_metadata import CONDITION_KEY_COLUMNS
+    condition_rows, skipped_conditions = load_row_table(source_root, "conditions", CONDITION_KEY_COLUMNS, include_modules,
+                                                       column_defaults={column: 0 for column in CONDITION_KEY_COLUMNS})
     spell_ids = {int(row["spell_id"]) for row in npc_spellclick_rows if int(row.get("spell_id") or 0) > 0}
-    spell_rows, spell_coverage = load_item_source_spells(source_root, spell_rows, spell_ids, spell_sql, spell_table)
+    spell_ids.update(int(row.get("action_param1") or 0) for row in smart_rows
+                     if int(row.get("action_type") or 0) in (11, 85, 86, 134) and int(row.get("action_param1") or 0) > 0)
+    spell_ids.update(int(row.get("datalong") or 0) for row in spell_command_rows
+                     if int(row.get("command") or 0) == 15 and int(row.get("datalong") or 0) > 0)
+    spell_ids.update(int(row.get(f"spellid_{index}") or 0) for row in item_rows.values() for index in range(1, 6)
+                     if int(row.get(f"spellid_{index}") or 0) > 0)
+    spell_ids.update(int(row.get("Data10") or 0) for row in gameobject_template_rows.values()
+                     if int(row.get("type") or 0) == 10 and int(row.get("Data10") or 0) > 0)
+    import acore_item_compatibility
+    import acore_item_spell_acquisitions
+    spell_ids.update(acore_item_compatibility.bound_spell_ids(spell_script_rows))
+    if any(row.get("ScriptName") == rule[2] for row in list(creature_template_rows.values()) + list(gameobject_template_rows.values())
+           for rule in acore_item_compatibility.CPP_RULES):
+        spell_ids.update(acore_item_compatibility.cpp_spell_ids(source_root))
+    while True:
+        linked_ids = {int(row.get("spell_effect") or 0) for row in spell_link_rows
+                      if int(row.get("type") or 0) == 0
+                      and abs(int(row.get("spell_trigger") or 0)) in spell_ids
+                      and int(row.get("spell_effect") or 0) > 0}
+        if linked_ids <= spell_ids:
+            break
+        spell_ids.update(linked_ids)
+    item_use_spells = {int(row.get(f"spellid_{index}") or 0) for row in item_rows.values() for index in range(1, 6)
+                       if int(row.get(f"spellid_{index}") or 0) > 0
+                       and int(row.get(f"spelltrigger_{index}") or 0) in (0, 5)}
+    spell_rows, spell_coverage = load_item_source_spells(source_root, spell_rows, spell_ids, spell_sql, spell_table,
+                                                     follow_triggers=True, trigger_roots=item_use_spells)
 
     diagnostics = {}
     valid_item_ids = {item_id for item_id in item_rows if item_id > 0}
@@ -1273,6 +1359,8 @@ def build_acore_items(source_root, include_modules=False, spell_sql=None, spell_
     valid_npc_ids = {npc_id for npc_id in creature_template_rows if npc_id > 0}
     reference_rows = validate_loot_items(reference_rows, valid_item_ids, diagnostics)
     creature_loot_rows = validate_loot_items(creature_loot_rows, valid_item_ids, diagnostics)
+    pickpocket_rows = validate_loot_items(pickpocket_rows, valid_item_ids, diagnostics)
+    skinning_rows = validate_loot_items(skinning_rows, valid_item_ids, diagnostics)
     gameobject_loot_rows = validate_loot_items(gameobject_loot_rows, valid_item_ids, diagnostics)
     item_loot_rows = validate_loot_items(item_loot_rows, valid_item_ids, diagnostics)
     reference_index = defaultdict(list)
@@ -1282,6 +1370,20 @@ def build_acore_items(source_root, include_modules=False, spell_sql=None, spell_
     mapped_object_loot_rows = [row for row in gameobject_loot_rows if int(row["Entry"]) in gameobject_loot_source_map]
     object_primary_items = build_object_primary_item_ids(mapped_object_loot_rows, reference_index, diagnostics)
     creature_loot_source_map = build_creature_loot_source_map(creature_template_rows)
+    interaction_loot = defaultdict(set)
+    for rows, column in ((pickpocket_rows, "pickpocketloot"), (skinning_rows, "skinloot")):
+        mapped = build_creature_loot_source_map(creature_template_rows, column)
+        for item_id, sources in add_item_sources_from_loot(rows, reference_index, mapped,
+                                                         diagnostics=diagnostics).items():
+            interaction_loot[item_id].update(sources)
+    # Scripted boss modes can combine the default bit with a hard-mode bit.
+    # References must receive that same combined mask at every depth.
+    for actor, modes in acore_item_compatibility.collect_cpp_loot_modes(source_root, creature_template_rows).items():
+        loot_id = int(creature_template_rows[actor].get("lootid") or 0)
+        rows = [row for row in creature_loot_rows if int(row["Entry"]) == loot_id]
+        for item_id, sources in add_item_sources_from_loot(
+                rows, reference_index, {loot_id: {actor}}, diagnostics=diagnostics, loot_modes=modes).items():
+            interaction_loot[item_id].update(sources)
 
     acore_items = {}
     for item_id, row in item_rows.items():
@@ -1294,21 +1396,15 @@ def build_acore_items(source_root, include_modules=False, spell_sql=None, spell_
                 item[field] = value
 
         start_quest = int(row.get("startquest") or 0)
-        if start_quest > 0:
+        if start_quest > 0 and start_quest in quest_rows:
             item["startQuest"] = start_quest
         acore_items[int(item_id)] = item
 
+    creature_item_sources = add_item_sources_from_loot(
+        creature_loot_rows, reference_index, source_to_object_ids=creature_loot_source_map,
+        object_primary_items=object_primary_items, diagnostics=diagnostics)
     for field, per_item in (
-        (
-            "npcDrops",
-            add_item_sources_from_loot(
-                creature_loot_rows,
-                reference_index,
-                source_to_object_ids=creature_loot_source_map,
-                object_primary_items=object_primary_items,
-                diagnostics=diagnostics,
-            ),
-        ),
+        ("npcDrops", creature_item_sources),
         ("objectDrops", add_item_sources_from_loot(gameobject_loot_rows, reference_index,
                                                   gameobject_loot_source_map, diagnostics=diagnostics)),
         ("itemDrops", add_item_sources_from_loot(item_loot_rows, reference_index, diagnostics=diagnostics)),
@@ -1393,6 +1489,53 @@ def build_acore_items(source_root, include_modules=False, spell_sql=None, spell_
         for field in ("questRewards", "relatedQuests"):
             if isinstance(item.get(field), set):
                 item[field] = sorted(item[field])
+    indirect = acore_item_compatibility.collect(item_rows, creature_template_rows, gameobject_template_rows,
+                                               smart_rows, spell_rows, condition_rows, spell_scripts=spell_command_rows,
+                                               creature_spawns=creature_rows, spell_links=spell_link_rows)
+    cpp_sources = acore_item_compatibility.collect_cpp(source_root, item_rows, creature_template_rows,
+                                                      gameobject_template_rows, spell_rows, spell_links=spell_link_rows)
+    bound_spell_sources = acore_item_compatibility.collect_bound_spells(
+        source_root, item_rows, creature_template_rows, gameobject_template_rows, spell_rows, spell_script_rows)
+    triggered_sources = acore_item_spell_acquisitions.collect(
+        item_rows, creature_template_rows, gameobject_template_rows, smart_rows, spell_rows, condition_rows,
+        source_root=source_root)
+    corpse_sources = {"sourceKind": "creatureLoot", "sources": {
+        str(item): {"npcDrops": sorted(npcs)} for item, npcs in creature_item_sources.items() if npcs}}
+    summon_sources = acore_item_compatibility.collect_summon_handoffs(
+        source_root, item_rows, creature_template_rows, gameobject_template_rows,
+        (indirect, cpp_sources, bound_spell_sources, triggered_sources, corpse_sources),
+        scripts=smart_rows, conditions=condition_rows)
+    quest_enders = defaultdict(lambda: defaultdict(set))
+    for field, relations in (("npcDrops", ender_rows), ("objectDrops", object_ender_rows)):
+        for relation in relations:
+            if int(relation["quest"]) in active_quests:
+                quest_enders[int(relation["quest"])][field].add(int(relation["id"]))
+    start_items = defaultdict(lambda: defaultdict(set))
+    for field, relations, actors in (("npcDrops", starter_rows, valid_npc_ids),
+                                     ("objectDrops", object_starter_rows, set(gameobject_template_rows))):
+        for relation in relations:
+            quest_id, actor = int(relation["quest"]), int(relation["id"])
+            item_id = int(quest_rows.get(quest_id, {}).get("StartItem") or 0)
+            if quest_id in active_quests and actor in actors and item_id in valid_item_ids:
+                start_items[item_id][field].add(actor)
+    for item_id, item in acore_items.items():
+        item["questUseClass"] = acore_item_compatibility.quest_use_class(item_rows[item_id], item)
+        sources = defaultdict(set)
+        for packet in (indirect, cpp_sources, bound_spell_sources, triggered_sources, summon_sources):
+            for field, values in packet["sources"].get(str(item_id), {}).items():
+                sources[field].update(values)
+        # Interaction loot supplies acquisition POIs without changing corpse
+        # drop probabilities or expanding the manifest's item/source scope.
+        if item_id in interaction_loot:
+            sources["npcDrops"].update(interaction_loot[item_id])
+        for field, actors in start_items[item_id].items():
+            sources[field].update(actors)
+        for quest in item.get("questRewards", ()):
+            for field, values in quest_enders[quest].items():
+                sources[field].update(values)
+        item["indirectSources"] = {field: sorted(values) for field, values in sorted(sources.items())}
+        item["questRelevant"] = bool((set(item.get("relatedQuests", ())) | set(item.get("questRewards", ())) |
+                                      {int(item.get("startQuest") or 0)}) & active_quests)
 
     skipped_mutations = {
         "item_template": skipped_item_template,
@@ -1403,17 +1546,30 @@ def build_acore_items(source_root, include_modules=False, spell_sql=None, spell_
         "spell_dbc": skipped_spell_dbc,
         "reference_loot_template": skipped_reference,
         "creature_loot_template": skipped_creature_loot,
+        "pickpocketing_loot_template": skipped_pickpocket,
+        "skinning_loot_template": skipped_skinning,
         "gameobject_loot_template": skipped_gameobject_loot,
         "item_loot_template": skipped_item_loot,
         "npc_vendor": skipped_npc_vendor,
         "game_event_npc_vendor": skipped_event_vendor,
         "npc_spellclick_spells": skipped_npc_spellclick,
+        "smart_scripts": skipped_smart,
+        "spell_script_names": skipped_spell_scripts,
+        "spell_scripts": skipped_spell_commands,
+        "spell_linked_spell": skipped_spell_links,
+        "conditions": skipped_conditions,
+        "creature_questender": skipped_enders,
+        "gameobject_questender": skipped_object_enders,
+        "creature_queststarter": skipped_starters,
+        "gameobject_queststarter": skipped_object_starters,
+        "disables": skipped_disabled,
     }
     source_context = {
         "spawnedCreatureIds": build_spawned_entry_ids(creature_rows, ("id", "entry", "id1", "id2", "id3")),
         "gameObjectTemplateIds": set(gameobject_template_rows),
         "sourceDiagnostics": {key: sorted(values) for key, values in sorted(diagnostics.items())},
         "spellCoverage": spell_coverage,
+        "acquisitionCoverage": {"triggered": triggered_sources, "summonHandoffs": summon_sources},
     }
     return acore_items, skipped_mutations, source_context
 

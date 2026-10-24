@@ -208,4 +208,96 @@ h.available.ValidateAvailableQuestsFromQuestDetail()
 equal(h.available.IsUnavailableForCurrentReset(10), false, "Weekly offers also clear persisted observations")
 equal(h.available.GetUnavailableQuestSnapshot(), nil, "An explicit offer removes all stale weekly records")
 
+-- Missing map guidance must not invent completion or discard client progress.
+do
+    local state = {entry = {isComplete = 0}, objectives = {}, finishers = 0}
+    local questModule = {
+        GetAllLeaderBoardDetails = function() return state.objectives end,
+        AddFinisher = function() state.finishers = state.finishers + 1 end,
+    }
+    local private = {}
+    local env = setmetatable({FixtureQuest = questModule, FixturePrivate = private}, {__index = _G})
+    env.bit = bit or bit32 or {band = function(value, mask)
+        assert(mask == 2); return math.floor(value / 2) % 2 * 2
+    end}
+    env.FixtureLog = {GetQuest = function() return state.entry end}
+    env.FixtureDB = {questEventTooltipTargets = {[155] = {{"monster", 467}}}}
+    env.FixtureAvailable = {RemoveQuest = function(_, callback) callback() end}
+    env.FixtureLib = {GetFullObjectiveText = function(text) return text end}
+    env.FixtureAddon = {Debug = noop}
+    local prefix = 'local QuestieQuest, _QuestieQuest = FixtureQuest, FixturePrivate\n'
+        .. 'local Questie, QuestieLib = FixtureAddon, FixtureLib\n'
+        .. 'local QuestLogCache, AvailableQuests = FixtureLog, FixtureAvailable\n'
+        .. 'local QuestieDB = FixtureDB\n'
+    loadFunction("Modules/Quest/QuestieQuest.lua", "function _QuestieQuest.ObjectiveUpdate(self)", prefix, env)
+    loadFunction("Modules/Quest/QuestieQuest.lua", "function QuestieQuest:PopulateQuestLogInfo(quest)", prefix, env)
+    local function quest(flags, data)
+        return {Id = 155, specialFlags = flags, ObjectiveData = data, Objectives = {}, SpecialObjectives = {}, Finisher = {Id = 467}}
+    end
+    local eventQuest = quest(2)
+    questModule:PopulateQuestLogInfo(eventQuest)
+    assert(not eventQuest.isComplete and state.finishers == 0, "An unfinished event was marked ready to turn in")
+    local delivery = quest(0)
+    questModule:PopulateQuestLogInfo(delivery)
+    assert(delivery.isComplete and state.finishers == 1, "Objective-free delivery lost its finisher")
+    state.objectives = {{type = "event", text = "Escort the NPC", raw_text = "Escort the NPC", finished = false}}
+    eventQuest = quest(2)
+    questModule:PopulateQuestLogInfo(eventQuest)
+    assert(not eventQuest.isComplete and eventQuest.Objectives[1].Completed == false)
+    equal(eventQuest.Objectives[1].Description, "Escort the NPC", "Client event progress survives omitted map guidance")
+    assert(next(eventQuest.Objectives[1].Coordinates) == nil, "Unverified event coordinates appeared")
+    state.objectives = {{type = "monster", text = "Target: 1/3", raw_text = "Target: 1/3", numFulfilled = 1, numRequired = 3}}
+    local unknown = quest(0)
+    questModule:PopulateQuestLogInfo(unknown)
+    assert(not unknown.isComplete and unknown.Objectives[1].Collected == 1 and unknown.Objectives[1].Needed == 3)
+    assert(next(unknown.Objectives[1].Coordinates) == nil, "Missing targets produced a fabricated map pin")
+    local mapped = quest(0, {{Type = "monster", Id = 42}})
+    questModule:PopulateQuestLogInfo(mapped)
+    equal(mapped.Objectives[1].Id, 42, "Verified objective data was replaced by a fallback")
+    state.entry.isComplete, state.objectives = 1, {}
+    eventQuest = quest(2)
+    questModule:PopulateQuestLogInfo(eventQuest)
+    assert(eventQuest.isComplete, "Authoritative server completion was ignored")
+end
+
+-- A duplicate source item must not suppress later, independently useful tools.
+do
+    local state = {registered = {}, queried = {}}
+    local env = setmetatable({Questie = {Debug = noop}}, {__index = _G})
+    -- Fix array traversal order so the duplicate is always encountered first.
+    env.pairs = ipairs
+    env.QuestieDB = {
+        QueryQuestSingle = function() return state.objectives end,
+        QueryItemSingle = function(id)
+            state.queried[#state.queried + 1] = id
+            return "Tool " .. id
+        end,
+    }
+    env.QuestieTooltips = {RegisterObjectiveTooltip = function(_, questId, key, objective)
+        equal(questId, 24461, "Source-item tooltip keeps its quest")
+        assert(objective.IsRequiredSourceItem and objective.QuestData == state.quest)
+        state.registered[key] = objective
+    end}
+    local declaration = "local function _AddRequiredSourceItemObjective(quest)"
+    local pattern = declaration:gsub("(%W)", "%%%1") .. ".-\nend"
+    compile(assert(read("Modules/Quest/QuestieQuest.lua"):match(pattern), declaration)
+        .. "\nFixtureRun = _AddRequiredSourceItemObjective", env)
+    local function run(objectives, sourceItemId, required)
+        state.objectives, state.queried, state.registered = objectives, {}, {}
+        state.quest = {Id = 24461, sourceItemId = sourceItemId, requiredSourceItems = required}
+        env.FixtureRun(state.quest)
+    end
+    run({nil, nil, {{49739, 1}}}, nil, {49739, 49740})
+    equal(#state.queried, 1, "An objective item is not registered twice")
+    equal(state.queried[1], 49740, "Processing continues after an objective duplicate")
+    equal(state.registered.i_49740.Index, 2, "Later tool keeps its source-item index")
+    run(nil, 49718, {49718, 49723})
+    equal(#state.queried, 1, "A provided source item is not registered twice")
+    assert(state.registered.i_49723, "A source-item duplicate suppressed the next tool")
+    run(nil, nil, {49723})
+    assert(state.registered.i_49723, "Missing objective data suppressed a verified tool")
+    run({nil, nil, {{49739, 49723}}}, nil, {49723})
+    assert(state.registered.i_49723, "An objective count was mistaken for an item ID")
+end
+
 print("Quest dialog identity tests passed")

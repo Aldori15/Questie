@@ -10,6 +10,15 @@ import db_snapshot
 
 
 class QuestSourceAuditTests(unittest.TestCase):
+    def test_guide_spell_fields_keep_focus_items_and_reagents_with_sql_zero_overrides(self):
+        row = {"Effect_1": 24, "EffectItemType_1": 17758, "RequiresSpellFocus": 43,
+               "Reagent_1": 17761, "Reagent1": 999, "Reagent_2": 0, "Reagent2": 888}
+        fields = audit.guide_spell_fields(row)
+        self.assertEqual(fields["RequiresSpellFocus"], 43)
+        self.assertEqual(fields["EffectItemType1"], 17758)
+        self.assertEqual(fields["Reagent1"], 17761)
+        self.assertEqual(fields["Reagent2"], 0)
+
     def test_children_reverse_only_active_parent_links(self):
         quests = {"1": {"s:parentQuest": 0}, "2": {"s:parentQuest": 1},
                   "3": {"s:preQuestSingle": audit.typed([1])},
@@ -130,12 +139,12 @@ class QuestSourceAuditTests(unittest.TestCase):
         saved["starterTeams"]["5497"] = 2
         self.assertNotEqual(audit.model_digest(saved), digest)
 
-    def test_all_schema_fields_are_accounted_for_without_claiming_helper_coverage(self):
+    def test_schema_accounts_for_supported_guides_and_unimplemented_fields(self):
         self.assertEqual(len(audit.FIELDS), 37)
-        self.assertEqual(len(audit.SOURCE_FIELDS), 29)
+        self.assertEqual(len(audit.SOURCE_FIELDS), 33)
         self.assertEqual(set(audit.FIELDS) - audit.SOURCE_FIELDS,
-                         {"triggerEnd", "inGroupWith", "extraObjectives", "requiredSpecialization",
-                          "availableUntilCompleted", "availableStartingWith", "requiredRanks", "disabledByQuest"})
+                         {"requiredSpecialization",
+                          "availableStartingWith", "requiredRanks", "disabledByQuest"})
 
     def test_tuple_typing_preserves_objective_slots_and_zero_false_values(self):
         value = (None, ((19017,),), ((182,),))

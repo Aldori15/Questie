@@ -23,6 +23,53 @@ def bootstrap(items, source):
 
 
 class ItemBaseTests(unittest.TestCase):
+    def test_missing_spell_review_cannot_hide_new_or_changed_source_gaps(self):
+        import hashlib
+        signature = {"source": "frozen"}
+        source_hash = hashlib.sha256(json.dumps(signature, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+        saved = {"spellCoverage": {"missingRequestedSpellIds": 1, "missingRequestedSpellIdList": [128]}}
+        with self.assertRaisesRegex(ValueError, "require a review"):
+            exporter.review_spell_coverage(saved, {}, signature)
+        manifest = {"accuracyPolicy": "verified-source-fields-v1", "unresolvedSpellReview": {
+            "expectedSource": source_hash, "reason": "Reviewed deprecated reference", "spellIds": [128]}}
+        self.assertEqual(exporter.review_spell_coverage(saved, manifest, signature), [128])
+        saved["spellCoverage"]["missingRequestedSpellIdList"] = [758]
+        with self.assertRaisesRegex(ValueError, "require a review"):
+            exporter.review_spell_coverage(saved, manifest, signature)
+        saved["spellCoverage"]["missingRequestedSpellIdList"] = [128]
+        with self.assertRaisesRegex(ValueError, "require a review"):
+            exporter.review_spell_coverage(saved, manifest, {"source": "updated"})
+        saved["spellCoverage"]["missingRequestedSpellIds"] = 2
+        with self.assertRaisesRegex(ValueError, "require a review"):
+            exporter.review_spell_coverage(saved, manifest, signature)
+
+    def test_active_quest_coverage_recovers_excluded_items_and_loot_without_expanding_generic_loot(self):
+        source = {1: item(npcDrops=[100], questRelevant=False), 2: item(npcDrops=[200], questRelevant=False)}
+        manifest = exporter.upgrade_manifest(bootstrap({1: exporter.source_record(item())}, source), source)
+        manifest["questCoveragePolicy"] = "active-source-quest-items-v1"
+        result, _ = exporter.build_records(source, manifest)
+        self.assertNotIn(2, result)
+        self.assertFalse(result[1].get("s:npcDrops"))
+        source[1]["questRelevant"] = source[2]["questRelevant"] = True
+        result, _ = exporter.build_records(source, manifest)
+        self.assertEqual(result[1]["s:npcDrops"], {"n:1": 100})
+        self.assertEqual(result[2]["s:npcDrops"], {"n:1": 200})
+
+    def test_verified_item_policies_refresh_classes_and_interaction_sources(self):
+        source = {1: item()}
+        manifest = exporter.upgrade_manifest(bootstrap({1: exporter.source_record(source[1])}, source), source)
+        manifest["entries"]["1"] = {"reason": "Source-derived UI", "sourceAcquisition": True, "questUseClass": True}
+        with self.assertRaisesRegex(ValueError, "fresh validated"):
+            exporter.build_records(source, manifest)
+        source[1].update(questUseClass=12, indirectSources={"npcDrops": [100]})
+        result, _ = exporter.build_records(source, manifest)
+        self.assertEqual(result[1]["s:class"], 12)
+        self.assertEqual(result[1]["s:npcDrops"], {"n:1": 100})
+        source[1].update(questUseClass=0, indirectSources={})
+        result, _ = exporter.build_records(source, manifest)
+        self.assertEqual(result[1]["s:class"], 0)
+        self.assertFalse(result[1].get("s:npcDrops"))
+
     def test_vendor_only_sources_cannot_be_preserved_as_npc_drops(self):
         source = {1: item(vendors=[100])}
         before = {1: exporter.source_record(item(vendors=[100], npcDrops=[100]))}

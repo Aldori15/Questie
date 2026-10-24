@@ -18,6 +18,49 @@ def export_fixture(path, underscored=False, table="spell"):
 
 
 class ItemSpellSourceTests(unittest.TestCase):
+    def chain_export(self, path):
+        fields = [f"{prefix}{i}" for prefix in ("Effect", "EffectItemType", "EffectTriggerSpell",
+                  "EffectApplyAuraName", "EffectBasePoints", "EffectDieSides",
+                  "EffectImplicitTargetA", "EffectImplicitTargetB") for i in range(1, 4)] + ["AttributesEx", "RequiresSpellFocus"]
+        columns = ["ID"] + fields
+        rows = [dict(ID=10, Effect1=64, EffectTriggerSpell1=20),
+                dict(ID=20, Effect1=6, EffectApplyAuraName1=23, EffectTriggerSpell1=30),
+                dict(ID=30, Effect1=24, EffectItemType1=1, Effect2=64, EffectTriggerSpell2=10),
+                dict(ID=40, Effect1=6, EffectApplyAuraName1=23, EffectTriggerSpell1=50),
+                dict(ID=50, Effect1=24, EffectItemType1=2)]
+        definition = ",\n".join(f"`{name}` INT NOT NULL DEFAULT '0'" for name in columns)
+        values = ",".join("(" + ",".join(str(row.get(name, 0)) for name in columns) + ")" for row in rows)
+        path.write_text(f"CREATE TABLE `spell` (\n{definition}\n) ENGINE=InnoDB;\n"
+                        f"INSERT INTO `spell` VALUES {values};\n", encoding="utf-8")
+
+    def test_trigger_closure_follows_only_active_roots_and_handles_cycles(self):
+        with db_snapshot.temporary_directory(ADDON_ROOT / "tools/reports") as directory:
+            path = directory / "spell.sql"
+            self.chain_export(path)
+            spells, coverage = reader.load_item_source_spells(ADDON_ROOT, {}, {10, 40, 99}, path,
+                                                             follow_triggers=True, trigger_roots={10})
+            self.assertEqual(set(spells), {10, 20, 30, 40})
+            self.assertEqual(coverage["missingRequestedSpellIdList"], [99])
+            self.assertEqual(coverage["requestedSpellIds"], 5)
+            self.assertEqual(spells[20]["EffectApplyAuraName_1"], 23)
+
+    def test_sql_zero_removes_export_trigger_before_dependency_discovery(self):
+        with db_snapshot.temporary_directory(ADDON_ROOT / "tools/reports") as directory:
+            path = directory / "spell.sql"
+            self.chain_export(path)
+            spells, coverage = reader.load_item_source_spells(ADDON_ROOT, {10: {"Effect_1": 0}}, {10}, path,
+                                                             follow_triggers=True, trigger_roots={10})
+            self.assertEqual(set(spells), {10})
+            self.assertEqual(spells[10]["EffectTriggerSpell_1"], 0)
+            self.assertEqual(coverage["missingRequestedSpellIdList"], [])
+
+    def test_trigger_discovery_rejects_export_missing_caster_and_trigger_fields(self):
+        with db_snapshot.temporary_directory(ADDON_ROOT / "tools/reports") as directory:
+            path = directory / "spell.sql"
+            export_fixture(path)
+            with self.assertRaisesRegex(ValueError, "Triggered acquisitions require complete"):
+                reader.load_item_source_spells(ADDON_ROOT, {}, {10}, path, follow_triggers=True)
+
     def test_real_export_parser_normalizes_columns_and_selects_requested_spells(self):
         with db_snapshot.temporary_directory(ADDON_ROOT / "tools/reports") as directory:
             path = directory / "spell.sql"
@@ -101,6 +144,26 @@ class ItemSpellSourceTests(unittest.TestCase):
         digest = audit.model_digest(saved)
         saved["spellCoverage"]["exportRowsLoaded"] = 2
         self.assertNotEqual(digest, audit.model_digest(saved))
+        digest = audit.model_digest(saved)
+        saved["acquisitionCoverage"] = {"triggered": {"omissions": [{"spellId": 37503}]}}
+        self.assertNotEqual(digest, audit.model_digest(saved))
+
+    def test_source_signature_invalidates_when_shared_actor_reader_changes(self):
+        with db_snapshot.temporary_directory(ADDON_ROOT / "tools/reports") as directory:
+            (directory / "data/sql/base/db_world").mkdir(parents=True)
+            (directory / "data/sql/base/db_world/item_template.sql").write_text("", encoding="utf-8")
+            shared_reader = ADDON_ROOT / "tools/acore_quest_compatibility.py"
+            file_hash = audit.snapshot.file_hash
+            with patch.object(audit.source_reader, "source_sql_files", return_value=[]):
+                before = audit.source_signature(directory, "starts")
+                self.assertEqual(before["readers"][shared_reader.name], file_hash(shared_reader))
+                with patch.object(audit.snapshot, "file_hash", side_effect=lambda path:
+                                  "changed-shared-reader" if path == shared_reader else file_hash(path)):
+                    after = audit.source_signature(directory, "starts")
+            self.assertNotEqual(before, after)
+            before.pop("readers")
+            after.pop("readers")
+            self.assertEqual(before, after)
 
 
 if __name__ == "__main__":

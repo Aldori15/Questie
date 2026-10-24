@@ -3057,6 +3057,12 @@ def derive_acore_metadata(source_root, quest_template_sql=None, quest_template_a
                 row.get("RequiredMaxRepValue"),
             ]
         )
+        objective_ceiling = normalize_pair([row.get("RequiredFactionId2"), row.get("RequiredFactionValue2")])
+        if objective_ceiling:
+            ceiling = metadata["requiredMaxRep"]
+            if ceiling and ceiling[0] != objective_ceiling[0]:
+                raise ValueError(f"Quest {quest_id}: multiple reputation ceilings cannot fit one Questie field")
+            metadata["requiredMaxRep"] = (objective_ceiling[0], min(ceiling[1], objective_ceiling[1])) if ceiling else objective_ceiling
         metadata["preQuestGroup"] = normalize_list(prequest_groups.get(quest_id, set()))
         metadata["preQuestSingle"] = normalize_list(() if metadata["preQuestGroup"] else prereq_sets.get(quest_id, set()))
         metadata["parentQuest"] = normalize_int(next(iter(parent_quests.get(quest_id, set())), 0))

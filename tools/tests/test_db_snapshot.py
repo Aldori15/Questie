@@ -158,7 +158,7 @@ class SnapshotComparisonTests(unittest.TestCase):
                 for row in snapshot.read_records(stream, header["metadata"]["contexts"]):
                     context, section, entity_id = row["context"], row["section"], row["id"]
                     counts[context] = counts.get(context, 0) + 1
-                    if (section == "questData" and entity_id in (2, 6, 7, 11390, 13836)) or (section == "itemData" and entity_id == 1307):
+                    if (section == "questData" and entity_id in (2, 6, 7, 25, 1471, 7067, 11390, 13836)) or (section == "itemData" and entity_id in (1307, 7208)):
                         selected[context, section, entity_id] = row["value"]
                     if section.startswith(("overrides/", "auxiliary/")):
                         states.setdefault((context, section), {})[entity_id] = row["value"]
@@ -168,8 +168,18 @@ class SnapshotComparisonTests(unittest.TestCase):
                 for quest_id, amount in ((2, 250), (6, 150), (7, 250)):
                     self.assertEqual(selected[context, "questData", quest_id]["s:reputationReward"]["n:1"]["n:2"], amount)
                 self.assertEqual(selected[context, "itemData", 1307]["s:startQuest"], 123)
-                self.assertEqual(selected[context, "questData", 11390]["s:extraObjectives"]["n:1"]["n:2"], 19)
-                self.assertEqual(selected[context, "questData", 13836]["s:extraObjectives"]["n:1"]["n:2"], 20)
+                # Source guides remain available without losing server objectives.
+                flying_machine = selected[context, "questData", 11390]
+                disarmed = selected[context, "questData", 13836]
+                self.assertEqual(flying_machine["s:objectives"]["n:1"]["n:1"]["n:1"], 24439)
+                self.assertEqual(disarmed["s:objectives"]["n:3"]["n:1"]["n:1"], 45323)
+                gazebo = selected[context, "questData", 25]["s:triggerEnd"]["n:2"]["n:331"]["n:1"]
+                self.assertEqual(gazebo, {"n:1": 48.92, "n:2": 69.56})
+                circle = selected[context, "questData", 1471]["s:extraObjectives"]["n:1"]["n:5"]["n:1"]
+                self.assertEqual(circle, {"n:1": "object", "n:2": 37097})
+                tools = selected[context, "questData", 7067]["s:requiredSourceItems"].values()
+                self.assertTrue(set(range(17761, 17766)) <= set(tools))
+                self.assertIn(6466, selected[context, "itemData", 7208]["s:npcDrops"].values())
                 self.assertEqual(states[context, "overrides/fresh/item"][49698]["s:npcDrops"]["n:1"], dropper)
                 for kind in ("quest", "npc", "object", "item"):
                     self.assertEqual(states.get((context, "overrides/fresh/" + kind), {}),

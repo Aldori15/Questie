@@ -23,6 +23,51 @@ def bootstrap(before, source):
 
 
 class NpcBaseTests(unittest.TestCase):
+    def setUp(self):
+        # Geometry-reader fixtures deliberately omit the core's health inputs.
+        self.enterContext(patch.object(audit.reader.acore_npc_health, "validate_source"))
+        self.enterContext(patch.object(audit.reader.acore_npc_health, "collect", side_effect=lambda templates, stats:
+            ({int(row["entry"]): {"minLevelHealth": 1, "maxLevelHealth": 1} for row in templates}, {})))
+
+    def test_source_health_refreshes_without_display_values_and_requires_provenance(self):
+        before = {1: npc(minLevelHealth=10, maxLevelHealth=20)}
+        source = {1: npc(minLevelHealth=30, maxLevelHealth=40)}
+        manifest = exporter.upgrade_manifest(bootstrap(before, source), source, {})
+        manifest.update(healthPolicy="acore-template-default-rates-v1", displayValues={})
+        proof = {"defaultHealth": {"policy": manifest["healthPolicy"]}}
+        result = exporter.build_records(source, manifest, proof)
+        self.assertEqual(result[1]["s:maxLevelHealth"], 40)
+        source[1]["s:maxLevelHealth"] = 50
+        self.assertEqual(exporter.build_records(source, manifest, proof)[1]["s:maxLevelHealth"], 50)
+        with self.assertRaisesRegex(ValueError, "fresh validated source"):
+            exporter.build_records(source, manifest, {})
+
+    def test_display_zones_follow_verified_geometry_and_do_not_reuse_legacy_labels(self):
+        spawns = audit.typed({45: [[1, 2]], 267: [[3, 4], [5, 6]]})
+        self.assertEqual(exporter.source_display_zone(45, spawns), 45)
+        self.assertEqual(exporter.source_display_zone(12, spawns), 267)
+        self.assertEqual(exporter.source_display_zone(12, {}), 0)
+        self.assertEqual(exporter.source_display_zone(0, {}, audit.typed({11313: [[[1, 2]]]})), 11313)
+
+    def test_source_zone_survives_unavailable_coordinates(self):
+        proof = {"zones": [2597], "origins": {"2597": ["cpp-zone:av:static"]}}
+        self.assertEqual(exporter.source_display_zone(0, {}, source_zones=proof), 2597)
+        self.assertEqual(exporter.source_display_zone(12, {}, source_zones=proof), 2597)
+        # Competing source maps do not justify guessing a primary zone.
+        self.assertEqual(exporter.source_display_zone(0, {}, source_zones={"zones": [12, 45]}), 0)
+        self.assertEqual(exporter.source_display_zone(45, {}, source_zones={"zones": [12, 45]}), 45)
+        # Successfully projected geometry remains more specific than a map label.
+        self.assertEqual(exporter.source_display_zone(0, audit.typed({12: [[1, 2]]}),
+                                                     source_zones=proof), 12)
+
+    def test_base_uses_independent_zone_provenance(self):
+        before = {13176: npc(zoneID=2597, spawns={})}
+        source = {13176: npc(zoneID=0, spawns={})}
+        manifest = exporter.upgrade_manifest(bootstrap(before, source), source, {})
+        manifest.update(zonePolicy="verified-geometry-v1", zoneOverrides={})
+        proof = {"sourceZones": {"version": 1, "entries": {"13176": {"zones": [2597]}}}}
+        self.assertEqual(exporter.build_records(source, manifest, proof)[13176]["s:zoneID"], 2597)
+
     def test_direct_generation_reports_reviewed_mapping_gaps_and_publishes_deterministically(self):
         with db_snapshot.temporary_directory(ADDON_ROOT / "tools/reports") as directory:
             (directory / "tools/data").mkdir(parents=True)

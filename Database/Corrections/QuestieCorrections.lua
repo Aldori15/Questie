@@ -88,7 +88,7 @@ do
     end
 
     function QuestieCorrections:MinimalInit() -- db already compiled
-
+        QuestRuntimeCorrections:LoadEventTooltipTargets()
         ItemRuntimeCorrections:ApplyFactionFixes(QuestieDB.itemDataOverrides, addOverride)
         NPCRuntimeCorrections:ApplyFactionFixes(QuestieDB.npcDataOverrides, addOverride)
         ObjectRuntimeCorrections:ApplyFactionFixes(QuestieDB.objectDataOverrides, addOverride)
@@ -134,44 +134,41 @@ function QuestieCorrections:Initialize(validationTables)
             QuestieDB.requiredItemConditionQuestIds[questId] = true
         end
 
-        if (not quest[QuestieDB.questKeys.requiredRaces]) or quest[QuestieDB.questKeys.requiredRaces] == 0 then
-            -- check against questgiver
-            local canHorde = false
-            local canAlliance = false
-            local starts = quest[QuestieDB.questKeys.startedBy]
-            if starts then
-                starts = starts[1]
-                if starts then
-                    for _, id in pairs(starts) do
+        if not quest[QuestieDB.questKeys.requiredRaces] or quest[QuestieDB.questKeys.requiredRaces] == 0 then
+            -- An endpoint-based client availability filter supplements AC's race mask.
+            -- Mixed, neutral, missing, object and item endpoints remain unrestricted.
+            local team
+            local consistent = true
+            local foundStarter = false
+            for side = 1, 2 do
+                local relation = quest[side == 1 and QuestieDB.questKeys.startedBy or QuestieDB.questKeys.finishedBy]
+                if relation then
+                    if (relation[2] and next(relation[2])) or (relation[3] and next(relation[3])) then
+                        consistent = false
+                    end
+                    for _, id in pairs(relation[1] or {}) do
                         local npc = QuestieDB.npcData[id]
-                        if npc then
-                            local friendly = npc[QuestieDB.npcKeys.friendlyToFaction]
-                            if friendly then
-                                if friendly == "H" then
-                                    canHorde = true
-                                elseif friendly == "A" then
-                                    canAlliance = true
-                                elseif friendly == "AH" then
-                                    canAlliance = true
-                                    canHorde = true
-                                end
-                            end
+                        local friendly = npc and npc[QuestieDB.npcKeys.friendlyToFaction]
+                        if friendly ~= "A" and friendly ~= "H" then
+                            consistent = false
+                        elseif team and team ~= friendly then
+                            consistent = false
+                        else
+                            team = friendly
+                        end
+                        if side == 1 then
+                            foundStarter = true
                         end
                     end
                 end
-                if canAlliance ~= canHorde then
-                    if canAlliance then
-                        quest[QuestieDB.questKeys.requiredRaces] = QuestieDB.raceKeys.ALL_ALLIANCE
-                    else
-                        quest[QuestieDB.questKeys.requiredRaces] = QuestieDB.raceKeys.ALL_HORDE
-                    end
-                end
+            end
+            if consistent and foundStarter and team then
+                quest[QuestieDB.questKeys.requiredRaces] = team == "A" and QuestieDB.raceKeys.ALL_ALLIANCE or QuestieDB.raceKeys.ALL_HORDE
             end
         end
     end
 
     QuestieCorrections:MinimalInit()
-
 end
 
 local WAYPOINT_MIN_DISTANCE = 1.5 -- todo: make this a config value maybe?
