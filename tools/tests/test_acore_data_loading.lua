@@ -86,6 +86,8 @@ for _, name in ipairs({"ItemRuntimeCorrections", "NPCRuntimeCorrections",
     local mod = env.QuestieLoader:ImportModule(name)
     mod.ApplyFactionFixes = empty
 end
+-- Runtime helper behavior is covered by test_runtime_corrections.lua.
+modules.QuestRuntimeCorrections.LoadEventTooltipTargets = empty
 for _, name in ipairs({"QuestieQuestBlacklist", "QuestieNPCBlacklist", "QuestieItemBlacklist"}) do
     local mod = env.QuestieLoader:ImportModule(name)
     for _, method in ipairs({"Load", "LoadAutomatics", "LoadReverseLinkFixes",

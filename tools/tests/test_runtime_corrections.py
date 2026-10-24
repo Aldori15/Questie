@@ -24,6 +24,16 @@ class RuntimeCorrectionTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("Runtime correction consolidation tests passed", result.stdout)
 
+    def test_generated_bases_load_through_production_initialization(self):
+        try:
+            lua = db_snapshot.lua_executable()
+        except ValueError:
+            self.skipTest("Lua unavailable")
+        result = subprocess.run([lua, "tools/tests/test_acore_data_loading.lua"], cwd=ADDON_ROOT,
+                                capture_output=True, text=True, encoding="utf-8")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("AzerothCore complete-base smoke test passed", result.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()

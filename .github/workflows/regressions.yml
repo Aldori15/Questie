@@ -53,32 +53,5 @@ jobs:
           sudo apt-get update
           sudo apt-get install --no-install-recommends -y lua5.1 lua5.2
 
-      - name: Check addon Lua 5.1 syntax
-        run: python -B tools/check_lua_syntax.py --luac luac5.1
-
-      - name: Check Lua regression test syntax
-        run: |
-          for test in tools/tests/test_*.lua; do
-            luac5.2 -p "$test"
-          done
-
-      - name: Run Lua 5.1-compatible regression suites
-        run: |
-          # Tests declare Lua 5.1 support in their first-line run instructions.
-          for test in tools/tests/test_*.lua; do
-            IFS= read -r header < "$test"
-            if [[ "$header" == *"Lua 5.1"* ]]; then
-              echo "Running $test (Lua 5.1)"
-              lua5.1 "$test"
-            fi
-          done
-
-      - name: Run Lua regression suites
-        run: |
-          for test in tools/tests/test_*.lua; do
-            echo "Running $test"
-            lua5.2 "$test"
-          done
-
-      - name: Run Python regression suites
-        run: python -B -m unittest discover -s tools/tests -p 'test_*.py' -v
+      - name: Run regression checks
+        run: python -B tools/run_regressions.py --ci

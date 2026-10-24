@@ -6,6 +6,10 @@ local function equal(actual, expected, label)
 end
 local function setup(historical)
     local env = setmetatable({}, {__index = _G})
+    env.bit = bit or bit32 or {band = function(value, mask)
+        assert(mask == 2)
+        return math.floor(value / 2) % 2 * 2
+    end}
     local modules, frames, tooltips, jobs = {}, {}, {}, {}
     local active, ready = true, 0
     local function noop() end
