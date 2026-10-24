@@ -1,3 +1,4 @@
+from questie_base import base_text
 import argparse
 import json
 import re
@@ -347,7 +348,7 @@ def unescape_lua_string(value: str):
 
 def load_item_names(item_db_path: Path):
     names = {}
-    for raw_line in item_db_path.read_text(encoding="utf-8").splitlines():
+    for raw_line in base_text(item_db_path).splitlines():
         line = raw_line.strip()
         if not line.startswith("["):
             continue
@@ -404,7 +405,7 @@ def main():
     parser = argparse.ArgumentParser(description="Generate AzerothCore creature quest-item drop rates for Questie.")
     parser.add_argument("--acore-source", default=r"P:\AC\source")
     parser.add_argument("--output", default="Database/DropTables/data/wotlkAcoreItemDrops.lua")
-    parser.add_argument("--item-db", default="Database/Wotlk/wotlkItemDB.lua")
+    parser.add_argument("--item-db", default="Database/AzerothCore/acoreItemDB.lua")
     parser.add_argument("--coverage-report", default="tools/reports/acore_creature_drop_coverage.json")
     parser.add_argument("--include-modules", action="store_true", help="Also scan SQL under AzerothCore modules/. This can be slow.")
     args = parser.parse_args()

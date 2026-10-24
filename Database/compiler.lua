@@ -28,8 +28,8 @@ local POINTERMAP_TICKS_PER_YIELD = 4096
 local coYield = coroutine.yield
 local coRunning = coroutine.running
 
--- Bump when field types/order or generated visibility coverage change to invalidate cached DB blobs.
-QuestieDBCompiler.compiledSchemaVersion = 64
+-- Bump for schema or base-database migration changes to invalidate cached DB blobs.
+QuestieDBCompiler.compiledSchemaVersion = 65
 
 ---@alias CompilerTypes
 ---| "u8"

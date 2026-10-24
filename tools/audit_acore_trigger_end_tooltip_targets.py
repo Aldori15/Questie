@@ -13,11 +13,8 @@ if str(TOOLS_DIR) not in sys.path:
 import validate_acore_quest_metadata as validator  # noqa: E402
 
 
-QUEST_FIX_FILES = (
-    Path("Database/Corrections/classicQuestFixes.lua"),
-    Path("Database/Corrections/tbcQuestFixes.lua"),
-    Path("Database/Corrections/wotlkQuestFixes.lua"),
-)
+QUEST_FIX_FILES = ()
+RUNTIME_QUEST_FILES = (Path("Database/Corrections/QuestRuntimeCorrections.lua"),)
 
 QUEST_ROW_RE = re.compile(r"^\s{8}\[(\d+)\]\s*=\s*\{")
 TOOLTIP_TARGET_RE = re.compile(
@@ -79,31 +76,27 @@ REVIEW_REASONS = {
 
 
 def load_trigger_ends(addon_root):
+    from questie_base import base_text
+    constants = validator.load_constants(addon_root)
+    index = constants["quest_keys"]["triggerEnd"] - 1
+    relative_path = Path("Database/AzerothCore/acoreQuestDB.lua")
     records = {}
-    for relative_path in QUEST_FIX_FILES:
-        quest_id = None
-        path = addon_root / relative_path
-        for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
-            quest_match = QUEST_ROW_RE.match(line)
-            if quest_match:
-                quest_id = int(quest_match.group(1))
-            if quest_id is None or "[questKeys.triggerEnd]" not in line:
-                continue
-            if re.search(r"=\s*(?:nil|false)\s*,?\s*$", line):
-                records.pop(quest_id, None)
-                continue
-            text_match = re.search(r'=\s*\{\s*"((?:\\.|[^"\\])*)"', line)
-            records[quest_id] = {
-                "file": relative_path.as_posix(),
-                "line": line_number,
-                "text": text_match.group(1) if text_match else "",
-            }
+    for line_number, line in enumerate(base_text(addon_root / relative_path).splitlines(), 1):
+        match = validator.QUEST_ROW_RE.match(line.strip())
+        if not match:
+            continue
+        fields = validator.split_top_level_lua_table(match.group(2))
+        if index >= len(fields) or not validator.lua_expression_is_truthy(fields[index]):
+            continue
+        value = validator.parse_lua_value(fields[index], constants)
+        text = value.get(1, "") if isinstance(value, dict) else value[0]
+        records[int(match.group(1))] = {"file": relative_path.as_posix(), "line": line_number, "text": str(text)}
     return records
 
 
 def load_configured_targets(addon_root):
     configured = {}
-    for relative_path in QUEST_FIX_FILES:
+    for relative_path in RUNTIME_QUEST_FILES:
         path = addon_root / relative_path
         for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
             match = TOOLTIP_TARGET_RE.search(line)
@@ -126,7 +119,7 @@ def load_configured_targets(addon_root):
 def load_effective_questie_metadata(addon_root):
     constants = validator.load_constants(addon_root)
     metadata = validator.load_questie_base_metadata(
-        addon_root / "Database/questDB.lua",
+        addon_root / "Database/AzerothCore/acoreQuestDB.lua",
         constants["quest_keys"],
         constants,
     )

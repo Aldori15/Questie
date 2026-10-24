@@ -1,3 +1,4 @@
+from questie_base import base_text, LuaTableParser
 import argparse
 import json
 import re
@@ -10,24 +11,9 @@ NPC_ENTRY_RE = re.compile(r"^\[(\d+)\]\s*=\s*(\{.*\})$", re.DOTALL)
 NPC_FIELD_RE = re.compile(r"^\[(npcKeys\.(?:questStarts|questEnds))\]\s*=\s*(.+)$", re.DOTALL)
 OBJECT_FIELD_RE = re.compile(r"^\[(objectKeys\.(?:questStarts|questEnds))\]\s*=\s*(.+)$", re.DOTALL)
 
-DEFAULT_QUEST_FIXES = [
-    "Database/Corrections/classicQuestFixes.lua",
-    "Database/Corrections/tbcQuestFixes.lua",
-    "Database/Corrections/wotlkQuestFixes.lua",
-]
-DEFAULT_NPC_FIXES = [
-    "Database/Corrections/classicNPCFixes.lua",
-    "Database/Corrections/tbcNPCFixes.lua",
-    "Database/Corrections/wotlkNPCFixes.lua",
-]
-DEFAULT_OBJECT_FIXES = [
-    "Database/Corrections/classicObjectFixes.lua",
-    "Database/Corrections/tbcObjectFixes.lua",
-    "Database/Corrections/wotlkObjectFixes.lua",
-]
-ACORE_QUEST_FIXES = ["Database/AzerothCore/AzerothCoreQuestCorrections.lua"]
-ACORE_NPC_FIXES = ["Database/AzerothCore/AzerothCoreNPCCorrections.lua"]
-ACORE_OBJECT_FIXES = ["Database/AzerothCore/AzerothCoreObjectCorrections.lua"]
+DEFAULT_QUEST_FIXES = []
+DEFAULT_NPC_FIXES = []
+DEFAULT_OBJECT_FIXES = []
 QUEST_CORRECTION_TABLE_MARKERS = [
     "return {",
     "local relationCorrections = ",
@@ -35,141 +21,6 @@ QUEST_CORRECTION_TABLE_MARKERS = [
 ]
 
 
-class LuaTableParser:
-    def __init__(self, text: str):
-        self.text = text
-        self.length = len(text)
-        self.index = 0
-
-    def parse(self):
-        value = self._parse_value()
-        self._skip_ws()
-        return value
-
-    def _skip_ws(self):
-        while self.index < self.length and self.text[self.index] in " \t\r\n":
-            self.index += 1
-
-    def _peek(self):
-        return self.text[self.index] if self.index < self.length else ""
-
-    def _parse_value(self):
-        self._skip_ws()
-        char = self._peek()
-        if char == "{":
-            return self._parse_table()
-        if char == '"':
-            return self._parse_string()
-        if char == "'":
-            return self._parse_single_quoted_string()
-        if char == "-" or char.isdigit():
-            return self._parse_number()
-        if self.text.startswith("nil", self.index):
-            self.index += 3
-            return None
-        if self.text.startswith("true", self.index):
-            self.index += 4
-            return True
-        if self.text.startswith("false", self.index):
-            self.index += 5
-            return False
-        if char == "[":
-            return self._parse_bracket_key_value()
-        raise ValueError(f"Unsupported Lua token near: {self.text[self.index:self.index + 32]!r}")
-
-    def _parse_table(self):
-        assert self._peek() == "{"
-        self.index += 1
-        items = []
-
-        while True:
-            self._skip_ws()
-            if self._peek() == "}":
-                self.index += 1
-                return items
-
-            items.append(self._parse_value())
-            self._skip_ws()
-
-            char = self._peek()
-            if char == ",":
-                self.index += 1
-                continue
-            if char == "}":
-                self.index += 1
-                return items
-            raise ValueError(f"Unexpected character in Lua table: {char!r}")
-
-    def _parse_string(self):
-        assert self._peek() == '"'
-        self.index += 1
-        chars = []
-
-        while self.index < self.length:
-            char = self.text[self.index]
-            self.index += 1
-            if char == "\\":
-                if self.index >= self.length:
-                    break
-                escaped = self.text[self.index]
-                self.index += 1
-                escape_map = {"n": "\n", "r": "\r", "t": "\t", '"': '"', "\\": "\\"}
-                chars.append(escape_map.get(escaped, escaped))
-                continue
-            if char == '"':
-                return "".join(chars)
-            chars.append(char)
-
-        raise ValueError("Unterminated Lua string")
-
-    def _parse_single_quoted_string(self):
-        assert self._peek() == "'"
-        self.index += 1
-        chars = []
-
-        while self.index < self.length:
-            char = self.text[self.index]
-            self.index += 1
-            if char == "\\":
-                if self.index >= self.length:
-                    break
-                chars.append(self.text[self.index])
-                self.index += 1
-                continue
-            if char == "'":
-                return "".join(chars)
-            chars.append(char)
-
-        raise ValueError("Unterminated Lua string")
-
-    def _parse_number(self):
-        start = self.index
-        if self._peek() == "-":
-            self.index += 1
-        while self.index < self.length and self.text[self.index].isdigit():
-            self.index += 1
-        return int(self.text[start:self.index])
-
-    def _parse_bracket_key_value(self):
-        assert self._peek() == "["
-        depth = 0
-        start = self.index
-        while self.index < self.length:
-            char = self.text[self.index]
-            if char == "[":
-                depth += 1
-            elif char == "]":
-                depth -= 1
-                if depth == 0:
-                    self.index += 1
-                    break
-            self.index += 1
-
-        self._skip_ws()
-        if self._peek() != "=":
-            raise ValueError(f"Unsupported bracket token near: {self.text[start:self.index + 16]!r}")
-        self.index += 1
-        return {"__kv__": True, "key": self.text[start:self.index].strip(), "value": self._parse_value()}
 
 
 def split_top_level_lua_table(lua_table: str):
@@ -327,7 +178,7 @@ def extract_relation_sources(value):
 def load_questie_relations(quest_db_path: Path):
     per_quest = {}
 
-    for raw_line in quest_db_path.read_text(encoding="utf-8").splitlines():
+    for raw_line in base_text(quest_db_path).splitlines():
         line = raw_line.strip()
         if not line.startswith("["):
             continue
@@ -338,8 +189,7 @@ def load_questie_relations(quest_db_path: Path):
 
         quest_id = int(quest_id_match.group(1))
         fields = split_top_level_lua_table(quest_id_match.group(2))
-        if len(fields) < 3:
-            continue
+        fields += ["nil"] * max(0, 3 - len(fields))
 
         per_quest[quest_id] = {
             "start": extract_relation_sources(LuaTableParser(fields[1]).parse() if fields[1] != "nil" else None),
@@ -405,7 +255,7 @@ def parse_optional_int_list(value):
 
 def load_base_npc_reverse(npc_db_path: Path):
     result = {}
-    for raw_line in npc_db_path.read_text(encoding="utf-8").splitlines():
+    for raw_line in base_text(npc_db_path).splitlines():
         line = raw_line.strip()
         if not line.startswith("["):
             continue
@@ -415,8 +265,7 @@ def load_base_npc_reverse(npc_db_path: Path):
 
         npc_id = int(match.group(1))
         fields = split_top_level_lua_table(match.group(2))
-        if len(fields) < 11:
-            continue
+        fields += ["nil"] * max(0, 11 - len(fields))
 
         result[npc_id] = {
             "questStarts": parse_optional_int_list(None if fields[9] == "nil" else LuaTableParser(fields[9]).parse()),
@@ -427,7 +276,7 @@ def load_base_npc_reverse(npc_db_path: Path):
 
 def load_base_object_reverse(object_db_path: Path):
     result = {}
-    for raw_line in object_db_path.read_text(encoding="utf-8").splitlines():
+    for raw_line in base_text(object_db_path).splitlines():
         line = raw_line.strip()
         if not line.startswith("["):
             continue
@@ -437,8 +286,7 @@ def load_base_object_reverse(object_db_path: Path):
 
         object_id = int(match.group(1))
         fields = split_top_level_lua_table(match.group(2))
-        if len(fields) < 3:
-            continue
+        fields += ["nil"] * max(0, 3 - len(fields))
 
         result[object_id] = {
             "questStarts": parse_optional_int_list(None if fields[1] == "nil" else LuaTableParser(fields[1]).parse()),
@@ -566,9 +414,9 @@ def build_lua_suggestions(entity_kind, entries):
 
 def main():
     parser = argparse.ArgumentParser(description="Validate reverse NPC/object quest links against effective Questie quest relations.")
-    parser.add_argument("--quest-db", default="Database/Wotlk/wotlkQuestDB.lua")
-    parser.add_argument("--npc-db", default="Database/Wotlk/wotlkNpcDB.lua")
-    parser.add_argument("--object-db", default="Database/Wotlk/wotlkObjectDB.lua")
+    parser.add_argument("--quest-db", default="Database/AzerothCore/acoreQuestDB.lua")
+    parser.add_argument("--npc-db", default="Database/AzerothCore/acoreNpcDB.lua")
+    parser.add_argument("--object-db", default="Database/AzerothCore/acoreObjectDB.lua")
     parser.add_argument(
         "--quest-fixes",
         nargs="*",
@@ -584,16 +432,10 @@ def main():
         nargs="*",
         default=DEFAULT_OBJECT_FIXES,
     )
-    parser.add_argument("--no-acore", action="store_true", help="Validate without AzerothCore compat corrections")
     parser.add_argument("--report", help="Optional path to write the full JSON report")
     parser.add_argument("--suggest-npc-lua", help="Optional path to write NPC reverse-link fix suggestions")
     parser.add_argument("--suggest-object-lua", help="Optional path to write object reverse-link fix suggestions")
     args = parser.parse_args()
-
-    if not args.no_acore:
-        args.quest_fixes = args.quest_fixes + ACORE_QUEST_FIXES
-        args.npc_fixes = args.npc_fixes + ACORE_NPC_FIXES
-        args.object_fixes = args.object_fixes + ACORE_OBJECT_FIXES
 
     quest_relations = load_questie_relations(Path(args.quest_db))
     for fix_file in args.quest_fixes:

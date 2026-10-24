@@ -1829,10 +1829,12 @@ QuestieDB.specialFlags = {
 
 _QuestieDB.questCache = {}; -- stores quest objects so they dont need to be regenerated
 _QuestieDB.npcCache = {};
+_QuestieDB.questStartCache = {};
 
 -- Event NPCs can move when a live holiday overrides the calendar location.
 function QuestieDB.InvalidateNPC(npcId)
     _QuestieDB.npcCache[npcId] = nil
+    _QuestieDB.questStartCache = {}
     -- Quests in the log own mutable objective state and queued draw work.
     -- Refresh previews without replacing those live quest objects.
     local activeQuests = QuestiePlayer.currentQuestlog or {}
@@ -1862,6 +1864,9 @@ local questRequirementQuerySource
 
 local function CreateQuestRequirementQuery(querySingle, questKeys, overrides)
     local cache = {}
+    -- Compact slots avoid a string-keyed hash table for every queried quest.
+    -- Schema indexes are sparse here because only requirement fields are read.
+    local fieldIndices, fieldCount = {}, 0
     local missing = {}
     return function(questId, field)
         -- Corrections remain live, including false/zero values and edited lists.
@@ -1872,16 +1877,22 @@ local function CreateQuestRequirementQuery(querySingle, questKeys, overrides)
             if index and override[index] ~= nil then return override[index] end
         end
 
+        local fieldIndex = fieldIndices[field]
+        if not fieldIndex then
+            fieldCount = fieldCount + 1
+            fieldIndex = fieldCount
+            fieldIndices[field] = fieldIndex
+        end
         local requirements = cache[questId]
         if not requirements then
             requirements = {}
             cache[questId] = requirements
         end
-        local value = requirements[field]
+        local value = requirements[fieldIndex]
         if value == nil then
             value = querySingle(questId, field)
             if value == nil then value = missing end
-            requirements[field] = value
+            requirements[fieldIndex] = value
         end
         if value ~= missing then return value end
     end
@@ -1969,6 +1980,7 @@ function QuestieDB:Initialize()
     -- data has been corrected, ensure cache is empty (something might have accessed the api before questie initialized)
     _QuestieDB.questCache = {};
     _QuestieDB.npcCache = {};
+    _QuestieDB.questStartCache = {};
 
     --? This improves performance a lot, the regular functions still work but this is much faster because i caches
     checkRace  = QuestieLib:TableMemoizeFunction(QuestiePlayer.HasRequiredRace)
@@ -3595,6 +3607,37 @@ function QuestieDB.HasQuestData(questId)
     return type(name) == "string" and name:find("%S") ~= nil
 end
 
+local questStartQueryOrder = {"name", "startedBy", "objectivesText", "specialFlags"}
+
+---Available icons need starter/display data, not objective spawn lists.
+---Full quest objects remain available through GetQuest for tracker and lifecycle callers.
+---@param questId QuestId
+---@return table|nil
+function QuestieDB.GetQuestStartInfo(questId)
+    if not questId or not QuestieDB.HasQuestData(questId) then return nil end
+    local fullQuest = _QuestieDB.questCache[questId]
+    if fullQuest then return fullQuest end
+    local cached = _QuestieDB.questStartCache[questId]
+    if cached then return cached end
+    local raw = QuestieDB.QueryQuest(questId, questStartQueryOrder)
+    if not raw then return nil end
+    local startedBy = raw[2] or {}
+    local level, requiredLevel = QuestieLib.GetEffectiveQuestLevel(questId)
+    local quest = {
+        Id = questId,
+        name = raw[1],
+        Starts = {NPC = startedBy[1], GameObject = startedBy[2], Item = startedBy[3]},
+        level = level,
+        requiredLevel = requiredLevel,
+        Description = raw[3],
+    }
+    if raw[4] then
+        quest.IsRepeatable = bitband(raw[4], QuestieDB.specialFlags.REPEATABLE) ~= 0
+    end
+    _QuestieDB.questStartCache[questId] = quest
+    return quest
+end
+
 ---@param questId QuestId
 ---@return Quest|nil @The quest object or nil if usable quest data is missing
 function QuestieDB.GetQuest(questId) -- /dump QuestieDB.GetQuest(867)
@@ -3885,6 +3928,7 @@ function QuestieDB.GetQuest(questId) -- /dump QuestieDB.GetQuest(867)
     end
 
     _QuestieDB.questCache[questId] = QO
+    _QuestieDB.questStartCache[questId] = nil
     return QO
 end
 

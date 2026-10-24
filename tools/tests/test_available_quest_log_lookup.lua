@@ -79,6 +79,7 @@ db.IsComplete = function() return -1 end
 db.IsAzerothCoreAvailabilityConditionFulfilled = function() return true end
 db.private.CheckAchievementRequirements = function() return true end
 db.GetQuest = function(id) return {Id = id, Starts = {}, tagInfoWasCached = true} end
+db.GetQuestStartInfo = function(id) return db.GetQuest(id) end
 db.GetQuestTagInfo = noop
 
 -- Snapshot hits/misses bypass live searches; ordinary callers remain live.

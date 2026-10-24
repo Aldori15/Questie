@@ -7,7 +7,7 @@ local l10n = QuestieLoader:ImportModule("l10n")
 local QuestieMap = QuestieLoader:ImportModule("QuestieMap")
 
 ---@type table<number, boolean>
-Moonwell.dataClassic = {
+Moonwell.objectIds = {
     -- Teldrassil Moonwells
     [19549] = true, -- Shadowglen moonwell
     [19550] = true, -- Starbreeze Village moonwell
@@ -20,9 +20,7 @@ Moonwell.dataClassic = {
     -- Darkshore Moonwells
     [174795] = true, -- Auberdine (Main moonwell)
     [175337] = true, -- Auberdine (Secondary moonwell)
-    -- Moonglade Moonwells
-    [400010] = true, -- Moonglade moonwell
-    -- Generic/Multi-location Moonwells
+    -- Shared Moonwells (multiple zones and expansions)
     [177232] = true,
     [177272] = true,
     [177273] = true,
@@ -36,26 +34,6 @@ Moonwell.dataClassic = {
     [177281] = true,
 }
 
----@type table<number, boolean>
-Moonwell.dataTBC = {
-    [410021] = true, -- Cenarion Thicket moonwell
-    [410022] = true, -- Evergrove moonwell
-    [410023] = true, -- Ghostlands moonwell
-}
-
-local function _GetActiveMoonwellData()
-    local data = {}
-    for objectId in pairs(Moonwell.dataClassic) do
-        data[objectId] = true
-    end
-
-    for objectId in pairs(Moonwell.dataTBC) do
-        data[objectId] = true
-    end
-
-    return data
-end
-
 function Moonwell:ShowMoonwell(objectID, icon, scale)
     icon = icon or "Interface\\Icons\\inv_fabric_moonrag_01.blp"
     scale = scale or 0.6
@@ -64,13 +42,13 @@ function Moonwell:ShowMoonwell(objectID, icon, scale)
 end
 
 function Moonwell:ShowAll()
-    for objectID in pairs(_GetActiveMoonwellData()) do
+    for objectID in pairs(Moonwell.objectIds) do
         Moonwell:ShowMoonwell(objectID)
     end
 end
 
 function Moonwell:HideAll()
-    for objectID in pairs(_GetActiveMoonwellData()) do
+    for objectID in pairs(Moonwell.objectIds) do
         QuestieMap:UnloadManualFrames(objectID, "moonwell")
     end
 end

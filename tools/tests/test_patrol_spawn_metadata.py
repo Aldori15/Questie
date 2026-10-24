@@ -7,6 +7,12 @@ import generate_acore_npc_corrections as npc
 
 
 class PatrolSpawnMetadataTests(unittest.TestCase):
+    def setUp(self):
+        # These fixtures isolate spawn identity and deliberately omit health data.
+        self.enterContext(patch.object(npc.acore_npc_health, "validate_source"))
+        self.enterContext(patch.object(npc.acore_npc_health, "collect", side_effect=lambda templates, stats:
+            ({int(row["entry"]): {"minLevelHealth": 1, "maxLevelHealth": 1} for row in templates}, {})))
+
     def test_identity_preserves_visibility_and_unrestricted_locations(self):
         ordinary = npc.add_acore_spawn_identity([51.3, 27.27], {"guid": 133649, "map": 571})
         self.assertEqual(ordinary, [51.3, 27.27, 0, 0, 571, 0, 0, 133649])

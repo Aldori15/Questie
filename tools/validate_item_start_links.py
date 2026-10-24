@@ -1,3 +1,4 @@
+from questie_base import base_text, LuaTableParser
 import argparse
 import json
 import re
@@ -10,98 +11,6 @@ ITEM_ENTRY_RE = re.compile(r"^\[(\d+)\]\s*=\s*(\{.*\})$", re.DOTALL)
 ITEM_FIELD_RE = re.compile(r"^\[(itemKeys\.startQuest)\]\s*=\s*(.+)$", re.DOTALL)
 
 
-class LuaTableParser:
-    def __init__(self, text: str):
-        self.text = text
-        self.length = len(text)
-        self.index = 0
-
-    def parse(self):
-        value = self._parse_value()
-        self._skip_ws()
-        return value
-
-    def _skip_ws(self):
-        while self.index < self.length and self.text[self.index] in " \t\r\n":
-            self.index += 1
-
-    def _peek(self):
-        return self.text[self.index] if self.index < self.length else ""
-
-    def _parse_value(self):
-        self._skip_ws()
-        char = self._peek()
-        if char == "{":
-            return self._parse_table()
-        if char == '"':
-            return self._parse_string('"')
-        if char == "'":
-            return self._parse_string("'")
-        if char == "-" or char.isdigit():
-            return self._parse_number()
-        if self.text.startswith("nil", self.index):
-            self.index += 3
-            return None
-        if self.text.startswith("true", self.index):
-            self.index += 4
-            return True
-        if self.text.startswith("false", self.index):
-            self.index += 5
-            return False
-        raise ValueError(f"Unsupported Lua token near: {self.text[self.index:self.index + 32]!r}")
-
-    def _parse_table(self):
-        assert self._peek() == "{"
-        self.index += 1
-        items = []
-
-        while True:
-            self._skip_ws()
-            if self._peek() == "}":
-                self.index += 1
-                return items
-
-            items.append(self._parse_value())
-            self._skip_ws()
-
-            char = self._peek()
-            if char == ",":
-                self.index += 1
-                continue
-            if char == "}":
-                self.index += 1
-                return items
-            raise ValueError(f"Unexpected character in Lua table: {char!r}")
-
-    def _parse_string(self, delimiter):
-        assert self._peek() == delimiter
-        self.index += 1
-        chars = []
-
-        while self.index < self.length:
-            char = self.text[self.index]
-            self.index += 1
-            if char == "\\":
-                if self.index >= self.length:
-                    break
-                escaped = self.text[self.index]
-                self.index += 1
-                escape_map = {"n": "\n", "r": "\r", "t": "\t", '"': '"', "'": "'", "\\": "\\"}
-                chars.append(escape_map.get(escaped, escaped))
-                continue
-            if char == delimiter:
-                return "".join(chars)
-            chars.append(char)
-
-        raise ValueError("Unterminated Lua string")
-
-    def _parse_number(self):
-        start = self.index
-        if self._peek() == "-":
-            self.index += 1
-        while self.index < self.length and self.text[self.index].isdigit():
-            self.index += 1
-        return int(self.text[start:self.index])
 
 
 def split_top_level_lua_table(lua_table: str):
@@ -250,7 +159,7 @@ def extract_item_starts(value):
 def load_quest_item_starts(quest_db_path: Path):
     per_quest = {}
 
-    for raw_line in quest_db_path.read_text(encoding="utf-8").splitlines():
+    for raw_line in base_text(quest_db_path).splitlines():
         line = raw_line.strip()
         if not line.startswith("["):
             continue
@@ -260,8 +169,7 @@ def load_quest_item_starts(quest_db_path: Path):
 
         quest_id = int(match.group(1))
         fields = split_top_level_lua_table(match.group(2))
-        if len(fields) < 2:
-            continue
+        fields += ["nil"] * max(0, 2 - len(fields))
 
         per_quest[quest_id] = extract_item_starts(None if fields[1] == "nil" else LuaTableParser(fields[1]).parse())
 
@@ -297,7 +205,7 @@ def apply_quest_overrides(quest_item_starts, overrides):
 
 def load_base_item_starts(item_db_path: Path):
     result = {}
-    for raw_line in item_db_path.read_text(encoding="utf-8").splitlines():
+    for raw_line in base_text(item_db_path).splitlines():
         line = raw_line.strip()
         if not line.startswith("["):
             continue
@@ -307,8 +215,7 @@ def load_base_item_starts(item_db_path: Path):
 
         item_id = int(match.group(1))
         fields = split_top_level_lua_table(match.group(2))
-        if len(fields) < 5:
-            continue
+        fields += ["nil"] * max(0, 5 - len(fields))
         result[item_id] = None if fields[4] == "nil" else int(fields[4])
     return result
 
@@ -379,26 +286,17 @@ def build_lua_suggestions(targets):
 
 def main():
     parser = argparse.ArgumentParser(description="Validate item startQuest links against effective Questie quest startedBy item data.")
-    parser.add_argument("--quest-db", default="Database/Wotlk/wotlkQuestDB.lua")
-    parser.add_argument("--item-db", default="Database/Wotlk/wotlkItemDB.lua")
+    parser.add_argument("--quest-db", default="Database/AzerothCore/acoreQuestDB.lua")
+    parser.add_argument("--item-db", default="Database/AzerothCore/acoreItemDB.lua")
     parser.add_argument(
         "--quest-fixes",
         nargs="*",
-        default=[
-            "Database/Corrections/classicQuestFixes.lua",
-            "Database/Corrections/tbcQuestFixes.lua",
-            "Database/Corrections/wotlkQuestFixes.lua",
-        ],
+        default=[],
     )
     parser.add_argument(
         "--item-fixes",
         nargs="*",
-        default=[
-            "Database/Corrections/classicItemFixes.lua",
-            "Database/Corrections/tbcItemFixes.lua",
-            "Database/Corrections/wotlkItemFixes.lua",
-            "Database/Corrections/Automatic/itemStartFixes.lua",
-        ],
+        default=[],
     )
     parser.add_argument("--report", help="Optional path to write the full JSON report")
     parser.add_argument("--suggest-lua", help="Optional path to write candidate Lua item fixes")

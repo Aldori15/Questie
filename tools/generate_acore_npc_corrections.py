@@ -1,3 +1,4 @@
+from questie_base import base_text, parse_keys, return_table
 import argparse
 import ast
 import csv
@@ -5,6 +6,7 @@ import math
 import re
 import struct
 import sys
+import acore_npc_health
 from collections import defaultdict
 from functools import lru_cache
 from pathlib import Path
@@ -38,18 +40,7 @@ from generate_acore_item_corrections import (  # noqa: E402
 )
 
 
-NPC_CORRECTION_FILES = [
-    ("Database/Corrections/classicNPCFixes.lua", ("QuestieNPCFixes:Load",)),
-    ("Database/Corrections/tbcNPCFixes.lua", ("QuestieTBCNpcFixes:Load",)),
-    (
-        "Database/Corrections/wotlkNPCFixes.lua",
-        (
-            "QuestieWotlkNpcFixes:LoadAutomatics",
-            "QuestieWotlkNpcFixes:Load",
-            "QuestieWotlkNpcFixes:LoadReverseLinkFixes",
-        ),
-    ),
-]
+NPC_CORRECTION_FILES = []
 
 # AzerothCore stores the TBC starting zones on map 530, but the 3.3.5 client
 # map rectangles used by Questie place those same zones in Eastern Kingdoms or
@@ -484,9 +475,7 @@ class LuaParser:
 
 
 def parse_npc_keys(npc_db_path):
-    text = npc_db_path.read_text(encoding="utf-8")
-    key_block = extract_balanced_braces(text, text.find("{", text.find("QuestieDB.npcKeys")))
-    return {name: int(value) for name, value in re.findall(r"\['([^']+)'\]\s*=\s*(\d+)", key_block)}
+    return parse_keys(npc_db_path, "npc")
 
 
 def load_questie_npcs(npc_db_path, npc_keys):
@@ -717,7 +706,7 @@ def apply_corrections(npcs, corrections):
 
 
 def load_effective_questie_npcs(repo_root, npc_keys, fields):
-    npcs = load_questie_npcs(repo_root / "Database/Wotlk/wotlkNpcDB.lua", npc_keys)
+    npcs = load_questie_npcs(repo_root / "Database/AzerothCore/acoreNpcDB.lua", npc_keys)
     zone_constants = parse_zone_id_constants(repo_root)
     zone_constants.update({f"phases.{name}": value for name, value in parse_spawn_phase_constants(repo_root).items()})
     for relative_path, function_names in NPC_CORRECTION_FILES:
@@ -872,6 +861,16 @@ def parse_zone_maps(repo_root, wdm_root=None):
         if isinstance(instance, int):
             ui_by_instance[instance].append(ui_id)
 
+    # The client packs the blood elf and draenei zones onto maps 0/1, while
+    # AzerothCore stores their world positions on map 530. Their native AC
+    # rectangles already supply the required transform; include those zones
+    # in map 530's fallback search as well as their client map search. This
+    # also covers sea/subzone IDs without a directly mapped UI rectangle.
+    for map_id, zone_id in ACORE_WORLD_RECT_OVERRIDES:
+        ui_id = special_to_ui.get(zone_id) or area_to_ui.get(zone_id) or wdm_floor_zone_to_ui.get(zone_id)
+        if ui_id in ui_map_data and ui_id not in ui_by_instance[map_id]:
+            ui_by_instance[map_id].append(ui_id)
+
     return {
         "area_to_ui": area_to_ui,
         "special_to_ui": special_to_ui,
@@ -973,6 +972,32 @@ def resolve_wdm_instance_floor(x, y, z, map_id, zone_maps):
     return zone_id, point
 
 
+def source_zone_candidates(row, zone_maps):
+    """Read geographic source metadata without requiring a map transform."""
+    for field in ("zoneId", "areaId"):
+        value = int(row.get(field) or row.get(field.lower()) or 0)
+        if field == "areaId":
+            value = ACORE_AREA_ID_OVERRIDES.get(value, value)
+        ui = (zone_maps.get("special_to_ui", {}).get(value)
+              or zone_maps.get("area_to_ui", {}).get(value)
+              or zone_maps.get("wdm_floor_zone_to_ui", {}).get(value))
+        if ui is not None:
+            return [int(zone_maps.get("ui_to_zone", {}).get(ui, value))]
+    map_id = int(row.get("map") or 0)
+    zone = zone_maps.get("instance_to_zone", {}).get(map_id)
+    if zone:
+        return [int(zone)]
+    # A continent is not itself a preferred geographic zone. Other source maps
+    # can identify a single instance zone even when its XY transform is absent.
+    if map_id not in (0, 1, 530, 571):
+        zones = {int(zone_maps["ui_to_zone"][ui])
+                 for ui in zone_maps.get("ui_by_instance", {}).get(map_id, [])
+                 if ui in zone_maps.get("ui_to_zone", {})}
+        if len(zones) == 1:
+            return sorted(zones)
+    return []
+
+
 def resolve_coordinate_zone(row, zone_maps):
     candidates = []
     guid = int(row.get("guid") or 0)
@@ -1064,7 +1089,7 @@ def resolve_coordinate_zone(row, zone_maps):
     return None, None
 
 
-def load_rows_from_sql_file(sql_path, table_name, key_columns, default_columns=None):
+def load_rows_from_sql_file(sql_path, table_name, key_columns, default_columns=None, row_filter=None):
     columns = list(default_columns or extract_sql_columns(sql_path, table_name))
     rows = {}
     skipped_mutations = 0
@@ -1080,12 +1105,13 @@ def load_rows_from_sql_file(sql_path, table_name, key_columns, default_columns=N
         if not statement_targets_table(statement, table_name):
             continue
         if upper.startswith(("INSERT", "REPLACE")):
-            skipped_mutations += apply_multirow_insert(statement, table_name, columns, rows, key_columns, sql_context)
+            skipped_mutations += apply_multirow_insert(statement, table_name, columns, rows, key_columns, sql_context,
+                                                       row_filter=row_filter)
 
     return list(rows.values()), skipped_mutations
 
 
-def load_filtered_row_table(source_root, table_name, key_columns, row_filter, include_modules=False):
+def load_filtered_row_table(source_root, table_name, key_columns, row_filter, include_modules=False, ignore_statement=None):
     """Replay one AC table while retaining only rows used by this generator."""
     source_root = Path(source_root)
     base_file = source_root / "data/sql/base/db_world" / f"{table_name}.sql"
@@ -1104,6 +1130,8 @@ def load_filtered_row_table(source_root, table_name, key_columns, row_filter, in
                 apply_variable_set(statement, sql_context)
                 continue
             if not statement_targets_table(statement, table_name):
+                continue
+            if ignore_statement is not None and ignore_statement(statement):
                 continue
             if upper.startswith(("INSERT", "REPLACE")):
                 skipped_mutations += apply_multirow_insert(
@@ -1228,6 +1256,134 @@ def is_friendly_to(template, other):
     return False
 
 
+def spawn_origin_matches(point, result, difficulty_masks):
+    """Match only the reader's explicit deduplication rules, never proximity."""
+    coordinate = [round(float(point[0]), 2), round(float(point[1]), 2)]
+    if coordinate != result[:2]:
+        return False
+    phase = lambda value: int(value[2] or 0) if len(value) >= 3 else 0
+    if phase(point) != phase(result):
+        return False
+    if len(result) >= 7:
+        return (len(point) == len(result) and point[4:] == result[4:]
+                and int(point[3]) & int(result[3]) == int(point[3]))
+    if len(result) >= 5:
+        return (len(point) == 5 and point[4] == result[4]
+                and int(point[3]) & int(result[3]) == int(point[3]))
+    return len(point) < 5 or (len(point) == 5 and
+        int(point[3]) & int(difficulty_masks.get(int(point[4]), 0)) == int(point[3]))
+
+
+def index_geometry_origins(npcs, spawn_origins, path_origins, difficulty_masks):
+    result = {}
+    for npc_id, npc in npcs.items():
+        fields = {}
+        for field, origins in (("spawns", spawn_origins), ("waypoints", path_origins)):
+            zones = {}
+            for zone, values in npc.get(field, {}).items():
+                candidates = origins.get(npc_id, {}).get(zone, [])
+                indexed = {}
+                # Bucket by coordinate to avoid a quadratic scan over large zones.
+                buckets = defaultdict(list)
+                for value, identity in candidates:
+                    key = tuple(round(float(v), 2) for v in value[:2]) if field == "spawns" else tuple(value[0])
+                    buckets[key].append((value, identity))
+                for index, value in enumerate(values, 1):
+                    key = tuple(value[:2]) if field == "spawns" else tuple(value[0])
+                    matches = {identity for original, identity in buckets.get(key, [])
+                               if (spawn_origin_matches(original, value, difficulty_masks)
+                                   if field == "spawns" else original == value)}
+                    if matches:
+                        indexed[f"n:{index}"] = sorted(matches)
+                if indexed:
+                    zones[f"n:{zone}"] = indexed
+            if zones:
+                fields[field] = zones
+        if fields:
+            result[str(npc_id)] = fields
+    return result
+
+
+def index_partial_spawn_coverage(provenance, spawns, origins, unmapped_guids, difficulty_masks):
+    """Expose incomplete mapping for explicit review, without declaring it complete."""
+    def typed(value):
+        if isinstance(value, list):
+            return {f"n:{i}": typed(v) for i, v in enumerate(value, 1) if v is not None}
+        if isinstance(value, dict):
+            return {f"n:{key}": typed(v) for key, v in value.items()}
+        return value
+
+    partial = {entry: {"spawns": sort_coordinate_table(spawns.get(entry, {}), difficulty_masks)}
+               for entry in unmapped_guids}
+    indexed = index_geometry_origins(partial, origins, {}, difficulty_masks)
+    for entry, row in partial.items():
+        provenance.setdefault(str(entry), {})["spawnCoverage"] = {
+            "unmappedGuids": sorted(unmapped_guids[entry]),
+            "mapped": typed(row["spawns"]),
+            "origins": indexed.get(str(entry), {}).get("spawns", {}),
+        }
+
+
+def index_partial_waypoint_coverage(provenance, waypoints, origins, unmapped_paths):
+    """Keep verified paths available for an explicit review of failed links."""
+    def typed(value):
+        if isinstance(value, list):
+            return {f"n:{i}": typed(v) for i, v in enumerate(value, 1) if v is not None}
+        if isinstance(value, dict):
+            return {f"n:{key}": typed(v) for key, v in value.items()}
+        return value
+
+    partial = {entry: {"waypoints": sort_waypoint_table(waypoints.get(entry, {}))}
+               for entry in unmapped_paths}
+    indexed = index_geometry_origins(partial, {}, origins, {})
+    for entry, row in partial.items():
+        provenance.setdefault(str(entry), {})["waypointCoverage"] = {
+            "unmappedPaths": sorted(unmapped_paths[entry]),
+            "mapped": typed(row["waypoints"]),
+            "origins": indexed.get(str(entry), {}).get("waypoints", {}),
+        }
+
+
+def project_waypoint_path(creature, path_rows, zone_maps):
+    """Project consecutive map/floor sections without bridging separate visits."""
+    base_zone, _ = resolve_coordinate_zone(creature, zone_maps)
+    preferred_zone = base_zone
+    sections = []
+    for index, point_row in enumerate(path_rows, 1):
+        if point_row.get("position_x") is None or point_row.get("position_y") is None:
+            return None
+        point_source = dict(creature)
+        # GUID-specific floor overrides describe the static spawn, not a moving
+        # waypoint. Resolve each waypoint using its own height, including zero.
+        point_source.pop("guid", None)
+        for column in ("position_x", "position_y", "position_z"):
+            if point_row.get(column) is not None:
+                point_source[column] = point_row[column]
+        if preferred_zone and preferred_zone != base_zone:
+            # Map rectangles overlap. Keep the current map while it still fits
+            # instead of jumping between overlapping maps at each waypoint.
+            point_source.update(areaId=0, areaid=0, zoneId=preferred_zone, zoneid=0)
+        zone, point = resolve_coordinate_zone(point_source, zone_maps)
+        if not zone or not point:
+            # Do not skip an unknown point and connect the positions around it.
+            return None
+        if not sections or sections[-1][0] != zone:
+            first_point = int(point_row.get("point") or point_row.get("pointid") or index)
+            sections.append((zone, first_point, []))
+        sections[-1][2].append(point)
+        preferred_zone = zone
+    # Addon tables can contain dormant/stale path links, and SmartAI can use a
+    # path only for a summoned copy located elsewhere. A static spawn's map is
+    # not evidence for those remote placements. Keep that coverage unavailable
+    # until a matching placement is known, rather than importing an unrelated
+    # route merely because its coordinates fit some other map rectangle.
+    # Floors of the same mapped dungeon remain valid regardless of spawn floor.
+    if int(creature.get("map") or 0) not in zone_maps.get("instance_to_zone", {}):
+        if base_zone is None or not any(zone == base_zone for zone, _, _ in sections):
+            return None
+    return sections
+
+
 def build_acore_npcs(
     source_root,
     include_modules=False,
@@ -1237,11 +1393,18 @@ def build_acore_npcs(
     map_difficulty_dbc=None,
     wdm_root=None,
     questie_npcs=None,
+    provenance=None,
 ):
     source_root = Path(source_root)
     map_difficulty_dbc = find_map_difficulty_dbc(source_root, map_difficulty_dbc)
     map_difficulty_masks = load_map_difficulty_masks(map_difficulty_dbc)
     template_rows, skipped_creature_template = load_keyed_table(source_root, "creature_template", "entry", include_modules)
+    acore_npc_health.validate_source(source_root)
+    health_rows, skipped_health = load_row_table(source_root, "creature_classlevelstats", ("level", "class"), include_modules)
+    template_health, health_diagnostics = acore_npc_health.collect(
+        ({"entry": entry, **row} for entry, row in template_rows.items()), health_rows)
+    if provenance is not None:
+        provenance["defaultHealth"] = {"policy": "acore-template-default-rates-v1", "diagnostics": health_diagnostics}
     if creature_sql:
         creature_rows, skipped_creature = load_rows_from_sql_file(Path(creature_sql), "creature", ("guid",))
     else:
@@ -1280,6 +1443,7 @@ def build_acore_npcs(
     questgiver_entries = starts_by_entry.keys() | ends_by_entry.keys()
     faction_template_rows, skipped_faction_template = load_keyed_table(source_root, "factiontemplate_dbc", "ID", include_modules)
     creature_addon_rows, skipped_creature_addon = load_keyed_table(source_root, "creature_addon", "guid", include_modules)
+    template_addon_rows, skipped_template_addon = load_keyed_table(source_root, "creature_template_addon", "entry", include_modules)
     waypoint_rows, skipped_waypoint = load_row_table(source_root, "waypoint_data", ("id", "point"), include_modules)
     escort_waypoint_rows, skipped_escort_waypoint = load_row_table(
         source_root,
@@ -1291,20 +1455,22 @@ def build_acore_npcs(
         source_root,
         "smart_scripts",
         SMART_SCRIPT_KEY_COLUMNS,
-        lambda row: (
-            int(row.get("source_type") or 0) == SMART_SOURCE_TYPE_CREATURE
-            and int(row.get("action_type") or 0) == SMART_ACTION_ESCORT_START
-        ),
+        # Summoned copies need their real caller/map context. Keep all actions
+        # so timed-list callers and phase/map mutations can be checked too.
+        lambda row: True,
         include_modules,
     )
 
-    health_by_entry = defaultdict(list)
     spawns_by_entry = defaultdict(lambda: defaultdict(list))
     spawn_zone_counts = defaultdict(lambda: defaultdict(int))
     unmapped_spawn_entries = set()
+    unmapped_spawn_guids = defaultdict(set)
     seen_spawn_entries = set()
     guid_to_creature = {}
     creatures_by_entry = defaultdict(list)
+    spawn_origins = defaultdict(lambda: defaultdict(list))
+    source_zone_origins = defaultdict(lambda: defaultdict(set))
+    path_origins = defaultdict(lambda: defaultdict(list))
     map_stats = defaultdict(int)
     zone_maps = parse_zone_maps(Path(repo_root or ".").resolve(), wdm_root)
     multispawns_by_guid = defaultdict(set)
@@ -1319,27 +1485,41 @@ def build_acore_npcs(
         primary_entry = get_primary_creature_entry(row)
         entries = get_creature_entries(row, multispawns_by_guid)
         guid = int(row.get("guid") or 0)
+        source_zones = source_zone_candidates(row, zone_maps)
         if guid:
             guid_to_creature[guid] = row
-        health = int(row.get("curhealth") or 0)
-        if primary_entry and health:
-            health_by_entry[primary_entry].append(health)
         if entries:
             zone_id, point = resolve_coordinate_zone(row, zone_maps)
         for entry in entries:
             creatures_by_entry[entry].append(row)
             seen_spawn_entries.add(entry)
+            for source_zone in source_zones:
+                source_zone_origins[entry][source_zone].add(
+                    f"creature:{guid}:map:{int(row.get('map') or 0)}:"
+                    f"zone:{int(row.get('zoneId') or row.get('zoneid') or 0)}:"
+                    f"area:{int(row.get('areaId') or row.get('areaid') or 0)}")
             if zone_id and point:
                 visible_point = add_acore_spawn_visibility(point, row, map_difficulty_masks)
                 if entry in questgiver_entries:
                     visible_point = add_acore_spawn_identity(visible_point, row)
                 spawns_by_entry[entry][zone_id].append(visible_point)
+                if provenance is not None and guid:
+                    spawn_origins[entry][zone_id].append((visible_point, f"creature:{guid}:entry:{entry}"))
                 spawn_zone_counts[entry][zone_id] += 1
             else:
                 unmapped_spawn_entries.add(entry)
+                unmapped_spawn_guids[entry].add(guid)
                 map_stats["unmapped_spawns"] += 1
 
     scripted_spawns = load_wintergrasp_scripted_spawns(source_root, repo_root or ".", zone_maps)
+    if provenance is not None:
+        # Script visibility can replace coincident SQL rows. Until script table
+        # identities are exposed, do not misattribute those markers to a GUID.
+        for entry, zones in scripted_spawns.items():
+            for zone, points in zones.items():
+                replaced = {tuple(point[:2]) for point in points}
+                spawn_origins[entry][zone] = [(point, identity) for point, identity in spawn_origins[entry][zone]
+                                              if tuple(point[:2]) not in replaced]
     merge_scripted_spawn_locations(spawns_by_entry, scripted_spawns)
     for entry, zones in scripted_spawns.items():
         seen_spawn_entries.add(entry)
@@ -1365,51 +1545,53 @@ def build_acore_npcs(
     waypoints_by_entry = defaultdict(lambda: defaultdict(list))
     seen_waypoint_entries = set()
     bad_waypoint_entries = set()
+    unmapped_waypoint_paths = defaultdict(set)
 
-    def add_waypoint_path(entries, creature_candidates, path_rows):
+    def add_waypoint_path(entries, creature_candidates, path_rows, identity):
         entries = tuple(sorted(set(entries)))
         if not entries or not creature_candidates or not path_rows:
             return False
 
         seen_waypoint_entries.update(entries)
         for creature in creature_candidates:
-            base_zone_id, _ = resolve_coordinate_zone(creature, zone_maps)
-            path_points = []
-            path_zone_id = base_zone_id
-            for point_row in path_rows:
-                point_source = dict(creature)
-                point_source["position_x"] = point_row.get("position_x")
-                point_source["position_y"] = point_row.get("position_y")
-                zone_id, point = resolve_coordinate_zone(point_source, zone_maps)
-                if not zone_id or not point:
-                    path_points = []
-                    break
-                if path_zone_id is None:
-                    path_zone_id = zone_id
-                if zone_id != path_zone_id:
-                    path_points = []
-                    break
-                path_points.append(point)
-
-            if path_zone_id and len(path_points) >= 2:
+            sections = project_waypoint_path(creature, path_rows, zone_maps)
+            if not sections:
+                continue
+            for zone, first_point, points in sections:
                 for entry in entries:
-                    waypoints_by_entry[entry][path_zone_id].append(path_points)
-                return True
+                    # Keep single destinations too; separate visits to a zone
+                    # must remain separate paths, even if a visit has one point.
+                    waypoints_by_entry[entry][zone].append(points)
+                    if provenance is not None:
+                        origin = f"{identity}:map-spawn:{int(creature.get('guid') or 0)}:entry:{entry}"
+                        if len(sections) > 1:
+                            origin += f":segment:{first_point}"
+                        path_origins[entry][zone].append((unique_consecutive_points(points), origin))
+            return True
 
         map_stats["unmapped_waypoints"] += 1
         bad_waypoint_entries.update(entries)
+        for entry in entries:
+            unmapped_waypoint_paths[entry].add(f"{identity}:entry:{entry}")
         return False
 
-    for guid, addon in creature_addon_rows.items():
-        creature = guid_to_creature.get(int(guid))
-        path_id = int(addon.get("path_id") or 0)
-        path_rows = waypoint_by_path.get(path_id)
-        if not creature or not path_id or not path_rows:
-            continue
+    for guid, creature in guid_to_creature.items():
         entries = get_creature_entries(creature, multispawns_by_guid)
-        if not entries:
-            continue
-        add_waypoint_path(entries, (creature,), path_rows)
+        addon = creature_addon_rows.get(guid)
+        if addon is not None:
+            # Creature::GetCreatureAddon returns the entire GUID addon first,
+            # even when its path_id is zero. Do not fall back field by field.
+            assignments = [(entries, addon, f"addon:{guid}")]
+        else:
+            # A multispawn can choose different templates at the same GUID.
+            # Each alternative inherits only its own template's addon path.
+            assignments = [((entry,), template_addon_rows[entry], f"template-addon:{entry}")
+                           for entry in entries if entry in template_addon_rows]
+        for path_entries, path_addon, origin in assignments:
+            path_id = int(path_addon.get("path_id") or 0)
+            path_rows = waypoint_by_path.get(path_id)
+            if path_id and path_rows:
+                add_waypoint_path(path_entries, (creature,), path_rows, f"waypoint_data:{path_id}:{origin}")
 
     seen_smart_waypoint_assignments = set()
     for script_row in smart_script_rows:
@@ -1436,7 +1618,7 @@ def build_acore_npcs(
         if assignment_key in seen_smart_waypoint_assignments:
             continue
         seen_smart_waypoint_assignments.add(assignment_key)
-        add_waypoint_path(entries, creature_candidates, path_rows)
+        add_waypoint_path(entries, creature_candidates, path_rows, f"waypoints:{path_id}:smart:{source_entry_or_guid}")
 
     acore_npcs = {}
     for npc_id, row in template_rows.items():
@@ -1452,10 +1634,7 @@ def build_acore_npcs(
             else:
                 npc[field] = int(value or 0)
 
-        health_values = health_by_entry.get(int(npc_id))
-        if health_values:
-            npc["minLevelHealth"] = min(health_values)
-            npc["maxLevelHealth"] = max(health_values)
+        npc.update(template_health[int(npc_id)])
 
         if int(npc_id) in unmapped_spawn_entries:
             transport_spawns = [spawn for spawn in creatures_by_entry.get(int(npc_id), [])
@@ -1496,8 +1675,70 @@ def build_acore_npcs(
 
         acore_npcs[int(npc_id)] = npc
 
+    if provenance is not None:
+        # Generation-only information. Never add it to an addon row or Lua output.
+        provenance.update(index_geometry_origins(acore_npcs, spawn_origins, path_origins, map_difficulty_masks))
+        index_partial_spawn_coverage(provenance, spawns_by_entry, spawn_origins,
+                                     unmapped_spawn_guids, map_difficulty_masks)
+        index_partial_waypoint_coverage(provenance, waypoints_by_entry, path_origins,
+                                        unmapped_waypoint_paths)
+        import acore_scripted_geometry
+        provenance["scriptedGeometry"] = acore_scripted_geometry.collect(
+            smart_script_rows, creatures_by_entry, guid_to_creature, template_rows,
+            zone_maps, escort_waypoint_by_path)
+        import acore_cpp_geometry
+        provenance["cppGeometry"] = acore_cpp_geometry.collect(source_root, zone_maps)
+        cpp_zones = acore_cpp_geometry.collect_source_zones(source_root)
+        for key, data in cpp_zones["entries"].items():
+            if int(key) not in acore_npcs:
+                continue
+            for zone in data["zones"]:
+                source_zone_origins[int(key)][zone].update(data["origins"][str(zone)])
+        provenance["sourceZones"] = {"version": 1, "entries": {
+            str(entry): {"zones": sorted(zones), "origins": {
+                str(zone): sorted(origins) for zone, origins in sorted(zones.items())}}
+            for entry, zones in sorted(source_zone_origins.items())},
+            "failures": cpp_zones["failures"]}
+        if any(template_rows.get(entry, {}).get("ScriptName") != "npc_hor_leader_second" for entry in (37554, 36955)):
+            data = provenance["cppGeometry"]["entries"]["36955"]
+            for field in ("spawns", "waypoints"):
+                data["failures"][field].append({"source": "creature_template:37554",
+                                              "reasons": ["HoR leader script binding changed"]})
+
+        # Runtime selectors must use the same source as the static rows. In
+        # particular, Darkmoon setup spawns are not active-fair placements.
+        import acore_runtime_geometry
+        if len(template_rows) > 1000:
+            event_rows, event_skips = load_filtered_row_table(
+                source_root, "event_scripts",
+                ("id", "delay", "command", "datalong", "datalong2", "dataint", "x", "y", "z", "o"),
+                lambda row: int(row.get("command") or 0) == 10
+                and int(row.get("datalong") or 0) in (5676, 5677, 12138), include_modules)
+            selected = [row for row in creature_rows
+                        if get_primary_creature_entry(row) in acore_runtime_geometry.DARKMOON_NPCS]
+            guids = {int(row["guid"]) for row in selected}
+            memberships, membership_skips = load_filtered_row_table(
+                source_root, "game_event_creature", ("eventEntry", "guid"),
+                lambda row: int(row.get("guid") or 0) in guids, include_modules,
+                ignore_statement=acore_runtime_geometry.ignore_unrelated_membership_statement)
+            if event_skips or membership_skips:
+                raise ValueError("Runtime event geometry has unsupported SQL mutations")
+
+            def project_runtime_point(row, maps):
+                zone, point = resolve_coordinate_zone(row, maps)
+                if zone is None or point is None:
+                    return None, None
+                point = add_acore_spawn_visibility(point, row, map_difficulty_masks)
+                if get_primary_creature_entry(row) in questgiver_entries:
+                    point = add_acore_spawn_identity(point, row)
+                return zone, point
+
+            provenance["runtimeGeometry"] = acore_runtime_geometry.collect(
+                event_rows, selected, memberships, zone_maps, project_runtime_point)
+
     skipped_mutations = {
         "creature_template": skipped_creature_template,
+        "creature_classlevelstats": skipped_health,
         "creature": skipped_creature,
         "creature_multispawn": skipped_creature_multispawn,
         "creature_queststarter": skipped_starter,
@@ -1505,6 +1746,7 @@ def build_acore_npcs(
         "creature_questender": skipped_ender,
         "factiontemplate_dbc": skipped_faction_template,
         "creature_addon": skipped_creature_addon,
+        "creature_template_addon": skipped_template_addon,
         "waypoint_data": skipped_waypoint,
         "waypoints": skipped_escort_waypoint,
         "smart_scripts": skipped_smart_scripts,
@@ -1701,16 +1943,11 @@ def collect_quest_referenced_ids(repo_root, candidate_ids):
     if not candidate_ids:
         return set()
 
-    paths = [
-        repo_root / "Database/Wotlk/wotlkQuestDB.lua",
-        repo_root / "Database/Corrections/classicQuestFixes.lua",
-        repo_root / "Database/Corrections/tbcQuestFixes.lua",
-        repo_root / "Database/Corrections/wotlkQuestFixes.lua",
-    ]
+    paths = [repo_root / "Database/AzerothCore/acoreQuestDB.lua"]
     texts = []
     for path in paths:
         if path.exists():
-            texts.append(strip_lua_comments(path.read_text(encoding="utf-8")))
+            texts.append(strip_lua_comments(base_text(path)))
     quest_text = "\n".join(texts)
 
     referenced_numbers = {
@@ -1723,7 +1960,7 @@ def collect_quest_referenced_ids(repo_root, candidate_ids):
         if int(candidate_id) in referenced_numbers:
             referenced_ids.add(int(candidate_id))
 
-    item_db_path = repo_root / "Database/Wotlk/wotlkItemDB.lua"
+    item_db_path = repo_root / "Database/AzerothCore/acoreItemDB.lua"
     if item_db_path.exists():
         item_keys = parse_item_keys(item_db_path)
         questie_items = load_effective_questie_items(repo_root, item_keys)
@@ -1956,81 +2193,8 @@ def write_report(corrections, skipped_mutations, fields, report_path):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate NPC corrections from AzerothCore SQL and scripted Wintergrasp spawns.")
-    parser.add_argument("--acore-source", default=r"P:\AC\source", type=Path)
-    parser.add_argument("--repo-root", default=Path("."), type=Path)
-    parser.add_argument("--output", default=Path("Database/AzerothCore/AzerothCoreNPCCorrections.lua"), type=Path)
-    parser.add_argument("--report", default=Path("tools/reports/acore_npc_corrections.md"), type=Path)
-    parser.add_argument(
-        "--wdm-root",
-        default=DEFAULT_WDM_ROOT,
-        type=Path,
-        help="WDM export root containing DungeonMap.csv and DungeonMapChunk.csv.",
-    )
-    parser.add_argument("--include-modules", action="store_true", help="Also scan SQL under AzerothCore modules/. This can be slow.")
-    parser.add_argument("--creature-sql", type=Path, help="Optional final creature table SQL export to use instead of AzerothCore source creature.sql.")
-    parser.add_argument(
-        "--map-difficulty-dbc",
-        type=Path,
-        help="MapDifficulty.dbc used by the server. Auto-detected from the AzerothCore build when omitted.",
-    )
-    parser.add_argument(
-        "--creature-multispawn-sql",
-        type=Path,
-        help="Optional final creature_multispawn SQL export. Auto-detected next to --creature-sql when omitted.",
-    )
-    parser.add_argument(
-        "--fields",
-        nargs="+",
-        default=DEFAULT_FIELD_ORDER,
-        choices=FIELD_ORDER,
-        help="Questie NPC fields to compare and generate.",
-    )
-    parser.add_argument("--include-missing-npcs", action="store_true", help="Generate corrections for NPC IDs missing from Questie.")
-    args = parser.parse_args()
-
-    repo_root = args.repo_root.resolve()
-    npc_keys = parse_npc_keys(repo_root / "Database/Wotlk/wotlkNpcDB.lua")
-    unknown_fields = [field for field in args.fields if field not in npc_keys]
-    if unknown_fields:
-        raise ValueError(f"Unknown npcKeys fields: {unknown_fields}")
-
-    questie_npcs = load_effective_questie_npcs(repo_root, npc_keys, set(args.fields))
-    acore_npcs, skipped_mutations = build_acore_npcs(
-        args.acore_source,
-        args.include_modules,
-        repo_root,
-        args.creature_sql,
-        args.creature_multispawn_sql,
-        args.map_difficulty_dbc,
-        args.wdm_root,
-        questie_npcs,
-    )
-    candidate_spawn_ids = {
-        npc_id
-        for npc_id, npc_fields in questie_npcs.items()
-        if normalize_value("spawns", npc_fields.get("spawns")) != ()
-        and normalize_value("spawns", acore_npcs.get(npc_id, {}).get("spawns")) == ()
-    }
-    preserve_spawn_ids = collect_quest_referenced_ids(repo_root, candidate_spawn_ids)
-    zone_maps = parse_zone_maps(repo_root, args.wdm_root)
-    corrections = find_differences(
-        questie_npcs,
-        acore_npcs,
-        args.fields,
-        args.include_missing_npcs,
-        preserve_spawn_ids,
-        wdm_instance_zone_ids(zone_maps),
-    )
-    zone_names = parse_zone_id_names(repo_root, zone_maps)
-
-    write_corrections_module(corrections, repo_root / args.output, zone_names)
-    write_report(corrections, skipped_mutations, set(args.fields), repo_root / args.report)
-
-    print(f"Wrote {len(corrections)} NPC corrections to {repo_root / args.output}")
-    skipped = {table: count for table, count in skipped_mutations.items() if count}
-    if skipped:
-        print(f"Skipped complex SQL mutations: {skipped}")
+    raise SystemExit("Correction layers are retired. Use tools/generate_acore_npc_base.py; "
+                     "this module retains shared source-reading helpers.")
 
 
 if __name__ == "__main__":
