@@ -166,9 +166,6 @@ local function loadFullDatabase()
     coYield()
     l10n:Initialize()
 
-    coYield()
-    QuestieDB.private:DeleteGatheringNodes()
-
     print("\124cFF4DDBFF [5/9] " .. l10n("Optimizing waypoints") .. "...")
     coYield()
     QuestieCorrections:PreCompile()

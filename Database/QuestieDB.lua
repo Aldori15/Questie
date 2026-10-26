@@ -4131,21 +4131,6 @@ function QuestieDB.IsFriendlyToPlayer(friendlyToFaction)
 end
 
 ---------------------------------------------------------------------------------------------------
--- Modifications to objectDB
-function _QuestieDB:DeleteGatheringNodes()
-    local prune = { -- gathering nodes
-        1617,1618,1619,1620,1621,1622,1623,1624,1628, -- herbs
-
-        1731,1732,1733,1734,1735,123848,150082,175404,176643,177388,324,150079,176645,2040,123310 -- mining
-    }
-    local objectSpawnsKey = QuestieDB.objectKeys.spawns
-    for i=1, #prune do
-        local id = prune[i]
-        QuestieDB.objectData[id][objectSpawnsKey] = nil
-    end
-end
-
----------------------------------------------------------------------------------------------------
 -- Modifications to questDB
 
 -- Quests where the reputation only goes in one direction (ex. Thorium Brotherhood)
