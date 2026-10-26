@@ -1,7 +1,5 @@
 from questie_base import base_text, parse_keys, return_table
-import argparse
 import ast
-import json
 import math
 import re
 import sys
@@ -1839,78 +1837,6 @@ def validate_lua_fragment(fragment, label):
             index += 1
     if balance != 0:
         raise ValueError(f"{label} has unbalanced braces ({balance:+d})")
-
-
-def write_corrections_module(corrections, output_path):
-    lines = [
-        "---@type QuestieDB",
-        'local QuestieDB = QuestieLoader:ImportModule("QuestieDB")',
-        "",
-        "-- Generated from tools/generate_acore_item_corrections.py.",
-        "-- Regenerate this file when AzerothCore item data changes.",
-        "",
-        'QuestieCompat.RegisterCorrection("itemData", function()',
-        "    local itemKeys = QuestieDB.itemKeys",
-        "",
-        "    return {",
-    ]
-
-    for item_id in sorted(corrections):
-        lines.append(f"        [{item_id}] = {{")
-        fields = corrections[item_id]
-        for field in FIELD_ORDER:
-            if field not in fields:
-                continue
-            lines.append(f"            [itemKeys.{field}] = {format_lua_value(fields[field])},")
-        lines.append("        },")
-        lines.append("")
-
-    lines.extend([
-        "    }",
-        "end)",
-        "",
-    ])
-    text = "\n".join(lines)
-    validate_lua_fragment(text, str(output_path))
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(text, encoding="utf-8")
-
-
-def write_report(corrections, skipped_mutations, report_path):
-    counts = defaultdict(int)
-    for fields in corrections.values():
-        for field in fields:
-            counts[field] += 1
-    lines = [
-        "# AzerothCore Item Corrections Report",
-        "",
-        f"Items with corrections: {len(corrections)}",
-        "",
-        "| Field | Corrections |",
-        "| --- | ---: |",
-    ]
-    for field in FIELD_ORDER:
-        if counts[field]:
-            lines.append(f"| `{field}` | {counts[field]} |")
-    skipped = {table: count for table, count in skipped_mutations.items() if count}
-    if skipped:
-        lines.extend([
-            "",
-            "Skipped complex SQL mutations:",
-            "",
-            "| Table | Skipped statements/rows |",
-            "| --- | ---: |",
-        ])
-        for table in sorted(skipped):
-            lines.append(f"| `{table}` | {skipped[table]} |")
-    lines.append("")
-    report_path.parent.mkdir(parents=True, exist_ok=True)
-    report_path.write_text("\n".join(lines), encoding="utf-8")
-
-
-def write_preservation_report(preservations, report_path):
-    report_path.parent.mkdir(parents=True, exist_ok=True)
-    report_path.write_text(json.dumps(preservations, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
 def main():

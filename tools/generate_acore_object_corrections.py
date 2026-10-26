@@ -1,5 +1,4 @@
 from questie_base import base_text, parse_keys, return_table
-import argparse
 import ast
 import re
 import sys
@@ -635,90 +634,6 @@ def format_lua_field_value(field, value, zone_names):
     if field == "zoneID":
         return format_zone_ref(value, zone_names)
     return format_lua_value(value, zone_names, zone_keyed_table=(field in NESTED_FIELDS))
-
-
-def write_corrections_module(corrections, output_path, zone_names):
-    lines = [
-        "---@type QuestieDB",
-        'local QuestieDB = QuestieLoader:ImportModule("QuestieDB")',
-        "---@type ZoneDB",
-        'local ZoneDB = QuestieLoader:ImportModule("ZoneDB")',
-        "",
-        "-- Generated from tools/generate_acore_object_corrections.py.",
-        "-- Regenerate this file when AzerothCore object data changes.",
-        "",
-        'QuestieCompat.RegisterCorrection("objectData", function()',
-        "    local objectKeys = QuestieDB.objectKeys",
-        "    local zoneIDs = ZoneDB.zoneIDs",
-        "",
-        "    return {",
-    ]
-
-    for object_id in sorted(corrections):
-        lines.append(f"        [{object_id}] = {{")
-        correction_fields = corrections[object_id]
-        for field in FIELD_ORDER:
-            if field in correction_fields:
-                lines.append(f"            [objectKeys.{field}] = {format_lua_field_value(field, correction_fields[field], zone_names)},")
-        lines.append("        },")
-        lines.append("")
-
-    lines.extend([
-        "    }",
-        "end)",
-        "",
-    ])
-    text = "\n".join(lines)
-    validate_lua_fragment(text, str(output_path))
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(text, encoding="utf-8")
-
-
-def write_report(corrections, skipped_mutations, fields, report_path):
-    counts = defaultdict(int)
-    for correction_fields in corrections.values():
-        for field in correction_fields:
-            counts[field] += 1
-
-    lines = [
-        "# AzerothCore Object Corrections Report",
-        "",
-        f"Objects with corrections: {len(corrections)}",
-        "",
-        "| Field | Corrections |",
-        "| --- | ---: |",
-    ]
-    for field in FIELD_ORDER:
-        if field in fields and counts[field]:
-            lines.append(f"| `{field}` | {counts[field]} |")
-
-    skipped = {table: count for table, count in skipped_mutations.items() if count and not table.startswith("mapping:")}
-    if skipped:
-        lines.extend([
-            "",
-            "Skipped complex SQL mutations:",
-            "",
-            "| Table | Skipped statements/rows |",
-            "| --- | ---: |",
-        ])
-        for table in sorted(skipped):
-            lines.append(f"| `{table}` | {skipped[table]} |")
-
-    mapping = {table.removeprefix("mapping:"): count for table, count in skipped_mutations.items() if count and table.startswith("mapping:")}
-    if mapping:
-        lines.extend([
-            "",
-            "Unmapped coordinate rows:",
-            "",
-            "| Mapping issue | Rows |",
-            "| --- | ---: |",
-        ])
-        for issue in sorted(mapping):
-            lines.append(f"| `{issue}` | {mapping[issue]} |")
-
-    lines.append("")
-    report_path.parent.mkdir(parents=True, exist_ok=True)
-    report_path.write_text("\n".join(lines), encoding="utf-8")
 
 
 def main():

@@ -1,10 +1,3 @@
-*.json
-*.lua
-*.md
+# All contents are generated locally; maintained tools and tests live outside reports.
+*
 !.gitignore
-
-# Local database comparison artifacts; keep the harness and tests in source control.
-*.jsonl
-*.jsonl.gz
-questie-snapshot-*/
-db-migration-local/

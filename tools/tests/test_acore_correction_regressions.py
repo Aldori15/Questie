@@ -7,7 +7,7 @@ from pathlib import Path
 
 from _test_paths import ADDON_ROOT
 
-import audit_acore_trigger_end_tooltip_targets as trigger_end_audit
+from questie_base import base_text
 import generate_acore_item_corrections as item_generator
 import generate_acore_npc_corrections as npc_generator
 import generate_acore_object_corrections as object_generator
@@ -458,12 +458,16 @@ const WintergraspObjectPositionData WGOutsideNPC[WG_MAX_OUTSIDE_NPC] = {
 
 
     def test_source_area_guide_and_event_actors_survive_independently(self):
-        trigger_ends = trigger_end_audit.load_trigger_ends(ADDON_ROOT)
-        self.assertIn(25, trigger_ends)
-        self.assertIn("gazebo", trigger_ends[25]["text"])
+        constants = quest_validator.load_constants(ADDON_ROOT)
+        rows = (quest_validator.QUEST_ROW_RE.match(line.strip())
+                for line in base_text(ADDON_ROOT / "Database/AzerothCore/acoreQuestDB.lua").splitlines())
+        gazebo = next((row for row in rows if row and int(row.group(1)) == 25), None)
+        self.assertIsNotNone(gazebo)
+        fields = quest_validator.split_top_level_lua_table(gazebo.group(2))
+        trigger_end = quest_validator.parse_lua_value(fields[constants["quest_keys"]["triggerEnd"] - 1], constants)
+        self.assertIn("gazebo", trigger_end[0])
         text = (ADDON_ROOT / "Database/AzerothCore/acoreQuestDB.lua").read_text(encoding="utf-8")
         block = text.split("QuestieDB.questEventTooltipTargets = {", 1)[1].split("\n}", 1)[0]
-        constants = quest_validator.load_constants(ADDON_ROOT)
         targets = quest_validator.parse_lua_value("{" + block + "}", constants)
         self.assertIn(["monster", 467], targets[155 - 1])
         # Escort completion is source-backed even without an area-trigger marker.
