@@ -1,89 +1,70 @@
 # Database maintenance tools
 
-These tools run outside WoW. The addon loads the generated Lua databases, not
-Python tools, tests, compatibility manifests, source caches, or reports.
+Run these tools from the addon directory, outside WoW. The addon loads generated
+Lua databases; it does not load Python tools, tests, manifests or reports.
 
-Run commands from the addon directory. Use Python 3.13 and Lua 5.2 for the shared
-regression runner. The Python regression tests and database maintenance tools use
-the standard library. `generate_exploration_masks.py` is a separate Windows
-utility that also requires Pillow and StormLib; normal database updates do not
-use it.
+Use Python 3.13 and Lua 5.2. Database tools and Python tests use the standard
+library. The separate Windows utility `generate_exploration_masks.py` also needs
+Pillow and StormLib.
 
 ## Tool roles
 
-- `generate_acore_{item,npc,object,quest}_base.py` are the maintained base
-  generation entry points. Use their `generate` subcommand for updates.
-- `generate_acore_{item,npc,object}_corrections.py` retain shared SQL readers,
-  parsers, geometry and comparison helpers. Their old correction-generation
-  commands are retired. Keep these modules because the base generators import
-  them.
-- `audit_acore_{item,npc,object,quest}_sources.py` build validated source models
-  and review reports. Cache signatures cover the relevant source inputs and
-  readers; changed inputs cause extraction to run again.
-- `tools/data/acore_*_compatibility.json` are maintained generation inputs.
-  They hold reviewed scope and compatibility policies, not runtime caches.
-- `generate_acore_full_base.py` provides the shared serializer/source-chunk
-  writer. Its snapshot-export CLI and the base generators' `bootstrap`
-  subcommands are migration tools, not routine update steps.
-- `db_snapshot.py` compares effective corrected data across both factions and
-  Isle stages 1/9. It does not cover XP/drop datasets or live server state.
-- `run_regressions.py` is the shared local/CI test entry point.
-- `acore_quest_guides.py` and `acore_quest_flight_guides.py` derive supported
-  quest guidance. Flight hints follow quest-conditioned SmartAI gossip actions
-  and player-targeted taxi instructions, rather than gossip labels. The quest
-  base includes `questOptionalExtraObjectives` metadata so travel guidance does
-  not become a completion requirement. This does not validate live flight
-  availability or infer destination geometry.
-- `report_extra_objective_localization.py` audits extra-objective translation
-  keys against an unlocalized quest base and maintained runtime literals. Use
-  `--quest-db` to review a candidate before promotion. Its unused candidates
-  require review for dynamic consumers and future recovery; it deletes nothing.
-  Active objective translations live in the shared
-  `Localization/Translations/ExtraObjectives.lua` dictionary.
+- `generate_acore_{item,npc,object,quest}_base.py generate`: update base data.
+- `generate_acore_{item,npc,object}_corrections.py`: shared reader/helper modules;
+  keep them, but do not run their retired correction-generation commands.
+- `audit_acore_*_sources.py`: source models and coverage reports. Changed source
+  inputs or readers invalidate caches automatically.
+- `tools/data/acore_*_compatibility.json`: maintained generation policies.
+- `generate_acore_full_base.py`: shared serializer and migration utilities;
+  snapshot export and `bootstrap` are not routine update steps.
+- `db_snapshot.py`: effective base data across both factions and Isle stages
+  1/9; excludes auxiliary datasets and live server state.
+- `run_regressions.py`: shared local/CI test runner.
+- `acore_quest*_guides.py`: source-backed guidance, including optional flight
+  hints. These do not establish live flight availability.
+- `report_extra_objective_localization.py`: translation usage audit. Use
+  `--quest-db` for candidates; review unused keys before deleting them. Active
+  translations live in `Localization/Translations/ExtraObjectives.lua`.
 
 ## Regression checks before pushing
 
 ```powershell
-$env:QUESTIE_TEST_LUA = "$env:TEMP\questie-db-harness-lua52\lua.exe"
+$env:QUESTIE_TEST_LUA = "C:\path\to\lua52\lua.exe"
 python -B tools/run_regressions.py
 if ($LASTEXITCODE -ne 0) { throw "Regression checks failed" }
 ```
 
-The runner discovers every `tools/tests/test_*.lua` suite before running Python
-discovery. A failure stops the run. Local tools that are unavailable are reported
-as skipped, not passed. CI runs `python -B tools/run_regressions.py --ci`, which
-requires the complete toolchain. Optional executable overrides are:
+The runner discovers Lua suites and Python tests, stopping on failure. Missing
+local tools are reported as skipped. CI uses `--ci` and requires all tools.
+Optional executable overrides:
 
 - `QUESTIE_TEST_LUA51`: Lua 5.1 for suites declaring Lua 5.1 support.
 - `QUESTIE_TEST_LUAC`: Lua 5.1 compiler for addon syntax checks.
 - `QUESTIE_TEST_LUAC52`: Lua 5.2 compiler for regression-suite syntax checks.
 
-## Replacement for the old PowerShell steps 1–10
+## Database update workflow
 
-This is the current command reference. The remaining PR migration checks still
-need to validate the auxiliary datasets and repeatable generation workflow.
-The commands below are for an intentional data update; they overwrite generated
-Lua outputs. Review the resulting changes before committing them.
-
-Do not run the retired item/NPC/object correction generators or the removed
-quest-correction merge command. Relation/metadata suggestions are review aids;
-they must not recreate a retired runtime correction layer.
+These commands overwrite generated Lua files. Review changes before committing;
+use `--output tools/reports/<candidate>.lua` to stage a generator's output first.
+Do not recreate the retired static correction layer from validator suggestions.
 
 ### Inputs and failure handling
 
-These example paths match the local migration inputs. Adjust them for another
-checkout. Use a consistent AC revision and matching client/world exports.
+Replace placeholder paths and use matching source, world exports and client
+data. Run the workflow as one `.ps1` script or inside one `& { ... }` block so a
+thrown error stops subsequent commands. Choose fresh snapshot filenames below
+to retain evidence from previous updates.
 
 ```powershell
-$acoreSource = "P:\AC\source"
-$spellSql = "E:\downloads\murky_acoreworld\spell5duck\exported spell.dbc.sql"
-$creatureSql = "E:\downloads\murky_acoreworld\creature export wth zoneId and areaId\creature.sql"
-$creatureMultispawnSql = "E:\downloads\murky_acoreworld\creature export wth zoneId and areaId\creature_multispawn.sql"
-$gameobjectSql = "E:\downloads\murky_acoreworld\gameobject export wth zoneId and areaId\gameobject.sql"
-$mapDifficultyDbc = "P:\AC\build\bin\RelWithDebInfo\Data\dbc\MapDifficulty.dbc"
-$wdmRoot = "E:\downloads\WDM stuff"
-$questXpCsv = "E:\downloads\murky_acoreworld\QuestXP.csv"
-$env:QUESTIE_TEST_LUA = "$env:TEMP\questie-db-harness-lua52\lua.exe"
+$acoreSource = "C:\path\to\azerothcore-wotlk"
+$spellSql = "C:\path\to\exports\spell.sql"
+$creatureSql = "C:\path\to\exports\creature.sql"
+$creatureMultispawnSql = "C:\path\to\exports\creature_multispawn.sql"
+$gameobjectSql = "C:\path\to\exports\gameobject.sql"
+$mapDifficultyDbc = "C:\path\to\dbc\MapDifficulty.dbc"
+$wdmRoot = "C:\path\to\wdm"
+$questXpCsv = "C:\path\to\exports\QuestXP.csv"
+$env:QUESTIE_TEST_LUA = "C:\path\to\lua52\lua.exe"
 
 function Invoke-QuestiePython {
     & python -B @args
@@ -93,15 +74,12 @@ function Invoke-QuestiePython {
 }
 
 Invoke-QuestiePython tools/db_snapshot.py capture `
-    --output tools/reports/db-before-update.jsonl.gz --force
+    --output tools/reports/db-before-update.jsonl.gz
 ```
 
-If generation reports changed source proofs, unsupported SQL, unresolved
-references, or an output-size limit, stop and review the specific issue. Do not
-increase budgets, replace proof hashes, or use `--force` to bypass that review.
-For the base generators, `--force` belongs to migration-manifest setup; normal
-generation already replaces its output atomically. `--output` can instead point
-to a candidate under `tools/reports/` for review before updating the live base.
+Review changed proofs, unsupported SQL, unresolved references and size-limit
+failures. Do not bypass them by increasing budgets or replacing proof hashes.
+Normal base generation replaces outputs atomically; it does not need `--force`.
 
 ### 1. Item base
 
@@ -140,9 +118,13 @@ Invoke-QuestiePython tools/generate_acore_quest_base.py generate `
 
 ### 5. Quest relation and metadata review
 
-This replaces the old suggestion-merge step. Review mismatches and correct the
-maintained source rules or justified policies; do not apply a generated static
-correction file.
+Relations identify possible questgivers, not currently active script/event
+windows. Missing quest templates are reported in `sourceDiagnostics.orphanRelations`.
+Metadata compares explicit race fields and source-proven tools; endpoint faction
+hints are informational. Manifest tool candidates still require source proof.
+
+Both validators return `0` for a match, `1` for mismatches and `2` for handled
+errors. Review orphan diagnostics even when comparisons match.
 
 ```powershell
 Invoke-QuestiePython tools/validate_acore_quest_relations.py `
@@ -175,13 +157,16 @@ Invoke-QuestiePython tools/generate_acore_quest_availability_conditions.py `
 ```powershell
 Invoke-QuestiePython tools/generate_acore_creature_drops.py `
     --acore-source $acoreSource `
-    --item-db Database/AzerothCore/acoreItemDB.lua
+    --item-db Database/AzerothCore/acoreItemDB.lua `
+    --coverage-report tools/reports/acore_creature_drop_coverage.json
 ```
+
+Review the coverage report for skipped SQL and missing creature-drop sources.
+An item without creature drops may use another acquisition mechanism.
 
 ### 9. Blacklist and relationship audits
 
-These commands report inconsistencies. They do not automatically modify curated
-blacklists or resolve every intentional compatibility difference.
+Review reports; these commands do not modify curated blacklists or fix links.
 
 ```powershell
 Invoke-QuestiePython tools/report_acore_quest_blacklist.py `
@@ -206,7 +191,7 @@ Invoke-QuestiePython tools/generate_acore_reputation_rates.py `
 ```powershell
 Invoke-QuestiePython tools/run_regressions.py
 Invoke-QuestiePython tools/db_snapshot.py capture `
-    --output tools/reports/db-after-update.jsonl.gz --force
+    --output tools/reports/db-after-update.jsonl.gz
 
 python -B tools/db_snapshot.py compare `
     tools/reports/db-before-update.jsonl.gz `
@@ -215,21 +200,13 @@ python -B tools/db_snapshot.py compare `
 if ($LASTEXITCODE -gt 1) { throw "Snapshot comparison failed" }
 ```
 
-Snapshot comparison returns `1` for data differences and `2` for errors. Review
-expected differences, auxiliary dataset diffs, and remaining coverage gaps.
-Confirm deterministic generation when required, then recompile the database
-in-game and check cached reload behavior. Version/schema bumps belong to the
-final migration release step. Confirm CI after pushing.
+Snapshot comparison returns `1` for differences and `2` for errors. Review the
+differences, auxiliary outputs and coverage gaps. Check repeatable generation,
+then recompile in-game and verify cached reload. Confirm CI before merging;
+release version/schema bumps belong to the final migration step.
 
 ## Reports and packaging
 
-`tools/reports/` is ignored except for its `.gitignore`. It contains disposable
-reports, validated source caches, comparison snapshots, and local review notes.
-Tests create their own temporary fixtures; they do not require old saved audit
-payloads. Keep the baseline/current snapshots and coverage evidence needed for
-an unfinished review. Source caches can be deleted, but extraction will run
-again on the next update.
-
-The repository currently distributes a source archive, with no separate release
-packager. Developer tools may be present in that archive; no TOC/XML path loads
-them in WoW. Generated reports remain excluded from commits and archives.
+`tools/reports/` is ignored except for `.gitignore`. Keep snapshots and coverage
+evidence while a review is unfinished. Caches may be deleted; extraction reruns
+when needed. Tests create their own fixtures and do not require saved reports.

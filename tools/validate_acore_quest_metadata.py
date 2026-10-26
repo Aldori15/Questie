@@ -1,8 +1,10 @@
 from questie_base import base_text
 import argparse
 import ast
+import copy
 import json
 import re
+import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 
@@ -217,6 +219,12 @@ def infer_acore_required_races(acore_metadata, acore_relations, creature_faction
         inferred[quest_id] = faction
 
     return inferred
+
+
+def derive_endpoint_faction_hints(acore_metadata, acore_relations, creature_factions, race_ids):
+    """Describe endpoint access without replacing the template's race field."""
+    return infer_acore_required_races(
+        copy.deepcopy(acore_metadata), acore_relations, creature_factions, race_ids)
 
 
 # Quests where AC omits PrevQuestID even though a real prerequisite chain
@@ -2908,7 +2916,7 @@ def derive_quest_availability_conditions(source_root, condition_rows=None):
     return condition_prereqs, required_spells, required_item_conditions
 
 
-def derive_acore_metadata(source_root, quest_template_sql=None, quest_template_addon_sql=None, spell_sql=None, spell_table="spell"):
+def derive_acore_metadata(source_root, quest_template_sql=None, quest_template_addon_sql=None, spell_sql=None, spell_table="spell", source_tool_candidates=None):
     source_quest_rows = load_acore_sql_table(source_root, "quest_template")
     source_addon_rows = load_acore_sql_table(source_root, "quest_template_addon")
     quest_rows = load_acore_sql_table(source_root, "quest_template", quest_template_sql) if quest_template_sql else dict(source_quest_rows)
@@ -2936,13 +2944,37 @@ def derive_acore_metadata(source_root, quest_template_sql=None, quest_template_a
     item_use_spells = build_item_use_spell_map(item_template_rows)
     spell_created_items = {}
     spell_reagent_items = {}
+    spell_rows = {}
     if spell_sql:
         wanted_spell_ids = set()
-        for spell_ids in item_use_spells.values():
+        source_item_spells = item_use_spells
+        if source_tool_candidates is not None:
+            from acore_quest_compatibility import build_required_tool_index
+            source_item_spells = build_required_tool_index(item_template_rows, {})["itemSpells"]
+        for spell_ids in source_item_spells.values():
             wanted_spell_ids.update(spell_ids)
         spell_rows = load_acore_sql_table(source_root, spell_table, spell_sql, wanted_keys=wanted_spell_ids)
+        if source_tool_candidates is not None:
+            # SQL spell overrides, including explicit zeros, supersede the DBC.
+            for spell_id, override in load_acore_sql_table(source_root, "spell_dbc").items():
+                spell_rows[spell_id] = {**spell_rows.get(spell_id, {}), **override}
         spell_created_items = build_spell_created_item_map(spell_rows)
         spell_reagent_items = build_spell_reagent_item_map(spell_rows)
+    tool_index = None
+    if source_tool_candidates is not None:
+        from acore_quest_compatibility import build_required_tool_index
+        # The export uses Effect1/Reagent1, while AC overrides use Effect_1/
+        # Reagent_1. Normalize after merging so an override wins across aliases.
+        tool_spells = {
+            spell_id: {
+                **{f"{field}{i}": get_numbered_spell_field(row, field, i)
+                   for field in ("Effect", "EffectItemType") for i in range(1, 4)},
+                **{f"Reagent{i}": get_numbered_spell_field(row, "Reagent", i)
+                   for i in range(1, 9)},
+            }
+            for spell_id, row in spell_rows.items()
+        }
+        tool_index = build_required_tool_index(item_template_rows, tool_spells)
     spell_target_creatures = build_spell_target_creature_map(condition_rows)
 
     for quest_id in quest_ids:
@@ -3038,6 +3070,11 @@ def derive_acore_metadata(source_root, quest_template_sql=None, quest_template_a
                 ),
             )
         )
+        if tool_index is not None:
+            from acore_quest_compatibility import derive_required_tool_items
+            metadata["requiredSourceItems"] = normalize_list(derive_required_tool_items(
+                row, item_template_rows, spell_rows,
+                source_tool_candidates.get(str(quest_id), ()), index=tool_index))
         metadata["requiredItemConditions"] = required_item_conditions.get(quest_id, ())
         metadata["requiredSkill"] = normalize_pair(
             [
@@ -3093,6 +3130,7 @@ def compare_metadata(
     smartai_object_display_targets=None,
     spawned_gameobject_ids=None,
     active_acore_quest_ids=None,
+    strict_source_tools=False,
 ):
     mismatches = []
     preserved_objective_expansions = []
@@ -3347,6 +3385,7 @@ def compare_metadata(
 
             if (
                 field == "requiredSourceItems"
+                and not strict_source_tools
                 and acore[field] != questie[field]
                 and acore[field]
                 and questie[field]
@@ -3841,7 +3880,7 @@ def build_quest_availability_condition_audit(condition_rows, quest_names=None):
 
 
 def main():
-    from validate_acore_quest_relations import apply_acore_relation_overrides, load_acore_relations
+    from validate_acore_quest_relations import load_acore_relations
 
     parser = argparse.ArgumentParser(description="Validate Questie metadata against AzerothCore quest SQL.")
     parser.add_argument("--acore-source", default=r"P:\AC\source", help="Path to the AzerothCore source tree")
@@ -3850,6 +3889,10 @@ def main():
     parser.add_argument("--quest-template-addon-sql", help="Optional HeidiSQL export for quest_template_addon")
     parser.add_argument("--spell-sql", help="Optional Spell.dbc SQL export used to infer crafted/created quest source items")
     parser.add_argument("--spell-table", default="spell", help="Table name inside --spell-sql")
+    parser.add_argument(
+        "--compatibility", default="tools/data/acore_quest_compatibility.json",
+        help="Quest manifest containing proposed tool IDs; each ID still requires source proof",
+    )
     parser.add_argument(
         "--quest-fixes",
         nargs="*",
@@ -3938,22 +3981,32 @@ def main():
         for field in FIELD_ORDER:
             quest_entry.setdefault(field, default_field_value(field))
 
+    if not spell_sql:
+        parser.error("--spell-sql is required for the full metadata audit; use --condition-report-only for condition coverage")
+    manifest = json.loads(resolve_addon_path(addon_root, args.compatibility).read_text(encoding="utf-8"))
+    tool_candidates = manifest.get("sourceToolCandidates", {})
+    if not isinstance(tool_candidates, dict) or any(
+        not str(quest).isdigit() or not isinstance(items, list)
+        or any(type(item) is not int or item <= 0 for item in items)
+        for quest, items in tool_candidates.items()
+    ):
+        raise ValueError("Invalid sourceToolCandidates in quest compatibility manifest")
     acore_metadata = derive_acore_metadata(
         source_root,
         quest_template_sql,
         quest_template_addon_sql,
         spell_sql,
         args.spell_table,
+        source_tool_candidates=tool_candidates,
     )
     acore_relations = load_acore_relations(source_root, quest_template_sql)
-    apply_acore_relation_overrides(acore_relations)
     faction_template_rows = load_acore_sql_table(source_root, "factiontemplate_dbc", key_column="ID")
     creature_template_rows = load_acore_sql_table(source_root, "creature_template", key_column="entry")
     creature_factions = {
         creature_id: parse_friendly_to_faction(row.get("faction"), faction_template_rows)
         for creature_id, row in creature_template_rows.items()
     }
-    inferred_required_races = infer_acore_required_races(
+    inferred_required_races = derive_endpoint_faction_hints(
         acore_metadata,
         acore_relations,
         creature_factions,
@@ -3990,6 +4043,7 @@ def main():
         smartai_object_display_targets,
         spawned_gameobject_ids,
         active_acore_quest_ids,
+        strict_source_tools=True,
     )
     objective_display_risks = build_objective_display_risks(
         mismatches,
@@ -4019,7 +4073,7 @@ def main():
     print(f"  preservedEmptyPreQuestClears: {len(preserved_empty_prequest_clears)}")
     print(f"  preservedEmptyPreQuestGroupClears: {len(preserved_empty_prequest_group_clears)}")
     print(f"  preservedEmptyRequiredRaceClears: {len(preserved_empty_required_race_clears)}")
-    print(f"  inferredRequiredRaces: {len(inferred_required_races)}")
+    print(f"  endpointFactionHints (informational): {len(inferred_required_races)}")
     print(f"  preservedGroupAsSinglePreQuests: {len(preserved_group_as_single_prequest)}")
     print(f"  preservedRequiredSourceItemSupersets: {len(preserved_required_source_item_supersets)}")
     print(f"  objectiveDisplayRisks: {len(objective_display_risks)}")
@@ -4054,7 +4108,7 @@ def main():
                     "preservedEmptyPreQuestClears": preserved_empty_prequest_clears,
                     "preservedEmptyPreQuestGroupClears": preserved_empty_prequest_group_clears,
                     "preservedEmptyRequiredRaceClears": preserved_empty_required_race_clears,
-                    "inferredRequiredRaces": inferred_required_races,
+                    "endpointFactionHints": inferred_required_races,
                     "preservedGroupAsSinglePreQuests": preserved_group_as_single_prequest,
                     "preservedRequiredSourceItemSupersets": preserved_required_source_item_supersets,
                     "objectiveDisplayRisks": objective_display_risks,
@@ -4083,6 +4137,12 @@ def main():
         suggestion_path.write_text(build_lua_suggestions(mismatches, acore_metadata, constants), encoding="utf-8")
         print(f"Lua suggestions written to {suggestion_path}")
 
+    return 1 if mismatches else 0
+
 
 if __name__ == "__main__":
-    main()
+    try:
+        raise SystemExit(main())
+    except (OSError, ValueError) as error:
+        print(f"ERROR: {error}", file=sys.stderr)
+        raise SystemExit(2)
