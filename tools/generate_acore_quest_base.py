@@ -317,7 +317,26 @@ def build_chain_selections(source, records, excluded=()):
     return result
 
 
-def write_stream(stream, records, starter_selections=None, event_tooltips=None):
+def build_optional_extra_objectives(records, packet):
+    """Mark only exact, source-proved travel guides as optional at runtime."""
+    result = {}
+    for key, indices in packet.get("optional", {}).items():
+        quest_id = int(key)
+        if quest_id not in records:
+            continue
+        expected = packet.get("guides", {}).get(key, packet.get("guides", {}).get(quest_id, {}))
+        actual = records[quest_id].get("s:extraObjectives", {})
+        for index in indices:
+            if type(index) is not int or index < 1:
+                raise ValueError(f"Quest {quest_id}: invalid optional travel guide index")
+            guide = expected.get(f"n:{index}")
+            if not guide or guide.get("n:4", 0) != 0 or not shared.same_value(actual.get(f"n:{index}"), guide):
+                raise ValueError(f"Quest {quest_id}: optional travel guide differs from its source proof")
+            result.setdefault(quest_id, {})[index] = True
+    return result
+
+
+def write_stream(stream, records, starter_selections=None, event_tooltips=None, optional_objectives=None):
     stream.write('-- Generated from AzerothCore source and explicit Questie compatibility data.\n')
     stream.write('-- Generator: tools/generate_acore_quest_base.py\n')
     stream.write('local QuestieDB = QuestieLoader:ImportModule("QuestieDB")\n\nQuestieDB.questKeys = {\n')
@@ -335,6 +354,12 @@ def write_stream(stream, records, starter_selections=None, event_tooltips=None):
             if quest_id in records and actors:
                 stream.write(f'    [{quest_id}] = {lua_value(audit.typed(actors))},\n')
         stream.write('}\n')
+    if optional_objectives is not None:
+        stream.write('\n-- Source-proved travel guides do not establish quest completion requirements.\n')
+        stream.write('QuestieDB.questOptionalExtraObjectives = {\n')
+        for quest_id, indices in sorted(optional_objectives.items()):
+            stream.write(f'    [{quest_id}] = {lua_value(audit.typed(indices))},\n')
+        stream.write('}\n')
     if starter_selections is not None:
         stream.write('\n-- Source-derived faction views; quest records above remain shared.\n')
         stream.write('QuestieDB.questFactionSelections = (UnitFactionGroup("player") == "Horde") and {\n')
@@ -344,14 +369,14 @@ def write_stream(stream, records, starter_selections=None, event_tooltips=None):
             stream.write(ending)
 
 
-def candidate_size(records, starter_selections=None, event_tooltips=None):
+def candidate_size(records, starter_selections=None, event_tooltips=None, optional_objectives=None):
     class ByteCounter:
         size = 0
 
         def write(self, value):
             self.size += len(value.encode("utf-8"))
     counter = ByteCounter()
-    write_stream(counter, records, starter_selections, event_tooltips)
+    write_stream(counter, records, starter_selections, event_tooltips, optional_objectives)
     return counter.size
 
 
@@ -420,6 +445,7 @@ def main(argv=None):
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     records = build_records(model, manifest, saved.get("objectiveCreditSources"), saved.get("objectiveEventSources"),
                             saved.get("objectiveSpellSources"))
+    optional_objectives = build_optional_extra_objectives(records, saved.get("questGuides", {}).get("extra", {}))
     event_tooltips = {int(key): actors for key, actors in saved.get("objectiveEventSources", {}).items()}
     starter_selections = build_starter_selections(model, records, saved.get("starterTeams", {}),
                                                 saved.get("scriptQuestStarters", {}))
@@ -438,7 +464,7 @@ def main(argv=None):
             shared.write_json(targets[1], {"comparison": comparison})
         ids = [row["questId"] for row in comparison["differences"][:20]]
         raise ValueError(f"Quest candidate differs from baseline ({comparison['changedRecords']} records; IDs {ids}); no candidate or manifest published")
-    if candidate_size(records, starter_selections, event_tooltips) > manifest["limits"]["maxOutputBytes"]:
+    if candidate_size(records, starter_selections, event_tooltips, optional_objectives) > manifest["limits"]["maxOutputBytes"]:
         raise ValueError("Quest candidate exceeds its baseline size budget")
     if audit.source_signature(source, spell, args.spell_table, tool_candidates) != signature:
         raise ValueError("Quest source inputs changed during generation")
@@ -448,7 +474,8 @@ def main(argv=None):
     summary = {"quests": len(records), "exactParity": comparison["exactParity"] if comparison else None,
                "changedRecords": comparison["changedRecords"] if comparison else None,
                "parityScope": "shared quest rows; faction selections require runtime snapshot review",
-               "factionStarterQuests": starter_ids, "factionChainQuests": sorted(chain_selections["Alliance"])}
+                "factionStarterQuests": starter_ids, "factionChainQuests": sorted(chain_selections["Alliance"]),
+                "optionalTravelQuests": sorted(optional_objectives)}
     if args.command == "bootstrap":
         write_manifest(manifest_path, manifest)
         summary.update({"manifest": str(manifest_path), "extraRecords": len(manifest["extraRecords"]),
@@ -462,7 +489,7 @@ def main(argv=None):
         with db_snapshot.temporary_directory(output.parent) as directory:
             candidate = directory / "acoreQuestDB.lua"
             with candidate.open("w", encoding="utf-8", newline="\n") as stream:
-                write_stream(stream, records, starter_selections, event_tooltips)
+                write_stream(stream, records, starter_selections, event_tooltips, optional_objectives)
             if candidate.stat().st_size > manifest["limits"]["maxOutputBytes"]:
                 raise ValueError("Serialized quest candidate exceeds size budget")
             shared.write_json(report, {"sourceInputs": signature, "manifestSha256": manifest_sha,
@@ -471,6 +498,7 @@ def main(argv=None):
                                       "maxOutputBytes": manifest["limits"]["maxOutputBytes"], "counts": summary,
                                       "factionSelections": starter_selections,
                                        "guideCoverage": saved.get("questGuides", {}),
+                                       "optionalExtraObjectives": optional_objectives,
                                       "excludedSourceQuestIds": sorted(set(model) - set(records))})
             candidate.replace(output)
         summary.update({"output": str(output), "report": str(report), "outputMiB": round(output.stat().st_size / 1048576, 2)})

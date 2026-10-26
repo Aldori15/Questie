@@ -31,6 +31,29 @@ def bootstrap(before, source):
 
 
 class QuestBaseTests(unittest.TestCase):
+    def test_optional_travel_footer_requires_exact_generated_guide(self):
+        hint = typed({2: 5, 3: "Speak with Pilot", 4: 0, 5: [["monster", 20]]})
+        records = {1: quest(extraObjectives={"n:1": hint})}
+        packet = {"guides": {"1": {"n:1": hint}}, "optional": {"1": [1], "99": [1]}}
+        self.assertEqual(exporter.build_optional_extra_objectives(records, packet), {1: {1: True}})
+        stream = io.StringIO()
+        exporter.write_stream(stream, records, optional_objectives={1: {1: True}})
+        self.assertIn("QuestieDB.questOptionalExtraObjectives = {\n    [1] = {[1]=true},\n}", stream.getvalue())
+        records[1]["s:extraObjectives"]["n:1"] = typed({2: 3, 3: "Required interaction", 4: 0})
+        with self.assertRaisesRegex(ValueError, "differs from its source proof"):
+            exporter.build_optional_extra_objectives(records, packet)
+        records[1]["s:extraObjectives"]["n:1"] = hint
+        packet["optional"]["1"] = [False]
+        with self.assertRaisesRegex(ValueError, "invalid optional"):
+            exporter.build_optional_extra_objectives(records, packet)
+
+    def test_real_objective_link_cannot_be_marked_optional(self):
+        hint = typed({2: 5, 3: "Linked objective", 4: 1, 5: [["monster", 20]]})
+        records = {1: quest(extraObjectives={"n:1": hint})}
+        packet = {"guides": {1: {"n:1": hint}}, "optional": {"1": [1]}}
+        with self.assertRaisesRegex(ValueError, "differs from its source proof"):
+            exporter.build_optional_extra_objectives(records, packet)
+
     def test_verified_objective_views_require_current_credit_sources(self):
         source = {1: quest(objectives=typed({1: [[10]]}))}
         before = {1: quest(objectives=typed({1: [[20]]}))}

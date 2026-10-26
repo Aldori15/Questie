@@ -50,6 +50,8 @@ TABLE_KEYS = {
     "waypoints": ("entry", "pointid"),
     "creature": ("guid",),
     "npc_spellclick_spells": ("npc_entry", "spell_id"),
+    "gossip_menu_option": ("MenuID", "OptionID"),
+    "spell_script_names": ("spell_id", "ScriptName"),
     **{table: (("eventEntry", "id", "quest") if table.startswith("game_event_") else ("id", "quest"))
        for table in relation_reader.TARGET_TABLES},
 }
@@ -91,7 +93,7 @@ def source_signature(source, spell_sql, spell_table, tool_candidates=None):
         paths.update(p.resolve() for p in root.rglob("*.sql"))
     revision = subprocess.run(["git", "-C", str(source), "rev-parse", "HEAD"], capture_output=True, text=True)
     readers = ("generate_acore_item_corrections.py", "validate_acore_quest_metadata.py", "validate_acore_quest_relations.py",
-               "acore_quest_compatibility.py", "acore_quest_guides.py", "acore_quest_cpp_events.py",
+                "acore_quest_compatibility.py", "acore_quest_guides.py", "acore_quest_flight_guides.py", "acore_quest_cpp_events.py",
                "acore_quest_script_events.py",
                "acore_quest_cpp_credits.py",
                "acore_item_compatibility.py",
@@ -125,6 +127,9 @@ def model_digest(saved):
         payload["questGuides"] = saved["questGuides"]
     if "objectiveSpellSources" in saved:
         payload["objectiveSpellSources"] = saved["objectiveSpellSources"]
+    # Proof maps use integer IDs in memory; JSON object keys reload as strings.
+    # Normalize before sorting so fresh and cached models have the same digest.
+    payload = json.loads(json.dumps(payload, ensure_ascii=True, allow_nan=False))
     return hashlib.sha256(json.dumps(payload, sort_keys=True, ensure_ascii=True, allow_nan=False,
                                      separators=(",", ":")).encode()).hexdigest()
 
@@ -445,7 +450,8 @@ def load_source(source, spell_sql, spell_table, signature, cache, refresh=False,
         extra_guides = guides.derive_extra_guide_packet(
             eligible_templates, item_templates, object_templates, complete_spells, rows("conditions"),
             rows("smart_scripts"), container_sources, rows("creature_template"),
-            npc_spellclick_rows=rows("npc_spellclick_spells"), quest_relations=relations)
+             npc_spellclick_rows=rows("npc_spellclick_spells"), quest_relations=relations,
+             gossip_options=rows("gossip_menu_option"), spell_scripts=rows("spell_script_names"))
         tool_index = compatibility.build_required_tool_index(item_templates, complete_spells)
     quests, tool_evidence = {}, {}
     for quest_id, fields in sorted(derived.items()):

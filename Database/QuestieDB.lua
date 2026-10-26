@@ -3887,11 +3887,13 @@ function QuestieDB.GetQuest(questId) -- /dump QuestieDB.GetQuest(867)
     ---@type ExtraObjective[]
     local extraObjectives = QO.extraObjectives
     if extraObjectives then
+        local optionalObjectives = QuestieDB.questOptionalExtraObjectives and QuestieDB.questOptionalExtraObjectives[questId]
         for index, o in pairs(extraObjectives) do
             local specialObjective = {
                 Icon = o[2],
                 Description = o[3],
                 RealObjectiveIndex = o[4],
+                Optional = optionalObjectives and optionalObjectives[index] == true and (not o[4] or o[4] == 0) or nil,
             }
             if o[1] then -- custom spawn
                 specialObjective.spawnList = {{

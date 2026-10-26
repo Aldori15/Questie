@@ -210,10 +210,11 @@ equal(h.available.GetUnavailableQuestSnapshot(), nil, "An explicit offer removes
 
 -- Missing map guidance must not invent completion or discard client progress.
 do
-    local state = {entry = {isComplete = 0}, objectives = {}, finishers = 0}
+    local state = {entry = {isComplete = 0}, objectives = {}, finishers = 0, sourceItemPresent = true}
     local questModule = {
         GetAllLeaderBoardDetails = function() return state.objectives end,
         AddFinisher = function() state.finishers = state.finishers + 1 end,
+        CheckQuestSourceItem = function() return state.sourceItemPresent end,
     }
     local private = {}
     local env = setmetatable({FixtureQuest = questModule, FixturePrivate = private}, {__index = _G})
@@ -229,6 +230,7 @@ do
         .. 'local Questie, QuestieLib = FixtureAddon, FixtureLib\n'
         .. 'local QuestLogCache, AvailableQuests = FixtureLog, FixtureAvailable\n'
         .. 'local QuestieDB = FixtureDB\n'
+        .. 'local _UpdateOptionalTravelHints = function() end\n'
     loadFunction("Modules/Quest/QuestieQuest.lua", "function _QuestieQuest.ObjectiveUpdate(self)", prefix, env)
     loadFunction("Modules/Quest/QuestieQuest.lua", "function QuestieQuest:PopulateQuestLogInfo(quest)", prefix, env)
     local function quest(flags, data)
@@ -240,6 +242,41 @@ do
     local delivery = quest(0)
     questModule:PopulateQuestLogInfo(delivery)
     assert(delivery.isComplete and state.finishers == 1, "Objective-free delivery lost its finisher")
+    local travel = quest(0)
+    travel.SpecialObjectives = {{Optional = true, Description = "Speak with the flight NPC"}}
+    questModule:PopulateQuestLogInfo(travel)
+    assert(travel.isComplete and state.finishers == 2, "Optional travel guidance hid a delivery finisher")
+    local requiredHelper = quest(0)
+    requiredHelper.SpecialObjectives = {{Description = "Activate the required object"}}
+    questModule:PopulateQuestLogInfo(requiredHelper)
+    assert(not requiredHelper.isComplete and state.finishers == 2, "Required helper was treated as optional travel")
+    local requiredItem = quest(0)
+    requiredItem.SpecialObjectives[42105] = {Type = "item", Id = 42105}
+    questModule:PopulateQuestLogInfo(requiredItem)
+    assert(not requiredItem.isComplete and state.finishers == 2, "Sparse required-source-item helper was ignored")
+    state.sourceItemPresent = false
+    local missingSourceItem = quest(0)
+    missingSourceItem.SpecialObjectives = {{Optional = true}}
+    questModule:PopulateQuestLogInfo(missingSourceItem)
+    assert(not missingSourceItem.isComplete and state.finishers == 2, "Missing source item was treated as ready to turn in")
+    state.sourceItemPresent = true
+    for _, kind in ipairs({"item", "monster", "spell", "reputation", "event"}) do
+        local missingClientObjectives = quest(0, {{Type = kind, Id = 999}})
+        missingClientObjectives.SpecialObjectives = {{Optional = true}}
+        questModule:PopulateQuestLogInfo(missingClientObjectives)
+        assert(not missingClientObjectives.isComplete and state.finishers == 2,
+            "Empty client scan bypassed source objective: " .. kind)
+    end
+    local travelEvent = quest(2)
+    travelEvent.SpecialObjectives = {{Optional = true}}
+    questModule:PopulateQuestLogInfo(travelEvent)
+    assert(not travelEvent.isComplete and state.finishers == 2, "Travel hint bypassed an unfinished server event")
+    state.entry.isComplete = -1
+    local failedTravel = quest(0)
+    failedTravel.SpecialObjectives = {{Optional = true}}
+    questModule:PopulateQuestLogInfo(failedTravel)
+    assert(not failedTravel.isComplete and state.finishers == 2, "Failed quest acquired a completion fallback")
+    state.entry.isComplete = 0
     state.objectives = {{type = "event", text = "Escort the NPC", raw_text = "Escort the NPC", finished = false}}
     eventQuest = quest(2)
     questModule:PopulateQuestLogInfo(eventQuest)

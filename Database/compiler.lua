@@ -740,7 +740,7 @@ QuestieDBCompiler.writers = {
     ["extraobjectives"] = function(stream, value)
         if value then
             stream:WriteByte(#value)
-            for _, data in pairs(value) do
+            for _, data in ipairs(value) do
                 QuestieDBCompiler.writers["spawnlist"](stream, data[1])
                 stream:WriteInt24(data[2]) -- icon
                 stream:WriteShortString(data[3]) -- description

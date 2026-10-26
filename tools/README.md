@@ -28,6 +28,18 @@ use it.
 - `db_snapshot.py` compares effective corrected data across both factions and
   Isle stages 1/9. It does not cover XP/drop datasets or live server state.
 - `run_regressions.py` is the shared local/CI test entry point.
+- `acore_quest_guides.py` and `acore_quest_flight_guides.py` derive supported
+  quest guidance. Flight hints follow quest-conditioned SmartAI gossip actions
+  and player-targeted taxi instructions, rather than gossip labels. The quest
+  base includes `questOptionalExtraObjectives` metadata so travel guidance does
+  not become a completion requirement. This does not validate live flight
+  availability or infer destination geometry.
+- `report_extra_objective_localization.py` audits extra-objective translation
+  keys against an unlocalized quest base and maintained runtime literals. Use
+  `--quest-db` to review a candidate before promotion. Its unused candidates
+  require review for dynamic consumers and future recovery; it deletes nothing.
+  Active objective translations live in the shared
+  `Localization/Translations/ExtraObjectives.lua` dictionary.
 
 ## Regression checks before pushing
 

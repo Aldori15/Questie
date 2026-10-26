@@ -113,6 +113,19 @@ local function _RunPopulateObjective(quest, objectiveIndex, objective, blockItem
     end)
 end
 
+local function _UpdateOptionalTravelHints(quest)
+    for _, objective in pairs(quest.SpecialObjectives or {}) do
+        if objective.Optional and QuestiePlayer.currentQuestlog[quest.Id] == quest and _IsQuestInLog(quest.Id)
+            and not quest.HideIcons and not (Questie.db.char.hidden and Questie.db.char.hidden[quest.Id])
+            and QuestieQuest:ShouldShowQuestNotes(quest.Id) then
+            local status = quest:IsComplete()
+            if status == 0 or (status == 1 and not next(quest.ObjectiveData or {})) then
+                _RunPopulateObjective(quest, 0, objective, true)
+            end
+        end
+    end
+end
+
 local function _HasVisibleSpawnInZone(spawns)
     if not spawns then
         return true
@@ -605,6 +618,7 @@ function QuestieQuest:UpdateQuest(questId)
             -- Only remove the map icons, but keep the tooltips
             _UnloadQuestFrames(questId, function()
                 QuestieQuest:AddFinisher(quest)
+                _UpdateOptionalTravelHints(quest)
                 Questie:SendMessage("QC_ID_BROADCAST_QUEST_UPDATE", questId)
             end)
         elseif isComplete == -1 then
@@ -677,6 +691,7 @@ function QuestieQuest:UpdateQuest(questId)
                         -- Only remove the map icons, but keep the tooltips
                         _UnloadQuestFrames(questId, function()
                             QuestieQuest:AddFinisher(quest)
+                            _UpdateOptionalTravelHints(quest)
                             Questie:SendMessage("QC_ID_BROADCAST_QUEST_UPDATE", questId)
                         end)
                     else
@@ -1334,7 +1349,11 @@ local function _IsCurrentObjectiveDraw(quest, objective, spawnCache)
         return true
     end
 
-    if QuestiePlayer.currentQuestlog[quest.Id] ~= quest or quest:IsComplete() ~= 0 then
+    local status = quest:IsComplete()
+    if QuestiePlayer.currentQuestlog[quest.Id] ~= quest
+        or (objective.Optional and (not _IsQuestInLog(quest.Id) or quest.HideIcons
+            or (Questie.db.char.hidden and Questie.db.char.hidden[quest.Id]) or not QuestieQuest:ShouldShowQuestNotes(quest.Id)))
+        or (status ~= 0 and not (objective.Optional and status == 1 and not next(quest.ObjectiveData or {}))) then
         return false
     end
 
@@ -1358,6 +1377,10 @@ end
 function QuestieQuest:PopulateObjective(quest, objectiveIndex, objective, blockItemTooltips)
     assert(coRunning(), "PopulateObjective must be called from a coroutine")
     Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest:PopulateObjective]", objective.Description)
+
+    if objective.Optional and not _IsCurrentObjectiveDraw(quest, objective, objective.AlreadySpawned) then
+        return
+    end
 
     if (not objective.Update) then
         Questie.Debug(Questie.DEBUG_INFO, "[QuestieQuest:PopulateObjective] - Quest is already updated. --> Exiting!")
@@ -2150,13 +2173,25 @@ function QuestieQuest:PopulateQuestLogInfo(quest)
     end
 
     local requiresEvent = bit.band(quest.specialFlags or 0, 2) ~= 0
-    if not requiresEvent and not next(questObjectives) and #quest.Objectives == 0 and #quest.SpecialObjectives == 0
+    local hasRequiredHelper = false
+    for _, specialObjective in pairs(quest.SpecialObjectives) do
+        if not specialObjective.Optional then
+            hasRequiredHelper = true
+            break
+        end
+    end
+    if not requiresEvent and not next(questObjectives) and not next(quest.Objectives)
+        and not next(quest.ObjectiveData or {}) and not hasRequiredHelper
+        and (questLogEngtry.isComplete == nil or questLogEngtry.isComplete == 0)
+        and QuestieQuest:CheckQuestSourceItem(quest.Id)
         and ((quest.triggerEnd and #quest.triggerEnd > 0) or (quest.Finisher and quest.Finisher.Id ~= nil)) then
         -- Delivery quests can lack the client's completion flag. Missing map
         -- guidance or an unfinished server event does not establish completion.
+        -- Verified optional travel hints do not prevent displaying the finisher.
         quest.isComplete = true
         AvailableQuests.RemoveQuest(quest.Id, function()
             QuestieQuest:AddFinisher(quest)
+            _UpdateOptionalTravelHints(quest)
         end)
     end
 

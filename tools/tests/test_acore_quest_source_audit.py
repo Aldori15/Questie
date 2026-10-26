@@ -10,6 +10,15 @@ import db_snapshot
 
 
 class QuestSourceAuditTests(unittest.TestCase):
+    def test_proof_digest_survives_json_roundtrip_for_mixed_length_quest_ids(self):
+        saved = {"quests": {}, "tableCoverage": {}, "diagnostics": {}, "disabledQuestIds": [],
+                 "moduleQuestIds": [], "spellCoverage": {},
+                 "questGuides": {"extra": {"flights": {"guides": {20: ["Pilot A"], 100: ["Pilot B"]}}}}}
+        digest = audit.model_digest(saved)
+        self.assertEqual(audit.model_digest(json.loads(json.dumps(saved))), digest)
+        saved["questGuides"]["extra"]["flights"]["guides"][20] = ["Changed pilot"]
+        self.assertNotEqual(audit.model_digest(saved), digest)
+
     def test_guide_spell_fields_keep_focus_items_and_reagents_with_sql_zero_overrides(self):
         row = {"Effect_1": 24, "EffectItemType_1": 17758, "RequiresSpellFocus": 43,
                "Reagent_1": 17761, "Reagent1": 999, "Reagent_2": 0, "Reagent2": 888}

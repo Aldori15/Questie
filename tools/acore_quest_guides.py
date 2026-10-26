@@ -5,6 +5,7 @@ from collections import defaultdict
 
 from acore_item_compatibility import number
 from acore_scripted_geometry import typed
+import acore_quest_flight_guides as flight_guides
 
 
 CORE_SOURCE_FILES = (
@@ -16,7 +17,7 @@ CORE_SOURCE_FILES = (
     "src/server/game/AI/SmartScripts/SmartAI.cpp",
     "src/server/game/AI/SmartScripts/SmartScript.cpp",
     "src/server/game/Entities/GameObject/GameObject.h",
-)
+) + flight_guides.CORE_SOURCE_FILES
 
 
 def _rows(values):
@@ -303,7 +304,8 @@ def _summoned_quest_finishers(quests, objects, npcs, scripts, conditions, quest_
 
 def derive_extra_guide_packet(quest_templates, item_templates, object_templates,
                               spells, conditions, scripts, item_sources,
-                              creature_templates, npc_spellclick_rows=(), quest_relations=None):
+                              creature_templates, npc_spellclick_rows=(), quest_relations=None,
+                              gossip_options=(), spell_scripts=()):
     quests = _templates(quest_templates, "ID")
     items = _templates(item_templates, "entry")
     objects = _templates(object_templates, "entry")
@@ -314,6 +316,8 @@ def derive_extra_guide_packet(quest_templates, item_templates, object_templates,
     vehicle_clicks = _vehicle_spellclicks(condition_rows, spell_rows, npcs, _rows(npc_spellclick_rows))
     summoned_finishers = _summoned_quest_finishers(
         quests, objects, npcs, _rows(scripts), condition_rows, quest_relations)
+    flights = flight_guides.derive(quests, npcs, spell_rows, condition_rows,
+                                   _rows(scripts), _rows(gossip_options), _rows(spell_scripts))
     source_items = {int(key): row for key, row in item_sources.items()}
     focuses, goobers = defaultdict(set), defaultdict(set)
     for entry, obj in objects.items():
@@ -334,7 +338,7 @@ def derive_extra_guide_packet(quest_templates, item_templates, object_templates,
             obj = number(spell, "EffectMiscValue" + str(i))
             if obj in objects and number(objects[obj], "type") in (3, 25):
                 death_containers[obj].add(actor)
-    guides, evidence, omissions = {}, [], []
+    guides, optional, evidence, omissions = {}, {}, [], []
     for quest_id, quest in sorted(quests.items()):
         hints = {}
         for item in sorted(_quest_items(quest)):
@@ -389,13 +393,26 @@ def derive_extra_guide_packet(quest_templates, item_templates, object_templates,
                     hints[(1, label, "monster", actor)] = {2: 1, 3: label, 4: 0, 5: [["monster", actor]]}
                     evidence.append({"questId": quest_id, "rule": "deathSummonedQuestContainer",
                                      "itemId": item, "objectId": obj, "creatureId": actor})
+        travel_keys = set()
+        for hint in flights["guides"].get(quest_id, ()):
+            kind, npc = hint[5][0]
+            key = (hint[2], hint[3], kind, npc)
+            hints[key] = hint
+            travel_keys.add(key)
         if hints:
-            guides[quest_id] = typed([value for _, value in sorted(hints.items())])
-    return {"guides": guides, "evidence": evidence, "omissions": omissions}
+            ordered = sorted(hints.items())
+            guides[quest_id] = typed([value for _, value in ordered])
+            indices = [index for index, (key, _) in enumerate(ordered, 1) if key in travel_keys]
+            if indices:
+                optional[str(quest_id)] = indices
+    return {"guides": guides, "optional": optional, "evidence": evidence,
+            "omissions": omissions, "flights": flights}
 
 
 def derive_extra_guides(quest_templates, item_templates, object_templates, spells,
-                        conditions, scripts, item_sources, creature_templates, npc_spellclick_rows=(), quest_relations=None):
+                        conditions, scripts, item_sources, creature_templates, npc_spellclick_rows=(), quest_relations=None,
+                        gossip_options=(), spell_scripts=()):
     return derive_extra_guide_packet(quest_templates, item_templates, object_templates,
                                      spells, conditions, scripts, item_sources,
-                                     creature_templates, npc_spellclick_rows, quest_relations)["guides"]
+                                     creature_templates, npc_spellclick_rows, quest_relations,
+                                     gossip_options, spell_scripts)["guides"]

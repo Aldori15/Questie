@@ -133,6 +133,21 @@ equal(preview.IsRepeatable, starter.IsRepeatable, "full and starter icon flags m
 equal(db.private.questStartCache[2], nil, "full quest replaces its starter cache entry")
 equal(db.GetQuestStartInfo(2), preview, "starter lookup reuses a cached full quest")
 assert(preview.SpecialObjectives[1].spawnList, "full quest still builds objective spawns")
+equal(preview.SpecialObjectives[1].Optional, nil, "unmarked helper remains required")
+db.questOptionalExtraObjectives = {[2] = {[1] = true}}
+db.private.questCache[2] = nil
+preview = db.GetQuest(2)
+equal(preview.SpecialObjectives[1].Optional, true, "generated metadata marks compiled helper optional")
+db.questOptionalExtraObjectives[2][1] = false
+db.private.questCache[2] = nil
+equal(db.GetQuest(2).SpecialObjectives[1].Optional, nil, "false metadata cannot mark a helper optional")
+db.questOptionalExtraObjectives[2][1] = true
+db.questDataOverrides[2] = {[q.extraObjectives] = {{nil, 1, "Required objective", 1, {{"monster", npcId}}}}}
+db.private.questCache[2] = nil
+equal(db.GetQuest(2).SpecialObjectives[1].Optional, nil, "linked real objective cannot become optional")
+db.questOptionalExtraObjectives, db.questDataOverrides[2] = nil, nil
+db.private.questCache[2] = nil
+preview = db.GetQuest(2)
 local beforeStarter = db.GetQuestStartInfo(5)
 local beforeNPC, unrelatedNPC = db:GetNPC(npcId), db:GetNPC(99)
 equal(canDraw(active, objective, spawnCache), true, "objective drawable before refresh")
