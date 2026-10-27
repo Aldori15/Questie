@@ -217,7 +217,7 @@ def validate_instance_rows(
 def main():
     parser = argparse.ArgumentParser(description="Validate Questie's WDM UiMapData against WDM WorldMapArea exports.")
     parser.add_argument("--addon-root", default=Path("."), type=Path)
-    parser.add_argument("--wdm-root", default=Path(r"E:\downloads\WDM stuff"), type=Path)
+    parser.add_argument("--wdm-root", default=Path(r"E:\downloads\questie_acore_exports\WDM stuff"), type=Path)
     args = parser.parse_args()
 
     ui_map_data_path = args.addon_root.resolve() / "Compat/UiMapData.lua"

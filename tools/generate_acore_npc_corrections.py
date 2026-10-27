@@ -69,7 +69,7 @@ ACORE_CREATURE_SPAWN_ZONE_OVERRIDES = {
     247103: 11316,  # Arugal - Shadowfang Keep floor 7
 }
 
-DEFAULT_WDM_ROOT = Path(r"E:\downloads\WDM stuff")
+DEFAULT_WDM_ROOT = Path(r"E:\downloads\questie_acore_exports\WDM stuff")
 WDM_INSTANCE_FLOOR_ZONE_ID_OFFSET = 11000
 
 # Some AC creature spawns sit just outside the client zone rectangle while still
