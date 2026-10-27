@@ -29,7 +29,7 @@ local IsleOfQuelDanas = QuestieLoader:ImportModule("IsleOfQuelDanas")
 -- Static data belongs to the generated bases. This module initializes runtime
 -- faction overrides, blacklists, race inference and waypoint optimization.
 
--- flags that can be used in corrections (currently only blacklists)
+-- Expansion-specific hide flags used by blacklist and event definitions.
 QuestieCorrections.TBC_ONLY = 1 -- Hide only in TBC
 QuestieCorrections.CLASSIC_ONLY = 2 -- Hide only in Classic
 QuestieCorrections.WOTLK_ONLY = 3 -- Hide only in Wotlk
@@ -43,7 +43,7 @@ QuestieCorrections.objectiveTooltipHints = {}
 ---@type table<QuestId, table<integer, { [1]: "monster"|"object"|"item", [2]: number }>>
 QuestieCorrections.triggerEndTooltipTargets = {}
 
--- this function filters a table of values, if the value is TBC_ONLY or CLASSIC_ONLY, set it to true or nil if that case is met
+-- Resolve expansion-specific hide flags for the Wrath client.
 ---@generic T
 ---@param values T
 ---@return T

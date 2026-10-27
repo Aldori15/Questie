@@ -1120,10 +1120,9 @@ function QuestieDBCompiler:CompileTableCoroutine(tbl, types, order, lookup, data
             end
             local id = indexLookup[index]
 
-            -- QuestieDBCompiler.currentEntry = id -- This was only ever used for debugging.
             local entry = tbl[id]
 
-            pointerMap[id] = stream._pointer--pointerStart
+            pointerMap[id] = stream._pointer
             for i=1, fieldCount do
                 -- If combat starts mid-entry, pause before processing next field
                 while InCombatLockdown() do
@@ -1143,13 +1142,8 @@ function QuestieDBCompiler:CompileTableCoroutine(tbl, types, order, lookup, data
                     error(errorMessage)
                 end
             end
-            -- tbl[id] = nil -- quicker gabage collection later
         end
     end
-    --I do not know if these assignments are actually needed but I am too scared to remove them
-    -- QuestieDBCompiler.pointerMap = pointerMap
-    -- QuestieDBCompiler.stream = stream
-    -- QuestieDBCompiler.index = index
 
 end
 

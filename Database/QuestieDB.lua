@@ -1930,7 +1930,7 @@ function QuestieDB:Initialize()
 
     InitializeQuestTagInfoCorrections()
 
-    -- For now we store the Era/HC database
+    -- Read the compiled AzerothCore database streams and pointer maps.
     local npcBin, npcPtrs, questBin, questPtrs, objBin, objPtrs, itemBin, itemPtrs
 
     npcBin = Questie.db.global.npcBin
@@ -4006,84 +4006,6 @@ function QuestieDB:GetCreatureLevels(quest)
     return creatureLevels
 end
 
-local playerFaction = UnitFactionGroup("player")
-local factionReactions = {
-    A = (playerFaction == "Alliance") or nil,
-    H = (playerFaction == "Horde") or nil,
-    AH = true,
-}
---
---
---function __TEST()
---    local questsWithoutTriggerEnd = {
---        869,
---        944,
---        1448,
---        6185,
---        9260,
---        9261,
---        9262,
---        9263,
---        9264,
---        9265,
---        12032,
---        12036,
---        12816,
---        12817,
---        13564,
---        13639,
---        13881,
---        13961,
---        14066,
---        14165,
---        14389,
---        24452,
---        24618,
---        25081,
---        25325,
---        25621,
---        25715,
---        25930,
---        26258,
---        26512,
---        26930,
---        26975,
---        27007,
---        27044,
---        27152,
---        27341,
---        27349,
---        27610,
---        27704,
---        28228,
---        28635,
---        28732,
---        29392,
---        29415,
---        29536,
---        29539,
---    }
---
---    local corrections = {}
---
---    -- Read QuestieDB to check if the quest has a triggerEnd
---    for _, questId in pairs(questsWithoutTriggerEnd) do
---        local quest = QuestieDB.GetQuest(questId)
---        if (not quest) then
---            print("Quest " .. questId .. " not found in QuestieDB")
---            corrections[questId] = true
---        else
---            if quest.triggerEnd then
---                print("Quest " .. questId .. " has a triggerEnd")
---            else
---                print("Quest " .. questId .. " does not have a triggerEnd")
---                corrections[questId] = true
---            end
---        end
---    end
---
---    Questie.db.global.__TEST = corrections
---end
 ---@param npcId number
 ---@return table
 function QuestieDB:GetNPC(npcId)
