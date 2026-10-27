@@ -1,6 +1,3 @@
-from questie_base import base_text, parse_keys, return_table
-import ast
-import re
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -13,50 +10,30 @@ if str(TOOLS_DIR) not in sys.path:
 
 from generate_acore_item_corrections import (  # noqa: E402
     add_item_sources_from_loot,
-    apply_multirow_insert,
-    apply_variable_set,
     build_gameobject_loot_source_map,
-    extract_function_return_tables,
-    extract_lua_long_return_table,
-    load_effective_questie_items,
     load_keyed_table,
     load_row_table,
-    parse_item_keys,
-    split_sql_statements,
-    statement_targets_table,
-    strip_lua_comments,
-    strip_sql_comments,
-    validate_lua_fragment,
 )
 from generate_acore_npc_corrections import (  # noqa: E402
-    LuaParser,
     add_acore_spawn_visibility,
-    extract_balanced_braces,
     find_map_difficulty_dbc,
     get_creature_entries,
     index_geometry_origins,
     index_partial_spawn_coverage,
-    format_zone_ref,
     load_map_difficulty_masks,
     load_filtered_row_table,
     load_rows_from_sql_file,
     merge_entrance_spawn_placeholders,
-    parse_zone_id_constants,
-    parse_zone_id_names,
     parse_zone_maps,
     resolve_coordinate_zone,
     source_zone_candidates,
     sort_coordinate_table,
-    wdm_instance_zone_ids,
 )
 
-
-OBJECT_CORRECTION_FILES = []
 
 LIST_FIELDS = {"questStarts", "questEnds"}
 NESTED_FIELDS = {"spawns"}
 STRING_FIELDS = {"name"}
-SCALAR_FIELDS = {"zoneID", "factionID"}
 
 FIELD_ORDER = [
     "name",
@@ -66,144 +43,6 @@ FIELD_ORDER = [
     "zoneID",
     "factionID",
 ]
-
-QUEST_REQUIRED_ITEM_COLUMNS = tuple(f"RequiredItemId{index}" for index in range(1, 7))
-
-
-def parse_object_keys(object_db_path):
-    return parse_keys(object_db_path, "object")
-
-
-def load_questie_objects(object_db_path, object_keys):
-    text = object_db_path.read_text(encoding="utf-8")
-    table_text = extract_lua_long_return_table(text, "QuestieDB.objectData")
-    parsed = LuaParser(table_text).parse()
-    reverse_keys = {index: name for name, index in object_keys.items()}
-    objects = {}
-    for object_id, values in parsed.items():
-        row = {}
-        for index, value in enumerate(values, start=1):
-            if value is not None and index in reverse_keys:
-                row[reverse_keys[index]] = value
-        objects[int(object_id)] = row
-    return objects
-
-
-def iter_lua_keyed_entries(table_text):
-    inner = table_text.strip()
-    if not inner.startswith("{") or not inner.endswith("}"):
-        return
-    index = 1
-    end = len(inner) - 1
-    while index < end:
-        while index < end and inner[index] in " \t\r\n,;":
-            index += 1
-        if index >= end:
-            break
-        if inner[index] != "[":
-            index += 1
-            continue
-        close_bracket = inner.find("]", index + 1)
-        if close_bracket == -1:
-            break
-        raw_key = inner[index + 1 : close_bracket].strip()
-        if not re.fullmatch(r"\d+", raw_key):
-            index = close_bracket + 1
-            continue
-        equals = inner.find("=", close_bracket + 1)
-        if equals == -1:
-            break
-        value_start = equals + 1
-        while value_start < end and inner[value_start].isspace():
-            value_start += 1
-        if value_start >= end or inner[value_start] != "{":
-            index = value_start + 1
-            continue
-        value_text = extract_balanced_braces(inner, value_start)
-        yield int(raw_key), value_text
-        index = value_start + len(value_text)
-
-
-def extract_lua_value_expression(text, start):
-    index = start
-    depth = 0
-    in_string = None
-    escaped = False
-    while index < len(text):
-        char = text[index]
-        if in_string:
-            if escaped:
-                escaped = False
-            elif char == "\\":
-                escaped = True
-            elif char == in_string:
-                in_string = None
-            index += 1
-            continue
-        if char in ("'", '"'):
-            in_string = char
-        elif char == "{":
-            depth += 1
-        elif char == "}":
-            if depth == 0:
-                return text[start:index].strip()
-            depth -= 1
-        elif char == "," and depth == 0:
-            return text[start:index].strip()
-        index += 1
-    return text[start:index].strip()
-
-
-def parse_targeted_correction_table(table_text, object_keys, fields, extra_constants=None):
-    constants = dict(extra_constants or {})
-    for name in object_keys:
-        constants[f"objectKeys.{name}"] = name
-
-    corrections = {}
-    pattern = re.compile(r"\[objectKeys\.([A-Za-z0-9_]+)\]\s*=")
-    for object_id, entry_text in iter_lua_keyed_entries(table_text):
-        for match in pattern.finditer(entry_text):
-            field = match.group(1)
-            if field not in fields:
-                continue
-            expression = extract_lua_value_expression(entry_text, match.end())
-            try:
-                value = LuaParser(expression, constants).parse()
-            except Exception:
-                continue
-            corrections.setdefault(object_id, {})[field] = value
-    return corrections
-
-
-def merge_corrections(target, source):
-    for object_id, fields in source.items():
-        target.setdefault(object_id, {}).update(fields)
-
-
-def load_lua_object_corrections(path, function_names, object_keys, fields, extra_constants=None):
-    text = strip_lua_comments(path.read_text(encoding="utf-8"))
-    corrections = {}
-    for function_name in function_names:
-        for table_text in extract_function_return_tables(text, function_name):
-            merge_corrections(corrections, parse_targeted_correction_table(table_text, object_keys, fields, extra_constants))
-    return corrections
-
-
-def apply_corrections(objects, corrections):
-    for object_id, fields in corrections.items():
-        objects.setdefault(object_id, {}).update(fields)
-
-
-def load_effective_questie_objects(repo_root, object_keys, fields):
-    objects = load_questie_objects(repo_root / "Database/AzerothCore/acoreObjectDB.lua", object_keys)
-    zone_constants = parse_zone_id_constants(repo_root)
-    for relative_path, function_names in OBJECT_CORRECTION_FILES:
-        path = repo_root / relative_path
-        if not path.exists():
-            continue
-        corrections = load_lua_object_corrections(path, function_names, object_keys, fields, zone_constants)
-        apply_corrections(objects, corrections)
-    return objects
 
 
 def load_rows_from_optional_sql_file(source_root, table_name, key_columns, include_modules=False, sql_path=None):
@@ -474,40 +313,6 @@ def normalize_coordinate_table(value):
     return tuple(sorted(zones))
 
 
-def collect_quest_referenced_ids(repo_root, candidate_ids):
-    if not candidate_ids:
-        return set()
-
-    paths = [repo_root / "Database/AzerothCore/acoreQuestDB.lua"]
-    texts = []
-    for path in paths:
-        if path.exists():
-            texts.append(strip_lua_comments(base_text(path)))
-    quest_text = "\n".join(texts)
-
-    referenced_ids = set()
-    for candidate_id in candidate_ids:
-        if re.search(rf"(?<!\d){int(candidate_id)}(?!\d)", quest_text):
-            referenced_ids.add(int(candidate_id))
-    return referenced_ids
-
-
-def collect_acore_required_quest_item_ids(source_root, include_modules=False):
-    quest_rows, skipped_mutations = load_keyed_table(
-        source_root,
-        "quest_template",
-        "ID",
-        include_modules,
-    )
-    item_ids = {
-        int(row.get(column) or 0)
-        for row in quest_rows.values()
-        for column in QUEST_REQUIRED_ITEM_COLUMNS
-        if int(row.get(column) or 0) > 0
-    }
-    return item_ids, skipped_mutations
-
-
 def collect_indirect_quest_item_object_source_ids(
     questie_items,
     required_quest_item_ids,
@@ -585,55 +390,6 @@ def find_differences(
             if expected != actual:
                 corrections.setdefault(object_id, {})[field] = correction_value(field, acore_value)
     return corrections
-
-
-def add_missing_object_identity_corrections(corrections, questie_objects, acore_objects, object_source_ids):
-    for object_id in sorted(object_source_ids):
-        if object_id in questie_objects:
-            continue
-
-        acore = acore_objects.get(object_id)
-        if not acore or not acore.get("name"):
-            continue
-
-        corrections.setdefault(object_id, {})["name"] = acore["name"]
-
-
-def lua_quote(value):
-    return ast.literal_eval(repr(value)).replace("\\", "\\\\").replace('"', '\\"')
-
-
-def format_lua_number(value):
-    if isinstance(value, int) or float(value).is_integer():
-        return str(int(value))
-    return f"{float(value):.2f}".rstrip("0").rstrip(".")
-
-
-def format_lua_value(value, zone_names=None, zone_keyed_table=False):
-    zone_names = zone_names or {}
-    if isinstance(value, str):
-        return f'"{lua_quote(value)}"'
-    if isinstance(value, list):
-        if value and isinstance(value[0], list):
-            return "{" + ",".join(format_lua_value(item, zone_names) for item in value) + "}"
-        return "{" + ",".join(format_lua_number(item) for item in value) + "}"
-    if isinstance(value, dict):
-        return "{" + ", ".join(
-            f"[{format_zone_ref(key, zone_names) if zone_keyed_table else int(key)}] = "
-            f"{format_lua_value(value[key], zone_names)}"
-            for key in sorted(value)
-        ) + "}"
-    if isinstance(value, int):
-        return str(value)
-    if isinstance(value, float):
-        return format_lua_number(value)
-    raise TypeError(f"Unsupported Lua value: {value!r}")
-
-
-def format_lua_field_value(field, value, zone_names):
-    if field == "zoneID":
-        return format_zone_ref(value, zone_names)
-    return format_lua_value(value, zone_names, zone_keyed_table=(field in NESTED_FIELDS))
 
 
 def main():

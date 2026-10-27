@@ -400,9 +400,7 @@ def main(argv=None):
     saved = load_source(source_root, args.scope, signature, cache, args.refresh_source, args.spell_sql, args.spell_table)
     source = {int(key): row for key, row in saved["items"].items()}
     template_ids = set(saved["templateIds"])
-    keys = source_reader.parse_item_keys(root / "Database/itemDB.lua")
-    manual = {path: source_reader.load_lua_item_corrections(root / path, keys)
-              for path in source_reader.ITEM_CORRECTION_FILES if (root / path).is_file()}
+    manual = {}
     report = {
         "scope": args.scope, "snapshot": str(args.snapshot.resolve()), "snapshotSha256": reference_digest,
         "snapshotGit": metadata.get("git"), "sourceInputs": signature,

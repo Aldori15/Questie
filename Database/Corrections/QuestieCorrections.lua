@@ -122,8 +122,7 @@ do
     end
 end
 
----@param validationTables table? Only used by the CI validation scripts to validate the corrections against the original database values and find irrelevant corrections
-function QuestieCorrections:Initialize(validationTables)
+function QuestieCorrections:Initialize()
     -- Static corrections are included in the generated base databases.
     -- MinimalInit retains faction overrides and blacklists on fresh and cached startup.
 

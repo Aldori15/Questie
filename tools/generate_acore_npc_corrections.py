@@ -1,4 +1,3 @@
-from questie_base import base_text, parse_keys
 import ast
 import csv
 import math
@@ -23,23 +22,16 @@ from generate_acore_item_corrections import (  # noqa: E402
     apply_variable_set,
     extract_balanced_braces,
     extract_sql_columns,
-    extract_function_return_tables,
-    extract_lua_long_return_table,
-    load_effective_questie_items,
     load_keyed_table,
     load_row_table,
     load_sql_statements,
-    parse_item_keys,
     split_sql_statements,
     source_sql_files,
     statement_targets_table,
     strip_sql_comments,
     strip_lua_comments,
-    validate_lua_fragment,
 )
 
-
-NPC_CORRECTION_FILES = []
 
 # AzerothCore stores the TBC starting zones on map 530, but the 3.3.5 client
 # map rectangles used by Questie place those same zones in Eastern Kingdoms or
@@ -92,15 +84,6 @@ STATIC_FIELD_MAP = {
 LIST_FIELDS = {"questStarts", "questEnds"}
 NESTED_FIELDS = {"spawns", "waypoints"}
 STRING_FIELDS = {"name", "subName", "friendlyToFaction"}
-SCALAR_FIELDS = {
-    "minLevelHealth",
-    "maxLevelHealth",
-    "minLevel",
-    "maxLevel",
-    "rank",
-    "factionID",
-    "npcFlags",
-}
 
 FIELD_ORDER = [
     "name",
@@ -120,19 +103,7 @@ FIELD_ORDER = [
     "npcFlags",
 ]
 
-DEFAULT_FIELD_ORDER = [
-    field
-    for field in FIELD_ORDER
-    if field not in {
-        "minLevelHealth",
-        "maxLevelHealth",
-    }
-]
 
-SKIPPED_FIELDS = {
-    "minLevelHealth": "Omitted by default to reduce addon memory; used only for display in map/search UI.",
-    "maxLevelHealth": "Omitted by default to reduce addon memory; used only for display in map/search UI.",
-}
 
 CREATURE_MULTISPAWN_COLUMNS = ("spawnId", "entry")
 SMART_SOURCE_TYPE_CREATURE = 0
@@ -473,62 +444,6 @@ class LuaParser:
         self.index += 1
 
 
-def parse_npc_keys(npc_db_path):
-    return parse_keys(npc_db_path, "npc")
-
-
-def load_questie_npcs(npc_db_path, npc_keys):
-    text = npc_db_path.read_text(encoding="utf-8")
-    table_text = extract_lua_long_return_table(text, "QuestieDB.npcData")
-    parsed = LuaParser(table_text).parse()
-    reverse_keys = {index: name for name, index in npc_keys.items()}
-    npcs = {}
-    for npc_id, values in parsed.items():
-        row = {}
-        for index, value in enumerate(values, start=1):
-            if value is not None and index in reverse_keys:
-                row[reverse_keys[index]] = value
-        npcs[int(npc_id)] = row
-    return npcs
-
-
-def npc_flag_constants():
-    return {
-        "QuestieDB.npcFlags.NONE": 0,
-        "QuestieDB.npcFlags.GOSSIP": 1,
-        "QuestieDB.npcFlags.QUEST_GIVER": 2,
-        "QuestieDB.npcFlags.TRAINER": 16,
-        "QuestieDB.npcFlags.VENDOR": 128,
-        "QuestieDB.npcFlags.REPAIR": 4096,
-        "QuestieDB.npcFlags.FLIGHT_MASTER": 8192,
-        "QuestieDB.npcFlags.SPIRIT_HEALER": 16384,
-        "QuestieDB.npcFlags.SPIRIT_GUIDE": 32768,
-        "QuestieDB.npcFlags.INNKEEPER": 65536,
-        "QuestieDB.npcFlags.BANKER": 131072,
-        "QuestieDB.npcFlags.PETITIONER": 262144,
-        "QuestieDB.npcFlags.TABARD_DESIGNER": 524288,
-        "QuestieDB.npcFlags.BATTLEMASTER": 1048576,
-        "QuestieDB.npcFlags.AUCTIONEER": 2097152,
-        "QuestieDB.npcFlags.STABLEMASTER": 4194304,
-        "npcFlags.NONE": 0,
-        "npcFlags.GOSSIP": 1,
-        "npcFlags.QUEST_GIVER": 2,
-        "npcFlags.TRAINER": 16,
-        "npcFlags.VENDOR": 128,
-        "npcFlags.REPAIR": 4096,
-        "npcFlags.FLIGHT_MASTER": 8192,
-        "npcFlags.SPIRIT_HEALER": 16384,
-        "npcFlags.SPIRIT_GUIDE": 32768,
-        "npcFlags.INNKEEPER": 65536,
-        "npcFlags.BANKER": 131072,
-        "npcFlags.PETITIONER": 262144,
-        "npcFlags.TABARD_DESIGNER": 524288,
-        "npcFlags.BATTLEMASTER": 1048576,
-        "npcFlags.AUCTIONEER": 2097152,
-        "npcFlags.STABLEMASTER": 4194304,
-    }
-
-
 def parse_zone_ids(repo_root):
     text = strip_lua_comments((repo_root / "Database/Zones/zoneTables.lua").read_text(encoding="utf-8"))
     start = text.find("ZoneDB.private.zoneIDs")
@@ -575,150 +490,6 @@ def parse_zone_id_names(repo_root, zone_maps=None):
             if zone_id and zone_id >= zone_maps["wdm_floor_zone_id_offset"]:
                 zone_names[zone_id] = wdm_floor_zone_constant_name(zone_maps["wdm_instance_map_data"][ui_id])
     return zone_names
-
-
-def iter_lua_keyed_entries(table_text):
-    inner = table_text.strip()
-    if not inner.startswith("{") or not inner.endswith("}"):
-        return
-    index = 1
-    end = len(inner) - 1
-    while index < end:
-        while index < end and inner[index] in " \t\r\n,;":
-            index += 1
-        if index >= end:
-            break
-        if inner[index] != "[":
-            index += 1
-            continue
-        close_bracket = inner.find("]", index + 1)
-        if close_bracket == -1:
-            break
-        raw_key = inner[index + 1 : close_bracket].strip()
-        if not re.fullmatch(r"\d+", raw_key):
-            index = close_bracket + 1
-            continue
-        equals = inner.find("=", close_bracket + 1)
-        if equals == -1:
-            break
-        value_start = equals + 1
-        while value_start < end and inner[value_start].isspace():
-            value_start += 1
-        if value_start >= end or inner[value_start] != "{":
-            index = value_start + 1
-            continue
-        value_text = extract_balanced_braces(inner, value_start)
-        yield int(raw_key), value_text
-        index = value_start + len(value_text)
-
-
-def extract_lua_value_expression(text, start):
-    index = start
-    depth = 0
-    in_string = None
-    escaped = False
-    while index < len(text):
-        char = text[index]
-        if in_string:
-            if escaped:
-                escaped = False
-            elif char == "\\":
-                escaped = True
-            elif char == in_string:
-                in_string = None
-            index += 1
-            continue
-        if char in ("'", '"'):
-            in_string = char
-        elif char == "{":
-            depth += 1
-        elif char == "}":
-            if depth == 0:
-                return text[start:index].strip()
-            depth -= 1
-        elif char == "," and depth == 0:
-            return text[start:index].strip()
-        index += 1
-    return text[start:index].strip()
-
-
-def parse_targeted_correction_table(table_text, npc_keys, fields):
-    constants = npc_flag_constants()
-    for name in npc_keys:
-        constants[f"npcKeys.{name}"] = name
-
-    corrections = {}
-    pattern = re.compile(r"\[npcKeys\.([A-Za-z0-9_]+)\]\s*=")
-    for npc_id, entry_text in iter_lua_keyed_entries(table_text):
-        for match in pattern.finditer(entry_text):
-            field = match.group(1)
-            if field not in fields:
-                continue
-            expression = extract_lua_value_expression(entry_text, match.end())
-            try:
-                value = LuaParser(expression, constants).parse()
-            except Exception:
-                continue
-            corrections.setdefault(npc_id, {})[field] = value
-    return corrections
-
-
-def merge_corrections(target, source):
-    for npc_id, fields in source.items():
-        target.setdefault(npc_id, {}).update(fields)
-
-
-def load_lua_npc_corrections(path, function_names, npc_keys, fields, extra_constants=None):
-    text = strip_lua_comments(path.read_text(encoding="utf-8"))
-    corrections = {}
-    for function_name in function_names:
-        for table_text in extract_function_return_tables(text, function_name):
-            merge_corrections(corrections, parse_targeted_correction_table_with_constants(table_text, npc_keys, fields, extra_constants))
-    return corrections
-
-
-def parse_targeted_correction_table_with_constants(table_text, npc_keys, fields, extra_constants=None):
-    constants = npc_flag_constants()
-    constants.update(extra_constants or {})
-    for name in npc_keys:
-        constants[f"npcKeys.{name}"] = name
-
-    corrections = {}
-    pattern = re.compile(r"\[npcKeys\.([A-Za-z0-9_]+)\]\s*=")
-    for npc_id, entry_text in iter_lua_keyed_entries(table_text):
-        for match in pattern.finditer(entry_text):
-            field = match.group(1)
-            if field not in fields:
-                continue
-            expression = extract_lua_value_expression(entry_text, match.end())
-            try:
-                value = LuaParser(expression, constants).parse()
-            except Exception:
-                continue
-            corrections.setdefault(npc_id, {})[field] = value
-    return corrections
-
-
-def apply_corrections(npcs, corrections):
-    for npc_id, fields in corrections.items():
-        npcs.setdefault(npc_id, {}).update(fields)
-
-
-def load_effective_questie_npcs(repo_root, npc_keys, fields):
-    npcs = load_questie_npcs(repo_root / "Database/AzerothCore/acoreNpcDB.lua", npc_keys)
-    zone_constants = parse_zone_id_constants(repo_root)
-    zone_constants.update({f"phases.{name}": value for name, value in parse_spawn_phase_constants(repo_root).items()})
-    for relative_path, function_names in NPC_CORRECTION_FILES:
-        path = repo_root / relative_path
-        if not path.exists():
-            continue
-        corrections = load_lua_npc_corrections(path, function_names, npc_keys, fields, zone_constants)
-        apply_corrections(npcs, corrections)
-    return npcs
-
-
-def int_value(value):
-    return int(value or 0)
 
 
 def extract_lua_assigned_tables(text, assignment_pattern):
@@ -1773,14 +1544,6 @@ def sort_coordinate_table(zone_points, map_difficulty_masks=None):
     }
 
 
-def wdm_instance_zone_ids(zone_maps):
-    return {
-        zone_maps["ui_to_zone"][ui_id]
-        for ui_id in zone_maps["wdm_instance_map_data"]
-        if ui_id in zone_maps["ui_to_zone"]
-    }
-
-
 def merge_entrance_spawn_placeholders(acore_spawns, questie_spawns, eligible_zone_ids):
     """Keep Questie's dungeon-entrance marker beside generated interior coordinates."""
     if not isinstance(acore_spawns, dict) or not isinstance(questie_spawns, dict):
@@ -1936,41 +1699,6 @@ def normalize_value(field, value, include_spawn_phases=False):
     if field in STRING_FIELDS:
         return value or ""
     return int(value or 0)
-
-
-def collect_quest_referenced_ids(repo_root, candidate_ids):
-    if not candidate_ids:
-        return set()
-
-    paths = [repo_root / "Database/AzerothCore/acoreQuestDB.lua"]
-    texts = []
-    for path in paths:
-        if path.exists():
-            texts.append(strip_lua_comments(base_text(path)))
-    quest_text = "\n".join(texts)
-
-    referenced_numbers = {
-        int(match.group(0))
-        for match in re.finditer(r"(?<!\d)\d+(?!\d)", quest_text)
-    }
-
-    referenced_ids = set()
-    for candidate_id in candidate_ids:
-        if int(candidate_id) in referenced_numbers:
-            referenced_ids.add(int(candidate_id))
-
-    item_db_path = repo_root / "Database/AzerothCore/acoreItemDB.lua"
-    if item_db_path.exists():
-        item_keys = parse_item_keys(item_db_path)
-        questie_items = load_effective_questie_items(repo_root, item_keys)
-        for item_id in referenced_numbers:
-            item = questie_items.get(item_id)
-            if not item:
-                continue
-            for npc_id in normalize_list(item.get("npcDrops")):
-                if npc_id in candidate_ids:
-                    referenced_ids.add(npc_id)
-    return referenced_ids
 
 
 def correction_value(field, acore_value):
