@@ -26,7 +26,7 @@ REPO_INPUTS = ("Database/Zones/zoneTables.lua", "Compat/UiMapData.lua", "Modules
                "Modules/Network/QuestieServer.lua", "tools/generate_acore_object_corrections.py",
                "tools/generate_acore_npc_corrections.py", "tools/generate_acore_item_corrections.py",
                "tools/validate_acore_quest_metadata.py", "tools/audit_acore_npc_sources.py",
-               "tools/acore_scripted_geometry.py", "tools/acore_cpp_geometry.py")
+               "tools/acore_scripted_geometry.py", "tools/acore_cpp_geometry.py", "tools/audit_acore_object_sources.py")
 
 
 def source_signature(source, repo, gameobject, difficulty, wdm, creature=None, multispawn=None, spell=None):

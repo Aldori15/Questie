@@ -29,7 +29,7 @@ REPO_INPUTS = ("Database/Zones/zoneTables.lua", "Compat/UiMapData.lua", "Modules
                "Modules/Network/QuestieServer.lua", "tools/generate_acore_npc_corrections.py",
                "tools/generate_acore_item_corrections.py", "tools/validate_acore_quest_metadata.py",
                "tools/acore_scripted_geometry.py", "tools/acore_cpp_geometry.py", "tools/acore_runtime_geometry.py",
-               "tools/acore_npc_health.py")
+               "tools/acore_npc_health.py", "tools/audit_acore_npc_sources.py")
 
 
 def typed(value):

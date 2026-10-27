@@ -92,7 +92,7 @@ def source_signature(source, spell_sql, spell_table, tool_candidates=None):
     for root in metadata_reader.get_excluded_module_sql_roots(source):
         paths.update(p.resolve() for p in root.rglob("*.sql"))
     revision = subprocess.run(["git", "-C", str(source), "rev-parse", "HEAD"], capture_output=True, text=True)
-    readers = ("generate_acore_item_corrections.py", "validate_acore_quest_metadata.py", "validate_acore_quest_relations.py",
+    readers = ("audit_acore_quest_sources.py", "generate_acore_item_corrections.py", "validate_acore_quest_metadata.py", "validate_acore_quest_relations.py",
                 "acore_quest_compatibility.py", "acore_quest_guides.py", "acore_quest_flight_guides.py", "acore_quest_cpp_events.py",
                "acore_quest_script_events.py",
                "acore_quest_cpp_credits.py",
