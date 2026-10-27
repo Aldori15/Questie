@@ -22,6 +22,7 @@ from generate_acore_item_corrections import (  # noqa: E402
     apply_variable_set,
     extract_balanced_braces,
     extract_sql_columns,
+    extract_sql_key_defaults,
     load_keyed_table,
     load_row_table,
     load_sql_statements,
@@ -886,6 +887,7 @@ def load_filtered_row_table(source_root, table_name, key_columns, row_filter, in
     source_root = Path(source_root)
     base_file = source_root / "data/sql/base/db_world" / f"{table_name}.sql"
     columns = extract_sql_columns(base_file, table_name)
+    defaults = extract_sql_key_defaults(base_file, table_name, key_columns)
     rows = {}
     skipped_mutations = 0
     sql_context = {}
@@ -912,6 +914,7 @@ def load_filtered_row_table(source_root, table_name, key_columns, row_filter, in
                     key_columns,
                     sql_context,
                     row_filter=row_filter,
+                    column_defaults=defaults,
                 )
             elif upper.startswith("DELETE"):
                 skipped_mutations += apply_multirow_delete(statement, table_name, rows, sql_context)

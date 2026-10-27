@@ -53,6 +53,41 @@ class FlightGuideTests(unittest.TestCase):
         self.assertEqual(packet["guides"][10382][0][5], [["monster", 999]])
         self.assertEqual(next(row for row in packet["evidence"] if row["questId"] == 10382)["taxiPathId"], 777)
 
+    def test_quest_state_mask_recovers_windbellow_hint_for_active_quests(self):
+        for mask in (2, 8, 10, 74):
+            with self.subTest(mask=mask):
+                args = self.args()
+                args[3] = [dict(args[3][2], ConditionTypeOrReference=47, ConditionValue2=mask)]
+                packet = flights.derive(*args)
+                self.assertEqual(packet["guides"][10382][0][3], "Speak with Gryphoneer Windbellow")
+                self.assertEqual(packet["evidence"][0]["conditionType"], 47)
+                self.assertEqual(packet["evidence"][0]["allowedQuestStateMask"], mask)
+                self.assertEqual(packet["evidence"][0]["taxiPathId"], 607)
+
+    def test_rewarded_only_invalid_and_negated_masks_do_not_prove_flight(self):
+        for change in ({"ConditionValue2": 64}, {"ConditionValue2": 1}, {"ConditionValue2": 32},
+                       {"ConditionValue2": 0}, {"ConditionValue2": -1}, {"ConditionValue2": 4},
+                       {"ConditionValue2": 78}, {"ConditionValue3": 1}, {"NegativeCondition": 1}):
+            with self.subTest(change=change):
+                args = self.args()
+                condition = dict(args[3][2], ConditionTypeOrReference=47, ConditionValue2=74)
+                condition.update(change)
+                args[3] = [condition]
+                self.assertEqual(flights.derive(*args)["guides"], {})
+
+    def test_same_group_quest_masks_intersect_and_negative_masks_restrict_states(self):
+        args = self.args()
+        complete = args[3][2]
+        mask = dict(complete, ConditionTypeOrReference=47, ConditionValue2=8)
+        args[3] = [complete, mask]
+        self.assertEqual(flights.derive(*args)["guides"], {})
+        args[3] = [complete, dict(mask, ConditionValue2=74)]
+        self.assertIn(10382, flights.derive(*args)["guides"])
+        args[3] = [complete, dict(mask, ConditionValue2=2, NegativeCondition=1)]
+        self.assertEqual(flights.derive(*args)["guides"], {})
+        args[3] = [complete, dict(mask, ConditionValue2=8, NegativeCondition=1)]
+        self.assertIn(10382, flights.derive(*args)["guides"])
+
     def test_negative_rewarded_reference_and_wrong_target_conditions_do_not_prove_hint(self):
         for change in ({"NegativeCondition": 1}, {"ConditionTypeOrReference": 8},
                        {"ConditionTypeOrReference": -123}, {"ConditionTarget": 1},

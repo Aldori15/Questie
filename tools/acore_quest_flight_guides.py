@@ -12,18 +12,36 @@ from acore_item_compatibility import number
 CORE_SOURCE_FILES = (
     "src/server/game/Conditions/ConditionMgr.cpp",
     "src/server/game/Conditions/ConditionMgr.h",
+    "src/server/game/Quests/QuestDef.h",
     "src/server/game/Entities/Player/PlayerGossip.cpp",
     "src/server/game/AI/SmartScripts/SmartScript.cpp",
     "src/server/game/AI/SmartScripts/SmartScriptMgr.h",
     "src/server/game/Spells/SpellEffects.cpp",
 )
 
+# ConditionMgr::Meets and QuestStatus: none, complete, incomplete, failed, rewarded.
+QUEST_STATE_MASK = 1 | 2 | 8 | 32 | 64
+ACTIVE_QUEST_STATES = 2 | 8
+
+
+def quest_state_mask(row):
+    """Interpret only built-in quest-state predicates with valid parameters."""
+    kind = number(row, "ConditionTypeOrReference")
+    if number(row, "ConditionValue3"):
+        return None
+    value = number(row, "ConditionValue2")
+    if kind in (9, 28):
+        return (8 if kind == 9 else 2) if not value else None
+    if kind == 47 and value > 0 and not value & ~QUEST_STATE_MASK:
+        return value
+    return None
+
 
 def derive(quests, creatures, spells, conditions, scripts, gossip_options,
            spell_scripts=()):
     """Return generic NPC hints, proof paths and explicitly unsupported candidates.
 
-    Conditions 9/28 identify an accepted, incomplete/complete quest. Rewarded
+    Conditions 9/28/47 identify accepted quest states. Rewarded-only
     prerequisites and arbitrary gossip labels do not establish a quest flight.
     Other visibility conditions remain server-controlled; these are possible
     interaction locations, not a promise that an option is available right now.
@@ -56,36 +74,39 @@ def derive(quests, creatures, spells, conditions, scripts, gossip_options,
             candidates, unsupported_groups = [], []
             for group, members in sorted(groups.items()):
                 recognizable = sorted({number(row, "ConditionValue1") for row in members
-                                       if number(row, "ConditionTypeOrReference") in (9, 28)
+                                       if number(row, "ConditionTypeOrReference") in (9, 28, 47)
                                        and number(row, "ConditionValue1") in quests
                                        and not number(row, "NegativeCondition")})
                 # References/custom predicates need their own source interpreter.
                 if any(number(row, "ConditionTypeOrReference") <= 0 or row.get("ScriptName")
-                       or number(row, "ConditionTarget") != 0 for row in members):
+                       or number(row, "ConditionTarget") != 0
+                       or (number(row, "ConditionTypeOrReference") in (9, 28, 47)
+                           and quest_state_mask(row) is None) for row in members):
                     if recognizable:
                         unsupported_groups.append({"creatureId": npc, "menuId": menu,
                                                    "optionId": option, "elseGroup": group,
                                                    "questIds": recognizable,
                                                    "reason": "unsupportedFlightCondition"})
                     continue
-                states = {}
+                states, positive = {}, defaultdict(set)
                 for row in members:
                     kind, quest = number(row, "ConditionTypeOrReference"), number(row, "ConditionValue1")
-                    if kind not in (9, 28) or quest not in quests or number(row, "NegativeCondition"):
+                    if kind not in (9, 28, 47) or quest not in quests:
                         continue
-                    if number(row, "ConditionValue2") or number(row, "ConditionValue3"):
-                        continue
-                    states.setdefault(quest, set()).add(kind)
-                for quest, kinds in sorted(states.items()):
-                    if len(kinds) == 1 and not any(
-                            number(row, "ConditionValue1") == quest and number(row, "NegativeCondition")
-                            and number(row, "ConditionTypeOrReference") in kinds for row in members):
-                        candidates.append((quest, group, next(iter(kinds))))
+                    mask = quest_state_mask(row)
+                    if number(row, "NegativeCondition"):
+                        mask = QUEST_STATE_MASK & ~mask
+                    elif mask & ACTIVE_QUEST_STATES:
+                        positive[quest].add(kind)
+                    states[quest] = states.get(quest, QUEST_STATE_MASK) & mask
+                for quest, kinds in sorted(positive.items()):
+                    if states[quest] & ACTIVE_QUEST_STATES:
+                        candidates.append((quest, group, min(kinds), states[quest]))
             omissions.extend(unsupported_groups)
             if not candidates:
                 continue
             context = {"creatureId": npc, "menuId": menu, "optionId": option,
-                       "questIds": sorted({quest for quest, _, _ in candidates})}
+                       "questIds": sorted({quest for quest, _, _, _ in candidates})}
 
             def omit(reason):
                 omissions.append({**context, "reason": reason})
@@ -151,11 +172,12 @@ def derive(quests, creatures, spells, conditions, scripts, gossip_options,
             if reason or len(flights) != 1:
                 omit(reason or "ambiguousOrMissingFlightAction")
                 continue
-            for quest, group, kind in candidates:
+            for quest, group, kind, state_mask in candidates:
                 label = "Speak with " + str(actor.get("name") or npc)
                 guides[quest][npc] = {2: 5, 3: label, 4: 0, 5: [["monster", npc]]}
                 evidence.append({**context, "questId": quest, "elseGroup": group,
-                                 "conditionType": kind, "rule": "questConditionedGossipTaxi",
+                                 "conditionType": kind, "allowedQuestStateMask": state_mask,
+                                 "rule": "questConditionedGossipTaxi",
                                  "proofScope": "sourceTaxiInstruction; destination geometry is not inferred",
                                  **flights[0]})
     return {"guides": {quest: [hints[npc] for npc in sorted(hints)]

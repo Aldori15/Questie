@@ -4,6 +4,7 @@ import unittest
 from _test_paths import ADDON_ROOT
 import db_snapshot
 import generate_acore_item_corrections as reader
+import generate_acore_npc_corrections as npc_reader
 
 
 class SqlPredicateTests(unittest.TestCase):
@@ -131,6 +132,58 @@ class SqlPredicateTests(unittest.TestCase):
             self.assertEqual(skipped, 0)
             self.assertEqual({(r["SourceId"], r["ElseGroup"], r["Comment"]) for r in rows},
                              {(0, 0, "replacement"), (0, 1, "alternative")})
+
+    def test_partial_smartai_insert_uses_schema_key_defaults_in_both_replayers(self):
+        with db_snapshot.temporary_directory(ADDON_ROOT / "tools/reports") as directory:
+            base = directory / "data/sql/base/db_world"
+            updates = directory / "data/sql/updates/db_world"
+            base.mkdir(parents=True)
+            updates.mkdir(parents=True)
+            (base / "smart_scripts.sql").write_text(
+                "CREATE TABLE `smart_scripts` (\n"
+                "`entryorguid` int NOT NULL,\n"
+                "`source_type` tinyint unsigned NOT NULL DEFAULT '0',\n"
+                "`id` smallint unsigned NOT NULL DEFAULT '0',\n"
+                "`link` smallint unsigned NOT NULL DEFAULT '0',\n"
+                "`action_type` tinyint unsigned NOT NULL DEFAULT '0'\n) ENGINE=InnoDB;\n"
+                "INSERT INTO smart_scripts VALUES (24484,0,0,0,53);", encoding="utf-8")
+            (updates / "update.sql").write_text(
+                "DELETE FROM smart_scripts WHERE entryorguid=24484 AND source_type=0;\n"
+                "INSERT INTO smart_scripts (`entryorguid`,`source_type`,`id`,`action_type`) "
+                "VALUES (24484,0,0,80),(24484,0,1,41);\n"
+                "INSERT INTO smart_scripts (`entryorguid`,`id`,`link`,`action_type`) "
+                "VALUES (24484,2,7,80),(24484,3,NULL,80);\n"
+                "INSERT INTO smart_scripts (`id`,`action_type`) VALUES (4,80);", encoding="utf-8")
+            keys = ("entryorguid", "source_type", "id", "link")
+            for filtered in (False, True):
+                with self.subTest(filtered=filtered):
+                    if filtered:
+                        rows, skipped = npc_reader.load_filtered_row_table(
+                            directory, "smart_scripts", keys, lambda row: row["action_type"] == 80)
+                    else:
+                        rows, skipped = reader.load_row_table(directory, "smart_scripts", keys)
+                    self.assertEqual(skipped, 2)  # Explicit NULL and missing entry remain invalid.
+                    actual = {(r["entryorguid"], r["source_type"], r["id"], r["link"]): r["action_type"]
+                              for r in rows}
+                    expected = {(24484, 0, 0, 0): 80, (24484, 0, 2, 7): 80}
+                    if not filtered:
+                        expected[(24484, 0, 1, 0)] = 41
+                    self.assertEqual(actual, expected)
+
+    def test_key_defaults_follow_schema_values_and_ignore_comments_and_expressions(self):
+        with db_snapshot.temporary_directory(ADDON_ROOT / "tools/reports") as directory:
+            path = directory / "example.sql"
+            path.write_text(
+                "CREATE TABLE `example` (\n"
+                "`id` int NOT NULL COMMENT 'DEFAULT 99',\n"
+                "`source` tinyint unsigned NOT NULL DEFAULT 9,\n"
+                "`offset` bigint NOT NULL DEFAULT '-12',\n"
+                "`unknown` int DEFAULT NULL,\n"
+                "`computed` int DEFAULT (1 + 2),\n"
+                "`label` text DEFAULT '0'\n) ENGINE=InnoDB;", encoding="utf-8")
+            defaults = reader.extract_sql_key_defaults(
+                path, "example", ("id", "source", "offset", "unknown", "computed", "label"))
+            self.assertEqual(defaults, {"source": 9, "offset": -12})
 
 
 if __name__ == "__main__":

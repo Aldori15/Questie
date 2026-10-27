@@ -159,10 +159,35 @@ def load_sql_statements(path_text):
     return raw_text, tuple(split_sql_statements(strip_sql_comments(raw_text)))
 
 
+def extract_sql_key_defaults(path, table_name, key_columns):
+    """Read explicit integer key defaults; never invent a missing identifier."""
+    text = strip_sql_comments(Path(path).read_text(encoding="utf-8"))
+    match = re.search(
+        rf"CREATE TABLE(?:\s+IF\s+NOT\s+EXISTS)?\s+`?{re.escape(table_name)}`?\s*\((?P<body>.*?)\)\s*ENGINE",
+        text, re.IGNORECASE | re.DOTALL,
+    )
+    if not match:
+        raise ValueError(f"Could not find CREATE TABLE for {table_name} in {path}")
+    keys = {column.lower() for column in key_columns}
+    defaults = {}
+    for line in match.group("body").splitlines():
+        column = re.match(r"\s*`([^`]+)`\s+(?:tinyint|smallint|mediumint|int|bigint)\b(.*)", line, re.IGNORECASE)
+        if not column or column.group(1).lower() not in keys:
+            continue
+        # Ignore column comments, which may mention SQL keywords themselves.
+        definition = re.split(r"\bCOMMENT\b", column.group(2), maxsplit=1, flags=re.IGNORECASE)[0]
+        default = re.search(r"\bDEFAULT\s+(?:'([+-]?\d+)'|([+-]?\d+))(?=\s|,|$)", definition, re.IGNORECASE)
+        if default:
+            defaults[column.group(1)] = int(default.group(1) or default.group(2))
+    return defaults
+
+
 def load_row_table(source_root, table_name, key_columns, include_modules=False, column_defaults=None):
     source_root = Path(source_root)
     base_file = source_root / "data/sql/base/db_world" / f"{table_name}.sql"
     columns = extract_sql_columns(base_file, table_name)
+    defaults = extract_sql_key_defaults(base_file, table_name, key_columns)
+    defaults.update(column_defaults or {})
     rows = {}
     skipped_mutations = 0
     sql_context = {}
@@ -180,7 +205,7 @@ def load_row_table(source_root, table_name, key_columns, include_modules=False, 
                 continue
             if upper.startswith(("INSERT", "REPLACE")):
                 skipped_mutations += apply_multirow_insert(statement, table_name, columns, rows, key_columns, sql_context,
-                                                          column_defaults=column_defaults)
+                                                          column_defaults=defaults)
             elif upper.startswith("DELETE"):
                 skipped_mutations += apply_multirow_delete(statement, table_name, rows, sql_context)
             elif upper.startswith("UPDATE"):
