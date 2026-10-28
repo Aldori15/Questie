@@ -529,11 +529,20 @@ function QuestieComms:RemoveRemotePlayer(name)
     QuestieComms.remotePlayerTimes[name] = nil
     QuestieComms.remotePlayerEnabled[name] = nil
     QuestieComms.remotePlayerClasses[name] = nil
+
     if not QuestieComms:CheckInGroup(name) then
-        for _, players in pairs(QuestieComms.remoteQuestLogs) do
+        -- Remove tooltip registrations before deleting quest data.
+        QuestieComms.data:RemovePlayer(name)
+
+        for questId, players in pairs(QuestieComms.remoteQuestLogs) do
             players[name] = nil
+
+            if not next(players) then
+                QuestieComms.remoteQuestLogs[questId] = nil
+            end
         end
     end
+
     QuestiePartyObjectives:ScheduleUpdate()
 end
 

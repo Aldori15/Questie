@@ -578,6 +578,45 @@ end
 -- Snapshot of online/offline state for party members who have shared quests, used to decide
 -- whether a GROUP_ROSTER_UPDATE actually requires a party-objective redraw.
 local previousOnlineStatus = {}
+local previousGroupRoster = {}
+
+local function _PruneDepartedGroupMembers()
+    -- GROUP_LEFT handles complete disbanding separately.
+    if GetNumGroupMembers() == 0 then
+        return
+    end
+
+    local currentRoster = {}
+
+    if QuestieCompat.IsInRaid() then
+        for i = 1, GetNumRaidMembers() do
+            local name = UnitName("raid" .. i)
+            if name then
+                currentRoster[name] = true
+            end
+        end
+    elseif IsInGroup() then
+        local playerName = UnitName("player")
+        if playerName then
+            currentRoster[playerName] = true
+        end
+
+        for i = 1, GetNumPartyMembers() do
+            local name = UnitName("party" .. i)
+            if name then
+                currentRoster[name] = true
+            end
+        end
+    end
+
+    for name in pairs(previousGroupRoster) do
+        if not currentRoster[name] then
+            QuestieComms:RemoveRemotePlayer(name)
+        end
+    end
+
+    previousGroupRoster = currentRoster
+end
 
 -- GROUP_ROSTER_UPDATE fires for many reasons, including party members crossing zone boundaries.
 -- Party objectives only need redrawing when a quest-sharing member goes online/offline or leaves,
@@ -613,6 +652,8 @@ function _EventHandler.GroupRosterUpdate()
     local sizeChanged = currentMembers ~= previousMembers
     QuestiePlayer.numberOfGroupMembers = currentMembers
 
+    _PruneDepartedGroupMembers()
+
     -- An existing party gained a member. Request quest logs so
     -- current members receive the newcomer's objectives too.
     if previousMembers >= 2 and currentMembers > previousMembers then
@@ -645,6 +686,7 @@ function _EventHandler:GroupJoined()
         local isInRaid = UnitInRaid("raid1")
         if partyPending then
             if (isInParty or isInRaid) then
+                _PruneDepartedGroupMembers()
                 Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieEventHandler] Player joined party/raid, ask for questlogs")
                 --Request other players log.
                 Questie:SendMessage("QC_ID_REQUEST_FULL_QUESTLIST")
@@ -667,6 +709,7 @@ function _EventHandler:GroupLeft()
     DailyQuestComms.CancelPendingUnavailableQuestGroupResponses()
     QuestiePartyObjectives:Clear()
     previousOnlineStatus = {}
+    previousGroupRoster = {}
 end
 
 local optionsHiddenByCombat, journeyHiddenByCombat = false, false
