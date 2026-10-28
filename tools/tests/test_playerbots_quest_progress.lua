@@ -4,6 +4,12 @@ local SOURCE = "."
 
 local modules, sent, printed, updates = {}, {}, {}, {}
 local now, roster, connected = 1, {"Tankbot", "Healbot", "Human"}, {}
+local guids = {
+    Owner = "0x0000000000000001",
+    Tankbot = "0x000000000000ABCD",
+    Healbot = "0x0000000000000003",
+    Human = "0x0000000000000004",
+}
 local frame, raidRoster
 local function module(name)
     if not modules[name] then modules[name] = {private={}} end
@@ -21,6 +27,7 @@ function UnitName(unit)
     return roster[tonumber(unit:match("party(%d+)"))]
 end
 function UnitIsConnected(unit) return connected[UnitName(unit)] ~= false end
+function UnitGUID(unit) return guids[UnitName(unit)] end
 function GetNumPartyMembers() return raidRoster and 0 or #roster end
 function GetNumRaidMembers() return raidRoster and #raidRoster or 0 end
 function CreateFrame()
@@ -80,8 +87,22 @@ local function token(name)
     end
     error("No request for "..name)
 end
-local function begin(name, request)
-    receive("QUEST_PROGRESS_BEGIN~" .. name .. "~" .. request .. "~Player-1-00000001")
+local function begin(name, request, guid)
+    if guid == nil and guids[name] then
+        local raw = guids[name]
+        guid = "GUID Full: " .. raw:lower()
+            .. " Type: Player Low: "
+            .. tonumber(raw:sub(3), 16)
+    end
+
+    local message = "QUEST_PROGRESS_BEGIN~" .. name .. "~" .. request
+
+    -- false explicitly simulates an older bridge without a GUID field.
+    if guid ~= nil and guid ~= false then
+        message = message .. "~" .. guid
+    end
+
+    receive(message)
 end
 local function quest(name, request, id, status)
     receive("QUEST_PROGRESS_QUEST~" .. name .. "~" .. request .. "~" .. id .. "~" .. (status or "I"))
@@ -139,6 +160,74 @@ progress("Healbot",heal,4,"F")
 assert(entry("Healbot").status == "F")
 begin("Tankbot",tank); finish("Tankbot",tank)
 assert(not entry("Tankbot") and entry("Healbot") and entry("Human"), "quest turn-in removed another member")
+-- Reject malformed GUIDs and GUIDs belonging to another character.
+for _, badGuid in ipairs({
+    "",
+    "0x2",
+    "Player-1-00000001",
+    guids.Owner,
+    guids.Healbot,
+}) do
+    begin("Tankbot", tank, badGuid)
+    quest("Tankbot", tank, 100)
+    objective("Tankbot", tank, 100, "m", 1, 101, 9, 10)
+    finish("Tankbot", tank)
+
+    assert(not entry("Tankbot"), "invalid GUID accepted")
+end
+
+-- An invalid BEGIN must discard a previously started snapshot.
+begin("Tankbot", tank)
+quest("Tankbot", tank, 100)
+objective("Tankbot", tank, 100, "m", 1, 101, 9, 10)
+begin("Tankbot", tank, guids.Owner)
+finish("Tankbot", tank)
+assert(not entry("Tankbot"), "invalid BEGIN retained partial snapshot")
+
+-- Valid native GUID must be accepted.
+begin("Tankbot", tank, guids.Tankbot)
+quest("Tankbot", tank, 100)
+objective("Tankbot", tank, 100, "m", 1, 101, 2, 10)
+finish("Tankbot", tank)
+assert(entry("Tankbot").fulfilled == 2, "valid GUID rejected")
+
+-- Character identity changes before END: reject stale progress.
+begin("Tankbot", tank)
+quest("Tankbot", tank, 100)
+objective("Tankbot", tank, 100, "m", 1, 101, 9, 10)
+
+local originalGuid = guids.Tankbot
+guids.Tankbot = "0x0000000000000005"
+finish("Tankbot", tank)
+
+assert(entry("Tankbot").fulfilled == 2,
+    "stale character snapshot accepted")
+guids.Tankbot = originalGuid
+
+-- A disconnected group member must not accept a snapshot.
+begin("Tankbot", tank)
+quest("Tankbot", tank, 100)
+objective("Tankbot", tank, 100, "m", 1, 101, 9, 10)
+connected.Tankbot = false
+finish("Tankbot", tank)
+
+assert(entry("Tankbot").fulfilled == 2,
+    "disconnected member snapshot accepted")
+connected.Tankbot = true
+
+-- Older bridges without a GUID field must remain compatible.
+begin("Tankbot", tank, false)
+quest("Tankbot", tank, 100)
+objective("Tankbot", tank, 100, "m", 1, 101, 3, 10)
+finish("Tankbot", tank)
+
+assert(entry("Tankbot").fulfilled == 3,
+    "legacy bridge snapshot rejected")
+
+-- Restore an empty Tankbot state for the following tests.
+begin("Tankbot", tank)
+finish("Tankbot", tank)
+assert(not entry("Tankbot"), "test cleanup failed")
 assert(comms.data:GetTooltip("m_101")[100].Tankbot == nil)
 
 -- Reject spoofed, unsolicited, mismatched, oversized and malformed snapshots atomically.

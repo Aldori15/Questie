@@ -137,6 +137,19 @@ local function NormalizeName(name)
     return name:gsub("%-.*$", "")
 end
 
+local function NormalizeGuid(guid)
+    if type(guid) ~= "string" then
+        return nil
+    end
+
+    -- AzerothCore ObjectGuid::ToString() or native UnitGUID().
+    guid = guid:match("^GUID Full: (0x%x+) Type: Player Low: %d+$") or guid
+
+    if #guid == 18 and guid:match("^0x%x+$") then
+        return guid:lower()
+    end
+end
+
 local function RequestBotQuestProgress(botName)
     if retryAfter[botName] and GetTime() < retryAfter[botName] then
         return
@@ -176,20 +189,20 @@ local function GetCurrentGroupMembers()
         for i = 1, GetNumRaidMembers() do
             local name = NormalizeName(UnitName("raid" .. i))
             if name and UnitIsConnected("raid" .. i) then
-                members[name] = true
+                members[name] = NormalizeGuid(UnitGUID("raid" .. i)) or true
             end
         end
     else
         local playerName = NormalizeName(UnitName("player"))
         if playerName then
-            members[playerName] = true
+            members[playerName] = NormalizeGuid(UnitGUID("player")) or true
         end
 
         if GetNumPartyMembers then
             for i = 1, GetNumPartyMembers() do
                 local name = NormalizeName(UnitName("party" .. i))
                 if name and UnitIsConnected("party" .. i) then
-                    members[name] = true
+                    members[name] = NormalizeGuid(UnitGUID("party" .. i)) or true
                 end
             end
         end
@@ -540,8 +553,19 @@ local function HandleBridgeMessage(message, sender)
             return
         end
 
+        local rawGuid = fields[4]
+        local guid = rawGuid and NormalizeGuid(UrlDecode(rawGuid))
+
+        -- An explicitly supplied but malformed GUID invalidates the snapshot.
+        -- Older bridges that omit the field remain supported.
+        if rawGuid and not guid then
+            progressSnapshots[token] = nil
+            return
+        end
+
         progressSnapshots[token] = {
             botName = botName,
+            guid = guid,
             quests = {},
             questCount = 0,
             expiresAt = GetTime() + REQUEST_TIMEOUT,
@@ -627,8 +651,13 @@ local function HandleBridgeMessage(message, sender)
             retryAfter[botName] = GetTime() + WATCH_REFRESH_INTERVAL
             return
         end
-        if snapshot and request and snapshot.botName == botName and GetTime() < snapshot.expiresAt then
+
+        local currentGuid = snapshot and GetCurrentGroupMembers()[botName]
+        local validIdentity = snapshot and (not snapshot.guid or (type(currentGuid) == "string" and snapshot.guid == currentGuid))
+
+        if snapshot and request and snapshot.botName == botName and GetTime() < snapshot.expiresAt and validIdentity then
             if not ApplyProgressSnapshot(snapshot) then
+                progressSnapshots[token] = nil
                 return
             end
             progressSnapshots[token] = nil
@@ -641,6 +670,7 @@ local function HandleBridgeMessage(message, sender)
             end
         end
 
+        progressSnapshots[token] = nil
         return
     end
 
