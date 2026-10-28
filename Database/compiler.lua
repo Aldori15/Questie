@@ -28,8 +28,8 @@ local POINTERMAP_TICKS_PER_YIELD = 4096
 local coYield = coroutine.yield
 local coRunning = coroutine.running
 
--- Bump when field types/order or generated visibility coverage change to invalidate cached DB blobs.
-QuestieDBCompiler.compiledSchemaVersion = 64
+-- Bump for schema or base-database migration changes to invalidate cached DB blobs.
+QuestieDBCompiler.compiledSchemaVersion = 66
 
 ---@alias CompilerTypes
 ---| "u8"
@@ -740,7 +740,7 @@ QuestieDBCompiler.writers = {
     ["extraobjectives"] = function(stream, value)
         if value then
             stream:WriteByte(#value)
-            for _, data in pairs(value) do
+            for _, data in ipairs(value) do
                 QuestieDBCompiler.writers["spawnlist"](stream, data[1])
                 stream:WriteInt24(data[2]) -- icon
                 stream:WriteShortString(data[3]) -- description
@@ -1120,10 +1120,9 @@ function QuestieDBCompiler:CompileTableCoroutine(tbl, types, order, lookup, data
             end
             local id = indexLookup[index]
 
-            -- QuestieDBCompiler.currentEntry = id -- This was only ever used for debugging.
             local entry = tbl[id]
 
-            pointerMap[id] = stream._pointer--pointerStart
+            pointerMap[id] = stream._pointer
             for i=1, fieldCount do
                 -- If combat starts mid-entry, pause before processing next field
                 while InCombatLockdown() do
@@ -1143,13 +1142,8 @@ function QuestieDBCompiler:CompileTableCoroutine(tbl, types, order, lookup, data
                     error(errorMessage)
                 end
             end
-            -- tbl[id] = nil -- quicker gabage collection later
         end
     end
-    --I do not know if these assignments are actually needed but I am too scared to remove them
-    -- QuestieDBCompiler.pointerMap = pointerMap
-    -- QuestieDBCompiler.stream = stream
-    -- QuestieDBCompiler.index = index
 
 end
 

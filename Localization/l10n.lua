@@ -75,7 +75,20 @@ local function ReleaseUnusedLookupLocales(lookup)
     end
 end
 
+local function GetLoadedRecords(data)
+    -- Cached startup keeps deferred source chunks until cleanup. Only a fresh
+    -- compilation has materialized records that need localization.
+    if type(data) == "table" and not data.__questieSourceChunks then
+        return data
+    end
+    return {}
+end
+
 function l10n:Initialize()
+    local itemData = GetLoadedRecords(QuestieDB.itemData)
+    local questData = GetLoadedRecords(QuestieDB.questData)
+    local npcData = GetLoadedRecords(QuestieDB.npcData)
+    local objectData = GetLoadedRecords(QuestieDB.objectData)
     local itemLookup = GetLookupEntries(l10n.itemLookup[locale])
     local questLookup = GetLookupEntries(l10n.questLookup[locale])
     local questLookupOverrides = GetLookupEntries(l10n.questLookupOverrides)
@@ -84,25 +97,25 @@ function l10n:Initialize()
 
     -- Load item locales
     for id, name in pairs(itemLookup) do
-        if QuestieDB.itemData[id] and name then
-            QuestieDB.itemData[id][QuestieDB.itemKeys.name] = name
+        if itemData[id] and name then
+            itemData[id][QuestieDB.itemKeys.name] = name
         end
     end
 
     -- data is {<questName>, {<questDescription>,...}, {<questObjective>,...}}
     -- Load quest locales
     for id, data in pairs(questLookup) do
-        if QuestieDB.questData[id] then
+        if questData[id] then
             if data[1] then
-                QuestieDB.questData[id][QuestieDB.questKeys.name] = data[1]
+                questData[id][QuestieDB.questKeys.name] = data[1]
             end
             -- TODO add details text to questDB.lua (data[2])
             if data[3] then
                 -- needs to be saved as a table for tooltips to have lines
                 if type(data[3]) == "string" then
-                    QuestieDB.questData[id][QuestieDB.questKeys.objectivesText] = {data[3]}
+                    questData[id][QuestieDB.questKeys.objectivesText] = {data[3]}
                 else
-                    QuestieDB.questData[id][QuestieDB.questKeys.objectivesText] = data[3]
+                    questData[id][QuestieDB.questKeys.objectivesText] = data[3]
                 end
             end
         end
@@ -111,38 +124,51 @@ function l10n:Initialize()
     -- Load custom quest locale overrides after the generated lookup table so
     -- addon-maintained custom quest translations can replace or extend it.
     for id, data in pairs(questLookupOverrides) do
-        if QuestieDB.questData[id] then
+        if questData[id] then
             if data[1] then
-                QuestieDB.questData[id][QuestieDB.questKeys.name] = data[1]
+                questData[id][QuestieDB.questKeys.name] = data[1]
             end
             -- TODO add details text to questDB.lua (data[2])
             if data[3] then
                 -- needs to be saved as a table for tooltips to have lines
                 if type(data[3]) == "string" then
-                    QuestieDB.questData[id][QuestieDB.questKeys.objectivesText] = {data[3]}
+                    questData[id][QuestieDB.questKeys.objectivesText] = {data[3]}
                 else
-                    QuestieDB.questData[id][QuestieDB.questKeys.objectivesText] = data[3]
+                    questData[id][QuestieDB.questKeys.objectivesText] = data[3]
                 end
+            end
+        end
+    end
+
+    -- Generated guides retain English keys until the active locale is known.
+    -- Only translate exact entries available in that locale; source-derived
+    -- descriptions without a translation remain readable without debug noise.
+    for _, quest in pairs(questData) do
+        for _, objective in ipairs(quest[QuestieDB.questKeys.extraObjectives] or {}) do
+            local description = objective[3]
+            local translation = l10n.translations[description]
+            if translation and translation[locale] then
+                objective[3] = l10n(description)
             end
         end
     end
 
     -- Load NPC locales
     for id, data in pairs(npcNameLookup) do
-        if QuestieDB.npcData[id] and data then
+        if npcData[id] and data then
             if type(data) == "string" then
-                QuestieDB.npcData[id][QuestieDB.npcKeys.name] = data
+                npcData[id][QuestieDB.npcKeys.name] = data
             else
-                QuestieDB.npcData[id][QuestieDB.npcKeys.name] = data[1]
-                QuestieDB.npcData[id][QuestieDB.npcKeys.subName] = data[2]
+                npcData[id][QuestieDB.npcKeys.name] = data[1]
+                npcData[id][QuestieDB.npcKeys.subName] = data[2]
             end
         end
     end
 
     -- Load object locales
     for id, name in pairs(objectLookup) do
-        if QuestieDB.objectData[id] and name then
-            QuestieDB.objectData[id][QuestieDB.objectKeys.name] = name
+        if objectData[id] and name then
+            objectData[id][QuestieDB.objectKeys.name] = name
         end
     end
 

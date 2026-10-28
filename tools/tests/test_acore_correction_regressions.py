@@ -7,7 +7,7 @@ from pathlib import Path
 
 from _test_paths import ADDON_ROOT
 
-import audit_acore_trigger_end_tooltip_targets as trigger_end_audit
+from questie_base import base_text
 import generate_acore_item_corrections as item_generator
 import generate_acore_npc_corrections as npc_generator
 import generate_acore_object_corrections as object_generator
@@ -446,28 +446,32 @@ const WintergraspObjectPositionData WGOutsideNPC[WG_MAX_OUTSIDE_NPC] = {
         self.assertEqual([], result[0])
         self.assertEqual("preserveQuestieEventObjectiveSlot", result[3][0]["reason"])
 
-    def test_tbc_trigger_end_corrections_are_loaded_as_event_slots(self):
-        addon_root = ADDON_ROOT
-        constants = quest_validator.load_constants(addon_root)
-        corrections = quest_validator.load_questie_correction_file(
-            addon_root / "Database/Corrections/tbcQuestFixes.lua",
-            constants,
-        )
+    def test_omitting_unverified_guides_keeps_source_event_requirements(self):
+        constants = quest_validator.load_constants(ADDON_ROOT)
+        metadata = quest_validator.load_questie_base_metadata(
+            ADDON_ROOT / "Database/AzerothCore/acoreQuestDB.lua",
+            constants["quest_keys"], constants)
+        for quest_id in (9889, 10887):
+            self.assertFalse(metadata[quest_id]["_hasTriggerEnd"])
+            self.assertTrue(metadata[quest_id]["specialFlags"]
+                            & quest_validator.QUEST_SPECIAL_FLAGS_EXPLORATION_OR_EVENT)
 
-        self.assertTrue(corrections[9889]["_hasTriggerEnd"])
-        self.assertNotIn("objectives", corrections[9889])
-        self.assertTrue(corrections[10887]["_hasTriggerEnd"])
 
-    def test_direct_trigger_end_tooltip_targets_are_complete_and_classified(self):
-        addon_root = ADDON_ROOT
-        trigger_ends = trigger_end_audit.load_trigger_ends(addon_root)
-        targets = trigger_end_audit.load_configured_targets(addon_root)
-
-        self.assertEqual(109, len(targets))
-        self.assertEqual([("monster", 18262)], targets[9889]["targets"])
-        self.assertEqual([("monster", 22377)], targets[10887]["targets"])
-        self.assertLessEqual(set(targets), set(trigger_ends))
-        self.assertTrue(set(targets).isdisjoint(trigger_end_audit.REVIEW_REASONS))
+    def test_source_area_guide_and_event_actors_survive_independently(self):
+        constants = quest_validator.load_constants(ADDON_ROOT)
+        rows = (quest_validator.QUEST_ROW_RE.match(line.strip())
+                for line in base_text(ADDON_ROOT / "Database/AzerothCore/acoreQuestDB.lua").splitlines())
+        gazebo = next((row for row in rows if row and int(row.group(1)) == 25), None)
+        self.assertIsNotNone(gazebo)
+        fields = quest_validator.split_top_level_lua_table(gazebo.group(2))
+        trigger_end = quest_validator.parse_lua_value(fields[constants["quest_keys"]["triggerEnd"] - 1], constants)
+        self.assertIn("gazebo", trigger_end[0])
+        text = (ADDON_ROOT / "Database/AzerothCore/acoreQuestDB.lua").read_text(encoding="utf-8")
+        block = text.split("QuestieDB.questEventTooltipTargets = {", 1)[1].split("\n}", 1)[0]
+        targets = quest_validator.parse_lua_value("{" + block + "}", constants)
+        self.assertIn(["monster", 467], targets[155 - 1])
+        # Escort completion is source-backed even without an area-trigger marker.
+        self.assertIn(["monster", 1379], targets[309 - 1])
 
     def test_does_not_preserve_waypoints_without_ac_path_evidence(self):
         questie = {17528: {"waypoints": {3525: [[[38.43, 82.02], [36.51, 71.61]]]}}}

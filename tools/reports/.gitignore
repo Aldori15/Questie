@@ -1,4 +1,3 @@
-*.json
-*.lua
-*.md
+# All contents are generated locally; maintained tools and tests live outside reports.
+*
 !.gitignore

@@ -143,6 +143,7 @@ local function availabilitySetup(s)
         return queries[id] and queries[id][field]
     end
     db.GetQuest = function(id) return {Id = id, Starts = {}, tagInfoWasCached = true} end
+    db.GetQuestStartInfo = function(id) return db.GetQuest(id) end
     db.IsDailyQuest = function(id) return id < 24000 end
     db.IsWeeklyQuest = function(id) return id >= 24000 end
     db.IsMonthlyQuest = function() return false end
@@ -1985,6 +1986,7 @@ do
     local spawns = {[210] = {{10, 20, 0, 1, 571, 1, 4477}, {11, 21, 0, 1, 571, 2, 4477}}}
     db.GetNPC = function() return {spawns = spawns} end
     db.GetQuest = function(id) return {Id = id, Starts = {NPC = {29343}}, tagInfoWasCached = true} end
+    db.GetQuestStartInfo = function(id) return db.GetQuest(id) end
     db.questData[999] = true
     mods.QuestieMap.RefreshDynamicStarterLocations = function() end
     mods.QuestieMap.RefreshDynamicManualNotes = function() end

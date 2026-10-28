@@ -6,6 +6,10 @@ local function equal(actual, expected, label)
 end
 local function setup(historical)
     local env = setmetatable({}, {__index = _G})
+    env.bit = bit or bit32 or {band = function(value, mask)
+        assert(mask == 2)
+        return math.floor(value / 2) % 2 * 2
+    end}
     local modules, frames, tooltips, jobs = {}, {}, {}, {}
     local active, ready = true, 0
     local function noop() end
@@ -27,6 +31,7 @@ local function setup(historical)
         GetQuestObjectives = function() return cache end}
     modules.QuestieAnnounce = {ObjectiveChanged = noop}
     modules.QuestieCombatQueue = {Queue = function(_, fn) fn() end}
+    modules.AvailableQuests = {RemoveQuest = function(_, callback) callback() end}
     modules.QuestieTracker = {Update = noop}
     modules.TrackerUtils = {ClearTomTomTargetForQuest = noop}
     modules.AutoRoute = {ScheduleUpdate = noop}
@@ -69,6 +74,9 @@ local function setup(historical)
     questModule.private.objectiveSpawnListCallTable = {item = function(id)
         return {{Id = 1, ItemId = id, Name = "Item source", TooltipKey = "m_1",
             Spawns = {[394] = {{50, 50}}}, GetIconScale = function() return 1 end}}
+    end, monster = function(id)
+        return {{Id = id, Name = "Flight NPC", TooltipKey = "m_" .. id,
+            Spawns = {[394] = {{60, 60}}}, GetIconScale = function() return 1 end}}
     end}
     local function runJobs()
         while #jobs > 0 do
@@ -92,6 +100,12 @@ local function setup(historical)
             cache[1].finished, cache[1].numFulfilled = true, 1
             questModule:SetObjectivesDirty(12960)
             questModule:UpdateQuest(12960)
+        end,
+        setTravel = function(status)
+            ready, cache = status, {}
+            quest.Objectives, quest.ObjectiveData = {}, {}
+            quest.SpecialObjectives = {{Optional = true, Type = "monster", Id = 20235,
+                Description = "Speak with Gryphoneer Windbellow", AlreadySpawned = {}}}
         end,
         remove = function() active = false; modules.QuestiePlayer.currentQuestlog[12960] = nil end}
 end
@@ -125,6 +139,56 @@ do
     s.finish(); s.remove(); s.runJobs()
     equal(s.count("item"), 0, "removed quest objectives stay removed")
     equal(s.count("complete"), 0, "late cleanup does not revive removed finisher")
+    tests = tests + 1
+end
+
+-- Optional travel guidance stays useful while an objective-free quest is ready to turn in.
+for _, status in ipairs({0, 1}) do
+    local s = setup(false)
+    s.setTravel(status)
+    s.module:UpdateQuest(s.quest.Id); s.runJobs()
+    equal(s.count("complete"), 2, "delivery finisher remains visible with travel guidance, status " .. status)
+    equal(s.count("monster"), 2, "flight NPC remains visible with finisher, status " .. status)
+    tests = tests + 1
+end
+
+do
+    local s = setup(false)
+    s.setTravel(0)
+    s.module:UpdateQuest(s.quest.Id); s.runJobs()
+    s.setTravel(1)
+    s.module:UpdateQuest(s.quest.Id); s.runJobs()
+    equal(s.count("complete"), 2, "completion transition leaves one finisher pair")
+    equal(s.count("monster"), 2, "completion cleanup restores one optional flight hint pair")
+    tests = tests + 1
+end
+
+-- Finished bombing/collection quests keep normal cleanup; their takeoff helper
+-- must not return after completion merely because travel guidance is optional.
+do
+    local s = setup(false)
+    s.setTravel(1)
+    s.quest.ObjectiveData = {{Type = "item", Id = 43272}}
+    s.module:UpdateQuest(s.quest.Id); s.runJobs()
+    equal(s.count("complete"), 2, "completed quest keeps its finisher")
+    equal(s.count("monster"), 0, "completed source objectives do not restore a takeoff hint")
+    tests = tests + 1
+end
+
+-- Queued helper redraws cannot revive abandoned quests or bypass hidden map notes.
+for _, status in ipairs({0, 1}) do
+    local s = setup(false)
+    s.setTravel(status)
+    s.module:UpdateQuest(s.quest.Id)
+    s.modules.QuestieMap:UnloadQuestFrames(s.quest.Id)
+    s.remove(); s.runJobs()
+    equal(s.count("complete"), 0, "abandoned delivery finisher stays removed")
+    equal(s.count("monster"), 0, "abandoned flight hint stays removed")
+    local hidden = setup(false)
+    hidden.setTravel(status)
+    hidden.quest.HideIcons = true
+    hidden.module:UpdateQuest(hidden.quest.Id); hidden.runJobs()
+    equal(hidden.count("monster"), 0, "hidden flight hint is not redrawn")
     tests = tests + 1
 end
 

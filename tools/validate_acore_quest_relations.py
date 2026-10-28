@@ -1,3 +1,4 @@
+from questie_base import base_text, LuaTableParser
 import argparse
 import json
 import re
@@ -47,27 +48,6 @@ RELATION_EXPORT_FILES = tuple(table for table in TARGET_TABLES if table not in E
 
 DISABLES_COLUMNS = ("sourceType", "entry", "flags", "params_0", "params_1", "comment")
 QUEST_DISABLE_SOURCE_TYPE = 1
-
-MANUAL_ACORE_RELATION_OVERRIDES = {
-    # Morja is listed in creature_queststarter, but AC SmartAI removes her
-    # questgiver flag on respawn and only adds it during the Dark Iron Ale
-    # Jubjub script window. Do not show Spawn of Jubjub as always available.
-    7946: {
-        "start": {
-            "creature": set(),
-            "object": set(),
-            "item": set(),
-        },
-    },
-    13966: {
-        "start": {
-            "creature": set(),
-            "object": set(),
-            "item": {46740},
-        },
-    },
-}
-
 
 def empty_relation():
     return {
@@ -132,102 +112,6 @@ QUEST_ENTRY_RE = re.compile(r"^\[(\d+)\]\s*=\s*(\{.*\})$", re.DOTALL)
 QUEST_FIELD_RE = re.compile(r"^\[(questKeys\.(?:startedBy|finishedBy))\]\s*=\s*(.+)$", re.DOTALL)
 
 
-class LuaTableParser:
-    def __init__(self, text: str):
-        self.text = text
-        self.length = len(text)
-        self.index = 0
-
-    def parse(self):
-        value = self._parse_value()
-        self._skip_ws()
-        return value
-
-    def _skip_ws(self):
-        while self.index < self.length and self.text[self.index] in " \t\r\n":
-            self.index += 1
-
-    def _peek(self):
-        return self.text[self.index] if self.index < self.length else ""
-
-    def _parse_value(self):
-        self._skip_ws()
-        char = self._peek()
-        if char == "{":
-            return self._parse_table()
-        if char == '"':
-            return self._parse_string()
-        if char == "-" or char.isdigit():
-            return self._parse_number()
-        if self.text.startswith("nil", self.index):
-            self.index += 3
-            return None
-        if self.text.startswith("true", self.index):
-            self.index += 4
-            return True
-        if self.text.startswith("false", self.index):
-            self.index += 5
-            return False
-        raise ValueError(f"Unsupported Lua token near: {self.text[self.index:self.index + 32]!r}")
-
-    def _parse_table(self):
-        assert self._peek() == "{"
-        self.index += 1
-        items = []
-
-        while True:
-            self._skip_ws()
-            if self._peek() == "}":
-                self.index += 1
-                return items
-
-            items.append(self._parse_value())
-            self._skip_ws()
-
-            char = self._peek()
-            if char == ",":
-                self.index += 1
-                continue
-            if char == "}":
-                self.index += 1
-                return items
-            raise ValueError(f"Unexpected character in Lua table: {char!r}")
-
-    def _parse_string(self):
-        assert self._peek() == '"'
-        self.index += 1
-        chars = []
-
-        while self.index < self.length:
-            char = self.text[self.index]
-            self.index += 1
-            if char == "\\":
-                if self.index >= self.length:
-                    break
-                escaped = self.text[self.index]
-                self.index += 1
-                escape_map = {
-                    "n": "\n",
-                    "r": "\r",
-                    "t": "\t",
-                    '"': '"',
-                    "\\": "\\",
-                }
-                chars.append(escape_map.get(escaped, escaped))
-                continue
-            if char == '"':
-                return "".join(chars)
-            chars.append(char)
-
-        raise ValueError("Unterminated Lua string")
-
-    def _parse_number(self):
-        start = self.index
-        if self._peek() == "-":
-            self.index += 1
-        while self.index < self.length and self.text[self.index].isdigit():
-            self.index += 1
-        return int(self.text[start:self.index])
 
 
 def parse_number_list(value: str):
@@ -527,10 +411,34 @@ def load_disabled_quest_ids(acore_source: Path):
     return disabled_quest_ids
 
 
-def load_acore_relations(acore_source: Path, quest_template_sql: Optional[Path] = None):
+def load_acore_relations(acore_source: Path, quest_template_sql: Optional[Path] = None, diagnostics=None):
+    """Read quest relations, retaining orphan source references as diagnostics.
+
+    A relation identifies a possible questgiver, not whether its event or
+    scripted questgiver flag is currently active. Only existing quest templates
+    can supply usable relations; stale source references remain visible in the
+    report instead of being proposed as new addon records.
+    """
     state = {table: set() for table in TARGET_TABLES}
     module_quest_ids = load_module_created_quest_ids(acore_source)
     disabled_quest_ids = load_disabled_quest_ids(acore_source)
+    quest_rows = load_acore_sql_table(acore_source, "quest_template", quest_template_sql)
+    quest_ids = set(quest_rows)
+    excluded_quest_ids = set(module_quest_ids) | set(disabled_quest_ids)
+    orphan_relations = []
+
+    def is_usable_relation(table, source_id, quest_id):
+        if quest_id in excluded_quest_ids:
+            return False
+        if quest_id not in quest_ids:
+            orphan_relations.append({
+                "table": table,
+                "sourceId": source_id,
+                "questId": quest_id,
+                "reason": "missingQuestTemplate",
+            })
+            return False
+        return True
 
     relation_export_dir = quest_template_sql.parent if quest_template_sql else None
     relation_export_files = {}
@@ -551,8 +459,8 @@ def load_acore_relations(acore_source: Path, quest_template_sql: Optional[Path] 
     per_quest = {}
     for table, pairs in state.items():
         relation_type, source_type = TARGET_TABLES[table]
-        for source_id, quest_id in pairs:
-            if quest_id in module_quest_ids or quest_id in disabled_quest_ids:
+        for source_id, quest_id in sorted(pairs):
+            if not is_usable_relation(table, source_id, quest_id):
                 continue
             relation = per_quest.setdefault(quest_id, empty_relation())
             relation[relation_type][source_type].add(source_id)
@@ -573,11 +481,15 @@ def load_acore_relations(acore_source: Path, quest_template_sql: Optional[Path] 
         start_quest = int(row.get("startquest") or row.get("StartQuest") or 0)
         if start_quest <= 0:
             continue
-        if start_quest in module_quest_ids or start_quest in disabled_quest_ids:
+        if not is_usable_relation("item_template", item_id, start_quest):
             continue
 
         relation = per_quest.setdefault(start_quest, empty_relation())
         relation["start"]["item"].add(item_id)
+    if diagnostics is not None:
+        diagnostics["orphanRelations"] = sorted(
+            orphan_relations, key=lambda row: (row["questId"], row["table"], row["sourceId"])
+        )
     return per_quest
 
 
@@ -602,7 +514,7 @@ def extract_relation_sources(value):
 def load_questie_relations(quest_db_path: Path):
     per_quest = {}
 
-    for raw_line in quest_db_path.read_text(encoding="utf-8").splitlines():
+    for raw_line in base_text(quest_db_path).splitlines():
         line = raw_line.strip()
         if not line.startswith("["):
             continue
@@ -613,8 +525,7 @@ def load_questie_relations(quest_db_path: Path):
 
         quest_id = int(quest_id_match.group(1))
         fields = split_top_level_lua_table(quest_id_match.group(2))
-        if len(fields) < 3:
-            continue
+        fields += ["nil"] * max(0, 3 - len(fields))
 
         per_quest[quest_id] = {
             "start": extract_relation_sources(LuaTableParser(fields[1]).parse() if fields[1] != "nil" else None),
@@ -662,17 +573,6 @@ def apply_relation_overrides(questie_relations, overrides):
         relation = questie_relations.setdefault(quest_id, empty_relation())
         for relation_type, value in override.items():
             relation[relation_type] = value
-
-
-def apply_acore_relation_overrides(acore_relations):
-    for quest_id, override in MANUAL_ACORE_RELATION_OVERRIDES.items():
-        relation = acore_relations.setdefault(quest_id, empty_relation())
-        for relation_type, source_map in override.items():
-            relation[relation_type] = {
-                "creature": set(source_map.get("creature", set())),
-                "object": set(source_map.get("object", set())),
-                "item": set(source_map.get("item", set())),
-            }
 
 
 def format_relation_table(source_map):
@@ -777,9 +677,9 @@ def build_summary(mismatches):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Validate Questie WotLK quest starter/finisher data against AzerothCore SQL.")
+    parser = argparse.ArgumentParser(description="Validate shared quest starter/finisher data against AzerothCore SQL.")
     parser.add_argument("--acore-source", default=r"P:\AC\source", help="Path to the AzerothCore source tree")
-    parser.add_argument("--quest-db", default="Database/Wotlk/wotlkQuestDB.lua", help="Path to the Questie WotLK quest DB")
+    parser.add_argument("--quest-db", default="Database/AzerothCore/acoreQuestDB.lua", help="Path to the shared AzerothCore quest DB")
     parser.add_argument(
         "--quest-template-sql",
         help="Optional HeidiSQL export for quest_template; sibling relation exports and item_template.sql will be used when present",
@@ -787,11 +687,7 @@ def main():
     parser.add_argument(
         "--quest-fixes",
         nargs="*",
-        default=[
-            "Database/Corrections/classicQuestFixes.lua",
-            "Database/Corrections/tbcQuestFixes.lua",
-            "Database/Corrections/wotlkQuestFixes.lua",
-        ],
+        default=[],
         help="Quest correction files to merge before comparison",
     )
     parser.add_argument("--limit", type=int, default=20, help="How many mismatches to print")
@@ -803,8 +699,8 @@ def main():
     quest_db_path = Path(args.quest_db)
     quest_template_sql = Path(args.quest_template_sql) if args.quest_template_sql else None
 
-    acore_relations = load_acore_relations(acore_source, quest_template_sql)
-    apply_acore_relation_overrides(acore_relations)
+    source_diagnostics = {}
+    acore_relations = load_acore_relations(acore_source, quest_template_sql, source_diagnostics)
     questie_relations = load_questie_relations(quest_db_path)
     for fix_file in args.quest_fixes:
         apply_relation_overrides(questie_relations, load_quest_relation_overrides(Path(fix_file)))
@@ -822,6 +718,9 @@ def main():
     print(f"  start/item:     {summary['startItem']}")
     print(f"  end/creature:   {summary['endCreature']}")
     print(f"  end/object:     {summary['endObject']}")
+    print(f"Orphan source relations: {len(source_diagnostics['orphanRelations'])}")
+    for orphan in source_diagnostics["orphanRelations"][: args.limit]:
+        print(json.dumps(orphan, separators=(",", ":")))
 
     if mismatches:
         print("")
@@ -842,6 +741,7 @@ def main():
                 {
                     "summary": summary,
                     "mismatches": mismatches,
+                    "sourceDiagnostics": source_diagnostics,
                 },
                 indent=2,
             ),
@@ -858,6 +758,12 @@ def main():
         suggestion_path.write_text(suggestion_text, encoding="utf-8")
         print(f"Lua suggestions written to {suggestion_path}")
 
+    return 1 if mismatches else 0
+
 
 if __name__ == "__main__":
-    main()
+    try:
+        raise SystemExit(main())
+    except (OSError, ValueError) as error:
+        print(f"ERROR: {error}", file=sys.stderr)
+        raise SystemExit(2)

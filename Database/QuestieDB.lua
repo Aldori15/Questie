@@ -1829,10 +1829,12 @@ QuestieDB.specialFlags = {
 
 _QuestieDB.questCache = {}; -- stores quest objects so they dont need to be regenerated
 _QuestieDB.npcCache = {};
+_QuestieDB.questStartCache = {};
 
 -- Event NPCs can move when a live holiday overrides the calendar location.
 function QuestieDB.InvalidateNPC(npcId)
     _QuestieDB.npcCache[npcId] = nil
+    _QuestieDB.questStartCache = {}
     -- Quests in the log own mutable objective state and queued draw work.
     -- Refresh previews without replacing those live quest objects.
     local activeQuests = QuestiePlayer.currentQuestlog or {}
@@ -1862,6 +1864,9 @@ local questRequirementQuerySource
 
 local function CreateQuestRequirementQuery(querySingle, questKeys, overrides)
     local cache = {}
+    -- Compact slots avoid a string-keyed hash table for every queried quest.
+    -- Schema indexes are sparse here because only requirement fields are read.
+    local fieldIndices, fieldCount = {}, 0
     local missing = {}
     return function(questId, field)
         -- Corrections remain live, including false/zero values and edited lists.
@@ -1872,16 +1877,22 @@ local function CreateQuestRequirementQuery(querySingle, questKeys, overrides)
             if index and override[index] ~= nil then return override[index] end
         end
 
+        local fieldIndex = fieldIndices[field]
+        if not fieldIndex then
+            fieldCount = fieldCount + 1
+            fieldIndex = fieldCount
+            fieldIndices[field] = fieldIndex
+        end
         local requirements = cache[questId]
         if not requirements then
             requirements = {}
             cache[questId] = requirements
         end
-        local value = requirements[field]
+        local value = requirements[fieldIndex]
         if value == nil then
             value = querySingle(questId, field)
             if value == nil then value = missing end
-            requirements[field] = value
+            requirements[fieldIndex] = value
         end
         if value ~= missing then return value end
     end
@@ -1919,7 +1930,7 @@ function QuestieDB:Initialize()
 
     InitializeQuestTagInfoCorrections()
 
-    -- For now we store the Era/HC database
+    -- Read the compiled AzerothCore database streams and pointer maps.
     local npcBin, npcPtrs, questBin, questPtrs, objBin, objPtrs, itemBin, itemPtrs
 
     npcBin = Questie.db.global.npcBin
@@ -1969,6 +1980,7 @@ function QuestieDB:Initialize()
     -- data has been corrected, ensure cache is empty (something might have accessed the api before questie initialized)
     _QuestieDB.questCache = {};
     _QuestieDB.npcCache = {};
+    _QuestieDB.questStartCache = {};
 
     --? This improves performance a lot, the regular functions still work but this is much faster because i caches
     checkRace  = QuestieLib:TableMemoizeFunction(QuestiePlayer.HasRequiredRace)
@@ -3595,6 +3607,37 @@ function QuestieDB.HasQuestData(questId)
     return type(name) == "string" and name:find("%S") ~= nil
 end
 
+local questStartQueryOrder = {"name", "startedBy", "objectivesText", "specialFlags"}
+
+---Available icons need starter/display data, not objective spawn lists.
+---Full quest objects remain available through GetQuest for tracker and lifecycle callers.
+---@param questId QuestId
+---@return table|nil
+function QuestieDB.GetQuestStartInfo(questId)
+    if not questId or not QuestieDB.HasQuestData(questId) then return nil end
+    local fullQuest = _QuestieDB.questCache[questId]
+    if fullQuest then return fullQuest end
+    local cached = _QuestieDB.questStartCache[questId]
+    if cached then return cached end
+    local raw = QuestieDB.QueryQuest(questId, questStartQueryOrder)
+    if not raw then return nil end
+    local startedBy = raw[2] or {}
+    local level, requiredLevel = QuestieLib.GetEffectiveQuestLevel(questId)
+    local quest = {
+        Id = questId,
+        name = raw[1],
+        Starts = {NPC = startedBy[1], GameObject = startedBy[2], Item = startedBy[3]},
+        level = level,
+        requiredLevel = requiredLevel,
+        Description = raw[3],
+    }
+    if raw[4] then
+        quest.IsRepeatable = bitband(raw[4], QuestieDB.specialFlags.REPEATABLE) ~= 0
+    end
+    _QuestieDB.questStartCache[questId] = quest
+    return quest
+end
+
 ---@param questId QuestId
 ---@return Quest|nil @The quest object or nil if usable quest data is missing
 function QuestieDB.GetQuest(questId) -- /dump QuestieDB.GetQuest(867)
@@ -3844,11 +3887,13 @@ function QuestieDB.GetQuest(questId) -- /dump QuestieDB.GetQuest(867)
     ---@type ExtraObjective[]
     local extraObjectives = QO.extraObjectives
     if extraObjectives then
+        local optionalObjectives = QuestieDB.questOptionalExtraObjectives and QuestieDB.questOptionalExtraObjectives[questId]
         for index, o in pairs(extraObjectives) do
             local specialObjective = {
                 Icon = o[2],
                 Description = o[3],
                 RealObjectiveIndex = o[4],
+                Optional = optionalObjectives and optionalObjectives[index] == true and (not o[4] or o[4] == 0) or nil,
             }
             if o[1] then -- custom spawn
                 specialObjective.spawnList = {{
@@ -3885,6 +3930,7 @@ function QuestieDB.GetQuest(questId) -- /dump QuestieDB.GetQuest(867)
     end
 
     _QuestieDB.questCache[questId] = QO
+    _QuestieDB.questStartCache[questId] = nil
     return QO
 end
 
@@ -3960,84 +4006,6 @@ function QuestieDB:GetCreatureLevels(quest)
     return creatureLevels
 end
 
-local playerFaction = UnitFactionGroup("player")
-local factionReactions = {
-    A = (playerFaction == "Alliance") or nil,
-    H = (playerFaction == "Horde") or nil,
-    AH = true,
-}
---
---
---function __TEST()
---    local questsWithoutTriggerEnd = {
---        869,
---        944,
---        1448,
---        6185,
---        9260,
---        9261,
---        9262,
---        9263,
---        9264,
---        9265,
---        12032,
---        12036,
---        12816,
---        12817,
---        13564,
---        13639,
---        13881,
---        13961,
---        14066,
---        14165,
---        14389,
---        24452,
---        24618,
---        25081,
---        25325,
---        25621,
---        25715,
---        25930,
---        26258,
---        26512,
---        26930,
---        26975,
---        27007,
---        27044,
---        27152,
---        27341,
---        27349,
---        27610,
---        27704,
---        28228,
---        28635,
---        28732,
---        29392,
---        29415,
---        29536,
---        29539,
---    }
---
---    local corrections = {}
---
---    -- Read QuestieDB to check if the quest has a triggerEnd
---    for _, questId in pairs(questsWithoutTriggerEnd) do
---        local quest = QuestieDB.GetQuest(questId)
---        if (not quest) then
---            print("Quest " .. questId .. " not found in QuestieDB")
---            corrections[questId] = true
---        else
---            if quest.triggerEnd then
---                print("Quest " .. questId .. " has a triggerEnd")
---            else
---                print("Quest " .. questId .. " does not have a triggerEnd")
---                corrections[questId] = true
---            end
---        end
---    end
---
---    Questie.db.global.__TEST = corrections
---end
 ---@param npcId number
 ---@return table
 function QuestieDB:GetNPC(npcId)
@@ -4084,21 +4052,6 @@ function QuestieDB.IsFriendlyToPlayer(friendlyToFaction)
     end
 
     return false
-end
-
----------------------------------------------------------------------------------------------------
--- Modifications to objectDB
-function _QuestieDB:DeleteGatheringNodes()
-    local prune = { -- gathering nodes
-        1617,1618,1619,1620,1621,1622,1623,1624,1628, -- herbs
-
-        1731,1732,1733,1734,1735,123848,150082,175404,176643,177388,324,150079,176645,2040,123310 -- mining
-    }
-    local objectSpawnsKey = QuestieDB.objectKeys.spawns
-    for i=1, #prune do
-        local id = prune[i]
-        QuestieDB.objectData[id][objectSpawnsKey] = nil
-    end
 end
 
 ---------------------------------------------------------------------------------------------------
