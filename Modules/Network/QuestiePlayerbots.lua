@@ -418,8 +418,8 @@ local function GetProgressRequest(botName, token)
     local request = current and pendingRequests[current]
     -- Tokens issued by NextToken expire once replaced. A bridge may push WATCH
     -- updates under its own tokens; those are valid only for a current WATCH.
-    local owned = token == current
-        or (request and request.watch and token and token:sub(1, #TOKEN_PREFIX) ~= TOKEN_PREFIX)
+    local isBridgePush = type(token) == "string" and token:match("^qpp%d+x%d+$") ~= nil
+    local owned = token == current or (request and request.watch and isBridgePush)
     if bridgeReady and request and owned
         and (not request.expiresAt or GetTime() < request.expiresAt) and GetCurrentGroupMembers()[botName] then
         return request
