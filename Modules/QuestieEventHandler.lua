@@ -608,9 +608,16 @@ local function _OnlineStatusChanged()
 end
 
 function _EventHandler.GroupRosterUpdate()
+    local previousMembers = QuestiePlayer.numberOfGroupMembers or 0
     local currentMembers = GetNumGroupMembers()
-    local sizeChanged = currentMembers ~= QuestiePlayer.numberOfGroupMembers
+    local sizeChanged = currentMembers ~= previousMembers
     QuestiePlayer.numberOfGroupMembers = currentMembers
+
+    -- An existing party gained a member. Request quest logs so
+    -- current members receive the newcomer's objectives too.
+    if previousMembers >= 2 and currentMembers > previousMembers then
+        Questie:SendMessage("QC_ID_REQUEST_FULL_QUESTLIST")
+    end
 
     -- Evaluate unconditionally so the online snapshot stays current even when the size also changed.
     local onlineChanged = _OnlineStatusChanged()
