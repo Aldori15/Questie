@@ -204,6 +204,15 @@ assert(entry("Tankbot",200,3).finished, "kill-credit alias did not map")
 -- Other bridges push WATCH updates under their own tokens and number objectives per type.
 progress("Tankbot","qpp7x1",6)
 assert(entry("Tankbot").fulfilled == 6, "bridge push token was rejected")
+
+-- Reject arbitrary or malformed bridge push tokens.
+progress("Tankbot", "random123", 9)
+assert(entry("Tankbot").fulfilled == 6, "arbitrary push token was accepted")
+progress("Tankbot", "qpp7x1junk", 9)
+assert(entry("Tankbot").fulfilled == 6, "malformed push token was accepted")
+progress("Tankbot", "qpp7x", 9)
+assert(entry("Tankbot").fulfilled == 6, "incomplete push token was accepted")
+
 begin("Tankbot","qpp7x2"); quest("Tankbot","qpp7x2",200)
 objective("Tankbot","qpp7x2",200,"m",1,101,4,10)
 objective("Tankbot","qpp7x2",200,"i",1,500,2,5)
