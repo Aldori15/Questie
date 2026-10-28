@@ -7,6 +7,8 @@ local QuestieDB = QuestieLoader:ImportModule("QuestieDB");
 local QuestieComms = QuestieLoader:ImportModule("QuestieComms");
 ---@type QuestieLib
 local QuestieLib = QuestieLoader:ImportModule("QuestieLib");
+---@type QuestiePlayer
+local QuestiePlayer = QuestieLoader:ImportModule("QuestiePlayer");
 
 QuestieComms.data = {}
 
@@ -45,7 +47,14 @@ function QuestieComms.data:GetTooltip(tooltipKey)
                     tooltipData[questId][playerName][objectiveIndex] = {};
                 end
                 local oName = "";
-                if((objective.type == "monster" or objective.type == "m") and objective.id) then
+                local localQuest = QuestiePlayer.currentQuestlog[questId]
+                local localObjective = localQuest and localQuest.Objectives and localQuest.Objectives[objectiveIndex]
+                local localText = localObjective and QuestieLib:GetObjectiveDescription(localObjective)
+                if localText and localText ~= "" then
+                    -- Name it like the local player's objective, as map icon tooltips do;
+                    -- the database can name another item or target than the server.
+                    oName = localText
+                elseif((objective.type == "monster" or objective.type == "m") and objective.id) then
                     local npc = QuestieDB:GetNPC(objective.id);
                     oName = (npc and npc.name) or ("NPC missing from DB: " .. objective.id);
                 elseif((objective.type == "object" or objective.type == "o") and objective.id) then
@@ -80,6 +89,7 @@ end
 ---@param playerName string
 ---@param objectives table @Contains objectives o[index].text
 function QuestieComms.data:RegisterTooltip(questId, playerName, objectives)
+    local quest = QuestieDB.GetQuest(questId)
     if(not playerRegisteredTooltips[playerName]) then
         playerRegisteredTooltips[playerName] = {}
     end
@@ -109,6 +119,26 @@ function QuestieComms.data:RegisterTooltip(questId, playerName, objectives)
             else
                 -- Show non-item objectives when hovering their direct objective entity.
                 QuestieComms.data:AddTooltip(playerName, questId, lookupKey, objectiveIndex, objective);
+            end
+
+            local objectiveData = quest and quest.ObjectiveData and quest.ObjectiveData[objectiveIndex]
+            local matchesKillCredit = false
+            if objectiveData and objectiveData.Type == "killcredit" and (objective.type == "m" or objective.type == "k") then
+                matchesKillCredit = objectiveData.RootId == objective.id
+                for _, id in pairs(objectiveData.IdList or {}) do
+                    matchesKillCredit = matchesKillCredit or id == objective.id
+                end
+            end
+            if matchesKillCredit then
+                -- A credit entry can be an invisible server target. Tooltips belong
+                -- to each creature that awards it, with the same objective counter.
+                for _, id in pairs(objectiveData.IdList or {}) do
+                    local sourceObjective = {}
+                    for key, value in pairs(objective) do sourceObjective[key] = value end
+                    sourceObjective.id = id
+                    sourceObjective.type = "m"
+                    QuestieComms.data:AddTooltip(playerName, questId, "m_" .. id, objectiveIndex, sourceObjective)
+                end
             end
         end
     end
