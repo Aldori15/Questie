@@ -4,7 +4,7 @@ local SOURCE = "."
 
 local modules, sent, printed, updates = {}, {}, {}, {}
 local now, roster, connected = 1, {"Tankbot", "Healbot", "Human"}, {}
-local frame
+local frame, raidRoster
 local function module(name)
     if not modules[name] then modules[name] = {private={}} end
     return modules[name]
@@ -17,11 +17,12 @@ DEFAULT_CHAT_FRAME = {AddMessage=function(_, message) printed[#printed+1] = mess
 function GetTime() return now end
 function UnitName(unit)
     if unit == "player" then return "Owner" end
+    if raidRoster then return raidRoster[tonumber(unit:match("raid(%d+)"))] end
     return roster[tonumber(unit:match("party(%d+)"))]
 end
 function UnitIsConnected(unit) return connected[UnitName(unit)] ~= false end
-function GetNumPartyMembers() return #roster end
-function GetNumRaidMembers() return 0 end
+function GetNumPartyMembers() return raidRoster and 0 or #roster end
+function GetNumRaidMembers() return raidRoster and #raidRoster or 0 end
 function CreateFrame()
     frame = {RegisterEvent=function() end, SetScript=function(self, event, callback) self[event] = callback end}
     return frame
@@ -110,7 +111,11 @@ loadAddon()
 assert(sent[1].message == "HELLO~1")
 hello()
 local tank, heal, human = token("Tankbot"), token("Healbot"), token("Human")
-assert(sent[2].message == "GET~QUEST_PROGRESS~Tankbot~"..tank.."~WATCH")
+assert(#sent == 4, "initial roster was not requested exactly once per other member")
+for i=2,#sent do
+    assert(sent[i].channel == "PARTY" and sent[i].message:match("~WATCH$"))
+    assert(not sent[i].message:find("~Owner~", 1, true), "requested the player as a bot")
+end
 local humanData = nativeHuman("Human", 6)
 receive("ERR~GET~QUEST_PROGRESS~"..human.."~BOT_UNAVAILABLE")
 assert(comms.remoteQuestLogs[100].Human == humanData and #printed == 0, "discovery damaged human comms")
@@ -340,6 +345,32 @@ for i=beforeSilent+1,#sent do
     if sent[i].message == "HELLO~1" then hellos = hellos + 1 end
 end
 assert(hellos == 4, "realm without a bridge kept receiving HELLO probes")
+
+-- Party and raid discovery use the same connected roster as departure cleanup.
+comms:ResetAll()
+raidRoster, connected = {"Tankbot", "Owner", "Human", "Healbot"}, {Healbot=false}
+local beforeRaid = #sent
+loadAddon(); hello()
+assert(#sent == beforeRaid + 3, "raid discovery included self or a disconnected member")
+local raidTank = token("Tankbot")
+for i=beforeRaid+2,#sent do assert(sent[i].channel == "RAID") end
+progress("Tankbot",raidTank,5)
+assert(entry("Tankbot").fulfilled == 5)
+local beforeReconnect = #sent
+connected.Healbot = true
+advance(2)
+assert(#sent == beforeReconnect + 1 and sent[#sent].message:find("~Healbot~", 1, true),
+    "reconnected raid member was not requested")
+connected.Tankbot = false
+advance(2)
+assert(not entry("Tankbot"), "disconnected raid member retained quest progress")
+assert(sent[#sent].message == "GET~QUEST_PROGRESS~Tankbot~"..raidTank.."~UNWATCH")
+raidRoster, roster, connected = nil, {}, {}
+comms:ResetAll()
+local beforeSolo = #sent
+loadAddon(); hello()
+advance(2)
+assert(#sent == beforeSolo + 1 and sent[#sent].message == "HELLO~1", "solo roster requested the player")
 
 -- Exercise the complete native party renderer, objective preparation and spawn
 -- handlers. Only client map/frame APIs and the static DB query boundary are doubled.

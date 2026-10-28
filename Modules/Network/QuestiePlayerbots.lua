@@ -169,30 +169,6 @@ local function RequestBotQuestProgress(botName)
     end
 end
 
-local function RequestGroupQuests()
-    if not bridgeReady then
-        return
-    end
-
-    if GetNumRaidMembers and GetNumRaidMembers() > 0 then
-        for i = 1, GetNumRaidMembers() do
-            local name = UnitName("raid" .. i)
-
-            if name and name ~= UnitName("player") and UnitIsConnected("raid" .. i) then
-                RequestBotQuestProgress(name)
-            end
-        end
-    elseif GetNumPartyMembers and GetNumPartyMembers() > 0 then
-        for i = 1, GetNumPartyMembers() do
-            local name = UnitName("party" .. i)
-
-            if name and UnitIsConnected("party" .. i) then
-                RequestBotQuestProgress(name)
-            end
-        end
-    end
-end
-
 local function GetCurrentGroupMembers()
     local members = {}
 
@@ -283,7 +259,12 @@ local function SyncGroupRoster()
         RemoveTrackedBot(botName)
     end
 
-    RequestGroupQuests()
+    local playerName = NormalizeName(UnitName("player"))
+    for name in pairs(members) do
+        if name ~= playerName then
+            RequestBotQuestProgress(name)
+        end
+    end
 end
 
 local function ScheduleRosterSync()
@@ -547,7 +528,7 @@ local function HandleBridgeMessage(message, sender)
 
         bridgeReady = true
 
-        RequestGroupQuests()
+        SyncGroupRoster()
         return
     end
 
