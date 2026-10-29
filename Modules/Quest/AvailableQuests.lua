@@ -478,6 +478,17 @@ function AvailableQuests.InvalidateSpawnVisibility()
     end
 end
 
+function AvailableQuests.InvalidateQuestgiverAvailability()
+    for _, quests in ipairs({availableQuests, nextAvailableQuests}) do
+        for questId in pairs(quests) do
+            local quest = QuestieDB.GetQuestStartInfo(questId)
+            if quest and quest.Starts and quest.Starts.NPC then
+                dirtySpawnVisibility[questId] = true
+            end
+        end
+    end
+end
+
 AvailableQuests.InvalidateWintergraspSpawnVisibility = AvailableQuests.InvalidateSpawnVisibility
 
 -- Repeatable quests should be controlled by showRepeatableQuests
@@ -683,6 +694,54 @@ function AvailableQuests.PruneByCurrentLevelFilter()
     end
 end
 
+local function _NpcStarterLocationAvailable(npc, zone, spawn)
+    if not spawn or not spawn[8] or not QuestieServer.GetNPCQuestgiverState then
+        return true
+    end
+
+    return QuestieServer:GetNPCQuestgiverState(npc.id, zone, spawn[8], spawn[5]) ~= false
+end
+
+local function _NpcStarterHasVisibleAllowedSpawnInZone(npc, zone)
+    for _, spawn in ipairs(npc.spawns and npc.spawns[zone] or {}) do
+        if Phasing.IsSpawnDataVisible(spawn)
+            and _NpcStarterLocationAvailable(npc, zone, spawn) then
+            return true
+        end
+    end
+    return false
+end
+
+local function _NpcStarterHasAllowedLocation(npc)
+    local hasLocation = false
+
+    for zone, spawns in pairs(npc.spawns or {}) do
+        for _, spawn in pairs(spawns) do
+            hasLocation = true
+            if _NpcStarterLocationAvailable(npc, zone, spawn) then return true end
+        end
+    end
+
+    for _, waypoints in pairs(npc.waypoints or {}) do
+        if next(waypoints) then return true end
+    end
+
+    return not hasLocation
+end
+
+local function _NpcStarterLocalTooltipAvailable(npc)
+    local zone = QuestiePlayer:GetCurrentZoneId()
+    local spawns = zone and npc.spawns and npc.spawns[zone]
+
+    if not spawns or #spawns == 0 then return true end
+
+    for _, spawn in ipairs(spawns) do
+        if _NpcStarterLocationAvailable(npc, zone, spawn) then return true end
+    end
+
+    return false
+end
+
 --Draw a single available quest, it is used by the CalculateAndDrawAll function.
 ---@param quest Quest
 function AvailableQuests.DrawAvailableQuest(quest) -- prevent recursion
@@ -696,6 +755,7 @@ function AvailableQuests.DrawAvailableQuest(quest) -- prevent recursion
         end
 
         if drawTooltipKey == "m_" .. starter.id then
+            if not _NpcStarterHasAllowedLocation(starter) then return end
             if playerFaction == "Alliance" and starter.friendlyToFaction == "H" then
                 return
             elseif playerFaction == "Horde" and starter.friendlyToFaction == "A" then
@@ -705,7 +765,7 @@ function AvailableQuests.DrawAvailableQuest(quest) -- prevent recursion
 
         if limit == 0 or added < limit then
             added = added + _AddStarter(starter, quest, drawTooltipKey, (limit == 0 and 0) or (limit - added))
-        elseif _ShouldRegisterQuestStartTooltip(quest.Id) then
+        elseif _ShouldRegisterQuestStartTooltip(quest.Id) and (drawTooltipKey ~= "m_" .. starter.id or _NpcStarterLocalTooltipAvailable(starter)) then
             QuestieTooltips:RegisterQuestStartTooltip(quest.Id, starter.name, starter.id, fallbackTooltipKey, tooltipType)
         end
     end
@@ -1439,7 +1499,7 @@ _RegisterQuestStartTooltips = function(quest)
     if npcs then
         for i = 1, #npcs do
             local npc = QuestieDB:GetNPC(npcs[i])
-            if npc then
+            if npc and _NpcStarterHasAllowedLocation(npc) and _NpcStarterLocalTooltipAvailable(npc) then
                 local tooltipKey = "m_" .. npc.id
                 local tooltipId = tostring(quest.Id) .. " " .. npc.name .. " " .. npc.id
                 if (not QuestieTooltips.lookupByKey[tooltipKey]) or (not QuestieTooltips.lookupByKey[tooltipKey][tooltipId]) then
@@ -1543,6 +1603,9 @@ _AddStarter = function(starter, quest, tooltipKey, limit)
         return 0
     end
 
+    local directNpcStarter = tooltipKey == "m_" .. starter.id
+    if directNpcStarter and not _NpcStarterHasAllowedLocation(starter) then return 0 end
+
     -- Need to know when this quest starts from an item or object, so we save it later
     ---@type string|nil
     local starterType
@@ -1571,7 +1634,8 @@ _AddStarter = function(starter, quest, tooltipKey, limit)
     local isDungeonQuest = QuestieDB.IsDungeonQuest(quest.Id)
     local isRaidQuest = QuestieDB.IsRaidQuest(quest.Id)
 
-    if _ShouldRegisterQuestStartTooltip(quest.Id) then
+    if _ShouldRegisterQuestStartTooltip(quest.Id)
+        and (not directNpcStarter or _NpcStarterLocalTooltipAvailable(starter)) then
         QuestieTooltips:RegisterQuestStartTooltip(quest.Id, starter.name, starter.id, tooltipKey, (starterType or "NPC"))
     end
 
@@ -1584,7 +1648,7 @@ _AddStarter = function(starter, quest, tooltipKey, limit)
             local coords
             for spawnIndex = 1, #spawns do
                 coords = spawns[spawnIndex]
-                if Phasing.IsSpawnDataVisible(coords) and (limit == 0 or added < limit) and (#spawns == 1 or _HasProperDistanceToAlreadyAddedSpawns(coords, alreadyAddedSpawns)) then
+                if Phasing.IsSpawnDataVisible(coords) and (not directNpcStarter or _NpcStarterLocationAvailable(starter, zone, coords)) and (limit == 0 or added < limit) and (#spawns == 1 or _HasProperDistanceToAlreadyAddedSpawns(coords, alreadyAddedSpawns)) then
                     visibleStarterZones[zone] = true
 
                     local data = {
@@ -1635,8 +1699,12 @@ _AddStarter = function(starter, quest, tooltipKey, limit)
     -- Only for NPCs since objects do not move
     if starter.waypoints then
         for zone, waypoints in pairs(starter.waypoints or {}) do
-            if QuestieDB:IsAzerothCoreAvailabilityConditionFulfilledForSpawnZone(quest.Id, zone) and
+            if (not directNpcStarter or _NpcStarterLocationAvailable(starter, zone)) and
+                QuestieDB:IsAzerothCoreAvailabilityConditionFulfilledForSpawnZone(quest.Id, zone) and
                 (visibleStarterZones[zone] or (not starter.spawns) or (not starter.spawns[zone]) or _HasVisibleSpawnInZone(starter.spawns[zone])) and
+                (visibleStarterZones[zone] or (not starter.spawns) or (not starter.spawns[zone])
+                    or (directNpcStarter and _NpcStarterHasVisibleAllowedSpawnInZone(starter, zone))
+                    or (not directNpcStarter and _HasVisibleSpawnInZone(starter.spawns[zone]))) and
                 (not dungeons[zone]) and waypoints[1] and waypoints[1][1] and waypoints[1][1][1] then
                 if not starterIcons[zone] then
                     if limit == 0 or added < limit then

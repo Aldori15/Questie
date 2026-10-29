@@ -3,7 +3,9 @@ local Integrations = QuestieLoader:CreateModule("QuestieServerIntegrations")
 local Server = QuestieLoader:ImportModule("QuestieServer")
 local Event = QuestieLoader:ImportModule("QuestieEvent")
 local Blacklist = QuestieLoader:ImportModule("QuestieQuestBlacklist")
+
 local previousQuestStateKey = "unknown"
+local previousQuestgiverStateKey = "unknown"
 local previousSpawnStateKey = "unknown"
 local previousPhaseStateKey = "unknown"
 
@@ -32,6 +34,16 @@ local function RefreshWintergraspSpawns()
         map:RefreshWintergraspStarterLocations()
         map:RefreshWintergraspManualNotes()
         QuestieLoader:ImportModule("QuestieQuest"):RefreshWintergraspSpawnVisibility()
+    end
+    return true
+end
+
+local function RefreshQuestgivers()
+    local key = Server:GetQuestgiverStateKey()
+    if key == previousQuestgiverStateKey then return false end
+    previousQuestgiverStateKey = key
+    if Questie.started then
+        QuestieLoader:ImportModule("AvailableQuests").InvalidateQuestgiverAvailability()
     end
     return true
 end
@@ -167,6 +179,7 @@ function Integrations:Refresh()
     end
     changed = darkmoonChanged or changed
     changed = RefreshQuestStates() or changed
+    changed = RefreshQuestgivers() or changed
     changed = RefreshWintergraspSpawns() or changed
     changed = RefreshPhaseSpawns() or changed
     if changed then Event.RefreshAvailableQuests() end
