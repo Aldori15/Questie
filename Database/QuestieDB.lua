@@ -145,6 +145,7 @@ QuestieDB.DoableStates = {
     DISABLED_BY = 31,
     MISSING_START_ITEM = 32,
     ACORE_CONDITION = 33,
+    SERVER_DISABLED = 34,
 }
 
 ---@param checker fun(questId: QuestId): boolean
@@ -3025,6 +3026,14 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
             return l10n("Available")..l10n(": ")..l10n("Player is on quest"), false, DoableStates.QUEST_LOG
         elseif returnText and not returnBrief then
             return msg, false, DoableStates.QUEST_LOG
+        end
+    end
+
+    if C_QuestLog.IsOnQuest(questId) ~= true and QuestieServer:IsQuestDisabled(questId) then
+        if returnText and returnBrief then
+            return l10n("Unavailable") .. l10n(": ") .. "Disabled by server", true, DoableStates.SERVER_DISABLED
+        elseif returnText then
+            return "Quest " .. questId .. " is disabled by the server", true, DoableStates.SERVER_DISABLED
         end
     end
 

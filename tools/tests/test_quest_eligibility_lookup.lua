@@ -43,6 +43,7 @@ modules.QuestieLib = {TableMemoizeFunction = function(_, fn)
     return setmetatable({}, {__index = function(tbl, key) local value = fn(key); tbl[key] = value; return value end})
 end}
 modules.QuestieServer = {GetQuestAvailabilityState = function(_, id) return state.bridge[id] end,
+    IsQuestDisabled = function() return nil end,
     IsICCQuestActive = function(_, id) return state.bridge[id] end,
     IsWintergraspQuestActive = function() end, IsPooledQuestActive = function() end}
 modules.QuestieEvent = {IsEventQuestInCurrentExpansion = function(_, id) return id == 24 end,

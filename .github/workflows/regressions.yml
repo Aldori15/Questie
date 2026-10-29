@@ -38,8 +38,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           repository: Aldori15/mod-questie-bridge
-          # Bridge contract revision.
-          ref: ad6ebd8fd70270992d0d843f0dc8c73ba924be30
+          ref: main
           path: source/modules/mod-questie-bridge
           persist-credentials: false
 

@@ -2,7 +2,7 @@
 local QuestieServer = QuestieLoader:CreateModule("QuestieServer")
 local Integrations = QuestieLoader:ImportModule("QuestieServerIntegrations")
 
-local PREFIX, PROTOCOL_VERSION = "QSTSVR", "15"
+local PREFIX, PROTOCOL_VERSION = "QSTSVR", "16"
 
 -- Shared with the correction generators. Decisions apply to the current area,
 -- never to every location in these zones. Keep the module's profiles in sync.
@@ -44,7 +44,7 @@ local nextPreferenceCheck, previousPreferences = 0, nil
 local subscriptions = {}
 local CAPABILITIES = {EVENTS = true, VALUES = true, SCOURGE = true, QUELDANAS = true,
     KALUAK = true, HEARTBEAT = true, QUESTPOOLS = true, WINTERGRASP = true, ICC = true, RESETS = true,
-    PHASES = true, PATROLS = true, QUESTXP = true, QUESTREP = true, QUESTMONEY = true}
+    PHASES = true, PATROLS = true, QUESTXP = true, QUESTREP = true, QUESTMONEY = true, QUESTDISABLES = true}
 
 local function Split(value, separator)
     local fields, first = {}, 1
@@ -278,6 +278,20 @@ function QuestieServer:GetPooledQuests(poolId)
     return ids
 end
 
+---@return boolean|nil nil means the server does not report quest disables.
+function QuestieServer:IsQuestDisabled(questId)
+    if not self:HasCapability("QUESTDISABLES") then return nil end
+    return snapshot.disabledQuests[questId] == true
+end
+
+function QuestieServer:GetDisabledQuests()
+    if not self:HasCapability("QUESTDISABLES") then return nil end
+    local ids = {}
+    for id in pairs(snapshot.disabledQuests) do ids[#ids + 1] = id end
+    table.sort(ids)
+    return ids
+end
+
 ---@return table|nil A copy of public battlefield state; nil means unsupported/expired.
 function QuestieServer:GetWintergraspState()
     if not self:HasCapability("WINTERGRASP") then return nil end
@@ -358,6 +372,7 @@ end
 function QuestieServer:GetQuestAvailabilityState(questId)
     if not Fresh() then return nil end
     local caps = snapshot.caps
+    if caps.QUESTDISABLES and snapshot.disabledQuests[questId] then return false end
     local pool, wintergrasp, icc
     if caps.QUESTPOOLS then
         local quest = snapshot.poolQuests[questId]
@@ -374,9 +389,10 @@ end
 
 function QuestieServer:GetStateControlledQuests()
     local pool, wintergrasp, icc = self:GetPooledQuests(), self:GetWintergraspQuests(), self:GetICCQuests()
-    if not pool and not wintergrasp and not icc then return nil end
+    local disabled = self:GetDisabledQuests()
+    if not pool and not wintergrasp and not icc and not disabled then return nil end
     local ids, seen = {}, {}
-    for _, members in ipairs({pool or {}, wintergrasp or {}, icc or {}}) do
+    for _, members in ipairs({pool or {}, wintergrasp or {}, icc or {}, disabled or {}}) do
         for _, id in ipairs(members) do
             if not seen[id] then ids[#ids + 1], seen[id] = id, true end
         end
@@ -415,7 +431,7 @@ end
 
 local function ParseRows(batch)
     local result = {caps = batch.caps, events = {}, values = {}, ui = {}, poolQuests = {},
-        wintergraspQuests = {}, iccQuests = {}, phaseVisibility = {}, reputationFactions = {}}
+        wintergraspQuests = {}, iccQuests = {}, disabledQuests = {}, phaseVisibility = {}, reputationFactions = {}}
     local count, reputationFactionCount = 0, 0
     for index = 1, batch.partCount do
         if not batch.parts[index] then return nil end
@@ -487,6 +503,9 @@ local function ParseRows(batch)
                 local pool = Integer(fields[3], 4294967295)
                 if not pool or pool < 1 or not string.match(fields[4], "^[01]$") or result.poolQuests[id] then return nil end
                 result.poolQuests[id] = {pool = pool, active = fields[4] == "1"}
+            elseif kind == "D" and result.caps.QUESTDISABLES and #fields == 2 and id and id > 0 then
+                if result.disabledQuests[id] then return nil end
+                result.disabledQuests[id] = true
             elseif kind == "R" and result.caps.WINTERGRASP and #fields == 3 and id and id > 0 then
                 if not string.match(fields[3], "^[01]$") or result.wintergraspQuests[id] ~= nil then return nil end
                 result.wintergraspQuests[id] = fields[3] == "1"
@@ -705,6 +724,8 @@ function QuestieServer:PrintStatus(poolId)
     table.sort(caps)
     Questie:Print("[Server bridge] Live state (" .. math.floor(GetTime() - lastReplyAt) .. "s): " .. table.concat(caps, ", "))
     Questie:Print("[Server bridge] Updates this session: " .. snapshotCount .. " snapshots, " .. heartbeatCount .. " heartbeats")
+    local disabled = self:GetDisabledQuests()
+    if disabled then Questie:Print("[Server bridge] Disabled quests: " .. #disabled) end
     local poolQuests = self:GetPooledQuests(poolId)
     if not poolQuests then
         Questie:Print("[Server bridge] Quest pool selection unavailable.")
@@ -987,9 +1008,16 @@ function QuestieServer:Initialize()
         end
         local patrolEntry = Integer(command:match("^%s*patrol%s+(%d+)%s*$"), 4294967295)
         if patrolEntry and patrolEntry > 0 then self:PrintPatrolStatus(patrolEntry); return end
+        local questId = Integer(command:match("^%s*quest%s+(%d+)%s*$"), 4294967295)
+        if questId and questId > 0 then
+            local disabled = self:IsQuestDisabled(questId)
+            local status = disabled == nil and "unknown" or (disabled and "disabled" or "not disabled")
+            Questie:Print("[Server bridge] Quest " .. questId .. ": " .. status)
+            return
+        end
         local id = Integer(command:match("^%s*pool%s+(%d+)%s*$"), 4294967295)
         if id and id > 0 then self:PrintStatus(id); return end
-        Questie:Print("[Server bridge] Usage: /qserver, /qserver pool <pool ID>, /qserver wintergrasp, /qserver icc, /qserver resets, /qserver phases, /qserver patrol [NPC ID], /qserver xp, /qserver rep [faction ID], or /qserver money")
+        Questie:Print("[Server bridge] Usage: /qserver, /qserver quest <quest ID>, /qserver pool <pool ID>, /qserver wintergrasp, /qserver icc, /qserver resets, /qserver phases, /qserver patrol [NPC ID], /qserver xp, /qserver rep [faction ID], or /qserver money")
     end
     Request()
 end
