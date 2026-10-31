@@ -371,6 +371,17 @@ function QuestieServer:GetNPCQuestgiverUnitState(npcId, guid)
     return nil
 end
 
+function QuestieServer:HasNPCQuestgiverRestrictions(npcId)
+    if self:GetNPCQuestgiverState(npcId) == false then return true end
+    if giverContextPending or not self:HasCapability("QUESTGIVERS") then return false end
+    local player = QuestieLoader:ImportModule("QuestiePlayer")
+    if player:GetCurrentZoneId() ~= snapshot.giverZone then return false end
+    for _, unit in pairs(snapshot.giverUnits) do
+        if unit.entry == npcId and not unit.active then return true end
+    end
+    return false
+end
+
 function QuestieServer:GetUnavailableQuestgiverSpawns(npcId)
     if giverContextPending or not self:HasCapability("QUESTGIVERS") then return nil end
     local ids = {}

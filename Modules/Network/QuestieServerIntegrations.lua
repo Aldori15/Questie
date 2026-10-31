@@ -39,11 +39,14 @@ local function RefreshWintergraspSpawns()
 end
 
 local function RefreshQuestgivers()
+    local available = QuestieLoader:ImportModule("AvailableQuests")
+    local changed = Questie.started and available.PruneRestrictedQuestgiverObservations
+        and available.PruneRestrictedQuestgiverObservations() or false
     local key = Server:GetQuestgiverStateKey()
-    if key == previousQuestgiverStateKey then return false end
+    if key == previousQuestgiverStateKey then return changed end
     previousQuestgiverStateKey = key
     if Questie.started then
-        QuestieLoader:ImportModule("AvailableQuests").InvalidateQuestgiverAvailability()
+        available.InvalidateQuestgiverAvailability()
     end
     return true
 end

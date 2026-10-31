@@ -421,6 +421,7 @@ end
 ---@param npcId NpcId
 ---@param questIds QuestId[]
 function DailyQuestComms.BroadcastUnavailableDailyQuests(npcId, questIds)
+    if AvailableQuests.CanInferQuestAvailability and not AvailableQuests.CanInferQuestAvailability(npcId) then return end
     ---@type CommEvent
     local event = {
         eventName = "HideDailyQuests",

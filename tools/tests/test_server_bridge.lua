@@ -2776,4 +2776,198 @@ do
     tests = tests + 1
 end
 
+local function giverInferenceSetup(weekly)
+    local state = setup()
+    local env, mods = state.env, state.modules
+    env.Questie.db.global = {}
+    env._G = env
+    local guid = "0xF130000337000001"
+    local offered = 1
+    env.UnitGUID = function() return guid end
+    env.QuestieCompat.UnitGUID = function() return "Creature-0-1-0-0-823-000001" end
+    env.QuestieCompat.GetQuestID = function() return offered end
+    env.QuestieCompat.GetAvailableQuests, env.QuestieCompat.GetActiveQuests = function() end, function() end
+    env.strsplit = function(separator, value)
+        local fields = {}
+        for part in value:gmatch("[^" .. separator .. "]+") do fields[#fields + 1] = part end
+        return table.unpack(fields)
+    end
+    env.MAX_NUM_QUESTS = 0
+    local available, db, _, drawn, calculate = availabilitySetup(state, true)
+    local questId = weekly and 24579 or 101
+    local quest = {Id = questId, Starts = {NPC = {823, 824}}, requiredLevel = 80, level = 80, tagInfoWasCached = true}
+    local npcs = {
+        [823] = {id = 823, name = "Restricted", npcFlags = 2,
+            spawns = {[12] = {{10, 20, 0, 0, 0, 0, 0, 111}, {20, 30, 0, 0, 0, 0, 0, 112}}}},
+        [824] = {id = 824, name = "Alternative", npcFlags = 2, spawns = {[40] = {{50, 60}}}},
+    }
+    db.questData[questId] = true
+    db.GetQuest = function() return quest end
+    db.GetQuestStartInfo = db.GetQuest
+    db.GetNPC = function(_, id) return npcs[id] end
+    db.QueryNPCSingle = function(id, field) return npcs[id] and npcs[id][field] end
+    db.IsActiveEventQuest, db.HasAzerothCoreLocationCondition = function() return false end, function() return false end
+    db.IsAzerothCoreAvailabilityConditionFulfilledForSpawnZone = function() return true end
+    mods.QuestiePlayer.GetCurrentZoneId = function() return 12 end
+    mods.Phasing.IsSpawnDataVisible = function() return true end
+    mods.QuestieLib.GetSpawnDistance = function() return 100 end
+    env.Questie.db.profile.spawnFilterDistance = 28
+    local notes, broadcasts = {}, {}
+    mods.QuestieMap.DrawWorldIcon = function(_, data)
+        notes[#notes + 1] = data.StarterEntryId; drawn[data.Id] = true; return {}
+    end
+    mods.QuestieMap.UnloadQuestFrames = function(_, id) drawn[id], notes = nil, {} end
+    mods.QuestieTooltips.RegisterQuestStartTooltip = function() end
+    local file = assert(io.open("Modules/Network/DailyQuestComms/DailyQuestComms.lua", "r"))
+    local broadcast = assert(file:read("*a"):gsub("\r\n", "\n"):match(
+        "function DailyQuestComms.BroadcastUnavailableDailyQuests.-\nend"))
+    file:close()
+    env.FixtureAvailable, env.FixtureDaily = available, mods.DailyQuestComms
+    env.FixtureSerializer = {Serialize = function(_, event) return event end}
+    env.FixtureSend = function(event) broadcasts[#broadcasts + 1] = event end
+    assert(load("local AvailableQuests, DailyQuestComms = FixtureAvailable, FixtureDaily\n"
+        .. "local AceSerializer, _SendSerializedEventToAvailableChannels = FixtureSerializer, FixtureSend\n"
+        .. broadcast, "@daily-broadcast", "t", env))()
+    env.Questie.started = true
+    local function catalog(restricted, live)
+        local rows = {"P:QG_CONTEXT:0:12", "P:QGT_COUNT:" .. (restricted and 1 or 0)}
+        if restricted then rows[#rows + 1] = "N:823" end
+        for _, row in ipairs(live or {}) do rows[#rows + 1] = row end
+        state.reply(rows, "QUESTGIVERS,QUESTGIVERTEMPLATES,HEARTBEAT")
+        calculate()
+    end
+    return {state = state, env = env, available = available, questId = questId, calculate = calculate,
+        catalog = catalog, broadcasts = broadcasts, count = function() return #notes end,
+        raw = function(value) guid = value end, npcs = npcs,
+        offer = function()
+            offered = questId
+            env.QuestieCompat.GetAvailableQuests = function() return {questID = questId} end
+            env.MAX_NUM_QUESTS = 1
+            env.QuestTitleButton1 = {IsVisible = function() return true end, GetID = function() return 1 end}
+            env.GetAvailableTitle = function() return "Offered" end
+            db.GetQuestIDFromName = function() return questId end
+        end,
+        bucket = function() return env.Questie.db.global.unavailableQuestSyncState["Test realm"][weekly and "weekly" or "daily"] end,
+        incoming = {[weekly and "weekly" or "daily"] = {{npcId = 823, questIds = {questId}}}}}
+end
+
+for _, weekly in ipairs({false, true}) do
+    for _, method in ipairs({"ValidateAvailableQuestsFromGossipShow", "ValidateAvailableQuestsFromQuestDetail",
+        "ValidateAvailableQuestsFromQuestGreeting"}) do
+        local h = giverInferenceSetup(weekly)
+        h.catalog(true, {"G:823:111:0:F130000337000001"})
+        equal(h.count(), 1, "restricted entry preserves the alternative starter")
+        h.available[method]()
+        equal(h.available.IsUnavailableForCurrentReset(h.questId), false, method .. " cannot infer from a restricted giver")
+        equal(#h.broadcasts, 0, "invalid dialog observations are not broadcast")
+        equal(h.available.MergeUnavailableQuestSnapshot(h.incoming), false, "restricted peer snapshot rejected")
+        h.available.RemoveQuestsForToday(823, {h.questId})
+        h.state.modules.DailyQuestComms.BroadcastUnavailableDailyQuests(823, {h.questId})
+        equal(h.available.GetUnavailableQuestSnapshot(), nil, "restricted observations cannot be stored or exported")
+        equal(h.available.GetUnavailableQuestSnapshotDelta(), nil, "restricted observations cannot enter sync deltas")
+        equal(#h.broadcasts, 0, "direct broadcast also rejects an unsafe source")
+        h.catalog(false)
+        equal(h.count(), 3, "restoring functionality restores both NPCs")
+        h.catalog(true)
+        h.state.reply({"P:QG_CONTEXT:0:12"}, "QUESTGIVERS,HEARTBEAT"); h.calculate()
+        equal(h.count(), 3, "removing template capability restores static starters")
+        h.state.reply({}, "HEARTBEAT"); h.calculate()
+        equal(h.count(), 3, "capability removal does not resurrect a bad reset cache")
+
+        h = giverInferenceSetup(weekly)
+        h.calculate()
+        h.available[method]()
+        equal(h.available.IsUnavailableForCurrentReset(h.questId), true, "ordinary no-bridge gossip inference is preserved")
+        equal(#h.broadcasts, 1, "ordinary inference is still broadcast")
+        tests = tests + 1
+    end
+
+    local h = giverInferenceSetup(weekly)
+    h.calculate()
+    h.available.RemoveQuestsForToday(823, {h.questId})
+    equal(h.available.IsUnavailableForCurrentReset(h.questId), true, "legacy observation precondition")
+    h.catalog(true)
+    equal(h.bucket().byNpc[823], nil, "fresh restriction clears legacy observations only at that NPC")
+    equal(h.available.IsUnavailableForCurrentReset(h.questId), false, "legacy quest lookup is repaired")
+    equal(h.count(), 1, "legacy cache cleanup redraws the valid alternative")
+    local redraws = h.state.refreshes()
+    h.catalog(true)
+    equal(h.state.refreshes(), redraws, "unchanged restriction and clean cache do not redraw")
+    h.state.reply({}, "HEARTBEAT"); h.calculate()
+    equal(h.count(), 3, "capability removal retains the repaired cache")
+    equal(h.available.GetUnavailableQuestSnapshot(), nil, "repaired records are absent from saved sync data")
+
+    h = giverInferenceSetup(weekly)
+    h.calculate()
+    h.available.RemoveQuestsForToday(823, {h.questId})
+    h.available.RemoveQuestsForToday(824, {h.questId})
+    h.catalog(true)
+    equal(h.bucket().byNpc[823], nil, "restricted legacy source removed")
+    equal(h.bucket().byNpc[824][h.questId], true, "independent unrestricted source retained")
+    equal(h.available.IsUnavailableForCurrentReset(h.questId), true, "independent legitimate restriction remains effective")
+    equal(h.available.GetUnavailableQuestSnapshot()[weekly and "weekly" or "daily"][1].npcId, 824,
+        "only the unrestricted source is synchronized")
+    tests = tests + 1
+
+    for _, method in ipairs({"ValidateAvailableQuestsFromGossipShow", "ValidateAvailableQuestsFromQuestDetail",
+        "ValidateAvailableQuestsFromQuestGreeting"}) do
+        h = giverInferenceSetup(weekly)
+        h.catalog(true, {"G:823:111:1:F130000337000001", "G:823:111:0:F130000337000002"})
+        equal(h.state.server:GetNPCQuestgiverState(823, 12, 111, 0), true, "spawn marker keeps an observed positive copy")
+        equal(h.available.CanInferQuestAvailability(823), false, "entry-only peer data cannot resolve mixed runtime copies")
+        h.raw("0xF130000337000002"); h.available[method]()
+        equal(h.available.IsUnavailableForCurrentReset(h.questId), false, "negative runtime copy cannot infer")
+        h.raw("0xF130000337000001"); h.available[method]()
+        equal(h.available.IsUnavailableForCurrentReset(h.questId), true, "positive live override can infer normally")
+        equal(type(h.bucket().byNpc[823][h.questId]), "string", "positive observation retains its evidence")
+        equal(h.available.GetUnavailableQuestSnapshot(), nil, "ambiguous entry-only sync omits a local positive observation")
+        equal(#h.broadcasts, 0, "mixed spawn evidence is never flattened into an entry-only broadcast")
+        h.catalog(true, {"G:823:111:1:F130000337000001", "G:823:111:0:F130000337000002"})
+        equal(h.available.IsUnavailableForCurrentReset(h.questId), true, "cleanup preserves proven positive observations")
+        h.state.reply({}, "HEARTBEAT")
+        equal(h.available.IsUnavailableForCurrentReset(h.questId), true, "bridge removal preserves legitimate inference")
+        h.catalog(true, {"G:823:111:0:F130000337000002"})
+        h.raw("0xF130000337000002"); h.offer(); h.available[method]()
+        equal(h.available.IsUnavailableForCurrentReset(h.questId), false, "explicit offers still repair cache at a restricted giver")
+        equal(h.count(), 1, "explicit offer restores the alternative starter without trusting missing offers")
+        tests = tests + 1
+    end
+end
+
+do
+    local h = giverInferenceSetup(false)
+    h.state.env.Questie.started = false
+    h.env.Questie.db.global.unavailableQuestSyncState = {["Test realm"] = {
+        daily = {nextReset = 2000000000, byNpc = {[823] = {[h.questId] = true}}, byQuest = {[h.questId] = true}},
+    }}
+    h.catalog(true)
+    equal(h.available.IsUnavailableForCurrentReset(h.questId), false, "first saved-state load prunes restricted sources")
+    h.state.env.Questie.started = true
+    h.catalog(false, {"G:823:111:0:F130000337000001"})
+    h.available.ValidateAvailableQuestsFromGossipShow()
+    equal(h.available.IsUnavailableForCurrentReset(h.questId), false, "enabled template does not override a live negative")
+    h.state.advance(31); h.available.ValidateAvailableQuestsFromGossipShow()
+    equal(h.available.IsUnavailableForCurrentReset(h.questId), true, "expired authority restores ordinary inference")
+    h = giverInferenceSetup(false)
+    h.state.info("17", "MISMATCH"); h.calculate(); h.available.ValidateAvailableQuestsFromGossipShow()
+    equal(h.available.IsUnavailableForCurrentReset(h.questId), true, "protocol mismatch retains normal inference")
+    h = giverInferenceSetup(false)
+    h.npcs[823].npcFlags = 1
+    h.catalog(true)
+    h.available.ValidateAvailableQuestsFromGossipShow()
+    equal(h.available.IsUnavailableForCurrentReset(h.questId), true, "unknown scripted template preserves fallback")
+    h = giverInferenceSetup(false)
+    h.calculate()
+    h.available.RemoveQuestsForToday(823, {h.questId})
+    h.catalog(false, {"G:823:111:1:F130000337000001", "G:823:111:0:F130000337000002"})
+    equal(h.available.IsUnavailableForCurrentReset(h.questId), false, "a negative runtime copy invalidates unverified legacy data")
+    h.catalog(false, {"G:823:111:1:F130000337000001"})
+    h.available.RemoveQuestsForToday(823, {h.questId})
+    local redraws = h.state.refreshes()
+    h.catalog(false, {"G:823:111:1:F130000337000001", "G:823:111:0:F130000337000002"})
+    equal(h.available.IsUnavailableForCurrentReset(h.questId), false, "same marker key still cleans newly unsafe source observations")
+    assert(h.state.refreshes() > redraws, "cache cleanup refreshes markers even when merged spawn state is unchanged")
+    tests = tests + 1
+end
+
 print("Server bridge: " .. tests .. " regression groups passed")

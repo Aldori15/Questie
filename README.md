@@ -39,7 +39,10 @@ Phase filtering applies within your current subarea. Quest prerequisites and you
 Questgiver-template restrictions apply at every map zoom level. Live
 spawn observations take precedence locally. Templates already lacking Questie's static questgiver
 flag keep scripted fallback; remote script grants cannot be predicted until observed. Missing or
-oversized catalogs restore static behavior. The generated databases need no changes.
+oversized catalogs restore static behavior.
+Missing offers at a restricted NPC do not hide daily or weekly quests at other starters.
+Unverified cached observations from restricted NPCs are discarded; independent valid
+observations and observations backed by explicit live questgiver functionality are retained.
 
 Enable **Available Scourge Invasion Quests** or **Available Sun's Reach Quests** to show those quest sets.
 The bridge is optional. Missing, disabled, or expired server information restores Questie's usual behavior.

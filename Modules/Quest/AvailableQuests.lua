@@ -34,6 +34,7 @@ local QuestieIconVisibility = QuestieLoader:ImportModule("QuestieIconVisibility"
 
 local GetQuestGreenRange = GetQuestGreenRange
 local GetQuestID = QuestieCompat.GetQuestID
+local RawUnitGUID = UnitGUID
 local UnitGUID = QuestieCompat.UnitGUID
 local yield = coroutine.yield
 local tinsert = table.insert
@@ -120,6 +121,13 @@ end
 
 local function _ShouldTrackNpcAvailability(questId)
     return QuestieDB.IsDailyQuest(questId) or QuestieDB.IsWeeklyQuest(questId) or QuestieDB.IsMonthlyQuest(questId)
+end
+
+function AvailableQuests.CanInferQuestAvailability(npcId, unit)
+    local guid = unit and RawUnitGUID and RawUnitGUID(unit)
+    local state = QuestieServer.GetNPCQuestgiverUnitState and QuestieServer:GetNPCQuestgiverUnitState(npcId, guid)
+    if state ~= nil then return state, state and guid or nil end
+    return not (QuestieServer.HasNPCQuestgiverRestrictions and QuestieServer:HasNPCQuestgiverRestrictions(npcId))
 end
 
 local function _ShouldRegisterQuestStartTooltip(questId)
@@ -262,7 +270,33 @@ local function _RebuildUnavailableQuestLookup(syncState)
     end
 end
 
+local function _PruneRestrictedQuestgiverObservations(syncState)
+    local changed = false
+    for _, bucketName in ipairs({"daily", "weekly"}) do
+        local bucket = _EnsureUnavailableQuestSyncBucket(syncState, bucketName)
+        local bucketChanged = false
+        for npcId, quests in pairs(bucket.byNpc) do
+            if not AvailableQuests.CanInferQuestAvailability(npcId) then
+                for questId, evidence in pairs(quests) do
+                    -- A GUID records an explicit live positive at observation time.
+                    if type(evidence) ~= "string" then quests[questId], bucketChanged = nil, true end
+                end
+                if not next(quests) then bucket.byNpc[npcId] = nil end
+            end
+        end
+        if bucketChanged then
+            bucket.byQuest = {}
+            for _, quests in pairs(bucket.byNpc) do
+                for questId in pairs(quests) do bucket.byQuest[questId] = true end
+            end
+            changed = true
+        end
+    end
+    return changed
+end
+
 local function _GetUnavailableQuestSyncState()
+    local previousState = unavailableQuestSyncState
     local syncState
     if (not Questie.db) or (not Questie.db.global) then
         unavailableQuestSyncState = unavailableQuestSyncState or {}
@@ -282,12 +316,21 @@ local function _GetUnavailableQuestSyncState()
     local currentTimestamp = _GetCurrentServerTimestamp()
     local dailyReset = _ResetUnavailableQuestBucketIfNeeded(_EnsureUnavailableQuestSyncBucket(syncState, "daily"), _CalculateNextDailyResetTimestamp, currentTimestamp)
     local weeklyReset = _ResetUnavailableQuestBucketIfNeeded(_EnsureUnavailableQuestSyncBucket(syncState, "weekly"), _CalculateNextWeeklyResetTimestamp, currentTimestamp)
-    if unavailableQuestLookupDirty or dailyReset or weeklyReset then
+    local pruned = syncState ~= previousState and _PruneRestrictedQuestgiverObservations(syncState)
+    if unavailableQuestLookupDirty or dailyReset or weeklyReset or pruned then
         _RebuildUnavailableQuestLookup(syncState)
         unavailableQuestLookupDirty = false
     end
 
     return syncState
+end
+
+function AvailableQuests.PruneRestrictedQuestgiverObservations()
+    local syncState = _GetUnavailableQuestSyncState()
+    if not _PruneRestrictedQuestgiverObservations(syncState) then return false end
+    _RebuildUnavailableQuestLookup(syncState)
+    lastNpcGuid = nil
+    return true
 end
 
 ---@return table<number, boolean>
@@ -344,7 +387,7 @@ local function _IsQuestStillTrackedAsUnavailable(bucket, questId)
     return false
 end
 
-local function _StoreUnavailableQuestForToday(npcId, questId)
+local function _StoreUnavailableQuestForToday(npcId, questId, evidence)
     local syncState = _GetUnavailableQuestSyncState()
     local bucket = _GetUnavailableQuestBucketForQuest(syncState, questId)
     if not bucket then
@@ -353,7 +396,7 @@ local function _StoreUnavailableQuestForToday(npcId, questId)
 
     bucket.byNpc[npcId] = bucket.byNpc[npcId] or {}
     local wasNew = not bucket.byNpc[npcId][questId]
-    bucket.byNpc[npcId][questId] = true
+    bucket.byNpc[npcId][questId] = evidence or bucket.byNpc[npcId][questId] or true
     bucket.byQuest[questId] = true
     unavailableQuestsDeterminedByTalking[questId] = true
     unavailableQuestLookupDirty = false
@@ -479,6 +522,7 @@ function AvailableQuests.InvalidateSpawnVisibility()
 end
 
 function AvailableQuests.InvalidateQuestgiverAvailability()
+    lastNpcGuid = nil
     for _, quests in ipairs({availableQuests, nextAvailableQuests}) do
         for questId in pairs(quests) do
             local quest = QuestieDB.GetQuestStartInfo(questId)
@@ -807,6 +851,7 @@ function AvailableQuests.DrawAvailableQuest(quest) -- prevent recursion
 
             if npc then
                 if trackNpcAvailability then
+                    -- Keep possible starters; the actual dialog's live state gates absence inference.
                     if (not availableQuestsByNpc[npc.id]) then
                         availableQuestsByNpc[npc.id] = {}
                     end
@@ -875,7 +920,9 @@ end
 
 ---@param npcId NpcId
 ---@param questIds QuestId[]
-function AvailableQuests.RemoveQuestsForToday(npcId, questIds)
+function AvailableQuests.RemoveQuestsForToday(npcId, questIds, unit)
+    local allowed, evidence = AvailableQuests.CanInferQuestAvailability(npcId, unit)
+    if not allowed then return end
     _GetUnavailableQuestsDeterminedByTalking()
 
     local removedAnyQuest = false
@@ -889,7 +936,7 @@ function AvailableQuests.RemoveQuestsForToday(npcId, questIds)
             if availableQuestsByNpc[npcId] then
                 availableQuestsByNpc[npcId][questId] = nil
             end
-            _StoreUnavailableQuestForToday(npcId, questId)
+            _StoreUnavailableQuestForToday(npcId, questId, evidence)
         end
     end
 
@@ -902,8 +949,8 @@ local function _BuildUnavailableQuestSnapshotEntries(bucket)
     local snapshotEntries = {}
     for npcId, questIdsByNpc in pairs(bucket.byNpc) do
         local questIds = {}
-        for questId in pairs(questIdsByNpc) do
-            tinsert(questIds, questId)
+        if AvailableQuests.CanInferQuestAvailability(npcId) then
+            for questId in pairs(questIdsByNpc) do tinsert(questIds, questId) end
         end
 
         if next(questIds) then
@@ -918,6 +965,7 @@ local function _BuildUnavailableQuestSnapshotEntries(bucket)
 end
 
 function AvailableQuests.GetUnavailableQuestSnapshot()
+    AvailableQuests.PruneRestrictedQuestgiverObservations()
     local syncState = _GetUnavailableQuestSyncState()
     local snapshot = {
         daily = _BuildUnavailableQuestSnapshotEntries(syncState.daily),
@@ -946,6 +994,7 @@ end
 ---@param knownSnapshot UnavailableQuestSnapshot|nil
 ---@return UnavailableQuestSnapshot|nil
 function AvailableQuests.GetUnavailableQuestSnapshotDelta(knownSnapshot)
+    AvailableQuests.PruneRestrictedQuestgiverObservations()
     local syncState = _GetUnavailableQuestSyncState()
     local delta = {daily = {}, weekly = {}}
     local hasDelta = false
@@ -957,9 +1006,9 @@ function AvailableQuests.GetUnavailableQuestSnapshotDelta(knownSnapshot)
         for npcId, questIdsByNpc in pairs(bucket.byNpc) do
             local missingQuestIds = {}
             local knownQuestIds = knownByNpc[npcId] or {}
-            for questId in pairs(questIdsByNpc) do
-                if not knownQuestIds[questId] then
-                    tinsert(missingQuestIds, questId)
+            if AvailableQuests.CanInferQuestAvailability(npcId) then
+                for questId in pairs(questIdsByNpc) do
+                    if not knownQuestIds[questId] then tinsert(missingQuestIds, questId) end
                 end
             end
 
@@ -988,7 +1037,7 @@ function AvailableQuests.MergeUnavailableQuestSnapshot(snapshot)
             for _, entry in pairs(bucketEntries) do
                 local npcId = entry.npcId
                 local questIds = entry.questIds
-                if npcId and type(questIds) == "table" then
+                if npcId and type(questIds) == "table" and AvailableQuests.CanInferQuestAvailability(npcId) then
                     local newQuestIds = {}
                     for _, questId in pairs(questIds) do
                         local syncState = _GetUnavailableQuestSyncState()
@@ -1042,9 +1091,10 @@ local function _GetDialogNPC(unit)
     local guid = UnitGUID(unit)
     if not guid then return end
     local kind, _, _, _, _, npcId = strsplit("-", guid)
-    if kind == "Creature" or kind == "Vehicle" then return guid, tonumber(npcId) end
+    local identity = (RawUnitGUID and RawUnitGUID(unit)) or guid
+    if kind == "Creature" or kind == "Vehicle" then return guid, tonumber(npcId), identity end
     -- Keep readable object GUIDs for Wrath's title-based quest lookup.
-    return guid
+    return guid, nil, identity
 end
 
 local function _RestoreOfferedQuest(questId)
@@ -1073,8 +1123,8 @@ end
 function AvailableQuests.ValidateAvailableQuestsFromGossipShow()
     _GetUnavailableQuestsDeterminedByTalking()
 
-    local npcGuid, npcId = _GetDialogNPC("npc")
-    if npcGuid and lastNpcGuid == npcGuid then
+    local npcGuid, npcId, identity = _GetDialogNPC("npc")
+    if identity and lastNpcGuid == identity then
         return
     end
 
@@ -1086,8 +1136,8 @@ function AvailableQuests.ValidateAvailableQuestsFromGossipShow()
     end
 
     -- Only an identified NPC's offer list can prove that its other quests are absent.
-    if not npcId then return end
-    lastNpcGuid = npcGuid
+    if not npcId or not AvailableQuests.CanInferQuestAvailability(npcId, "npc") then return end
+    lastNpcGuid = identity
 
     -- Active quests are relevant, because the API can fire GOSSIP_SHOW before QUEST_ACCEPTED.
     -- So we need to check active quests to not hide them incorrectly for the day.
@@ -1114,7 +1164,7 @@ function AvailableQuests.ValidateAvailableQuestsFromGossipShow()
     end
 
     if next(unavailableQuestsToBroadcast) then
-        AvailableQuests.RemoveQuestsForToday(npcId, unavailableQuestsToBroadcast)
+        AvailableQuests.RemoveQuestsForToday(npcId, unavailableQuestsToBroadcast, "npc")
         DailyQuestComms.BroadcastUnavailableDailyQuests(npcId, unavailableQuestsToBroadcast)
     end
 end
@@ -1124,8 +1174,8 @@ end
 function AvailableQuests.ValidateAvailableQuestsFromQuestDetail()
     _GetUnavailableQuestsDeterminedByTalking()
 
-    local npcGuid, npcId = _GetDialogNPC("questnpc")
-    if npcGuid and lastNpcGuid == npcGuid then
+    local npcGuid, npcId, identity = _GetDialogNPC("questnpc")
+    if identity and lastNpcGuid == identity then
         return
     end
 
@@ -1138,8 +1188,8 @@ function AvailableQuests.ValidateAvailableQuestsFromQuestDetail()
 
     -- validate quest is not incorrectly hidden
     _RestoreOfferedQuest(availableQuestId)
-    if not npcId then return end
-    lastNpcGuid = npcGuid
+    if not npcId or not AvailableQuests.CanInferQuestAvailability(npcId, "questnpc") then return end
+    lastNpcGuid = identity
 
     local unavailableQuestsToBroadcast = {}
     for questId in pairs(availableQuestsByNpc[npcId] or {}) do
@@ -1149,7 +1199,7 @@ function AvailableQuests.ValidateAvailableQuestsFromQuestDetail()
     end
 
     if next(unavailableQuestsToBroadcast) then
-        AvailableQuests.RemoveQuestsForToday(npcId, unavailableQuestsToBroadcast)
+        AvailableQuests.RemoveQuestsForToday(npcId, unavailableQuestsToBroadcast, "questnpc")
         DailyQuestComms.BroadcastUnavailableDailyQuests(npcId, unavailableQuestsToBroadcast)
     end
 end
@@ -1159,8 +1209,8 @@ end
 function AvailableQuests.ValidateAvailableQuestsFromQuestGreeting()
     _GetUnavailableQuestsDeterminedByTalking()
 
-    local npcGuid, npcId = _GetDialogNPC("npc")
-    if npcGuid and lastNpcGuid == npcGuid then
+    local npcGuid, npcId, identity = _GetDialogNPC("npc")
+    if identity and lastNpcGuid == identity then
         return
     end
 
@@ -1197,10 +1247,10 @@ function AvailableQuests.ValidateAvailableQuestsFromQuestGreeting()
         _RestoreOfferedQuest(questId)
     end
 
-    if not npcId or unresolvedQuestInGreeting then
+    if not npcId or unresolvedQuestInGreeting or not AvailableQuests.CanInferQuestAvailability(npcId, "npc") then
         return
     end
-    lastNpcGuid = npcGuid
+    lastNpcGuid = identity
 
     local unavailableQuestsToBroadcast = {}
     for questId in pairs(availableQuestsByNpc[npcId] or {}) do
@@ -1210,7 +1260,7 @@ function AvailableQuests.ValidateAvailableQuestsFromQuestGreeting()
     end
 
     if next(unavailableQuestsToBroadcast) then
-        AvailableQuests.RemoveQuestsForToday(npcId, unavailableQuestsToBroadcast)
+        AvailableQuests.RemoveQuestsForToday(npcId, unavailableQuestsToBroadcast, "npc")
         DailyQuestComms.BroadcastUnavailableDailyQuests(npcId, unavailableQuestsToBroadcast)
     end
 end
