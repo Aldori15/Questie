@@ -8,6 +8,7 @@ local l10n = QuestieLoader:ImportModule("l10n")
 local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 
 --- COMPATIBILITY ---
+local RawUnitGUID = UnitGUID
 local UnitGUID = QuestieCompat.UnitGUID
 
 local strfind = string.find
@@ -67,8 +68,10 @@ function _QuestieTooltips:AddUnitDataToTooltip()
     local name, unitToken = self:GetUnit();
     if not unitToken then return end
     local guid = UnitGUID(unitToken);
+    local rawGuid = RawUnitGUID(unitToken)
     if (not guid) then
         guid = UnitGUID("mouseover");
+        rawGuid = RawUnitGUID("mouseover")
     end
 
     local type, _, _, _, _, npcId, _ = strsplit("-", guid or "");
@@ -78,14 +81,17 @@ function _QuestieTooltips:AddUnitDataToTooltip()
         (not QuestieTooltips.lastGametooltipCount) or
         _QuestieTooltips:CountTooltip() < QuestieTooltips.lastGametooltipCount or
         QuestieTooltips.lastGametooltipType ~= "monster" or
-        lastGuid ~= guid
+        lastGuid ~= rawGuid
     ) then
         QuestieTooltips.lastGametooltipUnit = name
         if Questie.db.profile.enableTooltipsNPCID then
             GameTooltip:AddDoubleLine(l10n("NPC ID"), "|cFFFFFFFF" .. npcId .. "|r")
         end
 
-        local tooltipData = QuestieTooltips:GetTooltip("m_" .. npcId);
+        local server = QuestieLoader:ImportModule("QuestieServer")
+        local starterState = server.GetNPCQuestgiverUnitState
+            and server:GetNPCQuestgiverUnitState(tonumber(npcId), rawGuid)
+        local tooltipData = QuestieTooltips:GetTooltip("m_" .. npcId, nil, starterState);
         if tooltipData then
             GameTooltip:AddLine(" ")
             for _, v in pairs (tooltipData) do
@@ -95,7 +101,7 @@ function _QuestieTooltips:AddUnitDataToTooltip()
         end
         QuestieTooltips.lastGametooltipCount = _QuestieTooltips:CountTooltip()
     end
-    lastGuid = guid;
+    lastGuid = rawGuid;
     QuestieTooltips.lastGametooltipType = "monster";
 end
 

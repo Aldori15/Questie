@@ -19,6 +19,8 @@ server to let Questie follow live server state:
 
 - Holidays, fishing tournaments, Scourge Invasion, and Isle of Quel'Danas unlocks.
 - Selected daily/weekly quest pools, ICC weekly quests, and Wintergrasp control.
+- Explicitly disabled quests and global NPC questgiver-template restrictions on remote maps.
+- Local live questgiver observations that override template restrictions for matching spawns.
 - Weekly/monthly quest resets and live XP, reputation, and money rates.
 - Moving questgiver markers in your current zone, including Orgrim's Hammer and the Skybreaker.
 - Phase-dependent locations in supported story areas, including Icecrown, Storm Peaks, and the death knight start.
@@ -27,12 +29,17 @@ server to let Questie follow live server state:
 See the [module setup instructions](https://github.com/Aldori15/mod-questie-bridge#installation).
 Install matching addon and module builds, then log in or `/reload`. Run `/qserver` to check the connection;
 `/qserver xp`, `/qserver rep [faction ID]`, and `/qserver money` show reward rates.
+`/qserver giver <NPC ID>` reports the global template restriction and unavailable local spawns.
 The module README lists the other diagnostic commands.
 
 Server rate changes appear within a few seconds; rehover or reopen the reward display to refresh it.
 Rewards are estimates: server rounding, caps, or custom rules can affect the final amount awarded.
 Moving markers work in your current zone; other zones keep their static locations and patrol lines.
 Phase filtering applies within your current subarea. Quest prerequisites and your visibility settings still apply.
+Questgiver-template restrictions apply at every map zoom level. Live
+spawn observations take precedence locally. Templates already lacking Questie's static questgiver
+flag keep scripted fallback; remote script grants cannot be predicted until observed. Missing or
+oversized catalogs restore static behavior. The generated databases need no changes.
 
 Enable **Available Scourge Invasion Quests** or **Available Sun's Reach Quests** to show those quest sets.
 The bridge is optional. Missing, disabled, or expired server information restores Questie's usual behavior.

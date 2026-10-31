@@ -428,7 +428,8 @@ end
 
 ---@param key string
 ---@param playerZone number? @Only used for object tooltips. 0 disables the zone filter.
-function QuestieTooltips:GetTooltip(key, playerZone)
+---@param npcStarterState boolean? @Explicit live unit state; false suppresses only NPC starter lines.
+function QuestieTooltips:GetTooltip(key, playerZone, npcStarterState)
     Questie.Debug(Questie.DEBUG_SPAM, "[QuestieTooltips:GetTooltip]", key)
     if (not key) then
         return nil
@@ -478,6 +479,13 @@ function QuestieTooltips:GetTooltip(key, playerZone)
         tooltipLines = {}
         local playerName = UnitName("player")
         local sortedTooltipEntries = _GetSortedTooltipEntries(QuestieTooltips.lookupByKey[key])
+        if npcStarterState == false then
+            local filtered = {}
+            for _, entry in ipairs(sortedTooltipEntries) do
+                if entry.tooltip.type ~= "NPC" then filtered[#filtered + 1] = entry end
+            end
+            sortedTooltipEntries = filtered
+        end
 
         local finishedAndUnacceptedQuests = {}
         if Questie.db.profile.showQuestsInNpcTooltip then

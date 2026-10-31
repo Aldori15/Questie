@@ -92,7 +92,7 @@ local function setup()
     end
     local function info(protocol, status, version, revision)
         local token = messages[#messages].payload:match("^[^~]+~%d+~([^~]+)~")
-        receive("INFO~1~" .. token .. "~" .. (protocol or "17") .. "~" .. (version or "0.1.0")
+        receive("INFO~1~" .. token .. "~" .. (protocol or "18") .. "~" .. (version or "0.1.0")
             .. "~" .. (revision or "abc1234") .. "~" .. (status or "READY"))
     end
     return {
@@ -108,7 +108,7 @@ local function setup()
     }
 end
 
-local function availabilitySetup(s)
+local function availabilitySetup(s, drawStarters)
     local env, modules = s.env, s.modules
     local drawn, scheduled, queries = {}, {}, {}
     env.time, env.date = os.time, os.date
@@ -188,7 +188,7 @@ local function availabilitySetup(s)
     }
     assert(loadfile("Modules/Quest/AvailableQuests.lua", "t", env))()
     local available = modules.AvailableQuests
-    available.DrawAvailableQuest = function(quest) drawn[quest.Id] = true end
+    if not drawStarters then available.DrawAvailableQuest = function(quest) drawn[quest.Id] = true end end
     local function calculate()
         available.CalculateAndDrawAll()
         while #scheduled > 0 do
@@ -210,7 +210,7 @@ local function gates(s, first, second)
 end
 
 local s = setup()
-equal(s.messages[1].payload:sub(1, 9), "WATCH~17~", "heartbeat protocol discovery")
+equal(s.messages[1].payload:sub(1, 9), "WATCH~18~", "heartbeat protocol discovery")
 gates(s, nil, nil)
 s.snapshot(true, "0")
 equal(s.server:HasCapability("KALUAK"), true, "Kalu'ak capability")
@@ -249,7 +249,7 @@ s.advance(31)
 equal(s.server:IsKaluakDerbyFinished(), nil, "expired AI state")
 gates(s, nil, nil)
 s.advance(5)
-equal(s.messages[#s.messages].payload:sub(1, 9), "WATCH~17~", "fixed protocol survives an outage")
+equal(s.messages[#s.messages].payload:sub(1, 9), "WATCH~18~", "fixed protocol survives an outage")
 tests = tests + 1
 
 s = setup()
@@ -270,7 +270,7 @@ gates(s, true, false)
 tests = tests + 1
 
 s = setup()
-for _, version in ipairs({"2", "3", "4", "5", "9", "12", "13", "14", "15", "16"}) do
+for _, version in ipairs({"2", "3", "4", "5", "9", "12", "13", "14", "15", "16", "17"}) do
     s.reply({"E:63:0:0:1", "P:KA_FINISHED:1"}, "EVENTS,KALUAK", nil, version)
     equal(s.server:HasCapability("EVENTS"), false, "unsupported protocol rejected")
     gates(s, nil, nil)
@@ -278,7 +278,7 @@ end
 s.advance(5)
 equal(#s.messages, 1, "timeout does not downgrade")
 s.advance(55)
-equal(s.messages[2].payload:sub(1, 9), "WATCH~17~", "retry retains current protocol")
+equal(s.messages[2].payload:sub(1, 9), "WATCH~18~", "retry retains current protocol")
 s.snapshot(true, "1", true)
 gates(s, false, true)
 tests = tests + 1
@@ -295,7 +295,7 @@ tests = tests + 1
 -- Idle renewal preserves the snapshot/token and avoids availability refreshes.
 s = setup()
 local firstSnapshot = s.snapshot(true, "0", true)
-local firstToken = s.messages[1].payload:match("^WATCH~17~([^~]+)~")
+local firstToken = s.messages[1].payload:match("^WATCH~18~([^~]+)~")
 local refreshes = s.refreshes()
 for _ = 1, 9 do
     s.advance(10)
@@ -304,7 +304,7 @@ for _ = 1, 9 do
     gates(s, true, false)
 end
 for index = 2, #s.messages do
-    equal(s.messages[index].payload, "ACK~17~" .. firstToken .. "~" .. firstSnapshot, "lightweight lease renewal")
+    equal(s.messages[index].payload, "ACK~18~" .. firstToken .. "~" .. firstSnapshot, "lightweight lease renewal")
 end
 equal(s.refreshes(), refreshes, "heartbeats do not refresh quest icons")
 s.server:PrintStatus()
@@ -315,7 +315,7 @@ tests = tests + 1
 local changedSnapshot = s.snapshot(true, "1", true)
 gates(s, false, true)
 s.advance(10)
-equal(s.messages[#s.messages].payload, "ACK~17~" .. firstToken .. "~" .. changedSnapshot, "acknowledge latest state")
+equal(s.messages[#s.messages].payload, "ACK~18~" .. firstToken .. "~" .. changedSnapshot, "acknowledge latest state")
 s.heartbeat()
 gates(s, false, true)
 tests = tests + 1
@@ -327,7 +327,7 @@ local originalRequest = s.messages[1].payload
 s.advance(10)
 s.heartbeat(999)
 s.advance(1)
-equal(s.messages[#s.messages].payload:sub(1, 9), "WATCH~17~", "missed snapshot resync")
+equal(s.messages[#s.messages].payload:sub(1, 9), "WATCH~18~", "missed snapshot resync")
 assert(s.messages[#s.messages].payload ~= originalRequest, "resync must rotate the token")
 s.snapshot(true, "1", true)
 gates(s, false, true)
@@ -337,12 +337,12 @@ tests = tests + 1
 s = setup()
 s.snapshot(true, "0", true)
 s.advance(10)
-local token = s.messages[1].payload:match("^WATCH~17~([^~]+)~")
-s.receive("ALIVE~17~" .. token .. "~2~1", "Imposter")
+local token = s.messages[1].payload:match("^WATCH~18~([^~]+)~")
+s.receive("ALIVE~18~" .. token .. "~2~1", "Imposter")
 s.receive("ALIVE~3~" .. token .. "~2~1")
-s.receive("ALIVE~17~wrongtoken~2~1")
-s.receive("ALIVE~17~" .. token .. "~2~bad")
-s.receive("ALIVE~17~" .. token .. "~2~1~extra")
+s.receive("ALIVE~18~wrongtoken~2~1")
+s.receive("ALIVE~18~" .. token .. "~2~bad")
+s.receive("ALIVE~18~" .. token .. "~2~1~extra")
 s.server:PrintStatus()
 assert(printed(s, "[Server bridge] Live state"):find("Live state %(10s%)"), "invalid heartbeats must not refresh age")
 local validHeartbeat = s.heartbeat()
@@ -358,7 +358,7 @@ tests = tests + 1
 
 -- An expired or missing snapshot cannot be created/revived by ALIVE alone.
 s = setup()
-s.receive("ALIVE~17~" .. s.messages[1].payload:match("^WATCH~17~([^~]+)~") .. "~1~1")
+s.receive("ALIVE~18~" .. s.messages[1].payload:match("^WATCH~18~([^~]+)~") .. "~1~1")
 equal(s.server:HasCapability("HEARTBEAT"), false, "heartbeat before snapshot ignored")
 s.snapshot(true, "0", true)
 s.elapse(31)
@@ -383,7 +383,7 @@ for _, dropped in ipairs({1, "END"}) do
     s.advance(6)
     s.heartbeat()
     s.advance(1)
-    equal(s.messages[#s.messages].payload:sub(1, 9), "WATCH~17~", "incomplete snapshot recovery")
+    equal(s.messages[#s.messages].payload:sub(1, 9), "WATCH~18~", "incomplete snapshot recovery")
     s.snapshot(true, "1", true)
     gates(s, false, true)
 end
@@ -393,9 +393,9 @@ tests = tests + 1
 s = setup()
 s.snapshot(true, "0", true)
 s.advance(20)
-equal(s.messages[#s.messages].payload:sub(1, 7), "ACK~17~", "renewal request")
+equal(s.messages[#s.messages].payload:sub(1, 7), "ACK~18~", "renewal request")
 s.advance(5)
-equal(s.messages[#s.messages].payload:sub(1, 9), "WATCH~17~", "renewal timeout recovery")
+equal(s.messages[#s.messages].payload:sub(1, 9), "WATCH~18~", "renewal timeout recovery")
 s.snapshot(true, "1", true)
 gates(s, false, true)
 tests = tests + 1
@@ -406,7 +406,7 @@ s.snapshot(true, "0", true)
 s.advance(10)
 s.server:WatchWorldState(999)
 s.advance(0)
-assert(s.messages[#s.messages].payload:match("^WATCH~17~[^~]+~198,999$"), "changed subscriptions require WATCH")
+assert(s.messages[#s.messages].payload:match("^WATCH~18~[^~]+~198,999$"), "changed subscriptions require WATCH")
 s.reply({"W:198:0", "W:999:123"}, "VALUES,HEARTBEAT")
 equal(s.server:GetWorldState(999), 123, "new subscription value")
 tests = tests + 1
@@ -418,12 +418,12 @@ equal(s.server:HasCapability("KALUAK"), true, "independent capability state")
 s.heartbeat()
 equal(s.server:HasCapability("HEARTBEAT"), false, "unadvertised keepalive ignored")
 s.advance(20)
-equal(s.messages[#s.messages].payload:sub(1, 9), "WATCH~17~", "missing capability retains current protocol")
+equal(s.messages[#s.messages].payload:sub(1, 9), "WATCH~18~", "missing capability retains current protocol")
 s = setup()
 s.advance(5)
 s.advance(55)
 for _, message in ipairs(s.messages) do
-    assert(message.payload:match("^WATCH~17~"), "no module must not renew or downgrade")
+    assert(message.payload:match("^WATCH~18~"), "no module must not renew or downgrade")
 end
 gates(s, nil, nil)
 tests = tests + 1
@@ -434,8 +434,8 @@ s.info()
 equal(s.server:HasCapability("EVENTS"), false, "metadata does not create live state")
 gates(s, nil, nil)
 s.server:PrintStatus()
-equal(s.prints[1], "[Server bridge] Client: Questie 9.9.4-335; protocol 17", "client version diagnostic")
-equal(s.prints[2], "[Server bridge] Server: mod-questie-bridge 0.1.0; protocol 17; AC revision abc1234 (last handshake 0s ago)", "server build diagnostic")
+equal(s.prints[1], "[Server bridge] Client: Questie 9.9.4-335; protocol 18", "client version diagnostic")
+equal(s.prints[2], "[Server bridge] Server: mod-questie-bridge 0.1.0; protocol 18; AC revision abc1234 (last handshake 0s ago)", "server build diagnostic")
 assert(printed(s, "[Server bridge] Waiting"), "metadata still awaits a complete snapshot")
 s.snapshot(true, "0", true)
 s.advance(10)
@@ -448,12 +448,12 @@ tests = tests + 1
 s = setup()
 s.info("99", "MISMATCH", "0.2.0", "def5678")
 s.server:PrintStatus()
-assert(printed(s, "[Server bridge] Last handshake:"):find("client requires 17, server provides 99", 1, true), "mismatch diagnostic")
+assert(printed(s, "[Server bridge] Last handshake:"):find("client requires 18, server provides 99", 1, true), "mismatch diagnostic")
 equal(s.server:HasCapability("EVENTS"), false, "mismatched connection has no state")
 s.reply({"E:63:0:0:1", "P:KA_FINISHED:1"}, "EVENTS,KALUAK", nil, "99")
 gates(s, nil, nil)
 s.advance(60)
-equal(s.messages[#s.messages].payload:sub(1, 9), "WATCH~17~", "mismatch does not downgrade")
+equal(s.messages[#s.messages].payload:sub(1, 9), "WATCH~18~", "mismatch does not downgrade")
 s.info()
 s.snapshot(true, "1", true)
 gates(s, false, true)
@@ -461,7 +461,7 @@ tests = tests + 1
 
 -- Disabled is distinguishable from a server that never answered.
 s = setup()
-s.info("17", "DISABLED")
+s.info("18", "DISABLED")
 s.server:PrintStatus()
 assert(printed(s, "[Server bridge] Last handshake:"):find("disabled", 1, true), "disabled diagnostic")
 gates(s, nil, nil)
@@ -473,21 +473,21 @@ tests = tests + 1
 
 -- Sender/channel/token checks, bounds and status consistency protect diagnostics.
 s = setup()
-token = s.messages[1].payload:match("^WATCH~17~([^~]+)~")
-local metadata = "INFO~1~" .. token .. "~17~0.1.0~abc1234~READY"
+token = s.messages[1].payload:match("^WATCH~18~([^~]+)~")
+local metadata = "INFO~1~" .. token .. "~18~0.1.0~abc1234~READY"
 s.receive(metadata, "Imposter")
 s.receive(metadata, "Tester", "PARTY")
-s.receive("INFO~1~wrongtoken~17~0.1.0~abc1234~READY")
-s.receive("INFO~2~" .. token .. "~17~0.1.0~abc1234~READY")
+s.receive("INFO~1~wrongtoken~18~0.1.0~abc1234~READY")
+s.receive("INFO~2~" .. token .. "~18~0.1.0~abc1234~READY")
 s.info("0", "READY")
 s.info("06", "READY")
 s.info("65536", "MISMATCH")
-s.info("17", "MISMATCH")
+s.info("18", "MISMATCH")
 s.info("99", "READY")
 s.info("99", "DISABLED")
-s.info("17", "INVALID")
-s.info("17", "READY", "bad|version")
-s.info("17", "READY", "0.1.0", string.rep("a", 65))
+s.info("18", "INVALID")
+s.info("18", "READY", "bad|version")
+s.info("18", "READY", "0.1.0", string.rep("a", 65))
 s.server:PrintStatus()
 equal(printed(s, "[Server bridge] Server version"), "[Server bridge] Server version information unavailable.", "invalid metadata rejected")
 s.advance(5)
@@ -502,9 +502,9 @@ s = setup()
 s.info()
 s.info("99", "MISMATCH", "9.0.0")
 s.snapshot(true, "0", true)
-s.info("17", "DISABLED")
+s.info("18", "DISABLED")
 s.server:PrintStatus()
-assert(printed(s, "[Server bridge] Server:"):find("0.1.0; protocol 17", 1, true), "first metadata retained")
+assert(printed(s, "[Server bridge] Server:"):find("0.1.0; protocol 18", 1, true), "first metadata retained")
 gates(s, true, false)
 s.advance(20)
 s.info("99", "MISMATCH")
@@ -684,7 +684,7 @@ equal(s.server:IsPooledQuestActive(13830), true, "partial rotation never applied
 s.advance(6)
 s.heartbeat()
 s.advance(1)
-assert(s.messages[#s.messages].payload:match("^WATCH~17~"), "missed rotation requests snapshot")
+assert(s.messages[#s.messages].payload:match("^WATCH~18~"), "missed rotation requests snapshot")
 s.reply({"Q:13830:5676:0", "Q:13832:5676:1"}, "QUESTPOOLS,HEARTBEAT")
 equal(s.server:IsPooledQuestActive(13832), true, "rotation recovered")
 tests = tests + 1
@@ -813,7 +813,7 @@ equal(s.server:GetQuestAvailabilityState(13177), true, "old complete gates retai
 s.advance(6)
 s.heartbeat()
 s.advance(1)
-assert(s.messages[#s.messages].payload:match("^WATCH~17~"), "missed control change requests a complete snapshot")
+assert(s.messages[#s.messages].payload:match("^WATCH~18~"), "missed control change requests a complete snapshot")
 s.reply({"P:WG_STATE:1:0:1", "R:13177:0", "R:13179:1"}, "WINTERGRASP,HEARTBEAT")
 equal(s.server:GetWintergraspState().defender, 1, "control change recovered")
 equal(s.server:GetQuestAvailabilityState(13179), true, "replacement gates applied")
@@ -1524,7 +1524,7 @@ do
     local rows = iccRows(100, 0, 24869, false, 0)
     rows[#rows + 1] = "E:61:0:0:0"
     s.reply(rows, "ICC,EVENTS,HEARTBEAT")
-    local oldToken = s.messages[#s.messages].payload:match("^WATCH~17~([^~]+)~")
+    local oldToken = s.messages[#s.messages].payload:match("^WATCH~18~([^~]+)~")
     local oldHeartbeat = s.heartbeat()
     s.event("PLAYER_ENTERING_WORLD")
     equal(s.server:IsICCQuestActive(24869), nil, "travel clears old instance gate immediately")
@@ -1533,11 +1533,11 @@ do
     s.receive(oldHeartbeat)
     equal(s.server:GetICCState(), nil, "old heartbeat cannot restore raid context")
     s.advance(2)
-    local newToken = s.messages[#s.messages].payload:match("^WATCH~17~([^~]+)~")
+    local newToken = s.messages[#s.messages].payload:match("^WATCH~18~([^~]+)~")
     assert(newToken and newToken ~= oldToken, "instance travel requests new token")
-    s.receive("BEGIN~17~" .. oldToken .. "~999~ICC,HEARTBEAT~1~1")
-    s.receive("PART~17~" .. oldToken .. "~999~1~P:ICC_STATE:0:0:0:0:0")
-    s.receive("END~17~" .. oldToken .. "~999")
+    s.receive("BEGIN~18~" .. oldToken .. "~999~ICC,HEARTBEAT~1~1")
+    s.receive("PART~18~" .. oldToken .. "~999~1~P:ICC_STATE:0:0:0:0:0")
+    s.receive("END~18~" .. oldToken .. "~999")
     equal(s.server:GetICCState(), nil, "in-flight old snapshot rejected")
     s.reply(iccRows(200, 1, 24873, false, 0), "ICC,HEARTBEAT")
     equal(s.server:GetICCState().instance, 200, "new instance confirmed")
@@ -2260,7 +2260,7 @@ do
 
     equal(s.server:GetNPCQuestgiverState(823, 12, 111), nil, "no bridge state")
 
-    s.reply({"P:QG_CONTEXT:0:12", "G:823:111"}, "QUESTGIVERS,HEARTBEAT")
+    s.reply({"P:QG_CONTEXT:0:12", "G:823:111:0:F13000033700006F"}, "QUESTGIVERS,HEARTBEAT")
 
     equal(s.server:GetNPCQuestgiverState(823, 12, 111), false, "unavailable spawn")
     equal(s.server:GetNPCQuestgiverState(823, 12, 222), nil, "other spawn remains unknown")
@@ -2269,7 +2269,7 @@ do
     equal(s.server:GetNPCQuestgiverState(823, 12, 111, 1), nil, "other map unaffected")
     equal(s.server:GetNPCQuestgiverState(823, 12), nil, "missing spawn identity is unknown")
 
-    equal(s.server:GetQuestgiverStateKey(), "0:12:823:111", "spawn-specific state key")
+    equal(s.server:GetQuestgiverStateKey(), "823:111:0,G:0:12", "spawn-specific state key")
     equal(s.server:GetQuestAvailabilityState(783), nil, "quest remains globally eligible")
     equal(table.concat(s.server:GetUnavailableQuestgiverSpawns(823), ","), "111",
         "diagnostic reports exact spawn")
@@ -2278,10 +2278,12 @@ do
 
     local previous = invalidations
 
-    s.reply({"P:QG_CONTEXT:0:12", "G:823:111"}, "QUESTGIVERS,HEARTBEAT")
+    s.reply({"P:QG_CONTEXT:0:12", "G:823:111:0:F13000033700006F"}, "QUESTGIVERS,HEARTBEAT")
     equal(invalidations, previous, "unchanged state avoids redrawing")
+    s.reply({"P:QG_CONTEXT:0:12", "G:823:111:0:F130000337000999"}, "QUESTGIVERS,HEARTBEAT")
+    equal(invalidations, previous, "new runtime GUID with unchanged spawn state avoids marker redraws")
 
-    s.reply({"P:QG_CONTEXT:0:12", "G:823:222"}, "QUESTGIVERS,HEARTBEAT")
+    s.reply({"P:QG_CONTEXT:0:12", "G:823:222:0:F1300003370000DE"}, "QUESTGIVERS,HEARTBEAT")
     equal(s.server:GetNPCQuestgiverState(823, 12, 111), nil, "previous spawn restored")
     equal(s.server:GetNPCQuestgiverState(823, 12, 222), false, "second spawn unavailable")
     assert(invalidations > previous, "changed spawn identity triggers refresh")
@@ -2292,11 +2294,11 @@ do
     tests = tests + 1
 
     for _, rows in ipairs({
-        {"G:823:222"},
-        {"P:QG_CONTEXT:0:12", "G:823:222", "G:823:222"},
-        {"P:QG_CONTEXT:0:0", "G:823:222"},
-        {"P:QG_CONTEXT:0:12", "G:0:222"},
-        {"P:QG_CONTEXT:0:12", "G:823:0"},
+        {"G:823:222:0:F1300003370000DE"},
+        {"P:QG_CONTEXT:0:12", "G:823:222:0:F1300003370000DE", "G:823:222:0:F1300003370000DE"},
+        {"P:QG_CONTEXT:0:0", "G:823:222:0:F1300003370000DE"},
+        {"P:QG_CONTEXT:0:12", "G:0:222:0:F1300000000000DE"},
+        {"P:QG_CONTEXT:0:12", "G:823:0:0:F130000337000000"},
         {"P:QG_CONTEXT:0:12", "G:823:bad"},
         {"P:QG_CONTEXT:0:12", "G:823"},
     }) do
@@ -2305,17 +2307,361 @@ do
             "malformed catalog rejected")
     end
 
-    s.reply({"P:QG_CONTEXT:0:12", "G:823:222"}, "HEARTBEAT")
+    s.reply({"P:QG_CONTEXT:0:12", "G:823:222:0:F1300003370000DE"}, "HEARTBEAT")
     equal(s.server:GetNPCQuestgiverState(823, 12, 222), false,
         "unadvertised rows rejected")
 
     s.reply({"P:QG_CONTEXT:0:12"}, "QUESTGIVERS,HEARTBEAT")
     equal(s.server:GetNPCQuestgiverState(823, 12, 222), nil, "questgiver restored")
 
-    s.reply({"P:QG_CONTEXT:0:12", "G:823:111"}, "QUESTGIVERS,HEARTBEAT")
+    s.reply({"P:QG_CONTEXT:0:12", "G:823:111:0:F13000033700006F"}, "QUESTGIVERS,HEARTBEAT")
     s.advance(31)
     equal(s.server:GetNPCQuestgiverState(823, 12, 111), nil, "expired observation ignored")
     equal(s.server:GetQuestgiverStateKey(), "unknown", "expired state fallback")
+    tests = tests + 1
+end
+
+
+-- Global template authority feeds the production starter renderer on every map level.
+do
+    local state = setup()
+    local available, db, _, drawn, calculate = availabilitySetup(state, true)
+    local mods, env = state.modules, state.env
+    local zone, notes, tooltips, draws = 12, {}, {}, 0
+    env.Questie.db.profile.spawnFilterDistance = 28
+    mods.QuestiePlayer.GetCurrentZoneId = function() return zone end
+    mods.Phasing.IsSpawnDataVisible = function() return true end
+    mods.QuestieLib.GetSpawnDistance = function() return 100 end
+    db.IsActiveEventQuest = function() return false end
+    db.HasAzerothCoreLocationCondition = function() return false end
+    db.IsAzerothCoreAvailabilityConditionFulfilledForSpawnZone = function() return true end
+    local npcs = {
+        [823] = {id = 823, name = "Restricted", npcFlags = 2,
+            spawns = {[4395] = {{10, 20, 0, 0, 571, 0, 0, 111}}}},
+        [824] = {id = 824, name = "Alternative", npcFlags = 2,
+            spawns = {[40] = {{30, 40, 0, 0, 0, 0, 0, 222}}}},
+        [825] = {id = 825, name = "Scripted", npcFlags = 1,
+            spawns = {[4395] = {{40, 50, 0, 0, 571, 0, 0, 333}}}},
+    }
+    db.GetNPC = function(_, id) return npcs[id] end
+    db.QueryNPCSingle = function(id, field) return npcs[id] and npcs[id][field] end
+    local quest = {Id = 24579, Starts = {NPC = {823}}, requiredLevel = 80, level = 80, tagInfoWasCached = true}
+    db.GetQuest = function() return quest end
+    db.GetQuestStartInfo = db.GetQuest
+    db.questData[quest.Id] = true
+    db.GetItem = function() return {npcDrops = {823}} end
+    db.GetObject = function() return {id = 1, name = "Object", spawns = {[40] = {{50, 60}}}} end
+    mods.QuestieMap.DrawWorldIcon = function(_, data, area, x, y, spawn)
+        notes[#notes + 1] = {entry = data.StarterEntryId, area = area, spawn = spawn and spawn[8], type = data.StarterType}
+        drawn[data.Id] = true
+        draws = draws + 1
+        return {}
+    end
+    mods.QuestieMap.DrawWaypoints = function() end
+    mods.QuestieMap.UnloadQuestFrames = function(_, id) drawn[id], notes = nil, {} end
+    mods.QuestieTooltips.RegisterQuestStartTooltip = function(_, _, _, entry, _, typ) tooltips[entry] = typ end
+    mods.QuestieTooltips.RemoveAvailableQuest = function() tooltips = {} end
+    env.Questie.started = true
+    local caps = "QUESTGIVERS,QUESTGIVERTEMPLATES,HEARTBEAT"
+    local function catalog(entries, live)
+        local rows = {"P:QG_CONTEXT:571:4395", "P:QGT_COUNT:" .. #entries}
+        for _, id in ipairs(entries) do rows[#rows + 1] = "N:" .. id end
+        for _, row in ipairs(live or {}) do rows[#rows + 1] = row end
+        state.reply(rows, caps)
+        calculate()
+    end
+    calculate()
+    equal(#notes, 1, "static remote marker before bridge")
+    catalog({823})
+    equal(#notes, 0, "remote Dalaran starter hidden while physically in Elwynn")
+    equal(db.IsDoable(quest.Id), true, "template restriction never changes quest eligibility")
+    env.selectedWorldMap = "Eastern Kingdoms continent"
+    calculate()
+    equal(#notes, 0, "continent browsing consumes the same globally filtered starter list")
+    local before = state.refreshes()
+    catalog({823})
+    equal(state.refreshes(), before, "unchanged global state does not request redraws")
+    catalog({})
+    equal(#notes, 1, "restored template redraws remote starter")
+    local oldDraws = draws
+    catalog({})
+    equal(draws, oldDraws, "unchanged available state does not replace marker frames")
+    quest.Starts.NPC = {823, 824}
+    catalog({823})
+    equal(#notes, 1, "valid alternative NPC starter retained")
+    equal(notes[1].entry, 824, "only restricted NPC suppressed")
+    local stableKey, stableRefreshes, stableDraws = state.server:GetQuestgiverStateKey(), state.refreshes(), draws
+    local oldHeartbeat = state.heartbeat()
+    local oldToken = state.messages[#state.messages].payload:match("^[^~]+~%d+~([^~]+)~")
+    zone = 40
+    state.event("ZONE_CHANGED_NEW_AREA"); calculate()
+    equal(state.server:GetNPCQuestgiverTemplateState(823), false, "zone transition retains global authority")
+    equal(#notes, 1, "restricted remote marker stays hidden during zone transition")
+    equal(notes[1].entry, 824, "valid alternative marker survives transition")
+    equal(state.server:GetQuestgiverStateKey(), stableKey, "pending empty local context keeps stable key")
+    equal(state.refreshes(), stableRefreshes, "zone event does not request an unnecessary global redraw")
+    equal(draws, stableDraws, "zone event does not replace the existing alternative marker")
+    state.advance(2)
+    local newToken = state.messages[#state.messages].payload:match("^[^~]+~%d+~([^~]+)~")
+    assert(newToken ~= oldToken, "zone change still requests a new token")
+    state.receive(oldHeartbeat)
+    local oldHeader = "~18~" .. oldToken .. "~99999"
+    state.receive("BEGIN" .. oldHeader .. "~" .. caps .. "~2~1")
+    state.receive("PART" .. oldHeader .. "~1~P:QG_CONTEXT:571:4395;P:QGT_COUNT:0")
+    state.receive("END" .. oldHeader)
+    equal(state.server:GetNPCQuestgiverTemplateState(823), false, "old-token empty catalog cannot clear restrictions")
+    local sequence = state.reply({"P:QG_CONTEXT:0:40", "P:QGT_COUNT:1", "N:823"}, caps, nil, nil, "END")
+    calculate()
+    equal(#notes, 1, "incomplete replacement does not expose restricted remote marker")
+    equal(state.refreshes(), stableRefreshes, "incomplete replacement does not redraw")
+    state.receive("END~18~" .. newToken .. "~" .. sequence); calculate()
+    equal(state.server:GetQuestgiverStateKey(), stableKey, "new empty local context keeps global key")
+    equal(draws, stableDraws, "same global catalog with a new zone does not redraw")
+    equal(state.refreshes(), stableRefreshes, "complete unchanged replacement does not request refresh")
+    state.event("PLAYER_ENTERING_WORLD"); calculate()
+    equal(#notes, 1, "world transition also retains restricted remote filtering")
+    equal(state.refreshes(), stableRefreshes, "world event with empty local context does not redraw")
+    state.advance(2)
+
+    quest.Starts = {NPC = {823}, Item = {1}, GameObject = {1}}
+    catalog({})
+    catalog({823})
+    equal(#notes, 2, "item and gameobject sources preserved")
+    equal(tooltips[823], "itemFromMonster", "item drop tooltip survives NPC template restriction")
+    quest.Starts = {NPC = {825}}
+    catalog({})
+    catalog({825})
+    equal(#notes, 1, "baseline non-questgiver templates keep scripted fallback")
+    zone = 4395
+    catalog({825}, {"G:825:333:0:F130000339000003"})
+    equal(#notes, 0, "explicit live negative still overrides scripted static fallback")
+    quest.Starts = {NPC = {823}}
+    npcs[823].spawns[4395][2] = {11, 21, 0, 0, 571, 0, 0, 112}
+    zone = 4395
+    catalog({823}, {"G:823:111:1:F130000337000001", "G:823:112:0:F130000337000002"})
+    equal(#notes, 1, "positive live exception overrides negative template")
+    equal(notes[1].spawn, 111, "unavailable second spawn stays hidden")
+    equal(state.server:GetNPCQuestgiverUnitState(823, "0xF130000337000002"), false,
+        "runtime GUID resolves exact unavailable unit independently of spawn ID")
+    equal(state.server:GetNPCQuestgiverUnitState(823, "0xF130000337000001"), true, "positive runtime unit")
+    equal(state.server:GetNPCQuestgiverUnitState(823, "0xF130000337000003"), nil, "unobserved runtime unit unknown")
+    catalog({}, {"G:823:112:0:F130000337000002"})
+    equal(#notes, 1, "template-enabled NPC still respects negative individual spawn")
+    catalog({823}, {"G:823:111:0:F130000337000001", "G:823:111:1:F130000337000002"})
+    equal(state.server:GetNPCQuestgiverState(823, 4395, 111, 571), true,
+        "multiple visible copies of one DB spawn permit marker when any copy is active")
+    npcs[823].waypoints = {[4395] = {{{10, 20}, {11, 21}}}}
+    catalog({823})
+    equal(#notes, 0, "waypoints do not resurrect globally restricted markers")
+    state.advance(31); calculate()
+    equal(#notes, 2, "expiry restores static spawns")
+    catalog({823})
+    state.reply({}, "HEARTBEAT"); calculate()
+    equal(#notes, 2, "capability removal restores static spawns")
+    catalog({823})
+    state.event("PLAYER_ENTERING_WORLD"); calculate()
+    equal(#notes, 0, "pending local context does not clear fresh template authority")
+    state.advance(31); calculate()
+    equal(#notes, 2, "global authority still expires when no replacement arrives")
+    -- The server visibility regression excludes distant loaded Willem; no local exception is sent.
+    zone = 12
+    npcs[823].spawns = {[12] = {{48.05, 43.55, 0, 0, 0, 0, 0, 79942}}}
+    npcs[823].waypoints = nil
+    local function willemSnapshot(observable)
+        local rows = {"P:QG_CONTEXT:0:12", "P:QGT_COUNT:1", "N:823"}
+        if observable then rows[#rows + 1] = "G:823:79942:1:F130000337000001" end
+        state.reply(rows, caps)
+        calculate()
+    end
+    willemSnapshot(false)
+    equal(state.server:GetNPCQuestgiverTemplateState(823), false, "Willem template restricted")
+    equal(state.server:GetNPCQuestgiverState(823, 12, 79942, 0), false,
+        "distant loaded Willem cannot override global restriction at Forest's Edge")
+    equal(#notes, 0, "Willem marker hidden at Forest's Edge within Elwynn")
+    willemSnapshot(true)
+    equal(state.server:GetNPCQuestgiverState(823, 12, 79942, 0), true, "visible live Willem overrides template")
+    equal(#notes, 1, "approaching observable Willem shows his enabled live starter")
+    equal(notes[1].spawn, 79942, "positive override targets Willem's actual database spawn")
+    willemSnapshot(false)
+    equal(state.server:GetNPCQuestgiverState(823, 12, 79942, 0), false,
+        "leaving sight range restores template restriction without leaving Elwynn")
+    equal(state.server:GetNPCQuestgiverUnitState(823, "0xF130000337000001"), nil,
+        "out-of-range unit no longer supplies tooltip override")
+    equal(#notes, 0, "Willem marker hidden again before crossing a zone boundary")
+    local unchanged = state.refreshes()
+    willemSnapshot(false)
+    equal(state.refreshes(), unchanged, "unchanged distant observations do not request redraws")
+
+    tests = tests + 1
+end
+
+-- Pending local observations cannot survive zone/world transitions or extend global freshness.
+do
+    for _, event in ipairs({"ZONE_CHANGED_NEW_AREA", "PLAYER_ENTERING_WORLD"}) do
+        local state = setup()
+        local zone = 12
+        state.modules.QuestiePlayer = {GetCurrentZoneId = function() return zone end}
+        state.modules.QuestieDB.QueryNPCSingle = function() return 2 end
+        local caps = "QUESTGIVERS,QUESTGIVERTEMPLATES,HEARTBEAT"
+        local rows = {"P:QG_CONTEXT:0:12", "P:QGT_COUNT:1", "N:823",
+            "G:823:111:1:F130000337000001", "G:824:222:0:F130000338000002"}
+        state.reply(rows, caps)
+        equal(state.server:GetNPCQuestgiverState(823, 12, 111, 0), true, "initial positive overrides template")
+        equal(state.server:GetNPCQuestgiverState(824, 12, 222, 0), false, "initial explicit negative")
+        local oldHeartbeat = state.heartbeat()
+        state.event(event)
+        equal(state.server:GetNPCQuestgiverTemplateState(823), false, "global restriction retained while pending")
+        equal(state.server:GetNPCQuestgiverState(823, 12, 111, 0), false, "old positive no longer overrides template")
+        equal(state.server:GetNPCQuestgiverState(824, 12, 222, 0), nil, "old negative no longer overrides static fallback")
+        equal(state.server:GetNPCQuestgiverUnitState(823, "0xF130000337000001"), nil, "old positive unit discarded")
+        equal(state.server:GetNPCQuestgiverUnitState(824, "0xF130000338000002"), nil, "old negative unit discarded")
+        equal(state.server:GetUnavailableQuestgiverSpawns(824), nil, "pending local diagnostics unknown")
+        equal(state.server:GetQuestgiverStateKey(), "N:823", "pending key contains only global restrictions")
+        zone = 40
+        equal(state.server:GetNPCQuestgiverState(823, 40, 111, 0), false, "new zone uses global restriction")
+        zone = 12
+        equal(state.server:GetNPCQuestgiverState(823, 12, 111, 0), false, "returning before reply cannot reuse old positive")
+        state.advance(2)
+        state.advance(27)
+        state.receive(oldHeartbeat)
+        equal(state.server:GetNPCQuestgiverTemplateState(823), false, "global catalog still fresh at 29 seconds")
+        state.advance(1)
+        equal(state.server:GetNPCQuestgiverTemplateState(823), nil, "old heartbeat does not extend 30-second lifetime")
+        equal(state.server:GetQuestgiverStateKey(), "unknown", "real expiration clears global key")
+        equal(state.server:GetNPCQuestgiverState(823, 12, 111, 0), nil, "expiration restores static fallback")
+        state.reply(rows, caps)
+        equal(state.server:GetNPCQuestgiverState(823, 12, 111, 0), true, "new complete snapshot restores live override")
+        local token = state.messages[#state.messages].payload:match("^[^~]+~%d+~([^~]+)~")
+        local sequence = state.reply({}, "HEARTBEAT", nil, nil, "END")
+        equal(state.server:GetNPCQuestgiverTemplateState(823), false, "partial capability removal remains atomic")
+        state.receive("END~18~" .. token .. "~" .. sequence)
+        equal(state.server:GetNPCQuestgiverTemplateState(823), nil, "complete capability removal clears authority")
+        equal(state.server:GetNPCQuestgiverState(823, 12, 111, 0), nil, "removed capability clears local positives")
+    end
+    tests = tests + 1
+end
+
+-- Incomplete, duplicate and malformed catalogs cannot replace complete authority.
+do
+    local state = setup()
+    state.modules.QuestiePlayer = {GetCurrentZoneId = function() return 12 end}
+    state.modules.QuestieDB.QueryNPCSingle = function() return 2 end
+    local caps = "QUESTGIVERS,QUESTGIVERTEMPLATES,HEARTBEAT"
+    local good = {"P:QG_CONTEXT:0:12", "P:QGT_COUNT:1", "N:823"}
+    state.reply(good, caps)
+    equal(state.server:GetNPCQuestgiverState(823, 4395), false, "global baseline")
+    for _, rows in ipairs({
+        {"P:QG_CONTEXT:0:12", "N:824"},
+        {"P:QG_CONTEXT:0:12", "P:QGT_COUNT:2", "N:824"},
+        {"P:QG_CONTEXT:0:12", "P:QGT_COUNT:1", "N:824", "N:824"},
+        {"P:QG_CONTEXT:0:12", "P:QGT_COUNT:0", "P:QGT_COUNT:0"},
+        {"P:QG_CONTEXT:0:12", "P:QGT_COUNT:1", "N:0"},
+        {"P:QG_CONTEXT:0:12", "P:QGT_COUNT:1", "N:bad"},
+        {"P:QG_CONTEXT:0:12", "P:QGT_COUNT:4096"},
+        {"P:QG_CONTEXT:0:12", "P:QGT_COUNT:0", "G:823:111:2:F130000337000001"},
+        {"P:QG_CONTEXT:0:12", "P:QGT_COUNT:0", "G:823:111:1:F130000338000001"},
+        {"P:QG_CONTEXT:0:12", "P:QGT_COUNT:0", "G:823:111:1:F130000337000001", "G:823:112:0:F130000337000001"},
+    }) do
+        state.reply(rows, caps)
+        equal(state.server:GetNPCQuestgiverState(823, 4395), false, "invalid catalog retains previous complete snapshot")
+    end
+    state.reply(good, "QUESTGIVERS,HEARTBEAT")
+    equal(state.server:GetNPCQuestgiverState(823, 4395), false, "unadvertised catalog rejected")
+    state.reply({"P:QGT_COUNT:0"}, "QUESTGIVERTEMPLATES,HEARTBEAT")
+    equal(state.server:GetNPCQuestgiverState(823, 4395), false, "template authority requires local exception context")
+    state.reply({"P:QG_CONTEXT:0:12", "P:QGT_COUNT:0"}, caps, nil, nil, "END")
+    equal(state.server:GetNPCQuestgiverState(823, 4395), false, "unfinished batch cannot restore NPC")
+    state.advance(6)
+    state.reply(good, caps)
+    local live = {"P:QG_CONTEXT:0:12"}
+    for index = 1, 64 do
+        live[#live + 1] = string.format("G:823:%d:0:F130000337%06X", index, index)
+    end
+    state.reply(live, "QUESTGIVERS,HEARTBEAT")
+    equal(#state.server:GetUnavailableQuestgiverSpawns(823), 64, "64 complete live observations accepted")
+    live[#live + 1] = "G:823:65:0:F130000337000041"
+    state.reply(live, "QUESTGIVERS,HEARTBEAT")
+    equal(#state.server:GetUnavailableQuestgiverSpawns(823), 64, "65th observation rejects entire replacement")
+    -- Pack rows as the server does so a full snapshot can exceed 1024 rows without exceeding 1024 parts.
+    local rows = {"P:QG_CONTEXT:0:12", "P:QGT_COUNT:4094"}
+    for id = 1, 4094 do rows[#rows + 1] = "N:" .. id end
+    local token = state.messages[#state.messages].payload:match("^[^~]+~%d+~([^~]+)~")
+    local parts = {}
+    for _, row in ipairs(rows) do
+        if #parts == 0 or #parts[#parts] + #row + 1 > 150 then parts[#parts + 1] = row
+        else parts[#parts] = parts[#parts] .. ";" .. row end
+    end
+    local header = "~18~" .. token .. "~1000"
+    state.receive("BEGIN" .. header .. "~" .. caps .. "~4096~" .. #parts)
+    for index, part in ipairs(parts) do state.receive("PART" .. header .. "~" .. index .. "~" .. part) end
+    state.receive("END" .. header)
+    equal(state.server:GetNPCQuestgiverTemplateState(4094), false, "4096-row complete snapshot accepted atomically")
+    equal(state.server:GetNPCQuestgiverTemplateState(4095), nil, "no partial catalog claims")
+    local allCaps = "EVENTS,VALUES,SCOURGE,QUELDANAS,KALUAK,QUESTPOOLS,WINTERGRASP,RESETS,PATROLS,QUESTDISABLES,QUESTGIVERS,PHASES,ICC,QUESTXP,QUESTREP,QUESTMONEY,HEARTBEAT,QUESTGIVERTEMPLATES"
+    assert(#("BEGIN~18~" .. string.rep("x", 32) .. "~9007199254740991~" .. allCaps .. "~4096~1024") <= 240,
+        "all-capability header fits the receiver message bound")
+    tests = tests + 1
+end
+
+
+-- Exact live-unit filtering changes only NPC starter lines, never the shared registry.
+do
+    local state = setup()
+    local _, db = availabilitySetup(state)
+    local mods, env = state.modules, state.env
+    env.QuestieCompat.IsInGroup = function() return false end
+    mods.QuestiePlayer.numberOfGroupMembers = 1
+    mods.QuestiePlayer.GetPartyMemberByName = function() return nil end
+    mods.QuestieComms = {remotePlayerEnabled = {}, remoteQuestLogs = {}}
+    mods.QuestieTooltips.private = {}
+    mods.QuestieEvent.IsEventQuest = function() return false end
+    mods.QuestieLib.AddonPath = "Questie/"
+    mods.QuestieLib.GetColoredQuestName = function(_, id) return "Quest " .. id end
+    mods.QuestieLib.GetDifficultyColorPercent = function() return 1, 1, 0 end
+    mods.QuestieLib.GetRGBForObjective = function() return "white" end
+    mods.QuestieLib.GetObjectiveDescription = function() return "Objective retained" end
+    db.GetItemDroprate = function() return nil end
+    env.Questie.db.profile.showQuestsInNpcTooltip = true
+    assert(loadfile("Modules/Tooltips/Tooltip.lua", "t", env))()
+    local tips = mods.QuestieTooltips
+    tips:RegisterQuestStartTooltip(1, "NPC", 823, "m_823", "NPC")
+    tips:RegisterQuestStartTooltip(2, "Item drop", 823, "m_823", "itemFromMonster")
+    tips:RegisterQuestStartTooltip(3, "Turn-in", 823, "m_823", "Finisher")
+    mods.QuestiePlayer.currentQuestlog[4] = {}
+    tips:RegisterObjectiveTooltip(4, "m_823", {Index = 1, Type = "monster", Id = 823,
+        IsSourceItem = true, Needed = 1, Collected = 0})
+    local lines = table.concat(tips:GetTooltip("m_823", nil, false), "\n")
+    assert(not lines:find("Quest 1", 1, true), "unavailable unit hides only its NPC starter")
+    assert(lines:find("Quest 2", 1, true) and lines:find("Quest 3", 1, true), "item drops and finishers retained")
+    assert(lines:find("Objective retained", 1, true), "objectives retained")
+    assert(table.concat(tips:GetTooltip("m_823", nil, true), "\n"):find("Quest 1", 1, true),
+        "another live spawn of the same entry retains its starter tooltip")
+    assert(table.concat(tips:GetTooltip("m_823"), "\n"):find("Quest 1", 1, true),
+        "unknown unit or map tooltip preserves fallback and registry")
+    local guid = "0xF130000337000001"
+    env.UnitGUID = function() return guid end
+    env.QuestieCompat.UnitGUID = function() return "Creature-0-1-0-0-823-000001" end
+    env.strsplit = function(separator, value)
+        local fields = {}
+        for part in value:gmatch("[^" .. separator .. "]+") do fields[#fields + 1] = part end
+        return table.unpack(fields)
+    end
+    env.Questie.db.profile.enabled, env.Questie.db.profile.enableTooltips = true, true
+    local tip = {lines = {}}
+    function tip:GetUnit() return "NPC", "mouseover" end
+    function tip:NumLines() return #self.lines end
+    function tip:AddLine(line) self.lines[#self.lines + 1] = line end
+    function tip:Show() end
+    env.GameTooltip = tip
+    tips.private.CountTooltip = function() return #tip.lines end
+    mods.QuestiePlayer.GetCurrentZoneId = function() return 12 end
+    state.reply({"P:QG_CONTEXT:0:12", "G:823:111:0:F130000337000001"}, "QUESTGIVERS,HEARTBEAT")
+    assert(loadfile("Modules/Tooltips/TooltipHandler.lua", "t", env))()
+    tips.private.AddUnitDataToTooltip(tip)
+    assert(not table.concat(tip.lines, "\n"):find("Quest 1", 1, true), "unit hook passes exact negative state")
+    guid, tip.lines = "0xF130000337000002", {}
+    tips.private.AddUnitDataToTooltip(tip)
+    assert(table.concat(tip.lines, "\n"):find("Quest 1", 1, true), "another runtime GUID remains unknown")
     tests = tests + 1
 end
 

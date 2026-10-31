@@ -2,7 +2,7 @@
 local QuestieServer = QuestieLoader:CreateModule("QuestieServer")
 local Integrations = QuestieLoader:ImportModule("QuestieServerIntegrations")
 
-local PREFIX, PROTOCOL_VERSION = "QSTSVR", "17"
+local PREFIX, PROTOCOL_VERSION = "QSTSVR", "18"
 
 -- Shared with the correction generators. Decisions apply to the current area,
 -- never to every location in these zones. Keep the module's profiles in sync.
@@ -37,6 +37,7 @@ local snapshotToken, snapshotSequence, pendingRenewal
 local forceSnapshot, subscriptionsDirty = false, false
 local iccContextPending = false
 local phaseContextPending = false
+local giverContextPending = false
 local lastRequestAt = -2
 local snapshotCount, heartbeatCount = 0, 0
 local requestSequence, lastSequence, nextRequestAt = 0, 0, 0
@@ -45,7 +46,7 @@ local subscriptions = {}
 local CAPABILITIES = {EVENTS = true, VALUES = true, SCOURGE = true, QUELDANAS = true,
     KALUAK = true, HEARTBEAT = true, QUESTPOOLS = true, WINTERGRASP = true, ICC = true, RESETS = true,
     PHASES = true, PATROLS = true, QUESTXP = true, QUESTREP = true, QUESTMONEY = true,
-    QUESTDISABLES = true, QUESTGIVERS = true}
+    QUESTDISABLES = true, QUESTGIVERS = true, QUESTGIVERTEMPLATES = true}
 
 local function Split(value, separator)
     local fields, first = {}, 1
@@ -294,36 +295,64 @@ function QuestieServer:GetDisabledQuests()
 end
 
 function QuestieServer:GetQuestgiverStateKey()
-    if not self:HasCapability("QUESTGIVERS") then return "unknown" end
+    if not Fresh() then return "unknown" end
     local ids = {}
-    for npcId, spawns in pairs(snapshot.unavailableGivers) do
-        for spawnId in pairs(spawns) do
-            ids[#ids + 1] = npcId .. ":" .. spawnId
+    if self:HasCapability("QUESTGIVERTEMPLATES") then
+        for npcId in pairs(snapshot.giverTemplates) do ids[#ids + 1] = "N:" .. npcId end
+    end
+    if not giverContextPending and self:HasCapability("QUESTGIVERS") and next(snapshot.giverSpawns) then
+        ids[#ids + 1] = "G:" .. snapshot.giverMap .. ":" .. snapshot.giverZone
+        for npcId, spawns in pairs(snapshot.giverSpawns) do
+            for spawnId, active in pairs(spawns) do
+                ids[#ids + 1] = npcId .. ":" .. spawnId .. ":" .. (active and "1" or "0")
+            end
         end
     end
+    if #ids == 0 then return "unknown" end
     table.sort(ids)
-    return snapshot.giverMap .. ":" .. snapshot.giverZone .. ":" .. table.concat(ids, ",")
+    return table.concat(ids, ",")
 end
 
----@return boolean|nil false means this observed NPC spawn lacks questgiver functionality.
+---@return boolean|nil false means the loaded server template lacks the questgiver flag.
+function QuestieServer:GetNPCQuestgiverTemplateState(npcId)
+    if not self:HasCapability("QUESTGIVERTEMPLATES") then return nil end
+    if snapshot.giverTemplates[npcId] then return false end
+    return nil
+end
+
+---@return boolean|nil Explicit local spawn state takes precedence over the global template.
 function QuestieServer:GetNPCQuestgiverState(npcId, zone, spawnId, mapId)
-    if not self:HasCapability("QUESTGIVERS") or not spawnId
-        or zone ~= snapshot.giverZone
-        or (mapId and mapId ~= snapshot.giverMap) then return nil end
+    if not giverContextPending and self:HasCapability("QUESTGIVERS") and spawnId and zone == snapshot.giverZone
+        and (not mapId or mapId == snapshot.giverMap) then
+        local player = QuestieLoader:ImportModule("QuestiePlayer")
+        if player:GetCurrentZoneId() == zone then
+            local spawns = snapshot.giverSpawns[npcId]
+            if spawns and spawns[spawnId] ~= nil then return spawns[spawnId] end
+        end
+    end
+    if self:GetNPCQuestgiverTemplateState(npcId) == false then
+        local db = QuestieLoader:ImportModule("QuestieDB")
+        local flags = db.QueryNPCSingle and db.QueryNPCSingle(npcId, "npcFlags")
+        -- Templates already lacking the static flag may rely on scripted grants.
+        if flags and flags % 4 >= 2 then return false end
+    end
+    return nil
+end
 
+function QuestieServer:GetNPCQuestgiverUnitState(npcId, guid)
+    if giverContextPending or not self:HasCapability("QUESTGIVERS") or type(guid) ~= "string" then return nil end
     local player = QuestieLoader:ImportModule("QuestiePlayer")
-    if player:GetCurrentZoneId() ~= zone then return nil end
-
-    local spawns = snapshot.unavailableGivers[npcId]
-    if spawns and spawns[spawnId] then return false end
+    if player:GetCurrentZoneId() ~= snapshot.giverZone then return nil end
+    local unit = snapshot.giverUnits[guid:gsub("^0[xX]", ""):upper()]
+    if unit and unit.entry == npcId then return unit.active end
     return nil
 end
 
 function QuestieServer:GetUnavailableQuestgiverSpawns(npcId)
-    if not self:HasCapability("QUESTGIVERS") then return nil end
+    if giverContextPending or not self:HasCapability("QUESTGIVERS") then return nil end
     local ids = {}
-    for spawnId in pairs(snapshot.unavailableGivers[npcId] or {}) do
-        ids[#ids + 1] = spawnId
+    for spawnId, active in pairs(snapshot.giverSpawns[npcId] or {}) do
+        if not active then ids[#ids + 1] = spawnId end
     end
     table.sort(ids)
     return ids
@@ -468,9 +497,9 @@ end
 
 local function ParseRows(batch)
     local result = {caps = batch.caps, events = {}, values = {}, ui = {}, poolQuests = {},
-        wintergraspQuests = {}, iccQuests = {}, disabledQuests = {}, unavailableGivers = {},
+        wintergraspQuests = {}, iccQuests = {}, disabledQuests = {}, giverSpawns = {}, giverUnits = {}, giverTemplates = {},
         phaseVisibility = {}, reputationFactions = {}}
-    local count, reputationFactionCount, giverCount = 0, 0, 0
+    local count, reputationFactionCount, giverCount, templateCount = 0, 0, 0, 0
     for index = 1, batch.partCount do
         if not batch.parts[index] then return nil end
         for _, row in ipairs(Split(batch.parts[index], ";")) do
@@ -546,12 +575,24 @@ local function ParseRows(batch)
                 local map, zone = Integer(fields[3], 65535), Integer(fields[4], 65535)
                 if not map or not zone or zone == 0 then return nil end
                 result.giverMap, result.giverZone = map, zone
-            elseif kind == "G" and result.caps.QUESTGIVERS and #fields == 3 and id and id > 0 then
-                local spawnId = Integer(fields[3], 4294967295)
-                if not spawnId or spawnId == 0 or giverCount >= 64 then return nil end
-                result.unavailableGivers[id] = result.unavailableGivers[id] or {}
-                if result.unavailableGivers[id][spawnId] then return nil end
-                result.unavailableGivers[id][spawnId] = true
+            elseif kind == "P" and result.caps.QUESTGIVERTEMPLATES and fields[2] == "QGT_COUNT"
+                and #fields == 3 and result.giverTemplateCount == nil then
+                result.giverTemplateCount = Integer(fields[3], 4095)
+                if not result.giverTemplateCount then return nil end
+            elseif kind == "N" and result.caps.QUESTGIVERTEMPLATES and #fields == 2 and id and id > 0 then
+                if result.giverTemplates[id] then return nil end
+                result.giverTemplates[id] = true
+                templateCount = templateCount + 1
+            elseif kind == "G" and result.caps.QUESTGIVERS and #fields == 5 and id and id > 0 then
+                local spawnId, guid = Integer(fields[3], 4294967295), fields[5]
+                if not spawnId or spawnId == 0 or giverCount >= 64 or not fields[4]:match("^[01]$")
+                    or #guid ~= 16 or not guid:match("^[0-9A-F]+$")
+                    or (guid:sub(1, 4) ~= "F130" and guid:sub(1, 4) ~= "F150")
+                    or tonumber(guid:sub(5, 10), 16) ~= id or result.giverUnits[guid] then return nil end
+                local active = fields[4] == "1"
+                result.giverUnits[guid] = {entry = id, active = active}
+                result.giverSpawns[id] = result.giverSpawns[id] or {}
+                result.giverSpawns[id][spawnId] = result.giverSpawns[id][spawnId] == true or active
                 giverCount = giverCount + 1
             elseif kind == "D" and result.caps.QUESTDISABLES and #fields == 2 and id and id > 0 then
                 if result.disabledQuests[id] then return nil end
@@ -631,6 +672,8 @@ local function ParseRows(batch)
         end
     end
     if result.caps.QUESTGIVERS and not result.giverZone then return nil end
+    if result.caps.QUESTGIVERTEMPLATES and (not result.caps.QUESTGIVERS
+        or result.giverTemplateCount ~= templateCount) then return nil end
     if result.caps.RESETS and (not result.resets or not result.serverTime) then return nil end
     if result.caps.SCOURGE and result.scourge == nil then return nil end
     if result.caps.KALUAK and not result.kaluakReported then return nil end
@@ -737,6 +780,7 @@ local function HandleMessage(message, distribution, sender)
             snapshot.receivedAt = now
             iccContextPending = false
             phaseContextPending = false
+            giverContextPending = false
             snapshotToken, snapshotSequence = watchToken, sequence
             snapshotCount = snapshotCount + 1
             pendingUntil, pendingRenewal, forceSnapshot = nil, false, false
@@ -779,10 +823,13 @@ function QuestieServer:PrintStatus(poolId)
     if disabled then Questie:Print("[Server bridge] Disabled quests: " .. #disabled) end
     if self:HasCapability("QUESTGIVERS") then
         local count = 0
-        for _, spawns in pairs(snapshot.unavailableGivers) do
-            for _ in pairs(spawns) do count = count + 1 end
+        for _, spawns in pairs(snapshot.giverSpawns) do
+            for _, active in pairs(spawns) do if not active then count = count + 1 end end
         end
         Questie:Print("[Server bridge] Questgivers: " .. count .. " unavailable observed NPC spawns in zone " .. snapshot.giverZone)
+    end
+    if self:HasCapability("QUESTGIVERTEMPLATES") then
+        Questie:Print("[Server bridge] Restricted questgiver templates: " .. snapshot.giverTemplateCount)
     end
     local poolQuests = self:GetPooledQuests(poolId)
     if not poolQuests then
@@ -1014,6 +1061,7 @@ function QuestieServer:Initialize()
                 -- an in-flight reply or heartbeat from restoring the previous area/raid.
                 iccContextPending = refreshICC or iccContextPending
                 phaseContextPending = refreshPhases or phaseContextPending
+                giverContextPending = refreshQuestgivers or giverContextPending
                 pendingUntil, pendingRenewal, assembly, watchToken = nil, false, nil, nil
                 forceSnapshot, nextRequestAt = true, 0
                 Integrations:Refresh()
@@ -1069,6 +1117,8 @@ function QuestieServer:Initialize()
         if patrolEntry and patrolEntry > 0 then self:PrintPatrolStatus(patrolEntry); return end
         local giverId = Integer(command:match("^%s*giver%s+(%d+)%s*$"), 4294967295)
         if giverId and giverId > 0 then
+            local template = self:GetNPCQuestgiverTemplateState(giverId)
+            Questie:Print("[Server bridge] NPC " .. giverId .. " template: " .. (template == false and "restricted" or "unknown/unrestricted"))
             local ids = self:GetUnavailableQuestgiverSpawns(giverId)
             if not ids then
                 Questie:Print("[Server bridge] NPC " .. giverId .. ": unknown")

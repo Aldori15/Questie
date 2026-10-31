@@ -695,11 +695,11 @@ function AvailableQuests.PruneByCurrentLevelFilter()
 end
 
 local function _NpcStarterLocationAvailable(npc, zone, spawn)
-    if not spawn or not spawn[8] or not QuestieServer.GetNPCQuestgiverState then
+    if not QuestieServer.GetNPCQuestgiverState then
         return true
     end
 
-    return QuestieServer:GetNPCQuestgiverState(npc.id, zone, spawn[8], spawn[5]) ~= false
+    return QuestieServer:GetNPCQuestgiverState(npc.id, zone, spawn and spawn[8], spawn and spawn[5]) ~= false
 end
 
 local function _NpcStarterHasVisibleAllowedSpawnInZone(npc, zone)
@@ -722,18 +722,18 @@ local function _NpcStarterHasAllowedLocation(npc)
         end
     end
 
-    for _, waypoints in pairs(npc.waypoints or {}) do
-        if next(waypoints) then return true end
+    for zone, waypoints in pairs(npc.waypoints or {}) do
+        if next(waypoints) and _NpcStarterLocationAvailable(npc, zone) then return true end
     end
 
-    return not hasLocation
+    return not hasLocation and _NpcStarterLocationAvailable(npc)
 end
 
 local function _NpcStarterLocalTooltipAvailable(npc)
     local zone = QuestiePlayer:GetCurrentZoneId()
     local spawns = zone and npc.spawns and npc.spawns[zone]
 
-    if not spawns or #spawns == 0 then return true end
+    if not spawns or #spawns == 0 then return _NpcStarterLocationAvailable(npc, zone) end
 
     for _, spawn in ipairs(spawns) do
         if _NpcStarterLocationAvailable(npc, zone, spawn) then return true end
@@ -1700,7 +1700,9 @@ _AddStarter = function(starter, quest, tooltipKey, limit)
     if starter.waypoints then
         for zone, waypoints in pairs(starter.waypoints or {}) do
             if QuestieDB:IsAzerothCoreAvailabilityConditionFulfilledForSpawnZone(quest.Id, zone) and
-                (visibleStarterZones[zone] or (not starter.spawns) or (not starter.spawns[zone])
+                (visibleStarterZones[zone]
+                    or (((not starter.spawns) or (not starter.spawns[zone]))
+                        and (not directNpcStarter or _NpcStarterLocationAvailable(starter, zone)))
                     or (directNpcStarter and _NpcStarterHasVisibleAllowedSpawnInZone(starter, zone))
                     or (not directNpcStarter and _HasVisibleSpawnInZone(starter.spawns[zone]))) and
                 (not dungeons[zone]) and waypoints[1] and waypoints[1][1] and waypoints[1][1][1] then
