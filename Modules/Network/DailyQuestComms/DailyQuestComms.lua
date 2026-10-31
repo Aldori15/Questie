@@ -16,6 +16,7 @@ local COMM_PREFIX = "Questie335DlyV2"
 local UNAVAILABLE_QUEST_SYNC_REQUEST_ATTEMPTS = 60
 local UNAVAILABLE_QUEST_SYNC_REQUEST_INTERVAL = 0.5
 local UNAVAILABLE_QUEST_RESPONSE_WINDOW = 8
+local SEND_ERROR_REPORT_INTERVAL = 60
 local MAX_UNAVAILABLE_QUEST_MESSAGE_BYTES = 64 * 1024
 local MAX_UNAVAILABLE_QUEST_NPCS = 256
 local MAX_UNAVAILABLE_QUESTS_PER_NPC = 128
@@ -25,6 +26,8 @@ local playerName
 local realmName
 local requestedUnavailableQuestSnapshot
 local unavailableQuestSnapshotRequestTicker
+local initialUnavailableQuestSyncFailed = false
+local lastSendErrorAt
 local commsAudienceFrame
 local pendingUnavailableQuestResponses = {}
 
@@ -178,6 +181,39 @@ local function _CancelPendingUnavailableQuestResponse(distribution)
     end
 end
 
+local function _StopInitialUnavailableQuestSyncRequest()
+    if unavailableQuestSnapshotRequestTicker then
+        unavailableQuestSnapshotRequestTicker:Cancel()
+        unavailableQuestSnapshotRequestTicker = nil
+    end
+end
+
+local function _SendCommMessage(serializedEvent, distribution, target)
+    local success, sendError = xpcall(function()
+        Questie:SendCommMessage(COMM_PREFIX, serializedEvent, distribution, target)
+    end, function(message)
+        local _, revision = LibStub:GetLibrary("AceComm-3.0", true)
+        local diagnostic = string.format(
+            "[DailyQuestComms] Send failed (prefix=%s, bytes=%d, distribution=%s, AceComm=%s, CTL=%s): %s",
+            COMM_PREFIX, #serializedEvent, distribution, tostring(revision),
+            tostring(ChatThrottleLib and ChatThrottleLib.version), tostring(message))
+        if debugstack then
+            diagnostic = diagnostic .. "\n" .. debugstack(2)
+        end
+        return diagnostic
+    end)
+    if success then return true end
+
+    initialUnavailableQuestSyncFailed = true
+    _StopInitialUnavailableQuestSyncRequest()
+    local now = GetTime()
+    if not lastSendErrorAt or now - lastSendErrorAt >= SEND_ERROR_REPORT_INTERVAL then
+        lastSendErrorAt = now
+        error(sendError, 0)
+    end
+    return false
+end
+
 local function _SendUnavailableQuestSnapshot(snapshot, distribution)
     for _, bucketName in pairs({"daily", "weekly"}) do
         for _, entry in pairs(snapshot[bucketName] or {}) do
@@ -189,7 +225,7 @@ local function _SendUnavailableQuestSnapshot(snapshot, distribution)
                 },
             }
             local serializedEvent = AceSerializer:Serialize(event)
-            Questie:SendCommMessage(COMM_PREFIX, serializedEvent, distribution)
+            if not _SendCommMessage(serializedEvent, distribution) then return end
         end
     end
 end
@@ -237,16 +273,13 @@ end
 local function _SendSerializedEventToAvailableChannels(serializedEvent, askGuild)
     local sent = false
     if askGuild ~= false and IsInGuild() then
-        Questie:SendCommMessage(COMM_PREFIX, serializedEvent, "GUILD")
-        sent = true
+        sent = _SendCommMessage(serializedEvent, "GUILD") or sent
     end
 
     if IsInRaid() then
-        Questie:SendCommMessage(COMM_PREFIX, serializedEvent, "RAID")
-        sent = true
+        sent = _SendCommMessage(serializedEvent, "RAID") or sent
     elseif IsInGroup() then
-        Questie:SendCommMessage(COMM_PREFIX, serializedEvent, "PARTY")
-        sent = true
+        sent = _SendCommMessage(serializedEvent, "PARTY") or sent
     end
 
     return sent
@@ -284,15 +317,8 @@ local function _StartInitialUnavailableQuestSyncRequest()
     unavailableQuestSnapshotRequestTicker = ticker
 end
 
-local function _StopInitialUnavailableQuestSyncRequest()
-    if unavailableQuestSnapshotRequestTicker then
-        unavailableQuestSnapshotRequestTicker:Cancel()
-        unavailableQuestSnapshotRequestTicker = nil
-    end
-end
-
 local function _RefreshUnavailableQuestSyncRequest()
-    if requestedUnavailableQuestSnapshot then
+    if requestedUnavailableQuestSnapshot or initialUnavailableQuestSyncFailed then
         _StopInitialUnavailableQuestSyncRequest()
         return
     end
@@ -312,6 +338,7 @@ function DailyQuestComms.Initialize()
     playerName = UnitName("player")
     realmName = GetRealmName()
     requestedUnavailableQuestSnapshot = false
+    initialUnavailableQuestSyncFailed = false
 
     if not commsAudienceFrame then
         commsAudienceFrame = CreateFrame("Frame")
@@ -473,5 +500,5 @@ function DailyQuestComms.SendUnavailableQuestState(target)
     }
 
     local serializedEvent = AceSerializer:Serialize(event)
-    Questie:SendCommMessage(COMM_PREFIX, serializedEvent, "WHISPER", target)
+    _SendCommMessage(serializedEvent, "WHISPER", target)
 end
