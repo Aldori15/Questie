@@ -53,11 +53,11 @@ local function setup()
     local function reply(rows, caps, incomplete, protocol, sender)
         sequence = sequence + 1
         local token = messages[#messages]:match("^[^~]+~%d+~([^~]+)~")
-        local header = "~" .. (protocol or "18") .. "~" .. token .. "~" .. sequence
+        local header = "~" .. (protocol or "19") .. "~" .. token .. "~" .. sequence
         local function receive(value)
             frame.OnEvent(frame, "CHAT_MSG_ADDON", "QSTSVR", value, "WHISPER", sender or "Tester")
         end
-        receive("BEGIN" .. header .. "~" .. (caps or "QUESTMONEY,HEARTBEAT") .. "~" .. #rows .. "~" .. #rows)
+        receive("BEGIN" .. header .. "~" .. (caps or "00004020") .. "~" .. #rows .. "~" .. #rows)
         for index, row in ipairs(rows) do receive("PART" .. header .. "~" .. index .. "~" .. row) end
         if not incomplete then receive("END" .. header) end
     end
@@ -112,7 +112,7 @@ equal(s.money(1), 7400 + 1320, "bonus XP is evaluated at server cap")
 s.level(81); s.rates(ONE, ONE, 80)
 equal(s.money(6), 100 + 13200, "dynamic-level bonus uses cap rather than over-cap character level")
 s.reply({"P:QUEST_MONEY:" .. ONE .. ":" .. ONE .. ":80",
-    "P:QUEST_XP:" .. THREE .. ":" .. TWO .. ":1066192077:80"}, "QUESTMONEY,QUESTXP,HEARTBEAT")
+    "P:QUEST_XP:" .. THREE .. ":" .. TWO .. ":1066192077:80"}, "00005020")
 equal(s.money(6), 13300, "quest XP rates and aura do not inflate bonus money")
 tests = tests + 1
 
@@ -122,7 +122,7 @@ equal(s.money(1), 54400, "partial batch retains accepted money rates")
 s.elapse(30)
 equal(s.server:GetQuestMoneyRates(), nil, "expired money data")
 equal(s.money(1), 20600, "expired state restores generated fallback")
-s = setup(); s.rates(TWO); s.reply({}, "HEARTBEAT")
+s = setup(); s.rates(TWO); s.reply({}, "00000020")
 equal(s.money(1), 7400, "disabled capability restores fallback")
 s = setup(); s.reply({"P:QUEST_MONEY:" .. TWO .. ":" .. THREE .. ":80"}, nil, false, "14")
 equal(s.money(1), 7400, "previous protocol cannot apply rates")
@@ -138,7 +138,7 @@ for index, rows in ipairs({{}, {row, row}, {"P:QUEST_MONEY:2139095040:" .. ONE .
     s.reply(rows)
     equal(s.money(1), 14800, "invalid batch is atomic " .. index)
 end
-s.reply({row}, "HEARTBEAT")
+s.reply({row}, "00000020")
 equal(s.money(1), 14800, "unadvertised money row rejected")
 s.reply({row}, nil, false, nil, "Imposter")
 equal(s.money(1), 14800, "wrong sender rejected")
@@ -155,7 +155,7 @@ tests = tests + 1
 s = setup(); s.rates(TWO, THREE)
 s.env.SlashCmdList.QUESTIESERVER("money")
 assert(s.prints[#s.prints]:find("normal 2x; max-level bonus 3x; server level cap 80", 1, true), "money diagnostic")
-s.reply({}, "HEARTBEAT"); s.env.SlashCmdList.QUESTIESERVER("money")
+s.reply({}, "00000020"); s.env.SlashCmdList.QUESTIESERVER("money")
 assert(s.prints[#s.prints]:find("using generated rewards", 1, true), "fallback diagnostic")
 tests = tests + 1
 print("Quest money regression tests passed: " .. tests)

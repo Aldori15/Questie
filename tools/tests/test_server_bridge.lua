@@ -1,6 +1,23 @@
 -- Run from the addon directory with Lua 5.2+; no client or server is required.
 -- Exercise the production receiver and integrations with a simulated addon channel.
 local tests = 0
+local wireCapabilities = {
+    "EVENTS", "VALUES", "SCOURGE", "QUELDANAS", "KALUAK", "HEARTBEAT",
+    "QUESTPOOLS", "WINTERGRASP", "ICC", "RESETS", "PHASES", "PATROLS",
+    "QUESTXP", "QUESTREP", "QUESTMONEY", "QUESTDISABLES", "QUESTGIVERS", "QUESTGIVERTEMPLATES",
+}
+local function encodeCaps(names)
+    local mask = 0
+    for name in names:gmatch("[^,]+") do
+        local found = false
+        for index, capability in ipairs(wireCapabilities) do
+            if capability == name then mask = mask + 2 ^ (index - 1); found = true; break end
+        end
+        assert(found, "unknown fixture capability: " .. name)
+    end
+    return string.format("%08X", mask)
+end
+
 local function equal(actual, expected, context)
     assert(actual == expected, context .. ": expected " .. tostring(expected) .. ", got " .. tostring(actual))
 end
@@ -73,7 +90,7 @@ local function setup()
         sequence = sequence + 1
         snapshotSequence = sequence
         local batchHeader = header(version)
-        receive("BEGIN" .. batchHeader .. "~" .. caps .. "~" .. #rows .. "~" .. #rows, sender)
+        receive("BEGIN" .. batchHeader .. "~" .. encodeCaps(caps) .. "~" .. #rows .. "~" .. #rows, sender)
         for index, row in ipairs(rows) do
             if dropped ~= index then receive("PART" .. batchHeader .. "~" .. index .. "~" .. row, sender) end
         end
@@ -92,11 +109,11 @@ local function setup()
     end
     local function info(protocol, status, version, revision)
         local token = messages[#messages].payload:match("^[^~]+~%d+~([^~]+)~")
-        receive("INFO~1~" .. token .. "~" .. (protocol or "18") .. "~" .. (version or "0.1.0")
+        receive("INFO~1~" .. token .. "~" .. (protocol or "19") .. "~" .. (version or "0.1.0")
             .. "~" .. (revision or "abc1234") .. "~" .. (status or "READY"))
     end
     return {
-        env = env, modules = modules,
+        env = env, modules = modules, frame = frame,
         server = server, messages = messages, profile = profile, prints = prints, cleared = cleared,
         reply = reply, snapshot = snapshot, heartbeat = heartbeat, receive = receive, info = info,
         refreshes = function() return refreshes end,
@@ -210,7 +227,7 @@ local function gates(s, first, second)
 end
 
 local s = setup()
-equal(s.messages[1].payload:sub(1, 9), "WATCH~18~", "heartbeat protocol discovery")
+equal(s.messages[1].payload:sub(1, 9), "WATCH~19~", "heartbeat protocol discovery")
 gates(s, nil, nil)
 s.snapshot(true, "0")
 equal(s.server:HasCapability("KALUAK"), true, "Kalu'ak capability")
@@ -249,7 +266,7 @@ s.advance(31)
 equal(s.server:IsKaluakDerbyFinished(), nil, "expired AI state")
 gates(s, nil, nil)
 s.advance(5)
-equal(s.messages[#s.messages].payload:sub(1, 9), "WATCH~18~", "fixed protocol survives an outage")
+equal(s.messages[#s.messages].payload:sub(1, 9), "WATCH~19~", "fixed protocol survives an outage")
 tests = tests + 1
 
 s = setup()
@@ -270,7 +287,7 @@ gates(s, true, false)
 tests = tests + 1
 
 s = setup()
-for _, version in ipairs({"2", "3", "4", "5", "9", "12", "13", "14", "15", "16", "17"}) do
+for _, version in ipairs({"2", "3", "4", "5", "9", "12", "13", "14", "15", "16", "17", "18"}) do
     s.reply({"E:63:0:0:1", "P:KA_FINISHED:1"}, "EVENTS,KALUAK", nil, version)
     equal(s.server:HasCapability("EVENTS"), false, "unsupported protocol rejected")
     gates(s, nil, nil)
@@ -278,7 +295,7 @@ end
 s.advance(5)
 equal(#s.messages, 1, "timeout does not downgrade")
 s.advance(55)
-equal(s.messages[2].payload:sub(1, 9), "WATCH~18~", "retry retains current protocol")
+equal(s.messages[2].payload:sub(1, 9), "WATCH~19~", "retry retains current protocol")
 s.snapshot(true, "1", true)
 gates(s, false, true)
 tests = tests + 1
@@ -295,7 +312,7 @@ tests = tests + 1
 -- Idle renewal preserves the snapshot/token and avoids availability refreshes.
 s = setup()
 local firstSnapshot = s.snapshot(true, "0", true)
-local firstToken = s.messages[1].payload:match("^WATCH~18~([^~]+)~")
+local firstToken = s.messages[1].payload:match("^WATCH~19~([^~]+)~")
 local refreshes = s.refreshes()
 for _ = 1, 9 do
     s.advance(10)
@@ -304,7 +321,7 @@ for _ = 1, 9 do
     gates(s, true, false)
 end
 for index = 2, #s.messages do
-    equal(s.messages[index].payload, "ACK~18~" .. firstToken .. "~" .. firstSnapshot, "lightweight lease renewal")
+    equal(s.messages[index].payload, "ACK~19~" .. firstToken .. "~" .. firstSnapshot, "lightweight lease renewal")
 end
 equal(s.refreshes(), refreshes, "heartbeats do not refresh quest icons")
 s.server:PrintStatus()
@@ -315,7 +332,7 @@ tests = tests + 1
 local changedSnapshot = s.snapshot(true, "1", true)
 gates(s, false, true)
 s.advance(10)
-equal(s.messages[#s.messages].payload, "ACK~18~" .. firstToken .. "~" .. changedSnapshot, "acknowledge latest state")
+equal(s.messages[#s.messages].payload, "ACK~19~" .. firstToken .. "~" .. changedSnapshot, "acknowledge latest state")
 s.heartbeat()
 gates(s, false, true)
 tests = tests + 1
@@ -327,7 +344,7 @@ local originalRequest = s.messages[1].payload
 s.advance(10)
 s.heartbeat(999)
 s.advance(1)
-equal(s.messages[#s.messages].payload:sub(1, 9), "WATCH~18~", "missed snapshot resync")
+equal(s.messages[#s.messages].payload:sub(1, 9), "WATCH~19~", "missed snapshot resync")
 assert(s.messages[#s.messages].payload ~= originalRequest, "resync must rotate the token")
 s.snapshot(true, "1", true)
 gates(s, false, true)
@@ -337,12 +354,12 @@ tests = tests + 1
 s = setup()
 s.snapshot(true, "0", true)
 s.advance(10)
-local token = s.messages[1].payload:match("^WATCH~18~([^~]+)~")
-s.receive("ALIVE~18~" .. token .. "~2~1", "Imposter")
+local token = s.messages[1].payload:match("^WATCH~19~([^~]+)~")
+s.receive("ALIVE~19~" .. token .. "~2~1", "Imposter")
 s.receive("ALIVE~3~" .. token .. "~2~1")
-s.receive("ALIVE~18~wrongtoken~2~1")
-s.receive("ALIVE~18~" .. token .. "~2~bad")
-s.receive("ALIVE~18~" .. token .. "~2~1~extra")
+s.receive("ALIVE~19~wrongtoken~2~1")
+s.receive("ALIVE~19~" .. token .. "~2~bad")
+s.receive("ALIVE~19~" .. token .. "~2~1~extra")
 s.server:PrintStatus()
 assert(printed(s, "[Server bridge] Live state"):find("Live state %(10s%)"), "invalid heartbeats must not refresh age")
 local validHeartbeat = s.heartbeat()
@@ -358,7 +375,7 @@ tests = tests + 1
 
 -- An expired or missing snapshot cannot be created/revived by ALIVE alone.
 s = setup()
-s.receive("ALIVE~18~" .. s.messages[1].payload:match("^WATCH~18~([^~]+)~") .. "~1~1")
+s.receive("ALIVE~19~" .. s.messages[1].payload:match("^WATCH~19~([^~]+)~") .. "~1~1")
 equal(s.server:HasCapability("HEARTBEAT"), false, "heartbeat before snapshot ignored")
 s.snapshot(true, "0", true)
 s.elapse(31)
@@ -383,7 +400,7 @@ for _, dropped in ipairs({1, "END"}) do
     s.advance(6)
     s.heartbeat()
     s.advance(1)
-    equal(s.messages[#s.messages].payload:sub(1, 9), "WATCH~18~", "incomplete snapshot recovery")
+    equal(s.messages[#s.messages].payload:sub(1, 9), "WATCH~19~", "incomplete snapshot recovery")
     s.snapshot(true, "1", true)
     gates(s, false, true)
 end
@@ -393,9 +410,9 @@ tests = tests + 1
 s = setup()
 s.snapshot(true, "0", true)
 s.advance(20)
-equal(s.messages[#s.messages].payload:sub(1, 7), "ACK~18~", "renewal request")
+equal(s.messages[#s.messages].payload:sub(1, 7), "ACK~19~", "renewal request")
 s.advance(5)
-equal(s.messages[#s.messages].payload:sub(1, 9), "WATCH~18~", "renewal timeout recovery")
+equal(s.messages[#s.messages].payload:sub(1, 9), "WATCH~19~", "renewal timeout recovery")
 s.snapshot(true, "1", true)
 gates(s, false, true)
 tests = tests + 1
@@ -406,7 +423,7 @@ s.snapshot(true, "0", true)
 s.advance(10)
 s.server:WatchWorldState(999)
 s.advance(0)
-assert(s.messages[#s.messages].payload:match("^WATCH~18~[^~]+~198,999$"), "changed subscriptions require WATCH")
+assert(s.messages[#s.messages].payload:match("^WATCH~19~[^~]+~198,999$"), "changed subscriptions require WATCH")
 s.reply({"W:198:0", "W:999:123"}, "VALUES,HEARTBEAT")
 equal(s.server:GetWorldState(999), 123, "new subscription value")
 tests = tests + 1
@@ -418,12 +435,12 @@ equal(s.server:HasCapability("KALUAK"), true, "independent capability state")
 s.heartbeat()
 equal(s.server:HasCapability("HEARTBEAT"), false, "unadvertised keepalive ignored")
 s.advance(20)
-equal(s.messages[#s.messages].payload:sub(1, 9), "WATCH~18~", "missing capability retains current protocol")
+equal(s.messages[#s.messages].payload:sub(1, 9), "WATCH~19~", "missing capability retains current protocol")
 s = setup()
 s.advance(5)
 s.advance(55)
 for _, message in ipairs(s.messages) do
-    assert(message.payload:match("^WATCH~18~"), "no module must not renew or downgrade")
+    assert(message.payload:match("^WATCH~19~"), "no module must not renew or downgrade")
 end
 gates(s, nil, nil)
 tests = tests + 1
@@ -434,8 +451,8 @@ s.info()
 equal(s.server:HasCapability("EVENTS"), false, "metadata does not create live state")
 gates(s, nil, nil)
 s.server:PrintStatus()
-equal(s.prints[1], "[Server bridge] Client: Questie 9.9.4-335; protocol 18", "client version diagnostic")
-equal(s.prints[2], "[Server bridge] Server: mod-questie-bridge 0.1.0; protocol 18; AC revision abc1234 (last handshake 0s ago)", "server build diagnostic")
+equal(s.prints[1], "[Server bridge] Client: Questie 9.9.4-335; protocol 19", "client version diagnostic")
+equal(s.prints[2], "[Server bridge] Server: mod-questie-bridge 0.1.0; protocol 19; AC revision abc1234 (last handshake 0s ago)", "server build diagnostic")
 assert(printed(s, "[Server bridge] Waiting"), "metadata still awaits a complete snapshot")
 s.snapshot(true, "0", true)
 s.advance(10)
@@ -448,12 +465,12 @@ tests = tests + 1
 s = setup()
 s.info("99", "MISMATCH", "0.2.0", "def5678")
 s.server:PrintStatus()
-assert(printed(s, "[Server bridge] Last handshake:"):find("client requires 18, server provides 99", 1, true), "mismatch diagnostic")
+assert(printed(s, "[Server bridge] Last handshake:"):find("client requires 19, server provides 99", 1, true), "mismatch diagnostic")
 equal(s.server:HasCapability("EVENTS"), false, "mismatched connection has no state")
 s.reply({"E:63:0:0:1", "P:KA_FINISHED:1"}, "EVENTS,KALUAK", nil, "99")
 gates(s, nil, nil)
 s.advance(60)
-equal(s.messages[#s.messages].payload:sub(1, 9), "WATCH~18~", "mismatch does not downgrade")
+equal(s.messages[#s.messages].payload:sub(1, 9), "WATCH~19~", "mismatch does not downgrade")
 s.info()
 s.snapshot(true, "1", true)
 gates(s, false, true)
@@ -461,7 +478,7 @@ tests = tests + 1
 
 -- Disabled is distinguishable from a server that never answered.
 s = setup()
-s.info("18", "DISABLED")
+s.info("19", "DISABLED")
 s.server:PrintStatus()
 assert(printed(s, "[Server bridge] Last handshake:"):find("disabled", 1, true), "disabled diagnostic")
 gates(s, nil, nil)
@@ -473,21 +490,21 @@ tests = tests + 1
 
 -- Sender/channel/token checks, bounds and status consistency protect diagnostics.
 s = setup()
-token = s.messages[1].payload:match("^WATCH~18~([^~]+)~")
-local metadata = "INFO~1~" .. token .. "~18~0.1.0~abc1234~READY"
+token = s.messages[1].payload:match("^WATCH~19~([^~]+)~")
+local metadata = "INFO~1~" .. token .. "~19~0.1.0~abc1234~READY"
 s.receive(metadata, "Imposter")
 s.receive(metadata, "Tester", "PARTY")
-s.receive("INFO~1~wrongtoken~18~0.1.0~abc1234~READY")
-s.receive("INFO~2~" .. token .. "~18~0.1.0~abc1234~READY")
+s.receive("INFO~1~wrongtoken~19~0.1.0~abc1234~READY")
+s.receive("INFO~2~" .. token .. "~19~0.1.0~abc1234~READY")
 s.info("0", "READY")
 s.info("06", "READY")
 s.info("65536", "MISMATCH")
-s.info("18", "MISMATCH")
+s.info("19", "MISMATCH")
 s.info("99", "READY")
 s.info("99", "DISABLED")
-s.info("18", "INVALID")
-s.info("18", "READY", "bad|version")
-s.info("18", "READY", "0.1.0", string.rep("a", 65))
+s.info("19", "INVALID")
+s.info("19", "READY", "bad|version")
+s.info("19", "READY", "0.1.0", string.rep("a", 65))
 s.server:PrintStatus()
 equal(printed(s, "[Server bridge] Server version"), "[Server bridge] Server version information unavailable.", "invalid metadata rejected")
 s.advance(5)
@@ -502,9 +519,9 @@ s = setup()
 s.info()
 s.info("99", "MISMATCH", "9.0.0")
 s.snapshot(true, "0", true)
-s.info("18", "DISABLED")
+s.info("19", "DISABLED")
 s.server:PrintStatus()
-assert(printed(s, "[Server bridge] Server:"):find("0.1.0; protocol 18", 1, true), "first metadata retained")
+assert(printed(s, "[Server bridge] Server:"):find("0.1.0; protocol 19", 1, true), "first metadata retained")
 gates(s, true, false)
 s.advance(20)
 s.info("99", "MISMATCH")
@@ -684,7 +701,7 @@ equal(s.server:IsPooledQuestActive(13830), true, "partial rotation never applied
 s.advance(6)
 s.heartbeat()
 s.advance(1)
-assert(s.messages[#s.messages].payload:match("^WATCH~18~"), "missed rotation requests snapshot")
+assert(s.messages[#s.messages].payload:match("^WATCH~19~"), "missed rotation requests snapshot")
 s.reply({"Q:13830:5676:0", "Q:13832:5676:1"}, "QUESTPOOLS,HEARTBEAT")
 equal(s.server:IsPooledQuestActive(13832), true, "rotation recovered")
 tests = tests + 1
@@ -813,7 +830,7 @@ equal(s.server:GetQuestAvailabilityState(13177), true, "old complete gates retai
 s.advance(6)
 s.heartbeat()
 s.advance(1)
-assert(s.messages[#s.messages].payload:match("^WATCH~18~"), "missed control change requests a complete snapshot")
+assert(s.messages[#s.messages].payload:match("^WATCH~19~"), "missed control change requests a complete snapshot")
 s.reply({"P:WG_STATE:1:0:1", "R:13177:0", "R:13179:1"}, "WINTERGRASP,HEARTBEAT")
 equal(s.server:GetWintergraspState().defender, 1, "control change recovered")
 equal(s.server:GetQuestAvailabilityState(13179), true, "replacement gates applied")
@@ -1524,7 +1541,7 @@ do
     local rows = iccRows(100, 0, 24869, false, 0)
     rows[#rows + 1] = "E:61:0:0:0"
     s.reply(rows, "ICC,EVENTS,HEARTBEAT")
-    local oldToken = s.messages[#s.messages].payload:match("^WATCH~18~([^~]+)~")
+    local oldToken = s.messages[#s.messages].payload:match("^WATCH~19~([^~]+)~")
     local oldHeartbeat = s.heartbeat()
     s.event("PLAYER_ENTERING_WORLD")
     equal(s.server:IsICCQuestActive(24869), nil, "travel clears old instance gate immediately")
@@ -1533,11 +1550,11 @@ do
     s.receive(oldHeartbeat)
     equal(s.server:GetICCState(), nil, "old heartbeat cannot restore raid context")
     s.advance(2)
-    local newToken = s.messages[#s.messages].payload:match("^WATCH~18~([^~]+)~")
+    local newToken = s.messages[#s.messages].payload:match("^WATCH~19~([^~]+)~")
     assert(newToken and newToken ~= oldToken, "instance travel requests new token")
-    s.receive("BEGIN~18~" .. oldToken .. "~999~ICC,HEARTBEAT~1~1")
-    s.receive("PART~18~" .. oldToken .. "~999~1~P:ICC_STATE:0:0:0:0:0")
-    s.receive("END~18~" .. oldToken .. "~999")
+    s.receive("BEGIN~19~" .. oldToken .. "~999~00000120~1~1")
+    s.receive("PART~19~" .. oldToken .. "~999~1~P:ICC_STATE:0:0:0:0:0")
+    s.receive("END~19~" .. oldToken .. "~999")
     equal(s.server:GetICCState(), nil, "in-flight old snapshot rejected")
     s.reply(iccRows(200, 1, 24873, false, 0), "ICC,HEARTBEAT")
     equal(s.server:GetICCState().instance, 200, "new instance confirmed")
@@ -2405,8 +2422,8 @@ do
     local newToken = state.messages[#state.messages].payload:match("^[^~]+~%d+~([^~]+)~")
     assert(newToken ~= oldToken, "zone change still requests a new token")
     state.receive(oldHeartbeat)
-    local oldHeader = "~18~" .. oldToken .. "~99999"
-    state.receive("BEGIN" .. oldHeader .. "~" .. caps .. "~2~1")
+    local oldHeader = "~19~" .. oldToken .. "~99999"
+    state.receive("BEGIN" .. oldHeader .. "~" .. encodeCaps(caps) .. "~2~1")
     state.receive("PART" .. oldHeader .. "~1~P:QG_CONTEXT:571:4395;P:QGT_COUNT:0")
     state.receive("END" .. oldHeader)
     equal(state.server:GetNPCQuestgiverTemplateState(823), false, "old-token empty catalog cannot clear restrictions")
@@ -2414,7 +2431,7 @@ do
     calculate()
     equal(#notes, 1, "incomplete replacement does not expose restricted remote marker")
     equal(state.refreshes(), stableRefreshes, "incomplete replacement does not redraw")
-    state.receive("END~18~" .. newToken .. "~" .. sequence); calculate()
+    state.receive("END~19~" .. newToken .. "~" .. sequence); calculate()
     equal(state.server:GetQuestgiverStateKey(), stableKey, "new empty local context keeps global key")
     equal(draws, stableDraws, "same global catalog with a new zone does not redraw")
     equal(state.refreshes(), stableRefreshes, "complete unchanged replacement does not request refresh")
@@ -2534,7 +2551,7 @@ do
         local token = state.messages[#state.messages].payload:match("^[^~]+~%d+~([^~]+)~")
         local sequence = state.reply({}, "HEARTBEAT", nil, nil, "END")
         equal(state.server:GetNPCQuestgiverTemplateState(823), false, "partial capability removal remains atomic")
-        state.receive("END~18~" .. token .. "~" .. sequence)
+        state.receive("END~19~" .. token .. "~" .. sequence)
         equal(state.server:GetNPCQuestgiverTemplateState(823), nil, "complete capability removal clears authority")
         equal(state.server:GetNPCQuestgiverState(823, 12, 111, 0), nil, "removed capability clears local positives")
     end
@@ -2591,14 +2608,14 @@ do
         if #parts == 0 or #parts[#parts] + #row + 1 > 150 then parts[#parts + 1] = row
         else parts[#parts] = parts[#parts] .. ";" .. row end
     end
-    local header = "~18~" .. token .. "~1000"
-    state.receive("BEGIN" .. header .. "~" .. caps .. "~4096~" .. #parts)
+    local header = "~19~" .. token .. "~1000"
+    state.receive("BEGIN" .. header .. "~" .. encodeCaps(caps) .. "~4096~" .. #parts)
     for index, part in ipairs(parts) do state.receive("PART" .. header .. "~" .. index .. "~" .. part) end
     state.receive("END" .. header)
     equal(state.server:GetNPCQuestgiverTemplateState(4094), false, "4096-row complete snapshot accepted atomically")
     equal(state.server:GetNPCQuestgiverTemplateState(4095), nil, "no partial catalog claims")
     local allCaps = "EVENTS,VALUES,SCOURGE,QUELDANAS,KALUAK,QUESTPOOLS,WINTERGRASP,RESETS,PATROLS,QUESTDISABLES,QUESTGIVERS,PHASES,ICC,QUESTXP,QUESTREP,QUESTMONEY,HEARTBEAT,QUESTGIVERTEMPLATES"
-    assert(#("BEGIN~18~" .. string.rep("x", 32) .. "~9007199254740991~" .. allCaps .. "~4096~1024") <= 240,
+    assert(#("BEGIN~19~" .. string.rep("x", 32) .. "~9007199254740991~" .. encodeCaps(allCaps) .. "~4096~1024") <= 240,
         "all-capability header fits the receiver message bound")
     tests = tests + 1
 end
@@ -2662,6 +2679,100 @@ do
     guid, tip.lines = "0xF130000337000002", {}
     tips.private.AddUnitDataToTooltip(tip)
     assert(table.concat(tip.lines, "\n"):find("Quest 1", 1, true), "another runtime GUID remains unknown")
+    tests = tests + 1
+end
+
+-- Inspect the production decoder without exposing a test API to the addon.
+do
+    local function upvalue(fn, key)
+        for index = 1, math.huge do
+            local name, value = debug.getupvalue(fn, index)
+            if not name then error("missing upvalue: " .. key) end
+            if name == key then return value end
+        end
+    end
+    local state = setup()
+    local handler = upvalue(state.frame.OnEvent, "HandleMessage")
+    local decode = upvalue(handler, "ParseCapabilities")
+    for index, name in ipairs(wireCapabilities) do
+        local caps = assert(decode(string.format("%08X", 2 ^ (index - 1))))
+        equal(caps[name], true, "explicit wire bit for " .. name)
+        caps[name] = nil
+        equal(next(caps), nil, "one bit decodes to exactly one capability")
+    end
+    local all = assert(decode("0003FFFF"))
+    for _, name in ipairs(wireCapabilities) do equal(all[name], true, "full mask includes " .. name) end
+    equal(next(assert(decode("00000000"))), nil, "zero mask has no capabilities")
+    for _, mask in ipairs({"", "0", "0000000", "000000000", "0x000020", "0000002a", "0000000G",
+        " 00000020", "00000020 ", "-0000020", "EVENTS,HEARTBEAT", ".00000020", "00000020.",
+        "00000020..00000001", "00000020.00000000", "00000000.00000000",
+        "00000000.00000000.00000000.00000000.00000001", "00040000", "80000000",
+        "00000000.00000001", "00000000.00000000.00000000.80000000"}) do
+        equal(decode(mask), nil, "malformed or unknown mask rejected: " .. mask)
+    end
+    -- Future assignments exercise the same decoder across all four words.
+    local assigned = upvalue(decode, "CAPABILITIES")
+    assigned[31], assigned[32], assigned[64], assigned[127] = "FUTURE31", "FUTURE32", "FUTURE64", "FUTURE127"
+    local extended = assert(decode("80000020.00000001.00000001.80000000"))
+    equal(#("BEGIN~19~" .. string.rep("T", 32) .. "~9007199254740991~80000020.00000001.00000001.80000000~4096~1024"),
+        104, "four-word header fits with maximum token, sequence and counts")
+    for _, name in ipairs({"HEARTBEAT", "FUTURE31", "FUTURE32", "FUTURE64", "FUTURE127"}) do
+        equal(extended[name], true, "unsigned word decoding for " .. name)
+    end
+    state.receive("BEGIN~19~" .. state.messages[1].payload:match("^WATCH~19~([^~]+)~")
+        .. "~1~80000020.00000001.00000001.80000000~0~0")
+    state.receive("END~19~" .. state.messages[1].payload:match("^WATCH~19~([^~]+)~") .. "~1")
+    equal(state.server:HasCapability("FUTURE127"), true, "complete multiword snapshot preserves named caps")
+    tests = tests + 1
+end
+
+do
+    local state = setup()
+    local rows = {"E:63:0:0:1", "W:198:0", "P:SC_ACTIVE:0", "U:3426:0", "P:KA_FINISHED:0",
+        "P:WG_STATE:?:?:?", "P:ICC_STATE:?:?:?:?:?", "P:QUEST_RESETS:2000000000:2000000001",
+        "P:SERVER_TIME:1900000000", "P:PHASE_CONTEXT:0:12:1:12", "P:QG_CONTEXT:0:12", "P:QGT_COUNT:1", "N:823",
+        "P:QUEST_XP:1065353216:1065353216:1065353216:80",
+        "P:QUEST_REP:1065353216:1065353216:0:1065353216:51:0",
+        "P:QUEST_MONEY:1065353216:1065353216:80"}
+    state.reply(rows, table.concat(wireCapabilities, ","))
+    for _, name in ipairs(wireCapabilities) do
+        equal(state.server:HasCapability(name), true, "all-capability snapshot retains " .. name)
+    end
+    equal(state.server:GetNPCQuestgiverTemplateState(823), false, "global template authority survives protocol upgrade")
+    local redraws = state.refreshes()
+    state.advance(10); state.heartbeat()
+    equal(state.refreshes(), redraws, "compact capabilities do not cause heartbeat redraws")
+    state.advance(10)
+    assert(state.messages[#state.messages].payload:match("^ACK~19~"), "ACK renewal retains protocol 19")
+    state.reply({}, "HEARTBEAT")
+    equal(state.server:GetNPCQuestgiverTemplateState(823), nil, "capability removal restores fallback")
+    state.advance(31)
+    equal(state.server:HasCapability("HEARTBEAT"), false, "30-second expiration is unchanged")
+    tests = tests + 1
+end
+
+do
+    local state = setup()
+    state.snapshot(true, "0", true)
+    local token = state.messages[1].payload:match("^WATCH~19~([^~]+)~")
+    for index, mask in ipairs({"", "0000002a", "80000000", "00000020.00000001", "00000020.00000000"}) do
+        local sequence = 100 + index
+        state.receive("BEGIN~19~" .. token .. "~" .. sequence .. "~" .. mask .. "~0~0")
+        state.receive("END~19~" .. token .. "~" .. sequence)
+        equal(state.server:HasCapability("EVENTS"), true, "bad masks cannot replace accepted authority")
+    end
+    local padding = string.rep("0", 240 - #("BEGIN~19~" .. token .. "~200~00000020~0~"))
+    local boundary = "BEGIN~19~" .. token .. "~200~00000020~0~" .. padding
+    equal(#boundary, 240, "receiver boundary fixture")
+    state.receive(boundary .. "0"); state.receive("END~19~" .. token .. "~200")
+    equal(state.server:HasCapability("EVENTS"), true, "241-byte BEGIN cannot replace authority")
+    state.receive("BEGIN~18~" .. token .. "~201~EVENTS,HEARTBEAT~0~0")
+    state.receive("END~18~" .. token .. "~201")
+    equal(state.server:HasCapability("EVENTS"), true, "protocol 18 snapshot cannot replace protocol 19 state")
+    state.advance(31)
+    equal(state.server:HasCapability("EVENTS"), false, "rejected packets cannot renew old authority")
+    state = setup(); state.info("18", "MISMATCH")
+    equal(state.server:HasCapability("HEARTBEAT"), false, "INFO version 1 still diagnoses protocol 18 mismatch")
     tests = tests + 1
 end
 

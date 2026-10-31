@@ -61,15 +61,15 @@ local function setup()
     end
     local function snapshot(sequence, caps, rows)
         rows = rows or {}
-        local header = "~18~" .. token() .. "~" .. sequence
-        receive("BEGIN" .. header .. "~" .. (caps or "PATROLS,HEARTBEAT") .. "~" .. #rows .. "~" .. #rows)
+        local header = "~19~" .. token() .. "~" .. sequence
+        receive("BEGIN" .. header .. "~" .. (caps or "00000820") .. "~" .. #rows .. "~" .. #rows)
         for index, row in ipairs(rows) do receive("PART" .. header .. "~" .. index .. "~" .. row) end
         receive("END" .. header)
     end
     local function motion(sequence, rows, context, anchor, oldToken, dropped)
         rows = rows or {"37780:133649:5915.750:626.745"}
         context = context or {571, 0, 4395}
-        local header = "~18~" .. (oldToken or token()) .. "~" .. (anchor or 1) .. "~" .. sequence
+        local header = "~19~" .. (oldToken or token()) .. "~" .. (anchor or 1) .. "~" .. sequence
         receive("MBEGIN" .. header .. "~" .. table.concat(context, "~") .. "~" .. #rows .. "~" .. #rows .. "~READY")
         for index, row in ipairs(rows) do
             if dropped ~= index then receive("MPART" .. header .. "~" .. index .. "~" .. row) end
@@ -118,7 +118,7 @@ s.motion(2, nil, nil, 99); s.motion(2, nil, nil, nil, "oldtoken")
 equal(s.server:GetPatrolPositions(), good, "old connection/snapshot rejected")
 s.motion(2, {"37780:133649:5915.750:626.745", "37780:133649:5916.750:627.745"})
 equal(s.server:GetPatrolPositions(), good, "duplicate spawn rejected")
-local unauthorized = "~18~" .. s.token() .. "~1~2"
+local unauthorized = "~19~" .. s.token() .. "~1~2"
 for _, senderAndChannel in ipairs({{"Other", "WHISPER"}, {"Tester", "PARTY"}}) do
     for _, payload in ipairs({"MBEGIN" .. unauthorized .. "~571~0~4395~0~0~READY", "MEND" .. unauthorized}) do
         s.receive(payload, senderAndChannel[1], senderAndChannel[2])
@@ -132,7 +132,7 @@ s.motion(2, nil, nil, nil, nil, 1)
 equal(s.server:GetPatrolPositions(), good, "missing part cannot replace sample")
 s.motion(3, nil, nil, nil, nil, "END")
 equal(s.server:GetPatrolPositions(), good, "missing end cannot replace sample")
-s.elapse(3); s.receive("MEND~18~" .. s.token() .. "~1~3")
+s.elapse(3); s.receive("MEND~19~" .. s.token() .. "~1~3")
 equal(s.server:GetPatrolPositions(), good, "late batch end rejected")
 s.motion(4); local newest = s.server:GetPatrolPositions(); s.motion(1, {})
 equal(s.server:GetPatrolPositions(), newest, "reordered catalog rejected")
@@ -164,14 +164,14 @@ near(map.x, 51.3, "missing NPC restores static map position")
 near(mini.y, 27.27, "missing NPC restores static minimap position")
 s.motion(5, nil, nil, 2); s.step(0.11); s.elapse(5); s.update()
 near(map.x, 51.3, "expiry restores static location without reload")
-s.receive("MBEGIN~18~" .. s.token() .. "~2~6~571~0~4395~0~0~OVERFLOW")
-s.receive("MEND~18~" .. s.token() .. "~2~6")
+s.receive("MBEGIN~19~" .. s.token() .. "~2~6~571~0~4395~0~0~OVERFLOW")
+s.receive("MEND~19~" .. s.token() .. "~2~6")
 equal(s.server:GetPatrolPositions().status, "OVERFLOW", "overflow never supplies a partial catalog")
 s.step(0.11); near(map.x, 51.3, "overflow retains static fallback")
 
 -- The reported bank/shop bug: area-only transitions outside phase regions must
 -- keep the connection and fresh sample. Actual zone transitions invalidate both.
-s = setup(); s.snapshot(1, "PATROLS,PHASES,HEARTBEAT", {"P:PHASE_CONTEXT:571:4613:1:4395"}); s.motion(1)
+s = setup(); s.snapshot(1, "00000C20", {"P:PHASE_CONTEXT:571:4613:1:4395"}); s.motion(1)
 local bank = s.icon(false, false, true, nil, 133649)
 s.update(); local bankX, bankToken = bank.x, s.token()
 for _, event in ipairs({"ZONE_CHANGED", "ZONE_CHANGED_INDOORS"}) do
@@ -227,7 +227,7 @@ near(classic.x, 40, "ordinary Classic map transform")
 
 -- Shifty Vickers uses the Underbelly floor rectangle, while AC reports the
 -- parent Dalaran zone. Exact spawn matching must work on both map and minimap.
-s = setup(); s.snapshot(1, "PATROLS,PHASES,HEARTBEAT", {"P:PHASE_CONTEXT:571:4570:1:4395"})
+s = setup(); s.snapshot(1, "00000C20", {"P:PHASE_CONTEXT:571:4570:1:4395"})
 local sewerMap = s.icon(false, false, true, 30137, 113397, 126, 4560)
 local sewerMini = s.icon(true, false, true, 30137, 113397, 126, 4560)
 s.motion(1, {"30137:113397:5816.140:649.888"}); s.update()

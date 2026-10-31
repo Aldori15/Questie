@@ -2,7 +2,7 @@
 local QuestieServer = QuestieLoader:CreateModule("QuestieServer")
 local Integrations = QuestieLoader:ImportModule("QuestieServerIntegrations")
 
-local PREFIX, PROTOCOL_VERSION = "QSTSVR", "18"
+local PREFIX, PROTOCOL_VERSION = "QSTSVR", "19"
 
 -- Shared with the correction generators. Decisions apply to the current area,
 -- never to every location in these zones. Keep the module's profiles in sync.
@@ -43,10 +43,14 @@ local snapshotCount, heartbeatCount = 0, 0
 local requestSequence, lastSequence, nextRequestAt = 0, 0, 0
 local nextPreferenceCheck, previousPreferences = 0, nil
 local subscriptions = {}
-local CAPABILITIES = {EVENTS = true, VALUES = true, SCOURGE = true, QUELDANAS = true,
-    KALUAK = true, HEARTBEAT = true, QUESTPOOLS = true, WINTERGRASP = true, ICC = true, RESETS = true,
-    PHASES = true, PATROLS = true, QUESTXP = true, QUESTREP = true, QUESTMONEY = true,
-    QUESTDISABLES = true, QUESTGIVERS = true, QUESTGIVERTEMPLATES = true}
+-- Permanent wire bit positions, independent of the server's configuration flags.
+local CAPABILITIES = {
+    [0] = "EVENTS", [1] = "VALUES", [2] = "SCOURGE", [3] = "QUELDANAS",
+    [4] = "KALUAK", [5] = "HEARTBEAT", [6] = "QUESTPOOLS", [7] = "WINTERGRASP",
+    [8] = "ICC", [9] = "RESETS", [10] = "PHASES", [11] = "PATROLS",
+    [12] = "QUESTXP", [13] = "QUESTREP", [14] = "QUESTMONEY",
+    [15] = "QUESTDISABLES", [16] = "QUESTGIVERS", [17] = "QUESTGIVERTEMPLATES",
+}
 
 local function Split(value, separator)
     local fields, first = {}, 1
@@ -59,6 +63,25 @@ local function Split(value, separator)
         fields[#fields + 1] = string.sub(value, first, position - 1)
         first = position + #separator
     end
+end
+
+local function ParseCapabilities(value)
+    local words = Split(value, ".")
+    if #words > 4 or (#words > 1 and words[#words] == "00000000") then return nil end
+    local caps = {}
+    for index, raw in ipairs(words) do
+        if #raw ~= 8 or raw:find("[^0-9A-F]") then return nil end
+        local word = tonumber(raw, 16)
+        for bitIndex = 0, 31 do
+            if word % 2 == 1 then
+                local cap = CAPABILITIES[(index - 1) * 32 + bitIndex]
+                if not cap then return nil end
+                caps[cap] = true
+            end
+            word = math.floor(word / 2)
+        end
+    end
+    return caps
 end
 
 local function Integer(value, maximum)
@@ -756,13 +779,8 @@ local function HandleMessage(message, distribution, sender)
         if assembly and sequence <= assembly.sequence then return end
         local rows, parts = Integer(fields[6], 4096), Integer(fields[7], 1024)
         if not rows or not parts or (rows == 0) ~= (parts == 0) or parts > rows then return end
-        local caps = {}
-        if fields[5] ~= "" then
-            for _, cap in ipairs(Split(fields[5], ",")) do
-                if not CAPABILITIES[cap] or caps[cap] then return end
-                caps[cap] = true
-            end
-        end
+        local caps = ParseCapabilities(fields[5])
+        if not caps then return end
         assembly = {sequence = sequence, caps = caps, rowCount = rows, partCount = parts, parts = {}, untilTime = now + 5}
     elseif assembly and sequence == assembly.sequence and now <= assembly.untilTime then
         if fields[1] == "PART" and #fields == 6 then

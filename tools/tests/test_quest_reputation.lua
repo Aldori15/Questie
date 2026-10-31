@@ -53,11 +53,11 @@ local function setup()
     local function reply(rows, caps, incomplete, protocol, sender)
         sequence = sequence + 1
         local token = messages[#messages]:match("^[^~]+~%d+~([^~]+)~")
-        local header = "~" .. (protocol or "18") .. "~" .. token .. "~" .. sequence
+        local header = "~" .. (protocol or "19") .. "~" .. token .. "~" .. sequence
         local function receive(value)
             frame.OnEvent(frame, "CHAT_MSG_ADDON", "QSTSVR", value, "WHISPER", sender or "Tester")
         end
-        receive("BEGIN" .. header .. "~" .. (caps or "QUESTREP,HEARTBEAT") .. "~" .. #rows .. "~" .. #rows)
+        receive("BEGIN" .. header .. "~" .. (caps or "00002020") .. "~" .. #rows .. "~" .. #rows)
         for index, row in ipairs(rows) do receive("PART" .. header .. "~" .. index .. "~" .. row) end
         if not incomplete then receive("END" .. header) end
     end
@@ -142,7 +142,7 @@ s.elapse(30)
 equal(s.server:GetQuestReputationRates(), nil, "expired reputation data")
 equal(reward(s, 1), 500, "expiry restores generated faction rates")
 s = setup(); s.human(true); s.rates(TWO, ONE, 10)
-s.reply({}, "HEARTBEAT")
+s.reply({}, "00000020")
 equal(reward(s, 1), 550, "disabled capability restores generated faction rate and human bonus")
 s = setup()
 s.reply({"P:QUEST_REP:" .. TWO .. ":" .. ONE .. ":0:" .. ONE .. ":51:0"}, nil, false, "14")
@@ -168,7 +168,7 @@ for index, rows in ipairs(invalid) do
     s.reply(rows)
     equal(reward(s, 1), 750, "invalid reputation batch is atomic " .. index)
 end
-s.reply({header}, "HEARTBEAT")
+s.reply({header}, "00000020")
 equal(reward(s, 1), 750, "unadvertised rows rejected")
 s.reply({header}, nil, false, nil, "Imposter")
 equal(reward(s, 1), 750, "other sender rejected")
@@ -188,7 +188,7 @@ catalog[#catalog + 1] = faction(257, ONE)
 s.rates(THREE, ONE, 0, ONE, catalog)
 equal(s.server:GetQuestReputationRates().gain, 2, "oversized catalog cannot replace accepted data")
 s.reply({"P:QUEST_XP:" .. TWO .. ":" .. ONE .. ":" .. ONE .. ":80",
-    "P:QUEST_REP:" .. THREE .. ":" .. ONE .. ":0:" .. ONE .. ":51:0"}, "QUESTXP,QUESTREP,HEARTBEAT")
+    "P:QUEST_REP:" .. THREE .. ":" .. ONE .. ":0:" .. ONE .. ":51:0"}, "00003020")
 equal(s.server:GetQuestXPRates().normal, 2, "XP and reputation capabilities coexist")
 equal(reward(s, 1), 750, "reputation alongside XP")
 s.rewards[12] = {{911, 250}, {999, 2000000000}}
@@ -206,7 +206,7 @@ s.env.SlashCmdList.QUESTIESERVER("rep 911")
 assert(s.prints[#s.prints]:find("Faction 911 quest rates: normal 1x", 1, true), "faction rate diagnostic")
 s.env.SlashCmdList.QUESTIESERVER("rep 99999999999999999999999999999")
 assert(s.prints[#s.prints]:find("Usage:", 1, true), "invalid diagnostic faction ID")
-s.reply({}, "HEARTBEAT"); s.env.SlashCmdList.QUESTIESERVER("rep")
+s.reply({}, "00000020"); s.env.SlashCmdList.QUESTIESERVER("rep")
 assert(s.prints[#s.prints]:find("using generated faction rates", 1, true), "fallback diagnostic")
 tests = tests + 1
 print("Quest reputation regression tests passed: " .. tests)

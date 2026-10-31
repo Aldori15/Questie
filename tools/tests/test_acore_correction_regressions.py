@@ -137,12 +137,26 @@ const WintergraspObjectPositionData WGOutsideNPC[WG_MAX_OUTSIDE_NPC] = {
             self.skipTest("matching bridge source is not available beside the addon")
         text = header.read_text(encoding="utf-8")
         server_text = (header.parent / "QuestieBridge.cpp").read_text(encoding="utf-8")
+        protocol_text = (header.parent / "QuestieBridgeProtocol.h").read_text(encoding="utf-8")
         client_text = (addon_root / "Modules/Network/QuestieServer.lua").read_text(encoding="utf-8")
-        server_protocol = re.search(r"constexpr uint32 ProtocolVersion = (\d+);", server_text)
+        server_protocol = re.search(r"constexpr std::uint32_t ProtocolVersion = (\d+);", protocol_text)
         client_protocol = re.search(r'PROTOCOL_VERSION = "QSTSVR", "(\d+)"', client_text)
         self.assertIsNotNone(server_protocol, "bridge protocol declaration is missing")
         self.assertIsNotNone(client_protocol, "addon protocol declaration is missing")
         self.assertEqual(server_protocol.group(1), client_protocol.group(1), "bridge protocol mismatch")
+        self.assertIn("using QuestieBridge::ProtocolVersion;", server_text)
+        expected_caps = dict(enumerate((
+            "EVENTS", "VALUES", "SCOURGE", "QUELDANAS", "KALUAK", "HEARTBEAT", "QUESTPOOLS",
+            "WINTERGRASP", "ICC", "RESETS", "PHASES", "PATROLS", "QUESTXP", "QUESTREP",
+            "QUESTMONEY", "QUESTDISABLES", "QUESTGIVERS", "QUESTGIVERTEMPLATES",
+        )))
+        server_caps = re.findall(r'\{"([A-Z]+)", (\d+)\}', protocol_text)
+        client_caps = re.findall(r'\[(\d+)\] = "([A-Z]+)"',
+                                re.search(r"local CAPABILITIES = \{(.*?)\}", client_text, re.S).group(1))
+        self.assertEqual(len(server_caps), len(expected_caps), "duplicate or missing server assignments")
+        self.assertEqual(len(client_caps), len(expected_caps), "duplicate or missing client assignments")
+        self.assertEqual({int(bit): name for name, bit in server_caps}, expected_caps)
+        self.assertEqual({int(bit): name for bit, name in client_caps}, expected_caps)
         zones, areas, masks = npc_generator.load_server_phase_profiles()
         for name, profiles in (("PhaseZones", zones), ("PhaseAreas", areas)):
             body = re.search(rf"{name}\[\]\[2\]\s*=\s*\{{(.*?)\}};", text, re.S).group(1)

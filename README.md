@@ -44,6 +44,11 @@ oversized catalogs restore static behavior. The generated databases need no chan
 Enable **Available Scourge Invasion Quests** or **Available Sun's Reach Quests** to show those quest sets.
 The bridge is optional. Missing, disabled, or expired server information restores Questie's usual behavior.
 
+The addon and module require matching protocol **19** builds. Capabilities use compact
+32-bit hexadecimal mask words; the 240-byte message limit, atomic snapshots, heartbeats,
+and 30-second expiration are unchanged. `/qserver` reports mismatched versions, which
+restore static behavior. The independent `INFO~1` diagnostic handshake is retained.
+
 ## Questie Information
 - [Frequently Asked Questions](https://github.com/Questie/Questie/wiki/FAQ)
 - Come chat with us on [our Discord server](https://discord.gg/s33MAYKeZd).
