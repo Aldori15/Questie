@@ -1699,9 +1699,7 @@ _AddStarter = function(starter, quest, tooltipKey, limit)
     -- Only for NPCs since objects do not move
     if starter.waypoints then
         for zone, waypoints in pairs(starter.waypoints or {}) do
-            if (not directNpcStarter or _NpcStarterLocationAvailable(starter, zone)) and
-                QuestieDB:IsAzerothCoreAvailabilityConditionFulfilledForSpawnZone(quest.Id, zone) and
-                (visibleStarterZones[zone] or (not starter.spawns) or (not starter.spawns[zone]) or _HasVisibleSpawnInZone(starter.spawns[zone])) and
+            if QuestieDB:IsAzerothCoreAvailabilityConditionFulfilledForSpawnZone(quest.Id, zone) and
                 (visibleStarterZones[zone] or (not starter.spawns) or (not starter.spawns[zone])
                     or (directNpcStarter and _NpcStarterHasVisibleAllowedSpawnInZone(starter, zone))
                     or (not directNpcStarter and _HasVisibleSpawnInZone(starter.spawns[zone]))) and
