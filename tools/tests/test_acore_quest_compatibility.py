@@ -324,6 +324,65 @@ class QuestCompatibilityTests(unittest.TestCase):
         self.assertEqual(packet["items"], [17757, 17761, 17762, 17763, 17764, 17765])
         self.assertEqual(packet["reasons"]["17761"][0]["rule"], "questObjectiveCreationReagent")
 
+    def test_shipments_keep_quest_drops_without_mapping_crafting_gems(self):
+        shipments = (
+            (12958, 41989, 43269, 58069, (36917, 36932)),
+            (12959, 42104, 43270, 58073, (36923, 36926)),
+            (12960, 42105, 43272, 58074, (36920, 36929)),
+            (12961, 42106, 43274, 58075, (36920, 36932)),
+            (12962, 42107, 43275, 58076, (36917, 36929)),
+            (12963, 42108, 43276, 58077, (36920, 36926)),
+        )
+        for quest_id, component, goal, spell_id, gems in shipments:
+            with self.subTest(quest=quest_id):
+                quest = {"ItemDrop1": component, "RequiredItemId1": goal}
+                items = {component: {"class": 12, "bonding": 4, "spellid_1": spell_id},
+                         goal: {"class": 12}}
+                items.update({gem: {"class": 3, "bonding": 0} for gem in gems})
+                spells = {spell_id: {"Effect1": 24, "EffectItemType1": goal,
+                                     "Reagent1": gems[0], "Reagent2": gems[1]}}
+                packet = compat.derive_required_tool_items(quest, items, spells, with_reasons=True)
+                self.assertEqual(packet["items"], [component])
+                self.assertEqual(packet["reasons"], {str(component): [{"rule": "questItemDrop"}]})
+
+    def test_necklace_repair_keeps_provided_item_without_mapping_chalcedony(self):
+        quest = {"StartItem": 43299, "RequiredItemId1": 43298,
+                 "LogDescription": "Repair the necklace with a single Chalcedony."}
+        items = {43299: {"class": 12, "spellid_1": 58115}, 43298: {"class": 12},
+                 36923: {"name": "Chalcedony", "class": 3}}
+        spells = {58115: {"Effect1": 24, "EffectItemType1": 43298, "Reagent1": 36923}}
+        # Even a named compatibility candidate must not reintroduce material markers.
+        self.assertEqual(compat.derive_required_tool_items(quest, items, spells, [36923]), [43299])
+
+    def test_ordinary_materials_need_explicit_quest_source_evidence(self):
+        for item_class in (3, 5, 7):  # Gems, reagents, trade goods.
+            with self.subTest(item_class=item_class):
+                items = {1: {"class": 12, "spellid_1": 100},
+                         2: {"class": item_class}, 3: {"class": 12}}
+                spells = {100: {"Effect1": 24, "EffectItemType1": 3, "Reagent1": 2}}
+                quest = {"StartItem": 1, "RequiredItemId1": 3}
+                self.assertEqual(compat.derive_required_tool_items(quest, items, spells), [1])
+                # Quest-provided and quest-drop items remain guidance regardless of class.
+                quest["ItemDrop1"] = 2
+                self.assertEqual(compat.derive_required_tool_items(quest, items, spells), [1, 2])
+                del quest["ItemDrop1"]
+                quest["StartItem"] = 2
+                self.assertEqual(compat.derive_required_tool_items(quest, items, spells), [2])
+
+    def test_quest_bound_material_reagents_remain_auxiliary_objectives(self):
+        for item_class in (3, 5, 7, 12):
+            with self.subTest(item_class=item_class):
+                quest = {"StartItem": 1, "RequiredItemId1": 3}
+                items = {1: {"spellid_1": 100}, 2: {"class": item_class, "bonding": 4}, 3: {}}
+                spells = {100: {"Effect1": 24, "EffectItemType1": 3, "Reagent1": 2}}
+                self.assertEqual(compat.derive_required_tool_items(quest, items, spells), [1, 2])
+
+    def test_inferred_materials_do_not_expand_into_more_auxiliary_items(self):
+        quest = {"StartItem": 1}
+        items = {1: {"spellid_1": 100}, 2: {"class": 7, "spellid_1": 101}, 3: {"class": 12}}
+        spells = {100: {"Effect1": 24, "EffectItemType1": 2}, 101: {"Reagent1": 3}}
+        self.assertEqual(compat.derive_required_tool_items(quest, items, spells), [1])
+
     def test_dertroks_named_wand_set_is_backed_by_source_text_and_crystal_reagents(self):
         names = ("First", "Second", "Third", "Fourth")
         items = {30655: {"name": "Infused Vekh'nir Crystal"}}

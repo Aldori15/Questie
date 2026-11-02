@@ -147,23 +147,27 @@ class ItemSpellSourceTests(unittest.TestCase):
         digest = audit.model_digest(saved)
         saved["acquisitionCoverage"] = {"triggered": {"omissions": [{"spellId": 37503}]}}
         self.assertNotEqual(digest, audit.model_digest(saved))
+        digest = audit.model_digest(saved)
+        saved["spellCoverage"]["missingSpellUsage"] = {"128": {"references": [{"itemId": 1}]}}
+        self.assertNotEqual(digest, audit.model_digest(saved))
 
     def test_source_signature_invalidates_when_shared_actor_reader_changes(self):
         with db_snapshot.temporary_directory(ADDON_ROOT / "tools/reports") as directory:
             (directory / "data/sql/base/db_world").mkdir(parents=True)
             (directory / "data/sql/base/db_world/item_template.sql").write_text("", encoding="utf-8")
-            shared_reader = ADDON_ROOT / "tools/acore_quest_compatibility.py"
             file_hash = audit.snapshot.file_hash
-            with patch.object(audit.source_reader, "source_sql_files", return_value=[]):
-                before = audit.source_signature(directory, "starts")
-                self.assertEqual(before["readers"][shared_reader.name], file_hash(shared_reader))
-                with patch.object(audit.snapshot, "file_hash", side_effect=lambda path:
-                                  "changed-shared-reader" if path == shared_reader else file_hash(path)):
-                    after = audit.source_signature(directory, "starts")
-            self.assertNotEqual(before, after)
-            before.pop("readers")
-            after.pop("readers")
-            self.assertEqual(before, after)
+            for name in ("acore_quest_compatibility.py", "acore_missing_spell_review.py"):
+                with self.subTest(reader=name), patch.object(audit.source_reader, "source_sql_files", return_value=[]):
+                    shared_reader = ADDON_ROOT / "tools" / name
+                    before = audit.source_signature(directory, "starts")
+                    self.assertEqual(before["readers"][name], file_hash(shared_reader))
+                    with patch.object(audit.snapshot, "file_hash", side_effect=lambda path:
+                                      "changed-shared-reader" if path == shared_reader else file_hash(path)):
+                        after = audit.source_signature(directory, "starts")
+                    self.assertNotEqual(before, after)
+                    before.pop("readers")
+                    after.pop("readers")
+                    self.assertEqual(before, after)
 
 
 if __name__ == "__main__":

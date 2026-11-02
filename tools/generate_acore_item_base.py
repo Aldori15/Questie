@@ -7,13 +7,13 @@ bootstrap is a one-time migration helper; --compare-snapshot verifies migration.
 import argparse
 from collections import Counter
 import copy
-import hashlib
 import json
 import sys
 from pathlib import Path
 
 import audit_acore_item_sources as audit
 import db_snapshot
+import acore_missing_spell_review as spell_review
 from generate_acore_full_base import LuaBlobWriter, lua_quote, lua_value, row_to_lua
 
 
@@ -361,20 +361,36 @@ def build_current_records(source, manifest):
 
 
 def review_spell_coverage(saved, manifest, signature):
-    """Permit only reviewed missing effects tied to the exact audited inputs."""
-    missing = saved.get("spellCoverage", {}).get("missingRequestedSpellIds", 0)
+    """Review missing effects by usage; the full signature still validates caches."""
+    coverage = saved.get("spellCoverage", {})
+    missing = coverage.get("missingRequestedSpellIds", 0)
+    current = coverage.get("missingRequestedSpellIdList", [])
+    if (type(missing) is not int or missing < 0 or not isinstance(current, list)
+            or any(not positive_id(value) for value in current)
+            or current != sorted(set(current)) or len(current) != missing):
+        raise ValueError("Unresolved item spell IDs require a review: inconsistent spell coverage")
     if not missing:
         return []
     review = manifest.get("unresolvedSpellReview", {})
+    if not isinstance(review, dict):
+        raise ValueError("Unresolved item spell IDs require a review with current per-spell usage evidence")
     ids = review.get("spellIds", [])
-    source_hash = hashlib.sha256(json.dumps(signature, sort_keys=True, ensure_ascii=True,
-                                            allow_nan=False, separators=(",", ":")).encode()).hexdigest()
-    if (manifest.get("accuracyPolicy") != "verified-source-fields-v1" or review.get("expectedSource") != source_hash
-            or not review.get("reason") or len(ids) != missing or ids != sorted(set(ids))
-            or saved.get("spellCoverage", {}).get("missingRequestedSpellIdList") != ids
-            or not all(positive_id(value) for value in ids)):
-        raise ValueError("Unresolved item spell IDs require a review against the current source inputs")
-    return ids
+    hashes = review.get("usageSha256", {})
+    usage = coverage.get("missingSpellUsage", {})
+    if (manifest.get("accuracyPolicy") != "verified-source-fields-v1" or review.get("version") != 2
+            or not isinstance(review.get("reason"), str) or not review["reason"].strip()
+            or not isinstance(ids, list) or any(not positive_id(value) for value in ids)
+            or ids != sorted(set(ids)) or not isinstance(hashes, dict)
+            or set(hashes) != {str(value) for value in ids}
+            or any(not isinstance(value, str) or len(value) != 64
+                   or any(char not in "0123456789abcdef" for char in value) for value in hashes.values())
+            or not isinstance(usage, dict) or set(usage) != {str(value) for value in current}):
+        raise ValueError("Unresolved item spell IDs require a review with current per-spell usage evidence")
+    new = sorted(set(current) - set(ids))
+    changed = [value for value in current if value in ids and hashes[str(value)] != spell_review.digest(usage[str(value)])]
+    if new or changed:
+        raise ValueError(f"Unresolved item spell IDs require a review: new IDs {new}; changed usage {changed}")
+    return current
 
 
 def compare_candidate(before, after):
@@ -557,7 +573,12 @@ def main(argv=None):
     else:
         manifest_digest = db_snapshot.file_hash(manifest_path)
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        reviewed_spells = review_spell_coverage(saved, manifest, signature)
+        try:
+            reviewed_spells = review_spell_coverage(saved, manifest, signature)
+        except ValueError as exc:
+            audit.write_json(report, {"status": "spellReviewRequired", "sourceInputs": signature,
+                                      "spellCoverage": saved.get("spellCoverage", {}), "error": str(exc)})
+            raise ValueError(f"{exc}. Review {report}; item database was not written") from exc
         records, redundant = build_records(source, manifest)
         faction_selections = build_faction_selections(source, records, saved.get("objectSourceTeams", {}))
         comparison = compare_candidate(reference, records) if reference is not None else None

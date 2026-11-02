@@ -23,25 +23,81 @@ def bootstrap(items, source):
 
 
 class ItemBaseTests(unittest.TestCase):
-    def test_missing_spell_review_cannot_hide_new_or_changed_source_gaps(self):
-        import hashlib
+    def test_missing_spell_review_survives_unrelated_source_and_reader_changes(self):
         signature = {"source": "frozen"}
-        source_hash = hashlib.sha256(json.dumps(signature, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
-        saved = {"spellCoverage": {"missingRequestedSpellIds": 1, "missingRequestedSpellIdList": [128]}}
+        usage = {"128": {"references": [{"itemId": 1, "spellId": 128}]}}
+        saved = {"spellCoverage": {"missingRequestedSpellIds": 1, "missingRequestedSpellIdList": [128],
+                                   "missingSpellUsage": usage}}
         with self.assertRaisesRegex(ValueError, "require a review"):
             exporter.review_spell_coverage(saved, {}, signature)
         manifest = {"accuracyPolicy": "verified-source-fields-v1", "unresolvedSpellReview": {
-            "expectedSource": source_hash, "reason": "Reviewed deprecated reference", "spellIds": [128]}}
+            "version": 2, "usageSha256": {key: exporter.spell_review.digest(value) for key, value in usage.items()},
+            "reason": "Reviewed deprecated reference", "spellIds": [128]}}
         self.assertEqual(exporter.review_spell_coverage(saved, manifest, signature), [128])
+        self.assertEqual(exporter.review_spell_coverage(saved, manifest,
+                         {"sourceRevision": "new commit", "readers": {"reader.py": "changed"}}), [128])
         saved["spellCoverage"]["missingRequestedSpellIdList"] = [758]
-        with self.assertRaisesRegex(ValueError, "require a review"):
+        saved["spellCoverage"]["missingSpellUsage"] = {"758": usage["128"]}
+        with self.assertRaisesRegex(ValueError, "new IDs \\[758\\]"):
             exporter.review_spell_coverage(saved, manifest, signature)
         saved["spellCoverage"]["missingRequestedSpellIdList"] = [128]
-        with self.assertRaisesRegex(ValueError, "require a review"):
-            exporter.review_spell_coverage(saved, manifest, {"source": "updated"})
-        saved["spellCoverage"]["missingRequestedSpellIds"] = 2
-        with self.assertRaisesRegex(ValueError, "require a review"):
+        saved["spellCoverage"]["missingSpellUsage"] = usage
+        usage["128"]["references"].append({"itemId": 2, "spellId": 128})
+        with self.assertRaisesRegex(ValueError, "changed usage \\[128\\]"):
             exporter.review_spell_coverage(saved, manifest, signature)
+        saved["spellCoverage"]["missingRequestedSpellIds"] = 2
+        with self.assertRaisesRegex(ValueError, "inconsistent spell coverage"):
+            exporter.review_spell_coverage(saved, manifest, signature)
+
+    def test_resolved_spell_gaps_do_not_require_renewing_remaining_reviews(self):
+        usage = {"128": {"references": []}, "758": {"references": []}}
+        manifest = {"accuracyPolicy": "verified-source-fields-v1", "unresolvedSpellReview": {
+            "version": 2, "spellIds": [128, 758], "reason": "Reviewed deprecated references",
+            "usageSha256": {key: exporter.spell_review.digest(value) for key, value in usage.items()}}}
+        saved = {"spellCoverage": {"missingRequestedSpellIds": 1, "missingRequestedSpellIdList": [128],
+                                   "missingSpellUsage": {"128": usage["128"]}}}
+        self.assertEqual(exporter.review_spell_coverage(saved, manifest, {}), [128])
+        self.assertEqual(exporter.review_spell_coverage({}, manifest, {}), [])
+
+    def test_old_review_or_missing_usage_evidence_cannot_silently_approve_gaps(self):
+        saved = {"spellCoverage": {"missingRequestedSpellIds": 1, "missingRequestedSpellIdList": [128]}}
+        legacy = {"accuracyPolicy": "verified-source-fields-v1", "unresolvedSpellReview": {
+            "expectedSource": "old hash", "reason": "Reviewed", "spellIds": [128]}}
+        with self.assertRaisesRegex(ValueError, "per-spell usage evidence"):
+            exporter.review_spell_coverage(saved, legacy, {})
+        for malformed in (None, [], "reviewed"):
+            with self.subTest(review=malformed), self.assertRaisesRegex(ValueError, "per-spell usage evidence"):
+                exporter.review_spell_coverage(saved, {"unresolvedSpellReview": malformed}, {})
+
+    def test_cli_reports_changed_spell_usage_without_overwriting_the_database(self):
+        source = {1: item()}
+        manifest = exporter.upgrade_manifest(bootstrap({1: exporter.source_record(source[1])}, source), source)
+        manifest.update(accuracyPolicy="verified-source-fields-v1", unresolvedSpellReview={
+            "version": 2, "spellIds": [128], "reason": "Reviewed deprecated item",
+            "usageSha256": {"128": exporter.spell_review.digest({"references": [{"itemId": 1}]})}})
+        saved = {"items": {"1": source[1]}, "templateIds": [1], "spellCoverage": {
+            "missingRequestedSpellIds": 1, "missingRequestedSpellIdList": [128],
+            "missingSpellUsage": {"128": {"references": [{"itemId": 2}]}}}}
+        with db_snapshot.temporary_directory(ADDON_ROOT / "tools/reports") as directory:
+            manifest_path = directory / "tools/data/acore_item_compatibility.json"
+            exporter.write_manifest(manifest_path, manifest)
+            output = directory / "Database/AzerothCore/acoreItemDB.lua"
+            output.parent.mkdir(parents=True)
+            output.write_text("original database", encoding="utf-8")
+            with patch.object(exporter, "ROOT", directory), \
+                 patch.object(exporter.audit, "source_signature", return_value={"sourceRevision": "new"}), \
+                 patch.object(exporter.audit, "load_source", return_value=saved), \
+                 patch.object(exporter.audit, "local_output", return_value=directory / "cache.json"):
+                with self.assertRaisesRegex(ValueError, "database was not written"):
+                    exporter.main(["generate", "--spell-sql", str(directory / "spell.sql")])
+                report = json.loads((directory / "tools/reports/acore_item_base_candidate.json").read_text())
+                self.assertEqual(report["status"], "spellReviewRequired")
+                self.assertEqual(report["spellCoverage"], saved["spellCoverage"])
+                self.assertEqual(output.read_text(), "original database")
+                # Updating unrelated source metadata works when the reviewed usage matches.
+                saved["spellCoverage"]["missingSpellUsage"]["128"] = {"references": [{"itemId": 1}]}
+                with patch("sys.stdout", new=io.StringIO()):
+                    self.assertEqual(exporter.main(["generate", "--spell-sql", str(directory / "spell.sql")]), 0)
 
     def test_active_quest_coverage_recovers_excluded_items_and_loot_without_expanding_generic_loot(self):
         source = {1: item(npcDrops=[100], questRelevant=False), 2: item(npcDrops=[200], questRelevant=False)}

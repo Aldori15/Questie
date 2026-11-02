@@ -144,7 +144,7 @@ def source_signature(source, scope, spell_sql=None, spell_table="spell"):
             "extractor": hashlib.sha256((inspect.getsource(load_source) + inspect.getsource(object_source_teams)).encode("utf-8")).hexdigest(),
             "readers": {name: snapshot.file_hash(ROOT / "tools" / name) for name in
                         ("audit_acore_item_sources.py", "generate_acore_item_corrections.py", "validate_acore_quest_metadata.py", "acore_item_compatibility.py",
-                          "acore_item_spell_acquisitions.py", "acore_quest_compatibility.py")}}
+                          "acore_item_spell_acquisitions.py", "acore_quest_compatibility.py", "acore_missing_spell_review.py")}}
 
 
 def model_digest(saved):

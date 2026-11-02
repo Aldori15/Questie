@@ -1068,10 +1068,13 @@ def build_acore_items(source_root, include_modules=False, spell_sql=None, spell_
                      if int(row.get("type") or 0) == 10 and int(row.get("Data10") or 0) > 0)
     import acore_item_compatibility
     import acore_item_spell_acquisitions
-    spell_ids.update(acore_item_compatibility.bound_spell_ids(spell_script_rows))
+    bound_spell_ids = acore_item_compatibility.bound_spell_ids(spell_script_rows)
+    cpp_spell_ids = set()
+    spell_ids.update(bound_spell_ids)
     if any(row.get("ScriptName") == rule[2] for row in list(creature_template_rows.values()) + list(gameobject_template_rows.values())
            for rule in acore_item_compatibility.CPP_RULES):
-        spell_ids.update(acore_item_compatibility.cpp_spell_ids(source_root))
+        cpp_spell_ids = acore_item_compatibility.cpp_spell_ids(source_root)
+        spell_ids.update(cpp_spell_ids)
     while True:
         linked_ids = {int(row.get("spell_effect") or 0) for row in spell_link_rows
                       if int(row.get("type") or 0) == 0
@@ -1085,6 +1088,16 @@ def build_acore_items(source_root, include_modules=False, spell_sql=None, spell_
                        and int(row.get(f"spelltrigger_{index}") or 0) in (0, 5)}
     spell_rows, spell_coverage = load_item_source_spells(source_root, spell_rows, spell_ids, spell_sql, spell_table,
                                                      follow_triggers=True, trigger_roots=item_use_spells)
+
+    from acore_missing_spell_review import build_usage
+    spell_coverage["missingSpellUsage"] = build_usage(
+        spell_coverage["missingRequestedSpellIdList"], spell_rows,
+        {"item_template": item_rows, "quest_template": quest_rows,
+         "npc_spellclick_spells": npc_spellclick_rows, "smart_scripts": smart_rows,
+         "spell_scripts": spell_command_rows, "spell_script_names": spell_script_rows,
+         "spell_linked_spell": spell_link_rows, "gameobject_template": gameobject_template_rows,
+         "disables": disabled_rows},
+        bound_spell_ids | cpp_spell_ids)
 
     diagnostics = {}
     valid_item_ids = {item_id for item_id in item_rows if item_id > 0}

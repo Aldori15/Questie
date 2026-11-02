@@ -31,6 +31,20 @@ def bootstrap(before, source):
 
 
 class QuestBaseTests(unittest.TestCase):
+    def test_direct_gem_objectives_survive_auxiliary_material_filter(self):
+        gems = {item: {"class": 3} for item in (36923, 36926, 36929, 36932)}
+        source = {}
+        for quest_id, objectives in ((13041, [36923]), (12918, [36929, 36932, 36926])):
+            template = {f"RequiredItemId{i}": item for i, item in enumerate(objectives, 1)}
+            helpers = exporter.audit.compatibility.derive_required_tool_items(template, gems, {})
+            self.assertEqual(helpers, [])
+            source[quest_id] = quest(objectives=typed({3: [[item] for item in objectives]}),
+                                     requiredSourceItems=typed(helpers))
+        result = exporter.build_records(source, bootstrap(source, source))
+        for quest_id in source:
+            self.assertEqual(result[quest_id]["s:objectives"], source[quest_id]["s:objectives"])
+            self.assertEqual(result[quest_id]["s:requiredSourceItems"], {})
+
     def test_optional_travel_footer_requires_exact_generated_guide(self):
         hint = typed({2: 5, 3: "Speak with Pilot", 4: 0, 5: [["monster", 20]]})
         records = {1: quest(extraObjectives={"n:1": hint})}

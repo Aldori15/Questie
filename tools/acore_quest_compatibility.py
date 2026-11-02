@@ -439,6 +439,8 @@ def derive_required_tool_items(quest, item_templates, spells, candidate_ids=(), 
 
     Candidates are proposals to verify, never authority. Main objective items are
     excluded from the auxiliary list because the runtime tracks them separately.
+    Ordinary crafting materials only become auxiliary objectives when explicitly
+    provided by the quest or listed as quest drops, not inferred from recipes/text.
     Text evidence uses specific item names, including named ordinal sets, rather
     than generic words such as 'elixir', 'wand' or 'bait'.
     """
@@ -452,6 +454,13 @@ def derive_required_tool_items(quest, item_templates, spells, candidate_ids=(), 
 
     def add(item, rule, **details):
         if item > 0 and item in templates:
+            template = templates[item]
+            # requiredSourceItems are map objectives, not a complete ingredient
+            # list. Keep quest-bound components and explicit quest sources, but
+            # don't map every gathering source for inferred gems/reagents/goods.
+            if (item not in seeds and _number(template, "class") in (3, 5, 7)
+                    and _number(template, "bonding") not in (4, 5)):
+                return
             result.add(item)
             reason = {"rule": rule, **details}
             if reason not in reasons[str(item)]:
