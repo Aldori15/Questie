@@ -2,7 +2,7 @@
 local QuestieServer = QuestieLoader:CreateModule("QuestieServer")
 local Integrations = QuestieLoader:ImportModule("QuestieServerIntegrations")
 
-local PREFIX, PROTOCOL_VERSION = "QSTSVR", "19"
+local PREFIX, PROTOCOL_VERSION = "QSTSVR", "20"
 
 -- Shared with the correction generators. Decisions apply to the current area,
 -- never to every location in these zones. Keep the module's profiles in sync.
@@ -50,6 +50,7 @@ local CAPABILITIES = {
     [8] = "ICC", [9] = "RESETS", [10] = "PHASES", [11] = "PATROLS",
     [12] = "QUESTXP", [13] = "QUESTREP", [14] = "QUESTMONEY",
     [15] = "QUESTDISABLES", [16] = "QUESTGIVERS", [17] = "QUESTGIVERTEMPLATES",
+    [18] = "QUESTCONDITIONS",
 }
 
 local function Split(value, separator)
@@ -467,12 +468,26 @@ function QuestieServer:GetICCQuests()
     return ids
 end
 
+function QuestieServer:IsQuestConditionRestricted(questId)
+    if not self:HasCapability("QUESTCONDITIONS") then return nil end
+    return snapshot.conditionQuests[questId] == true
+end
+
+function QuestieServer:GetConditionRestrictedQuests()
+    if not self:HasCapability("QUESTCONDITIONS") then return nil end
+    local ids = {}
+    for id in pairs(snapshot.conditionQuests) do ids[#ids + 1] = id end
+    table.sort(ids)
+    return ids
+end
+
 -- Combine independent live gates. A selected quest cannot bypass a faction gate,
 -- raid-instance gate or inactive direct pool membership.
 function QuestieServer:GetQuestAvailabilityState(questId)
     if not Fresh() then return nil end
     local caps = snapshot.caps
     if caps.QUESTDISABLES and snapshot.disabledQuests[questId] then return false end
+    if caps.QUESTCONDITIONS and snapshot.conditionQuests[questId] then return false end
     local pool, wintergrasp, icc
     if caps.QUESTPOOLS then
         local quest = snapshot.poolQuests[questId]
@@ -489,10 +504,10 @@ end
 
 function QuestieServer:GetStateControlledQuests()
     local pool, wintergrasp, icc = self:GetPooledQuests(), self:GetWintergraspQuests(), self:GetICCQuests()
-    local disabled = self:GetDisabledQuests()
-    if not pool and not wintergrasp and not icc and not disabled then return nil end
+    local disabled, conditions = self:GetDisabledQuests(), self:GetConditionRestrictedQuests()
+    if not pool and not wintergrasp and not icc and not disabled and not conditions then return nil end
     local ids, seen = {}, {}
-    for _, members in ipairs({pool or {}, wintergrasp or {}, icc or {}, disabled or {}}) do
+    for _, members in ipairs({pool or {}, wintergrasp or {}, icc or {}, disabled or {}, conditions or {}}) do
         for _, id in ipairs(members) do
             if not seen[id] then ids[#ids + 1], seen[id] = id, true end
         end
@@ -532,8 +547,9 @@ end
 local function ParseRows(batch)
     local result = {caps = batch.caps, events = {}, values = {}, ui = {}, poolQuests = {},
         wintergraspQuests = {}, iccQuests = {}, disabledQuests = {}, giverSpawns = {}, giverUnits = {}, giverTemplates = {},
-        phaseVisibility = {}, reputationFactions = {}}
+        phaseVisibility = {}, reputationFactions = {}, conditionQuests = {}}
     local count, reputationFactionCount, giverCount, templateCount = 0, 0, 0, 0
+    local conditionCount = 0
     for index = 1, batch.partCount do
         if not batch.parts[index] then return nil end
         for _, row in ipairs(Split(batch.parts[index], ";")) do
@@ -628,6 +644,14 @@ local function ParseRows(batch)
                 result.giverSpawns[id] = result.giverSpawns[id] or {}
                 result.giverSpawns[id][spawnId] = result.giverSpawns[id][spawnId] == true or active
                 giverCount = giverCount + 1
+            elseif kind == "P" and result.caps.QUESTCONDITIONS and fields[2] == "QC_COUNT"
+                and #fields == 3 and result.conditionCount == nil then
+                result.conditionCount = Integer(fields[3], 512)
+                if not result.conditionCount then return nil end
+            elseif kind == "C" and result.caps.QUESTCONDITIONS and #fields == 2 and id and id > 0 then
+                if result.conditionQuests[id] or conditionCount >= 512 then return nil end
+                result.conditionQuests[id] = true
+                conditionCount = conditionCount + 1
             elseif kind == "D" and result.caps.QUESTDISABLES and #fields == 2 and id and id > 0 then
                 if result.disabledQuests[id] then return nil end
                 result.disabledQuests[id] = true
@@ -685,6 +709,7 @@ local function ParseRows(batch)
         end
     end
     if count ~= batch.rowCount then return nil end
+    if result.caps.QUESTCONDITIONS and result.conditionCount ~= conditionCount then return nil end
     if result.caps.QUESTXP and not result.questXP then return nil end
     if result.caps.QUESTMONEY and not result.questMoney then return nil end
     if result.caps.QUESTREP and (not result.questReputation
@@ -1138,6 +1163,11 @@ function QuestieServer:Initialize()
         if command:match("^%s*patrol%s*$") then self:PrintPatrolStatus(); return end
         if command:match("^%s*xp%s*$") then self:PrintXPStatus(); return end
         if command:match("^%s*money%s*$") then self:PrintMoneyStatus(); return end
+        if command:match("^%s*conditions%s*$") then
+            local ids = self:GetConditionRestrictedQuests()
+            Questie:Print("[Server bridge] Quest conditions: " .. (ids and (#ids .. " restricted quest(s): " .. table.concat(ids, ", ")) or "unknown/unavailable"))
+            return
+        end
         local factionId = Integer(command:match("^%s*rep%s+(%d+)%s*$"), 4294967295)
         if command:match("^%s*rep%s*$") or (factionId and factionId > 0) then
             self:PrintReputationStatus(factionId); return

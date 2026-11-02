@@ -3037,6 +3037,15 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
         end
     end
 
+    if QuestieServer:IsQuestConditionRestricted(questId) then
+        if returnText and returnBrief then
+            return l10n("Unavailable") .. l10n(": ") .. "Server quest conditions not met", true, DoableStates.ACORE_CONDITION
+        elseif returnText then
+            return "Quest " .. questId .. " is unavailable because server quest conditions are not met",
+                true, DoableStates.ACORE_CONDITION
+        end
+    end
+
     if C_QuestLog.IsOnQuest(questId) ~= true and QuestieServer:IsICCQuestActive(questId) == false then
         if returnText and returnBrief then
             return l10n("Unavailable") .. l10n(": ") .. "ICC weekly quest inactive", true, DoableStates.MISSING_DAILY

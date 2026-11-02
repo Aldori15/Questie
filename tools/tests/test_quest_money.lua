@@ -53,7 +53,7 @@ local function setup()
     local function reply(rows, caps, incomplete, protocol, sender)
         sequence = sequence + 1
         local token = messages[#messages]:match("^[^~]+~%d+~([^~]+)~")
-        local header = "~" .. (protocol or "19") .. "~" .. token .. "~" .. sequence
+        local header = "~" .. (protocol or "20") .. "~" .. token .. "~" .. sequence
         local function receive(value)
             frame.OnEvent(frame, "CHAT_MSG_ADDON", "QSTSVR", value, "WHISPER", sender or "Tester")
         end

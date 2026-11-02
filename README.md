@@ -36,21 +36,19 @@ Server rate changes appear within a few seconds; rehover or reopen the reward di
 Rewards are estimates: server rounding, caps, or custom rules can affect the final amount awarded.
 Moving markers work in your current zone; other zones keep their static locations and patrol lines.
 Phase filtering applies within your current subarea. Quest prerequisites and your visibility settings still apply.
-Questgiver-template restrictions apply at every map zoom level. Live
-spawn observations take precedence locally. Templates already lacking Questie's static questgiver
-flag keep scripted fallback; remote script grants cannot be predicted until observed. Missing or
-oversized catalogs restore static behavior.
-Missing offers at a restricted NPC do not hide daily or weekly quests at other starters.
-Unverified cached observations from restricted NPCs are discarded; independent valid
-observations and observations backed by explicit live questgiver functionality are retained.
+Questgiver-template restrictions apply at every map zoom level, with visible live spawn observations
+taking precedence locally. Other valid starters, objectives, and turn-ins remain unaffected.
 
 Enable **Available Scourge Invasion Quests** or **Available Sun's Reach Quests** to show those quest sets.
 The bridge is optional. Missing, disabled, or expired server information restores Questie's usual behavior.
 
-The addon and module require matching protocol **19** builds. Capabilities use compact
-32-bit hexadecimal mask words; the 240-byte message limit, atomic snapshots, heartbeats,
-and 30-second expiration are unchanged. `/qserver` reports mismatched versions, which
-restore static behavior. The independent `INFO~1` diagnostic handshake is retained.
+Bridge features require matching protocol **20** addon and module builds. Older bridges, including
+protocol 19, retain normal static Questie behavior; `/qserver` reports version mismatches.
+
+Servers can opt in to experimental player-specific quest conditions, disabled by default.
+These only restrict available starters; generated databases, accepted quests, and objectives remain unchanged.
+See the [bridge documentation](https://github.com/Aldori15/mod-questie-bridge#experimental-quest-conditions)
+for supported conditions, configuration, and performance considerations.
 
 ## Questie Information
 - [Frequently Asked Questions](https://github.com/Questie/Questie/wiki/FAQ)

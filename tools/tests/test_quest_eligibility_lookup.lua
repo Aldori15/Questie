@@ -44,6 +44,7 @@ modules.QuestieLib = {TableMemoizeFunction = function(_, fn)
 end}
 modules.QuestieServer = {GetQuestAvailabilityState = function(_, id) return state.bridge[id] end,
     IsQuestDisabled = function() return nil end,
+    IsQuestConditionRestricted = function() return nil end,
     IsICCQuestActive = function(_, id) return state.bridge[id] end,
     IsWintergraspQuestActive = function() end, IsPooledQuestActive = function() end}
 modules.QuestieEvent = {IsEventQuestInCurrentExpansion = function(_, id) return id == 24 end,

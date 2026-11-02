@@ -148,7 +148,7 @@ const WintergraspObjectPositionData WGOutsideNPC[WG_MAX_OUTSIDE_NPC] = {
         expected_caps = dict(enumerate((
             "EVENTS", "VALUES", "SCOURGE", "QUELDANAS", "KALUAK", "HEARTBEAT", "QUESTPOOLS",
             "WINTERGRASP", "ICC", "RESETS", "PHASES", "PATROLS", "QUESTXP", "QUESTREP",
-            "QUESTMONEY", "QUESTDISABLES", "QUESTGIVERS", "QUESTGIVERTEMPLATES",
+            "QUESTMONEY", "QUESTDISABLES", "QUESTGIVERS", "QUESTGIVERTEMPLATES", "QUESTCONDITIONS",
         )))
         server_caps = re.findall(r'\{"([A-Z]+)", (\d+)\}', protocol_text)
         client_caps = re.findall(r'\[(\d+)\] = "([A-Z]+)"',

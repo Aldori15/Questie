@@ -40,7 +40,7 @@ local function setup()
     local function reply(rows, caps, incomplete, protocol)
         sequence = sequence + 1
         local token = messages[#messages]:match("^[^~]+~%d+~([^~]+)~")
-        local header = "~" .. (protocol or "19") .. "~" .. token .. "~" .. sequence
+        local header = "~" .. (protocol or "20") .. "~" .. token .. "~" .. sequence
         frame.OnEvent(frame, "CHAT_MSG_ADDON", "QSTSVR", "BEGIN" .. header .. "~" .. (caps or "00001020")
             .. "~" .. #rows .. "~" .. #rows, "WHISPER", "Tester")
         for index, row in ipairs(rows) do

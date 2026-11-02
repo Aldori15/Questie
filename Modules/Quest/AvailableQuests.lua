@@ -950,7 +950,9 @@ local function _BuildUnavailableQuestSnapshotEntries(bucket)
     for npcId, questIdsByNpc in pairs(bucket.byNpc) do
         local questIds = {}
         if AvailableQuests.CanInferQuestAvailability(npcId) then
-            for questId in pairs(questIdsByNpc) do tinsert(questIds, questId) end
+            for questId in pairs(questIdsByNpc) do
+                if QuestieServer:GetQuestAvailabilityState(questId) == nil then tinsert(questIds, questId) end
+            end
         end
 
         if next(questIds) then
@@ -1008,7 +1010,9 @@ function AvailableQuests.GetUnavailableQuestSnapshotDelta(knownSnapshot)
             local knownQuestIds = knownByNpc[npcId] or {}
             if AvailableQuests.CanInferQuestAvailability(npcId) then
                 for questId in pairs(questIdsByNpc) do
-                    if not knownQuestIds[questId] then tinsert(missingQuestIds, questId) end
+                    if not knownQuestIds[questId] and QuestieServer:GetQuestAvailabilityState(questId) == nil then
+                        tinsert(missingQuestIds, questId)
+                    end
                 end
             end
 
