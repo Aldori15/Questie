@@ -42,8 +42,8 @@ taking precedence locally. Other valid starters, objectives, and turn-ins remain
 Enable **Available Scourge Invasion Quests** or **Available Sun's Reach Quests** to show those quest sets.
 The bridge is optional. Missing, disabled, or expired server information restores Questie's usual behavior.
 
-Bridge features require matching protocol **20** addon and module builds. Older bridges, including
-protocol 19, retain normal static Questie behavior; `/qserver` reports version mismatches.
+Bridge features require matching protocol **21** addon and module builds. Older bridges retain
+normal static Questie behavior. Shared catalogs are reused for smaller updates; `/qserver` shows versions and catalog reuse.
 
 Servers can opt in to experimental player-specific quest conditions, disabled by default.
 These only restrict available starters; generated databases, accepted quests, and objectives remain unchanged.
