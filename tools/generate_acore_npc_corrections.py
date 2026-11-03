@@ -5,6 +5,7 @@ import re
 import struct
 import sys
 import acore_npc_health
+import acore_transport_geometry
 from collections import defaultdict
 from functools import lru_cache
 from pathlib import Path
@@ -822,7 +823,7 @@ def resolve_coordinate_zone(row, zone_maps):
         fallback_candidates = []
         for ui_id in zone_maps["ui_by_instance"].get(map_id, []):
             data = zone_maps["ui_map_data"].get(ui_id)
-            if data and data.get("worldMapOnly"):
+            if data and (data.get("worldMapOnly") or data.get("mapType") in (0, 1, 2)):
                 continue
             zone_id = zone_maps["ui_to_zone"].get(ui_id)
             if not zone_id:
@@ -844,7 +845,7 @@ def resolve_coordinate_zone(row, zone_maps):
                 near_candidates.append((area, zone_id, point))
         for ui_id in zone_maps["ui_by_instance"].get(map_id, []):
             data = zone_maps["ui_map_data"].get(ui_id)
-            if data and data.get("worldMapOnly"):
+            if data and (data.get("worldMapOnly") or data.get("mapType") in (0, 1, 2)):
                 continue
             zone_id = zone_maps["ui_to_zone"].get(ui_id)
             if not zone_id:
@@ -858,6 +859,28 @@ def resolve_coordinate_zone(row, zone_maps):
             return zone_id, point
 
     return None, None
+
+
+def resolve_transport_coordinate_zone(row, zone_maps):
+    """Project outdoor transport points without guessing between overlapping maps."""
+    map_id = int(row.get("map") or 0)
+    x, y = float(row["position_y"]), float(row["position_x"])
+    zone_id = int(row.get("zoneId") or 0)
+    if zone_id:
+        point = convert_world_to_zone(x, y, zone_id, zone_maps, map_id=map_id)
+        return (zone_id, point) if point else (None, None)
+    matches = {}
+    for ui_id in zone_maps["ui_by_instance"].get(map_id, []):
+        data = zone_maps["ui_map_data"].get(ui_id)
+        if not data or data.get("worldMapOnly") or data.get("mapType") in (0, 1, 2):
+            continue
+        zone_id = zone_maps["ui_to_zone"].get(ui_id)
+        if not zone_id:
+            continue
+        point = convert_world_to_zone(x, y, zone_id, zone_maps, map_id=map_id)
+        if point:
+            matches[zone_id] = point
+    return next(iter(matches.items())) if len(matches) == 1 else (None, None)
 
 
 def load_rows_from_sql_file(sql_path, table_name, key_columns, default_columns=None, row_filter=None):
@@ -1167,6 +1190,8 @@ def build_acore_npcs(
     wdm_root=None,
     questie_npcs=None,
     provenance=None,
+    transport_templates=None,
+    taxi_nodes=None,
 ):
     source_root = Path(source_root)
     map_difficulty_dbc = find_map_difficulty_dbc(source_root, map_difficulty_dbc)
@@ -1254,6 +1279,9 @@ def build_acore_npcs(
         if guid and entry:
             multispawns_by_guid[guid].add(entry)
 
+    transport_geometry = acore_transport_geometry.build_geometry(
+        transport_templates or [], creature_rows, taxi_nodes or [], zone_maps, resolve_transport_coordinate_zone)
+
     for row in creature_rows:
         primary_entry = get_primary_creature_entry(row)
         entries = get_creature_entries(row, multispawns_by_guid)
@@ -1262,7 +1290,9 @@ def build_acore_npcs(
         if guid:
             guid_to_creature[guid] = row
         if entries:
-            zone_id, point = resolve_coordinate_zone(row, zone_maps)
+            transport = transport_geometry.get(guid)
+            zone_id, point = ((transport["zone"], transport["point"]) if transport
+                              else resolve_coordinate_zone(row, zone_maps))
         for entry in entries:
             creatures_by_entry[entry].append(row)
             seen_spawn_entries.add(entry)
@@ -1272,9 +1302,10 @@ def build_acore_npcs(
                     f"zone:{int(row.get('zoneId') or row.get('zoneid') or 0)}:"
                     f"area:{int(row.get('areaId') or row.get('areaid') or 0)}")
             if zone_id and point:
-                visible_point = add_acore_spawn_visibility(point, row, map_difficulty_masks)
+                world_row = transport["row"] if transport else row
+                visible_point = add_acore_spawn_visibility(point, world_row, map_difficulty_masks)
                 if entry in questgiver_entries:
-                    visible_point = add_acore_spawn_identity(visible_point, row)
+                    visible_point = add_acore_spawn_identity(visible_point, world_row)
                 spawns_by_entry[entry][zone_id].append(visible_point)
                 if provenance is not None and guid:
                     spawn_origins[entry][zone_id].append((visible_point, f"creature:{guid}:entry:{entry}"))
@@ -1319,6 +1350,22 @@ def build_acore_npcs(
     seen_waypoint_entries = set()
     bad_waypoint_entries = set()
     unmapped_waypoint_paths = defaultdict(set)
+
+    for row in creature_rows:
+        guid = int(row.get("guid") or 0)
+        transport = transport_geometry.get(guid)
+        if not transport:
+            continue
+        for entry in get_creature_entries(row, multispawns_by_guid):
+            if not starts_by_entry.get(entry) and not ends_by_entry.get(entry):
+                continue
+            for zone, paths in transport["paths"].items():
+                for index, path in enumerate(paths, 1):
+                    if len(path) < 2:
+                        continue
+                    waypoints_by_entry[entry][zone].append(path)
+                    path_origins[entry][zone].append((path, transport["origin"] + f":entry:{entry}:zone:{zone}:segment:{index}"))
+                    seen_waypoint_entries.add(entry)
 
     def add_waypoint_path(entries, creature_candidates, path_rows, identity):
         entries = tuple(sorted(set(entries)))

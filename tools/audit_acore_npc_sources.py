@@ -18,6 +18,7 @@ import generate_acore_item_corrections as sql_reader
 import generate_acore_npc_corrections as reader
 import acore_cpp_geometry
 import acore_npc_health
+import acore_transport_geometry
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -29,7 +30,7 @@ REPO_INPUTS = ("Database/Zones/zoneTables.lua", "Compat/UiMapData.lua", "Modules
                "Modules/Network/QuestieServer.lua", "tools/generate_acore_npc_corrections.py",
                "tools/generate_acore_item_corrections.py", "tools/validate_acore_quest_metadata.py",
                "tools/acore_scripted_geometry.py", "tools/acore_cpp_geometry.py", "tools/acore_runtime_geometry.py",
-               "tools/acore_npc_health.py", "tools/audit_acore_npc_sources.py")
+               "tools/acore_npc_health.py", "tools/acore_transport_geometry.py", "tools/audit_acore_npc_sources.py")
 
 
 def typed(value):
@@ -42,6 +43,11 @@ def typed(value):
 
 
 def source_signature(source, repo, creature, multispawn, difficulty, wdm):
+    taxi = difficulty.with_name("TaxiPathNode.dbc").resolve()
+    transport_paths = {source / name for name in acore_transport_geometry.SOURCE_FILES}
+    for table in ("gameobject_template", "transports"):
+        transport_paths.update(p.resolve() for p in sql_reader.source_sql_files(source, table))
+        transport_paths.add(source / "data/sql/base/db_world" / f"{table}.sql")
     paths = {p.resolve() for table in TABLES for p in sql_reader.source_sql_files(source, table)}
     paths.update(source / "data/sql/base/db_world" / f"{table}.sql" for table in TABLES)
     paths.add(source / "src/server/game/Battlefield/Zones/BattlefieldWG.h")
@@ -56,6 +62,9 @@ def source_signature(source, repo, creature, multispawn, difficulty, wdm):
             "sourceFiles": {str(p.relative_to(source)): db_snapshot.file_hash(p) for p in sorted(paths)},
             "externalFiles": {str(p): db_snapshot.file_hash(p) for p in external},
             "repoFiles": {name: db_snapshot.file_hash(repo / name) for name in REPO_INPUTS},
+            "transport": {"taxiPathNodes": str(taxi), "taxiPathNodesSha256": db_snapshot.file_hash(taxi) if taxi.is_file() else None,
+                          "sources": {str(p.relative_to(source)): db_snapshot.file_hash(p) if p.is_file() else None
+                                      for p in sorted(transport_paths)}},
             "extractor": hashlib.sha256((inspect.getsource(load_source) + inspect.getsource(typed)).encode()).hexdigest()}
 
 
@@ -133,11 +142,24 @@ def load_source(source, repo, creature, multispawn, difficulty, wdm, signature, 
         setattr(reader, name, getattr(sql_reader, name))
     provenance = {}
     try:
+        transport_options = {}
+        if signature.get("transport"):
+            templates, _ = rows(source, "gameobject_template", ("entry",))
+            registrations, _ = rows(source, "transports", ("guid",))
+            registered = {int(row.get("entry") or 0) for row in registrations}
+            templates = [row for row in templates if int(row.get("entry") or 0) in registered
+                         and int(row.get("type") or 0) == 15
+                         and int(row.get("Data6", row.get("data6")) or 0) > 0]
+            if templates:
+                acore_transport_geometry.verify_core(source)
+                taxi = Path(signature["transport"]["taxiPathNodes"])
+                transport_options = {"transport_templates": templates,
+                                     "taxi_nodes": acore_transport_geometry.load_taxi_nodes(taxi)}
         # Baseline NPCs are deliberately NOT passed as the reader's fallback.
         # Missing transport/scripted coverage must remain visible in the audit.
         npcs, stats = reader.build_acore_npcs(source, repo_root=repo, creature_sql=creature,
                                              creature_multispawn_sql=multispawn, map_difficulty_dbc=difficulty,
-                                             wdm_root=wdm, provenance=provenance)
+                                             wdm_root=wdm, provenance=provenance, **transport_options)
     finally:
         sql_reader.load_row_table, reader.load_row_table = original_rows, npc_rows
         reader.load_rows_from_sql_file, reader.load_filtered_row_table = original_external, original_filtered

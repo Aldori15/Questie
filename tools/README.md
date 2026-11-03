@@ -90,6 +90,14 @@ Invoke-QuestiePython tools/generate_acore_item_base.py generate `
 
 ### 2. NPC base
 
+Registered single-map motion transports use `TaxiPathNode.dbc` to project passenger offsets into 
+world anchors. Routes are included for NPC quest starters and turn-ins.
+Passenger spawn anchors retain their deck offsets; waypoint lines use the shared
+transport centerline.
+The gunships retain their reviewed Icecrown display zone. Other transport points
+require an unambiguous map projection.
+Teleporting, ambiguous, or unverified transport geometry remains unmapped.
+
 ```powershell
 Invoke-QuestiePython tools/generate_acore_npc_base.py generate `
     --acore-source $acoreSource `

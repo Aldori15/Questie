@@ -1,10 +1,13 @@
 """C++ geometry follows actual callsites and fails closed on unsupported changes."""
+import math
+import struct
 import unittest
 from unittest.mock import patch
 
 from _test_paths import ADDON_ROOT
 from db_snapshot import temporary_directory
 import acore_cpp_geometry as cpp
+import acore_transport_geometry as transport
 import generate_acore_npc_corrections as reader
 
 
@@ -357,6 +360,232 @@ class CppGeometryTests(unittest.TestCase):
                 entries, _ = self.collect_objects(files, lantern=True)
                 self.assertTrue(entries["186887"]["failures"]["spawns"])
                 self.assertFalse(entries["186887"]["spawns"])
+
+
+class TransportGeometryTests(unittest.TestCase):
+    def fixture(self, positions=None):
+        positions = positions or [(0, 0, 10), (10, 0, 20), (20, 0, 30), (30, 0, 40)]
+        templates = [{"entry": 987654, "type": 15, "Data0": 4321, "Data6": 8765}]
+        creatures = [{"guid": 765432, "id1": 654321, "map": 8765,
+                      "position_x": 2, "position_y": 3, "position_z": 4,
+                      "orientation": 0.25, "zoneId": 999, "areaId": 998,
+                      "zoneid": 997, "areaid": 996, "custom": "preserved"}]
+        nodes = [dict(id=100 + index, path=4321, index=index, map=2468,
+                      x=x, y=y, z=z, flags=0, delay=0, arrival_event=0, departure_event=0)
+                 for index, (x, y, z) in enumerate(positions)]
+        return templates, creatures, nodes
+
+    @staticmethod
+    def project(row, _maps):
+        return 3579, [row["position_x"], row["position_y"]]
+
+    def build(self, fixture=None, project=None):
+        templates, creatures, nodes = fixture or self.fixture()
+        return transport.build_geometry(templates, creatures, nodes, {}, project or self.project)
+
+    def test_straight_route_preserves_anchor_offsets_and_uses_transport_centerline(self):
+        templates, creatures, nodes = self.fixture()
+        before = dict(creatures[0])
+        seen = []
+
+        def project(row, maps):
+            seen.append(dict(row))
+            self.assertEqual(row["map"], 2468)
+            self.assertEqual([row[key] for key in ("zoneId", "areaId", "zoneid", "areaid")], [0, 0, 0, 0])
+            return self.project(row, maps)
+
+        data = self.build((templates, creatures, nodes), project)[765432]
+        self.assertAlmostEqual(data["row"]["position_x"], 8)
+        self.assertAlmostEqual(data["row"]["position_y"], -3)
+        self.assertAlmostEqual(data["row"]["position_z"], 24)
+        self.assertAlmostEqual(data["row"]["orientation"], math.pi + 0.25)
+        self.assertEqual(data["row"]["custom"], "preserved")
+        self.assertEqual(data["row"]["id1"], 654321)
+        self.assertEqual(creatures[0], before)
+        self.assertEqual(data["origin"], "transport:987654:path:4321:creature:765432")
+        self.assertEqual(data["zone"], 3579)
+        path = data["paths"][3579][0]
+        self.assertEqual(len(path), 9)
+        self.assertAlmostEqual(path[0][0], 10)
+        self.assertAlmostEqual(path[-1][0], 20)
+        self.assertAlmostEqual(path[-1][1], 0)
+        self.assertNotEqual(path[0], path[-1], "route never creates a last-to-first seam")
+        self.assertEqual(len(seen), 10, "anchor and every route point project independently")
+        self.assertEqual(seen[0]["position_z"], 24)
+        self.assertEqual(seen[-1]["position_z"], 30)
+
+    def test_curved_route_keeps_precise_anchor_and_shared_transport_centerline(self):
+        fixture = self.fixture([(0, 0, 0), (10, 0, 10), (20, 10, 20), (20, 20, 30), (10, 30, 40)])
+        templates, creatures, nodes = fixture
+        creatures[0].update(position_x=4, position_y=0, position_z=2, orientation=0)
+        data = self.build(fixture)[765432]
+        initial_heading = math.atan2(10, 20) + math.pi
+        self.assertAlmostEqual(data["row"]["position_x"], 10 + 4 * math.cos(initial_heading))
+        self.assertAlmostEqual(data["row"]["position_y"], 4 * math.sin(initial_heading))
+        path = data["paths"][3579][0]
+        self.assertEqual(len(path), 17)
+        self.assertAlmostEqual(path[0][0], 10)
+        self.assertAlmostEqual(path[0][1], 0)
+        self.assertNotEqual(path[0], data["point"])
+        self.assertAlmostEqual(path[-1][0], 20)
+        self.assertAlmostEqual(path[-1][1], 20)
+
+    def test_passengers_share_route_geometry_and_keep_distinct_spawn_anchors(self):
+        fixture = self.fixture([(0, 0, 0), (10, 0, 10), (20, 10, 20), (20, 20, 30), (10, 30, 40)])
+        fixture[1].append(dict(fixture[1][0], guid=765433, id1=654322,
+                               position_x=70, position_y=-20, position_z=12, orientation=1.5))
+        result = self.build(fixture)
+        first, second = result[765432], result[765433]
+        self.assertEqual(first["paths"], second["paths"])
+        self.assertNotEqual(first["point"], second["point"])
+        self.assertNotEqual(first["row"]["position_z"], second["row"]["position_z"])
+        self.assertNotEqual(first["origin"], second["origin"])
+
+    def test_different_transports_keep_distinct_route_geometry(self):
+        fixture = self.fixture()
+        fixture[0].append(dict(fixture[0][0], entry=987655, Data0=4322, Data6=8766))
+        fixture[1].append(dict(fixture[1][0], guid=765433, id1=654322, map=8766))
+        fixture[2].extend([dict(node, id=node["id"] + 1000, path=4322, x=node["x"] + 100)
+                           for node in fixture[2]])
+        result = self.build(fixture)
+        self.assertNotEqual(result[765432]["paths"], result[765433]["paths"])
+
+    def test_stops_are_retained_but_teleports_multimap_and_invalid_paths_are_omitted(self):
+        fixture = self.fixture()
+        fixture[2][1].update(flags=2, delay=17, arrival_event=9, departure_event=10)
+        self.assertIn(765432, self.build(fixture))
+        for change in (lambda nodes: nodes[1].update(flags=1),
+                       lambda nodes: nodes[2].update(map=2469),
+                       lambda nodes: nodes[1].update(index=7),
+                       lambda nodes: nodes[2].update(id=nodes[1]["id"]),
+                       lambda nodes: nodes[1].update(x=float("nan")),
+                       lambda nodes: nodes.pop()):
+            with self.subTest(change=change):
+                fixture = self.fixture()
+                change(fixture[2])
+                self.assertEqual(self.build(fixture), {})
+        self.assertEqual(self.build(self.fixture([(0, 0, 0)] * 4)), {}, "zero XY tangent is unsupported")
+        self.assertEqual(self.build(self.fixture([(index, 0, 0) for index in range(515)])), {},
+                         "samples are bounded before passenger projection")
+
+    def test_template_joins_are_data_driven_and_ambiguity_never_selects_arbitrarily(self):
+        fixture = self.fixture()
+        fixture[0][0].update(entry=112233, Data0=556677, Data6=889900)
+        fixture[1][0].update(guid=123456, id1=999888, map=889900)
+        for node in fixture[2]:
+            node["path"] = 556677
+        result = self.build(fixture)
+        self.assertEqual(result[123456]["origin"], "transport:112233:path:556677:creature:123456")
+        lowercase = self.fixture()
+        lowercase[0][0] = {"type": 15, "entry": 987654, "data0": 4321, "data6": 8765}
+        self.assertIn(765432, self.build(lowercase))
+        for template in ({"entry": 123, "type": 15, "Data0": 4322, "Data6": 8765},
+                         {"entry": 123, "type": 15, "Data0": 4321, "Data6": 8765},
+                         {"entry": 987654, "type": 15, "Data0": 4321, "Data6": 8766}):
+            fixture = self.fixture()
+            fixture[0].append(template)
+            self.assertEqual(self.build(fixture), {})
+        fixture = self.fixture()
+        fixture[1].append(dict(fixture[1][0], guid="0765432"))
+        self.assertEqual(self.build(fixture), {}, "duplicate GUIDs are ambiguous even with alternate numeric spelling")
+        fixture = self.fixture()
+        fixture[0][0]["type"] = 11
+        self.assertEqual(self.build(fixture), {}, "static transports do not use motion transport routes")
+        for key in ("entry", "Data0", "Data6"):
+            fixture = self.fixture()
+            fixture[0][0][key] = 0
+            if key == "Data6":
+                fixture[1][0]["map"] = 0
+            self.assertEqual(self.build(fixture), {}, "zero transport identities never classify world-map creatures as passengers")
+
+    def test_reviewed_transport_display_zone_rejects_wrong_map_or_projection(self):
+        fixture = self.fixture()
+        fixture[0][0]["Data6"] = 622
+        fixture[1][0]["map"] = 622
+        for node in fixture[2]:
+            node["map"] = 571
+
+        def project(row, maps):
+            self.assertEqual(row["zoneId"], 210)
+            self.assertEqual(row["areaId"], 0)
+            return 210, [row["position_x"], row["position_y"]]
+
+        self.assertEqual(self.build(fixture, project)[765432]["zone"], 210)
+        self.assertEqual(self.build(fixture, lambda row, maps: (67, [1, 2])), {})
+        for node in fixture[2]:
+            node["map"] = 1
+        self.assertEqual(self.build(fixture, project), {})
+
+    def test_projection_unknown_invalidates_whole_guid_and_zone_runs_never_join(self):
+        calls = 0
+
+        def missing(row, maps):
+            nonlocal calls
+            calls += 1
+            return (None, None) if calls == 5 else self.project(row, maps)
+
+        self.assertEqual(self.build(project=missing), {})
+        calls = 0
+
+        def zones(row, maps):
+            nonlocal calls
+            calls += 1
+            zone = 10 if calls <= 4 or calls >= 8 else 20
+            return zone, [row["position_x"], row["position_y"]]
+
+        data = self.build(project=zones)[765432]
+        self.assertEqual([len(path) for path in data["paths"][10]], [3, 3])
+        self.assertEqual([len(path) for path in data["paths"][20]], [3])
+        self.assertNotEqual(data["paths"][10][0][-1], data["paths"][10][1][0])
+
+    def test_dbc_layout_empty_records_and_malformed_data(self):
+        nodes = self.fixture()[2]
+
+        def dbc(records, strings=b"\0"):
+            keys = ("id", "path", "index", "map", "x", "y", "z", "flags", "delay", "arrival_event", "departure_event")
+            return b"WDBC" + struct.pack("<4I", len(records), 11, 44, len(strings)) + b"".join(
+                struct.pack("<4I3f4I", *(node[key] for key in keys)) for node in records) + strings
+
+        with temporary_directory(ADDON_ROOT / "tools/reports") as root:
+            path = root / "TaxiPathNode.dbc"
+            with self.assertRaisesRegex(ValueError, "missing or unreadable"):
+                transport.load_taxi_nodes(path)
+            path.write_bytes(dbc([]))
+            self.assertEqual(transport.load_taxi_nodes(path), [])
+            path.write_bytes(dbc(nodes))
+            self.assertEqual(transport.load_taxi_nodes(path), nodes)
+            malformed = [b"", b"BAD!" + dbc(nodes)[4:], dbc(nodes)[:-1], dbc(nodes) + b"x",
+                         b"WDBC" + struct.pack("<4I", 0, 10, 44, 0),
+                         b"WDBC" + struct.pack("<4I", 0, 11, 40, 0)]
+            for replacement in (dict(nodes[1], id=nodes[0]["id"]), dict(nodes[1], index=0),
+                                dict(nodes[1], index=5), dict(nodes[1], x=float("inf"))):
+                changed = [dict(node) for node in nodes]
+                changed[1] = replacement
+                malformed.append(dbc(changed))
+            for data in malformed:
+                path.write_bytes(data)
+                with self.assertRaises(ValueError):
+                    transport.load_taxi_nodes(path)
+
+    def test_core_source_identities_include_all_transport_mapping_and_math_owners(self):
+        expected = {
+            "src/server/game/Maps/TransportMgr.cpp", "src/server/game/Entities/Transport/Transport.cpp",
+            "src/server/game/Entities/Transport/Transport.h", "src/server/game/Entities/Vehicle/VehicleDefines.h",
+            "src/server/game/Entities/GameObject/GameObjectData.h", "src/server/game/Movement/Spline/Spline.cpp",
+            "src/server/shared/DataStores/DBCStructure.h", "src/server/game/DataStores/DBCStores.cpp",
+            "src/server/game/Movement/Spline/Spline.h",
+        }
+        self.assertEqual(set(transport.SOURCE_FILES), expected)
+        self.assertEqual(len(transport.SOURCE_FILES), len(expected))
+        with temporary_directory(ADDON_ROOT / "tools/reports") as root:
+            with self.assertRaisesRegex(ValueError, "missing transport core source"):
+                transport.verify_core(root)
+            for relative in transport.SOURCE_FILES:
+                path = root / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("// changed transport implementation\n", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "unsupported transport core source"):
+                transport.verify_core(root)
 
 
 if __name__ == "__main__":
