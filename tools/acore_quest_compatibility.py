@@ -125,6 +125,12 @@ PLAYER_TARGETS = frozenset({7, 16, 17, 18, 21, 23, 27, 201})
 SMART_ESCORT_TARGETS = 0xFFFFFF
 
 
+def is_quest_escort_start(row):
+    """Quest-bound movement is not evidence of an NPC's ordinary patrol."""
+    return int(row.get("action_type") or 0) == 53 and (
+        int(row.get("action_param4") or 0) > 0 or int(row.get("event_type") or 0) in (19, 20, 47))
+
+
 def _valid_escort_start(actor, row, escort_paths):
     # SmartAI::StartPath requires an existing, nonempty Smart waypoint path.
     path = int(row.get("action_param2") or 0)

@@ -5,6 +5,7 @@ import re
 import struct
 import sys
 import acore_npc_health
+import acore_quest_compatibility
 import acore_transport_geometry
 from collections import defaultdict
 from functools import lru_cache
@@ -572,6 +573,12 @@ def parse_zone_maps(repo_root, wdm_root=None):
         parsed = LuaParser(extract_balanced_braces(text, text.find("{", start)), constants).parse()
         wdm_floor_zone_to_ui.update({int(k): int(v) for k, v in parsed.items() if isinstance(k, int) and isinstance(v, int)})
 
+    subzone_parents = {}
+    start = text.find("ZoneDB.private.subZoneToParentZone")
+    if start != -1:
+        parsed = LuaParser(extract_balanced_braces(text, text.find("{", start)), constants).parse()
+        subzone_parents.update({int(k): int(v) for k, v in parsed.items() if isinstance(k, int) and isinstance(v, int)})
+
     instance_to_zone = {}
     start = text.find("ZoneDB.instanceIdToAreaId")
     if start != -1:
@@ -645,6 +652,7 @@ def parse_zone_maps(repo_root, wdm_root=None):
 
     return {
         "area_to_ui": area_to_ui,
+        "subzone_parents": subzone_parents,
         "special_to_ui": special_to_ui,
         "wdm_floor_zone_to_ui": wdm_floor_zone_to_ui,
         "instance_to_zone": instance_to_zone,
@@ -1418,6 +1426,8 @@ def build_acore_npcs(
         if int(script_row.get("source_type") or 0) != SMART_SOURCE_TYPE_CREATURE:
             continue
         if int(script_row.get("action_type") or 0) != SMART_ACTION_ESCORT_START:
+            continue
+        if acore_quest_compatibility.is_quest_escort_start(script_row):
             continue
 
         path_id = int(script_row.get("action_param2") or 0)

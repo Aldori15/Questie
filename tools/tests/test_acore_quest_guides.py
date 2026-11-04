@@ -7,6 +7,444 @@ import acore_quest_guides as guides
 
 
 class QuestGuideTests(unittest.TestCase):
+    def linked_escort_args(self):
+        quests = {660: {"LogTitle": "Hints of a New Plague?", "SpecialFlags": 2}}
+        creatures = {2713: {"entry": 2713, "name": "Kinelory", "AIName": "SmartAI", "ScriptName": ""}}
+        scripts = [
+            {"id": 2, "link": 3, "event_type": 19, "event_param1": 660, "action_type": 1, "target_type": 7},
+            {"id": 3, "link": 4, "event_type": 61, "action_type": 53, "action_param2": 2713,
+             "action_param4": 660, "target_type": 1},
+            {"id": 4, "event_type": 61, "action_type": 64, "action_param1": 0, "target_type": 7},
+            {"id": 20, "link": 21, "event_type": 40, "event_param1": 35, "event_param2": 2713,
+             "action_type": 15, "action_param1": 660, "target_type": 12, "target_param1": 0},
+            {"id": 21, "event_type": 61, "action_type": 41, "target_type": 1},
+        ]
+        for row in scripts:
+            row.update(entryorguid=2713, source_type=0, event_chance=100)
+        nodes = [{"entry": 2713, "pointid": point, "position_x": point,
+                  "position_y": 50, "position_z": 1} for point in range(1, 38)]
+        return [quests, creatures, scripts, nodes, [{"guid": 1, "id1": 2713, "map": 0}],
+                lambda node, *_: (45, [node["position_x"], node["position_y"]])]
+
+    def test_linked_quest_accept_uses_explicit_credit_waypoint_before_path_end(self):
+        args = self.linked_escort_args()
+        packet = guides.derive_escort_guide_packet(*args)
+        self.assertEqual(packet["guides"][660], guides.typed(["Escort Kinelory to safety", {45: [[35, 50]]}]))
+        self.assertEqual(packet["evidence"][0]["pointId"], 35)
+        self.assertEqual(packet["evidence"][0]["rule"], "smartEscortWaypointCredit")
+        args[2][3]["event_param1"] = 34
+        self.assertEqual(guides.derive_escort_guide_packet(*args)["evidence"][0]["pointId"], 34)
+
+    def test_linked_escort_rejects_unproved_player_credit_and_activation(self):
+        changes = [(0, "event_param1", 661), (1, "link", 0), (1, "event_type", 0),
+                   (2, "target_type", 1), (2, "event_type", 11), (3, "target_param1", 7),
+                   (2, "event_phase_mask", 1), (2, "event_chance", 50),
+                   (3, "target_type", 1), (3, "event_type", 0), (3, "event_param1", 99),
+                   (3, "event_param2", 999), (3, "event_phase_mask", 1), (3, "event_chance", 50)]
+        for index, field, value in changes:
+            with self.subTest(index=index, field=field):
+                args = self.linked_escort_args()
+                args[2][index][field] = value
+                self.assertNotIn(660, guides.derive_escort_guide_packet(*args)["guides"])
+
+    def test_linked_escort_rejects_cycles_multiple_parents_and_multiple_credit_points(self):
+        for extra in [
+            {"id": 8, "link": 3, "event_type": 19, "event_param1": 660},
+            {"id": 8, "link": 3, "event_type": 61},
+            {"id": 3, "event_type": 19, "event_param1": 660},
+            {"id": 8, "event_type": 40, "event_param1": 30, "event_param2": 2713,
+             "action_type": 15, "action_param1": 660, "target_type": 12},
+        ]:
+            args = self.linked_escort_args()
+            args[2].append(dict(entryorguid=2713, source_type=0, event_chance=100, **extra))
+            self.assertNotIn(660, guides.derive_escort_guide_packet(*args)["guides"])
+
+    def cpp_escort_args(self):
+        proof = {"questId": 435, "npcId": 1978, "pointId": 13, "script": "escort",
+                 "file": "event.cpp", "line": 20}
+        packet = {"escortWaypoints": [proof], "events": {"435": [["monster", 1978]]},
+                  "evidence": {"435": [dict(proof, actor=["monster", 1978])]}}
+        return [{435: {"SpecialFlags": 2}}, {1978: {"entry": 1978, "ScriptName": "escort", "name": "Erland"}},
+                packet, [{"entry": 1978, "pointid": point, "location_x": point,
+                          "location_y": 50, "location_z": 1} for point in range(16)],
+                [{"id1": 1978, "map": 0}], lambda node, *_: (130, [node["position_x"], node["position_y"]])]
+
+    def test_cpp_escort_projects_credited_waypoint_not_last_point(self):
+        args = self.cpp_escort_args()
+        packet = guides.derive_cpp_escort_guide_packet(*args)
+        self.assertEqual(packet["guides"][435], guides.typed(["Escort Erland to safety", {130: [[13, 50]]}]))
+        self.assertEqual(packet["evidence"][0]["rule"], "cppEscortWaypointCredit")
+        args[3][13]["location_x"] = 14
+        self.assertEqual(guides.derive_cpp_escort_guide_packet(*args)["guides"][435]["n:2"],
+                         guides.typed({130: [[14, 50]]}))
+
+    def test_cpp_escort_rejects_changed_binding_bad_geometry_and_partial_alternatives(self):
+        for change in ("template", "spawn", "point", "duplicate", "nan", "map", "alternative", "event", "unmapped",
+                       "same_actor_credit", "missing_evidence"):
+            with self.subTest(change=change):
+                args = self.cpp_escort_args()
+                if change == "template": args[1][1978]["ScriptName"] = "other"
+                elif change == "spawn": args[4][0]["ScriptName"] = "other"
+                elif change == "point": args[3].pop(13)
+                elif change == "duplicate": args[3].append(dict(args[3][13]))
+                elif change == "nan": args[3][13]["location_x"] = float("nan")
+                elif change == "map": args[4].append({"id1": 1978, "map": 1})
+                elif change == "alternative": args[2]["events"]["435"].append(["monster", 999])
+                elif change == "event": args[0][435]["SpecialFlags"] = 0
+                elif change == "unmapped": args[5] = lambda *_: (None, None)
+                elif change == "same_actor_credit": args[2]["evidence"]["435"].append(dict(args[2]["evidence"]["435"][0]))
+                elif change == "missing_evidence": args[2]["evidence"] = {}
+                self.assertNotIn(435, guides.derive_cpp_escort_guide_packet(*args)["guides"])
+
+    def test_cpp_escort_reviewed_wait_final_point_and_display_zone_are_enforced(self):
+        args = self.cpp_escort_args()
+        proof = args[2]["escortWaypoints"][0]
+        proof["minimumWaitMs"] = 5000
+        args[3][13]["waittime"] = 4999
+        self.assertNotIn(435, guides.derive_cpp_escort_guide_packet(*args)["guides"])
+        args[3][13]["waittime"] = 5000
+        self.assertIn(435, guides.derive_cpp_escort_guide_packet(*args)["guides"])
+        proof["requireLastPoint"] = True
+        self.assertNotIn(435, guides.derive_cpp_escort_guide_packet(*args)["guides"])
+        proof["pointId"] = 15
+        args[3][15]["waittime"] = 5000
+        proof["displayZone"] = 40
+        args[0][435]["QuestSortID"] = -141
+        args[5] = lambda node, _spawn, quest: (quest["QuestSortID"], [node["position_x"], node["position_y"]])
+        packet = guides.derive_cpp_escort_guide_packet(*args)
+        self.assertEqual(packet["guides"][435]["n:2"], guides.typed({40: [[15, 50]]}))
+        self.assertEqual(args[0][435]["QuestSortID"], -141)
+
+    def cpp_destination_args(self, kind="followerDestinations"):
+        proof = {"questId": 1560, "actor": ["monster", 5955], "destinationNpcId": 6015,
+                 "script": "npc_tooga", "file": "event.cpp", "line": 10,
+                 "class": "ToogaAI", "call": "GroupEventHappens"}
+        if kind != "followerDestinations":
+            proof.pop("destinationNpcId")
+        if kind == "coordinateCredits":
+            proof.update(position_x=70, position_y=80, position_z=0)
+        packet = {kind: [proof], "evidence": {"1560": [dict(proof)]}}
+        creatures = {5955: {"entry": 5955, "name": "Tooga", "ScriptName": "npc_tooga"},
+                     6015: {"entry": 6015, "name": "Torta", "ScriptName": "", "AIName": ""}}
+        spawns = [{"guid": 1, "id1": 5955, "map": 1, "position_x": 30, "position_y": 40, "position_z": 0},
+                  {"guid": 2, "id1": 6015, "map": 1, "position_x": 66, "position_y": 44, "position_z": 0}]
+        return [{1560: {"SpecialFlags": 2, "AreaDescription": "Lead Tooga to Torta"}}, creatures, packet, spawns,
+                lambda node, *_: (440, [node["position_x"], node["position_y"]])]
+
+    def test_cpp_destination_projects_follower_target_proximity_actor_and_fixed_coordinate(self):
+        for kind, expected in (("followerDestinations", [66, 44]), ("proximityCredits", [30, 40]),
+                               ("coordinateCredits", [70, 80])):
+            with self.subTest(kind=kind):
+                packet = guides.derive_cpp_destination_guide_packet(*self.cpp_destination_args(kind))
+                self.assertEqual(packet["guides"][1560]["n:2"], guides.typed({440: [expected]}))
+                self.assertEqual(packet["evidence"][0]["actor"], ["monster", 5955])
+
+    def test_cpp_destination_rejects_overrides_missing_targets_movement_and_unproved_calls(self):
+        for change in ("source_script", "spawn_script", "missing_target", "no_target_spawns", "target_map",
+                       "target_script", "target_ai", "moving", "wandering", "nan", "unmapped", "extra_call", "event"):
+            with self.subTest(change=change):
+                args = self.cpp_destination_args()
+                if change == "source_script": args[1][5955]["ScriptName"] = "other"
+                elif change == "spawn_script": args[3][0]["ScriptName"] = "other"
+                elif change == "missing_target": args[1].pop(6015)
+                elif change == "no_target_spawns": args[3].pop()
+                elif change == "target_map": args[3][1]["map"] = 0
+                elif change == "target_script": args[1][6015]["ScriptName"] = "moving"
+                elif change == "target_ai": args[1][6015]["AIName"] = "SmartAI"
+                elif change == "moving": args[3][1]["MovementType"] = 2
+                elif change == "wandering": args[3][1].update(MovementType=1, wander_distance=5)
+                elif change == "nan": args[3][1]["position_x"] = float("nan")
+                elif change == "unmapped": args[4] = lambda *_: (None, None)
+                elif change == "extra_call": args[2]["evidence"]["1560"].append(dict(args[2]["evidence"]["1560"][0]))
+                elif change == "event": args[0][1560]["SpecialFlags"] = 0
+                self.assertNotIn(1560, guides.derive_cpp_destination_guide_packet(*args)["guides"])
+
+    def test_spawn_movement_overrides_template_defaults(self):
+        args = self.cpp_destination_args()
+        args[1][6015]["MovementType"] = 1
+        args[3][1].update(MovementType=0, wander_distance=5)
+        self.assertIn(1560, guides.derive_cpp_destination_guide_packet(*args)["guides"])
+        args[3][1].pop("MovementType")
+        self.assertNotIn(1560, guides.derive_cpp_destination_guide_packet(*args)["guides"])
+
+    def test_reviewed_proximity_display_zone_requires_matching_world_map(self):
+        args = self.cpp_destination_args("proximityCredits")
+        args[2]["proximityCredits"][0].update(displayMap=1, displayZone=3557)
+        args[4] = lambda node, _spawn, quest: (quest["QuestSortID"], [20, 30])
+        packet = guides.derive_cpp_destination_guide_packet(*args)
+        self.assertEqual(packet["guides"][1560]["n:2"], guides.typed({3557: [[20, 30]]}))
+        args[2]["proximityCredits"][0]["displayMap"] = 530
+        self.assertNotIn(1560, guides.derive_cpp_destination_guide_packet(*args)["guides"])
+
+    def test_cpp_destination_does_not_publish_a_partial_set_of_follow_targets(self):
+        args = self.cpp_destination_args()
+        alternative = dict(args[2]["followerDestinations"][0], destinationNpcId=999)
+        args[2]["followerDestinations"].append(alternative)
+        args[2]["evidence"]["1560"].append(dict(alternative))
+        self.assertNotIn(1560, guides.derive_cpp_destination_guide_packet(*args)["guides"])
+
+    def test_interactions_keep_npc_entity_hints_and_project_all_object_spawns(self):
+        quests = {2954: {"SpecialFlags": 2}, 4285: {"SpecialFlags": 2}}
+        npcs = {7918: {"entry": 7918, "name": "Stone Watcher"}}
+        objects = {164955: {"entry": 164955, "name": "Northern Pylon"}}
+        proofs = [{"questId": 2954, "actor": ["monster", 7918]},
+                  {"questId": 4285, "actor": ["object", 164955]}]
+        spawns = [{"id1": 7918, "map": 1}]
+        object_spawns = [{"id": 164955, "map": 1, "position_x": 10, "position_y": 20},
+                         {"id": 164955, "map": 1, "position_x": 30, "position_y": 40}]
+        project = lambda node, *_: (490, [node["position_x"], node["position_y"]])
+        packet = guides.derive_interaction_guide_packet(quests, npcs, objects, proofs, spawns, object_spawns, project)
+        self.assertNotIn(2954, packet["guides"])
+        self.assertEqual(packet["guides"][4285]["n:2"], guides.typed({490: [[10, 20], [30, 40]]}))
+        self.assertEqual({proof["questId"] for proof in packet["interactions"]}, {2954, 4285})
+        object_spawns[1]["ScriptName"] = "overridden"
+        rejected = guides.derive_interaction_guide_packet(quests, npcs, objects, proofs, spawns, object_spawns, project)
+        self.assertNotIn(4285, rejected["guides"])
+        self.assertEqual([proof["questId"] for proof in rejected["interactions"]], [2954])
+
+    def test_follower_interaction_fallback_keeps_credit_source_binding_and_spawn_overrides(self):
+        for change in (None, "source_script", "source_spawn_script", "missing_source", "missing_target", "target_map"):
+            with self.subTest(change=change):
+                args = self.cpp_destination_args()
+                proof = dict(args[2]["followerDestinations"][0], creditActor=["monster", 5955], actor=["monster", 6015])
+                if change == "source_script": args[1][5955]["ScriptName"] = "other"
+                elif change == "source_spawn_script": args[3][0]["ScriptName"] = "other"
+                elif change == "missing_source": args[3].pop(0)
+                elif change == "missing_target": args[1].pop(6015)
+                elif change == "target_map": args[3][1]["map"] = 0
+                packet = guides.derive_interaction_guide_packet(args[0], args[1], {}, [proof], args[3], [], args[4])
+                self.assertEqual(packet["guides"], {})
+                if change is None:
+                    self.assertEqual(packet["interactions"][0]["actor"], ["monster", 6015])
+                    self.assertEqual(packet["interactions"][0]["creditActor"], ["monster", 5955])
+                else:
+                    self.assertEqual(packet["interactions"], [])
+
+    def test_interaction_append_preserves_sparse_optional_indices_and_deduplicates_targets(self):
+        packet = {"guides": {1: {"n:1": guides.typed({2: 3, 3: "Take the flight", 4: 0, 5: [["monster", 100]]}),
+                                "n:3": guides.typed({2: 3, 3: "Other guide", 4: 0, 5: [["object", 200]]})}},
+                  "optional": {"1": [1]}, "evidence": []}
+        original = dict(packet["guides"][1])
+        hints = [{"questId": 1, "actor": ["monster", 100], "label": "Duplicate"},
+                 {"questId": 1, "actor": ["monster", 300], "label": "Talk"},
+                 {"questId": 2, "actor": ["monster", 400], "label": "Skip"}]
+        guides.append_interaction_hints(packet, hints, skip_quests={2})
+        self.assertEqual(packet["optional"], {"1": [1]})
+        self.assertEqual(packet["guides"][1]["n:1"], original["n:1"])
+        self.assertEqual(packet["guides"][1]["n:3"], original["n:3"])
+        self.assertEqual(packet["guides"][1]["n:4"]["n:5"], guides.typed([["monster", 300]]))
+        self.assertEqual(len(packet["evidence"]), 1)
+        self.assertNotIn(2, packet["guides"])
+        guides.append_interaction_hints(packet, hints, skip_quests={2})
+        self.assertEqual(len(packet["evidence"]), 1)
+
+    def test_location_packet_combination_requires_all_known_actors_and_merges_duplicate_points(self):
+        def packet(actor, points):
+            return {"guides": {1: guides.typed(["Destination", {40: points}])},
+                    "evidence": [{"questId": 1, "actor": ["monster", actor]}], "omissions": []}
+        first, second = packet(100, [[10, 20]]), packet(200, [[10, 20], [30, 40]])
+        sources = {"1": [["monster", 100], ["monster", 200]]}
+        self.assertNotIn(1, guides.combine_location_guide_packets([first], sources)["guides"])
+        combined = guides.combine_location_guide_packets([first, second], sources)
+        self.assertEqual(combined["guides"][1]["n:2"], guides.typed({40: [[10, 20], [30, 40]]}))
+        self.assertEqual(len(combined["evidence"]), 2)
+
+    def test_new_complete_proof_supersedes_conservative_omissions_without_losing_other_faction(self):
+        args = self.escort_args()
+        old = guides.derive_escort_guide_packet(*args)
+        old["guides"].pop(13229)
+        old["evidence"] = [proof for proof in old["evidence"] if proof["questId"] != 13229]
+        old["omissions"].append({"questId": 13229, "npcId": 31279, "pathId": 31279,
+                                 "scriptEntry": 31279, "rowId": 1, "reason": "unsupportedEscortActivation"})
+        self.assertEqual(set(old["guides"]), {13221})
+        new = {"guides": {13229: guides.typed(["Explicit credit", {210: [[31.98, 57.06]]}])},
+               "evidence": [{"questId": 13229, "actor": ["monster", 31279], "rule": "smartExplicitWaypointCredit",
+                             "sourceType": 0, "scriptEntry": 31279, "pathIds": [31279]}],
+               "omissions": []}
+        sources = {str(q): [["monster", 31279]] for q in (13221, 13229)}
+        combined = guides.combine_location_guide_packets([old, new], sources)
+        self.assertEqual(set(combined["guides"]), {13221, 13229})
+        self.assertEqual([(proof["questId"], proof["reason"]) for proof in combined["supersededOmissions"]],
+                         [(13229, "unsupportedEscortActivation")])
+        sources["13229"].append(["monster", 999])
+        rejected = guides.combine_location_guide_packets([old, new], sources)
+        self.assertEqual(set(rejected["guides"]), {13221})
+        self.assertEqual(rejected["supersededOmissions"], [])
+
+    def test_combiner_does_not_supersede_unmatched_same_actor_or_repeat_omissions(self):
+        args = self.escort_args()
+        args[2][1]["action_param3"] = 1
+        old = guides.derive_escort_guide_packet(*args)
+        new = {"guides": {13229: guides.typed(["Explicit credit", {210: [[31.98, 57.06]]}])},
+               "evidence": [{"questId": 13229, "actor": ["monster", 31279], "rule": "smartExplicitWaypointCredit",
+                             "sourceType": 0, "scriptEntry": 31279, "pathIds": [31279]}], "omissions": []}
+        sources = {str(q): [["monster", 31279]] for q in (13221, 13229)}
+        for change in ("repeat", "same_actor_unknown_call", "owner", "actor", "path", "source_type"):
+            with self.subTest(change=change):
+                omission = dict(old["omissions"][0])
+                if change == "same_actor_unknown_call": omission["reason"] = "unprovedAlternativeDestinationCredit"
+                elif change != "repeat":
+                    omission["reason"] = "unsupportedEscortActivation"
+                    if change == "owner": omission["scriptEntry"] = -121631
+                    elif change == "actor": omission["npcId"] = 999
+                    elif change == "path": omission["pathId"] = 999
+                selected = dict(old, omissions=[omission])
+                replacement = new
+                if change == "source_type":
+                    replacement = dict(new, evidence=[dict(new["evidence"][0], sourceType=9)])
+                packet = guides.combine_location_guide_packets([selected, replacement], sources)
+                self.assertEqual(set(packet["guides"]), {13221})
+                self.assertEqual(packet["supersededOmissions"], [])
+
+    def escort_args(self):
+        quests = {quest: {"LogTitle": "I'm Not Dead Yet!", "QuestSortID": 210, "SpecialFlags": 2}
+                  for quest in (13221, 13229)}
+        creatures = {31279: {"entry": 31279, "name": "Father Kamaros", "AIName": "SmartAI", "ScriptName": ""}}
+        starts = [{"entryorguid": 31279, "source_type": 0, "id": index, "event_type": 19,
+                   "event_param1": quest, "event_chance": 100, "action_type": 53,
+                   "action_param2": 31279, "action_param4": quest, "target_type": 7}
+                  for index, quest in enumerate(quests)]
+        starts += [{"entryorguid": 31279, "source_type": 0, "id": 8, "link": 9,
+                    "event_type": 40, "event_param1": 24, "action_type": 1, "target_type": 12},
+                   {"entryorguid": 31279, "source_type": 0, "id": 9, "event_type": 61,
+                    "action_type": 41, "action_param1": 12000, "target_type": 1}]
+        nodes = [{"entry": 31279, "pointid": index, "position_x": index,
+                  "position_y": index, "position_z": 600} for index in range(1, 25)]
+        nodes[-1].update(position_x=7041.24, position_y=3438.29, position_z=695.568)
+        spawns = [{"guid": 121631, "id1": 31279, "map": 571}]
+        return [quests, creatures, starts, nodes, spawns, lambda *_: (210, [31.98, 57.06])]
+
+    def test_escort_endpoint_is_derived_for_both_factions_and_follows_source_changes(self):
+        args = self.escort_args()
+        calls = []
+
+        def project(node, spawn, quest):
+            calls.append((node["pointid"], spawn["map"], quest["QuestSortID"]))
+            return 210, [node["position_x"] / 1000, node["position_y"] / 1000]
+
+        args[-1] = project
+        packet = guides.derive_escort_guide_packet(*args)
+        self.assertEqual(set(packet["guides"]), {13221, 13229})
+        self.assertEqual(calls, [(24, 571, 210), (24, 571, 210)])
+        self.assertEqual(packet["omissions"], [])
+        before = packet["guides"][13229]
+        self.assertEqual(before["n:1"], "Escort Father Kamaros to safety")
+        args[3][-1]["position_x"] += 100
+        self.assertNotEqual(guides.derive_escort_guide_packet(*args)["guides"][13229], before)
+        args[0][13229]["AreaDescription"] = "Escort the priest."
+        self.assertEqual(guides.derive_escort_guide_packet(*args)["guides"][13229]["n:1"], "Escort the priest.")
+
+    def test_escort_rejects_unsupported_activation_repeat_phase_and_script_binding(self):
+        for field, value in (("event_type", 62), ("event_param1", 999), ("target_type", 1),
+                             ("action_param4", 0), ("action_param3", 1), ("event_phase_mask", 1),
+                             ("event_chance", 50)):
+            with self.subTest(field=field):
+                args = self.escort_args()
+                for row in args[2][:2]:
+                    row[field] = value
+                self.assertEqual(guides.derive_escort_guide_packet(*args)["guides"], {})
+        for field, value in (("AIName", ""), ("ScriptName", "custom_script")):
+            args = self.escort_args()
+            args[1][31279][field] = value
+            self.assertEqual(guides.derive_escort_guide_packet(*args)["guides"], {})
+        args = self.escort_args()
+        conditions = [{"SourceTypeOrReferenceId": 22, "SourceId": 0, "SourceEntry": 31279, "SourceGroup": 1}]
+        self.assertEqual(guides.derive_escort_guide_packet(*args, conditions=conditions)["guides"], {})
+
+    def test_escort_does_not_add_a_required_event_to_an_ordinary_quest(self):
+        args = self.escort_args()
+        args[0][13229]["SpecialFlags"] = 0
+        packet = guides.derive_escort_guide_packet(*args)
+        self.assertNotIn(13229, packet["guides"])
+        self.assertIn(13221, packet["guides"])
+        self.assertIn(13229, guides.derive_escort_guide_packet(*args, quest_special_flags={13229: 2})["guides"])
+
+    def test_repeating_escort_invalidates_only_its_quest_and_restores_after_refresh(self):
+        for index, quest_id in enumerate((13221, 13229)):
+            with self.subTest(quest_id=quest_id):
+                args = self.escort_args()
+                args[2][index]["action_param3"] = 1
+                packet = guides.derive_escort_guide_packet(*args)
+                self.assertEqual(set(packet["guides"]), {13221, 13229} - {quest_id})
+                self.assertEqual([(proof["questId"], proof["reason"]) for proof in packet["omissions"]],
+                                 [(quest_id, "conditionalOrRepeatingEscort")])
+                args[2][index]["action_param3"] = 0
+                self.assertEqual(set(guides.derive_escort_guide_packet(*args)["guides"]), {13221, 13229})
+
+        args = self.escort_args()
+        args[2].append(dict(args[2][0], id=10, action_param3=1))
+        self.assertEqual(set(guides.derive_escort_guide_packet(*args)["guides"]), {13229})
+
+    def test_escort_rejects_early_credit_successful_stops_reroutes_and_action_lists(self):
+        for action, parameters in ((15, {"action_param1": 13229}), (26, {"action_param1": 13229}),
+                                   (55, {}), (62, {}), (69, {}), (80, {"action_param1": 3127900}),
+                                   (87, {}), (88, {}), (53, {"action_param2": 999})):
+            with self.subTest(action=action):
+                args = self.escort_args()
+                args[2].append({"entryorguid": 31279, "source_type": 0, "id": 10, "event_type": 0,
+                                "action_type": action, "target_type": 1, **parameters})
+                self.assertNotIn(13229, guides.derive_escort_guide_packet(*args)["guides"])
+        args = self.escort_args()
+        args[2].append({"entryorguid": 31279, "source_type": 0, "id": 10, "event_type": 0,
+                        "action_type": 55, "action_param3": 1, "target_type": 1})
+        self.assertIn(13229, guides.derive_escort_guide_packet(*args)["guides"])
+
+    def test_escort_allows_pauses_and_terminal_despawn_but_rejects_early_despawn(self):
+        args = self.escort_args()
+        args[2].append({"entryorguid": 31279, "source_type": 0, "id": 10, "event_type": 40,
+                        "event_param1": 10, "action_type": 54, "action_param1": 5000, "target_type": 1})
+        self.assertIn(13229, guides.derive_escort_guide_packet(*args)["guides"])
+        args[2][2]["event_param1"] = 23
+        packet = guides.derive_escort_guide_packet(*args)
+        self.assertEqual(packet["guides"], {})
+        self.assertEqual({row["reason"] for row in packet["omissions"]}, {"unprovedEarlyEscortDespawn"})
+
+    def test_escort_rejects_missing_gapped_nonfinite_or_unmapped_geometry(self):
+        for change in (lambda args: args[3].clear(), lambda args: args[3].pop(5),
+                       lambda args: args[3][0].update(pointid=2),
+                       lambda args: args[3][-1].update(position_x=float("nan")),
+                       lambda args: args[4].clear(),
+                       lambda args: args[4].append({"guid": 2, "id1": 31279, "map": 0}),
+                       lambda args: args.__setitem__(-1, lambda *_: (None, None))):
+            args = self.escort_args()
+            change(args)
+            self.assertEqual(guides.derive_escort_guide_packet(*args)["guides"], {})
+
+    def test_escort_guid_scripts_and_duplicate_placements_preserve_correct_actor(self):
+        args = self.escort_args()
+        for row in args[2]:
+            row["entryorguid"] = -121631
+        packet = guides.derive_escort_guide_packet(*args)
+        self.assertEqual(set(packet["guides"]), {13221, 13229})
+        self.assertTrue(all(row["npcId"] == 31279 for row in packet["evidence"]))
+        args = self.escort_args()
+        args[4].append({"guid": 2, "id1": 31279, "map": 571})
+        guide = guides.derive_escort_guide_packet(*args)["guides"][13229]
+        self.assertEqual(len(guide["n:2"]["n:210"]), 1)
+
+    def test_escort_does_not_publish_a_partial_set_of_alternatives(self):
+        args = self.escort_args()
+        args[2].append(dict(args[2][0], id=10, event_chance=50))
+        packet = guides.derive_escort_guide_packet(*args)
+        self.assertNotIn(13221, packet["guides"])
+        self.assertIn(13229, packet["guides"])
+
+    def test_escort_rejects_guid_overrides_and_merged_entry_scripts(self):
+        args = self.escort_args()
+        args[2].append({"entryorguid": -121631, "source_type": 0, "id": 0, "event_type": 11,
+                        "action_type": 1, "target_type": 1})
+        packet = guides.derive_escort_guide_packet(*args)
+        self.assertEqual(packet["guides"], {})
+        self.assertEqual({row["reason"] for row in packet["omissions"]}, {"overriddenOrMergedEscortScript"})
+        args = self.escort_args()
+        for row in args[2]:
+            row["entryorguid"] = -121631
+        args[2].append({"entryorguid": 31279, "source_type": 0, "id": 10, "event_type": 0,
+                        "action_type": 55, "target_type": 1})
+        self.assertIn(13229, guides.derive_escort_guide_packet(*args)["guides"])
+        args[1][31279]["flags_extra"] = 0x08000000
+        self.assertEqual(guides.derive_escort_guide_packet(*args)["guides"], {})
+
     def test_area_trigger_25_uses_current_projected_source_point(self):
         quests = {25: {"LogTitle": "Stonetalon Standstill", "AreaDescription": "Explore the gazebo."}}
         relations = [{"id": 77, "quest": 25}, {"id": 77, "quest": 25}]

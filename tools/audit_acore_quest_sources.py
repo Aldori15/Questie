@@ -6,6 +6,7 @@ import copy
 import hashlib
 import inspect
 import json
+import re
 from pathlib import Path
 import subprocess
 from unittest.mock import patch
@@ -20,6 +21,8 @@ import acore_quest_guides as guides
 import acore_quest_cpp_events as cpp_events
 import acore_quest_cpp_credits as cpp_credits
 import acore_quest_script_events as script_events
+import acore_quest_area_scripts as area_scripts
+import acore_quest_smart_guides as smart_guides
 import generate_acore_npc_corrections as coordinates
 
 
@@ -48,7 +51,9 @@ TABLE_KEYS = {
     "areatrigger_scripts": ("entry",),
     "reference_loot_template": ("Entry", "Item"), "gameobject_loot_template": ("Entry", "Item"),
     "waypoints": ("entry", "pointid"),
+    "script_waypoint": ("entry", "pointid"),
     "creature": ("guid",),
+    "gameobject": ("guid",),
     "npc_spellclick_spells": ("npc_entry", "spell_id"),
     "gossip_menu_option": ("MenuID", "OptionID"),
     "spell_script_names": ("spell_id", "ScriptName"),
@@ -76,6 +81,46 @@ def guide_spell_fields(row):
     return result
 
 
+def rotation_only_update(statement, table):
+    if table != "gameobject":
+        return False
+    assignments, _where, matched = sql_reader.split_update_statement(statement, table)
+    if not matched:
+        return False
+    values = sql_reader.split_sql_values(assignments)
+    return bool(values) and all(re.fullmatch(
+        r"\s*`?rotation[0-3]`?\s*=\s*(?:SIN|COS)\s*\(\s*`?orientation`?\s*/\s*2\s*\)\s*",
+        value, re.IGNORECASE) for value in values)
+
+
+def project_escort_endpoint(node, spawn, quest, zone_maps):
+    """Use explicit geography, a verified floor, or one unambiguous outdoor zone."""
+    map_id = int(spawn.get("map") or 0)
+    zone = int(quest.get("QuestSortID") or 0)
+    if zone <= 0:
+        zone = int(spawn.get("zoneId") or spawn.get("zoneid") or 0)
+    seen = set()
+    while zone > 0 and not coordinates.zone_to_ui(zone, zone_maps):
+        if zone in seen or zone not in zone_maps.get("subzone_parents", {}):
+            return None, None
+        seen.add(zone)
+        zone = zone_maps["subzone_parents"][zone]
+    x, y, z = (float(node[field]) for field in ("position_x", "position_y", "position_z"))
+    floor, point = coordinates.resolve_wdm_instance_floor(y, x, z, map_id, zone_maps)
+    if floor:
+        return floor, point
+    if zone > 0:
+        ui = coordinates.zone_to_ui(zone, zone_maps)
+        data = zone_maps["ui_map_data"].get(ui, {})
+        if data.get("instance") != map_id and (map_id, zone) not in coordinates.ACORE_WORLD_RECT_OVERRIDES:
+            return None, None
+        point = coordinates.convert_world_to_zone(y, x, zone, zone_maps, map_id=map_id)
+        if point:
+            return zone, point
+    return coordinates.resolve_transport_coordinate_zone(
+        {"map": map_id, "position_x": x, "position_y": y}, zone_maps)
+
+
 def source_signature(source, spell_sql, spell_table, tool_candidates=None):
     paths = {p.resolve() for table in TABLE_KEYS for p in sql_reader.source_sql_files(source, table)}
     paths.update(source / "data/sql/base/db_world" / f"{table}.sql" for table in TABLE_KEYS)
@@ -88,12 +133,16 @@ def source_signature(source, spell_sql, spell_table, tool_candidates=None):
     paths.update(source / path for path in script_events.CORE_SOURCE_FILES)
     paths.update(source / path for path in cpp_credits.CORE_SOURCE_FILES)
     paths.update(source / path for path in getattr(guides, "CORE_SOURCE_FILES", ()))
+    paths.update(source / path for path in area_scripts.CORE_SOURCE_FILES)
+    paths.update(source / path for path in smart_guides.CORE_SOURCE_FILES)
     paths.update(cpp_events.source_files(source))
     for root in metadata_reader.get_excluded_module_sql_roots(source):
         paths.update(p.resolve() for p in root.rglob("*.sql"))
     revision = subprocess.run(["git", "-C", str(source), "rev-parse", "HEAD"], capture_output=True, text=True)
     readers = ("audit_acore_quest_sources.py", "generate_acore_item_corrections.py", "validate_acore_quest_metadata.py", "validate_acore_quest_relations.py",
                 "acore_quest_compatibility.py", "acore_quest_guides.py", "acore_quest_flight_guides.py", "acore_quest_cpp_events.py",
+                "acore_quest_area_scripts.py",
+                "acore_quest_smart_guides.py",
                "acore_quest_script_events.py",
                "acore_quest_cpp_credits.py",
                "acore_item_compatibility.py",
@@ -319,7 +368,7 @@ def load_source(source, spell_sql, spell_table, signature, cache, refresh=False,
                 raise ValueError("Quest cache checksum mismatch; use --refresh-source")
             print(f"Using validated quest source cache: {cache}", flush=True)
             return saved
-    tables, coverage, skipped_statements = {}, {}, []
+    tables, coverage, skipped_statements, rotation_updates = {}, {}, [], []
     spell_coverage = {}
     script_spell_items = {}
     complete_spells = {}
@@ -333,6 +382,9 @@ def load_source(source, spell_sql, spell_table, signature, cache, refresh=False,
 
     def trace_mutation(name, original):
         def replay(statement, table, *args, **kwargs):
+            if name == "apply_multirow_update" and rotation_only_update(statement, table):
+                rotation_updates.append({"table": table, "statementSha256": hashlib.sha256(statement.encode()).hexdigest()})
+                return 0
             skipped = original(statement, table, *args, **kwargs)
             if skipped:
                 path = current_file["path"]
@@ -435,9 +487,56 @@ def load_source(source, spell_sql, spell_table, signature, cache, refresh=False,
                          "zoneId": max(0, int(quest.get("QuestSortID") or 0))}
             return coordinates.resolve_coordinate_zone(placement, zone_maps)
 
+        area_script_proofs = area_scripts.collect(source, rows("areatrigger_scripts"), rows("smart_scripts"), rows("conditions"))
+        area_script_credits = []
+        for proof in area_script_proofs["credits"]:
+            if int(derived.get(proof["questId"], {}).get("specialFlags") or 0) & 2:
+                area_script_credits.append(proof)
+            else:
+                area_script_proofs["omissions"].append({**proof, "reason": "questDoesNotRequireExplorationEvent"})
         area_guides = guides.derive_area_guide_packet(
             eligible_templates, rows("areatrigger_involvedrelation"), rows("areatrigger"), project_trigger,
-            rows("areatrigger_scripts"), smart_scripts=rows("smart_scripts"))
+            rows("areatrigger_scripts"), smart_scripts=rows("smart_scripts"),
+            script_credits=area_script_credits)
+        area_guides["omissions"].extend(area_script_proofs["omissions"])
+
+        escort_guides = guides.derive_escort_guide_packet(
+            eligible_templates, rows("creature_template"), rows("smart_scripts"), rows("waypoints"),
+            rows("creature"), lambda node, spawn, quest: project_escort_endpoint(node, spawn, quest, zone_maps),
+            rows("conditions"), {quest: int(fields.get("specialFlags") or 0) for quest, fields in derived.items()})
+        cpp_escort_guides = guides.derive_cpp_escort_guide_packet(
+            eligible_templates, rows("creature_template"), cpp, rows("script_waypoint"), rows("creature"),
+            lambda node, spawn, quest: project_escort_endpoint(node, spawn, quest, zone_maps),
+            {quest: int(fields.get("specialFlags") or 0) for quest, fields in derived.items()})
+        cpp_destinations = guides.derive_cpp_destination_guide_packet(
+            eligible_templates, rows("creature_template"), cpp, rows("creature"),
+            lambda node, spawn, quest: project_escort_endpoint(node, spawn, quest, zone_maps),
+            {quest: int(fields.get("specialFlags") or 0) for quest, fields in derived.items()})
+        smart_locations = smart_guides.derive(
+            eligible_templates, rows("creature_template"), rows("gameobject_template"), rows("smart_scripts"),
+            rows("waypoints"), rows("creature"),
+            lambda node, spawn, quest: project_escort_endpoint(node, spawn, quest, zone_maps),
+            rows("conditions"), {quest: int(fields.get("specialFlags") or 0) for quest, fields in derived.items()},
+            gameobject_spawns=rows("gameobject"), spells=complete_spells)
+        smart_quests = set(smart_locations["guides"]) | {proof["questId"] for proof in smart_locations["interactions"]}
+        for proof in smart_locations["evidence"]:
+            if proof["questId"] in smart_quests:
+                key = str(proof["questId"])
+                event_sources[key] = [list(actor) for actor in sorted(
+                    {tuple(actor) for actor in event_sources.get(key, ())} | {tuple(proof["actor"])})]
+        interactions = guides.derive_interaction_guide_packet(
+            eligible_templates, rows("creature_template"), rows("gameobject_template"),
+            cpp.get("interactionCredits", []) + smart_locations["interactions"]
+            + [{**proof, "creditActor": proof["actor"], "actor": ["monster", proof["destinationNpcId"]]}
+               for proof in cpp.get("followerDestinations", [])],
+            rows("creature"), rows("gameobject"),
+            lambda node, spawn, quest: project_escort_endpoint(node, spawn, quest, zone_maps),
+            {quest: int(fields.get("specialFlags") or 0) for quest, fields in derived.items()})
+        escort_guides = guides.combine_location_guide_packets(
+            [escort_guides, cpp_escort_guides, cpp_destinations, smart_locations, interactions], event_sources)
+        for quest_id in set(escort_guides["guides"]) & set(area_guides["guides"]):
+            del escort_guides["guides"][quest_id]
+            escort_guides["omissions"].append({"questId": quest_id, "reason": "existingAreaTriggerGuide"})
         references = {}
         for loot in rows("reference_loot_template"):
             references.setdefault(int(loot["Entry"]), []).append(loot)
@@ -452,6 +551,8 @@ def load_source(source, spell_sql, spell_table, signature, cache, refresh=False,
             rows("smart_scripts"), container_sources, rows("creature_template"),
              npc_spellclick_rows=rows("npc_spellclick_spells"), quest_relations=relations,
              gossip_options=rows("gossip_menu_option"), spell_scripts=rows("spell_script_names"))
+        guides.append_interaction_hints(extra_guides, interactions["interactions"],
+                                       set(area_guides["guides"]) | set(escort_guides["guides"]))
         tool_index = compatibility.build_required_tool_index(item_templates, complete_spells)
     quests, tool_evidence = {}, {}
     for quest_id, fields in sorted(derived.items()):
@@ -472,6 +573,8 @@ def load_source(source, spell_sql, spell_table, signature, cache, refresh=False,
         row["s:availableUntilCompleted"] = availability.get(str(quest_id), 0)
         if quest_id in area_guides["guides"]:
             row["s:triggerEnd"] = area_guides["guides"][quest_id]
+        elif quest_id in escort_guides["guides"]:
+            row["s:triggerEnd"] = escort_guides["guides"][quest_id]
         if quest_id in extra_guides["guides"]:
             row["s:extraObjectives"] = extra_guides["guides"][quest_id]
         if quest_id in templates:
@@ -487,13 +590,16 @@ def load_source(source, spell_sql, spell_table, signature, cache, refresh=False,
     if source_signature(source, spell_sql, spell_table, tool_candidates) != signature:
         raise ValueError("Quest source inputs changed during extraction")
     unresolved_source_spells = [row["spellId"] for row in spell_coverage["missingSpellReferences"] if row["requiredSourceItemQuestIds"]]
+    if rotation_updates:
+        coverage["gameobject"]["ignoredRotationOnlyUpdates"] = rotation_updates
     saved = {"signature": signature, "quests": quests, "tableCoverage": coverage,
-             "diagnostics": {"skippedSqlMutations": skipped_statements, "missingRequiredSourceItemSpellIds": unresolved_source_spells},
+             "diagnostics": {"skippedSqlMutations": skipped_statements,
+                             "missingRequiredSourceItemSpellIds": unresolved_source_spells},
              "disabledQuestIds": sorted(disabled_ids), "moduleQuestIds": sorted(module_ids), "spellCoverage": spell_coverage,
              "starterTeams": teams, "scriptQuestStarters": script_starters,
              "factionReputationRewards": faction_rewards, "objectiveCreditSources": credit_sources,
               "objectiveEventSources": event_sources,
-              "questGuides": {"version": 1, "area": area_guides, "extra": extra_guides,
+              "questGuides": {"version": 1, "area": area_guides, "escort": escort_guides, "extra": extra_guides,
                                "cppEvents": cpp, "cppCredits": cpp_credit_proofs,
                                "scriptEvents": scripted, "requiredTools": tool_evidence},
               "objectiveSpellSources": {str(key): row for key, row in complete_spells.items()

@@ -1,11 +1,12 @@
 """Generate bounded quest guides from current source relationships."""
 
 import math
-from collections import defaultdict
+from collections import Counter, defaultdict
 
 from acore_item_compatibility import number
 from acore_scripted_geometry import typed
 import acore_quest_flight_guides as flight_guides
+import acore_quest_compatibility as compatibility
 
 
 CORE_SOURCE_FILES = (
@@ -17,6 +18,12 @@ CORE_SOURCE_FILES = (
     "src/server/game/AI/SmartScripts/SmartAI.cpp",
     "src/server/game/AI/SmartScripts/SmartScript.cpp",
     "src/server/game/Entities/GameObject/GameObject.h",
+    "src/server/game/Entities/Creature/CreatureData.h",
+    "src/server/game/Entities/Creature/Creature.cpp",
+    "src/server/game/AI/ScriptedAI/ScriptedEscortAI.cpp",
+    "src/server/game/AI/ScriptedAI/ScriptedEscortAI.h",
+    "src/server/game/AI/ScriptedAI/ScriptedFollowerAI.cpp",
+    "src/server/game/AI/ScriptedAI/ScriptedFollowerAI.h",
 ) + flight_guides.CORE_SOURCE_FILES
 
 
@@ -35,6 +42,10 @@ def _identity(row, *keys):
     return next((number(row, key) for key in keys if row.get(key) is not None), 0)
 
 
+def spawn_movement_type(template, spawn):
+    return number(spawn, "MovementType") if "MovementType" in spawn else number(template, "MovementType")
+
+
 def _point(value):
     if not isinstance(value, (tuple, list)) or len(value) != 2:
         return None
@@ -49,7 +60,7 @@ def _point(value):
 
 
 def derive_area_guide_packet(quest_templates, relation_rows, trigger_rows,
-                             project_point, script_bindings=(), smart_scripts=()):
+                             project_point, script_bindings=(), smart_scripts=(), script_credits=()):
     """Keep default area-trigger guides and report unsupported scripted cases."""
     quests = _templates(quest_templates, "ID")
     triggers = _templates(trigger_rows, "ID")
@@ -67,9 +78,11 @@ def derive_area_guide_packet(quest_templates, relation_rows, trigger_rows,
                 number(row, "event_phase_mask") == 0 and float(row.get("event_chance", 100)) > 0 and
                 trigger > 0 and quest > 0):
             smart_credits[(quest, trigger)] = number(row, "id")
+    cpp_credits = {(proof["questId"], proof["triggerId"]): proof for proof in script_credits
+                   if bindings[proof["triggerId"]] == {proof["script"]}}
     points, omissions, evidence = defaultdict(lambda: defaultdict(list)), [], []
     candidates = _rows(relation_rows) + [{"quest": quest, "id": trigger}
-                                        for quest, trigger in smart_credits]
+                                        for quest, trigger in set(smart_credits) | set(cpp_credits)]
     relations = sorted(candidates,
                        key=lambda row: (_identity(row, "quest", "QuestId", "Quest"),
                                         _identity(row, "id", "ID", "entry")))
@@ -86,10 +99,16 @@ def derive_area_guide_packet(quest_templates, relation_rows, trigger_rows,
             reason = "missingQuestTemplate"
         elif trigger is None:
             reason = "missingAreaTrigger"
-        elif bindings[trigger_id] and (quest_id, trigger_id) not in smart_credits:
+        elif (bindings[trigger_id] and (quest_id, trigger_id) not in smart_credits
+              and (quest_id, trigger_id) not in cpp_credits):
             reason = "unprovedAreaTriggerScript"
         else:
             try:
+                proof = cpp_credits.get((quest_id, trigger_id), {})
+                if proof.get("displayZone"):
+                    if number(trigger, "map") != proof.get("displayMap"):
+                        raise ValueError("reviewed area map changed")
+                    quest = dict(quest, QuestSortID=proof["displayZone"])
                 projected = _point(project_point(trigger, quest))
             except (ValueError, TypeError, KeyError):
                 projected = None
@@ -99,9 +118,10 @@ def derive_area_guide_packet(quest_templates, relation_rows, trigger_rows,
                 zone, point = projected
                 if point not in points[quest_id][zone]:
                     points[quest_id][zone].append(point)
-                evidence.append({"questId": quest_id, "triggerId": trigger_id,
+                evidence.append(cpp_credits.get((quest_id, trigger_id),
+                                {"questId": quest_id, "triggerId": trigger_id,
                                  "rule": "smartTriggerQuestCredit" if (quest_id, trigger_id) in smart_credits
-                                 else "areaTriggerRelation"})
+                                 else "areaTriggerRelation"}))
         if reason:
             omissions.append({"questId": quest_id, "triggerId": trigger_id, "reason": reason})
     guides = {}
@@ -117,6 +137,457 @@ def derive_area_guides(quest_templates, relation_rows, trigger_rows,
                        project_point, script_bindings=(), smart_scripts=()):
     return derive_area_guide_packet(quest_templates, relation_rows, trigger_rows,
                                     project_point, script_bindings, smart_scripts)["guides"]
+
+
+def derive_cpp_escort_guide_packet(quest_templates, creature_templates, cpp_events, waypoint_rows,
+                                  creature_spawns, project_point, quest_special_flags=None):
+    """Project registered C++ escort credits at their explicit script_waypoint IDs."""
+    quests, creatures = _templates(quest_templates, "ID"), _templates(creature_templates, "entry")
+    paths, placements = defaultdict(list), defaultdict(list)
+    for node in _rows(waypoint_rows):
+        paths[number(node, "entry")].append(node)
+    for spawn in _rows(creature_spawns):
+        for entry in {number(spawn, key) for key in ("id1", "id2", "id3", "id", "entry")} - {0}:
+            placements[entry].append(spawn)
+    points, evidence, omissions, blocked = defaultdict(lambda: defaultdict(list)), [], [], set()
+    candidates = cpp_events.get("escortWaypoints", ())
+    proven_actors = defaultdict(set)
+    proven_calls = defaultdict(Counter)
+
+    def call_key(proof, entry):
+        return (entry, proof["file"], proof["line"], proof.get("class"), proof["script"], proof.get("call"))
+
+    for proof in candidates:
+        proven_actors[proof["questId"]].add(("monster", proof["npcId"]))
+        proven_calls[proof["questId"]][call_key(proof, proof["npcId"])] += 1
+    for proof in candidates:
+        quest_id, entry, point_id = proof["questId"], proof["npcId"], proof["pointId"]
+        if quest_id not in quests:
+            continue
+        template, spawns = creatures.get(entry, {}), placements[entry]
+        nodes = [node for node in paths[entry] if number(node, "pointid") == point_id]
+        special = (quest_special_flags or {}).get(quest_id, number(quests[quest_id], "SpecialFlags"))
+        reason = None
+        if not special & 2:
+            reason = "questDoesNotRequireExplorationEvent"
+        elif (template.get("ScriptName") != proof["script"]
+              or any(spawn.get("ScriptName") and spawn["ScriptName"] != proof["script"] for spawn in spawns)):
+            reason = "overriddenEscortScript"
+        elif {tuple(actor) for actor in cpp_events.get("events", {}).get(str(quest_id), ())} != proven_actors[quest_id]:
+            reason = "unprovedAlternativeEscortActor"
+        elif Counter(call_key(event, event["actor"][1])
+                     for event in cpp_events.get("evidence", {}).get(str(quest_id), ())) != proven_calls[quest_id]:
+            reason = "unprovedAlternativeEscortCredit"
+        elif not spawns or len({number(spawn, "map") for spawn in spawns}) != 1:
+            reason = "missingOrAmbiguousEscortPlacement"
+        elif len(nodes) != 1:
+            reason = "missingOrAmbiguousEscortWaypoint"
+        projected = []
+        if reason is None:
+            try:
+                if any(not math.isfinite(float(nodes[0][key])) for key in ("location_x", "location_y", "location_z")):
+                    raise ValueError("non-finite escort coordinates")
+                if (proof.get("requireLastPoint") and point_id != max(number(node, "pointid") for node in paths[entry])
+                        or number(nodes[0], "waittime") < proof.get("minimumWaitMs", 0)):
+                    raise ValueError("reviewed escort wait or final point changed")
+                node = {"position_" + axis: nodes[0]["location_" + axis] for axis in ("x", "y", "z")}
+                quest = quests[quest_id]
+                if proof.get("displayZone"):
+                    quest = dict(quest, QuestSortID=proof["displayZone"])
+                projected = [_point(project_point(node, spawn, quest)) for spawn in spawns]
+            except (ValueError, TypeError, KeyError, OverflowError):
+                projected = []
+            if not projected or any(point is None for point in projected):
+                reason = "unmappedEscortEndpoint"
+        if reason:
+            blocked.add(quest_id)
+            omissions.append({**proof, "reason": reason})
+            continue
+        for zone, point in projected:
+            if point not in points[quest_id][zone]:
+                points[quest_id][zone].append(point)
+        evidence.append({**proof, "rule": "cppEscortWaypointCredit"})
+    guides = {}
+    for quest_id, zones in sorted(points.items()):
+        if quest_id in blocked:
+            continue
+        entry = next(proof["npcId"] for proof in evidence if proof["questId"] == quest_id)
+        description = str(quests[quest_id].get("AreaDescription") or "").strip()
+        name = creatures[entry].get("name") or "the escort"
+        guides[quest_id] = typed([description or f"Escort {name} to safety", dict(sorted(zones.items()))])
+    return {"guides": guides, "evidence": evidence, "omissions": omissions}
+
+
+def derive_cpp_destination_guide_packet(quest_templates, creature_templates, cpp_events,
+                                       creature_spawns, project_point, quest_special_flags=None):
+    """Project reviewed follower arrivals, proximity credits and fixed completion checks."""
+    quests, creatures = _templates(quest_templates, "ID"), _templates(creature_templates, "entry")
+    placements = defaultdict(list)
+    for spawn in _rows(creature_spawns):
+        for entry in {number(spawn, key) for key in ("id1", "id2", "id3", "id", "entry")} - {0}:
+            placements[entry].append(spawn)
+    candidates = [(kind, proof) for kind in ("followerDestinations", "coordinateCredits", "proximityCredits")
+                  for proof in cpp_events.get(kind, ())]
+    proof_calls = defaultdict(Counter)
+
+    def key(proof, actor):
+        return (tuple(actor), proof["file"], proof["line"], proof.get("class"), proof["script"], proof.get("call"))
+
+    for _, proof in candidates:
+        proof_calls[proof["questId"]][key(proof, proof["actor"])] += 1
+    points, evidence, omissions, blocked = defaultdict(lambda: defaultdict(list)), [], [], set()
+    for kind, proof in candidates:
+        quest_id, actor = proof["questId"], proof["actor"]
+        if quest_id not in quests or actor[0] != "monster":
+            continue
+        entry = actor[1]
+        source_spawns = placements[entry]
+        target = proof.get("destinationNpcId", entry)
+        spawns = placements[target]
+        reason = None
+        special = (quest_special_flags or {}).get(quest_id, number(quests[quest_id], "SpecialFlags"))
+        if not special & 2:
+            reason = "questDoesNotRequireExplorationEvent"
+        elif (creatures.get(entry, {}).get("ScriptName") != proof["script"]
+              or any(row.get("ScriptName") and row["ScriptName"] != proof["script"] for row in source_spawns)):
+            reason = "overriddenDestinationScript"
+        elif Counter(key(row, row["actor"]) for row in cpp_events.get("evidence", {}).get(str(quest_id), ())) != proof_calls[quest_id]:
+            reason = "unprovedAlternativeDestinationCredit"
+        elif (target not in creatures or not spawns or not source_spawns or len({number(row, "map") for row in source_spawns}) != 1
+              or {number(row, "map") for row in spawns} != {number(row, "map") for row in source_spawns}):
+            reason = "missingOrAmbiguousDestinationPlacement"
+        elif kind != "coordinateCredits" and (
+                any(spawn_movement_type(creatures[target], row) for row in spawns)
+                or target != entry and (creatures.get(target, {}).get("ScriptName")
+                                        or creatures.get(target, {}).get("AIName")
+                                        or any(row.get("ScriptName") for row in spawns))):
+            reason = "movingOrScriptedDestination"
+        projected = []
+        if reason is None:
+            try:
+                quest = quests[quest_id]
+                if proof.get("displayZone"):
+                    if any(number(spawn, "map") != proof["displayMap"] for spawn in spawns):
+                        raise ValueError("reviewed destination map changed")
+                    quest = dict(quest, QuestSortID=proof["displayZone"])
+                for spawn in spawns:
+                    node = proof if kind == "coordinateCredits" else spawn
+                    if any(not math.isfinite(float(node["position_" + axis])) for axis in ("x", "y", "z")):
+                        raise ValueError("non-finite destination")
+                    projected.append(_point(project_point(node, spawn, quest)))
+            except (ValueError, TypeError, KeyError, OverflowError):
+                projected = []
+            if not projected or any(point is None for point in projected):
+                reason = "unmappedDestination"
+        if reason:
+            blocked.add(quest_id)
+            omissions.append({**proof, "reason": reason})
+            continue
+        for zone, point in projected:
+            if point not in points[quest_id][zone]:
+                points[quest_id][zone].append(point)
+        evidence.append({**proof, "npcId": entry, "rule": "cpp" + kind[0].upper() + kind[1:]})
+    guides = {}
+    for quest_id, zones in sorted(points.items()):
+        if quest_id not in blocked:
+            quest = quests[quest_id]
+            label = str(quest.get("AreaDescription") or "").strip() or "Complete " + str(quest.get("LogTitle") or quest_id)
+            guides[quest_id] = typed([label, dict(sorted(zones.items()))])
+    return {"guides": guides, "evidence": evidence, "omissions": omissions}
+
+
+def derive_interaction_guide_packet(quest_templates, creature_templates, object_templates, interactions,
+                                    creature_spawns, object_spawns, project_point, quest_special_flags=None):
+    """Keep proved interactions as entity hints; project complete static object locations."""
+    quests = _templates(quest_templates, "ID")
+    templates = {"monster": _templates(creature_templates, "entry"), "object": _templates(object_templates, "entry")}
+    placements = defaultdict(list)
+    for spawn in _rows(creature_spawns):
+        for entry in {number(spawn, key) for key in ("id1", "id2", "id3", "id", "entry")} - {0}:
+            placements[("monster", entry)].append(spawn)
+    for spawn in _rows(object_spawns):
+        placements[("object", number(spawn, "id"))].append(spawn)
+    points, hints, evidence, omissions, blocked = defaultdict(lambda: defaultdict(list)), [], [], [], set()
+    for proof in interactions:
+        quest_id, actor = proof["questId"], tuple(proof["actor"])
+        kind, entry = actor
+        if quest_id not in quests or kind not in templates:
+            continue
+        template, spawns = templates[kind].get(entry, {}), placements[actor]
+        credit_actor = tuple(proof.get("creditActor", actor))
+        credit_kind, credit_entry = credit_actor
+        credit_template = templates.get(credit_kind, {}).get(credit_entry, {})
+        credit_spawns = placements[credit_actor]
+        special = (quest_special_flags or {}).get(quest_id, number(quests[quest_id], "SpecialFlags"))
+        if (not special & 2 or not template or not spawns or not credit_template or not credit_spawns
+                or proof.get("script") and credit_template.get("ScriptName") != proof["script"]
+                or any(row.get("ScriptName") and row["ScriptName"] != credit_template.get("ScriptName") for row in credit_spawns)
+                or any(row.get("ScriptName") and row["ScriptName"] != template.get("ScriptName") for row in spawns)):
+            blocked.add(quest_id)
+            omissions.append({**proof, "reason": "unprovedInteractionPlacementOrEvent"})
+            continue
+        if credit_actor != actor and ({number(row, "map") for row in credit_spawns}
+                                      != {number(row, "map") for row in spawns}):
+            blocked.add(quest_id)
+            omissions.append({**proof, "reason": "ambiguousFollowInteractionMap"})
+            continue
+        label = proof.get("label") or str(quests[quest_id].get("AreaDescription") or "").strip()
+        label = label or ("Interact with " if kind == "object" else "Speak with ") + str(template.get("name") or entry)
+        hints.append({**proof, "label": label})
+        evidence.append({**proof, "rule": proof.get("rule", "sourceQuestInteraction")})
+        projected = []
+        if kind == "object":
+            try:
+                projected = [_point(project_point(spawn, spawn, quests[quest_id])) for spawn in spawns]
+            except (ValueError, TypeError, KeyError, OverflowError):
+                projected = []
+        if not projected or any(point is None for point in projected):
+            blocked.add(quest_id)
+            continue
+        for zone, point in projected:
+            if point not in points[quest_id][zone]:
+                points[quest_id][zone].append(point)
+    guides = {}
+    for quest_id, zones in sorted(points.items()):
+        if quest_id not in blocked:
+            label = next(proof["label"] for proof in hints if proof["questId"] == quest_id)
+            guides[quest_id] = typed([label, dict(sorted(zones.items()))])
+    return {"guides": guides, "interactions": hints, "evidence": evidence, "omissions": omissions}
+
+
+def append_interaction_hints(packet, interactions, skip_quests=()):
+    """Append entity hints without renumbering existing optional travel objectives."""
+    skipped = set(skip_quests)
+    for proof in interactions:
+        quest_id, actor = proof["questId"], proof["actor"]
+        if quest_id in skipped:
+            continue
+        hints = packet["guides"].setdefault(quest_id, {})
+        existing = [target for hint in hints.values() for target in hint.get("n:5", {}).values()]
+        if typed(actor) in existing:
+            continue
+        index = max((int(key[2:]) for key in hints), default=0) + 1
+        hints[f"n:{index}"] = typed({2: 3, 3: proof["label"], 4: 0, 5: [actor]})
+        packet["evidence"].append({**proof, "rule": proof.get("rule", "sourceQuestInteraction")})
+
+
+def combine_location_guide_packets(packets, event_sources):
+    """Combine proved alternatives while requiring coverage of known completion actors."""
+    result = {"guides": {}, "evidence": [], "omissions": [], "supersededOmissions": []}
+
+    def superseded(omission, evidence):
+        if omission.get("reason") not in ("unsupportedEscortActivation", "unprovedEscortCompletionFlow",
+                                           "unprovedEscortPlayersOrScriptBinding"):
+            return False
+        return any(proof.get("rule") == "smartExplicitWaypointCredit"
+                   and proof.get("sourceType") == 0
+                   and proof.get("scriptEntry") == omission.get("scriptEntry")
+                   and proof.get("actor") == ["monster", omission.get("npcId")]
+                   and omission.get("pathId") in proof.get("pathIds", ()) for proof in evidence)
+
+    candidates = sorted({quest for packet in packets for quest in packet["guides"]})
+    for quest_id in candidates:
+        selected = [packet for packet in packets if quest_id in packet["guides"]]
+        evidence = [proof for packet in selected for proof in packet["evidence"] if proof["questId"] == quest_id]
+        covered = {tuple(proof["actor"]) if "actor" in proof else ("monster", proof["npcId"])
+                   for proof in evidence}
+        known = {tuple(actor) for actor in event_sources.get(str(quest_id), ())}
+        unresolved = [proof for packet in packets for proof in packet["omissions"]
+                      if proof["questId"] == quest_id and not superseded(proof, evidence)]
+        if not covered or known - covered or unresolved:
+            result["omissions"].append({"questId": quest_id, "reason": "unprovedAlternativeEscortActor"})
+            continue
+        points = defaultdict(list)
+        for packet in selected:
+            for zone, rows in packet["guides"][quest_id]["n:2"].items():
+                for point in rows.values():
+                    if point not in points[zone]:
+                        points[zone].append(point)
+        first = selected[0]["guides"][quest_id]
+        result["guides"][quest_id] = {"n:1": first["n:1"],
+            "n:2": {zone: {f"n:{index}": point for index, point in enumerate(rows, 1)}
+                    for zone, rows in sorted(points.items())}}
+        result["evidence"].extend(evidence)
+    for packet in packets:
+        for proof in packet["omissions"]:
+            target = "supersededOmissions" if proof["questId"] in result["guides"] else "omissions"
+            result[target].append(proof)
+    return result
+
+
+def derive_escort_guide_packet(quest_templates, creature_templates, scripts, waypoint_rows,
+                              creature_spawns, project_point, conditions=(), quest_special_flags=None):
+    """Prove quest-accept escorts completed by EndPath or explicit waypoint credit."""
+    quests, creatures = _templates(quest_templates, "ID"), _templates(creature_templates, "entry")
+    scripts, spawns = _rows(scripts), _rows(creature_spawns)
+    candidates = [row for row in scripts if number(row, "source_type") == 0
+                  and compatibility.is_quest_escort_start(row)]
+    if not candidates:
+        return {"guides": {}, "evidence": [], "omissions": []}
+    paths, by_entry = defaultdict(list), defaultdict(list)
+    by_guid = {}
+    for row in _rows(waypoint_rows):
+        paths[number(row, "entry")].append(row)
+    for row in spawns:
+        by_guid[number(row, "guid")] = row
+        entries = {number(row, key) for key in ("id1", "id2", "id3", "id", "entry")} - {0}
+        for entry in entries:
+            by_entry[entry].append(row)
+    contexts = dict(compatibility._source_context(creatures, {}, scripts, spawns))
+    player_lists = compatibility._known_player_lists(creatures, {}, scripts, contexts, spawns, set(paths))
+    guid_scripts = {-number(row, "entryorguid") for row in scripts
+                    if number(row, "source_type") == 0 and number(row, "entryorguid") < 0}
+    entry_scripts = {number(row, "entryorguid") for row in scripts
+                     if number(row, "source_type") == 0 and number(row, "entryorguid") > 0}
+    conditional = {(number(row, "SourceId"), number(row, "SourceEntry")) for row in _rows(conditions)
+                   if number(row, "SourceTypeOrReferenceId") == 22}
+    points, evidence, omissions, blocked = defaultdict(lambda: defaultdict(list)), [], [], set()
+
+    for row in candidates:
+        quest_id = number(row, "action_param4") or number(row, "event_param1")
+        if quest_id not in quests:
+            continue
+        owner, path_id = number(row, "entryorguid"), number(row, "action_param2")
+        placement = by_guid.get(-owner) if owner < 0 else None
+        entry = (number(placement or {}, "id1") or number(placement or {}, "id")) if owner < 0 else owner
+        actor = ("monster", entry, -owner) if owner < 0 else ("monster", entry)
+        placements = [placement] if placement else by_entry.get(entry, []) if owner > 0 else []
+        actions = [action for action in contexts.get(actor, ()) if float(action.get("event_chance", 100)) > 0]
+        nodes = sorted(paths.get(path_id, ()), key=lambda node: number(node, "pointid"))
+        parents = defaultdict(list)
+        action_ids = Counter(number(action, "id") for action in actions if number(action, "source_type") == 0)
+        for action in actions:
+            if number(action, "link"):
+                parents[number(action, "link")].append(action)
+
+        def event_chain(action, seen=frozenset()):
+            identity = number(action, "id")
+            if number(action, "source_type") != 0 or identity in seen or action_ids[identity] != 1:
+                return []
+            if number(action, "event_type") != 61:
+                return [action]
+            preceding = parents.get(identity, ())
+            if len(preceding) != 1:
+                return []
+            chain = event_chain(preceding[0], seen | {identity})
+            return chain + [action] if chain else []
+
+        activation = event_chain(row)
+        credits = [action for action in actions if number(action, "action_type") in (15, 26)
+                   and number(action, "action_param1") == quest_id]
+        credit_chains = [event_chain(action) for action in credits]
+        point_id = len(nodes)
+        proof = {"questId": quest_id, "npcId": entry, "pathId": path_id,
+                 "scriptEntry": owner, "rowId": number(row, "id")}
+        reason = None
+        special = (quest_special_flags or {}).get(quest_id, number(quests[quest_id], "SpecialFlags"))
+        if not special & 2:
+            reason = "questDoesNotRequireExplorationEvent"
+        elif (not activation or number(activation[0], "event_type") != 19
+                or number(activation[0], "event_param1") != quest_id
+                or number(row, "action_param4") != quest_id
+                or number(row, "target_type") not in ((1, 7) if credits else (7,))):
+            reason = "unsupportedEscortActivation"
+        elif not actions or not credits and (actor, compatibility.SMART_ESCORT_TARGETS) not in player_lists:
+            reason = "unprovedEscortPlayersOrScriptBinding"
+        elif (number(row, "action_param3") or (0, owner) in conditional
+              or any(number(action, "event_phase_mask") or float(action.get("event_chance", 100)) != 100
+                     for action in activation)):
+            reason = "conditionalOrRepeatingEscort"
+        elif not nodes or [number(node, "pointid") for node in nodes] != list(range(1, len(nodes) + 1)):
+            reason = "missingOrNoncontiguousEscortPath"
+        elif not placements or len({number(spawn, "map") for spawn in placements}) != 1:
+            reason = "missingOrAmbiguousEscortPlacement"
+        elif (owner > 0 and any(number(spawn, "guid") in guid_scripts for spawn in placements)
+              or owner < 0 and entry in entry_scripts and number(creatures[entry], "flags_extra") & 0x08000000
+              or any(spawn.get("ScriptName") for spawn in placements)):
+            # CreatureData.h: CREATURE_FLAG_EXTRA_DONT_OVERRIDE_ENTRY_SAI merges
+            # generic scripts into GUID scripts; neither isolated context proves it.
+            reason = "overriddenOrMergedEscortScript"
+        elif any(number(action, "action_type") in (62, 69, 80, 87, 88)
+                 or number(action, "action_type") == 55 and not number(action, "action_param3")
+                 or number(action, "action_type") == 53 and (
+                     number(action, "action_param2") != path_id
+                     or not event_chain(action) or number(event_chain(action)[0], "event_type") != 19
+                     or number(action, "target_type") not in ((1, 7) if credits else (7,))
+                     or number(action, "action_param4") <= 0)
+                 for action in actions):
+            reason = "unprovedEscortCompletionFlow"
+        if reason is None and credits:
+            valid_credits = all(
+                chain and number(chain[0], "event_type") == 40
+                and number(chain[0], "event_param2") in (0, path_id)
+                and 1 <= number(chain[0], "event_param1") <= len(nodes)
+                and all(not number(action, "event_phase_mask")
+                        and float(action.get("event_chance", 100)) == 100 for action in chain)
+                and number(credit, "target_type") == 12
+                and (actor, number(credit, "target_param1")) in player_lists
+                for credit, chain in zip(credits, credit_chains))
+            points_credited = {number(chain[0], "event_param1") for chain in credit_chains if chain}
+            for credit in credits:
+                identifier = number(credit, "target_param1")
+                writers = [action for action in actions if number(action, "action_type") == 64
+                           and number(action, "action_param1") == identifier]
+                if identifier == compatibility.SMART_ESCORT_TARGETS:
+                    valid_credits &= number(row, "target_type") == 7 and not writers
+                else:
+                    valid_credits &= bool(writers) and all(
+                        number(writer, "target_type") == 7 and event_chain(writer)
+                        and number(event_chain(writer)[0], "event_type") == 19
+                        and number(event_chain(writer)[0], "event_param1") == quest_id
+                        and all(not number(action, "event_phase_mask")
+                                and float(action.get("event_chance", 100)) == 100
+                                for action in event_chain(writer)) for writer in writers)
+            if not valid_credits or len(points_credited) != 1:
+                reason = "unprovedEscortCompletionFlow"
+            else:
+                point_id = points_credited.pop()
+        if reason is None:
+            def terminal_despawn(action, seen=frozenset()):
+                identity = number(action, "id")
+                if identity in seen:
+                    return False
+                event = number(action, "event_type")
+                if event == 6:
+                    return True
+                if event == 40:
+                    return (number(action, "event_param1") in (point_id, len(nodes))
+                            and number(action, "event_param2") in (0, path_id))
+                preceding = parents.get(identity, ())
+                return event == 61 and bool(preceding) and all(
+                    terminal_despawn(parent, seen | {identity}) for parent in preceding)
+
+            if any(number(action, "action_type") == 41 and not terminal_despawn(action) for action in actions):
+                reason = "unprovedEarlyEscortDespawn"
+        projected = []
+        if reason is None:
+            try:
+                if any(not math.isfinite(float(node[key])) for node in nodes
+                       for key in ("position_x", "position_y", "position_z")):
+                    raise ValueError("non-finite escort coordinates")
+                projected = [_point(project_point(nodes[point_id - 1], spawn, quests[quest_id])) for spawn in placements]
+            except (ValueError, TypeError, KeyError, OverflowError):
+                projected = []
+            if not projected or any(point is None for point in projected):
+                reason = "unmappedEscortEndpoint"
+        if reason:
+            blocked.add(quest_id)
+            omissions.append({**proof, "reason": reason})
+            continue
+        for zone, point in projected:
+            if point not in points[quest_id][zone]:
+                points[quest_id][zone].append(point)
+        evidence.append({**proof, "pointId": point_id,
+                         "rule": "smartEscortWaypointCredit" if credits else "smartEscortEndPathCredit"})
+    guides = {}
+    for quest_id, zones in sorted(points.items()):
+        if quest_id in blocked:
+            continue
+        actor = next(proof["npcId"] for proof in evidence if proof["questId"] == quest_id)
+        description = str(quests[quest_id].get("AreaDescription") or "").strip()
+        name = creatures[actor].get("name") or "the escort"
+        guides[quest_id] = typed([description or f"Escort {name} to safety", dict(sorted(zones.items()))])
+    return {"guides": guides, "evidence": evidence, "omissions": omissions}
 
 
 def _quest_items(quest, required_only=False):
