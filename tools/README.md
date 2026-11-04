@@ -28,6 +28,8 @@ Pillow and StormLib.
 
 ## Regression checks before pushing
 
+Run these checks after generation and all final edits, against the files you will commit.
+
 ```powershell
 $env:QUESTIE_TEST_LUA = "C:\path\to\lua52\lua.exe"
 python -B tools/run_regressions.py

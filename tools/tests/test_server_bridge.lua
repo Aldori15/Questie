@@ -563,6 +563,148 @@ equal(printed(s, "[Server bridge] Updates"), "[Server bridge] Updates this sessi
 gates(s, false, true)
 tests = tests + 1
 
+-- READY permits bounded queueing; BEGIN starts a separate fixed assembly deadline.
+do
+    local state = setup()
+    state.info()
+    state.advance(29)
+    equal(#state.messages, 1, "READY keeps the original WATCH pending beyond five seconds")
+    equal(state.server:HasCapability("HEARTBEAT"), false, "READY does not establish authority while queued")
+    local token = state.messages[1].payload:match("^WATCH~21~([^~]+)~")
+    local header = "~21~" .. token .. "~1"
+    state.receive("BEGIN" .. header .. "~00008020~2~2~" .. CATALOG .. "~2")
+    state.receive("PART" .. header .. "~1~D:783")
+    state.advance(3)
+    equal(state.server:IsQuestDisabled(783), nil, "paced partial batch remains unpublished after the WATCH deadline")
+    state.receive("PART" .. header .. "~2~D:784")
+    state.receive("END" .. header)
+    equal(state.server:IsQuestDisabled(783), true, "late BEGIN receives its full five-second assembly budget")
+    equal(state.server:IsQuestDisabled(784), true, "paced batch publishes every row together")
+    state.advance(0)
+    equal(state.messages[#state.messages].payload, "ACK~21~" .. token .. "~1",
+        "delayed initial snapshot renews immediately before the original server lease expires")
+    tests = tests + 1
+end
+
+do
+    local state = setup()
+    state.info()
+    state.advance(29)
+    state.info()
+    state.elapse(2)
+    local token = state.messages[1].payload:match("^WATCH~21~([^~]+)~")
+    state.receive("BEGIN~21~" .. token .. "~1~00000020~0~0~" .. CATALOG .. "~0")
+    state.receive("END~21~" .. token .. "~1")
+    equal(state.server:HasCapability("HEARTBEAT"), false, "late BEGIN cannot revive expired WATCH before frame update")
+    state.advance(0)
+    state.reply({}, "HEARTBEAT")
+    equal(state.server:HasCapability("HEARTBEAT"), false, "duplicate READY cannot extend the thirty-second WATCH bound")
+    state.advance(29)
+    equal(#state.messages, 2, "unanswered queued WATCH eventually retries without creating authority")
+    tests = tests + 1
+end
+
+do
+    local state = setup()
+    state.reply({"D:783"}, "QUESTDISABLES,HEARTBEAT")
+    local redraws = state.refreshes()
+    local token = state.messages[1].payload:match("^WATCH~21~([^~]+)~")
+    local header = "~21~" .. token .. "~100"
+    state.receive("BEGIN" .. header .. "~00008020~2~2~" .. string.rep("B", 64) .. "~2")
+    state.receive("PART" .. header .. "~1~D:784")
+    state.advance(1)
+    state.receive("PART" .. header .. "~2~D:785")
+    state.advance(2)
+    equal(state.server:IsQuestDisabled(783), true, "paced replacement retains previously accepted authority")
+    equal(state.server:IsQuestDisabled(784), false, "paced parts do not publish new restrictions early")
+    equal(state.refreshes(), redraws, "paced parts cause no redraws")
+    state.receive("END" .. header)
+    equal(state.server:IsQuestDisabled(783), false, "complete paced replacement removes old restriction")
+    equal(state.server:IsQuestDisabled(785), true, "complete paced replacement publishes new restrictions")
+    equal(state.refreshes(), redraws + 1, "complete paced replacement redraws once")
+    state.advance(17)
+    equal(state.messages[#state.messages].payload, "ACK~21~" .. token .. "~100",
+        "ACK names the latest completed paced snapshot")
+    tests = tests + 1
+end
+
+do
+    local state = setup()
+    state.reply({"D:783"}, "QUESTDISABLES,HEARTBEAT")
+    local redraws = state.refreshes()
+    local token = state.messages[1].payload:match("^WATCH~21~([^~]+)~")
+    local old, replacement = "~21~" .. token .. "~100", "~21~" .. token .. "~101"
+    state.receive("BEGIN" .. old .. "~00008020~2~2~" .. string.rep("B", 64) .. "~2")
+    state.receive("PART" .. old .. "~1~D:784")
+    state.advance(1)
+    state.receive("BEGIN" .. replacement .. "~00008020~2~2~" .. string.rep("C", 64) .. "~2")
+    state.receive("PART" .. old .. "~2~D:785")
+    state.receive("END" .. old)
+    state.receive("PART" .. replacement .. "~1~D:786")
+    state.advance(2)
+    equal(state.server:IsQuestDisabled(783), true, "superseded partial batches leave accepted authority intact")
+    equal(state.refreshes(), redraws, "delayed superseded packets cause no redraws")
+    state.receive("PART" .. replacement .. "~2~D:787")
+    state.receive("END" .. replacement)
+    equal(state.server:IsQuestDisabled(784), false, "replacement cannot inherit superseded partial rows")
+    equal(state.server:IsQuestDisabled(787), true, "newest completed batch becomes authoritative")
+    equal(state.refreshes(), redraws + 1, "only newest completed batch redraws")
+    state.advance(17)
+    equal(state.messages[#state.messages].payload, "ACK~21~" .. token .. "~101",
+        "ACK cannot acknowledge a superseded partial snapshot")
+    tests = tests + 1
+end
+
+do
+    for _, lateInfo in ipairs({false, true}) do
+        local state = setup()
+        if not lateInfo then state.info() end
+        local token = state.messages[1].payload:match("^WATCH~21~([^~]+)~")
+        local header = "~21~" .. token .. "~1"
+        state.receive("BEGIN" .. header .. "~00008020~2~2~" .. CATALOG .. "~2")
+        state.advance(4)
+        state.receive("PART" .. header .. "~1~D:783")
+        if lateInfo then state.info() end
+        state.advance(1)
+        state.receive("PART" .. header .. "~2~D:784")
+        state.receive("END" .. header)
+        equal(state.server:IsQuestDisabled(783), nil, "PART or late READY cannot extend a fixed assembly deadline")
+    end
+    tests = tests + 1
+end
+
+do
+    local state = setup()
+    state.reply({"D:783"}, "QUESTDISABLES,HEARTBEAT")
+    state.advance(20)
+    state.advance(4)
+    local token = state.messages[1].payload:match("^WATCH~21~([^~]+)~")
+    local header = "~21~" .. token .. "~100"
+    state.receive("BEGIN" .. header .. "~00008020~2~2~" .. string.rep("B", 64) .. "~2")
+    state.receive("PART" .. header .. "~1~D:784")
+    state.advance(2)
+    state.receive("PART" .. header .. "~2~D:785")
+    state.receive("END" .. header)
+    equal(state.server:IsQuestDisabled(783), false, "valid BEGIN replaces the pending ACK deadline with assembly deadline")
+    equal(state.server:IsQuestDisabled(785), true, "paced renewal replacement survives the former ACK timeout")
+    tests = tests + 1
+end
+
+do
+    local state = setup()
+    state.reply({"D:783"}, "QUESTDISABLES,HEARTBEAT")
+    state.advance(20)
+    local ack = state.messages[#state.messages].payload
+    assert(ack:match("^ACK~21~"), "fresh connection renews normally")
+    state.info()
+    state.advance(5)
+    assert(state.messages[#state.messages].payload:match("^WATCH~21~"), "INFO cannot extend an unanswered ACK")
+    state.info()
+    state.advance(5)
+    equal(state.server:IsQuestDisabled(783), nil, "READY during recovery cannot extend existing thirty-second authority")
+    tests = tests + 1
+end
+
 -- Pool membership is explicit; nonmembers stay unknown, not inactive.
 s = setup()
 s.reply({"Q:13830:5676:1", "Q:13832:5676:0", "Q:24579:5678:1"}, "QUESTPOOLS,HEARTBEAT")

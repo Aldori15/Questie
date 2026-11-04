@@ -816,7 +816,9 @@ local function HandleInfo(fields)
     end
     infoReceived = true
     serverInfo = {protocol = fields[4], version = fields[5], revision = fields[6], status = status, receivedAt = now}
-    if status ~= "READY" then
+    if status == "READY" then
+        pendingUntil = assembly and assembly.untilTime or lastRequestAt + 30
+    else
         local hadSnapshot = snapshot ~= nil
         catalog = nil
         snapshot, lastReplyAt, snapshotToken, snapshotSequence = nil, nil, nil, nil
@@ -853,6 +855,7 @@ local function HandleMessage(message, distribution, sender)
         heartbeatCount = heartbeatCount + 1
         if pendingRenewal then pendingUntil, pendingRenewal = nil, false end
     elseif fields[1] == "BEGIN" and #fields == 9 then
+        if pendingUntil and now > pendingUntil then return end
         if assembly and sequence <= assembly.sequence then return end
         local rows, parts = Integer(fields[6], 4096), Integer(fields[7], 1024)
         if not rows or not parts or (rows == 0) ~= (parts == 0) or parts > rows then return end
@@ -868,6 +871,7 @@ local function HandleMessage(message, distribution, sender)
         end
         if rows + (reuse and catalog.rowCount or 0) > 4096 then return end
         assembly = {sequence = sequence, caps = caps, rowCount = rows, partCount = parts, parts = {}, untilTime = now + 5, catalogId = id, catalogRows = shared, reuseCatalog = reuse}
+        if pendingUntil then pendingUntil = assembly.untilTime end
     elseif assembly and sequence == assembly.sequence and now <= assembly.untilTime then
         if fields[1] == "PART" and #fields == 6 then
             local index = Integer(fields[5], assembly.partCount)
@@ -900,7 +904,7 @@ local function HandleMessage(message, distribution, sender)
             snapshotToken, snapshotSequence = watchToken, sequence
             snapshotCount = snapshotCount + 1
             pendingUntil, pendingRenewal, forceSnapshot = nil, false, false
-            nextRequestAt = math.min(nextRequestAt, now + 20)
+            nextRequestAt = math.min(nextRequestAt, now + 20, lastRequestAt + 20)
             Integrations:Refresh()
         end
     end

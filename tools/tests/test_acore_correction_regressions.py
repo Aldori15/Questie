@@ -460,15 +460,16 @@ const WintergraspObjectPositionData WGOutsideNPC[WG_MAX_OUTSIDE_NPC] = {
         self.assertEqual([], result[0])
         self.assertEqual("preserveQuestieEventObjectiveSlot", result[3][0]["reason"])
 
-    def test_omitting_unverified_guides_keeps_source_event_requirements(self):
+    def test_verified_and_omitted_guides_keep_source_event_requirements(self):
         constants = quest_validator.load_constants(ADDON_ROOT)
         metadata = quest_validator.load_questie_base_metadata(
             ADDON_ROOT / "Database/AzerothCore/acoreQuestDB.lua",
             constants["quest_keys"], constants)
-        for quest_id in (9889, 10887):
-            self.assertFalse(metadata[quest_id]["_hasTriggerEnd"])
-            self.assertTrue(metadata[quest_id]["specialFlags"]
-                            & quest_validator.QUEST_SPECIAL_FLAGS_EXPLORATION_OR_EVENT)
+        for quest_id, has_guide in ((9889, False), (10887, True)):
+            with self.subTest(quest_id=quest_id):
+                self.assertEqual(metadata[quest_id]["_hasTriggerEnd"], has_guide)
+                self.assertTrue(metadata[quest_id]["specialFlags"]
+                                & quest_validator.QUEST_SPECIAL_FLAGS_EXPLORATION_OR_EVENT)
 
 
     def test_source_area_guide_and_event_actors_survive_independently(self):
