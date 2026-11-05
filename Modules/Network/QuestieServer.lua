@@ -476,8 +476,9 @@ function QuestieServer:GetPhaseVisibilityKey()
     local context = self:GetPhaseContext()
     if not self:GetPhaseRegion(context) then return "unknown" end
     local parts = {tostring(context.map), tostring(context.area), tostring(context.zone), tostring(context.mask)}
+    local visibility = snapshot.phaseVisibility[context.area] or {}
     for _, mask in ipairs(phaseMasks) do
-        parts[#parts + 1] = tostring(self:GetSpawnPhaseVisibility(context.map, context.area, mask))
+        parts[#parts + 1] = tostring(visibility[mask])
     end
     return table.concat(parts, ":")
 end

@@ -499,14 +499,24 @@ end
 -- Availability can remain true while a world/story transition changes locations.
 -- Mark existing notes for replacement in the normal drawing thread.
 function AvailableQuests.InvalidateSpawnVisibility(affected)
-    local quests, checkedSpawns = {}, {}
+    local quests, checkedSpawns, npcSpawns, objectSpawns = {}, {}, {}, {}
     for questId in pairs(availableQuests) do quests[questId] = true end
     for questId in pairs(nextAvailableQuests) do quests[questId] = true end
-    local function needsRefresh(spawns)
+    local function needsRefresh(id, cache, getter)
+        local spawns = cache[id]
+        if spawns == nil then
+            local entity = getter(QuestieDB, id)
+            spawns = entity and entity.spawns or false
+            cache[id] = spawns
+        end
         if not spawns then return false end
         local result = checkedSpawns[spawns]
         if result == nil then
-            result = Phasing.HasDynamicSpawns(spawns) and (not affected or affected(spawns)) or false
+            if affected then
+                result = affected(spawns) or false
+            else
+                result = Phasing.HasDynamicSpawns(spawns)
+            end
             checkedSpawns[spawns] = result
         end
         return result
@@ -514,17 +524,17 @@ function AvailableQuests.InvalidateSpawnVisibility(affected)
     for questId in pairs(quests) do
         local quest = QuestieDB.GetQuestStartInfo(questId)
         for _, npcId in ipairs(quest and quest.Starts and quest.Starts.NPC or {}) do
-            local npc = QuestieDB:GetNPC(npcId)
-            if npc and needsRefresh(npc.spawns) then
+            if needsRefresh(npcId, npcSpawns, QuestieDB.GetNPC) then
                 dirtySpawnVisibility[questId] = true
                 break
             end
         end
-        for _, objectId in ipairs(quest and quest.Starts and quest.Starts.GameObject or {}) do
-            local object = QuestieDB:GetObject(objectId)
-            if object and needsRefresh(object.spawns) then
-                dirtySpawnVisibility[questId] = true
-                break
+        if not dirtySpawnVisibility[questId] then
+            for _, objectId in ipairs(quest and quest.Starts and quest.Starts.GameObject or {}) do
+                if needsRefresh(objectId, objectSpawns, QuestieDB.GetObject) then
+                    dirtySpawnVisibility[questId] = true
+                    break
+                end
             end
         end
     end

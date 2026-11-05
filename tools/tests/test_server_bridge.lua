@@ -2117,6 +2117,61 @@ local function phaseRows(mask, normal, captured, shared, everywhere, map, area, 
     return rows
 end
 do
+    local state = setup()
+    local server = state.server
+    local contextReads, visibilityReads, clockReads = 0, 0, 0
+    local getContext, getVisibility, getTime = server.GetPhaseContext, server.GetSpawnPhaseVisibility, state.env.GetTime
+    server.GetPhaseContext = function(...)
+        contextReads = contextReads + 1
+        return getContext(...)
+    end
+    server.GetSpawnPhaseVisibility = function(...)
+        visibilityReads = visibilityReads + 1
+        return getVisibility(...)
+    end
+    state.env.GetTime = function() clockReads = clockReads + 1; return getTime() end
+    local function compare()
+        local context = getContext(server)
+        local expected = "unknown"
+        if server:GetPhaseRegion(context) then
+            local parts = {tostring(context.map), tostring(context.area), tostring(context.zone), tostring(context.mask)}
+            for _, mask in ipairs(phaseMasks) do
+                parts[#parts + 1] = tostring(getVisibility(server, context.map, context.area, mask))
+            end
+            expected = table.concat(parts, ":")
+        end
+        contextReads, visibilityReads, clockReads = 0, 0, 0
+        equal(server:GetPhaseVisibilityKey(), expected, "phase key preserves all public visibility decisions")
+        equal(contextReads, 1, "phase key reads one context")
+        equal(visibilityReads, 0, "phase key avoids per-mask public getter calls")
+        assert(clockReads <= 1, "phase key checks freshness at most once")
+        if context then equal(clockReads, 1, "fresh context still requires a freshness check") end
+    end
+    compare()
+    state.reply(phaseRows(1, "1", "0", "0", "0"), "PHASES,HEARTBEAT"); compare()
+    local key = server:GetPhaseVisibilityKey()
+    state.advance(10); state.heartbeat(); compare()
+    equal(server:GetPhaseVisibilityKey(), key, "heartbeat retains the same phase key")
+    state.reply(phaseRows(2, "0", "1"), "PHASES,HEARTBEAT", nil, nil, "END"); compare()
+    equal(server:GetPhaseVisibilityKey(), key, "incomplete phase batch cannot change key")
+    state.event("ZONE_CHANGED"); compare()
+    equal(server:GetPhaseVisibilityKey(), "unknown", "pending context cannot expose old decisions")
+    state.advance(2)
+    state.reply(phaseRows(4294967295, "0", "1"), "PHASES,HEARTBEAT"); compare()
+    assert(server:GetPhaseVisibilityKey() ~= key, "new raw mask and decisions replace the key")
+    state.reply(phaseRows(1, "1", "0", nil, nil, 571, 4508, 210), "PHASES,HEARTBEAT"); compare()
+    state.reply({"P:PHASE_CONTEXT:0:87:1:12"}, "PHASES,HEARTBEAT"); compare()
+    equal(server:GetPhaseVisibilityKey(), "unknown", "unsupported region keeps static fallback")
+    state.reply(phaseRows(1, "1", "0"), "PHASES,HEARTBEAT")
+    state.elapse(30); compare()
+    equal(server:GetPhaseVisibilityKey(), "unknown", "phase key expires before frame cleanup")
+    state.reply(phaseRows(1, "1", "0"), "PHASES,HEARTBEAT"); compare()
+    state.reply({}, "HEARTBEAT"); compare()
+    equal(server:GetPhaseVisibilityKey(), "unknown", "capability removal clears the phase key")
+    tests = tests + 1
+end
+
+do
     local filter = setup().modules.Phasing
     local localSpawn = {[210] = {{10, 20, 0, 1, 571, 2, 4477}}}
     local hidden = {map = 571, area = 4477, hidden = {[2] = true}}
@@ -2248,37 +2303,84 @@ do
         error("missing visibility upvalue: " .. name)
     end
     local current, pending = upvalue("availableQuests"), upvalue("nextAvailableQuests")
-    current[1000], current[1001], current[1003] = true, true, true
-    pending[1000], pending[1002], pending[1003] = true, true, true
+    current[1000], current[1001], current[1003], current[1004], current[1005], current[1007] = true, true, true, true, true, true
+    pending[1000], pending[1002], pending[1003], pending[1004], pending[1006] = true, true, true, true, true
     local shared, ordinary = {[210] = {{10, 20, 0, 1, 571, 2, 4477}}}, {[12] = {{30, 40}}}
     local quests = {[1000] = {Starts = {NPC = {101}}}, [1001] = {Starts = {NPC = {101}}},
-        [1002] = {Starts = {GameObject = {1}}}, [1003] = {Starts = {NPC = {102}}}}
-    local queries, dynamicCalls, affectedCalls = {}, 0, 0
+        [1002] = {Starts = {GameObject = {101}}}, [1003] = {Starts = {NPC = {102}}},
+        [1004] = {Starts = {GameObject = {101}}}, [1005] = {Starts = {NPC = {999}, GameObject = {999}}},
+        [1006] = {Starts = {NPC = {999}, GameObject = {999}}}, [1007] = {Starts = {NPC = {101}, GameObject = {2}}}}
+    local queries, npcCalls, objectCalls, dynamicCalls, affectedCalls = {}, {}, {}, 0, 0
+    local entitySpawns, restored = shared, false
     db.GetQuestStartInfo = function(id) queries[id] = (queries[id] or 0) + 1; return quests[id] end
-    db.GetNPC = function(_, id) return {spawns = id == 101 and shared or ordinary} end
-    db.GetObject = function() return {spawns = shared} end
+    db.GetNPC = function(_, id)
+        npcCalls[id] = (npcCalls[id] or 0) + 1
+        if id == 999 then return restored and {spawns = shared} or nil end
+        return {spawns = id == 101 and entitySpawns or ordinary}
+    end
+    db.GetObject = function(_, id)
+        objectCalls[id] = (objectCalls[id] or 0) + 1
+        if id == 999 then return nil end
+        if id == 2 then return {spawns = ordinary} end
+        local copy = {}
+        for zone, points in pairs(entitySpawns) do copy[zone] = points end
+        return {spawns = copy}
+    end
     local hasDynamic = state.modules.Phasing.HasDynamicSpawns
     state.modules.Phasing.HasDynamicSpawns = function(spawns)
         dynamicCalls = dynamicCalls + 1
         return hasDynamic(spawns)
     end
     local dirty = upvalue("dirtySpawnVisibility")
+    local hidden = {map = 571, area = 4477, hidden = {[2] = true}}
     for pass = 1, 3 do
-        queries, dynamicCalls, affectedCalls = {}, 0, 0
+        queries, npcCalls, objectCalls, dynamicCalls, affectedCalls = {}, {}, {}, 0, 0
         for id in pairs(quests) do dirty[id] = nil end
         local changed = pass ~= 2
-        available.InvalidateSpawnVisibility(function()
+        local previous
+        if not changed then previous = hidden end
+        available.InvalidateSpawnVisibility(function(spawns)
             affectedCalls = affectedCalls + 1
-            return changed
+            return state.modules.Phasing.HasSpawnVisibilityChanges(spawns, previous, hidden)
         end)
         for id in pairs(quests) do equal(queries[id], 1, "quest union visits each ID once across both buffers") end
-        equal(dynamicCalls, 2, "shared NPC/object spawn table and ordinary spawn table are classified once each")
-        equal(affectedCalls, 1, "shared dynamic spawn table is compared once, including cached false")
-        for _, id in ipairs({1000, 1001, 1002}) do
+        equal(dynamicCalls, 0, "phase predicate avoids preliminary dynamic classification")
+        equal(affectedCalls, 3, "shared spawn tables cache false and true comparisons; decoded object spawns are read once")
+        for _, id in ipairs({101, 102, 999}) do equal(npcCalls[id], 1, "each NPC, including missing NPCs, is looked up once per pass") end
+        equal(objectCalls[101], 1, "gameobjects sharing a quest starter are decoded once per pass")
+        equal(objectCalls[999], 1, "missing gameobjects are looked up once per pass")
+        equal(objectCalls[2], not changed and 1 or nil, "affected NPC short-circuits further starter lookups")
+        for _, id in ipairs({1000, 1001, 1002, 1004, 1007}) do
             equal(dirty[id], changed and true or nil, "both buffers retain every affected quest with no stale memo")
         end
         equal(dirty[1003], nil, "ordinary locations never become dirty")
+        equal(dirty[1005], nil, "missing NPC and object impose no visibility change")
+        equal(dirty[1006], nil, "missing lookups are shared across both buffers")
     end
+    entitySpawns = ordinary
+    for id in pairs(quests) do dirty[id] = nil end
+    available.InvalidateSpawnVisibility(function(spawns)
+        return state.modules.Phasing.HasSpawnVisibilityChanges(spawns, nil, hidden)
+    end)
+    equal(next(dirty), nil, "replacement spawn tables take effect on the next invocation")
+    restored = true
+    available.InvalidateSpawnVisibility(function(spawns)
+        return state.modules.Phasing.HasSpawnVisibilityChanges(spawns, nil, hidden)
+    end)
+    equal(dirty[1005], true, "previously missing entity is retried and restored next invocation")
+    equal(dirty[1006], true, "restored entity affects both availability buffers")
+    for id in pairs(quests) do dirty[id] = nil end
+    local wintergrasp = state.modules.Phasing.phases.WINTERGRASP_ALLIANCE_KEEP
+    entitySpawns = {[4197] = {{10, 20, wintergrasp}}}
+    available.InvalidateWintergraspSpawnVisibility()
+    equal(dirty[1000], true, "no-predicate Wintergrasp path retains dynamic classification")
+    equal(dirty[1002], true, "Wintergrasp still refreshes gameobject starters")
+    equal(dirty[1003], nil, "Wintergrasp still preserves ordinary NPC locations")
+    for id in pairs(quests) do dirty[id] = nil end
+    local unknownCalls = 0
+    available.InvalidateSpawnVisibility(function() unknownCalls = unknownCalls + 1 end)
+    equal(next(dirty), nil, "unknown predicate result never falls through to unrelated dynamic changes")
+    equal(unknownCalls, 4, "unknown predicate results are cached for each distinct spawn table")
     tests = tests + 1
 end
 
