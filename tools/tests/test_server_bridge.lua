@@ -3748,4 +3748,221 @@ do
     tests = tests + 1
 end
 
+-- Availability comparisons preserve the public gates without per-quest public lookups.
+do
+    local state = setup()
+    local server = state.server
+    local function compare()
+        local ids, seen, known = {}, {}, false
+        for _, getter in ipairs({"GetPooledQuests", "GetWintergraspQuests", "GetICCQuests",
+            "GetDisabledQuests", "GetConditionRestrictedQuests"}) do
+            local members = server[getter](server)
+            if members then known = true end
+            for _, id in ipairs(members or {}) do
+                if not seen[id] then ids[#ids + 1], seen[id] = id, true end
+            end
+        end
+        table.sort(ids)
+        local parts = {}
+        for _, id in ipairs(ids) do
+            parts[#parts + 1] = id .. ":" .. tostring(server:GetQuestPoolId(id))
+                .. ":" .. tostring(server:GetQuestAvailabilityState(id))
+        end
+        equal(server:GetQuestStateKey(), known and table.concat(parts, ";") or "unknown",
+            "comparison key matches independent public gates")
+        local controlled = server:GetStateControlledQuests()
+        equal(controlled and table.concat(controlled, ","), known and table.concat(ids, ",") or nil,
+            "controlled quest union preserves empty versus unavailable catalogs")
+        if controlled then controlled[1] = -1 end
+        equal(server:GetQuestStateKey(), known and table.concat(parts, ";") or "unknown",
+            "caller cannot mutate cached IDs through the public catalog")
+    end
+    compare()
+    local caps = "QUESTPOOLS,WINTERGRASP,ICC,QUESTDISABLES,QUESTCONDITIONS,HEARTBEAT"
+    local function rows(active, pool)
+        return {"Q:24869:" .. pool .. ":" .. active, "Q:13154:5678:1", "D:8985",
+            "P:QC_COUNT:1", "C:11451", "P:WG_STATE:1:0:0", "R:13154:0",
+            "P:ICC_STATE:100:0:24869:0:0", "I:24869:1", "I:24873:0"}
+    end
+    state.reply(rows("0", 5676), caps); compare()
+    equal(table.concat(server:GetStateControlledQuests(), ","), "8985,11451,13154,24869,24873",
+        "all five availability sources are included and deduplicated")
+    equal(server:GetQuestAvailabilityState(24869), false, "negative pool overrides positive raid gate")
+    local key = server:GetQuestStateKey()
+    state.reply(rows("1", 5676), caps, nil, nil, "END")
+    equal(server:GetQuestStateKey(), key, "incomplete snapshot cannot replace cached availability")
+    state.reply({"D:8985", "D:8985"}, "QUESTDISABLES,HEARTBEAT")
+    equal(server:GetQuestStateKey(), key, "malformed replacement cannot invalidate complete cached authority")
+    state.reply(rows("1", 5676), caps); compare()
+    assert(server:GetQuestStateKey() ~= key, "selection change invalidates comparison")
+    key = server:GetQuestStateKey()
+    state.reply(rows("1", 9000), caps); compare()
+    assert(server:GetQuestStateKey() ~= key, "pool membership change matters even with identical availability")
+    state.event("PLAYER_ENTERING_WORLD"); compare()
+    equal(server:GetQuestAvailabilityState(24873), nil, "pending raid context discards old negative gate immediately")
+    equal(server:GetQuestAvailabilityState(24869), true, "pending raid context retains independent pool authority")
+    state.advance(2)
+    state.reply(rows("1", 9000), caps); compare()
+    state.reply({"P:WG_STATE:?:?:?", "P:ICC_STATE:?:?:?:?:?", "P:QC_COUNT:0"}, caps); compare()
+    state.reply({"P:WG_STATE:1:0:0", "P:ICC_STATE:0:0:0:0:0"}, "WINTERGRASP,ICC,HEARTBEAT"); compare()
+    state.reply({"P:QC_COUNT:0"}, "QUESTCONDITIONS,HEARTBEAT"); compare()
+    equal(server:GetQuestStateKey(), "", "supported empty catalog differs from missing authority")
+    state.reply({}, "HEARTBEAT"); compare()
+    equal(server:GetQuestStateKey(), "unknown", "capability removal removes cached authority")
+    state.reply(rows("0", 5676), caps)
+    state.elapse(30); compare()
+    equal(server:GetQuestStateKey(), "unknown", "exact 30-second expiry applies before frame cleanup")
+    state.reply(rows("1", 5676), caps); compare()
+    equal(server:GetQuestAvailabilityState(11451), false, "reconnection restores character-specific restriction")
+    state.advance(31)
+    state.info("18", "MISMATCH"); compare()
+    equal(server:GetQuestStateKey(), "unknown", "protocol mismatch keeps static fallback")
+    tests = tests + 1
+end
+
+do
+    local state = setup()
+    local sorts = 0
+    state.env.table = setmetatable({sort = function(...)
+        sorts = sorts + 1
+        return table.sort(...)
+    end}, {__index = table})
+    local caps = "QUESTPOOLS,QUESTDISABLES,QUESTCONDITIONS,QUESTGIVERS,HEARTBEAT"
+    local rows = {"P:QC_COUNT:0", "P:QG_CONTEXT:0:12"}
+    for id = 1, 600 do rows[#rows + 1] = "D:" .. id end
+    for id = 1001, 1160 do rows[#rows + 1] = "Q:" .. id .. ":5676:1" end
+    state.reply(rows, caps)
+    equal(sorts, 1, "large combined catalog needs only one union sort")
+    local key, redraws = state.server:GetQuestStateKey(), state.refreshes()
+    for pass = 1, 10 do
+        state.reply({"P:QC_COUNT:0", "P:QG_CONTEXT:0:" .. (pass % 2 == 0 and 12 or 40)},
+            caps, nil, nil, nil, {reuse = true})
+        state.refresh()
+        equal(state.server:GetQuestStateKey(), key, "private zone updates retain availability comparison")
+    end
+    state.advance(10); state.heartbeat()
+    equal(sorts, 1, "reused catalogs, empty private conditions, preferences and heartbeats do not rebuild union")
+    equal(state.refreshes(), redraws, "unrelated updates request no availability redraw")
+    local reads, getTime = 0, state.env.GetTime
+    state.env.GetTime = function() reads = reads + 1; return getTime() end
+    equal(state.server:GetQuestStateKey(), key, "cached comparison remains available")
+    equal(reads, 1, "cached comparison still checks freshness once")
+    local lookups = 0
+    for _, name in ipairs({"GetQuestPoolId", "GetQuestAvailabilityState", "GetStateControlledQuests"}) do
+        local original = state.server[name]
+        state.server[name] = function(...)
+            lookups = lookups + 1
+            return original(...)
+        end
+    end
+    state.refresh()
+    equal(lookups, 0, "integration no longer calls public getters for each controlled quest")
+    state.reply({"P:QC_COUNT:1", "C:11451", "P:QG_CONTEXT:0:12"}, caps, nil, nil, nil, {reuse = true})
+    equal(state.server:GetQuestAvailabilityState(11451), false, "changed private condition rebuilds authority")
+    equal(sorts, 2, "changed private restriction rebuilds union once")
+    state.reply({"P:QG_CONTEXT:0:12"}, "QUESTPOOLS,QUESTDISABLES,QUESTGIVERS,HEARTBEAT",
+        nil, nil, nil, {reuse = true})
+    equal(state.server:GetQuestStateKey(), key, "private capability removal restores previous effective state")
+    equal(state.server:GetQuestAvailabilityState(11451), nil, "removed condition authority cannot persist in cache")
+    equal(sorts, 3, "capability removal invalidates comparison")
+    redraws = state.refreshes()
+    state.reply(rows, caps)
+    equal(state.server:GetQuestStateKey(), key, "full replacement with same contents avoids redraw")
+    equal(state.refreshes(), redraws, "equivalent full replacement requests no redraw")
+    equal(sorts, 4, "new full catalog rebuilds once even when effective state is unchanged")
+    tests = tests + 1
+end
+
+do
+    local state = setup()
+    local available, db = availabilitySetup(state)
+    local function upvalue(name)
+        for index = 1, 100 do
+            local key, value = debug.getupvalue(available.InvalidateQuestgiverAvailability, index)
+            if key == name then return value end
+            if not key then break end
+        end
+        error("missing questgiver upvalue: " .. name)
+    end
+    local current, pending, dirty = upvalue("availableQuests"), upvalue("nextAvailableQuests"), upvalue("dirtySpawnVisibility")
+    current[1000], current[1001], current[1003], current[1004] = true, true, true, true
+    pending[1000], pending[1002], pending[1003], pending[1005] = true, true, true, true
+    local quests = {[1000] = {Starts = {NPC = {823, 824}}}, [1001] = {Starts = {NPC = {823}}},
+        [1002] = {Starts = {GameObject = {1}}}, [1003] = {Starts = {Item = {1}}}, [1005] = {Starts = {NPC = {823}}}}
+    local queries = {}
+    db.GetQuestStartInfo = function(id) queries[id] = (queries[id] or 0) + 1; return quests[id] end
+    for pass, changedNpcs in ipairs({{[823] = true}, {[825] = true}, {}}) do
+        queries = {}
+        for id in pairs(current) do dirty[id] = nil end
+        for id in pairs(pending) do dirty[id] = nil end
+        equal(available.InvalidateQuestgiverAvailability(changedNpcs), pass == 1,
+            "only an affected NPC starter requests a redraw")
+        for id = 1000, 1005 do equal(queries[id], 1, "questgiver invalidation checks each quest once across both buffers") end
+        equal(dirty[1000], pass == 1 and true or nil, "alternative NPC starter is invalidated when needed")
+        equal(dirty[1001], pass == 1 and true or nil, "current-only quest remains included")
+        equal(dirty[1005], pass == 1 and true or nil, "pending-only NPC quest remains included")
+        equal(dirty[1002], nil, "pending-only gameobject starter remains untouched")
+        equal(dirty[1003], nil, "item starter remains untouched")
+    end
+    equal(available.InvalidateQuestgiverAvailability(), true, "unfiltered legacy invalidation still marks NPC starters")
+    tests = tests + 1
+end
+
+do
+    local state, _, frames, calculate = starterRendererSetup({
+        [823] = {[12] = {{10, 20, 0, 0, 0, 0, 0, 111}}},
+        [824] = {[12] = {{30, 40, 0, 0, 0, 0, 0, 222}}},
+    }, {[24579] = {823}, [24580] = {824}, [24581] = {823, 824}})
+    calculate()
+    local original, other, redraws = frames[24579][1], frames[24580][1], state.refreshes()
+    local caps = "QUESTGIVERS,HEARTBEAT"
+    state.reply({"P:QG_CONTEXT:0:12", "G:825:333:0:F130000339000001"}, caps)
+    equal(state.refreshes(), redraws, "observations unrelated to available quests request no redraw")
+    equal(frames[24579][1], original, "unrelated negative retains exact frame")
+    state.reply({"P:QG_CONTEXT:0:12"}, caps)
+    equal(state.refreshes(), redraws, "removing unrelated negative requests no redraw")
+    state.reply({"P:QG_CONTEXT:0:12", "G:823:111:0:F130000337000001"}, caps)
+    assert(state.refreshes() > redraws, "relevant negative requests a redraw")
+    calculate()
+    equal(frames[24579], nil, "affected marker is hidden")
+    equal(#frames[24581], 1, "valid alternative remains visible")
+    state.reply({}, "HEARTBEAT"); calculate()
+    equal(#frames[24579], 1, "capability removal restores hidden NPC even without a live frame")
+    equal(#frames[24581], 2, "capability removal restores all valid alternatives")
+    equal(frames[24580][1], other, "unrelated quest keeps its original frame")
+    tests = tests + 1
+end
+
+do
+    for _, weekly in ipairs({false, true}) do
+        local h = giverInferenceSetup(weekly)
+        h.calculate()
+        h.available.RemoveQuestsForToday(823, {h.questId})
+        h.calculate()
+        equal(h.count(), 0, "stored gossip observation removes quest from available buffers")
+        local bucketName = weekly and "weekly" or "daily"
+        h.env.Questie.db.global.unavailableQuestSyncState["Test realm"] = {
+            [bucketName] = {nextReset = 2000000000, byNpc = {[823] = {[h.questId] = true}}, byQuest = {[h.questId] = true}},
+        }
+        local redraws = h.state.refreshes()
+        h.catalog(true)
+        assert(h.state.refreshes() > redraws, "first-load pruning requests refresh even without matching available quests")
+        equal(h.available.IsUnavailableForCurrentReset(h.questId), false, "first-load pruning removes invalid unavailable inference")
+        equal(h.count(), 1, "cleanup restores valid alternative starter")
+        equal(h.available.GetUnavailableQuestSnapshot(), nil, "removed observations cannot be synchronized again")
+
+        h = giverInferenceSetup(weekly)
+        h.calculate()
+        h.available.RemoveQuestsForToday(823, {h.questId})
+        h.calculate()
+        h.bucket().nextReset = 1
+        redraws = h.state.refreshes()
+        h.state.refresh()
+        assert(h.state.refreshes() > redraws, "reset cleanup still requests refresh without a changed NPC key")
+        h.calculate()
+        equal(h.count(), 3, "normal reset restores all static starters without a bridge")
+    end
+    tests = tests + 1
+end
+
 print("Server bridge: " .. tests .. " regression groups passed")

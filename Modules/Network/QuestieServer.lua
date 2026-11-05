@@ -37,6 +37,7 @@ local serverInfo, infoReceived
 local snapshotToken, snapshotSequence, pendingRenewal
 local forceSnapshot, subscriptionsDirty = false, false
 local iccContextPending = false
+local questStateCache
 local phaseContextPending = false
 local giverContextPending = false
 local lastRequestAt = -2
@@ -554,8 +555,7 @@ end
 
 -- Combine independent live gates. A selected quest cannot bypass a faction gate,
 -- raid-instance gate or inactive direct pool membership.
-function QuestieServer:GetQuestAvailabilityState(questId)
-    if not Fresh() then return nil end
+local function QuestAvailabilityState(questId)
     local caps = snapshot.caps
     if caps.QUESTDISABLES and snapshot.disabledQuests[questId] then return false end
     if caps.QUESTCONDITIONS and snapshot.conditionQuests[questId] then return false end
@@ -573,17 +573,62 @@ function QuestieServer:GetQuestAvailabilityState(questId)
     return nil
 end
 
-function QuestieServer:GetStateControlledQuests()
-    local pool, wintergrasp, icc = self:GetPooledQuests(), self:GetWintergraspQuests(), self:GetICCQuests()
-    local disabled, conditions = self:GetDisabledQuests(), self:GetConditionRestrictedQuests()
-    if not pool and not wintergrasp and not icc and not disabled and not conditions then return nil end
+function QuestieServer:GetQuestAvailabilityState(questId)
+    if not Fresh() then return nil end
+    return QuestAvailabilityState(questId)
+end
+
+local function Nonempty(members)
+    return members and next(members) and members or nil
+end
+
+local function QuestStates()
+    if not Fresh() then questStateCache = nil; return nil end
+    local caps = snapshot.caps
+    local wintergrasp = caps.WINTERGRASP and snapshot.wintergrasp.loaded
+    local icc = caps.ICC and not iccContextPending and snapshot.icc.loaded and snapshot.icc.inside
+    if not (caps.QUESTPOOLS or caps.QUESTDISABLES or caps.QUESTCONDITIONS or wintergrasp or icc) then
+        questStateCache = nil
+        return nil
+    end
+    local pool = Nonempty(caps.QUESTPOOLS and snapshot.poolQuests)
+    local disabled = Nonempty(caps.QUESTDISABLES and snapshot.disabledQuests)
+    local conditions = Nonempty(caps.QUESTCONDITIONS and snapshot.conditionQuests)
+    wintergrasp = Nonempty(wintergrasp and snapshot.wintergraspQuests)
+    icc = Nonempty(icc and snapshot.iccQuests)
+    -- Reused catalogs retain their table identities across unrelated private updates.
+    if questStateCache and questStateCache.pool == pool and questStateCache.wintergrasp == wintergrasp
+        and questStateCache.icc == icc and questStateCache.disabled == disabled and questStateCache.conditions == conditions then
+        return questStateCache
+    end
     local ids, seen = {}, {}
-    for _, members in ipairs({pool or {}, wintergrasp or {}, icc or {}, disabled or {}, conditions or {}}) do
-        for _, id in ipairs(members) do
+    local function add(members)
+        for id in pairs(members or {}) do
             if not seen[id] then ids[#ids + 1], seen[id] = id, true end
         end
     end
+    add(pool); add(wintergrasp); add(icc); add(disabled); add(conditions)
     table.sort(ids)
+    local parts = {}
+    for _, id in ipairs(ids) do
+        local quest = pool and pool[id]
+        parts[#parts + 1] = id .. ":" .. tostring(quest and quest.pool or nil) .. ":" .. tostring(QuestAvailabilityState(id))
+    end
+    questStateCache = {pool = pool, wintergrasp = wintergrasp, icc = icc, disabled = disabled,
+        conditions = conditions, ids = ids, key = table.concat(parts, ";")}
+    return questStateCache
+end
+
+function QuestieServer:GetQuestStateKey()
+    local state = QuestStates()
+    return state and state.key or "unknown"
+end
+
+function QuestieServer:GetStateControlledQuests()
+    local state = QuestStates()
+    if not state then return nil end
+    local ids = {}
+    for index, id in ipairs(state.ids) do ids[index] = id end
     return ids
 end
 

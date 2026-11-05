@@ -322,12 +322,12 @@ local function _GetUnavailableQuestSyncState()
         unavailableQuestLookupDirty = false
     end
 
-    return syncState
+    return syncState, dailyReset or weeklyReset or pruned
 end
 
 function AvailableQuests.PruneRestrictedQuestgiverObservations()
-    local syncState = _GetUnavailableQuestSyncState()
-    if not _PruneRestrictedQuestgiverObservations(syncState) then return false end
+    local syncState, changed = _GetUnavailableQuestSyncState()
+    if not _PruneRestrictedQuestgiverObservations(syncState) and not changed then return false end
     _RebuildUnavailableQuestLookup(syncState)
     lastNpcGuid = nil
     return true
@@ -532,17 +532,20 @@ end
 
 function AvailableQuests.InvalidateQuestgiverAvailability(changedNpcs)
     lastNpcGuid = nil
-    for _, quests in ipairs({availableQuests, nextAvailableQuests}) do
-        for questId in pairs(quests) do
-            local quest = QuestieDB.GetQuestStartInfo(questId)
-            for _, npcId in ipairs(quest and quest.Starts and quest.Starts.NPC or {}) do
-                if not changedNpcs or changedNpcs[npcId] then
-                    dirtySpawnVisibility[questId] = true
-                    break
-                end
+    local quests, changed = {}, false
+    for questId in pairs(availableQuests) do quests[questId] = true end
+    for questId in pairs(nextAvailableQuests) do quests[questId] = true end
+    for questId in pairs(quests) do
+        local quest = QuestieDB.GetQuestStartInfo(questId)
+        for _, npcId in ipairs(quest and quest.Starts and quest.Starts.NPC or {}) do
+            if not changedNpcs or changedNpcs[npcId] then
+                dirtySpawnVisibility[questId] = true
+                changed = true
+                break
             end
         end
     end
+    return changed
 end
 
 AvailableQuests.InvalidateWintergraspSpawnVisibility = AvailableQuests.InvalidateSpawnVisibility

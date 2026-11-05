@@ -69,19 +69,13 @@ local function RefreshQuestgivers()
     previousQuestgiverStateKeys = keys
     if not next(changedNpcs) then return changed end
     if Questie.started then
-        available.InvalidateQuestgiverAvailability(changedNpcs)
+        return available.InvalidateQuestgiverAvailability(changedNpcs) or changed
     end
     return true
 end
 
 local function RefreshQuestStates()
-    local ids = Server:GetStateControlledQuests()
-    local parts = {}
-    for _, id in ipairs(ids or {}) do
-        parts[#parts + 1] = id .. ":" .. tostring(Server:GetQuestPoolId(id))
-            .. ":" .. tostring(Server:GetQuestAvailabilityState(id))
-    end
-    local key = ids and table.concat(parts, ";") or "unknown"
+    local key = Server:GetQuestStateKey()
     local changed = key ~= previousQuestStateKey
     previousQuestStateKey = key
     return changed
