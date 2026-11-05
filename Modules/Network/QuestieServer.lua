@@ -224,6 +224,7 @@ local function HandlePatrol(fields)
             end
             if result.count ~= batch.rowCount then return end
             patrolLastToken, patrolLastSequence, patrol = watchToken, sequence, result
+            Patrol.needsUpdate = true
         end
     end
 end
@@ -366,6 +367,35 @@ function QuestieServer:GetQuestgiverStateKey()
     return table.concat(ids, ",")
 end
 
+function QuestieServer:GetQuestgiverStateKeys()
+    local keys = {}
+    if not Fresh() then return keys end
+    if snapshot.caps.QUESTGIVERTEMPLATES then
+        for npcId in pairs(snapshot.giverTemplates) do keys[npcId] = {"N"} end
+    end
+    if not giverContextPending and snapshot.caps.QUESTGIVERS then
+        local context = "G:" .. snapshot.giverMap .. ":" .. snapshot.giverZone
+        local negative = {}
+        for _, unit in pairs(snapshot.giverUnits) do
+            if not unit.active then negative[unit.entry] = true end
+        end
+        for npcId, spawns in pairs(snapshot.giverSpawns) do
+            local parts = keys[npcId] or {}
+            parts[#parts + 1] = context
+            if negative[npcId] then parts[#parts + 1] = "U:0" end
+            for spawnId, active in pairs(spawns) do
+                parts[#parts + 1] = spawnId .. ":" .. (active and "1" or "0")
+            end
+            keys[npcId] = parts
+        end
+    end
+    for npcId, parts in pairs(keys) do
+        table.sort(parts)
+        keys[npcId] = table.concat(parts, ",")
+    end
+    return keys
+end
+
 ---@return boolean|nil false means the loaded server template lacks the questgiver flag.
 function QuestieServer:GetNPCQuestgiverTemplateState(npcId)
     if not self:HasCapability("QUESTGIVERTEMPLATES") then return nil end
@@ -449,6 +479,18 @@ function QuestieServer:GetPhaseVisibilityKey()
         parts[#parts + 1] = tostring(self:GetSpawnPhaseVisibility(context.map, context.area, mask))
     end
     return table.concat(parts, ":")
+end
+
+function QuestieServer:GetPhaseVisibilityState()
+    local context = self:GetPhaseContext()
+    if not self:GetPhaseRegion(context) then return nil end
+    local state = {map = context.map, area = context.area, hidden = {}}
+    for mask, visible in pairs(snapshot.phaseVisibility[context.area] or {}) do
+        if visible == false then
+            state.hidden[mask] = true
+        end
+    end
+    return state
 end
 
 ---@return boolean|nil Server visibility decision, or nil outside the supported region.
@@ -1217,7 +1259,7 @@ function QuestieServer:Initialize()
             if previousPreferences and previousPreferences ~= preferences then Integrations:Refresh() end
             previousPreferences = preferences
         end
-        if Patrol.Update then Patrol:Update(now) end
+        if Patrol.needsUpdate and now >= (Patrol.nextCheck or 0) and Patrol.Update then Patrol:Update(now) end
         Request()
     end)
     SLASH_QUESTIESERVER1 = "/qserver"

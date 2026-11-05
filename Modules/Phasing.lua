@@ -45,6 +45,22 @@ function Phasing.HasDynamicSpawns(spawns)
     return Phasing.HasWintergraspSpawns(spawns) or Phasing.HasServerPhaseSpawns(spawns)
 end
 
+function Phasing.HasSpawnVisibilityChanges(spawns, previous, current)
+    for _, points in pairs(spawns or {}) do
+        for _, point in ipairs(points) do
+            local mask, area = point[6], point[7]
+            if mask and mask > 0 and area and area > 0 then
+                local wasHidden = previous and previous.map == point[5] and previous.area == area
+                    and previous.hidden[mask] == true or false
+                local isHidden = current and current.map == point[5] and current.area == area
+                    and current.hidden[mask] == true or false
+                if wasHidden ~= isHidden then return true end
+            end
+        end
+    end
+    return false
+end
+
 ---@param phase number|nil
 ---@return boolean
 function Phasing.IsSpawnVisible(phase)

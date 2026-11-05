@@ -54,6 +54,16 @@ local function setup()
     modules.QuestieServerIntegrations = {Initialize = function() end, Refresh = function() refreshes = refreshes + 1 end}
     assert(loadfile("Modules/Network/QuestieServerPatrol.lua", "t", env))()
     assert(loadfile("Modules/Network/QuestieServer.lua", "t", env))()
+    local patrolUpdates, patrolQueries = 0, 0
+    local update, positions = modules.QuestieServerPatrol.Update, modules.QuestieServer.GetPatrolPositions
+    modules.QuestieServerPatrol.Update = function(self, ...)
+        patrolUpdates = patrolUpdates + 1
+        return update(self, ...)
+    end
+    modules.QuestieServer.GetPatrolPositions = function(self, ...)
+        patrolQueries = patrolQueries + 1
+        return positions(self, ...)
+    end
     modules.QuestieServer:Initialize()
     local function token() return messages[#messages]:match("^[^~]+~%d+~([^~]+)~") end
     local function receive(payload, sender, channel)
@@ -99,6 +109,7 @@ local function setup()
         elapse = function(seconds) now = now + seconds end,
         update = function() modules.QuestieServerPatrol:Update(now) end,
         event = function(name) frame.OnEvent(frame, name) end,
+        activity = function() return patrolUpdates, patrolQueries end,
         counts = function() return miniMoves, mapMoves, refreshes end}
 end
 
@@ -151,8 +162,12 @@ near(map.x, x * 100, "Dalaran conversion"); near(mini.y, y * 100, "paired minima
 s.motion(2, {"37780:133649:5915.750:636.745"}); s.step(0.11)
 near(mini.worldX, 636.745, "new sample moves directly without interpolation")
 local beforeMini, beforeMap, beforeRefresh = s.counts()
+local beforeUpdates = s.activity()
 for _ = 1, 1000 do s.step(0.001) end
+local afterUpdates = s.activity()
 local afterMini, afterMap, afterRefresh = s.counts()
+assert(afterUpdates - beforeUpdates >= 9 and afterUpdates - beforeUpdates <= 10,
+    "live patrol updater is called at most ten times per second regardless of client FPS")
 equal(beforeMini, afterMini, "client FPS does not cause extra minimap redraws")
 equal(beforeMap, afterMap, "client FPS does not cause extra map redraws")
 equal(beforeRefresh, afterRefresh, "motion cannot rebuild quest availability")
@@ -163,8 +178,10 @@ s.step(0.11); near(mini.worldX, 636.745, "late previous-anchor data cannot updat
 s.motion(4, {}, nil, 2); s.step(0.11)
 near(map.x, 51.3, "missing NPC restores static map position")
 near(mini.y, 27.27, "missing NPC restores static minimap position")
+equal(s.patrol.needsUpdate, false, "empty sample sleeps after restoring moved pins")
 s.motion(5, nil, nil, 2); s.step(0.11); s.elapse(5); s.update()
 near(map.x, 51.3, "expiry restores static location without reload")
+equal(s.patrol.needsUpdate, false, "expired sample sleeps after static restoration")
 s.receive("MBEGIN~21~" .. s.token() .. "~2~6~571~0~4395~0~0~OVERFLOW")
 s.receive("MEND~21~" .. s.token() .. "~2~6")
 equal(s.server:GetPatrolPositions().status, "OVERFLOW", "overflow never supplies a partial catalog")
@@ -207,11 +224,13 @@ near(legacy.x, 51.3, "multiple static locations cannot use entry-only fallback")
 s = setup(); s.snapshot(1)
 local queued = s.icon(false, true, nil, nil, 133649)
 s.motion(1); s.update(); near(queued.x, 51.3, "queued frame not moved before draw")
+equal(s.patrol.needsUpdate, true, "queued live draw remains active")
 queued._loaded = true; s.step(0.11); near(queued.worldX, 626.745, "queued frame catches up")
 queued._needsUnload = true; s.motion(2, {"37780:133649:5915.750:636.745"}); s.step(0.11)
 near(queued.worldX, 626.745, "pending removal cannot move")
 s.patrol:Unregister(queued); queued._needsUnload = nil; queued.data = {Id = 999}
 s.step(0.11); near(queued.worldX, 626.745, "recycled frame remains untouched")
+equal(s.patrol.needsUpdate, false, "unregistering last pin clears pending patrol work")
 
 -- Native map 530 is translated into the client's Eastern Kingdoms coordinate
 -- space for TBC starting zones. Ordinary continent maps need no such remap.
@@ -250,5 +269,51 @@ near(oldSewerMap.x, 51.3, "parent-zone fallback still rejects ambiguous live spa
 local unknownArea = s.icon(false, false, true, 30137, nil, 126, 9999)
 s.motion(5, {"30137:113397:5817.140:654.888"}, {571, 0, 9998}); s.step(0.11)
 near(unknownArea.x, 51.3, "unknown maps cannot match just because both IDs are nil")
+
+-- Idle clients do not enter the patrol updater or query bridge state each frame.
+s = setup()
+for _ = 1, 100 do s.step(0.01) end
+local updates, queries = s.activity()
+equal(updates, 0, "no tracked pins cause no patrol callbacks")
+equal(queries, 0, "no tracked pins cause no patrol state queries")
+local idle = s.icon(false, true, true, nil, 133649)
+equal(s.patrol.needsUpdate, true, "registration wakes one patrol check")
+s.step(0.11)
+equal(s.patrol.needsUpdate, false, "no bridge leaves static pin idle")
+updates, queries = s.activity()
+for _ = 1, 100 do s.step(0.01) end
+local idleUpdates, idleQueries = s.activity()
+equal(idleUpdates, updates, "static pin does not call patrol updater while idle")
+equal(idleQueries, queries, "static pin does not poll absent bridge")
+near(idle.x, 51.3, "idle static coordinates retained")
+local undrawn = s.icon(false, true, nil, nil, 222222)
+s.step(0.11)
+equal(s.patrol.needsUpdate, false, "undrawn static pin needs no expiry polling")
+s.patrol:Unregister(undrawn)
+s.step(0.11)
+
+s = setup(); s.snapshot(1)
+local active = s.icon(false, true, true, nil, 133649)
+s.motion(1, {})
+s.step(0.11)
+equal(s.patrol.needsUpdate, false, "fresh empty sample causes no idle polling")
+s.motion(2, {"37780:222222:5915.750:626.745"})
+s.step(0.11)
+equal(s.patrol.needsUpdate, false, "unmatched live spawn causes no idle polling")
+s.motion(3)
+equal(s.patrol.needsUpdate, true, "new complete sample wakes sleeping patrol updater")
+s.step(0.11)
+near(active.worldX, 626.745, "woken patrol applies live position")
+equal(s.patrol.needsUpdate, true, "live position retains expiration checks")
+s.elapse(5); s.step(0.11)
+near(active.x, 51.3, "live sample expiration restores static pin through gated update")
+equal(s.patrol.needsUpdate, false, "restored pin returns to idle")
+s.motion(4); s.step(0.11)
+equal(s.patrol.needsUpdate, true, "fresh sample resumes expired patrol")
+s.snapshot(2, "00000020"); s.step(0.11)
+near(active.x, 51.3, "capability removal restores live pin")
+equal(s.patrol.needsUpdate, false, "removed capability leaves no idle polling")
+s.snapshot(3); s.motion(5, nil, nil, 3); s.step(0.11)
+near(active.worldX, 626.745, "capability re-enable and new sample resume movement")
 
 print("Server patrol: batched protocol, zone transitions, identities, transports, turn-ins, fallback and pin reuse passed")

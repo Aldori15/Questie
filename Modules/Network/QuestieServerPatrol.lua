@@ -6,7 +6,9 @@ local DB = QuestieLoader:ImportModule("QuestieDB")
 local ZoneDB = QuestieLoader:ImportModule("ZoneDB")
 local HBD = QuestieCompat.HBD or LibStub("HereBeDragonsQuestie-2.0")
 local Pins = QuestieCompat.HBDPins or LibStub("HereBeDragonsQuestie-Pins-2.0")
-local entries, lastSample, dirty, nextCheck = {}, nil, false, 0
+local entries, lastSample, dirty = {}, nil, false
+Patrol.needsUpdate = false
+Patrol.nextCheck = 0
 -- Native map-530 rectangles for the TBC starting zones displayed on client
 -- continents. Keep aligned with the generators' ACORE_WORLD_RECT_OVERRIDES.
 local nativeRects = {
@@ -88,11 +90,14 @@ function Patrol:Register(icon, spawn, originalX, originalY)
     entries[icon] = {data = icon.data, spawn = spawn, x = x, y = y, worldX = worldX, worldY = worldY,
         instance = instance, live = icon.x ~= x or icon.y ~= y}
     dirty = true
+    Patrol.needsUpdate = true
 end
 
 function Patrol:Unregister(icon)
     icon.serverPatrolTracked = nil
     entries[icon] = nil
+    dirty = true
+    Patrol.needsUpdate = true
 end
 
 local function Apply(icon, x, y, worldX, worldY, instance)
@@ -109,13 +114,16 @@ local function Apply(icon, x, y, worldX, worldY, instance)
 end
 
 function Patrol:Update(now)
-    if now < nextCheck then return end
-    nextCheck = now + 0.1 -- Check expiry/queued draws; movement happens only for new samples.
-    if not next(entries) then lastSample = nil; return end
+    if now < self.nextCheck then return end
+    self.nextCheck = now + 0.1 -- Check expiry/queued draws; movement happens only for new samples.
+    if not next(entries) then
+        lastSample, dirty, Patrol.needsUpdate = nil, false, false
+        return
+    end
     local sample = Server:GetPatrolPositions()
     if sample == lastSample and not dirty then return end
     lastSample, dirty = sample, false
-    local converted = {}
+    local converted, live = {}, false
     for icon, entry in pairs(entries) do
         if icon.data ~= entry.data then
             entries[icon] = nil
@@ -136,9 +144,9 @@ function Patrol:Update(now)
                 else
                     dirty = true
                 end
-            elseif not icon._loaded and not icon._needsUnload then
-                dirty = true
             end
+            live = live or entry.live
         end
     end
+    Patrol.needsUpdate = dirty or live
 end

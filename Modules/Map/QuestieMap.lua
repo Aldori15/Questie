@@ -732,17 +732,27 @@ function QuestieMap:ShowNPC(npcID, icon, scale, title, body, disableShiftToRemov
     end
 end
 
-function QuestieMap:RefreshDynamicManualNotes()
+function QuestieMap:RefreshDynamicManualNotes(affected)
     local requests = {}
     for _, notes in pairs(dynamicManualNotes) do
         for _, request in pairs(notes) do requests[#requests + 1] = request end
     end
     for _, request in ipairs(requests) do
-        self:UnloadManualFrames(request.frameId or request[1], request[7])
-        if request.object then
-            self:ShowObject(tunpack(request, 1, 7))
-        else
-            self:ShowNPC(tunpack(request, 1, 8))
+        local data
+        if affected then
+            if request.object then
+                data = QuestieDB:GetObject(request[1])
+            else
+                data = QuestieDB:GetNPC(request[1])
+            end
+        end
+        if not affected or not data or affected(data.spawns) then
+            self:UnloadManualFrames(request.frameId or request[1], request[7])
+            if request.object then
+                self:ShowObject(tunpack(request, 1, 7))
+            else
+                self:ShowNPC(tunpack(request, 1, 8))
+            end
         end
     end
 end
@@ -1116,19 +1126,19 @@ end
 --- The return type also contains, distance, zone and type but we never really use it.
 ---@type table<QuestId, {x:X, y:Y}>
 local closestStarter = {}
-function QuestieMap:RefreshDynamicStarterLocations()
+function QuestieMap:RefreshDynamicStarterLocations(affected)
     for questId in pairs(QuestiePlayer.currentQuestlog or {}) do
         local quest = QuestieDB.GetQuest(questId)
         for _, npcId in ipairs(quest and quest.Starts and quest.Starts.NPC or {}) do
             local npc = QuestieDB:GetNPC(npcId)
-            if npc and Phasing.HasDynamicSpawns(npc.spawns) then
+            if npc and Phasing.HasDynamicSpawns(npc.spawns) and (not affected or affected(npc.spawns)) then
                 closestStarter[questId] = nil
                 break
             end
         end
         for _, objectId in ipairs(quest and quest.Starts and quest.Starts.GameObject or {}) do
             local object = QuestieDB:GetObject(objectId)
-            if object and Phasing.HasDynamicSpawns(object.spawns) then
+            if object and Phasing.HasDynamicSpawns(object.spawns) and (not affected or affected(object.spawns)) then
                 closestStarter[questId] = nil
                 break
             end

@@ -39,6 +39,7 @@ local function setup()
     local env = setmetatable({}, {__index = _G})
     local modules, messages, states, prints, cleared = {}, {}, {}, {}, {}
     local now, frame, refreshes = 0, {}, 0
+    env.bit = bit32
     local profile = {showEventQuests = true, showScourgeInvasionQuests = false, showSunsReachQuests = false}
     env.GetTime = function() return now end
     env.UnitName = function() return "Tester" end
@@ -80,6 +81,7 @@ local function setup()
         ClearUnavailableQuestForLiveTransition = function(id) cleared[id] = true end,
         InvalidateWintergraspSpawnVisibility = function() end,
     }
+    assert(loadfile("Modules/Phasing.lua", "t", env))()
     assert(loadfile("Modules/Network/QuestieServerIntegrations.lua", "t", env))()
     assert(loadfile("Modules/Network/QuestieServer.lua", "t", env))()
     local server = modules.QuestieServer
@@ -243,6 +245,54 @@ end
 local function gates(s, first, second)
     equal(s.gate(24803), first, "24803 gate")
     equal(s.gate(24806), second, "24806 gate")
+end
+
+local function starterRendererSetup(spawnTables, starters)
+    local state = setup()
+    local available, db, _, frames, calculate = availabilitySetup(state, true)
+    local mods, env = state.modules, state.env
+    local npcs, quests, unloads = {}, {}, {}
+    env.Questie.db.profile.spawnFilterDistance = 28
+    mods.QuestiePlayer.GetCurrentZoneId = function() return 12 end
+    mods.QuestieLib.GetSpawnDistance = function() return 100 end
+    db.IsActiveEventQuest = function() return false end
+    db.HasAzerothCoreLocationCondition = function() return false end
+    db.IsAzerothCoreAvailabilityConditionFulfilledForSpawnZone = function() return true end
+    for npcId, spawns in pairs(spawnTables) do
+        npcs[npcId] = {id = npcId, name = "NPC " .. npcId, npcFlags = 2, spawns = spawns}
+    end
+    for questId, ids in pairs(starters) do
+        quests[questId] = {Id = questId, Starts = {NPC = ids}, requiredLevel = 80, level = 80, tagInfoWasCached = true}
+        db.questData[questId] = true
+    end
+    db.GetNPC = function(_, id) return npcs[id] end
+    db.QueryNPCSingle = function(id, field) return npcs[id] and npcs[id][field] end
+    db.GetQuest = function(id) return quests[id] end
+    db.GetQuestStartInfo = db.GetQuest
+    mods.QuestieTooltips.lookupByKey = {}
+    mods.QuestieTooltips.RegisterQuestStartTooltip = function() end
+    mods.QuestieMap.DrawWorldIcon = function(_, data, area, x, y)
+        local frame = {data = data, area = area, x = x, y = y}
+        frames[data.Id] = frames[data.Id] or {}
+        table.insert(frames[data.Id], frame)
+        return frame
+    end
+    mods.QuestieMap.ForQuestFrames = function(_, id, callback)
+        for _, frame in ipairs(frames[id] or {}) do
+            if callback(frame) then return true end
+        end
+        return false
+    end
+    mods.QuestieMap.UnloadQuestFrames = function(_, id)
+        unloads[id] = (unloads[id] or 0) + 1
+        frames[id] = nil
+    end
+    mods.QuestieMap.DrawWaypoints = function() end
+    mods.QuestieMap.RefreshDynamicStarterLocations = function() end
+    mods.QuestieMap.RefreshDynamicManualNotes = function() end
+    mods.QuestieQuest.RefreshSpawnVisibility = function() end
+    env.Questie.started = true
+    return state, available, frames, calculate, unloads
 end
 
 local s = setup()
@@ -2020,6 +2070,23 @@ local function phaseRows(mask, normal, captured, shared, everywhere, map, area, 
     return rows
 end
 do
+    local filter = setup().modules.Phasing
+    local localSpawn = {[210] = {{10, 20, 0, 1, 571, 2, 4477}}}
+    local hidden = {map = 571, area = 4477, hidden = {[2] = true}}
+    local visible = {map = 571, area = 4477, hidden = {}}
+    equal(filter.HasSpawnVisibilityChanges(localSpawn, nil, hidden), true, "new hidden decision changes local location")
+    equal(filter.HasSpawnVisibilityChanges(localSpawn, hidden, nil), true, "unknown state restores a hidden location")
+    equal(filter.HasSpawnVisibilityChanges(localSpawn, nil, visible), false, "reported visible matches static fallback")
+    equal(filter.HasSpawnVisibilityChanges(localSpawn, hidden, hidden), false, "identical visibility keeps locations")
+    equal(filter.HasSpawnVisibilityChanges(localSpawn, nil, {map = 530, area = 4477, hidden = {[2] = true}}), false,
+        "another map cannot change local location")
+    equal(filter.HasSpawnVisibilityChanges(localSpawn, nil, {map = 571, area = 4501, hidden = {[2] = true}}), false,
+        "another area cannot change local location")
+    equal(filter.HasSpawnVisibilityChanges({[12] = {{10, 20}}}, hidden, nil), false,
+        "ordinary townsfolk never participate in server phase redraws")
+    tests = tests + 1
+end
+do
     local state = setup()
     state.env.bit = bit32
     assert(loadfile("Modules/Phasing.lua", "t", state.env))()
@@ -2082,12 +2149,19 @@ end
 do
     local state = setup()
     local dirty, manual, quests = 0, 0, 0
-    state.modules.AvailableQuests.InvalidateSpawnVisibility = function() dirty = dirty + 1 end
+    local spawns = {[210] = {{10, 20, 0, 1, 571, 1, 4477}, {11, 21, 0, 1, 571, 2, 4477}}}
+    state.modules.AvailableQuests.InvalidateSpawnVisibility = function(affected)
+        if affected(spawns) then dirty = dirty + 1 end
+    end
     state.modules.QuestieMap = {
         RefreshDynamicStarterLocations = function() end,
-        RefreshDynamicManualNotes = function() manual = manual + 1 end,
+        RefreshDynamicManualNotes = function(_, affected)
+            if affected(spawns) then manual = manual + 1 end
+        end,
     }
-    state.modules.QuestieQuest = {RefreshSpawnVisibility = function() quests = quests + 1 end}
+    state.modules.QuestieQuest = {RefreshSpawnVisibility = function(_, affected)
+        if affected(spawns) then quests = quests + 1 end
+    end}
     state.env.Questie.started = true
     state.reply(phaseRows(1, "1", "0"), "PHASES,HEARTBEAT")
     equal(dirty, 1, "first context invalidates starter caches")
@@ -2115,8 +2189,11 @@ do
     mods.l10n = setmetatable({}, {__call = function(_, text) return text end})
     mods.WeaponMasterSkills = {AppendSkillsToTitle = function(title) return title end}
     local spawns = {[210] = {{10, 20, 0, 1, 571, 1, 4477}, {11, 21, 0, 1, 571, 2, 4477}}}
-    mods.QuestieDB.GetNPC = function() return {id = 29343, name = "Sliver", friendly = true,
-        minLevel = 80, maxLevel = 80, minLevelHealth = 1, maxLevelHealth = 1, spawns = spawns} end
+    mods.QuestieDB.GetNPC = function(_, id)
+        return {id = id, name = "NPC " .. id, friendly = true, minLevel = 80, maxLevel = 80,
+            minLevelHealth = 1, maxLevelHealth = 1,
+            spawns = id == 29400 and {[67] = {{40, 50, 0, 1, 571, 2, 4438}}} or spawns}
+    end
     mods.QuestieDB.GetObject = function() return {id = 192000, name = "Object", spawns = spawns} end
     mods.QuestieFramePool = {UnloadFrame = function(_, frame) env[frame.name] = nil end}
     assert(loadfile("Modules/Phasing.lua", "t", env))()
@@ -2137,6 +2214,8 @@ do
     map:ShowNPC(29343)
     map:ShowObject(192000)
     map:ShowObject(192000, nil, nil, nil, nil, nil, "search")
+    map:ShowNPC(29400)
+    local remote = map:GetManualFrames(29400)[1]
     equal(map:GetManualFrames(29343)[1].x, 10, "manual NPC starts in mask-1 location")
     equal(map:GetManualFrames(-192000)[1].x, 10, "default object uses negative frame key")
     equal(map:GetManualFrames(192000, "search")[1].x, 10, "typed object retains existing frame key")
@@ -2146,11 +2225,25 @@ do
     equal(#map:GetManualFrames(-192000), 1, "old object marker removed")
     equal(map:GetManualFrames(-192000)[1].x, 11, "object marker follows phase")
     equal(map:GetManualFrames(192000, "search")[1].x, 11, "typed object marker follows phase")
+    equal(map:GetManualFrames(29400)[1], remote, "unrelated manual NPC retains exact frame on phase change")
+    local same, redraws = map:GetManualFrames(29343)[1], state.refreshes()
+    state.reply(phaseRows(3, "0", "1"), "PHASES,HEARTBEAT")
+    equal(map:GetManualFrames(29343)[1], same, "same visibility decisions preserve manual frames")
+    equal(state.refreshes(), redraws, "same effective manual visibility requests no refresh")
     map:UnloadManualFrames(-192000)
+    state.event("ZONE_CHANGED")
+    equal(map:GetManualFrames(29400)[1], remote, "pending context preserves unrelated manual NPC")
+    state.advance(2)
     state.reply(phaseRows(2, "0", "1", nil, nil, 571, 4501, 210), "PHASES,HEARTBEAT")
     equal(#map:GetManualFrames(29343), 2, "manual NPC restores both fallback locations")
     equal(#map:GetManualFrames(-192000), 0, "explicitly removed object is not resurrected")
     equal(#map:GetManualFrames(192000, "search"), 2, "typed object restores fallback locations")
+    equal(map:GetManualFrames(29400)[1], remote, "fresh adjacent-area snapshot preserves unrelated manual NPC")
+    state.reply(phaseRows(2, "0", "1"), "PHASES,HEARTBEAT")
+    state.advance(31)
+    equal(#map:GetManualFrames(29343), 2, "expiry restores only previously hidden manual locations")
+    equal(map:GetManualFrames(29400)[1], remote, "expiry preserves unrelated manual NPC frame")
+    equal(#map:GetManualFrames(-192000), 0, "expiry cannot restore explicitly removed manual object")
     tests = tests + 1
 end
 
@@ -2188,6 +2281,51 @@ do
     equal(draws, 2, "heartbeat preserves location cache")
     state.advance(31); calculate()
     equal(drawn[999], "10,11", "expiry restores static available quest locations")
+    tests = tests + 1
+end
+
+do
+    local state, _, frames, calculate, unloads = starterRendererSetup({
+        [101] = {[210] = {{10, 20, 0, 1, 571, 1, 4477}, {11, 21, 0, 1, 571, 2, 4477}}},
+        [102] = {[67] = {{40, 50, 0, 1, 571, 2, 4438}}},
+        [103] = {[12] = {{60, 70}}},
+        [104] = {[210] = {{30, 40, 0, 1, 571, 2, 4501}}},
+        [105] = {[210] = {{31, 41, 0, 1, 571, 1, 4501}}},
+    }, {[24579] = {101}, [24580] = {102}, [24581] = {103}, [24582] = {104}, [24583] = {105}})
+    calculate()
+    local remote, town, future = frames[24580][1], frames[24581][1], frames[24582][1]
+    state.reply(phaseRows(1, "1", "0"), "PHASES,HEARTBEAT"); calculate()
+    equal(#frames[24579], 1, "real starter renderer filters only hidden local phase")
+    equal(frames[24580][1], remote, "different story region keeps existing frame")
+    equal(frames[24581][1], town, "ordinary townsfolk keep existing frame")
+    equal(frames[24582][1], future, "future area remains static until it becomes current")
+    local same, redraws = frames[24579][1], state.refreshes()
+    state.reply(phaseRows(2, "1", "0"), "PHASES,HEARTBEAT"); calculate()
+    equal(frames[24579][1], same, "raw phase-mask change with identical decisions preserves frame")
+    equal(state.refreshes(), redraws, "unchanged effective phase visibility requests no refresh")
+    state.event("ZONE_CHANGED"); calculate()
+    equal(#frames[24579], 2, "pending local context restores old hidden location")
+    local fallback = frames[24579][1]
+    equal(frames[24580][1], remote, "pending context does not redraw remote region")
+    equal(frames[24581][1], town, "pending context does not redraw townsfolk")
+    state.advance(2)
+    state.reply(phaseRows(1, "1", "0", nil, nil, 571, 4501, 210), "PHASES,HEARTBEAT"); calculate()
+    equal(frames[24579][1], fallback, "fresh adjacent-area context does not redraw old area fallback")
+    equal(frames[24582], nil, "fresh context hides matching adjacent-area location")
+    equal(frames[24580][1], remote, "fresh replacement preserves unrelated region frame")
+    equal(frames[24581][1], town, "fresh replacement preserves townsfolk frame")
+    state.reply(phaseRows(2, "0", "1", nil, nil, 571, 4501, 210), "PHASES,HEARTBEAT"); calculate()
+    equal(frames[24582][1].x, 30, "changed decision restores affected location")
+    equal(frames[24583], nil, "changed decision removes newly hidden location")
+    local visible = frames[24582][1]
+    state.advance(31); calculate()
+    equal(frames[24583][1].x, 31, "expiry restores previously hidden location")
+    equal(frames[24582][1], visible, "expiry preserves already visible local frame")
+    equal(frames[24579][1], fallback, "expiry preserves old remote fallback frames")
+    equal(frames[24580][1], remote, "expiry preserves unrelated story-region frame")
+    equal(frames[24581][1], town, "expiry preserves townsfolk frame")
+    equal(unloads[24580], nil, "unrelated story quest never unloads")
+    equal(unloads[24581], nil, "ordinary quest never unloads")
     tests = tests + 1
 end
 
@@ -2672,6 +2810,61 @@ do
     willemSnapshot(false)
     equal(state.refreshes(), unchanged, "unchanged distant observations do not request redraws")
 
+    tests = tests + 1
+end
+
+do
+    local state, available, frames, calculate, unloads = starterRendererSetup({
+        [823] = {[12] = {{10, 20, 0, 0, 0, 0, 0, 111}}},
+        [824] = {[12] = {{30, 40, 0, 0, 0, 0, 0, 222}}},
+    }, {[24579] = {823}, [24580] = {824}, [24581] = {823, 824}})
+    local caps = "QUESTGIVERS,HEARTBEAT"
+    local function negative()
+        state.reply({"P:QG_CONTEXT:0:12", "G:823:111:0:F130000337000001"}, caps)
+        calculate()
+    end
+    calculate()
+    local other = frames[24580][1]
+    equal(#frames[24581], 2, "alternative-starter quest begins with both NPCs")
+    negative()
+    equal(frames[24579], nil, "live negative removes only its starter marker")
+    equal(frames[24580][1], other, "other NPC's quest keeps its exact frame")
+    equal(#frames[24581], 1, "restricted NPC preserves a valid alternative starter")
+    equal(frames[24581][1].data.StarterEntryId, 824, "remaining alternative belongs to unrestricted NPC")
+    state.reply({"P:QG_CONTEXT:0:12"}, caps); calculate()
+    equal(#frames[24579], 1, "removed negative restores its starter")
+    equal(#frames[24581], 2, "removed negative restores both alternatives")
+    equal(frames[24580][1], other, "state restoration preserves unrelated frame")
+    negative()
+    state.reply({}, "HEARTBEAT"); calculate()
+    equal(#frames[24579], 1, "capability removal restores restricted starter")
+    equal(frames[24580][1], other, "capability removal preserves unrelated frame")
+    negative()
+    state.advance(31); calculate()
+    equal(#frames[24579], 1, "expiry restores restricted starter")
+    equal(frames[24580][1], other, "expiry preserves unrelated frame")
+    equal(unloads[24580], nil, "unrelated NPC quest never unloads across live transitions")
+
+    state.reply({"P:QG_CONTEXT:0:12", "G:823:111:1:F130000337000001",
+        "G:823:111:0:F130000337000002"}, caps); calculate()
+    equal(available.CanInferQuestAvailability(823), false, "mixed runtime units suppress ambiguous gossip inference")
+    local mixed = state.server:GetQuestgiverStateKeys()[823]
+    state.reply({"P:QG_CONTEXT:0:12", "G:823:111:1:F130000337000001"}, caps); calculate()
+    equal(available.CanInferQuestAvailability(823), true, "removing negative sibling restores ordinary inference")
+    assert(state.server:GetQuestgiverStateKeys()[823] ~= mixed,
+        "negative-unit summary changes even while aggregate spawn state stays positive")
+    local unchanged, redraws = frames[24579][1], state.refreshes()
+    local prunes, prune = 0, available.PruneRestrictedQuestgiverObservations
+    available.PruneRestrictedQuestgiverObservations = function()
+        prunes = prunes + 1
+        return prune()
+    end
+    state.reply({"P:QG_CONTEXT:0:12", "G:823:111:1:F130000337000003"}, caps)
+    equal(prunes, 1, "unchanged visibility still prunes invalid gossip observations")
+    calculate()
+    equal(frames[24579][1], unchanged, "positive GUID-only churn preserves starter frame")
+    equal(frames[24580][1], other, "mixed-unit transitions preserve unrelated starter frame")
+    equal(state.refreshes(), redraws, "positive GUID-only churn requests no redraw")
     tests = tests + 1
 end
 

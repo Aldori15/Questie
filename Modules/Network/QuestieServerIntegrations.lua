@@ -5,22 +5,35 @@ local Event = QuestieLoader:ImportModule("QuestieEvent")
 local Blacklist = QuestieLoader:ImportModule("QuestieQuestBlacklist")
 
 local previousQuestStateKey = "unknown"
-local previousQuestgiverStateKey = "unknown"
+local previousQuestgiverStateKeys = {}
 local previousSpawnStateKey = "unknown"
 local previousPhaseStateKey = "unknown"
+local previousPhaseState
 
 local function RefreshPhaseSpawns()
     local key = Server:GetPhaseVisibilityKey()
     if key == previousPhaseStateKey then return false end
     previousPhaseStateKey = key
+    local previous = previousPhaseState
+    local current = Server.GetPhaseVisibilityState and Server:GetPhaseVisibilityState()
+    previousPhaseState = current
+    local changed = false
     if Questie.started then
-        QuestieLoader:ImportModule("AvailableQuests").InvalidateSpawnVisibility()
+        local phasing = QuestieLoader:ImportModule("Phasing")
+        local function affected(spawns)
+            if phasing.HasSpawnVisibilityChanges(spawns, previous, current) then
+                changed = true
+                return true
+            end
+            return false
+        end
+        QuestieLoader:ImportModule("AvailableQuests").InvalidateSpawnVisibility(affected)
         local map = QuestieLoader:ImportModule("QuestieMap")
-        map:RefreshDynamicStarterLocations()
-        map:RefreshDynamicManualNotes()
-        QuestieLoader:ImportModule("QuestieQuest"):RefreshSpawnVisibility()
+        map:RefreshDynamicStarterLocations(affected)
+        map:RefreshDynamicManualNotes(affected)
+        QuestieLoader:ImportModule("QuestieQuest"):RefreshSpawnVisibility(affected)
     end
-    return true
+    return changed
 end
 
 local function RefreshWintergraspSpawns()
@@ -42,11 +55,17 @@ local function RefreshQuestgivers()
     local available = QuestieLoader:ImportModule("AvailableQuests")
     local changed = Questie.started and available.PruneRestrictedQuestgiverObservations
         and available.PruneRestrictedQuestgiverObservations() or false
-    local key = Server:GetQuestgiverStateKey()
-    if key == previousQuestgiverStateKey then return changed end
-    previousQuestgiverStateKey = key
+    local keys, changedNpcs = Server:GetQuestgiverStateKeys(), {}
+    for npcId, key in pairs(keys) do
+        if key ~= previousQuestgiverStateKeys[npcId] then changedNpcs[npcId] = true end
+    end
+    for npcId in pairs(previousQuestgiverStateKeys) do
+        if not keys[npcId] then changedNpcs[npcId] = true end
+    end
+    previousQuestgiverStateKeys = keys
+    if not next(changedNpcs) then return changed end
     if Questie.started then
-        available.InvalidateQuestgiverAvailability()
+        available.InvalidateQuestgiverAvailability(changedNpcs)
     end
     return true
 end

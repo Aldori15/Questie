@@ -725,32 +725,35 @@ end
 
 -- World/story changes can move a questgiver without changing the quest's gate.
 -- Refresh accepted quests too, including their turn-in and navigation targets.
-function QuestieQuest:RefreshSpawnVisibility()
+function QuestieQuest:RefreshSpawnVisibility(affectedSpawns)
+    local function affected(spawns)
+        return Phasing.HasDynamicSpawns(spawns) and (not affectedSpawns or affectedSpawns(spawns))
+    end
     for questId, quest in pairs(QuestiePlayer.currentQuestlog or {}) do
-        local affected = false
+        local changed = false
         if quest.Finisher and quest.Finisher.Type == "monster" then
             local npc = QuestieDB:GetNPC(quest.Finisher.Id)
-            affected = npc and Phasing.HasDynamicSpawns(npc.spawns) or false
+            changed = npc and affected(npc.spawns) or false
         elseif quest.Finisher and quest.Finisher.Type == "object" then
             local object = QuestieDB:GetObject(quest.Finisher.Id)
-            affected = object and Phasing.HasDynamicSpawns(object.spawns) or false
+            changed = object and affected(object.spawns) or false
         end
         for _, npcId in ipairs(quest.Starts and quest.Starts.NPC or {}) do
             local npc = QuestieDB:GetNPC(npcId)
-            affected = npc and Phasing.HasDynamicSpawns(npc.spawns) or affected
+            changed = npc and affected(npc.spawns) or changed
         end
         for _, objectId in ipairs(quest.Starts and quest.Starts.GameObject or {}) do
             local object = QuestieDB:GetObject(objectId)
-            affected = object and Phasing.HasDynamicSpawns(object.spawns) or affected
+            changed = object and affected(object.spawns) or changed
         end
         for _, objectives in ipairs({quest.Objectives or {}, quest.SpecialObjectives or {}}) do
             for _, objective in pairs(objectives) do
                 for _, spawnData in pairs(objective.spawnList or {}) do
-                    affected = Phasing.HasDynamicSpawns(spawnData.Spawns) or affected
+                    changed = affected(spawnData.Spawns) or changed
                 end
             end
         end
-        if affected then
+        if changed then
             for _, objectives in ipairs({quest.Objectives or {}, quest.SpecialObjectives or {}}) do
                 for _, objective in pairs(objectives) do
                     objective.isUpdated = false
