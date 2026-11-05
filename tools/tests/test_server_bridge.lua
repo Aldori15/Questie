@@ -755,6 +755,53 @@ do
     tests = tests + 1
 end
 
+do
+    local state = setup()
+    local registrations, calls = {}, {}
+    for id = 100001, 100100 do registrations[id] = {name = "Midsummer", expansion = 1} end
+    for id = 100101, 100120 do registrations[id] = {name = "Winter Veil", expansion = 1} end
+    for id = 100121, 100140 do registrations[id] = {name = "Lunar Festival", expansion = 1} end
+    state.modules.QuestieEvent.GetServerQuestRegistrations = function() return registrations end
+    local holidayActive = state.server.IsHolidayActive
+    state.server.IsHolidayActive = function(self, id)
+        calls[id] = (calls[id] or 0) + 1
+        return holidayActive(self, id)
+    end
+    local rows = {"E:1:341:1:1", "E:2:141:1:0", "E:3:374:1:0", "E:4:375:1:1", "E:5:376:1:0"}
+    for _ = 1, 2 do
+        calls = {}
+        state.reply(rows, "EVENTS,HEARTBEAT")
+        for _, id in ipairs({341, 141, 327, 374, 375, 376}) do
+            equal(calls[id], 1, "each holiday is looked up once per refresh, including false and nil")
+        end
+        equal(state.gate(100001), true, "many registrations share active holiday result")
+        equal(state.gate(100101), false, "false holiday result remains an explicit restriction")
+        equal(state.gate(100121), nil, "unreported holiday retains unknown state")
+        equal(state.gate(7905), false, "Darkmoon helper reuses false holiday result")
+        equal(state.gate(7926), true, "Darkmoon helper reuses true holiday result")
+    end
+    calls = {}
+    state.reply({"E:1:341:1:0", "E:2:141:1:1", "E:3:374:1:1", "E:4:375:1:0", "E:5:376:1:0",
+        "E:6:327:1:0"}, "EVENTS,HEARTBEAT")
+    equal(state.gate(100001), false, "next snapshot replaces cached true holiday result")
+    equal(state.gate(100101), true, "next snapshot replaces cached false holiday result")
+    equal(state.gate(100121), false, "next snapshot replaces cached nil holiday result")
+    equal(calls[374], 1, "Darkmoon 374 has no duplicate lookup during replacement")
+    equal(calls[375], 1, "Darkmoon 375 has no duplicate lookup during replacement")
+    calls = {}
+    state.advance(31)
+    equal(state.gate(100001), nil, "expiry removes holiday restrictions instead of retaining memoized false")
+    equal(calls[341], 1, "expiry uses a new cache for unknown holiday result")
+    state.reply(rows, "EVENTS,HEARTBEAT")
+    equal(state.gate(100001), true, "reconnection restores current holiday result")
+    calls = {}
+    state.reply({}, "HEARTBEAT")
+    equal(state.gate(100001), nil, "capability removal clears memoized active holiday result")
+    equal(state.gate(100101), nil, "capability removal clears memoized inactive holiday result")
+    equal(calls[141], 1, "capability removal caches unknown only within its refresh")
+    tests = tests + 1
+end
+
 -- Pool membership is explicit; nonmembers stay unknown, not inactive.
 s = setup()
 s.reply({"Q:13830:5676:1", "Q:13832:5676:0", "Q:24579:5678:1"}, "QUESTPOOLS,HEARTBEAT")
@@ -2149,12 +2196,17 @@ end
 do
     local state = setup()
     local dirty, manual, quests = 0, 0, 0
+    local comparisons, compare = 0, state.modules.Phasing.HasSpawnVisibilityChanges
+    state.modules.Phasing.HasSpawnVisibilityChanges = function(...)
+        comparisons = comparisons + 1
+        return compare(...)
+    end
     local spawns = {[210] = {{10, 20, 0, 1, 571, 1, 4477}, {11, 21, 0, 1, 571, 2, 4477}}}
     state.modules.AvailableQuests.InvalidateSpawnVisibility = function(affected)
         if affected(spawns) then dirty = dirty + 1 end
     end
     state.modules.QuestieMap = {
-        RefreshDynamicStarterLocations = function() end,
+        RefreshDynamicStarterLocations = function(_, affected) affected(spawns) end,
         RefreshDynamicManualNotes = function(_, affected)
             if affected(spawns) then manual = manual + 1 end
         end,
@@ -2167,14 +2219,66 @@ do
     equal(dirty, 1, "first context invalidates starter caches")
     equal(manual, 1, "first context refreshes manual locations")
     equal(quests, 1, "first context refreshes accepted quest locations")
+    equal(comparisons, 1, "shared spawn table is compared once across available, manual and accepted consumers")
     state.advance(10); state.heartbeat()
     state.reply(phaseRows(1, "1", "0"), "PHASES,HEARTBEAT")
     equal(dirty, 1, "unchanged snapshots and heartbeats do not redraw")
+    state.reply(phaseRows(7, "1", "0"), "PHASES,HEARTBEAT")
+    equal(comparisons, 2, "a false visibility result is shared across consumers during this refresh")
+    equal(dirty, 1, "different raw mask with same visibility does not dirty starter caches")
     state.reply(phaseRows(2, "0", "1"), "PHASES,HEARTBEAT")
     equal(dirty, 2, "phase transition replaces locations even when quest gates stay unchanged")
+    equal(comparisons, 3, "next refresh recomputes previously cached false result")
     state.advance(31)
     equal(manual, 3, "expiry refreshes manual fallback")
     equal(quests, 3, "expiry refreshes accepted quest fallback")
+    equal(comparisons, 4, "expiry compares shared data once with unknown context")
+    tests = tests + 1
+end
+
+do
+    local state = setup()
+    local available, db = availabilitySetup(state)
+    local function upvalue(name)
+        for index = 1, 100 do
+            local key, value = debug.getupvalue(available.InvalidateSpawnVisibility, index)
+            if key == name then return value end
+            if not key then break end
+        end
+        error("missing visibility upvalue: " .. name)
+    end
+    local current, pending = upvalue("availableQuests"), upvalue("nextAvailableQuests")
+    current[1000], current[1001], current[1003] = true, true, true
+    pending[1000], pending[1002], pending[1003] = true, true, true
+    local shared, ordinary = {[210] = {{10, 20, 0, 1, 571, 2, 4477}}}, {[12] = {{30, 40}}}
+    local quests = {[1000] = {Starts = {NPC = {101}}}, [1001] = {Starts = {NPC = {101}}},
+        [1002] = {Starts = {GameObject = {1}}}, [1003] = {Starts = {NPC = {102}}}}
+    local queries, dynamicCalls, affectedCalls = {}, 0, 0
+    db.GetQuestStartInfo = function(id) queries[id] = (queries[id] or 0) + 1; return quests[id] end
+    db.GetNPC = function(_, id) return {spawns = id == 101 and shared or ordinary} end
+    db.GetObject = function() return {spawns = shared} end
+    local hasDynamic = state.modules.Phasing.HasDynamicSpawns
+    state.modules.Phasing.HasDynamicSpawns = function(spawns)
+        dynamicCalls = dynamicCalls + 1
+        return hasDynamic(spawns)
+    end
+    local dirty = upvalue("dirtySpawnVisibility")
+    for pass = 1, 3 do
+        queries, dynamicCalls, affectedCalls = {}, 0, 0
+        for id in pairs(quests) do dirty[id] = nil end
+        local changed = pass ~= 2
+        available.InvalidateSpawnVisibility(function()
+            affectedCalls = affectedCalls + 1
+            return changed
+        end)
+        for id in pairs(quests) do equal(queries[id], 1, "quest union visits each ID once across both buffers") end
+        equal(dynamicCalls, 2, "shared NPC/object spawn table and ordinary spawn table are classified once each")
+        equal(affectedCalls, 1, "shared dynamic spawn table is compared once, including cached false")
+        for _, id in ipairs({1000, 1001, 1002}) do
+            equal(dirty[id], changed and true or nil, "both buffers retain every affected quest with no stale memo")
+        end
+        equal(dirty[1003], nil, "ordinary locations never become dirty")
+    end
     tests = tests + 1
 end
 

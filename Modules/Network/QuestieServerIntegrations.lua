@@ -20,12 +20,16 @@ local function RefreshPhaseSpawns()
     local changed = false
     if Questie.started then
         local phasing = QuestieLoader:ImportModule("Phasing")
+        local visibilityChanges = {}
         local function affected(spawns)
-            if phasing.HasSpawnVisibilityChanges(spawns, previous, current) then
-                changed = true
-                return true
+            if not spawns then return false end
+            local result = visibilityChanges[spawns]
+            if result == nil then
+                result = phasing.HasSpawnVisibilityChanges(spawns, previous, current)
+                visibilityChanges[spawns] = result
             end
-            return false
+            if result then changed = true end
+            return result
         end
         QuestieLoader:ImportModule("AvailableQuests").InvalidateSpawnVisibility(affected)
         local map = QuestieLoader:ImportModule("QuestieMap")
@@ -144,11 +148,11 @@ local function FishingState(states)
     end
 end
 
-local function DarkmoonState(states, registrations)
+local function DarkmoonState(states, registrations, holidayActive)
     local locations = {{375, 1}, {374, 2}, {376, 3}}
     local activeLocations = {}
     for _, pair in ipairs(locations) do
-        local active = Server:IsHolidayActive(pair[1])
+        local active = holidayActive(pair[1])
         if active == nil then return nil end
         if active then activeLocations[#activeLocations + 1] = pair[2] end
     end
@@ -157,7 +161,7 @@ local function DarkmoonState(states, registrations)
             states[id] = #activeLocations > 0
         end
     end
-    states[7905], states[7926] = Server:IsHolidayActive(374), Server:IsHolidayActive(375)
+    states[7905], states[7926] = holidayActive(374), holidayActive(375)
     return activeLocations
 end
 
@@ -172,14 +176,23 @@ function Integrations:Refresh()
     local profile = Questie.db.profile
     local locations
     if profile.showEventQuests then
+        local holidayStates = {}
+        local function holidayActive(id)
+            local cached = holidayStates[id]
+            if not cached then
+                cached = {Server:IsHolidayActive(id)}
+                holidayStates[id] = cached
+            end
+            return cached[1]
+        end
         for id, registration in pairs(registrations) do
             local holiday = holidays[registration.name]
             if holiday and Event.IsQuestVisibleForExpansion(registration.expansion) then
-                states[id] = Server:IsHolidayActive(holiday)
+                states[id] = holidayActive(holiday)
             end
         end
         FishingState(states)
-        locations = DarkmoonState(states, registrations)
+        locations = DarkmoonState(states, registrations, holidayActive)
     end
     local scourge = Server:IsScourgeInvasionActive()
     if profile.showScourgeInvasionQuests and scourge ~= nil then
