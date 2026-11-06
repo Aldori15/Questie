@@ -50,6 +50,7 @@ TABLE_KEYS = {
     "areatrigger_involvedrelation": ("id", "quest"), "areatrigger": ("entry",),
     "areatrigger_scripts": ("entry",),
     "reference_loot_template": ("Entry", "Item"), "gameobject_loot_template": ("Entry", "Item"),
+    "fishing_loot_template": ("Entry", "Item"), "item_loot_template": ("Entry", "Item"),
     "waypoints": ("entry", "pointid"),
     "script_waypoint": ("entry", "pointid"),
     "creature": ("guid",),
@@ -553,6 +554,9 @@ def load_source(source, spell_sql, spell_table, signature, cache, refresh=False,
              gossip_options=rows("gossip_menu_option"), spell_scripts=rows("spell_script_names"))
         guides.append_interaction_hints(extra_guides, interactions["interactions"],
                                        set(area_guides["guides"]) | set(escort_guides["guides"]))
+        guides.append_fishing_hints(extra_guides, eligible_templates, item_templates,
+                                    rows("fishing_loot_template"), rows("reference_loot_template"), rows("item_loot_template"),
+                                    rows("gameobject_template"), rows("gameobject_loot_template"))
         tool_index = compatibility.build_required_tool_index(item_templates, complete_spells)
     quests, tool_evidence = {}, {}
     for quest_id, fields in sorted(derived.items()):

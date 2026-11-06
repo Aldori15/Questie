@@ -24,6 +24,7 @@ CORE_SOURCE_FILES = (
     "src/server/game/AI/ScriptedAI/ScriptedEscortAI.h",
     "src/server/game/AI/ScriptedAI/ScriptedFollowerAI.cpp",
     "src/server/game/AI/ScriptedAI/ScriptedFollowerAI.h",
+    "src/server/scripts/Spells/spell_generic.cpp",
 ) + flight_guides.CORE_SOURCE_FILES
 
 
@@ -887,3 +888,92 @@ def derive_extra_guides(quest_templates, item_templates, object_templates, spell
                                      spells, conditions, scripts, item_sources,
                                      creature_templates, npc_spellclick_rows, quest_relations,
                                      gossip_options, spell_scripts)["guides"]
+
+
+# Reviewed coordinates from Questie d695e9048, checked against current fishing loot below.
+# Quest 9205 also uses Jademir Lake reports: https://www.wowhead.com/ptr-2/item=13890/plated-armorfish#comments
+FISHING_GUIDES = {
+    (1141, 12238): (12238, ((148, 148, [[35.71, 44.68]]),)),
+    (1579, 6717): (6717, ((148, 148, [[35.71, 44.68]]),)),
+    (1580, 6718): (6718, ((456, 148, [[50.7, 23.8]]), (454, 148, [[40, 73.6]]))),
+    (6607, 16967): (16967, ((2521, 357, [[62.6, 50.2]]),)),
+    (6607, 16970): (16970, ((300, 8, [[90.2, 22.4]]),)),
+    (6607, 16968): (16968, ((598, 405, [[25.8, 77.4]]),)),
+    (6607, 16969): (16969, ((301, 33, [[27.7, 21]]), (1578, 33, [[27.4, 68.9]]))),
+    (9205, 13890): (13890, ((1112, 357, [[49, 11]]),)),
+    (11665, 34864): (34864, ((1519, 1519, [[48.5, 67.9], [45.7, 60.5], [45.4, 53.3], [35.7, 45.6],
+                                      [34.3, 59], [51.8, 47.1], [60.2, 46.6], [65.2, 53.7],
+                                      [61.1, 37], [65.6, 32], [55.9, 33.5], [50.9, 23.8]]),
+                         (1637, 1637, [[70.4, 28.3], [67.8, 33.7], [64.8, 26], [35.2, 78.6],
+                                      [37.6, 81.7], [33.3, 84.4], [36.3, 86]]))),
+    (11666, 34865): (34865, ((3519, 3519, [[51.9, 34.7], [55.3, 44.1], [60.2, 53.9]]),)),
+    (11667, 34868): (34868, ((3614, 3518, [[62, 35]]),)),
+    (11668, 34866): (35313, ((3521, 3521, [[75.6, 82.9]]),)),
+    (11669, 34867): (34867, ((3483, 3483, [[39.4, 43]]), (3520, 3520, [[24, 32.5], [31.9, 29.9], [40.1, 60.1]]))),
+    (13830, 45902): (45902, ((4290, 3711, [[48.2, 63.4]]),)),
+    (13832, 45903): (45903, ((4560, 4560, [[46, 68]]),)),
+    (13834, 45904): (45904, ((4197, 4197, [[70, 36], [63, 60], [50, 44], [37.6, 36],
+                                                    [56, 66], [42, 75], [34.7, 19.5]]),)),
+    (13836, 45323): (45328, ((4567, 4395, [[67.43, 61.38], [62.43, 70.05]]),)),
+}
+
+
+FISHING_POOL_GUIDES = {
+    (13833, 45905): (45905, ((194479, 3537, [[57.5, 33.2], [62.2, 64.2], [45, 45]]),)),
+}
+
+
+def append_fishing_hints(packet, quest_templates, item_templates, fishing_rows, reference_rows, item_loot_rows,
+                         object_templates=(), object_loot_rows=()):
+    """Restore reviewed water locations only while their source acquisition still exists."""
+    from generate_acore_item_corrections import resolve_loot_rows
+
+    quests, items = _templates(quest_templates, "ID"), _templates(item_templates, "entry")
+    references, fishing, containers, object_loot = (defaultdict(list) for _ in range(4))
+    for row in _rows(reference_rows):
+        references[number(row, "Entry")].append(row)
+    for row in _rows(fishing_rows):
+        fishing[number(row, "Entry")].append(row)
+    for row in _rows(item_loot_rows):
+        containers[number(row, "Entry")].append(row)
+    for row in _rows(object_loot_rows):
+        object_loot[number(row, "Entry")].append(row)
+    catches = {area: resolve_loot_rows(rows, references) for area, rows in fishing.items()}
+    objects = _templates(object_templates, "entry")
+    pools = {entry: resolve_loot_rows(object_loot[number(row, "Data1")], references)
+             for entry, row in objects.items() if number(row, "type") == 25}
+    for catalog, sources, source_field in ((FISHING_GUIDES, catches, "fishingAreaIds"),
+                                            (FISHING_POOL_GUIDES, pools, "fishingObjectIds")):
+        for (quest_id, item), (catch, locations) in catalog.items():
+            quest = quests.get(quest_id)
+            if (not quest or item not in items or catch not in items
+                    or any(number(quest, "RequiredNpcOrGo" + str(i)) for i in range(1, 5))):
+                continue
+            required = [number(quest, "RequiredItemId" + str(i)) for i in range(1, 7)
+                        if number(quest, "RequiredItemId" + str(i)) and number(quest, "RequiredItemCount" + str(i)) > 0]
+            source_items = {number(quest, "ItemDrop" + str(i)) for i in range(1, 5)
+                            if number(quest, "ItemDropQuantity" + str(i)) > 0}
+            if item not in required and item not in source_items:
+                continue
+            if catch != item and item not in resolve_loot_rows(containers[catch], references):
+                continue
+            points, source_ids = {}, []
+            for source_id, zone, coordinates in locations:
+                if catch in sources.get(source_id, ()):
+                    points.setdefault(zone, []).extend([list(point) for point in coordinates])
+                    source_ids.append(source_id)
+            if not points:
+                continue
+            label = "Fish for " + str(items[catch].get("name") or catch)
+            if source_field == "fishingObjectIds":
+                label = "Create a " + str(objects[source_ids[0]]["name"]) + " in water, then fish for " + str(items[catch]["name"])
+            if catch != item:
+                label += " and open it for " + str(items[item].get("name") or item)
+            hints = packet["guides"].setdefault(quest_id, {})
+            index = max((int(key[2:]) for key in hints), default=0) + 1
+            hint = {1: points, 2: 20, 3: label, 4: required.index(item) + 1 if item in required else 0}
+            if item not in required:
+                hint[5] = [["item", item]]
+            hints[f"n:{index}"] = typed(hint)
+            packet["evidence"].append({"questId": quest_id, "rule": "reviewedFishingLocation",
+                                       "itemId": item, "fishingItemId": catch, source_field: source_ids})

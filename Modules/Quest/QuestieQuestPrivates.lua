@@ -224,8 +224,9 @@ end
 ---comment
 ---@param itemId any
 ---@param objective any
+---@param objectiveData table?
 ---@return table<ItemId, SpawnListItem>?
-item = function(itemId, objective)
+item = function(itemId, objective, objectiveData)
     if (not itemId) then
         Questie.Error(
             "Corrupted objective data handed to objectiveSpawnListCallTable['item']:",
@@ -297,6 +298,16 @@ item = function(itemId, objective)
                     end
                 end
             end
+        end
+    end
+    if item and not item.Hidden and objectiveData and objectiveData.FallbackSpawnList then
+        for _, source in pairs(ret) do
+            if (source.Spawns and next(source.Spawns)) or (source.Waypoints and next(source.Waypoints)) then
+                return ret
+            end
+        end
+        for _, source in ipairs(objectiveData.FallbackSpawnList) do
+            ret[#ret + 1] = source
         end
     end
     return ret

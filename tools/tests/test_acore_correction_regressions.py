@@ -500,6 +500,31 @@ const WintergraspObjectPositionData WGOutsideNPC[WG_MAX_OUTSIDE_NPC] = {
 
         self.assertEqual({17528: {"waypoints": {}}}, corrections)
 
+    def test_shipped_fishing_guides_cover_native_items_and_ghostfish_source_item(self):
+        constants = quest_validator.load_constants(ADDON_ROOT)
+        keys = constants["quest_keys"]
+        rows = {}
+        for line in base_text(ADDON_ROOT / "Database/AzerothCore/acoreQuestDB.lua").splitlines():
+            match = quest_validator.QUEST_ROW_RE.match(line.strip())
+            if match:
+                rows[int(match.group(1))] = match.group(2)
+        expected = {1141: ({1}, {148}), 1579: ({1}, {148}), 1580: ({1}, {148}),
+                    6607: ({1, 2, 3, 4}, {357, 8, 405, 33}), 9205: ({2}, {357}),
+                    11665: ({1}, {1519, 1637}), 11666: ({1}, {3519}), 11667: ({1}, {3518}),
+                    11668: ({1}, {3521}), 11669: ({1}, {3483, 3520}), 13830: ({0}, {3711}),
+                    13832: ({1}, {4560}), 13833: ({1}, {3537}), 13834: ({1}, {4197}), 13836: ({1}, {4395})}
+        for quest_id, (indices, zones) in expected.items():
+            with self.subTest(quest=quest_id):
+                fields = quest_validator.split_top_level_lua_table(rows[quest_id])
+                hints = quest_validator.parse_lua_value(fields[keys["extraObjectives"] - 1], constants)
+                self.assertEqual({hint[3] for hint in hints}, indices)
+                self.assertTrue(all(hint[1] == 20 for hint in hints))
+                self.assertEqual({zone for hint in hints for zone, points in enumerate(hint[0], 1) if points}, zones)
+                if quest_id == 13830:
+                    self.assertEqual(hints[0][4], [["item", 45902]])
+                    self.assertEqual(fields[keys["triggerEnd"] - 1], "nil")
+                    self.assertEqual(quest_validator.parse_lua_value(fields[keys["requiredSourceItems"] - 1], constants), [45902])
+
     def test_preserves_object_spawn_for_ac_required_quest_item(self):
         questie_items = {23880: {"objectDrops": [181781]}}
         preserve_spawn_ids = object_generator.collect_indirect_quest_item_object_source_ids(

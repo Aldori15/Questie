@@ -117,6 +117,22 @@ class QuestSourceAuditTests(unittest.TestCase):
                           {"entry": 31279, "pointid": 2, "position_x": 7041.24,
                            "position_y": 3438.29, "position_z": 695.568}],
         })
+        fixtures["quest_template"].append({"ID": 11667, "LogTitle": "The One That Got Away",
+                                            "RequiredItemId1": 34868, "RequiredItemCount1": 1})
+        fixtures["item_template"] = [{"entry": 34868, "name": "World's Largest Mudfish"}]
+        fixtures["fishing_loot_template"] = [{"Entry": 3614, "Item": 34868, "Chance": 33,
+                                               "QuestRequired": 1, "MinCount": 1, "MaxCount": 1}]
+        fixtures["quest_template"].append({"ID": 13830, "LogTitle": "The Ghostfish",
+                                            "ItemDrop1": 45902, "ItemDropQuantity1": 1})
+        fixtures["item_template"].append({"entry": 45902, "name": "Phantom Ghostfish"})
+        fixtures["fishing_loot_template"].append({"Entry": 4290, "Item": 45902, "Chance": 20,
+                                                  "QuestRequired": 1, "MinCount": 1, "MaxCount": 1})
+        fixtures["quest_template"].append({"ID": 13833, "LogTitle": "Blood Is Thicker",
+                                            "RequiredItemId1": 45905, "RequiredItemCount1": 5})
+        fixtures["item_template"].append({"entry": 45905, "name": "Bloodtooth Frenzy"})
+        fixtures["gameobject_template"].append({"entry": 194479, "name": "Pool of Blood", "type": 25, "Data1": 27003})
+        fixtures["gameobject_loot_template"] = [{"Entry": 27003, "Item": 45905, "Chance": 100,
+                                                  "MinCount": 2, "MaxCount": 3}]
 
         def derive(_root, **_kwargs):
             audit.sql_reader.apply_multirow_update(
@@ -128,6 +144,8 @@ class QuestSourceAuditTests(unittest.TestCase):
                           for field in audit.metadata_reader.FIELD_ORDER}
                 fields["name"] = quest["LogTitle"]
                 fields["specialFlags"] = 2
+                if quest["ID"] == 13830:
+                    fields["requiredSourceItems"] = (45902,)
                 result[quest["ID"]] = fields
             return result
 
@@ -146,6 +164,22 @@ class QuestSourceAuditTests(unittest.TestCase):
                 self.assertEqual(len(saved["tableCoverage"]["gameobject"]["ignoredRotationOnlyUpdates"]), 1)
                 self.assertEqual(saved["quests"]["13221"]["s:triggerEnd"], expected)
                 self.assertEqual(saved["quests"]["13229"]["s:triggerEnd"], expected)
+                fishing = audit.typed([{1: {3518: [[62, 35]]}, 2: 20,
+                                       3: "Fish for World's Largest Mudfish", 4: 1}])
+                self.assertEqual(saved["quests"]["11667"]["s:extraObjectives"], fishing)
+                self.assertIn({"questId": 11667, "rule": "reviewedFishingLocation", "itemId": 34868,
+                               "fishingItemId": 34868, "fishingAreaIds": [3614]},
+                              saved["questGuides"]["extra"]["evidence"])
+                ghostfish = saved["quests"]["13830"]
+                self.assertEqual(ghostfish["s:extraObjectives"], audit.typed([
+                    {1: {3711: [[48.2, 63.4]]}, 2: 20, 3: "Fish for Phantom Ghostfish", 4: 0,
+                     5: [["item", 45902]]}]))
+                self.assertEqual(ghostfish["s:requiredSourceItems"], audit.typed([45902]))
+                self.assertNotIn("s:triggerEnd", ghostfish)
+                self.assertEqual(saved["quests"]["13833"]["s:extraObjectives"]["n:1"]["n:4"], 1)
+                self.assertIn({"questId": 13833, "rule": "reviewedFishingLocation", "itemId": 45905,
+                               "fishingItemId": 45905, "fishingObjectIds": [194479]},
+                              saved["questGuides"]["extra"]["evidence"])
                 escort = saved["questGuides"]["escort"]
                 self.assertEqual(set(escort["guides"]), {13221, 13229})
                 self.assertEqual(escort["omissions"], [])

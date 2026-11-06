@@ -1,3 +1,4 @@
+import copy
 import sys
 import unittest
 from pathlib import Path
@@ -7,6 +8,106 @@ import acore_quest_guides as guides
 
 
 class QuestGuideTests(unittest.TestCase):
+    def fishing_args(self):
+        quests, items, fishing = {}, {}, []
+        for (quest_id, item), (catch, locations) in guides.FISHING_GUIDES.items():
+            quest = quests.setdefault(quest_id, {"ID": quest_id})
+            if quest_id == 13830:
+                quest.update(ItemDrop1=item, ItemDropQuantity1=1)
+            else:
+                slot = 1 + sum(key.startswith("RequiredItemId") for key in quest)
+                quest["RequiredItemId" + str(slot)] = item
+                quest["RequiredItemCount" + str(slot)] = 1
+            items[item] = {"entry": item, "name": "Quest fish " + str(item)}
+            items[catch] = {"entry": catch, "name": "Catch " + str(catch)}
+            for area, _, _ in locations:
+                fishing.append({"Entry": area, "Item": 11012 if catch == 35313 else catch,
+                                "Reference": 11012 if catch == 35313 else 0,
+                                "Chance": 100, "MinCount": 1, "MaxCount": 1})
+        references = [{"Entry": 11012, "Item": 35313, "Chance": 100, "MinCount": 1, "MaxCount": 1}]
+        containers = [{"Entry": 35313, "Item": 34866, "Chance": 100, "MinCount": 1, "MaxCount": 2},
+                      {"Entry": 45328, "Item": 45323, "Chance": 100, "MinCount": 1, "MaxCount": 1}]
+        quests[9205].update(RequiredItemId1=22623, RequiredItemCount1=1,
+                           RequiredItemId2=13890, RequiredItemCount2=30)
+        return [quests, items, fishing, references, containers]
+
+    def fishing_packet(self, args):
+        packet = {"guides": {}, "evidence": []}
+        guides.append_fishing_hints(packet, *args)
+        return packet
+
+    def test_reviewed_fishing_guides_follow_source_loot_and_link_real_or_source_item(self):
+        args = self.fishing_args()
+        packet = self.fishing_packet(args)
+        self.assertEqual(set(packet["guides"]), {quest for quest, _ in guides.FISHING_GUIDES})
+        indices = {}
+        for (quest_id, item), (_, locations) in guides.FISHING_GUIDES.items():
+            with self.subTest(quest=quest_id):
+                indices[quest_id] = indices.get(quest_id, 0) + 1
+                hint = packet["guides"][quest_id]["n:" + str(indices[quest_id])]
+                self.assertEqual(hint["n:2"], 20)
+                if quest_id == 13830:
+                    self.assertEqual(hint["n:4"], 0)
+                    self.assertEqual(hint["n:5"], guides.typed([["item", item]]))
+                else:
+                    required = [args[0][quest_id].get("RequiredItemId" + str(slot)) for slot in range(1, 7)]
+                    self.assertEqual(hint["n:4"], required.index(item) + 1)
+                    self.assertNotIn("n:5", hint, "Fishing water is not a fabricated NPC or object")
+                self.assertEqual(set(hint["n:1"]), {"n:" + str(zone) for _, zone, _ in locations})
+        self.assertIn("open it for", packet["guides"][11668]["n:1"]["n:3"])
+        self.assertIn("open it for", packet["guides"][13836]["n:1"]["n:3"])
+        self.assertEqual(len(packet["evidence"]), len(guides.FISHING_GUIDES))
+
+    def test_fishing_guides_disappear_when_source_relationships_or_objectives_change(self):
+        for mutate, missing in (
+                (lambda a: a[2].clear(), {quest for quest, _ in guides.FISHING_GUIDES}),
+                (lambda a: a[3].clear(), {11668}),
+                (lambda a: a[4].clear(), {11668, 13836}),
+                (lambda a: a[0][11667].update(RequiredItemId1=999), {11667}),
+                (lambda a: a[0][11667].update(RequiredItemCount1=0), {11667}),
+                (lambda a: a[0][11667].update(RequiredNpcOrGo1=999), {11667}),
+                (lambda a: a[0][13830].update(ItemDrop1=999), {13830}),
+                (lambda a: a[0][13830].update(ItemDropQuantity1=0), {13830}),
+                (lambda a: a[1].pop(34868), {11667})):
+            args = self.fishing_args()
+            mutate(args)
+            with self.subTest(missing=missing):
+                self.assertEqual(set(self.fishing_packet(args)["guides"]), {quest for quest, _ in guides.FISHING_GUIDES} - missing)
+
+    def test_fishing_guides_follow_current_item_order_without_adding_native_objectives(self):
+        args = self.fishing_args()
+        quest = args[0][6607]
+        quest["RequiredItemId1"], quest["RequiredItemId4"] = quest["RequiredItemId4"], quest["RequiredItemId1"]
+        packet = self.fishing_packet(args)
+        self.assertEqual([hint["n:4"] for hint in packet["guides"][6607].values()], [4, 2, 3, 1])
+        self.assertEqual(args[0][13830].get("RequiredItemId1"), None)
+
+    def test_fishing_guides_keep_valid_areas_and_existing_optional_indices(self):
+        args = self.fishing_args()
+        args[2] = [row for row in args[2] if row["Entry"] != 1637]
+        packet = {"guides": {11667: {"n:1": guides.typed({2: 3, 3: "Existing guide"})}},
+                  "optional": {"11667": [1]}, "evidence": []}
+        before = copy.deepcopy(packet["optional"])
+        guides.append_fishing_hints(packet, *args)
+        self.assertEqual(set(packet["guides"][11665]["n:1"]["n:1"]), {"n:1519"})
+        self.assertEqual(packet["optional"], before)
+        self.assertEqual(packet["guides"][11667]["n:2"]["n:4"], 1)
+
+    def test_scripted_fishing_pool_requires_current_type_loot_and_quest_item(self):
+        args = [{13833: {"ID": 13833, "RequiredItemId1": 45905, "RequiredItemCount1": 5}},
+                {45905: {"entry": 45905, "name": "Bloodtooth Frenzy"}}, [], [], [],
+                {194479: {"entry": 194479, "name": "Pool of Blood", "type": 25, "Data1": 27003}},
+                [{"Entry": 27003, "Item": 45905, "Chance": 100, "MinCount": 2, "MaxCount": 3}]]
+        packet = self.fishing_packet(args)
+        self.assertEqual(packet["guides"][13833]["n:1"]["n:4"], 1)
+        self.assertIn("Create a Pool of Blood", packet["guides"][13833]["n:1"]["n:3"])
+        self.assertEqual(packet["evidence"][0]["fishingObjectIds"], [194479])
+        for mutate in (lambda a: a[5][194479].update(type=3), lambda a: a[5][194479].update(Data1=999),
+                       lambda a: a[6].clear(), lambda a: a[0][13833].update(RequiredItemId1=999)):
+            changed = copy.deepcopy(args)
+            mutate(changed)
+            self.assertEqual(self.fishing_packet(changed)["guides"], {})
+
     def linked_escort_args(self):
         quests = {660: {"LogTitle": "Hints of a New Plague?", "SpecialFlags": 2}}
         creatures = {2713: {"entry": 2713, "name": "Kinelory", "AIName": "SmartAI", "ScriptName": ""}}

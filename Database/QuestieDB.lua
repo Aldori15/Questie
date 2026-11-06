@@ -3922,7 +3922,18 @@ function QuestieDB.GetQuest(questId) -- /dump QuestieDB.GetQuest(867)
                     IconScale = _GetIconScale(),
                 }}
             end
-            if o[5] then -- db ref
+            local fishingTarget
+            if o[2] == Questie.ICON_TYPE_NODE_FISH and o[1] then
+                if not o[5] then
+                    fishingTarget = o[4] and QO.ObjectiveData[o[4]]
+                elseif #o[5] == 1 and o[5][1][1] == "item" then
+                    fishingTarget = QO.SpecialObjectives[o[5][1][2]]
+                end
+                if fishingTarget and fishingTarget.Type ~= "item" then
+                    fishingTarget = nil
+                end
+            end
+            if o[5] and not fishingTarget then -- db ref
                 specialObjective.Type = o[5][1][1]
                 specialObjective.Id = o[5][1][2]
                 local spawnList = {}
@@ -3943,7 +3954,11 @@ function QuestieDB.GetQuest(questId) -- /dump QuestieDB.GetQuest(867)
 
                 specialObjective.spawnList = spawnList
             end
-            QO.SpecialObjectives[index] = specialObjective
+            if fishingTarget then
+                fishingTarget.FallbackSpawnList = specialObjective.spawnList
+            else
+                QO.SpecialObjectives[index] = specialObjective
+            end
         end
     end
 
