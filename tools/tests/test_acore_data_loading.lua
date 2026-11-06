@@ -150,6 +150,87 @@ for quest, reward in pairs({[2]=250,[6]=150,[7]=250}) do
 end
 equal(env.QuestieCorrections.hiddenQuests[13240], false, "cached/fresh blacklist registration")
 
+-- Validate runtime lookups against the emitted catalogs, including both faction views.
+local blacklistModule = modules.QuestieQuestBlacklist
+local oldLoad, oldAuto = blacklistModule.Load, blacklistModule.LoadAutoBlacklistWotlk
+load("Database/Corrections/QuestieQuestBlacklist.lua")
+local inactive = blacklistModule:Load()
+for id, hidden in pairs(blacklistModule.LoadAutoBlacklistWotlk()) do inactive[id] = hidden end
+for id, hidden in pairs(env.QuestieCorrections.hiddenQuests) do inactive[id] = hidden end
+blacklistModule.Load, blacklistModule.LoadAutoBlacklistWotlk = oldLoad, oldAuto
+local catalogs = {monster = db.npcData, object = db.objectData, item = db.itemData}
+local function reference(kind, id, label)
+    if not id or id == 0 then return end
+    local row = catalogs[kind] and catalogs[kind][math.abs(id)]
+    assert(row and type(row[1]) == "string" and row[1] ~= "",
+        label .. ": missing " .. tostring(kind) .. " " .. tostring(id))
+end
+local function references(kind, ids, label)
+    for _, id in pairs(ids or {}) do reference(kind, id, label) end
+end
+local function selections(kind, faction)
+    local source = read("Database/AzerothCore/acore" .. kind:sub(1, 1):upper() .. kind:sub(2) .. "DB.lua")
+    local horde, alliance = source:match("QuestieDB%." .. kind .. "FactionSelections.-and%s*(%b{})%s*or%s*(%b{})")
+    assert(horde and alliance, "Missing generated " .. kind .. " faction selections")
+    return compile("return " .. (faction == "Horde" and horde or alliance), "@faction reference view")()
+end
+for _, faction in ipairs({"Alliance", "Horde"}) do
+    local itemView, questView = selections("item", faction), selections("quest", faction)
+    local function field(row, view, id, key)
+        if view[id] and view[id][key] ~= nil then return view[id][key] end
+        return row[key]
+    end
+    for id, row in pairs(db.itemData) do
+        local label = faction .. " item " .. id
+        for key, kind in pairs({npcDrops = "monster", objectDrops = "object", itemDrops = "item", vendors = "monster"}) do
+            references(kind, field(row, itemView, id, db.itemKeys[key]), label .. " " .. key)
+        end
+    end
+    for id, row in pairs(db.questData) do
+        if inactive[id] ~= true then
+            local label = faction .. " quest " .. id
+            local function questField(key) return field(row, questView, id, db.questKeys[key]) end
+            for _, key in ipairs({"startedBy", "finishedBy"}) do
+                local endpoints = questField(key) or {}
+                for index, kind in ipairs({"monster", "object", "item"}) do
+                    references(kind, endpoints[index], label .. " " .. key)
+                end
+            end
+            local objectives = questField("objectives") or {}
+            for index, kind in ipairs({"monster", "object", "item"}) do
+                for _, objective in pairs(objectives[index] or {}) do
+                    reference(kind, objective[1], label .. " objectives")
+                end
+            end
+            for _, group in pairs(objectives[5] or {}) do
+                references("monster", group[1], label .. " kill-credit sources")
+                reference("monster", group[2], label .. " kill-credit objective")
+            end
+            for _, objective in pairs(objectives[6] or {}) do
+                reference("item", objective[3], label .. " spell objective item")
+            end
+            reference("item", questField("sourceItemId"), label .. " source item")
+            references("item", questField("requiredSourceItems"), label .. " required source items")
+            for _, hint in pairs(questField("extraObjectives") or {}) do
+                for _, target in pairs(hint[5] or {}) do reference(target[1], target[2], label .. " extra objective") end
+            end
+        end
+    end
+end
+local bloodSources = db.itemData[30430][db.itemKeys.objectDrops]
+equal(#bloodSources, 1, "Boiled Blood interaction site count")
+equal(bloodSources[1], 184715, "Boiled Blood uses the player-facing cauldron")
+local bloodHints = db.questData[10538][db.questKeys.extraObjectives]
+for _, hint in pairs(bloodHints) do
+    for _, target in pairs(hint[5] or {}) do
+        if target[1] == "object" then equal(target[2], 184715, "Boiling Blood helper uses the cauldron") end
+    end
+end
+local forges = {}
+for _, id in pairs(db.itemData[4703][db.itemKeys.objectDrops]) do forges[id] = true end
+assert(forges[17190] and forges[30] and forges[184633], "Dwarven Digging lost valid forge locations")
+print("Runtime quest/item references resolve in both faction views; intentional quest exclusions preserved")
+
 -- Resource coordinates must survive startup, binary compilation and a cached
 -- handle reload. Source-only snapshots stop too early to catch destructive pruning.
 local resourceIds = {

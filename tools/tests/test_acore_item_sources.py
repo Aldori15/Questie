@@ -11,6 +11,21 @@ def loot(item=0, chance=100, group=0, reference=0, **fields):
 
 
 class ItemSourceTests(unittest.TestCase):
+    def test_boiled_blood_display_preserves_engine_provenance_and_uses_visible_cauldron(self):
+        keyed = {"item_template": {30430: {"entry": 30430, "name": "Boiled Blood", "class": 12}},
+                 "quest_template": {10538: {"RequiredItemId1": 30430}},
+                 "gameobject_template": {184722: {"entry": 184722, "type": 6},
+                                          184715: {"entry": 184715, "type": 10, "Data1": 10538}}}
+        packet = {"sources": {"30430": {"objectDrops": [184722]}},
+                  "evidence": [{"itemId": 30430, "sourceId": 184722}], "omissions": []}
+        with patch.object(reader, "load_keyed_table", side_effect=lambda root, table, key, modules=False: (keyed.get(table, {}), 0)), \
+             patch.object(reader, "load_row_table", return_value=([], 0)), \
+             patch("acore_item_spell_acquisitions.collect", return_value=packet):
+            items, _, context = reader.build_acore_items(ADDON_ROOT)
+        self.assertEqual(items[30430]["indirectSources"], {"objectDrops": [184715]})
+        self.assertNotIn("objectDrops", items[30430], "display sites must not become direct loot probabilities")
+        self.assertEqual(context["acquisitionCoverage"]["triggered"]["evidence"][0]["sourceId"], 184722)
+
     def test_retired_correction_command_stops_before_reading_sql(self):
         with patch.object(reader, "build_acore_items") as build_items:
             with self.assertRaises(SystemExit) as result:

@@ -1280,6 +1280,9 @@ def build_acore_items(source_root, include_modules=False, spell_sql=None, spell_
         for quest in item.get("questRewards", ()):
             for field, values in quest_enders[quest].items():
                 sources[field].update(values)
+        if "objectDrops" in sources:
+            sources["objectDrops"] = {acore_item_compatibility.object_display_source(entry, gameobject_template_rows)
+                                      for entry in sources["objectDrops"]}
         item["indirectSources"] = {field: sorted(values) for field, values in sorted(sources.items())}
         item["questRelevant"] = bool((set(item.get("relatedQuests", ())) | set(item.get("questRewards", ())) |
                                       {int(item.get("startQuest") or 0)}) & active_quests)

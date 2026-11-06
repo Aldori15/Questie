@@ -3,7 +3,7 @@
 import math
 from collections import Counter, defaultdict
 
-from acore_item_compatibility import number
+from acore_item_compatibility import number, object_display_source
 from acore_scripted_geometry import typed
 import acore_quest_flight_guides as flight_guides
 import acore_quest_compatibility as compatibility
@@ -838,11 +838,16 @@ def derive_extra_guide_packet(quest_templates, item_templates, object_templates,
                     evidence.append({"questId": quest_id, "rule": "questItemSpellFocus",
                                      "itemId": item, "spellId": spell_id, "objectId": obj})
                 for kind, entry in sorted(target_conditions[spell_id]):
+                    source_entry = entry
+                    if kind == "object":
+                        entry = object_display_source(entry, objects, quest_id)
                     target = (npcs if kind == "monster" else objects)[entry]
                     label = "Use " + str(template.get("name") or item) + " on " + str(target.get("name") or entry)
                     hints[(3, label, kind, entry)] = {2: 3, 3: label, 4: 0, 5: [[kind, entry]]}
                     evidence.append({"questId": quest_id, "rule": "questItemSpellTargetCondition",
                                      "itemId": item, "spellId": spell_id, "kind": kind, "entry": entry})
+                    if source_entry != entry:
+                        evidence[-1]["sourceEntry"] = source_entry
         for obj in sorted(goobers[quest_id]):
             label = "Interact with " + str(objects[obj].get("name") or obj)
             hints[(3, label, "object", obj)] = {2: 3, 3: label, 4: 0, 5: [["object", obj]]}

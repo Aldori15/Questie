@@ -31,6 +31,18 @@ def bootstrap(before, source, provenance=None):
 
 
 class ObjectBaseTests(unittest.TestCase):
+    def test_cauldron_display_alias_requires_equal_current_source_placements(self):
+        source = {184715: obj(name="Cursed Cauldron", spawns=typed({3483: [[65.21, 71.2]]})),
+                  184722: obj(name="Cauldron Bug Summoner", spawns=typed({3483: [[65.21, 71.2]]}))}
+        manifest = bootstrap({184715: source[184715]}, source)
+        self.assertIn(184715, exporter.build_records(source, manifest))
+        source[184722]["s:spawns"] = typed({3483: [[60, 70]]})
+        with self.assertRaisesRegex(ValueError, "no longer shares its source placements"):
+            exporter.build_records(source, manifest)
+        source[184722]["s:spawns"] = {}
+        with self.assertRaisesRegex(ValueError, "no longer shares its source placements"):
+            exporter.build_records(source, manifest)
+
     def test_reviewed_mapping_gap_uses_actual_source_and_requires_review_of_new_gaps(self):
         reader = audit.reader
         # A real Tirisfal placement plus deliberately synthetic coordinates far

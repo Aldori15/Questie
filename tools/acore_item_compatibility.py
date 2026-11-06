@@ -37,6 +37,22 @@ CPP_SOURCE_FILES = tuple(sorted({"src/server/scripts/" + rule[3] for rule in CPP
                                  "src/server/game/Entities/Creature/Creature.h",
                                  "src/server/scripts/Northrend/Ulduar/Ulduar/ulduar.h"}))
 
+# The spell targets the hidden trap; the player's interaction site is the cauldron.
+OBJECT_DISPLAY_SOURCES = {184722: (184715, 10538)}
+
+
+def object_display_source(entry, objects, quest_id=None):
+    replacement = OBJECT_DISPLAY_SOURCES.get(entry)
+    if not replacement or entry not in objects:
+        return entry
+    target, quest = replacement
+    if quest_id is not None and quest_id != quest:
+        return entry
+    if (number(objects[entry], "type") != 6 or target not in objects
+            or number(objects[target], "type") != 10 or number(objects[target], "Data1") != quest):
+        raise ValueError(f"Object {entry}: reviewed quest interaction site changed; review display source {target}")
+    return target
+
 
 def number(row, name):
     value = row.get(name)

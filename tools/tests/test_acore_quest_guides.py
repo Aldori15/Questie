@@ -696,6 +696,22 @@ class QuestGuideTests(unittest.TestCase):
         args[4][0]["SourceGroup"] = 2
         self.assertFalse(guides.derive_extra_guides(*args))
 
+    def test_boiling_blood_keeps_both_instructions_at_the_visible_quest_cauldron(self):
+        quests = {10538: {"RequiredItemId1": 30430, "ItemDrop1": 30425}}
+        items = {30425: {"name": "Bleeding Hollow Blood", "spellid_1": 36546}}
+        objects = {184722: {"name": "Cauldron Bug Summoner", "type": 6},
+                   184715: {"name": "Cursed Cauldron", "type": 10, "Data1": 10538}}
+        spells = {36546: {"Effect2": 77}}
+        conditions = [{"SourceTypeOrReferenceId": 13, "SourceGroup": 2, "SourceEntry": 36546,
+                       "ConditionTypeOrReference": 31, "ConditionValue1": 5, "ConditionValue2": 184722}]
+        packet = guides.derive_extra_guide_packet(quests, items, objects, spells, conditions, [], {}, {})
+        hints = list(packet["guides"][10538].values())
+        self.assertEqual({hint["n:3"] for hint in hints},
+                         {"Interact with Cursed Cauldron", "Use Bleeding Hollow Blood on Cursed Cauldron"})
+        self.assertTrue(all(hint["n:5"] == guides.typed([["object", 184715]]) for hint in hints))
+        self.assertIn({"questId": 10538, "rule": "questItemSpellTargetCondition", "itemId": 30425,
+                       "spellId": 36546, "kind": "object", "entry": 184715, "sourceEntry": 184722}, packet["evidence"])
+
     def test_quest_item_conditions_exclude_caster_negative_guid_and_unrelated_item(self):
         for change in [{"ConditionTarget": 0}, {"NegativeCondition": 1},
                        {"ConditionValue3": 99}, {"ScriptName": "custom"},

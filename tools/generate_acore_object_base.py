@@ -12,6 +12,7 @@ from pathlib import Path
 import audit_acore_item_sources as shared
 import audit_acore_object_sources as audit
 import db_snapshot
+import acore_item_compatibility as item_compatibility
 import generate_acore_npc_base as geometry
 from generate_acore_full_base import LuaBlobWriter, lua_quote, lua_value, row_to_lua
 
@@ -144,6 +145,12 @@ def validate_manifest(manifest):
 
 def build_records(source, manifest, provenance=None):
     validate_manifest(manifest)
+    for actor, (display, _) in item_compatibility.OBJECT_DISPLAY_SOURCES.items():
+        if actor in source:
+            actor_spawns = source[actor].get("s:spawns")
+            display_spawns = source.get(display, {}).get("s:spawns")
+            if not actor_spawns or actor_spawns != display_spawns:
+                raise ValueError(f"Object {actor}: reviewed display source {display} no longer shares its source placements")
     if "zonePolicy" in manifest:
         if manifest["zonePolicy"] != "verified-geometry-v1" or any("zoneID" in row for row in manifest["overrides"].values()):
             raise ValueError("Source-derived object zones cannot retain legacy zone overrides")

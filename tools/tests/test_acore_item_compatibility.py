@@ -8,6 +8,20 @@ import db_snapshot
 
 
 class ItemCompatibilityTests(unittest.TestCase):
+    def test_reviewed_cauldron_display_target_requires_current_source_types_and_quest(self):
+        objects = {184722: {"type": 6}, 184715: {"type": 10, "Data1": 10538}}
+        self.assertEqual(compatibility.object_display_source(184722, objects), 184715)
+        self.assertEqual(compatibility.object_display_source(184722, objects, 10538), 184715)
+        self.assertEqual(compatibility.object_display_source(184722, objects, 999), 184722)
+        self.assertEqual(compatibility.object_display_source(144050, objects), 144050)
+        self.assertEqual(compatibility.object_display_source(184722, {}), 184722)
+        for actor, field, value in ((184722, "type", 3), (184715, "type", 8), (184715, "Data1", 999)):
+            previous = dict(objects[actor])
+            objects[actor][field] = value
+            with self.assertRaisesRegex(ValueError, "reviewed quest interaction site changed"):
+                compatibility.object_display_source(184722, objects)
+            objects[actor] = previous
+
     def test_scoped_quest_class_tracks_current_quest_and_use_spell(self):
         template = {"class": 0, "spellid_1": 100, "spelltrigger_1": 0}
         self.assertEqual(compatibility.quest_use_class(template, {"class": 0, "isStartItem": True}), 12)
