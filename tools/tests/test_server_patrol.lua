@@ -65,13 +65,14 @@ local function setup()
         return positions(self, ...)
     end
     modules.QuestieServer:Initialize()
+    local protocol = assert(messages[1]:match("^WATCH~(%d+)~"))
     local function token() return messages[#messages]:match("^[^~]+~%d+~([^~]+)~") end
     local function receive(payload, sender, channel)
         frame.OnEvent(frame, "CHAT_MSG_ADDON", "QSTSVR", payload, channel or "WHISPER", sender or "Tester")
     end
     local function snapshot(sequence, caps, rows)
         rows = rows or {}
-        local header = "~22~" .. token() .. "~" .. sequence
+        local header = "~" .. protocol .. "~" .. token() .. "~" .. sequence
         receive("BEGIN" .. header .. "~" .. (caps or "00000820") .. "~" .. #rows .. "~" .. #rows
             .. "~" .. string.rep("A", 64) .. "~0")
         for index, row in ipairs(rows) do receive("PART" .. header .. "~" .. index .. "~" .. row) end
@@ -80,7 +81,7 @@ local function setup()
     local function motion(sequence, rows, context, anchor, oldToken, dropped)
         rows = rows or {"37780:133649:5915.750:626.745"}
         context = context or {571, 0, 4395}
-        local header = "~22~" .. (oldToken or token()) .. "~" .. (anchor or 1) .. "~" .. sequence
+        local header = "~" .. protocol .. "~" .. (oldToken or token()) .. "~" .. (anchor or 1) .. "~" .. sequence
         receive("MBEGIN" .. header .. "~" .. table.concat(context, "~") .. "~" .. #rows .. "~" .. #rows .. "~READY")
         for index, row in ipairs(rows) do
             if dropped ~= index then receive("MPART" .. header .. "~" .. index .. "~" .. row) end
@@ -103,7 +104,7 @@ local function setup()
         modules.QuestieServerPatrol:Register(pin, spawn and {51.3, 27.27, 0, 0, 571, 0, 0, spawn})
         return pin
     end
-    return {env = env, server = modules.QuestieServer, patrol = modules.QuestieServerPatrol,
+    return {env = env, server = modules.QuestieServer, patrol = modules.QuestieServerPatrol, protocol = protocol,
         token = token, snapshot = snapshot, motion = motion, npcs = npcs, messages = messages, receive = receive, icon = icon,
         step = function(seconds) now = now + seconds; frame.OnUpdate(frame) end,
         elapse = function(seconds) now = now + seconds end,
@@ -130,7 +131,7 @@ s.motion(2, nil, nil, 99); s.motion(2, nil, nil, nil, "oldtoken")
 equal(s.server:GetPatrolPositions(), good, "old connection/snapshot rejected")
 s.motion(2, {"37780:133649:5915.750:626.745", "37780:133649:5916.750:627.745"})
 equal(s.server:GetPatrolPositions(), good, "duplicate spawn rejected")
-local unauthorized = "~22~" .. s.token() .. "~1~2"
+local unauthorized = "~" .. s.protocol .. "~" .. s.token() .. "~1~2"
 for _, senderAndChannel in ipairs({{"Other", "WHISPER"}, {"Tester", "PARTY"}}) do
     for _, payload in ipairs({"MBEGIN" .. unauthorized .. "~571~0~4395~0~0~READY", "MEND" .. unauthorized}) do
         s.receive(payload, senderAndChannel[1], senderAndChannel[2])
@@ -144,7 +145,7 @@ s.motion(2, nil, nil, nil, nil, 1)
 equal(s.server:GetPatrolPositions(), good, "missing part cannot replace sample")
 s.motion(3, nil, nil, nil, nil, "END")
 equal(s.server:GetPatrolPositions(), good, "missing end cannot replace sample")
-s.elapse(3); s.receive("MEND~22~" .. s.token() .. "~1~3")
+s.elapse(3); s.receive("MEND~" .. s.protocol .. "~" .. s.token() .. "~1~3")
 equal(s.server:GetPatrolPositions(), good, "late batch end rejected")
 s.motion(4); local newest = s.server:GetPatrolPositions(); s.motion(1, {})
 equal(s.server:GetPatrolPositions(), newest, "reordered catalog rejected")
@@ -182,8 +183,8 @@ equal(s.patrol.needsUpdate, false, "empty sample sleeps after restoring moved pi
 s.motion(5, nil, nil, 2); s.step(0.11); s.elapse(5); s.update()
 near(map.x, 51.3, "expiry restores static location without reload")
 equal(s.patrol.needsUpdate, false, "expired sample sleeps after static restoration")
-s.receive("MBEGIN~22~" .. s.token() .. "~2~6~571~0~4395~0~0~OVERFLOW")
-s.receive("MEND~22~" .. s.token() .. "~2~6")
+s.receive("MBEGIN~" .. s.protocol .. "~" .. s.token() .. "~2~6~571~0~4395~0~0~OVERFLOW")
+s.receive("MEND~" .. s.protocol .. "~" .. s.token() .. "~2~6")
 equal(s.server:GetPatrolPositions().status, "OVERFLOW", "overflow never supplies a partial catalog")
 s.step(0.11); near(map.x, 51.3, "overflow retains static fallback")
 
