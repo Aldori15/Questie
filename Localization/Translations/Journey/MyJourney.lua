@@ -395,8 +395,8 @@ local myJourneyLocales = {
         ["koKR"] = "사용 불가",
         ["ptBR"] = "Indisponível",
         ["ruRU"] = "Недоступно",
-        ["zhCN"] = "无法完成",
-        ["zhTW"] = "無法完成",
+        ["zhCN"] = "不可用",
+        ["zhTW"] = "無法取得",
     },
     ["Event inactive"] = {
         ["enUS"] = true,

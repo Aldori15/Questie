@@ -176,10 +176,10 @@ local generalOptionsLocales = {
         ["esES"] = "Modificador auto",
         ["esMX"] = "Modificador auto",
         ["frFR"] = "Modificateur auto",
-        ["koKR"] = "자동 수정",
+        ["koKR"] = "자동 수락/완료 보조키",
         ["ptBR"] = "Modificador auto",
         ["ruRU"] = "Авто-модификатор",
-        ["zhCN"] = "自动调整",
+        ["zhCN"] = "自动任务操作修饰键",
         ["zhTW"] = "自動輔助鍵",
     },
     ["The modifier to NOT auto-accept/-complete quests when either option is enabled and you interact with a quest NPC."] = {

@@ -159,7 +159,7 @@ local nameplateOptionsLocales = {
         ["frFR"] = "Échelle des icônes sur les barres de vie flottantes",
     },
     ["Scale the size of the quest icons on creature nameplates. ( Default: %s )"] = {
-        ["ptBR"] = "Mude o tamanho dos ícones da missão nas placas de identificação das criaturas por defeito.",
+        ["ptBR"] = "Mude o tamanho dos ícones da missão nas placas de identificação das criaturas. (Padrão: %s)",
         ["ruRU"] = "Регулировка размера значков на индикаторах здоровья (по умолчанию: %s)",
         ["deDE"] = "Skaliert wie groß die Quest-Icons an den Namensplaketten der Gegner sein sollen. ( Standard: %s )",
         ["koKR"] = "퀘스트 목표 이름표에 표시할 아이콘의 크기를 설정합니다. ( 기본값: %s )",
