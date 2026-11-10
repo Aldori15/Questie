@@ -3779,8 +3779,9 @@ function QuestieDB.GetQuest(questId) -- /dump QuestieDB.GetQuest(867)
     ---@type RawObjectives
     local objectives = QO.objectives
     if objectives then
+        -- Preserve quest-log indices even when generated lists use explicit numeric keys.
         if objectives[1] then
-            for _, creatureObjective in pairs(objectives[1]) do
+            for _, creatureObjective in ipairs(objectives[1]) do
                 if creatureObjective then
                     ---@type NpcObjective
                     QO.ObjectiveData[#QO.ObjectiveData+1] = _CreateObjectiveData("monster", creatureObjective)
@@ -3788,7 +3789,7 @@ function QuestieDB.GetQuest(questId) -- /dump QuestieDB.GetQuest(867)
             end
         end
         if objectives[2] then
-            for _, objectObjective in pairs(objectives[2]) do
+            for _, objectObjective in ipairs(objectives[2]) do
                 if objectObjective then
                     ---@type ObjectObjective
                     QO.ObjectiveData[#QO.ObjectiveData+1] = _CreateObjectiveData("object", objectObjective)
@@ -3796,7 +3797,7 @@ function QuestieDB.GetQuest(questId) -- /dump QuestieDB.GetQuest(867)
             end
         end
         if objectives[3] then
-            for _, itemObjective in pairs(objectives[3]) do
+            for _, itemObjective in ipairs(objectives[3]) do
                 if itemObjective then
                     ---@type ItemObjective
                     local itemObjectiveData = _CreateObjectiveData("item", itemObjective)
@@ -3817,7 +3818,7 @@ function QuestieDB.GetQuest(questId) -- /dump QuestieDB.GetQuest(867)
             }
         end
         if objectives[5] and type(objectives[5]) == "table" and #objectives[5] > 0 then
-            for _, creditObjective in pairs(objectives[5]) do
+            for _, creditObjective in ipairs(objectives[5]) do
                 ---@type KillObjective
                 local killCreditObjective = _CreateKillCreditObjective(creditObjective)
 
@@ -3831,7 +3832,7 @@ function QuestieDB.GetQuest(questId) -- /dump QuestieDB.GetQuest(867)
             end
         end
         if objectives[6] then
-            for _, spellObjective in pairs(objectives[6]) do
+            for _, spellObjective in ipairs(objectives[6]) do
                 if spellObjective then
                     ---@type SpellObjective
                     QO.ObjectiveData[#QO.ObjectiveData+1] = {

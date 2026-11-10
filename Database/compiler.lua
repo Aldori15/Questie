@@ -29,7 +29,7 @@ local coYield = coroutine.yield
 local coRunning = coroutine.running
 
 -- Bump for schema or base-database migration changes to invalidate cached DB blobs.
-QuestieDBCompiler.compiledSchemaVersion = 69
+QuestieDBCompiler.compiledSchemaVersion = 70
 
 ---@alias CompilerTypes
 ---| "u8"
@@ -667,9 +667,9 @@ QuestieDBCompiler.writers = {
     end,
     ["objective"] = function(stream, value)
         if value then
-            local count = 0 for _ in pairs(value) do count = count + 1 end
-            stream:WriteByte(count)
-            for _, pair in pairs(value) do
+            -- List indices match quest-log objectives; hash traversal can swap them.
+            stream:WriteByte(#value)
+            for _, pair in ipairs(value) do
                 stream:WriteInt24(pair[1])
                 stream:WriteTinyString(pair[2] or "")
                 stream:WriteByte(pair[3] or 0)
@@ -680,9 +680,8 @@ QuestieDBCompiler.writers = {
     end,
     ["spellobjective"] = function(stream, value)
         if value then
-            local count = 0 for _ in pairs(value) do count = count + 1 end
-            stream:WriteByte(count)
-            for _, data in pairs(value) do
+            stream:WriteByte(#value)
+            for _, data in ipairs(value) do
                 stream:WriteInt24(data[1])
                 stream:WriteTinyString(data[2] or "")
                 stream:WriteInt24(data[3] or 0)
