@@ -52,8 +52,8 @@ local function setup()
     local sequence = 0
     local function reply(rows, caps, incomplete, protocol, sender)
         sequence = sequence + 1
-        local token = messages[#messages]:match("^[^~]+~%d+~([^~]+)~")
-        local header = "~" .. (protocol or "21") .. "~" .. token .. "~" .. sequence
+        local version, token = messages[#messages]:match("^[^~]+~(%d+)~([^~]+)~")
+        local header = "~" .. (protocol or version) .. "~" .. token .. "~" .. sequence
         local function receive(value)
             frame.OnEvent(frame, "CHAT_MSG_ADDON", "QSTSVR", value, "WHISPER", sender or "Tester")
         end
@@ -72,6 +72,7 @@ end
 
 local s = setup()
 s.rates(TWO, THREE)
+equal(s.server:HasCapability("QUESTMONEY"), true, "money fixture establishes live bridge state")
 equal(s.money(1), 14800, "ordinary quest money rate")
 equal(s.money(2), -10000, "quest costs remain unchanged")
 equal(s.money(3), 250, "level-dependent money table uses character level")

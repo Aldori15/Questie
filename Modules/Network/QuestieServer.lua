@@ -2,7 +2,7 @@
 local QuestieServer = QuestieLoader:CreateModule("QuestieServer")
 local Integrations = QuestieLoader:ImportModule("QuestieServerIntegrations")
 
-local PREFIX, PROTOCOL_VERSION = "QSTSVR", "21"
+local PREFIX, PROTOCOL_VERSION = "QSTSVR", "22"
 
 -- Shared with the correction generators. Decisions apply to the current area,
 -- never to every location in these zones. Keep the module's profiles in sync.
@@ -99,15 +99,15 @@ local function CatalogId(value)
     return value and #value == 64 and not value:find("[^0-9A-F]")
 end
 
-local sharedFields = {"events", "ui", "poolQuests", "disabledQuests", "wintergraspQuests",
-    "wintergrasp", "resets", "scourge", "kaluakReported", "kaluakFinished"}
+-- Only stable metadata belongs to the catalog. Live selections and progress are
+-- rebuilt for every complete batch, including batches reusing this metadata.
+local sharedFields = {"eventDefinitions", "poolMembers", "disabledQuests", "resets"}
 local sharedCapabilities = {"EVENTS", "VALUES", "SCOURGE", "QUELDANAS", "KALUAK", "HEARTBEAT",
     "QUESTPOOLS", "WINTERGRASP", "RESETS", "PATROLS", "QUESTDISABLES"}
-local sharedProperties = {QUEST_RESETS = true, SC_ACTIVE = true, KA_FINISHED = true, WG_STATE = true}
 local function SharedRow(row)
     local kind, property = row:match("^([^:]+):([^:]+)")
-    return kind == "E" or kind == "Q" or kind == "D" or kind == "R" or kind == "U"
-        or (kind == "P" and sharedProperties[property] == true)
+    return kind == "E" or kind == "Q" or kind == "D"
+        or (kind == "P" and property == "QUEST_RESETS")
 end
 
 local function CopySharedState(source, target)
@@ -583,6 +583,21 @@ local function Nonempty(members)
     return members and next(members) and members or nil
 end
 
+local function SameLiveQuests(left, right, pooled)
+    if left == right then return true end
+    if not left or not right then return false end
+    for id, value in pairs(left) do
+        local previous = right[id]
+        if pooled then
+            if not previous or value.pool ~= previous.pool or value.active ~= previous.active then return false end
+        elseif value ~= previous then
+            return false
+        end
+    end
+    for id in pairs(right) do if left[id] == nil then return false end end
+    return true
+end
+
 local function QuestStates()
     if not Fresh() then questStateCache = nil; return nil end
     local caps = snapshot.caps
@@ -597,8 +612,10 @@ local function QuestStates()
     local conditions = Nonempty(caps.QUESTCONDITIONS and snapshot.conditionQuests)
     wintergrasp = Nonempty(wintergrasp and snapshot.wintergraspQuests)
     icc = Nonempty(icc and snapshot.iccQuests)
-    -- Reused catalogs retain their table identities across unrelated private updates.
-    if questStateCache and questStateCache.pool == pool and questStateCache.wintergrasp == wintergrasp
+    -- Live rows are rebuilt even when their catalog is reused. Compare complete
+    -- selections before rebuilding the sorted union for an unrelated update.
+    if questStateCache and SameLiveQuests(pool, questStateCache.pool, true)
+        and SameLiveQuests(wintergrasp, questStateCache.wintergrasp)
         and questStateCache.icc == icc and questStateCache.disabled == disabled and questStateCache.conditions == conditions then
         return questStateCache
     end
@@ -665,11 +682,12 @@ local function Request()
 end
 
 local function ParseRows(batch)
-    local result = {caps = batch.caps, events = {}, values = {}, ui = {}, poolQuests = {},
+    local result = {caps = batch.caps, events = {}, eventDefinitions = {}, values = {}, ui = {}, poolQuests = {}, poolMembers = {},
         wintergraspQuests = {}, iccQuests = {}, disabledQuests = {}, giverSpawns = {}, giverUnits = {}, giverTemplates = {},
         phaseVisibility = {}, reputationFactions = {}, conditionQuests = {}}
     local count, reputationFactionCount, giverCount, templateCount = 0, 0, 0, 0
-    local conditionCount = 0
+    local conditionCount, activeCount, selectedCount = 0, 0, 0
+    local activeEvents, selectedQuests = {}, {}
     if batch.reuseCatalog then CopySharedState(catalog.state, result) end
     local common = {}
     CopySharedState(result, common)
@@ -737,15 +755,28 @@ local function ParseRows(batch)
                 local serverTime = Integer(fields[3], 4294967295)
                 if not serverTime or serverTime == 0 then return nil end
                 result.serverTime = serverTime
-            elseif kind == "E" and result.caps.EVENTS and #fields == 5 and id and id > 0 and id <= 65535 then
+            elseif kind == "E" and result.caps.EVENTS and #fields == 4 and id and id > 0 and id <= 65535 then
                 local holiday = Integer(fields[3], 4294967295)
-                if not holiday or not string.match(fields[4], "^[01]$") or not string.match(fields[5], "^[01]$")
-                    or result.events[id] then return nil end
-                result.events[id] = {holiday = holiday, main = fields[4] == "1", active = fields[5] == "1"}
-            elseif kind == "Q" and result.caps.QUESTPOOLS and #fields == 4 and id and id > 0 then
+                if not holiday or not string.match(fields[4], "^[01]$") or result.eventDefinitions[id] then return nil end
+                result.eventDefinitions[id] = {holiday = holiday, main = fields[4] == "1"}
+            elseif kind == "Q" and result.caps.QUESTPOOLS and #fields == 3 and id and id > 0 then
                 local pool = Integer(fields[3], 4294967295)
-                if not pool or pool < 1 or not string.match(fields[4], "^[01]$") or result.poolQuests[id] then return nil end
-                result.poolQuests[id] = {pool = pool, active = fields[4] == "1"}
+                if not pool or pool < 1 or result.poolMembers[id] then return nil end
+                result.poolMembers[id] = pool
+            elseif kind == "P" and result.caps.EVENTS and fields[2] == "EVENT_COUNT"
+                and #fields == 3 and result.eventCount == nil then
+                result.eventCount = Integer(fields[3], 4096)
+                if not result.eventCount then return nil end
+            elseif kind == "A" and result.caps.EVENTS and #fields == 2 and id and id > 0 and id <= 65535 then
+                if activeEvents[id] or not result.eventDefinitions[id] then return nil end
+                activeEvents[id], activeCount = true, activeCount + 1
+            elseif kind == "P" and result.caps.QUESTPOOLS and fields[2] == "POOL_COUNT"
+                and #fields == 3 and result.poolCount == nil then
+                result.poolCount = Integer(fields[3], 4096)
+                if not result.poolCount then return nil end
+            elseif kind == "S" and result.caps.QUESTPOOLS and #fields == 2 and id and id > 0 then
+                if selectedQuests[id] or not result.poolMembers[id] then return nil end
+                selectedQuests[id], selectedCount = true, selectedCount + 1
             elseif kind == "P" and result.caps.QUESTGIVERS and fields[2] == "QG_CONTEXT"
                 and #fields == 4 and not result.giverZone then
                 local map, zone = Integer(fields[3], 65535), Integer(fields[4], 65535)
@@ -836,6 +867,14 @@ local function ParseRows(batch)
         end
     end
     if count ~= batch.rowCount then return nil end
+    if result.caps.EVENTS and result.eventCount ~= activeCount then return nil end
+    if result.caps.QUESTPOOLS and result.poolCount ~= selectedCount then return nil end
+    for id, event in pairs(result.eventDefinitions) do
+        result.events[id] = {holiday = event.holiday, main = event.main, active = activeEvents[id] == true}
+    end
+    for id, pool in pairs(result.poolMembers) do
+        result.poolQuests[id] = {pool = pool, active = selectedQuests[id] == true}
+    end
     batch.catalogState = common
     if result.caps.QUESTCONDITIONS and result.conditionCount ~= conditionCount then return nil end
     if result.caps.QUESTXP and not result.questXP then return nil end

@@ -39,8 +39,8 @@ local function setup()
     local sequence = 0
     local function reply(rows, caps, incomplete, protocol)
         sequence = sequence + 1
-        local token = messages[#messages]:match("^[^~]+~%d+~([^~]+)~")
-        local header = "~" .. (protocol or "21") .. "~" .. token .. "~" .. sequence
+        local version, token = messages[#messages]:match("^[^~]+~(%d+)~([^~]+)~")
+        local header = "~" .. (protocol or version) .. "~" .. token .. "~" .. sequence
         frame.OnEvent(frame, "CHAT_MSG_ADDON", "QSTSVR", "BEGIN" .. header .. "~" .. (caps or "00001020")
             .. "~" .. #rows .. "~" .. #rows .. "~" .. string.rep("A", 64) .. "~0", "WHISPER", "Tester")
         for index, row in ipairs(rows) do
@@ -58,6 +58,7 @@ end
 
 local s = setup()
 s.rates(1073741824, 1077936128, 1065353216) -- 2x normal, 3x DF, 1x aura
+equal(s.server:HasCapability("QUESTXP"), true, "XP fixture establishes live bridge state")
 equal(s.xp:GetQuestLogRewardXP(1), 2100, "normal rate replaces local equipment bonus")
 equal(s.xp:GetQuestLogRewardXP(2), 3150, "DF rate")
 equal(s.xp:GetQuestLogRewardXP(3), 3150, "DF flag with other special flags")

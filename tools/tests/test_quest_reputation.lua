@@ -52,8 +52,8 @@ local function setup()
     local sequence = 0
     local function reply(rows, caps, incomplete, protocol, sender)
         sequence = sequence + 1
-        local token = messages[#messages]:match("^[^~]+~%d+~([^~]+)~")
-        local header = "~" .. (protocol or "21") .. "~" .. token .. "~" .. sequence
+        local version, token = messages[#messages]:match("^[^~]+~(%d+)~([^~]+)~")
+        local header = "~" .. (protocol or version) .. "~" .. token .. "~" .. sequence
         local function receive(value)
             frame.OnEvent(frame, "CHAT_MSG_ADDON", "QSTSVR", value, "WHISPER", sender or "Tester")
         end
@@ -79,6 +79,7 @@ end
 
 local s = setup()
 s.rates(TWO)
+equal(s.server:HasCapability("QUESTREP"), true, "reputation fixture establishes live bridge state")
 equal(reward(s, 1), 500, "global reputation gain")
 s.rates(THREE)
 equal(reward(s, 1), 750, "config change updates live reward")
