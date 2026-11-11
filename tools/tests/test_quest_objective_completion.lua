@@ -96,6 +96,7 @@ local function setup(historical)
     return {quest = quest, module = questModule, modules = modules, env = env, tooltips = tooltips, jobs = jobs,
         runJobs = runJobs, count = count,
         setObjectives = function(values) cache = values end,
+        setReady = function(value) ready = value end,
         finish = function()
             ready = 1
             cache[1].finished, cache[1].numFulfilled = true, 1
@@ -120,6 +121,29 @@ for _, history in ipairs({false, true}) do
     equal(s.count("complete"), 2, "ready quest draws turn-in location despite history")
     equal(s.quest.WasComplete, true, "completion handled")
     equal(s.tooltips.m_1, true, "objective tooltips retained until turn-in")
+    tests = tests + 1
+end
+
+-- Removing required items reopens the quest and restores its objective icons.
+do
+    local s = setup(false)
+    s.finish(); s.runJobs()
+    s.setReady(0)
+    s.modules.QuestieDB.QueryQuestSingle = function() return {} end
+    s.modules.QuestieDB.QueryItemSingle = function(id) if id > 0 then return tostring(id) end end
+    s.modules.AvailableQuests.CalculateAndDrawAll = function() end
+    s.setObjectives({{type = "item", text = "Wicked Sun Brooch", raw_text = "Wicked Sun Brooch: 0/1",
+        numFulfilled = 0, numRequired = 1, finished = false}})
+    s.modules.AvailableQuests.RemoveQuest = function(_, callback)
+        s.modules.QuestieMap:UnloadQuestFrames(s.quest.Id)
+        callback()
+    end
+    s.module:SetObjectivesDirty(s.quest.Id)
+    s.module:UpdateQuest(s.quest.Id); s.runJobs()
+    equal(s.quest.WasComplete, nil, "required item loss clears completion state")
+    equal(s.quest.isComplete, nil, "required item loss clears completion override")
+    equal(s.count("complete"), 0, "required item loss removes turn-in icons")
+    equal(s.count("item"), 4, "required item loss restores objective and ingredient icons")
     tests = tests + 1
 end
 

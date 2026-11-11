@@ -46,6 +46,7 @@ local l10n = QuestieLoader:ImportModule("l10n")
 local QuestiePartyObjectives = QuestieLoader:ImportModule("QuestiePartyObjectives")
 ---@type BreadcrumbQuests
 local BreadcrumbQuests = QuestieLoader:ImportModule("BreadcrumbQuests")
+local CommsVisibility = QuestieLoader:ImportModule("CommsVisibility")
 
 --- COMPATIBILITY ---
 local C_Timer = QuestieCompat.C_Timer
@@ -531,7 +532,27 @@ function _QuestEventHandler:UpdateAllQuests(confirmItemRegressions)
         end
     end
 
-    local cacheMiss, changes = QuestLogCache.CheckForChanges(questIdsToCheck, true, confirmItemRegressions)
+    local cacheMiss, changes, _, unlisted, ready = QuestLogCache.CheckForChanges(questIdsToCheck, true, confirmItemRegressions)
+    ready = ready or {}
+    local adopted = {}
+    for questId in pairs(unlisted or {}) do
+        -- Pending accepts and removals retain their own lifecycle handling.
+        if not questLog[questId] then adopted[questId] = true end
+    end
+    if next(adopted) then
+        QuestEventHandler.InitQuestLogStates(adopted)
+        for questId in pairs(adopted) do questLog[questId].adopting = true end
+        local adoptMiss, adoptChanges, _, _, adoptReady = QuestLogCache.CheckForChanges(adopted, false, confirmItemRegressions)
+        cacheMiss = cacheMiss or adoptMiss
+        for questId, objectiveIds in pairs(adoptChanges) do changes[questId] = objectiveIds end
+        for questId in pairs(adoptReady or {}) do ready[questId] = true end
+    end
+    -- A valid snapshot may predate lifecycle discovery and have no changed rows.
+    for questId, data in pairs(questLog) do
+        if data.adopting and ready[questId] then
+            changes[questId] = changes[questId] or {}
+        end
+    end
 
     -- Accepted quests and pending accepts are checked separately; either may still be loading.
     if cacheMiss or pendingAccept then
@@ -549,26 +570,28 @@ function _QuestEventHandler:UpdateAllQuests(confirmItemRegressions)
         for questId in pairs(changes) do
             if QuestieDB.HasQuestData(questId) then
                 mappedChanged = true
-                if (not QuestiePlayer.currentQuestlog[questId]) then
-                    -- Recover mapped quests whose data was unavailable during login.
-                    local quest = QuestieDB.GetQuest(questId)
-                    if quest then
-                        Questie.Debug(Questie.DEBUG_INFO, "Quest:", questId, "is not in the player's quest log, but is in the QuestEventHandler quest log")
-                        QuestiePlayer.currentQuestlog[questId] = quest
-                    else
-                        Questie.Error("Quest:", questId, "is not in the player's quest log and not in the QuestDB. Please report this on Github or Discord!")
-                    end
-                end
-
                 Questie.Debug(Questie.DEBUG_INFO, "Quest:", questId, "will be updated")
                 QuestieQuest:SetObjectivesDirty(questId)
 
                 QuestieNameplate:UpdateNameplate()
-                QuestieQuest:UpdateQuest(questId)
+                if QuestiePlayer.currentQuestlog[questId] then
+                    QuestieQuest:UpdateQuest(questId)
+                else
+                    local data = questLog[questId]
+                    QuestLifecycle:AdoptQuest(questId, function() return questLog[questId] == data end)
+                    QuestiePartyObjectives:ScheduleUpdate(questId)
+                end
             else
                 -- Native membership and progress are valid without a database map object.
                 nativeChanged = true
+                local data = questLog[questId]
+                if data and data.adopting then
+                    CommsVisibility:ScheduleSnapshot("ACCEPT_QUEST")
+                    Questie:SendMessage("QC_ID_BROADCAST_QUEST_UPDATE", questId)
+                    QuestiePartyObjectives:ScheduleUpdate(questId)
+                end
             end
+            if questLog[questId] then questLog[questId].adopting = nil end
         end
         if nativeChanged then QueueTrackerUpdate(true) end
         if mappedChanged then

@@ -818,6 +818,35 @@ function QuestieQuest:RefreshNPCSpawns(changedNpcs)
     end
 end
 
+-- Shared setup for login and quests recovered without an acceptance event.
+function QuestieQuest:AddToQuestLog(quest)
+    local questId = quest.Id
+    QuestiePlayer.currentQuestlog[questId] = quest
+    if quest:IsComplete() == -1 then
+        self:UpdateQuest(questId)
+        return
+    end
+
+    self:CheckQuestSourceItem(questId, true)
+    self:PopulateQuestLogInfo(quest)
+
+    local hiddenQuests = Questie.db.char.TrackerHiddenQuests or {}
+    local hiddenObjectives = Questie.db.char.TrackerHiddenObjectives or {}
+    if hiddenQuests[questId] then quest.HideIcons = true end
+    for _, objectives in ipairs({quest.Objectives, quest.SpecialObjectives}) do
+        for _, objective in pairs(objectives) do
+            if hiddenObjectives[tostring(questId) .. " " .. tostring(objective.Index)] then
+                objective.HideIcons = true
+            end
+        end
+    end
+    if self:ShouldShowQuestNotes(questId) then
+        self:PopulateObjectiveNotes(quest)
+    else
+        QuestieTooltips:RemoveQuest(questId)
+    end
+end
+
 --Run this if you want to update the entire table
 function QuestieQuest:GetAllQuestIds()
     Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest] Getting all quests")
@@ -825,8 +854,6 @@ function QuestieQuest:GetAllQuestIds()
     assert(coRunning(), "GetAllQuestIds must be called from a coroutine")
 
     QuestiePlayer.currentQuestlog = {}
-    local trackerHiddenQuests = Questie.db.char.TrackerHiddenQuests or {}
-    local trackerHiddenObjectives = Questie.db.char.TrackerHiddenObjectives or {}
 
     -- Snapshot titles before yielding so the live quest-log cache cannot change during traversal.
     local questTitles = {}
@@ -841,38 +868,7 @@ function QuestieQuest:GetAllQuestIds()
             local quest = QuestieDB.GetQuest(questId)
 
             if quest then
-                local complete = quest:IsComplete()
-
-                QuestiePlayer.currentQuestlog[questId] = quest
-
-                if complete == -1 then
-                    QuestieQuest:UpdateQuest(questId)
-                else
-                    QuestieQuest:CheckQuestSourceItem(questId, true)
-                    QuestieQuest:PopulateQuestLogInfo(quest)
-
-                    -- Restore hidden icon state before objective notes spawn map icons.
-                    if trackerHiddenQuests[questId] then
-                        quest.HideIcons = true
-                    end
-                    local questIdStr = tostring(questId)
-                    for _, objective in pairs(quest.Objectives) do
-                        if trackerHiddenObjectives[questIdStr .. " " .. tostring(objective.Index)] then
-                            objective.HideIcons = true
-                        end
-                    end
-                    for _, objective in pairs(quest.SpecialObjectives) do
-                        if trackerHiddenObjectives[questIdStr .. " " .. tostring(objective.Index)] then
-                            objective.HideIcons = true
-                        end
-                    end
-
-                    if QuestieQuest:ShouldShowQuestNotes(questId) then
-                        QuestieQuest:PopulateObjectiveNotes(quest)
-                    else
-                        QuestieTooltips:RemoveQuest(questId)
-                    end
-                end
+                self:AddToQuestLog(quest)
             end
 
             Questie.Debug(Questie.DEBUG_INFO, "[QuestieQuest] Adding the quest", questId, QuestiePlayer.currentQuestlog[questId])

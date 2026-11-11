@@ -208,6 +208,9 @@ local function GetNewObjectives(questId, oldObjectives, questLogIndex, isComplet
             end
         else -- objective text not in game's cache
             if oldObj then
+                if suppressRegressions and not isCompleteAccordingToBlizzard then
+                    return nil, nil, isCompleteAccordingToBlizzard, true, false
+                end
                 Questie.Debug(Questie.DEBUG_INFO, "[GetNewObjectives] objective not in game's cache. Using addon's cache. questID, objIndex:", questId, objIndex)
                 -- Extremely unlikely that the objective has changed from cached version as a change SHOULD trigger fetching data into game cache.
                 -- Possible bug point if there comes desync issues.
@@ -225,6 +228,15 @@ local function GetNewObjectives(questId, oldObjectives, questLogIndex, isComplet
 
     local isComplete = isCompleteAccordingToBlizzard
     if (not isCompleteAccordingToBlizzard) then
+        -- Loading can hide an unfinished row beside valid rows. Keep the whole
+        -- snapshot pending so a later blank scan cannot infer completion.
+        if suppressRegressions then
+            for index, oldObj in pairs(oldObjectives) do
+                if not oldObj.finished and not newObjectives[index] then
+                    return nil, nil, isCompleteAccordingToBlizzard, true, false
+                end
+            end
+        end
         -- Blizzard can return bogus empty objectives and leave the quest flagged incomplete.
         -- If every real objective is finished, treat the quest as complete.
         -- Only infer completion if there are actual trackable objectives. Scripted event
@@ -254,13 +266,15 @@ QuestLogCache._GetNewObjectives = GetNewObjectives
 ---@param questIdsToCheck table? @keys are the questIds
 ---@param fullScan boolean? @Whether questIdsToCheck contains every accepted quest.
 ---@param confirmItemRegressions boolean? @Whether a settled bag scan may accept item-count decreases.
----@return boolean cacheMiss, table changes, table questIdsChecked @cacheMiss = couldn't get all required data  ; changes[questId] = list of changed objectiveIndexes (may be an empty list if quest has no objectives)
+---@return boolean cacheMiss, table changes, table questIdsChecked, table questIdsUnlisted, table readyIds @Ready IDs had valid snapshots, including unchanged ones; unlisted IDs were absent from questIdsToCheck.
 function QuestLogCache.CheckForChanges(questIdsToCheck, fullScan, confirmItemRegressions)
     Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestLogCache.CheckForChanges]")
 
     local cacheMiss = false
     local changes = {} -- table key = questid of the changed quest, table value = list of changed objective ids
     local questIdsChecked = {} -- for debug / error detection
+    local questIdsUnlisted = {}
+    local readyIds = {}
 
     local suppressRegressions = blizzardQuestCacheStale
     local hadRegressionCacheMiss = false
@@ -273,6 +287,9 @@ function QuestLogCache.CheckForChanges(questIdsToCheck, fullScan, confirmItemReg
         if (not title) then
             break -- We exceeded the valid quest log entries
         end
+        if not isHeader and questIdsToCheck and not questIdsToCheck[questId] then
+            questIdsUnlisted[questId] = true
+        end
         if (not isHeader) and ((not questIdsToCheck) or questIdsToCheck[questId]) then -- check all quests if no list what to check, otherwise just ones in the list
             questIdsChecked[questId] = true
             if HaveQuestData(questId) then
@@ -282,16 +299,19 @@ function QuestLogCache.CheckForChanges(questIdsToCheck, fullScan, confirmItemReg
                 -- During zone transitions (e.g. entering/leaving a dungeon) GetQuestLogTitle temporarily
                 -- returns incorrect values (e.g. isCompleteAccordingToBlizzard being nil for quests that are actually complete).
                 -- To avoid caching incorrect values, we skip the update entirely and set cacheMiss so we retry next QUEST_LOG_UPDATE.
-                local blizzardCacheIncorrect = (not isCompleteAccordingToBlizzard) and cachedQuest and cachedQuest.isComplete == 1
+                -- Outside loading recovery, an incomplete flag can reflect a real item loss.
+                local blizzardCacheIncorrect = suppressRegressions and (not isCompleteAccordingToBlizzard)
+                    and cachedQuest and cachedQuest.isComplete == 1
                 if blizzardCacheIncorrect then
                     cacheMiss = true
+                    hadRegressionCacheMiss = true
                 else
                     local newObjectives, changedObjIds, isComplete, suppressedRegression, deferredItemRegression = GetNewObjectives(questId, cachedObjectives, questLogIndex, isCompleteAccordingToBlizzard, suppressRegressions, confirmItemRegressions)
 
                     if newObjectives then
-                        if (not cachedQuest) or (#cachedObjectives == #newObjectives and #cachedObjectives > 0 and
-                            (cachedQuest.title ~= title or cachedQuest.questTag ~= questTag or cachedQuest.isComplete ~= isComplete)) or
-                           (cachedQuest and #cachedObjectives == 0 and cachedQuest.isComplete ~= isComplete) then
+                        readyIds[questId] = true
+                        if not cachedQuest or #cachedObjectives ~= #newObjectives or cachedQuest.title ~= title
+                            or cachedQuest.questTag ~= questTag or cachedQuest.isComplete ~= isComplete then
                             -- Mark all objectives changed to force update those too.
 
                             -- changedObjIds is nil from GetObjectives() for quests not having objectives. This is easiest place to change it to {}.
@@ -389,7 +409,7 @@ function QuestLogCache.CheckForChanges(questIdsToCheck, fullScan, confirmItemReg
         pendingItemRegression = true
     end
 
-    return cacheMiss, changes, questIdsChecked
+    return cacheMiss, changes, questIdsChecked, questIdsUnlisted, readyIds
 end
 
 ---@return boolean

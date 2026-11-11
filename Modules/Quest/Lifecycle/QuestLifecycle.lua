@@ -142,6 +142,27 @@ end
 local allianceChampionMarkerQuests = {[13699] = true, [13713] = true, [13723] = true, [13724] = true, [13725] = true}
 local hordeChampionMarkerQuests = {[13726] = true, [13727] = true, [13728] = true, [13729] = true, [13731] = true}
 
+-- Recover membership without resetting saved tracker choices or announcing an accept.
+function QuestLifecycle:AdoptQuest(questId, isCurrent)
+    local quest = QuestieDB.GetQuest(questId)
+    if not quest then return end
+
+    QuestiePlayer.currentQuestlog[questId] = quest
+    CommsVisibility:ScheduleSnapshot("ACCEPT_QUEST")
+    local function current()
+        local index = QuestieCompat.GetQuestLogIndexByID(questId)
+        return QuestiePlayer.currentQuestlog[questId] == quest and index and index > 0
+            and (not isCurrent or isCurrent())
+    end
+    AvailableQuests.RemoveQuest(questId, function()
+        if not current() then return end
+        QuestieQuest:AddToQuestLog(quest)
+        if not current() then return end -- Drawing can yield to a removal or a new acceptance.
+        Questie:SendMessage("QC_ID_BROADCAST_QUEST_UPDATE", questId)
+        AvailableQuests.CalculateAndDrawAll(nil, true)
+    end)
+end
+
 ---@param questId number
 function QuestLifecycle:CompleteQuest(questId)
     QuestieQuest:ClearLootedSpawns(questId)
