@@ -230,6 +230,12 @@ modules.QuestieFramePool = {UnloadFrame = function(_, frame)
     end
 end}
 modules.QuestieMap = {FindClosestStarter = function() return {} end,
+    ForQuestFrames = function(_, questId, callback)
+        for _, frame in pairs(frames) do
+            if frame.data and frame.data.Id == questId and callback(frame) then return true end
+        end
+        return false
+    end,
     IsLootedObjectSpawn = function() return false end,
     DrawWorldIcon = function(_, data, zone, x, y)
         local frame = {data = data, zone = zone, x = x, y = y}

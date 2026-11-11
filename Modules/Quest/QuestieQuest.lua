@@ -1162,6 +1162,12 @@ function QuestieQuest:AddFinisher(quest)
     -- must not suppress an accepted quest's finisher or revive a removed quest.
     if QuestiePlayer.currentQuestlog[questId] and _IsQuestInLog(questId)
         and (quest:IsComplete() == 1 or quest:IsComplete() == 0) then
+        -- Another cleanup callback may already have queued this quest's turn-in.
+        if QuestieMap:ForQuestFrames(questId, function(frame)
+            local data = frame.data
+            return not frame._needsUnload and data and data.Id == questId and data.Type == "complete"
+        end) then return end
+
         local finisher, key
 
         if quest.Finisher ~= nil then

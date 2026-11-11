@@ -59,9 +59,13 @@ local function setup(historical)
     modules.QuestieMap = {
         FindClosestStarter = function() return {} end, IsLootedObjectSpawn = function() return false end,
         DrawWorldIcon = function(_, data)
-            local map, mini = {}, {}
+            local map, mini = {data = data}, {data = data, miniMapIcon = true}
             frames[map], frames[mini] = data, data
             return map, mini
+        end,
+        ForQuestFrames = function(_, _, callback)
+            for frame in pairs(frames) do if callback(frame) then return true end end
+            return false
         end,
         UnloadQuestFrames = function()
             for frame in pairs(frames) do frames[frame] = nil end
@@ -381,6 +385,56 @@ for _, entry in ipairs({{1141, 12238, 148, 35.71, 44.68}, {1579, 6717, 148, 35.7
         end
         equal(next(multiple.SpecialObjectives), nil, "multiple fish create no duplicate helpers")
     end
+    tests = tests + 1
+end
+
+-- Real ThreadLib unloads on one tick and calls back on the next. Both requests
+-- must share one finisher batch, including while its frames are still queued.
+for _, status in ipairs({0, 1}) do
+    local s, tickers = setup(false), {}
+    s.setTravel(status)
+    s.quest.SpecialObjectives = {}
+    s.env.Questie.Error = error
+    s.env.QuestieCompat.C_Timer.NewTicker = function(_, callback)
+        local ticker = {callback = callback, Cancel = function(self) self.cancelled = true end}
+        tickers[#tickers + 1] = ticker
+        return ticker
+    end
+    assert(loadfile("Modules/Libs/ThreadLib.lua", "t", s.env))()
+    s.modules.AvailableQuests.RemoveQuest = function(_, callback)
+        s.modules.ThreadLib.ThreadCallbackInstant(function()
+            s.modules.QuestieMap:UnloadQuestFrames(s.quest.Id)
+        end, callback)
+    end
+    local function tick()
+        local count = #tickers
+        for i = 1, count do if not tickers[i].cancelled then tickers[i].callback() end end
+    end
+    local function request()
+        if status == 1 then s.module:UpdateQuest(s.quest.Id)
+        else s.module:PopulateQuestLogInfo(s.quest) end
+    end
+    request(); request()
+    tick(); tick()
+    equal(s.count("complete"), 2, "overlapping finisher requests share one map/minimap pair, status " .. status)
+    request(); tick(); tick()
+    equal(s.count("complete"), 2, "normal refresh can replace previous finisher pair, status " .. status)
+    tests = tests + 1
+end
+
+for _, case in ipairs({
+    {frame = {data = {Id = 12960, Type = "complete"}}, skip = true}, -- queued, not loaded yet
+    {frame = {data = {Id = 12960, Type = "complete"}, hidden = true, _loaded = true}, skip = true},
+    {frame = {data = {Id = 12960, Type = "complete"}, _needsUnload = true}},
+    {frame = {data = {Id = 999, Type = "complete"}}}, -- stale registry entry reused by another quest
+    {frame = {data = {Id = 12960, Type = "item"}}},
+    {frame = {}}, -- unloaded
+}) do
+    local s = setup(false)
+    s.setReady(1)
+    s.modules.QuestieMap.ForQuestFrames = function(_, _, callback) return callback(case.frame) end
+    s.module:AddFinisher(s.quest)
+    equal(s.count("complete"), case.skip and 0 or 2, "finisher guard respects ownership, queue and unload state")
     tests = tests + 1
 end
 
