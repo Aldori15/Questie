@@ -1251,6 +1251,13 @@ function pins:SetMinimapObject(minimapObject)
     UpdateMinimapPins(true)
 end
 
+-- Expose the exact radius and rotation used by the 3.3.5 minimap pin projection.
+function pins:GetMinimapView()
+    local sizes = minimap_size[indoors]
+    local size = sizes and sizes[pins.Minimap:GetZoom()]
+    return size and size / 2, rotateMinimap
+end
+
 -- world map constants
 -- show worldmap pin only on zone map (Questie modification)
 HBD_PINS_WORLDMAP_SHOW_CURRENT   = -1

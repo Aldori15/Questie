@@ -77,7 +77,7 @@ local function _StoreTooltipTracking(tooltip)
 end
 
 local function _GetSortedTooltipEntries(tooltips)
-    local sortedTooltips = {}
+    local sortedTooltips, ids, ranks = {}, {}, {}
 
     for tooltipKey, tooltip in pairs(tooltips or {}) do
         tinsert(sortedTooltips, {
@@ -86,6 +86,8 @@ local function _GetSortedTooltipEntries(tooltips)
         })
     end
 
+    for _, entry in ipairs(sortedTooltips) do ids[entry.tooltip.questId] = true end
+    for rank, id in ipairs(QuestieLib:SortQuestIDsByLevel(ids, true)) do ranks[id] = rank end
     tsort(sortedTooltips, function(left, right)
         local leftTooltip = left.tooltip
         local rightTooltip = right.tooltip
@@ -93,7 +95,7 @@ local function _GetSortedTooltipEntries(tooltips)
         local rightQuestId = rightTooltip and rightTooltip.questId or 0
 
         if leftQuestId ~= rightQuestId then
-            return leftQuestId < rightQuestId
+            return ranks[leftQuestId] < ranks[rightQuestId]
         end
 
         return left.key < right.key
@@ -593,11 +595,7 @@ function QuestieTooltips:GetTooltip(key, playerZone, npcStarterState)
 
     local playerName = UnitName("player")
 
-    local sortedQuestIds = {}
-    for questId in pairs(tooltipData) do
-        tinsert(sortedQuestIds, questId)
-    end
-    tsort(sortedQuestIds)
+    local sortedQuestIds = QuestieLib:SortQuestIDsByLevel(tooltipData, true)
 
     for _, questId in ipairs(sortedQuestIds) do
         local questData = tooltipData[questId]

@@ -584,7 +584,7 @@ end
 
 ---@param quests table<QuestId, any>
 ---@return table A sorted table of quests, sorted by level and then by type (Elite, Dungeon, etc.)
-function QuestieLib:SortQuestIDsByLevel(quests)
+function QuestieLib:SortQuestIDsByLevel(quests, idsOnly)
     local sortedQuestsByLevel = {}
 
     for questId in pairs(quests) do
@@ -594,6 +594,11 @@ function QuestieLib:SortQuestIDsByLevel(quests)
     end
     table.sort(sortedQuestsByLevel, compareQuestsByLevelAndType)
 
+    if idsOnly then
+        local ids = {}
+        for i, entry in ipairs(sortedQuestsByLevel) do ids[i] = entry[2] end
+        return ids
+    end
     return sortedQuestsByLevel
 end
 

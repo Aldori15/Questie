@@ -24,6 +24,7 @@ local l10n = QuestieLoader:ImportModule("l10n")
 local WeaponMasterSkills = QuestieLoader:ImportModule("WeaponMasterSkills")
 ---@type Phasing
 local Phasing = QuestieLoader:ImportModule("Phasing")
+local QuestieWaypoints = QuestieLoader:ImportModule("QuestieWaypoints")
 
 --- COMPATIBILITY ---
 local C_Timer = QuestieCompat.C_Timer
@@ -81,67 +82,8 @@ local function _IsSpawnVisible(spawn)
     return Phasing.IsSpawnDataVisible(spawn)
 end
 
-local function _RememberWaypointDrawData(icon, waypoints, zone, color)
-    if not icon or not icon.data then
-        return
-    end
-
-    if not icon.data.waypointDrawData then
-        icon.data.waypointDrawData = {}
-    end
-
-    for _, waypointDrawData in ipairs(icon.data.waypointDrawData) do
-        if waypointDrawData.waypoints == waypoints and waypointDrawData.zone == zone and waypointDrawData.color == color then
-            return
-        end
-    end
-
-    tinsert(icon.data.waypointDrawData, {
-        waypoints = waypoints,
-        zone = zone,
-        color = color,
-    })
-end
-
-local function _SetIconWaypointLinesVisible(icon, visible)
-    if not icon or not icon.data then
-        return
-    end
-
-    if visible and (not icon.data.lineFrames) and icon.data.waypointDrawData then
-        for _, waypointDrawData in ipairs(icon.data.waypointDrawData) do
-            QuestieMap:DrawWaypoints(icon, waypointDrawData.waypoints, waypointDrawData.zone, waypointDrawData.color)
-        end
-    end
-
-    if not icon.data.lineFrames then
-        return
-    end
-
-    local shouldShow = visible and (not icon.hidden) and (not icon.ShouldBeHidden or not icon:ShouldBeHidden())
-    for _, lineIcon in pairs(icon.data.lineFrames) do
-        if shouldShow then
-            lineIcon:FakeShow()
-        else
-            lineIcon:FakeHide()
-        end
-    end
-end
-
-function QuestieMap:SetWaypointLinesVisible(visible)
-    for _, frameList in pairs(QuestieMap.questIdFrames) do
-        for _, frameName in pairs(frameList) do
-            _SetIconWaypointLinesVisible(_G[frameName], visible)
-        end
-    end
-
-    for _, frameTypeList in pairs(QuestieMap.manualFrames) do
-        for _, frameList in pairs(frameTypeList) do
-            for _, frameName in pairs(frameList) do
-                _SetIconWaypointLinesVisible(_G[frameName], visible)
-            end
-        end
-    end
+function QuestieMap:SetWaypointLinesVisible()
+    QuestieWaypoints.Refresh()
 end
 
 local function _CopyManualTooltipDataWithCoordinates(data, x, y)
@@ -726,7 +668,7 @@ function QuestieMap:ShowNPC(npcID, icon, scale, title, body, disableShiftToRemov
                 if not manualIcons[zone] then
                     manualIcons[zone] = QuestieMap:DrawManualIcon(data, zone, waypoints[1][1][1], waypoints[1][1][2], typ)
                 end
-                QuestieMap:DrawWaypoints(manualIcons[zone], waypoints, zone)
+                QuestieMap:DrawWaypoints(manualIcons[zone], waypoints, zone, nil, "m_" .. npc.id)
             end
         end
     end
@@ -822,17 +764,6 @@ function QuestieMap:ShowObject(objectID, icon, scale, title, body, disableShiftT
     end
 end
 
-function QuestieMap:DrawLineIcon(lineFrame, areaID, x, y)
-    if type(areaID) ~= "number" or type(x) ~= "number" or type(y) ~= "number" then
-        error("Questie" .. ": AddWorldMapIconMap: 'AreaID', 'x' and 'y' must be numbers " .. areaID .. " " .. x .. " " .. y)
-    end
-
-    local uiMapId = ZoneDB:GetUiMapIdByAreaId(areaID)
-
-    HBDPins:AddWorldMapIconMap(Questie, lineFrame, uiMapId, x, y, HBD_PINS_WORLDMAP_SHOW_CURRENT)
-    QuestieMap.utils.SetLineDrawOrder(lineFrame)
-end
-
 -- Draw manually added NPC/object notes
 -- TODO: item and custom notes
 ---@param data table @A table created by the calling function, must contain `id`, `Name`, `GetIconScale()`, and `Type`
@@ -924,6 +855,8 @@ function QuestieMap:DrawManualIcon(data, areaID, x, y, typ, spawn)
     iconMinimap.texture.b = colorsMinimap[3]
     iconMinimap.texture.a = 1
     iconMinimap.miniMapIcon = true;
+    icon.minimapTwin = iconMinimap
+    iconMinimap.waypointOwner = icon
 
     if (not iconMinimap.FadeLogic) then
         iconMinimap.SetFade = _MinimapIconSetFade
@@ -1085,6 +1018,8 @@ function QuestieMap:DrawWorldIcon(data, areaID, x, y, spawn, showFlag)
     --Are we a minimap note?
     iconMinimap.miniMapIcon = true;
     iconMinimap:UpdateTexture(Questie.usedIcons[data.Icon]);
+    iconMap.minimapTwin = iconMinimap
+    iconMinimap.waypointOwner = iconMap
 
     if (not iconMinimap.FadeLogic) then
         iconMinimap.SetFade = _MinimapIconSetFade
@@ -1411,32 +1346,7 @@ function QuestieMap:GetNearestQuestSpawn(quest)
     return bestSpawn, bestSpawnZone, bestSpawnName, bestSpawnId, bestSpawnType, bestDistance
 end
 
-QuestieMap.zoneWaypointColorOverrides = { -- this is used when the default orange color doesn't work well in specific zones. Not needed after 769ea832ff772b10c57351eb199348393625a99b
-    --    [14] = {0,0.1,0.9,0.7}, -- durotar
-    --    [38] = {0,0.1,0.9,0.7} -- loch modan
-}
-
-QuestieMap.zoneWaypointHoverColorOverrides = {
-    --    [14] = {0,0.6,1,1}, -- durotar
-    --    [38] = {0,0.6,1,1} -- loch modan
-}
-
-function QuestieMap:DrawWaypoints(icon, waypoints, zone, color)
-    if not icon then
-        return
-    end
-
-    if waypoints and waypoints[1] and waypoints[1][1] and waypoints[1][1][1] then -- check that waypoint data actually exists
-        _RememberWaypointDrawData(icon, waypoints, zone, color)
-        if not Questie.db.profile.showWaypointLines then return end
-
-        local shouldBeHidden = icon:ShouldBeHidden()
-        local lineFrames = QuestieFramePool:CreateWaypoints(icon, waypoints, nil, color or QuestieMap.zoneWaypointColorOverrides[zone], zone)
-        for _, lineFrame in ipairs(lineFrames) do
-            QuestieMap:DrawLineIcon(lineFrame, zone, waypoints[1][1][1], waypoints[1][1][2])
-            if shouldBeHidden then
-                lineFrame:FakeHide()
-            end
-        end
-    end
+function QuestieMap:DrawWaypoints(icon, waypoints, zone, color, entity)
+    if not icon or not icon.data or not waypoints then return end
+    QuestieWaypoints.Add(icon, entity, waypoints, zone, color ~= nil)
 end

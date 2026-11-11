@@ -53,6 +53,8 @@ function Questie:OnDisable()
 end
 
 function Questie:RefreshConfig(_, db, profileName)
+    local waypoints = QuestieLoader:ImportModule("QuestieWaypoints")
+    if waypoints.Refresh then waypoints.Refresh() end
     Questie:SetIcons()
     MinimapIcon:Refresh()
     QuestieQuest:SmoothReset()

@@ -1316,7 +1316,7 @@ function QuestieQuest:AddFinisher(quest)
                             finisherLocs[zone] = { waypoints[1][1][1], waypoints[1][1][2] }
                         end
 
-                        QuestieMap:DrawWaypoints(finisherIcons[zone], waypoints, zone)
+                        QuestieMap:DrawWaypoints(finisherIcons[zone], waypoints, zone, nil, key)
                     end
                 end
             end
@@ -2045,7 +2045,7 @@ _DrawObjectiveWaypoints = function(quest, objective, icon, iconPerZone)
                     local ipz = iconPerZone[zone]
 
                     if ipz then
-                        QuestieMap:DrawWaypoints(ipz[1], waypoints, zone, spawnData.Hostile and {1, 0.2, 0, 0.7} or nil)
+                        QuestieMap:DrawWaypoints(ipz[1], waypoints, zone, spawnData.Hostile and true or nil, spawnData.TooltipKey or ("m_" .. spawnData.Id))
                     end
 
                     yieldCount = yieldCount + 1

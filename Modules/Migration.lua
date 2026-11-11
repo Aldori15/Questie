@@ -173,6 +173,11 @@ local migrationFunctions = {
         Questie.db.profile.minimizeTrackerInDungeons = nil
         Questie.db.profile.hideTrackerInDungeons = nil
     end,
+    [32] = function()
+        if Questie.db.profile.showWaypointLines == false then
+            Questie.db.profile.waypointMinimapEnabled = false
+        end
+    end,
 }
 
 function Migration:Migrate()

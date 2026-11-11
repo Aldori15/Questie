@@ -139,6 +139,9 @@ Modules\FramePool\QuestieFramePool.lua
 Modules\FramePool\QuestieFrame.lua
 
 # Map
+Modules\Map\Waypoints\WaypointGeometry.lua
+Modules\Map\Waypoints\WaypointRenderer.lua
+Modules\Map\Waypoints\QuestieWaypoints.lua
 Modules\Map\QuestieMap.lua
 Modules\Map\QuestieMapUtils.lua
 #Modules\Map\HBDHooks.lua

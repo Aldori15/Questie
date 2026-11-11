@@ -1,5 +1,6 @@
 ---@class TrackerUtils
 local TrackerUtils = QuestieLoader:CreateModule("TrackerUtils")
+local QuestieWaypoints = QuestieLoader:ImportModule("QuestieWaypoints")
 -------------------------
 --Import QuestieTracker modules.
 -------------------------
@@ -156,14 +157,6 @@ function TrackerUtils:FlashObjective(objective)
                     if icon:IsShown() then
                         icon._hidden_by_flash = true
                         icon:Hide()
-                        if icon.data.lineFrames then
-                            for _, line in pairs(icon.data.lineFrames) do
-                                if line:IsShown() then
-                                    line._hidden_by_flash = true
-                                    line:Hide()
-                                end
-                            end
-                        end
                     end
                 end
             end
@@ -181,15 +174,12 @@ function TrackerUtils:FlashObjective(objective)
                     -- todo: move into frame.session
                     frame._hidden_by_flash = nil
                     frame._size = frame:GetWidth()
-
-                    if Questie.db.profile.showWaypointLines and frame.data.lineFrames then
-                        for _, line in pairs(frame.data.lineFrames) do
-                            line:Show()
-                        end
-                    end
                 end
             end
         end
+        local patrolData = {}
+        for _, frame in ipairs(toFlash) do patrolData[frame.data] = true end
+        if QuestieWaypoints.SetSolo then QuestieWaypoints.SetSolo(patrolData) end
         local flashW = 1
         local flashB = true
         local flashDone = 0
@@ -232,6 +222,7 @@ function TrackerUtils:FlashObjective(objective)
                                         end
                                     end
                                 end
+                                if QuestieWaypoints.SetSolo then QuestieWaypoints.SetSolo(nil) end
                                 _RefreshWorldMapPins()
                             end)
                         end
@@ -256,14 +247,6 @@ function TrackerUtils:FlashFinisher(quest)
                     if icon:IsShown() then
                         icon._hidden_by_flash = true
                         icon:Hide()
-                        if icon.data.lineFrames then
-                            for _, line in pairs(icon.data.lineFrames) do
-                                if line:IsShown() then
-                                    line._hidden_by_flash = true
-                                    line:Hide()
-                                end
-                            end
-                        end
                     end
                 end
             end
@@ -273,17 +256,14 @@ function TrackerUtils:FlashFinisher(quest)
                 if not icon.miniMapIcon then
                     icon._size = icon:GetWidth()
                     tinsert(toFlash, icon)
-
-                    if Questie.db.profile.showWaypointLines and icon.data.lineFrames then
-                        for _, line in pairs(icon.data.lineFrames) do
-                            line:Show()
-                        end
-                    end
                 end
             end
         end
     end
 
+    local patrolData = {}
+    for _, frame in ipairs(toFlash) do patrolData[frame.data] = true end
+    if QuestieWaypoints.SetSolo then QuestieWaypoints.SetSolo(patrolData) end
     local flashW = 1
     local flashB = true
     local flashDone = 0
@@ -326,6 +306,7 @@ function TrackerUtils:FlashFinisher(quest)
                                     end
                                 end
                             end
+                            if QuestieWaypoints.SetSolo then QuestieWaypoints.SetSolo(nil) end
                             _RefreshWorldMapPins()
                         end)
                     end

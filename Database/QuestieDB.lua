@@ -2057,6 +2057,7 @@ function QuestieDB:GetItem(itemId)
                 sources[#sources + 1] = {
                     Id = npcId,
                     Type = "monster",
+                    Vendor = true,
                 }
             end
         end

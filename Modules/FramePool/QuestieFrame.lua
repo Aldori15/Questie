@@ -1,6 +1,7 @@
 ---@class QuestieFrame
 local QuestieFrame = QuestieLoader:CreateModule("QuestieFrame")
 local _QuestieFrame = QuestieFrame.private
+local QuestieWaypoints = QuestieLoader:ImportModule("QuestieWaypoints")
 ---@type QuestieMap
 local QuestieMap = QuestieLoader:ImportModule("QuestieMap")
 ---@type QuestieDBMIntegration
@@ -152,13 +153,7 @@ function _QuestieFrame:OnLeave()
     end
 
     if self.data then
-        --Reset highlighting if it exists.
-        if self.data.lineFrames then
-            for _, lineFrame in pairs(self.data.lineFrames) do
-                local line = lineFrame.line
-                line:SetColorTexture(line.dR, line.dG, line.dB, line.dA)
-            end
-        end
+        if QuestieWaypoints.SetHighlighted then QuestieWaypoints.SetHighlighted(self.data, false) end
 
         if self.data.touchedPins then
             for i = #self.data.touchedPins, 1, -1 do
@@ -242,6 +237,7 @@ function _QuestieFrame:GlowUpdate()
 end
 
 function _QuestieFrame:BaseOnShow()
+    if QuestieWaypoints.OwnerChanged then QuestieWaypoints.OwnerChanged(self) end
     local data = self.data
 
     if ((self.miniMapIcon and Questie.db.profile.alwaysGlowMinimap) or ((not self.miniMapIcon) and Questie.db.profile.alwaysGlowMap)) and
@@ -257,6 +253,7 @@ function _QuestieFrame:BaseOnShow()
 end
 
 function _QuestieFrame:BaseOnHide()
+    if QuestieWaypoints.OwnerChanged then QuestieWaypoints.OwnerChanged(self) end
     self.glowTexture:Hide()
 end
 
@@ -329,6 +326,8 @@ function _QuestieFrame:UpdateTexture(texture)
 end
 
 function _QuestieFrame:Unload()
+    if QuestieWaypoints.RemoveOwner then QuestieWaypoints.RemoveOwner(self) end
+    if QuestieWaypoints.OwnerChanged then QuestieWaypoints.OwnerChanged(self) end
     if self.serverPatrolTracked then
         QuestieLoader:ImportModule("QuestieServerPatrol"):Unregister(self)
     end
@@ -370,12 +369,8 @@ function _QuestieFrame:Unload()
         self.overlayTexture:SetTexture(nil)
     end
     self.miniMapIcon = nil;
-    --Unload potential waypoint frames that are used for pathing.
-    if self.data and self.data.lineFrames then
-        for _, lineFrame in pairs(self.data.lineFrames) do
-            lineFrame:Unload();
-        end
-    end
+    self.minimapTwin = nil
+    self.waypointOwner = nil
 
     if self.OnHide then self:OnHide() end -- the event might trigger after OnHide=nil even if its set after self:Hide()
     self:Hide()
@@ -391,43 +386,30 @@ function _QuestieFrame:Unload()
 end
 
 function _QuestieFrame:FadeOut()
+    if QuestieWaypoints.OwnerChanged then QuestieWaypoints.OwnerChanged(self) end
     if not self.faded then
         self.faded = true
         local r, g, b = self.texture:GetVertexColor()
         self.texture:SetVertexColor(r, g, b, Questie.db.profile.iconFadeLevel)
         r, g, b = self.glowTexture:GetVertexColor()
         self.glowTexture:SetVertexColor(r, g, b, GetObjectiveGlowAlpha(self, Questie.db.profile.iconFadeLevel))
-        if self.data and self.data.lineFrames then
-            for _, lineFrame in pairs(self.data.lineFrames) do
-                local line = lineFrame.line
-                if line then
-                    line:SetColorTexture(line.dR, line.dG, line.dB, Questie.db.global.iconFadeLevel)
-                end
-            end
-        end
     end
 end
 
 function _QuestieFrame:FadeIn()
+    if QuestieWaypoints.OwnerChanged then QuestieWaypoints.OwnerChanged(self) end
     if self.faded then
         self.faded = nil
         local r, g, b = self.texture:GetVertexColor()
         self.texture:SetVertexColor(r, g, b, 1)
         r, g, b = self.glowTexture:GetVertexColor()
         self.glowTexture:SetVertexColor(r, g, b, GetObjectiveGlowAlpha(self, 1))
-        if self.data and self.data.lineFrames then
-            for _, lineFrame in pairs(self.data.lineFrames) do
-                local line = lineFrame.line
-                if line then
-                    line:SetColorTexture(line.dR, line.dG, line.dB, line.dA)
-                end
-            end
-        end
     end
 end
 
 --- This is needed because HBD will show the icons again after switching zones and stuff like that
 function _QuestieFrame:FakeHide()
+    if QuestieWaypoints.OwnerChanged then QuestieWaypoints.OwnerChanged(self) end
     if not self.hidden then
         self.shouldBeShowing = self:IsShown();
         self._show = self.Show;
@@ -435,15 +417,6 @@ function _QuestieFrame:FakeHide()
             self.shouldBeShowing = true;
         end
         self:Hide();
-        if self.data and self.data.lineFrames then
-            for _, line in pairs(self.data.lineFrames) do
-                if line.FakeHide then
-                    line:FakeHide()
-                else
-                    line:Hide()
-                end
-            end
-        end
         self._hide = self.Hide;
         self.Hide = function()
             self.shouldBeShowing = false;
@@ -454,6 +427,7 @@ end
 
 --- This is needed because HBD will show the icons again after switching zones and stuff like that
 function _QuestieFrame:FakeShow()
+    if QuestieWaypoints.OwnerChanged then QuestieWaypoints.OwnerChanged(self) end
     if self.hidden then
         self.hidden = false
         self.Show = self._show;
@@ -462,15 +436,6 @@ function _QuestieFrame:FakeShow()
         self._hide = nil
         if self.shouldBeShowing then
             self:Show();
-            if self.data and self.data.lineFrames then
-                for _, line in pairs(self.data.lineFrames) do
-                    if line.FakeShow then
-                        line:FakeShow()
-                    else
-                        line:Show()
-                    end
-                end
-            end
         end
     end
 end

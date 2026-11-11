@@ -1810,7 +1810,10 @@ _AddStarter = function(starter, quest, tooltipKey, limit)
                     end
                 end
                 if starterIcons[zone] then
-                    QuestieMap:DrawWaypoints(starterIcons[zone], waypoints, zone)
+                    QuestieMap:DrawWaypoints(starterIcons[zone], waypoints, zone,
+                        starterType == "itemFromMonster" and not (starter.friendly and starter.npcFlags
+                            and bit.band(starter.npcFlags, QuestieDB.npcFlags.VENDOR) ~= 0) and true or nil,
+                        tooltipKey)
                 end
             end
         end

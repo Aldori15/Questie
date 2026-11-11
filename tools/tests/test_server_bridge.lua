@@ -3231,6 +3231,12 @@ do
     mods.QuestieLib.GetDifficultyColorPercent = function() return 1, 1, 0 end
     mods.QuestieLib.GetRGBForObjective = function() return "white" end
     mods.QuestieLib.GetObjectiveDescription = function() return "Objective retained" end
+    mods.QuestieLib.SortQuestIDsByLevel = function(_, quests)
+        local ids = {}
+        for id in pairs(quests) do ids[#ids + 1] = id end
+        table.sort(ids)
+        return ids
+    end
     db.GetItemDroprate = function() return nil end
     env.Questie.db.profile.showQuestsInNpcTooltip = true
     assert(loadfile("Modules/Tooltips/Tooltip.lua", "t", env))()
