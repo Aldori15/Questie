@@ -40,7 +40,7 @@
 -- @class file
 -- @name AceDB-3.0.lua
 -- @release $Id: AceDB-3.0.lua 940 2010-06-19 08:01:47Z nevcairiel $
-local ACEDB_MAJOR, ACEDB_MINOR = "AceDB-3.0", 21
+local ACEDB_MAJOR, ACEDB_MINOR = "AceDB-3.0", 22
 local AceDB, oldminor = LibStub:NewLibrary(ACEDB_MAJOR, ACEDB_MINOR)
 
 if not AceDB then return end -- No upgrade needed
@@ -355,7 +355,7 @@ local function logoutHandler(frame, event)
 			
 			-- cleanup sections that are empty without defaults
 			local sv = rawget(db, "sv")
-			for section in pairs(db.keys) do
+			for section in pairs(rawget(db, "keys")) do
 				if rawget(sv, section) then
 					-- global is special, all other sections have sub-entrys
 					-- also don't delete empty profiles on main dbs, only on namespaces
@@ -369,6 +369,16 @@ local function logoutHandler(frame, event)
 					if not next(sv[section]) then
 						sv[section] = nil
 					end
+				end
+			end
+		end
+		-- Namespace cleanup must follow all database cleanup, regardless of registry order.
+		for db in pairs(AceDB.db_registry) do
+			local namespaces = rawget(rawget(db, "sv"), "namespaces")
+			if namespaces then
+				for name, namespace in pairs(namespaces) do
+					if namespace.profiles and not next(namespace.profiles) then namespace.profiles = nil end
+					if not next(namespace) then namespaces[name] = nil end
 				end
 			end
 		end
@@ -520,6 +530,20 @@ function DBObjectLib:DeleteProfile(name, silent)
 		end
 	end
 
+	-- Unloaded namespaces and other characters must not retain the deleted profile.
+	if self.sv.namespaces then
+		for nsname, data in pairs(self.sv.namespaces) do
+			if not (self.children and self.children[nsname]) and data.profiles then
+				data.profiles[name] = nil
+			end
+		end
+	end
+	if self.sv.profileKeys then
+		for key, profile in pairs(self.sv.profileKeys) do
+			if profile == name then self.sv.profileKeys[key] = nil end
+		end
+	end
+
 	-- Callback: OnProfileDeleted, database, profileKey
 	self.callbacks:Fire("OnProfileDeleted", self, name)
 end
@@ -556,6 +580,15 @@ function DBObjectLib:CopyProfile(name, silent)
 		end
 	end
 
+	if self.sv.namespaces then
+		for nsname, data in pairs(self.sv.namespaces) do
+			if not (self.children and self.children[nsname]) and data.profiles then
+				data.profiles[self.keys.profile] = {}
+				copyTable(data.profiles[name], data.profiles[self.keys.profile])
+			end
+		end
+	end
+
 	-- Callback: OnProfileCopied, database, sourceProfileKey
 	self.callbacks:Fire("OnProfileCopied", self, name)
 end
@@ -582,6 +615,14 @@ function DBObjectLib:ResetProfile(noChildren, noCallbacks)
 		end
 	end
 
+	if self.sv.namespaces and not noChildren then
+		for nsname, data in pairs(self.sv.namespaces) do
+			if not (self.children and self.children[nsname]) and data.profiles then
+				data.profiles[self.keys.profile] = nil
+			end
+		end
+	end
+
 	-- Callback: OnProfileReset, database
 	if not noCallbacks then
 		self.callbacks:Fire("OnProfileReset", self)
@@ -592,8 +633,8 @@ end
 -- profile.
 -- @param defaultProfile The profile name to use as the default
 function DBObjectLib:ResetDB(defaultProfile)
-	if defaultProfile and type(defaultProfile) ~= "string" then
-		error("Usage: AceDBObject:ResetDB(defaultProfile): 'defaultProfile' - string or nil expected.", 2)
+	if defaultProfile and type(defaultProfile) ~= "string" and defaultProfile ~= true then
+		error("Usage: AceDBObject:ResetDB(defaultProfile): 'defaultProfile' - string or true expected.", 2)
 	end
 
 	local sv = self.sv

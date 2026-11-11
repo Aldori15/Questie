@@ -153,7 +153,7 @@ function QuestieJourney:ToggleJourneyWindow()
     end
 
     if (not isWindowShown) then
-        PlaySound(882)
+        PlaySound("igPlayerInviteDecline")
 
         local treeGroup = _QuestieJourney:HandleTabChange(_QuestieJourney.containerCache, _QuestieJourney.lastOpenWindow)
         if treeGroup then

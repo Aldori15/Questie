@@ -2,11 +2,10 @@
 TreeGroup Container
 Container that uses a tree control to switch between groups.
 -------------------------------------------------------------------------------]]
-local Type, Version = "TreeGroup", 40
+local Type, Version = "TreeGroup", 41
 local AceGUI = LibStub and LibStub("AceGUI-3.0", true)
 if not AceGUI or (AceGUI:GetWidgetVersion(Type) or 0) >= Version then return end
-
-local IsLegion = select(4, GetBuildInfo()) >= 70000
+local GameTooltip = AceGUI.tooltip or GameTooltip
 
 -- Lua APIs
 local next, pairs, ipairs, assert, type = next, pairs, ipairs, assert, type
@@ -213,6 +212,7 @@ local function Button_OnEnter(frame)
 
 	if self.enabletooltips then
 		GameTooltip:SetOwner(frame, "ANCHOR_NONE")
+		GameTooltip:ClearAllPoints()
 		GameTooltip:SetPoint("LEFT",frame,"RIGHT")
 		GameTooltip:SetText(frame.text:GetText() or "", 1, .82, 0, true)
 
@@ -673,7 +673,7 @@ local function Constructor()
 	local scrollbg = scrollbar:CreateTexture(nil, "BACKGROUND")
 	scrollbg:SetAllPoints(scrollbar)
 
-	if IsLegion then
+	if scrollbg.SetColorTexture then
 		scrollbg:SetColorTexture(0,0,0,0.4)
 	else
 		scrollbg:SetTexture(0,0,0,0.4)

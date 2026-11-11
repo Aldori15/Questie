@@ -25,16 +25,16 @@
 -- @class file
 -- @name AceGUI-3.0
 -- @release $Id: AceGUI-3.0.lua 1102 2013-10-25 14:15:23Z nevcairiel $
-local ACEGUI_MAJOR, ACEGUI_MINOR = "AceGUI-3.0", 34
+local ACEGUI_MAJOR, ACEGUI_MINOR = "AceGUI-3.0", 35
 local AceGUI, oldminor = LibStub:NewLibrary(ACEGUI_MAJOR, ACEGUI_MINOR)
 
 if not AceGUI then return end -- No upgrade needed
 
 -- Lua APIs
-local tconcat, tremove, tinsert = table.concat, table.remove, table.insert
+local tinsert = table.insert
 local select, pairs, next, type = select, pairs, next, type
-local error, assert, loadstring = error, assert, loadstring
-local setmetatable, rawget, rawset = setmetatable, rawget, rawset
+local error, assert = error, assert
+local setmetatable, rawget = setmetatable, rawget
 local math_max = math.max
 
 -- WoW APIs
@@ -51,6 +51,7 @@ AceGUI.LayoutRegistry = AceGUI.LayoutRegistry or {}
 AceGUI.WidgetBase = AceGUI.WidgetBase or {}
 AceGUI.WidgetContainerBase = AceGUI.WidgetContainerBase or {}
 AceGUI.WidgetVersions = AceGUI.WidgetVersions or {}
+AceGUI.tooltip = AceGUI.tooltip or CreateFrame("GameTooltip", "AceGUITooltip", UIParent, "GameTooltipTemplate")
  
 -- local upvalues
 local WidgetRegistry = AceGUI.WidgetRegistry
@@ -66,39 +67,11 @@ local function errorhandler(err)
 	return geterrorhandler()(err)
 end
 
-local function CreateDispatcher(argCount)
-	local code = [[
-		local xpcall, eh = ...
-		local method, ARGS
-		local function call() return method(ARGS) end
-	
-		local function dispatch(func, ...)
-			method = func
-			if not method then return end
-			ARGS = ...
-			return xpcall(call, eh)
-		end
-	
-		return dispatch
-	]]
-	
-	local ARGS = {}
-	for i = 1, argCount do ARGS[i] = "arg"..i end
-	code = code:gsub("ARGS", tconcat(ARGS, ", "))
-	return assert(loadstring(code, "safecall Dispatcher["..argCount.."]"))(xpcall, errorhandler)
-end
-
-local Dispatchers = setmetatable({}, {__index=function(self, argCount)
-	local dispatcher = CreateDispatcher(argCount)
-	rawset(self, argCount, dispatcher)
-	return dispatcher
-end})
-Dispatchers[0] = function(func)
-	return xpcall(func, errorhandler)
-end
- 
+-- Lua 5.1 does not forward xpcall arguments. Keep each invocation independent.
 local function safecall(func, ...)
-	return Dispatchers[select("#", ...)](func, ...)
+	if not func then return end
+	local args, count = {...}, select("#", ...)
+	return xpcall(function() return func(unpack(args, 1, count)) end, errorhandler)
 end
 
 -- Recycling functions
@@ -204,7 +177,10 @@ end
 -- If this widget is a Container-Widget, all of its Child-Widgets will be releases as well.
 -- @param widget The widget to release
 function AceGUI:Release(widget)
+	if widget.isQueuedForRelease then return end
+	widget.isQueuedForRelease = true
 	safecall(widget.PauseLayout, widget)
+	widget.frame:Hide()
 	widget:Fire("OnRelease")
 	safecall(widget.ReleaseChildren, widget)
 
@@ -233,7 +209,17 @@ function AceGUI:Release(widget)
 		widget.content.width = nil
 		widget.content.height = nil
 	end
+	widget.isQueuedForRelease = nil
 	delWidget(widget, widget.type)
+end
+
+--- Returns whether a widget or its parent is being released.
+function AceGUI:IsReleasing(widget)
+	if widget.isQueuedForRelease then return true end
+	if widget.parent and widget.parent.AceGUIWidgetVersion then
+		return self:IsReleasing(widget.parent)
+	end
+	return false
 end
 
 -----------
@@ -295,6 +281,10 @@ end
 --------------------------
 do
 	local WidgetBase = AceGUI.WidgetBase 
+
+	WidgetBase.IsReleasing = function(self)
+		return AceGUI:IsReleasing(self)
+	end
 	
 	WidgetBase.SetParent = function(self, parent)
 		local frame = self.frame

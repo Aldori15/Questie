@@ -125,7 +125,7 @@ end
 function QuestieOptions:OpenConfigWindow()
     if not QuestieConfigFrame:IsShown() then
         _TrySkinJourneyButton()
-        PlaySound(882)
+        PlaySound("igPlayerInviteDecline")
         AceConfigDialog:Open("Questie", QuestieConfigFrame)
     else
         QuestieConfigFrame:Hide()

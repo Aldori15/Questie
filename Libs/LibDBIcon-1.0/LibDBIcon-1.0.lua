@@ -33,7 +33,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 --
 
 local DBICON10 = "LibDBIcon-1.0"
-local DBICON10_MINOR = tonumber(("$Rev: 15 $"):match("(%d+)"))
+local DBICON10_MINOR = 16
 if not LibStub then error(DBICON10 .. " requires LibStub.") end
 local ldb = LibStub("LibDataBroker-1.1", true)
 if not ldb then error(DBICON10 .. " requires LibDataBroker-1.1.") end
@@ -44,15 +44,48 @@ lib.disabled = lib.disabled or nil
 lib.objects = lib.objects or {}
 lib.callbackRegistered = lib.callbackRegistered or nil
 lib.notCreated = lib.notCreated or {}
+lib.radius = lib.radius or 5
+lib.tooltip = lib.tooltip or CreateFrame("GameTooltip", "LibDBIconTooltip", UIParent, "GameTooltipTemplate")
+local GameTooltip = lib.tooltip
 
-function lib:IconCallback(event, name, key, value, dataobj)
-	if lib.objects[name] then
-		lib.objects[name].icon:SetTexture(dataobj.icon)
+local defaultCoords = {0, 1, 0, 1}
+local function updateCoord(icon)
+	local button = icon:GetParent()
+	local coords = button.dataObject.iconCoords or defaultCoords
+	local dx, dy = 0, 0
+	if not button.isMouseDown then
+		dx, dy = (coords[2] - coords[1]) * 0.05, (coords[4] - coords[3]) * 0.05
+	end
+	icon:SetTexCoord(coords[1] + dx, coords[2] - dx, coords[3] + dy, coords[4] - dy)
+end
+
+function lib:IconCallback(event, name, key, value)
+	local button = lib.objects[name]
+	if not button then return end
+	if key == "icon" then
+		button.icon:SetTexture(value)
+	elseif key == "iconCoords" then
+		updateCoord(button.icon)
+	elseif key == "iconR" then
+		local _, g, b = button.icon:GetVertexColor()
+		button.icon:SetVertexColor(value or 1, g, b)
+	elseif key == "iconG" then
+		local r, _, b = button.icon:GetVertexColor()
+		button.icon:SetVertexColor(r, value or 1, b)
+	elseif key == "iconB" then
+		local r, g = button.icon:GetVertexColor()
+		button.icon:SetVertexColor(r, g, value or 1)
 	end
 end
 if not lib.callbackRegistered then
 	ldb.RegisterCallback(lib, "LibDataBroker_AttributeChanged__icon", "IconCallback")
 	lib.callbackRegistered = true
+end
+if not lib.attributeCallbacksRegistered then
+	for _, attribute in ipairs({"iconCoords", "iconR", "iconG", "iconB"}) do
+		ldb.RegisterCallback(lib, "LibDataBroker_AttributeChanged__" .. attribute, "IconCallback")
+	end
+	lib.attributeCallbacksRegistered = true
 end
 
 -- Tooltip code ripped from StatBlockCore by Funkydude
@@ -88,42 +121,55 @@ end
 local minimapShapes = {
 	["ROUND"] = {true, true, true, true},
 	["SQUARE"] = {false, false, false, false},
-	["CORNER-TOPLEFT"] = {true, false, false, false},
+	["CORNER-TOPLEFT"] = {false, false, false, true},
 	["CORNER-TOPRIGHT"] = {false, false, true, false},
 	["CORNER-BOTTOMLEFT"] = {false, true, false, false},
-	["CORNER-BOTTOMRIGHT"] = {false, false, false, true},
-	["SIDE-LEFT"] = {true, true, false, false},
-	["SIDE-RIGHT"] = {false, false, true, true},
-	["SIDE-TOP"] = {true, false, true, false},
-	["SIDE-BOTTOM"] = {false, true, false, true},
-	["TRICORNER-TOPLEFT"] = {true, true, true, false},
+	["CORNER-BOTTOMRIGHT"] = {true, false, false, false},
+	["SIDE-LEFT"] = {false, true, false, true},
+	["SIDE-RIGHT"] = {true, false, true, false},
+	["SIDE-TOP"] = {false, false, true, true},
+	["SIDE-BOTTOM"] = {true, true, false, false},
+	["TRICORNER-TOPLEFT"] = {false, true, true, true},
 	["TRICORNER-TOPRIGHT"] = {true, false, true, true},
 	["TRICORNER-BOTTOMLEFT"] = {true, true, false, true},
-	["TRICORNER-BOTTOMRIGHT"] = {false, true, true, true},
+	["TRICORNER-BOTTOMRIGHT"] = {true, true, true, false},
 }
 
 local math_max, math_min = math.max, math.min
 
 local function updatePosition(button)
+	-- Detached buttons and external collectors own their own anchors.
+	if button:GetParent() ~= Minimap then return end
 	local angle = math.rad(button.db and button.db.minimapPos or button.minimapPos or 225)
 	local x, y, q = math.cos(angle), math.sin(angle), 1
 	if x < 0 then q = q + 1 end
 	if y > 0 then q = q + 2 end
 	local minimapShape = GetMinimapShape and GetMinimapShape() or "ROUND"
-	local quadTable = minimapShapes[minimapShape]
+	local quadTable = minimapShapes[minimapShape] or minimapShapes.ROUND
+	local width, height = Minimap:GetWidth(), Minimap:GetHeight()
+	if width <= 0 or height <= 0 then return end
+	local w, h = width / 2 + lib.radius, height / 2 + lib.radius
 	if quadTable[q] then
-		x, y = x*80, y*80
+		x, y = x*w, y*h
 	else
-		local diagRadius = 103.13708498985 --math.sqrt(2*(80)^2)-10
-		x = math_max(-80, math_min(x*diagRadius, 80))
-		y = math_max(-80, math_min(y*diagRadius, 80))
+		local diagRadiusW = math.sqrt(2*w*w)-10
+		local diagRadiusH = math.sqrt(2*h*h)-10
+		x = math_max(-w, math_min(x*diagRadiusW, w))
+		y = math_max(-h, math_min(y*diagRadiusH, h))
 	end
 	button:SetPoint("CENTER", Minimap, "CENTER", x, y)
 end
 
+if not lib.minimapSizeHooked then
+	Minimap:HookScript("OnSizeChanged", function()
+		for _, button in pairs(lib.objects) do updatePosition(button) end
+	end)
+	lib.minimapSizeHooked = true
+end
+
 local function onClick(self, b) if self.dataObject.OnClick then self.dataObject.OnClick(self, b) end end
-local function onMouseDown(self) self.icon:SetTexCoord(0, 1, 0, 1) end
-local function onMouseUp(self) self.icon:SetTexCoord(0.05, 0.95, 0.05, 0.95) end
+local function onMouseDown(self) self.isMouseDown = true; updateCoord(self.icon) end
+local function onMouseUp(self) self.isMouseDown = nil; updateCoord(self.icon) end
 
 local function onUpdate(self)
 	local mx, my = Minimap:GetCenter()
@@ -140,7 +186,8 @@ end
 
 local function onDragStart(self)
 	self:LockHighlight()
-	self.icon:SetTexCoord(0, 1, 0, 1)
+	self.isMouseDown = true
+	updateCoord(self.icon)
 	self:SetScript("OnUpdate", onUpdate)
 	self.isMoving = true
 	GameTooltip:Hide()
@@ -148,13 +195,15 @@ end
 
 local function onDragStop(self)
 	self:SetScript("OnUpdate", nil)
-	self.icon:SetTexCoord(0.05, 0.95, 0.05, 0.95)
+	self.isMouseDown = nil
+	updateCoord(self.icon)
 	self:UnlockHighlight()
 	self.isMoving = nil
 end
 
 local function createButton(name, object, db)
 	local button = CreateFrame("Button", "LibDBIcon10_"..name, Minimap)
+	button:Hide()
 	button.dataObject = object
 	button.db = db
 	button:SetFrameStrata("MEDIUM")
@@ -170,7 +219,8 @@ local function createButton(name, object, db)
 	local icon = button:CreateTexture(nil, "BACKGROUND")
 	icon:SetWidth(20); icon:SetHeight(20)
 	icon:SetTexture(object.icon)
-	icon:SetTexCoord(0.05, 0.95, 0.05, 0.95)
+	updateCoord(icon)
+	icon:SetVertexColor(object.iconR or 1, object.iconG or 1, object.iconB or 1)
 	icon:SetPoint("TOPLEFT", 7, -5)
 	button.icon = icon
 
@@ -186,7 +236,7 @@ local function createButton(name, object, db)
 
 	if lib.loggedIn then
 		updatePosition(button)
-		if not db or not db.hide then button:Show()
+		if not lib.disabled and (not db or not db.hide) then button:Show()
 		else button:Hide() end
 	end
 end
@@ -236,6 +286,7 @@ end
 function lib:Show(name)
 	if lib.disabled then return end
 	check(name)
+	if not lib.objects[name] then return end
 	lib.objects[name]:Show()
 	updatePosition(lib.objects[name])
 end
@@ -243,19 +294,27 @@ function lib:IsRegistered(name)
 	return (lib.objects[name] or lib.notCreated[name]) and true or false
 end
 function lib:GetMinimapButton(name)
+	check(name)
 	return lib.objects[name]
 end
 function lib:Refresh(name, db)
 	if lib.disabled then return end
 	check(name)
 	local button = lib.objects[name]
+	if not button then return end
 	if db then button.db = db end
 	updatePosition(button)
-	if not db or not db.hide then
+	if not button.db or not button.db.hide then
 		button:Show()
 	else
 		button:Hide()
 	end
+end
+
+function lib:SetButtonRadius(radius)
+	if type(radius) ~= "number" or radius < 0 or radius >= math.huge or radius ~= radius then return end
+	lib.radius = radius
+	for _, button in pairs(lib.objects) do updatePosition(button) end
 end
 
 function lib:EnableLibrary()
@@ -273,4 +332,9 @@ function lib:DisableLibrary()
 	for name, object in pairs(lib.objects) do
 		object:Hide()
 	end
+end
+
+-- Refresh buttons created by an older embedded copy without changing their visibility.
+for _, button in pairs(lib.objects) do
+	if lib.loggedIn then updatePosition(button) end
 end
