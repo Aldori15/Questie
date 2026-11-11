@@ -45,9 +45,10 @@ CORE_FIXTURES = {
 
 
 class QuestCppCreditTests(unittest.TestCase):
-    def collect(self, source, creatures=None, objects=None, broken_core=False):
+    def collect(self, source, creatures=None, objects=None, broken_core=False,
+                relative="src/server/scripts/credit.cpp"):
         with db_snapshot.temporary_directory(Path(__file__).resolve().parents[1] / "reports") as directory:
-            path = directory / "src/server/scripts/credit.cpp"
+            path = directory / relative
             path.parent.mkdir(parents=True)
             path.write_text(source, encoding="utf-8")
             for relative, text in CORE_FIXTURES.items():
@@ -191,6 +192,66 @@ class QuestCppCreditTests(unittest.TestCase):
         }; void AddSC(){RegisterCreatureAI(bear);}
         struct unrelated { void F(Player* player) { player->KilledMonsterCredit(4); } };'''
         self.assertEqual(self.collect(source)["credits"], {"3": [["monster", 2164]]})
+
+
+    def cauldron_fixture(self):
+        source = (Path(__file__).parent / "fixtures/basic_chemistry.cpp").read_text(encoding="utf-8")
+        creatures = [{"entry": entry, "ScriptName": script}
+                     for entries, script in (((31773, 32427, 32442), "npc_plague_cauldron_target"),
+                                             ((31880, 32431, 32445), "npc_plague_cauldron_bunny"))
+                     for entry in entries]
+        return source, creatures
+
+    def test_cauldron_summoners_inherit_only_their_reviewed_helper_credit(self):
+        source, creatures = self.cauldron_fixture()
+        result = self.collect(source, creatures, relative=cpp.CAULDRON_SOURCE)
+        self.assertEqual(result["credits"]["31767"],
+                         [["monster", entry] for entry in (31773, 31880, 32427, 32431, 32442, 32445)])
+        handoffs = [row for row in result["evidence"]["31767"] if "viaActor" in row]
+        self.assertEqual([(row["actor"][1], row["viaActor"][1]) for row in handoffs],
+                         [(31773, 31880), (32427, 32431), (32442, 32445)])
+
+    def test_changed_cauldron_handoff_requires_review(self):
+        source, creatures = self.cauldron_fixture()
+        changes = [
+            ("bunny->AI()->SetGUID(player->GetGUID());", "bunny->AI()->SetGUID(ObjectGuid::Empty);"),
+            ("_doserGUID = guid;", "_doserGUID = ObjectGuid::Empty;"),
+            ("return NPC_CAULDRON_BUNNY_01;", "return NPC_CAULDRON_BUNNY_02;"),
+            ("return ObjectAccessor::GetPlayer(*me, _doserGUID);", "return nullptr;"),
+            ("NPC_PLAGUE_CAULDRON_KC_BUNNY, me", "NPC_CAULDRON_TARGET_00, me"),
+        ]
+        for before, after in changes:
+            with self.subTest(change=before):
+                self.assertIn(before, source)
+                result = self.collect(source.replace(before, after), creatures, relative=cpp.CAULDRON_SOURCE)
+                for actors in result["credits"].values():
+                    self.assertFalse({31773, 32427, 32442} & {actor[1] for actor in actors})
+
+    def test_cauldron_proof_requires_the_matching_helper_binding_and_credit(self):
+        source, creatures = self.cauldron_fixture()
+        for missing in (31880, 32431, 32445):
+            with self.subTest(missing=missing):
+                rows = [row for row in creatures if row["entry"] != missing]
+                result = self.collect(source, rows, relative=cpp.CAULDRON_SOURCE)
+                target = {31880: 31773, 32431: 32427, 32445: 32442}[missing]
+                self.assertNotIn(["monster", target], result["credits"]["31767"])
+
+    def test_cauldron_proof_rejects_unreviewed_bindings_paths_and_duplicate_classes(self):
+        source, creatures = self.cauldron_fixture()
+        result = self.collect(source, creatures + [{"entry": 99999, "ScriptName": "npc_plague_cauldron_target"}],
+                              relative=cpp.CAULDRON_SOURCE)
+        self.assertNotIn(["monster", 99999], result["credits"]["31767"])
+        for changed, relative in ((source, "src/server/scripts/other.cpp"),
+                                  (source + "\nstruct npc_plague_cauldron_target {};", cpp.CAULDRON_SOURCE)):
+            result = self.collect(changed, creatures, relative=relative)
+            self.assertFalse({31773, 32427, 32442} & {actor[1] for actor in result["credits"]["31767"]})
+
+    def test_cauldron_proof_ignores_comments_and_whitespace(self):
+        source, creatures = self.cauldron_fixture()
+        source = source.replace("_doserGUID = guid;", "_doserGUID /* same player */ =\n guid;")
+        result = self.collect(source, creatures, relative=cpp.CAULDRON_SOURCE)
+        for entry in (31773, 32427, 32442):
+            self.assertIn(["monster", entry], result["credits"]["31767"])
 
     def test_core_semantics_change_requires_review(self):
         source = '''struct bear : public ScriptedAI {

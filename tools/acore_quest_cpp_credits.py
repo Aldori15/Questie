@@ -84,6 +84,56 @@ def _owners(masked, comments_removed, classes, bindings):
     return result
 
 
+# Reviewed summon-to-credit handoff in AC df405cce050179efa7cf1e3c79397bbc5a1e1617.
+# Fingerprint both state machines: a generic summon does not prove quest credit.
+CAULDRON_SOURCE = "src/server/scripts/Northrend/zone_icecrown.cpp"
+REVIEWED_CAULDRON_ACTORS = {
+    "npc_plague_cauldron_target": "09d749b3c8d1f147eef20d56404afd6c823ece2d3908c49f961b223ca1d1bfe5",
+    "npc_plague_cauldron_bunny": "41723efa6d6674212fc7c52a8c163afc5155b01be5cb06e8a81ea404e054ae6c",
+}
+CAULDRON_PAIRS = (
+    ("NPC_CAULDRON_TARGET_00", "NPC_CAULDRON_BUNNY_00"),
+    ("NPC_CAULDRON_TARGET_01", "NPC_CAULDRON_BUNNY_01"),
+    ("NPC_CAULDRON_TARGET_02", "NPC_CAULDRON_BUNNY_02"),
+)
+
+
+def _add_cauldron_targets(masked, classes, constants, owners, relative, credits, evidence):
+    """Keep cauldron targets linked to their own source-proven credit helpers."""
+    if relative != CAULDRON_SOURCE:
+        return
+    reviewed = {}
+    for name, digest in REVIEWED_CAULDRON_ACTORS.items():
+        matches = [row for row in classes if row["name"] == name]
+        if len(matches) != 1 or cpp._source_digest(masked, matches[0]) != digest:
+            return
+        reviewed[name] = matches[0]
+    target = reviewed["npc_plague_cauldron_target"]
+    helper = reviewed["npc_plague_cauldron_bunny"]
+    body = masked[target["open"] + 1:target["end"]] + masked[helper["open"] + 1:helper["end"]]
+    credit = cpp._quest_id("NPC_PLAGUE_CAULDRON_KC_BUNNY", constants, body)
+    if credit is None:
+        return
+    helper_actors = {actor for actor, _ in owners.get(helper["start"], ())}
+    for target_name, helper_name in CAULDRON_PAIRS:
+        target_id = cpp._quest_id(target_name, constants, body)
+        helper_id = cpp._quest_id(helper_name, constants, body)
+        if target_id is None or helper_id is None:
+            continue
+        helper_actor = ("monster", helper_id)
+        if helper_actor not in helper_actors or helper_actor not in credits.get(str(credit), ()):
+            continue
+        for actor, script in sorted(owners.get(target["start"], ())):
+            if actor != ("monster", target_id):
+                continue
+            credits[str(credit)].add(actor)
+            evidence[str(credit)].append({
+                "actor": list(actor), "viaActor": list(helper_actor), "file": relative,
+                "class": target["name"], "script": script, "call": "SummonCreature",
+                "line": masked.count("\n", 0, target["start"]) + 1, "receiver": "player",
+                "sourceDigests": dict(REVIEWED_CAULDRON_ACTORS),
+            })
+
 def collect(source_root, creature_templates, object_templates):
     """Return credit-to-actor mappings proven by active script bindings.
 
@@ -145,6 +195,7 @@ def collect(source_root, creature_templates, object_templates):
                 evidence[str(credit)].append({"actor": list(actor), "file": relative, "line": line,
                     "class": owner["name"], "script": script, "call": call[1],
                     "receiver": recipient})
+        _add_cauldron_targets(masked, classes, constants, owners, relative, credits, evidence)
     return {"credits": {key: [list(actor) for actor in sorted(actors)]
                         for key, actors in sorted(credits.items(), key=lambda row: int(row[0]))},
             "evidence": dict(evidence), "unsupported": unsupported}

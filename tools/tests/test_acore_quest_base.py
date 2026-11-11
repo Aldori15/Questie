@@ -81,6 +81,26 @@ class QuestBaseTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "inherited helpers"):
             exporter.validate_manifest(manifest)
 
+
+    def test_cauldron_views_keep_three_alternatives_in_one_verified_objective(self):
+        ids = (13279, 13281, 13295, 13297)
+        source = {quest_id: quest(objectives=typed({1: [[31767]]})) for quest_id in ids}
+        manifest = bootstrap(source, source)
+        manifest["accuracyPolicy"] = "verified-source-fields-v1"
+        production = json.loads((ADDON_ROOT / "tools/data/acore_quest_compatibility.json").read_text(encoding="utf-8"))
+        manifest["overrides"] = {str(quest_id): production["overrides"][str(quest_id)] for quest_id in ids}
+        proof = {"31767": [["monster", entry] for entry in (31773, 32427, 32442)]}
+        expected = typed({5: [{1: [31773, 32427, 32442], 2: 31767, 4: 3}]})
+        records = exporter.build_records(source, manifest, proof)
+        for quest_id in ids:
+            self.assertEqual(records[quest_id]["s:objectives"], expected)
+            self.assertEqual(source[quest_id]["s:objectives"], typed({1: [[31767]]}))
+        for missing in (31773, 32427, 32442):
+            with self.subTest(missing=missing):
+                incomplete = {"31767": [actor for actor in proof["31767"] if actor[1] != missing]}
+                with self.assertRaisesRegex(ValueError, "objective display proof changed"):
+                    exporter.build_records(source, manifest, incomplete)
+
     def test_child_relations_follow_source_without_baseline_exceptions(self):
         def source(rows):
             for key, children in exporter.audit.derive_child_quests(rows).items():
