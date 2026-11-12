@@ -52,6 +52,9 @@ QuestieMap.manualFrames = {}
 -- Retain explicitly requested notes while their dynamic locations are hidden.
 local dynamicManualNotes = {}
 
+local singlePinNpcIds = {
+    [4772] = true, -- Ultham Ironhorn: nearby event-exclusive positions share one pin per zone.
+}
 
 --Used in my fadelogic.
 local fadeOverDistance = 10;
@@ -643,7 +646,7 @@ function QuestieMap:ShowNPC(npcID, icon, scale, title, body, disableShiftToRemov
     for zone, spawns in pairs(npc.spawns) do
         if (zone ~= nil and spawns ~= nil) and ((not excludeDungeon) or (not ZoneDB.IsDungeonZone(zone))) then
             for _, coords in ipairs(spawns) do
-                if _IsSpawnVisible(coords) then
+                if _IsSpawnVisible(coords) and (not singlePinNpcIds[npcID] or not manualIcons[zone]) then
                     visibleSpawnZones[zone] = true
 
                     -- instance spawn, draw entrance on map

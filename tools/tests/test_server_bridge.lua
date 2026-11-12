@@ -1210,6 +1210,7 @@ map.DrawManualIcon = function(_, data, zone, x, y, typ)
     map.manualFrames[typ] = map.manualFrames[typ] or {}
     map.manualFrames[typ][data.id] = map.manualFrames[typ][data.id] or {}
     table.insert(map.manualFrames[typ][data.id], name)
+    return env[name]
 end
 s.reply({"P:WG_STATE:1:0:0"}, "WINTERGRASP,HEARTBEAT")
 map:ShowNPC(31109, "custom-icon", 0.9, "custom-title", {{"custom-body"}}, true, "search", true)
@@ -1239,6 +1240,40 @@ map:ResetManualFrames("hidden")
 s.reply({"P:WG_STATE:1:0:1"}, "WINTERGRASP,HEARTBEAT")
 equal(#map:GetManualFrames(31109, "hidden"), 0, "reset removes hidden requests too")
 tests = tests + 1
+
+-- Ultham's nearby event-exclusive spawn positions need only one manual pin per zone.
+do
+    local originalNpc = npc
+    npc = {id = 4772, name = "Ultham Ironhorn", minLevel = 10, maxLevel = 10,
+        minLevelHealth = 198, maxLevelHealth = 198, spawns = {[1] = {
+            {63.67, 50.14, 0, 0, 0, 0, 0, 76265},
+            {63.94, 50.1, 0, 0, 0, 0, 0, 4150},
+        }}}
+    map:ShowNPC(4772, nil, nil, nil, nil, nil, "Riding Trainer")
+    equal(#map:GetManualFrames(4772, "Riding Trainer"), 1, "Ultham draws one representative pin")
+    equal(#npc.spawns[1], 2, "Ultham retains both source spawn positions")
+    map:UnloadManualFrames(4772, "Riding Trainer")
+
+    npc.spawns[1][1][3] = keep -- The current Horde ownership hides this first test position.
+    map:ShowNPC(4772, nil, nil, nil, nil, nil, "Riding Trainer")
+    local ultham = map:GetManualFrames(4772, "Riding Trainer")
+    equal(#ultham, 1, "a hidden first position does not hide Ultham entirely")
+    equal(ultham[1].x, 63.94, "Ultham uses the first visible position")
+    map:UnloadManualFrames(4772, "Riding Trainer")
+
+    npc.spawns[1][1][3] = 0
+    npc.spawns[12] = {{40, 30}, {41, 31}}
+    map:ShowNPC(4772, nil, nil, nil, nil, nil, "Riding Trainer")
+    equal(#map:GetManualFrames(4772, "Riding Trainer"), 2, "Ultham keeps one pin for each visible zone")
+    map:UnloadManualFrames(4772, "Riding Trainer")
+
+    npc.id, npc.spawns[12] = 7954, nil
+    map:ShowNPC(7954, nil, nil, nil, nil, nil, "Riding Trainer")
+    equal(#map:GetManualFrames(7954, "Riding Trainer"), 2, "other trainers keep their distinct spawn positions")
+    map:UnloadManualFrames(7954, "Riding Trainer")
+    npc = originalNpc
+    tests = tests + 1
+end
 
 -- Closest-starter clustering must not keep a previously visible camp location.
 npc.spawns = {[4197] = {{48.6, 24.29, keep}, {71.6, 32.08, camp}}}
