@@ -38,8 +38,15 @@ local playerVendorKeys = {
 
 local function _reformatVendors(lst, existingTable)
     local newList = existingTable or {}
+    local seen = {}
+    for _, id in ipairs(newList) do
+        seen[id] = true
+    end
     for k in pairs(lst) do
-        tinsert(newList, k)
+        if not seen[k] then
+            tinsert(newList, k)
+            seen[k] = true
+        end
     end
     return newList
 end
@@ -138,9 +145,7 @@ function Townsfolk.Initialize()
         [professionKeys.LEATHERWORKING] = {},
         [professionKeys.ALCHEMY] = {},
         [professionKeys.HERBALISM] = {},
-        [professionKeys.COOKING] = {
-            19186, -- Kylene <Barmaid> (this is an edge case)
-        },
+        [professionKeys.COOKING] = {},
         [professionKeys.MINING] = {},
         [professionKeys.TAILORING] = {},
         [professionKeys.ENGINEERING] = {},
@@ -153,52 +158,28 @@ function Townsfolk.Initialize()
     professionTrainers[professionKeys.INSCRIPTION] = {}
 
     local count = 0
-    local validProfessionTrainers = Townsfolk.GetProfessionTrainers()
-    for i=1, #validProfessionTrainers do
-        local id = validProfessionTrainers[i]
-        if QuestieDB.npcData[id] then
-            local subName = QuestieDB.npcData[id][QuestieDB.npcKeys.subName]
-            if subName then
-                if townfolk[subName] then -- weapon master,
-                    tinsert(townfolk[subName], id)
-                else
-                    for k, professionId in pairs(QuestieProfessions.professionTable) do
-                        if string.match(subName, k) then
-                            tinsert(professionTrainers[professionId], id)
-                        end
-                    end
+    for category, ids in pairs(Townsfolk.GetProfessionTrainers()) do
+        local target = category == "RIDING" and townfolk["Riding Trainer"]
+            or category == "WEAPON_MASTER" and townfolk["Weapon Master"]
+            or professionTrainers[professionKeys[category]]
+        if target then
+            for _, id in ipairs(ids) do
+                if QuestieDB.npcData[id] then
+                    tinsert(target, id)
                 end
+                if count > 10 then
+                    count = 0
+                    coroutine.yield()
+                end
+                count = count + 1
             end
-        end
-
-        if count > 10 then -- Yield every 10 iterations, 10 is just a madeup number, is pretty fast.
-            count = 0
-            coroutine.yield()
-        end
-        count = count + 1
-    end
-
-    local subNameTownsfolk = {
-        ["Barber"] = "Barber",
-        ["Riding Trainer"] = "Riding Trainer",
-        ["Cold Weather Flying Trainer"] = "Riding Trainer",
-    }
-    local subNameTownsfolkIds = {}
-    for _, key in pairs(subNameTownsfolk) do
-        subNameTownsfolkIds[key] = {}
-        for _, id in pairs(townfolk[key]) do
-            subNameTownsfolkIds[key][id] = true
         end
     end
 
     count = 0
     for id, npcData in pairs(QuestieDB.npcData) do
-        local subName = npcData[QuestieDB.npcKeys.subName]
-        -- Binjy Featherwhistle trains riding but AzerothCore titles him "Mechanostrider Pilot".
-        local key = (id == 7954 and "Riding Trainer") or subNameTownsfolk[subName]
-        if key and npcData[QuestieDB.npcKeys.spawns] and not subNameTownsfolkIds[key][id] then
-            subNameTownsfolkIds[key][id] = true
-            tinsert(townfolk[key], id)
+        if npcData[QuestieDB.npcKeys.subName] == "Barber" and npcData[QuestieDB.npcKeys.spawns] then
+            tinsert(townfolk["Barber"], id)
         end
 
         if count > 700 then
@@ -207,11 +188,6 @@ function Townsfolk.Initialize()
         end
         count = count + 1
     end
-
-    -- Fix NPC Gubber Blump (10216) can train fishing profession
-    tinsert(professionTrainers[professionKeys.FISHING], 10216)
-    -- Fix NPC Aresella (18991) can train first aid profession
-    tinsert(professionTrainers[professionKeys.FIRST_AID], 18991)
 
     local meetingStones = Townsfolk.GetMeetingStones()
 

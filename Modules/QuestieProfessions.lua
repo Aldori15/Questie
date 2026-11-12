@@ -14,7 +14,6 @@ local playerProfessions = {}
 local professionTable = {}
 local professionNames = {}
 local specializationNames = {}
-local alternativeProfessionNames = {}
 
 -- Fast local references
 local ExpandSkillHeader, GetNumSkillLines, GetSkillLineInfo, IsSpellKnown = ExpandSkillHeader, GetNumSkillLines, GetSkillLineInfo, IsSpellKnown
@@ -36,7 +35,6 @@ hooksecurefunc("AbandonSkill", function(skillIndex)
 end)
 
 function QuestieProfessions:Init()
-
     -- Generate professionTable with translations for all available locals.
     -- We need the translated values because the API returns localized profession names
     for professionId, professionName in pairs(professionNames) do
@@ -48,12 +46,6 @@ function QuestieProfessions:Init()
             end
         end
     end
-
-    for professionName, professionId in pairs(alternativeProfessionNames) do
-        professionTable[professionName] = professionId
-    end
-
-    QuestieProfessions.professionTable = professionTable
 end
 
 --- Returns if a skill increased and learning a new profession, does not however return if a skill is unlearned
@@ -367,32 +359,6 @@ end
 function QuestieProfessions:GetSortIdByProfessionId(professionId)
     return sortIds[professionId]
 end
-
--- alternate naming scheme (used by DB)
-alternativeProfessionNames = {
-    ["Enchanter"] = 333,
-    ["Tailor"] = 197,
-    ["Leatherworker"] = 165,
-    ["Engineer"] = 202,
-    ["Blacksmith"] = 164,
-    ["Herbalist"] = 182,
-    ["Fisherman"] = 356,
-    ["Fishmonger"] = 356,
-    ["Skinner"] = 393,
-    ["Alchemist"] = 171,
-    ["Miner"] = 186,
-    ["Cook"] = 185,
-    ["Chef"] = 185,
-    ["Butcher"] = 185,
-    ["Physician"] = 129,
-    ["Weapon Crafter"] = 164,
-    ["Leathercrafter"] = 165,
-    ["Armorsmith"] = 164,
-    ["Weaponsmith"] = 164,
-    ["Surgeon"] = 129,
-    ["Trauma Surgeon"] = 129,
-}
-
 
 ---@class ProfessionMetaDB
 QuestieProfessions.rankKeys = {
