@@ -98,6 +98,12 @@ add(21, {requiredClasses = 2})
 add(23)
 add(24)
 add(25)
+add(200, {exclusiveTo = {310}, specialFlags = 1})
+add(310, {exclusiveTo = {200}, specialFlags = 1})
+add(211)
+add(26, {preQuestSingle = {200}})
+add(27, {preQuestSingle = {200, 211}})
+add(28, {preQuestGroup = {-200}})
 add(14107)
 local function compile()
     local global = env.Questie.db.global
@@ -148,6 +154,61 @@ env.Questie.db.char.complete[200] = true
 verify(2, true, "completed prerequisite")
 env.Questie.db.char.complete[200] = nil
 verify(2, false, "removed prerequisite completion")
+
+-- Journey distinguishes a missing prerequisite from a blocked prerequisite.
+-- Boolean eligibility stays unchanged, and explanations agree across query paths.
+local function verifyReason(id, eligible, reason, label)
+    verify(id, eligible, label)
+    for _, brief in ipairs({true, false}) do
+        for _, query in ipairs({source, uncached}) do
+            db.QueryQuestSingle = query
+            local text, _, actual = db.IsDoableVerbose(id, false, true, brief)
+            equal(actual, reason, label .. " reason")
+            assert(type(text) == "string" and text ~= "", label .. " explanation")
+        end
+    end
+    db.QueryQuestSingle = source
+end
+local reasons = db.DoableStates
+env.Questie.db.char.complete[310] = true
+verifyReason(26, false, reasons.EXCLUSIVE_COMPLETED, "completed alternative blocks sole prerequisite")
+verifyReason(27, false, reasons.NO_PREQUESTSINGLE, "blocked OR prerequisite does not exclude other alternatives")
+verifyReason(28, false, reasons.NO_PREQUESTGROUP, "group prerequisite retains its existing rules")
+env.Questie.db.char.complete[310] = nil
+modules.QuestiePlayer.currentQuestlog[310] = {}
+verifyReason(26, false, reasons.EXCLUSIVE_IN_QUEST_LOG, "accepted alternative blocks sole prerequisite")
+state.rewarded[200] = true
+verifyReason(26, true, reasons.AVAILABLE, "server-rewarded repeatable prerequisite takes precedence")
+state.rewarded[200] = nil
+env.Questie.db.char.complete[200] = true
+verifyReason(26, true, reasons.AVAILABLE, "saved prerequisite completion takes precedence")
+env.Questie.db.char.complete[200] = nil
+modules.QuestiePlayer.currentQuestlog[310] = nil
+verifyReason(26, false, reasons.NO_PREQUESTSINGLE, "abandoning alternative restores missing prerequisite")
+env.Questie.db.char.complete[211] = true
+verifyReason(27, true, reasons.AVAILABLE, "another OR prerequisite can fulfill the requirement")
+env.Questie.db.char.complete[211] = nil
+
+-- Exercise Journey's existing categorizer with the production reason codes.
+local savedLibStub, savedTinsert = env.LibStub, env.tinsert
+local savedSort, savedName = modules.QuestieLib.SortQuestIDsByLevel, modules.QuestieLib.GetColoredQuestName
+modules.QuestieJourney = {private = {questsByZone = {}}}
+env.LibStub = function() return {} end
+env.tinsert = table.insert
+modules.QuestieLib.SortQuestIDsByLevel = function() return {{80, 26}} end
+modules.QuestieLib.GetColoredQuestName = function() return "Blocked follow-up" end
+assert(loadfile("Modules/Journey/tabs/QuestsByZone/QuestsByZone.lua", "t", env))()
+for _, mode in ipairs({"missing", "active", "completed", "abandoned"}) do
+    modules.QuestiePlayer.currentQuestlog[310] = mode == "active" and {} or nil
+    env.Questie.db.char.complete[310] = mode == "completed" and true or nil
+    local tree = modules.QuestieJourney.private.questsByZone:CategorizeQuests({[26] = true})
+    local blocked = mode == "active" or mode == "completed"
+    equal(#tree[blocked and 6 or 5].children, 1, "Journey places " .. mode .. " prerequisite in correct category")
+    equal(#tree[blocked and 5 or 6].children, 0, "Journey has no duplicate prerequisite category")
+end
+env.LibStub, env.tinsert = savedLibStub, savedTinsert
+modules.QuestieLib.SortQuestIDsByLevel, modules.QuestieLib.GetColoredQuestName = savedSort, savedName
+
 verify(3, false, "missing grouped prerequisites")
 state.rewarded[203], state.rewarded[202] = true, true
 verify(3, true, "exclusive alternative and negative group entry")

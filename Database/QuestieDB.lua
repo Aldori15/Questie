@@ -3312,6 +3312,25 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
     if preQuestSingle then
         local isPreQuestSingleFulfilled = QuestieDB:IsPreQuestSingleFulfilled(preQuestSingle)
         if not isPreQuestSingleFulfilled then
+            -- A sole prerequisite can itself be locked out. Check fulfillment first:
+            -- rewarded repeatables may be absent from the normal completion table.
+            if returnText and #preQuestSingle == 1 then
+                local exclusives = queryRequirements(preQuestSingle[1], "exclusiveTo")
+                for _, exclusiveId in ipairs(exclusives or {}) do
+                    local reason, label, status
+                    if completedQuests[exclusiveId] then
+                        reason, label, status = DoableStates.EXCLUSIVE_COMPLETED, "Exclusive quest completed", "completed"
+                    elseif currentQuestlog[exclusiveId] then
+                        reason, label, status = DoableStates.EXCLUSIVE_IN_QUEST_LOG, "Exclusive quest in quest log", "in the quest log"
+                    end
+                    if reason then
+                        if returnBrief then
+                            return l10n("Unavailable")..l10n(": ")..l10n(label), true, reason
+                        end
+                        return "Quest " .. questId .. " is unavailable because prerequisite " .. preQuestSingle[1] .. " is blocked by exclusive quest " .. exclusiveId .. " (" .. status .. ")", true, reason
+                    end
+                end
+            end
             local msg = "Pre-quest requirement not fulfilled for quest " .. questId
             if returnText and returnBrief then
                 return l10n("Unavailable")..l10n(": ")..l10n("Incomplete pre-quest"), true, DoableStates.NO_PREQUESTSINGLE
