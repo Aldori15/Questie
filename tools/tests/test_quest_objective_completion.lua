@@ -157,16 +157,49 @@ do
     s.modules.AvailableQuests.CalculateAndDrawAll = function() end
     s.setObjectives({{type = "item", text = "Wicked Sun Brooch", raw_text = "Wicked Sun Brooch: 0/1",
         numFulfilled = 0, numRequired = 1, finished = false}})
+    local finishReset
     s.modules.AvailableQuests.RemoveQuest = function(_, callback)
         s.modules.QuestieMap:UnloadQuestFrames(s.quest.Id)
-        callback()
+        finishReset = callback
     end
     s.module:SetObjectivesDirty(s.quest.Id)
-    s.module:UpdateQuest(s.quest.Id); s.runJobs()
+    s.module:UpdateQuest(s.quest.Id)
+    assert(finishReset, "required item loss queues a reset")
+    finishReset(); s.runJobs()
     equal(s.quest.WasComplete, nil, "required item loss clears completion state")
     equal(s.quest.isComplete, nil, "required item loss clears completion override")
     equal(s.count("complete"), 0, "required item loss removes turn-in icons")
     equal(s.count("item"), 4, "required item loss restores objective and ingredient icons")
+    tests = tests + 1
+end
+
+-- Item consumption can reset a quest before turn-in removes it during deferred cleanup.
+do
+    local s = setup(false)
+    s.finish(); s.runJobs()
+    s.setReady(0)
+    s.setObjectives({{type = "item", text = "Wicked Sun Brooch", raw_text = "Wicked Sun Brooch: 0/1",
+        numFulfilled = 0, numRequired = 1, finished = false}})
+    s.modules.QuestieDB.QueryQuestSingle = function() return {} end
+    local finishReset
+    s.modules.AvailableQuests.RemoveQuest = function(_, callback) finishReset = callback end
+    s.module:SetObjectivesDirty(s.quest.Id)
+    s.module:UpdateQuest(s.quest.Id)
+    assert(finishReset, "item consumption queues a reset before turn-in")
+    s.remove(); s.setObjectives(nil)
+    local cacheReads, redraws, broadcasts, refreshes = 0, 0, 0, 0
+    s.modules.QuestLogCache.GetQuest = function() cacheReads = cacheReads + 1 end
+    s.modules.QuestLogCache.GetQuestObjectives = function() cacheReads = cacheReads + 1 end
+    s.module.PopulateObjectiveNotes = function() redraws = redraws + 1 end
+    s.env.Questie.SendMessage = function(_, message)
+        if message == "QC_ID_BROADCAST_QUEST_UPDATE" then broadcasts = broadcasts + 1 end
+    end
+    s.modules.AvailableQuests.CalculateAndDrawAll = function() refreshes = refreshes + 1 end
+    finishReset(); s.runJobs()
+    equal(cacheReads, 0, "late reset cannot read the removed quest cache")
+    equal(redraws, 0, "late reset cannot redraw removed quest objectives")
+    equal(broadcasts, 0, "late reset cannot broadcast removed quest progress")
+    equal(refreshes, 0, "late reset leaves available quest refresh to turn-in")
     tests = tests + 1
 end
 

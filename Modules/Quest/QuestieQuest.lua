@@ -658,6 +658,10 @@ function QuestieQuest:UpdateQuest(questId)
                 end
 
                 AvailableQuests.RemoveQuest(questId, function()
+                    -- Turn-in can remove the quest and its cache before this cleanup finishes.
+                    if not QuestiePlayer.currentQuestlog[questId] then
+                        return
+                    end
                     QuestieQuest:PopulateQuestLogInfo(quest)
                     QuestieQuest:PopulateObjectiveNotes(quest)
                     AutoRoute.ScheduleUpdate()
