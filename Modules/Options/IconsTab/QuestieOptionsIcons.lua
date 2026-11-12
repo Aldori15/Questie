@@ -951,23 +951,6 @@ function QuestieOptions.tabs.icons:Initialize()
                 hidden = function() return not _showIconOverrides end,
                 name = function() return l10n("Icon Overrides") end,
                 args = {
-                    --usePfQuestIcons = {
-                    --    type = "toggle",
-                    --    order = 16.1,
-                    --    name = function() return l10n('Toggle pfQuest/ClassicCodex icon style'); end,
-                    --    desc = function()
-                    --        return l10n('Toggles between Questie icon style and pfQuest/ClassicCodex icon style.\n\nToggling affects the following settings:\n\n- Objective icons\n- ')
-                    --            .. l10n('Map Icons Glow') .. '\n- '
-                    --            .. l10n('Unique Map Icon Colors') .. '\n- '
-                    --            .. l10n('Minimap Icons Glow') .. '\n- '
-                    --            .. l10n('Unique Minimap Icon Colors') .. '\n- '
-                    --            .. l10n('Objective icon cluster amount');
-                    --    end,
-                    --    width = 3,
-                    --    disabled = function() return (not Questie.db.profile.enabled); end,
-                    --    get = function(info) return Questie.db.profile.usePfQuestIcons end,
-                    --    set = QuestieOptionsUtils.SetPfQuestIcons,
-                    --},
                     overrideObjectivesHeader = {
                         type = "header",
                         order = 16.5,
@@ -1507,40 +1490,6 @@ _GetIconTypesSort = function()
     return _iconTypesSortCache
 end
 
-function QuestieOptionsUtils.SetPfQuestIcons(info, value)
-    Questie.db.profile.usePfQuestIcons = value
-    if value then
-        Questie.db.profile.ICON_SLAY = Questie.icons["node"]
-        Questie.db.profile.ICON_LOOT = Questie.icons["node"]
-        Questie.db.profile.ICON_EVENT = Questie.icons["node"]
-        Questie.db.profile.ICON_OBJECT = Questie.icons["node"]
-        Questie.db.profile.ICON_TALK = Questie.icons["node"]
-        Questie.db.profile.ICON_INTERACT = Questie.icons["node"]
-        -- TODO remove these setting changes once we have a style selection window/frame
-        Questie.db.profile.questObjectiveColors = true
-        Questie.db.profile.alwaysGlowMap = false
-        Questie.db.profile.questMinimapObjectiveColors = true
-        Questie.db.profile.alwaysGlowMinimap = false
-        Questie.db.profile.objectiveFilterDistance = 0
-    else
-        Questie.db.profile.ICON_SLAY = Questie.icons["slay"]
-        Questie.db.profile.ICON_LOOT = Questie.icons["loot"]
-        Questie.db.profile.ICON_EVENT = Questie.icons["event"]
-        Questie.db.profile.ICON_OBJECT = Questie.icons["object"]
-        Questie.db.profile.ICON_TALK = Questie.icons["talk"]
-        Questie.db.profile.ICON_INTERACT = Questie.icons["interact"]
-        -- TODO remove these setting changes once we have a style selection window/frame
-        Questie.db.profile.questObjectiveColors = false
-        Questie.db.profile.alwaysGlowMap = true
-        Questie.db.profile.questMinimapObjectiveColors = false
-        Questie.db.profile.alwaysGlowMinimap = false
-        Questie.db.profile.objectiveFilterDistance = optionsDefaults.profile.objectiveFilterDistance
-    end
-    _InvalidateIconOptionCache()
-    Questie:SetIcons()
-    QuestieQuest:SmoothReset()
-end
-
 _GetIconThemes = function()
     if _iconThemesCache then
         return _iconThemesCache
@@ -1586,7 +1535,7 @@ function QuestieOptionsUtils.DetermineTheme()
                 Questie.db.profile.alwaysGlowMap == false and
                 Questie.db.profile.questMinimapObjectiveColors == true and
                 Questie.db.profile.alwaysGlowMinimap == false and
-                Questie.db.profile.objectiveFilterDistance == 0)
+                Questie.db.profile.objectiveFilterDistance == 2)
         then
             Questie.db.profile.iconTheme = 'pfquest'
         elseif (QuestieIconVisibility:IsEnabledAnywhere("objective") == true and
@@ -1648,7 +1597,7 @@ function QuestieOptionsUtils.ExecuteTheme(info, value)
         Questie.db.profile.alwaysGlowMap = false
         Questie.db.profile.questMinimapObjectiveColors = true
         Questie.db.profile.alwaysGlowMinimap = false
-        Questie.db.profile.objectiveFilterDistance = 0
+        Questie.db.profile.objectiveFilterDistance = 2
     elseif value == 'blizzard' then
         if GetCVar("questPOI") then -- if wotlk objectives available
             SetCVar("questPOI", "1") -- enable them
