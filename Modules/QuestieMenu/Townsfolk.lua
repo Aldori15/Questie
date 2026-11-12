@@ -194,7 +194,8 @@ function Townsfolk.Initialize()
     count = 0
     for id, npcData in pairs(QuestieDB.npcData) do
         local subName = npcData[QuestieDB.npcKeys.subName]
-        local key = subNameTownsfolk[subName]
+        -- Binjy Featherwhistle trains riding but AzerothCore titles him "Mechanostrider Pilot".
+        local key = (id == 7954 and "Riding Trainer") or subNameTownsfolk[subName]
         if key and npcData[QuestieDB.npcKeys.spawns] and not subNameTownsfolkIds[key][id] then
             subNameTownsfolkIds[key][id] = true
             tinsert(townfolk[key], id)
