@@ -27,7 +27,7 @@ local function harness()
     env.CreateFrame = function() return {} end
     env.GetCursorInfo = noop
     env.Questie = {Debug = noop, Warning = error, db = {profile = {}, char = {
-        TrackerHiddenQuests = {}, TrackerHiddenObjectives = {}, collapsedQuests = {}, AutoUntrackedQuests = {}}},
+        complete = {}, TrackerHiddenQuests = {}, TrackerHiddenObjectives = {}, collapsedQuests = {}, AutoUntrackedQuests = {}}},
         SendMessage = function(_, message, id)
             if message == "QC_ID_BROADCAST_QUEST_UPDATE" then
                 h.broadcasts[id] = (h.broadcasts[id] or 0) + 1
@@ -46,6 +46,7 @@ local function harness()
     end
     env.QuestieCompat = {HBD = {}, C_Timer = {After = timer, NewTimer = timer, NewTicker = timer},
         GetQuestLogIndexByID = index,
+        SetQuestComplete = function(id) env.Questie.db.char.complete[id] = true end,
         GetQuestLogTitle = function(i)
             local id = h.order[i]
             if id then return "Quest " .. id, 1, nil, false, false, h.records[id].flag, 1, id end
@@ -61,18 +62,23 @@ local function harness()
         if h.deferCombat then h.jobs[#h.jobs + 1] = callback else callback() end
     end
     module("QuestieTracker").Update, module("QuestieTracker").UpdateFromQuestLog = noop, noop
+    module("QuestieTracker").RemoveQuest = noop
     module("QuestieNameplate").UpdateNameplate = noop
     module("QuestiePartyObjectives").ScheduleUpdate = function(_, id) h.party[id] = true end
     module("CommsVisibility").ScheduleSnapshot = function(_, reason) h.snapshots[#h.snapshots + 1] = reason end
     module("QuestieJourney").AcceptQuest = function() h.accepts = h.accepts + 1 end
+    module("QuestieJourney").CompleteQuest = noop
     module("QuestieAnnounce").AcceptedQuest = function() error("Recovery must not announce acceptance") end
+    module("QuestieAnnounce").CompletedQuest = noop
     module("BreadcrumbQuests").CheckQuestBreadcrumbs = noop
     module("TrackerUtils").ClearTomTomTargetForQuest = noop
     module("IsleOfQuelDanas").CheckForActivePhase = function() return false end
     module("AutoRoute").ScheduleUpdate = noop
+    module("AutoRoute").RemoveFromRoute = noop
     module("QuestiePlayer").currentQuestlog = {}
     module("QuestieDB").HasQuestData = function(id) return h.records[id].mapped end
     module("QuestieDB").GetQuest = function(id) return h.records[id].quest end
+    module("QuestieDB").QueryQuestSingle = noop
     module("AvailableQuests").CalculateAndDrawAll = noop
     module("AvailableQuests").RemoveQuest = function(id, callback)
         h.removed[id] = true
@@ -110,6 +116,7 @@ local function harness()
     function h:scan() return self.cache.CheckForChanges(nil, true, true) end
     function h:complete(id) return self.cache.GetQuest(id).isComplete end
     function h:flush() while #self.callbacks > 0 do table.remove(self.callbacks, 1)() end end
+    h.loadModule = loadModule
     return h
 end
 
@@ -259,4 +266,85 @@ for _, mapped in ipairs({true, false}) do
     equal(h.accepts, 0, "unchanged cache recovery creates no Journey acceptance")
 end
 
-print("Quest log sync regressions passed (item loss, loading snapshots, discovery, adoption and native quests)")
+-- Wrath's reward confirmation can precede the native log removing its old row.
+-- That row must not be mistaken for a missed accept and restore tracker/map state.
+do
+    local h = harness()
+    h:add(844, {objective("Beaks", 7, 7)}, 1, true)
+    h:add(868, {objective("Eggs", 0, 12)}, nil, true)
+    h.events:UpdateAllQuests()
+    local draws, broadcasts = h.draws[844], h.broadcasts[844]
+    h.events:QuestTurnedIn(844)
+    h.events:QuestRemoved(844)
+    equal(h.modules.QuestiePlayer.currentQuestlog[844], nil, "turn-in removes mapped membership")
+    h.records[844].flag, h.records[844].rows = nil, {objective("Beaks", 0, 7)}
+    h.events:UpdateAllQuests()
+    equal(h.modules.QuestiePlayer.currentQuestlog[844], nil, "stale turned-in native row cannot be adopted")
+    equal(h.cache.questLog_DO_NOT_MODIFY[844], nil, "stale turned-in native row cannot rebuild cache")
+    h.order, h.records[844].present = {868}, false
+    h.events:UpdateAllQuests()
+    equal(h.draws[844], draws, "turned-in quest cannot redraw objective notes")
+    equal(h.broadcasts[844], broadcasts, "turned-in quest cannot broadcast restored membership")
+    h.env.GetNumQuestLogEntries = function() return #h.order end
+    h.loadModule("Modules/Tracker/TrackerData.lua")
+    local displayed = h.modules.TrackerData.Refresh()
+    equal(displayed[844], nil, "tracker excludes turned-in quest after native removal")
+    assert(displayed[868], "remaining Egg Hunt quest stays tracked")
+    -- Once absence is observed, a later missed acceptance of the same ID can recover.
+    h.order, h.records[844].present = {844, 868}, true
+    h.events:UpdateAllQuests()
+    assert(h.modules.QuestiePlayer.currentQuestlog[844], "new missed acceptance can recover after confirmed removal")
+end
+
+-- A scan can observe absence between turn-in and removal notifications.
+-- Keep turn-in state until removal arrives so it cannot become an abandonment.
+do
+    local h = harness()
+    h:add(844, {objective("Beaks", 7, 7)}, 1, true)
+    h.events:UpdateAllQuests()
+    h.events:QuestTurnedIn(844)
+    h.order, h.records[844].present = {}, false
+    h.events:UpdateAllQuests()
+    h.events:QuestRemoved(844)
+    h.events:UpdateAllQuests()
+    h.order, h.records[844].present = {844}, true
+    h.records[844].flag, h.records[844].rows = nil, {objective("Beaks", 0, 7)}
+    h.events:UpdateAllQuests()
+    assert(h.modules.QuestiePlayer.currentQuestlog[844], "delayed removal releases the completed lifecycle after absence")
+end
+
+-- Removal may also arrive first; both mapped and native-only quests must recover later.
+for _, mapped in ipairs({true, false}) do
+    local h = harness()
+    h:add(844, {objective("Beaks", 7, 7)}, 1, mapped)
+    h.events:UpdateAllQuests()
+    local broadcasts = h.broadcasts[844]
+    h.events:QuestRemoved(844)
+    h.events:QuestTurnedIn(844)
+    h.records[844].flag, h.records[844].rows = nil, {objective("Beaks", 0, 7)}
+    h.events:UpdateAllQuests()
+    equal(h.cache.questLog_DO_NOT_MODIFY[844], nil, "removal before turn-in cannot restore a stale snapshot")
+    equal(h.broadcasts[844], broadcasts, "removal before turn-in cannot announce restored membership")
+    h.order, h.records[844].present = {}, false
+    h.events:UpdateAllQuests()
+    h.order, h.records[844].present = {844}, true
+    h.events:UpdateAllQuests()
+    equal(h.broadcasts[844], broadcasts + 1, "removal-first lifecycle allows a later missed acceptance")
+end
+
+-- A real repeatable acceptance supersedes retained turn-in state immediately.
+do
+    local h = harness()
+    h:add(844, {objective("Beaks", 7, 7)}, 1, true)
+    h.events:UpdateAllQuests()
+    h.events:QuestTurnedIn(844)
+    h.events:QuestRemoved(844)
+    h.records[844].flag, h.records[844].rows = nil, {objective("Beaks", 0, 7)}
+    h.modules.QuestieAnnounce.AcceptedQuest = noop
+    h.events:QuestAccepted(1, 844)
+    assert(h.modules.QuestiePlayer.currentQuestlog[844], "explicit reaccept needs no intervening absent scan")
+    equal(h.accepts, 1, "explicit reaccept retains normal acceptance behavior")
+    equal(h:complete(844), 0, "explicit reaccept uses fresh objective progress")
+end
+
+print("Quest log sync regressions passed (item loss, loading snapshots, discovery, adoption, turn-in ordering and native quests)")

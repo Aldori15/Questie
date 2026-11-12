@@ -614,12 +614,13 @@ function QuestieQuest:UpdateQuest(questId)
 
             -- Register tooltips synchronously so quest removal cannot invalidate QuestLogCache first.
             QuestieQuest.RegisterObjectiveTooltips(quest)
+            -- The broadcast reads QuestLogCache, which a quick turn-in can remove before cleanup finishes.
+            Questie:SendMessage("QC_ID_BROADCAST_QUEST_UPDATE", questId)
 
             -- Only remove the map icons, but keep the tooltips
             _UnloadQuestFrames(questId, function()
                 QuestieQuest:AddFinisher(quest)
                 _UpdateOptionalTravelHints(quest)
-                Questie:SendMessage("QC_ID_BROADCAST_QUEST_UPDATE", questId)
             end)
         elseif isComplete == -1 then
             -- Failed quests should be shown as available again
@@ -687,12 +688,12 @@ function QuestieQuest:UpdateQuest(questId)
 
                         -- Register tooltips synchronously so quest removal cannot invalidate QuestLogCache first.
                         QuestieQuest.RegisterObjectiveTooltips(quest)
+                        Questie:SendMessage("QC_ID_BROADCAST_QUEST_UPDATE", questId)
 
                         -- Only remove the map icons, but keep the tooltips
                         _UnloadQuestFrames(questId, function()
                             QuestieQuest:AddFinisher(quest)
                             _UpdateOptionalTravelHints(quest)
-                            Questie:SendMessage("QC_ID_BROADCAST_QUEST_UPDATE", questId)
                         end)
                     else
                         Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest:UpdateQuest] Quest Objective Status is: " .. numCompleteObjectives .. ", out of: " .. #quest.Objectives .. ". No updates required.")

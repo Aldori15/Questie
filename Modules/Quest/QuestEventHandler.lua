@@ -405,6 +405,7 @@ function _QuestEventHandler:QuestTurnedIn(questId, xpReward, moneyReward)
     if questLog[questId] then
         -- There are quests which you just turn in so there is no preceding QUEST_ACCEPTED event and questLog[questId]
         -- is empty
+        questLog[questId].removalSeen = questLog[questId].state == QUEST_LOG_STATES.QUEST_REMOVED
         questLog[questId].state = QUEST_LOG_STATES.QUEST_TURNED_IN
     else
         questLog[questId] = {state = QUEST_LOG_STATES.QUEST_TURNED_IN}
@@ -438,7 +439,8 @@ function _QuestEventHandler:QuestRemoved(questId, isImmediateAbandon)
     -- QUEST_TURNED_IN was called before QUEST_REMOVED --> quest was turned in
     if questLog[questId].state == QUEST_LOG_STATES.QUEST_TURNED_IN then
         Questie.Debug(Questie.DEBUG_INFO, "Quest:", questId, "was turned in before. Nothing do to.")
-        questLog[questId] = nil
+        -- The native row can outlive reward confirmation; do not recover it as a missed accept.
+        questLog[questId].removalSeen = true
         return
     end
 
@@ -534,6 +536,14 @@ function _QuestEventHandler:UpdateAllQuests(confirmItemRegressions)
 
     local cacheMiss, changes, _, unlisted, ready = QuestLogCache.CheckForChanges(questIdsToCheck, true, confirmItemRegressions)
     ready = ready or {}
+    if unlisted then
+        for questId, data in pairs(questLog) do
+            -- Turned-in IDs are outside questIdsToCheck, so unlisted contains any lingering native rows.
+            if data.state == QUEST_LOG_STATES.QUEST_TURNED_IN and data.removalSeen and not unlisted[questId] then
+                questLog[questId] = nil
+            end
+        end
+    end
     local adopted = {}
     for questId in pairs(unlisted or {}) do
         -- Pending accepts and removals retain their own lifecycle handling.

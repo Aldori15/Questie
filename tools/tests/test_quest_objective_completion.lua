@@ -101,8 +101,8 @@ local function setup(historical)
         runJobs = runJobs, count = count,
         setObjectives = function(values) cache = values end,
         setReady = function(value) ready = value end,
-        finish = function()
-            ready = 1
+        finish = function(inferred)
+            ready = inferred and 0 or 1
             cache[1].finished, cache[1].numFulfilled = true, 1
             questModule:SetObjectivesDirty(12960)
             questModule:UpdateQuest(12960)
@@ -125,6 +125,25 @@ for _, history in ipairs({false, true}) do
     equal(s.count("complete"), 2, "ready quest draws turn-in location despite history")
     equal(s.quest.WasComplete, true, "completion handled")
     equal(s.tooltips.m_1, true, "objective tooltips retained until turn-in")
+    tests = tests + 1
+end
+
+-- Group progress must be sent while cached, before deferred cleanup can outlive a quick turn-in.
+for _, inferred in ipairs({false, true}) do
+    local s, broadcasts = setup(false), 0
+    s.env.Questie.SendMessage = function(_, message, questId)
+        if message == "QC_ID_BROADCAST_QUEST_UPDATE" then
+            assert(s.modules.QuestLogCache.GetQuestObjectives(questId), "broadcast read removed quest objectives")
+            broadcasts = broadcasts + 1
+        end
+    end
+    s.finish(inferred)
+    equal(broadcasts, 1, "completion broadcasts before pending cleanup, inferred " .. tostring(inferred))
+    assert(#s.jobs > 0, "completion cleanup is still pending")
+    s.remove(); s.setObjectives(nil)
+    s.runJobs()
+    equal(broadcasts, 1, "late cleanup does not broadcast after turn-in")
+    equal(s.count("complete"), 0, "late cleanup does not restore removed turn-in icons")
     tests = tests + 1
 end
 
