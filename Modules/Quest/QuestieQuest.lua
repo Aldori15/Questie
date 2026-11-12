@@ -47,6 +47,8 @@ local AutoRoute = QuestieLoader:ImportModule("AutoRoute")
 local l10n = QuestieLoader:ImportModule("l10n")
 ---@type QuestLogCache
 local QuestLogCache = QuestieLoader:ImportModule("QuestLogCache")
+---@type QuestLifecycle
+local QuestLifecycle = QuestieLoader:ImportModule("QuestLifecycle")
 ---@type ThreadLib
 local ThreadLib = QuestieLoader:ImportModule("ThreadLib")
 ---@type AvailableQuests
@@ -443,6 +445,7 @@ function QuestieQuest:SmoothReset()
     QuestieQuest._isResetting = true
     QuestieQuest._resetNeedsAvailables = false
     QuestieQuest._clearAllNotesFailed = false
+    local resetQuestIds, resetQuestIndex = {}, 1
 
     -- bit of a hack (there has to be a better way to do logic like this
     QuestieDBMIntegration:ClearAll()
@@ -476,7 +479,13 @@ function QuestieQuest:SmoothReset()
             return #QuestieMap._mapDrawQueue == 0 and #QuestieMap._minimapDrawQueue == 0 -- wait until draw queue is finished
         end,
         function()
-            -- reset quest log
+            -- Rebuild derived completion from the current native log, not the retained database objects.
+            for _, quest in pairs(QuestiePlayer.currentQuestlog) do
+                if type(quest) == "table" then
+                    quest.WasComplete = nil
+                    quest.isComplete = nil
+                end
+            end
             QuestiePlayer.currentQuestlog = {}
 
             --- reset the blacklist
@@ -489,7 +498,9 @@ function QuestieQuest:SmoothReset()
 
             -- populate QuestiePlayer.currentQuestlog
             QuestieQuest:GetAllQuestIdsNoObjectives()
-            QuestieQuest._nextRestQuest = next(QuestiePlayer.currentQuestlog)
+            for questId in pairs(QuestiePlayer.currentQuestlog) do
+                resetQuestIds[#resetQuestIds + 1] = questId
+            end
             return true
         end,
         function()
@@ -508,10 +519,15 @@ function QuestieQuest:SmoothReset()
         end,
         function()
             for _ = 1, 64 do
-                if QuestieQuest._nextRestQuest then
-                    QuestieQuest:UpdateQuest(QuestieQuest._nextRestQuest)
-                    _UpdateSpecials(QuestieQuest._nextRestQuest)
-                    QuestieQuest._nextRestQuest = next(QuestiePlayer.currentQuestlog, QuestieQuest._nextRestQuest)
+                local questId = resetQuestIds[resetQuestIndex]
+                if questId then
+                    resetQuestIndex = resetQuestIndex + 1
+                    -- A turn-in between ticker steps can remove both membership and cached objectives.
+                    if QuestiePlayer.currentQuestlog[questId] and QuestLogCache.TryGetQuest(questId) then
+                        QuestieQuest:CheckQuestSourceItem(questId, true)
+                        QuestieQuest:UpdateQuest(questId)
+                        _UpdateSpecials(questId)
+                    end
                 else
                     QuestieCombatQueue:Queue(function()
                         C_Timer.After(2.0, function()
@@ -521,7 +537,7 @@ function QuestieQuest:SmoothReset()
                     break
                 end
             end
-            return not QuestieQuest._nextRestQuest
+            return resetQuestIds[resetQuestIndex] == nil
         end,
         function()
             return (not QuestieQuest._resetNeedsAvailables) and #QuestieMap._mapDrawQueue == 0 and #QuestieMap._minimapDrawQueue == 0
@@ -599,6 +615,8 @@ function QuestieQuest:UpdateQuest(questId)
     -- Completion history can outlive a daily reset or server-side reacceptance.
     -- A quest still in the live log must continue to update its objective icons.
     if quest and (not Questie.db.char.complete[questId] or _IsQuestInLog(questId)) then
+        if not QuestLogCache.TryGetQuest(questId) then return end
+        local acceptance = QuestLifecycle.GetAcceptance(questId)
         QuestieQuest:PopulateQuestLogInfo(quest)
 
         local isComplete = quest:IsComplete()
@@ -619,8 +637,11 @@ function QuestieQuest:UpdateQuest(questId)
 
             -- Only remove the map icons, but keep the tooltips
             _UnloadQuestFrames(questId, function()
-                QuestieQuest:AddFinisher(quest)
-                _UpdateOptionalTravelHints(quest)
+                if QuestLifecycle.IsCurrentAcceptance(questId, acceptance) and quest.WasComplete
+                    and QuestLogCache.TryGetQuest(questId) then
+                    QuestieQuest:AddFinisher(quest)
+                    _UpdateOptionalTravelHints(quest)
+                end
             end)
         elseif isComplete == -1 then
             -- Failed quests should be shown as available again
@@ -646,6 +667,7 @@ function QuestieQuest:UpdateQuest(questId)
                 Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest:UpdateQuest] Quest was once complete or Quest Item(s) were removed. Resetting quest.")
 
                 -- Reset quest objectives and quest flags before asynchronous cleanup.
+                QuestLifecycle.InvalidateQuestWork(questId)
                 quest.Objectives = {}
                 quest.WasComplete = nil
                 quest.isComplete = nil
@@ -657,13 +679,11 @@ function QuestieQuest:UpdateQuest(questId)
                     Questie.db.char.collapsedQuests[questId] = nil
                 end
 
-                AvailableQuests.RemoveQuest(questId, function()
-                    -- Turn-in can remove the quest and its cache before this cleanup finishes.
-                    if not QuestiePlayer.currentQuestlog[questId] then
-                        return
-                    end
+                QuestLifecycle.RemoveFramesOfLoggedQuest(questId, function(current)
                     QuestieQuest:PopulateQuestLogInfo(quest)
+                    if not current() then return end
                     QuestieQuest:PopulateObjectiveNotes(quest)
+                    if not current() then return end
                     AutoRoute.ScheduleUpdate()
                     Questie:SendMessage("QC_ID_BROADCAST_QUEST_UPDATE", questId)
                     AvailableQuests.CalculateAndDrawAll(nil, true)
@@ -696,8 +716,11 @@ function QuestieQuest:UpdateQuest(questId)
 
                         -- Only remove the map icons, but keep the tooltips
                         _UnloadQuestFrames(questId, function()
-                            QuestieQuest:AddFinisher(quest)
-                            _UpdateOptionalTravelHints(quest)
+                            if QuestLifecycle.IsCurrentAcceptance(questId, acceptance) and quest.WasComplete
+                                and QuestLogCache.TryGetQuest(questId) then
+                                QuestieQuest:AddFinisher(quest)
+                                _UpdateOptionalTravelHints(quest)
+                            end
                         end)
                     else
                         Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest:UpdateQuest] Quest Objective Status is: " .. numCompleteObjectives .. ", out of: " .. #quest.Objectives .. ". No updates required.")

@@ -378,16 +378,6 @@ function QuestLogCache.CheckForChanges(questIdsToCheck, fullScan, confirmItemReg
         end
     end
 
-    -- debug / error detection to see if this happens sometimes. If happens there is fault in QuestEventHandler side.
-    if questIdsToCheck then
-        for questId in pairs(questIdsToCheck) do
-            if (not questIdsChecked[questId]) then
-                -- TODO: This actually happens and need to be fixed
-                Questie.Warning("Please report on Github or Discord. QuestId doesn't exist in Game's quest log:", questId)
-            end
-        end
-    end
-
     -- Only a scan of every accepted quest can confirm that the client cache recovered.
     -- The scan limit prevents a legitimate decrease during loading from being suppressed forever.
     if blizzardQuestCacheStale and fullScan then
@@ -475,6 +465,13 @@ function QuestLogCache.GetQuest(questId)
         Questie.Error("Please report this error. GetQuest: The quest doesn't exist in QuestLogCache.", questId)
         return
     end
+    return cache[questId]
+end
+
+---Deferred work may legitimately outlive a quest's cached membership.
+---@param questId QuestId
+---@return QuestLogCacheData? @DO NOT MODIFY THE RETURNED TABLE
+function QuestLogCache.TryGetQuest(questId)
     return cache[questId]
 end
 

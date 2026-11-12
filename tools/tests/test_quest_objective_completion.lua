@@ -21,20 +21,26 @@ local function setup(historical)
         CreateModule = function(_, name) modules[name] = modules[name] or {private = {}}; return modules[name] end,
         ImportModule = function(_, name) modules[name] = modules[name] or {private = {}}; return modules[name] end,
     }
-    env.Questie = {db = {profile = {objectiveFilterDistance = 0}, char = {complete = {[12960] = historical}}},
+    env.Questie = {db = {profile = {objectiveFilterDistance = 0}, char = {
+        complete = {[12960] = historical}, AutoUntrackedQuests = {}}},
         Debug = noop, SendMessage = noop}
-    env.QuestieCompat = {C_Timer = {}, HBD = {GetWorldCoordinatesFromZone = function(_, x, y) return x, y end},
+    env.QuestieCompat = {C_Timer = {After = noop}, GetQuestsCompleted = function() return {} end,
+        HBD = {GetWorldCoordinatesFromZone = function(_, x, y) return x, y end},
         GetQuestLogIndexByID = function() if active then return 1 end end}
     local cache = {{type = "item", text = "Wicked Sun Brooch", raw_text = "Wicked Sun Brooch: 0/1",
         numFulfilled = 0, numRequired = 1, finished = false}}
     modules.QuestLogCache = {GetQuest = function() return {isComplete = ready, objectives = cache} end,
         GetQuestObjectives = function() return cache end}
+    modules.QuestLogCache.TryGetQuest = function()
+        if cache then return modules.QuestLogCache.GetQuest() end
+    end
     modules.QuestieAnnounce = {ObjectiveChanged = noop}
     modules.QuestieCombatQueue = {Queue = function(_, fn) fn() end}
     modules.AvailableQuests = {RemoveQuest = function(_, callback) callback() end}
-    modules.QuestieTracker = {Update = noop}
+    modules.QuestieTracker = {Update = noop, RemoveQuest = noop}
     modules.TrackerUtils = {ClearTomTomTargetForQuest = noop}
     modules.AutoRoute = {ScheduleUpdate = noop}
+    modules.CommsVisibility = {ScheduleSnapshot = noop}
     modules.QuestieIconVisibility = {IsEnabledAnywhere = function() return true end}
     modules.Phasing = {IsSpawnDataVisible = function() return true end}
     modules.ZoneDB = {GetUiMapIdByAreaId = function(_, zone) return zone end, GetDungeonLocation = function() end}
@@ -53,7 +59,8 @@ local function setup(historical)
         Finisher = {Id = 28701, Type = "monster"}, IsComplete = function() return ready end}
     modules.QuestiePlayer = {currentQuestlog = {[12960] = quest}}
     modules.QuestieDB = {GetQuest = function() return quest end, IsPvPQuest = function() return false end,
-        QueryItemSingle = function(id) return tostring(id) end,
+        QueryQuestSingle = function(_, field) if field == "objectives" then return {} end end,
+        QueryItemSingle = function(id) if id > 0 then return tostring(id) end end,
         GetNPC = function() return {id = 28701, name = "Timothy Jones", spawns = {[4395] = {{40, 35}}}} end}
     modules.QuestieEvent = {IsEventQuest = function() return false end}
     modules.QuestieMap = {
@@ -74,6 +81,7 @@ local function setup(historical)
         end,
     }
     assert(loadfile("Modules/Quest/QuestieQuest.lua", "t", env))()
+    assert(loadfile("Modules/Quest/Lifecycle/QuestLifecycle.lua", "t", env))()
     local questModule = modules.QuestieQuest
     questModule.private.objectiveSpawnListCallTable = {item = function(id)
         return {{Id = 1, ItemId = id, Name = "Item source", TooltipKey = "m_1",
@@ -125,6 +133,95 @@ for _, history in ipairs({false, true}) do
     equal(s.count("complete"), 2, "ready quest draws turn-in location despite history")
     equal(s.quest.WasComplete, true, "completion handled")
     equal(s.tooltips.m_1, true, "objective tooltips retained until turn-in")
+    tests = tests + 1
+end
+
+-- Old native and inferred completion callbacks cannot finish a new incomplete acceptance.
+for _, inferred in ipairs({false, true}) do
+    local s = setup(false)
+    s.modules.AvailableQuests.CalculateAndDrawAll = function() end
+    s.finish(inferred)
+    s.modules.QuestLifecycle:AbandonQuest(s.quest.Id)
+    s.setReady(0)
+    s.setObjectives({{type = "item", text = "Wicked Sun Brooch", raw_text = "Wicked Sun Brooch: 0/1",
+        numFulfilled = 0, numRequired = 1, finished = false}})
+    s.modules.QuestLifecycle:AcceptQuest(s.quest.Id)
+    s.runJobs()
+    equal(s.count("complete"), 0, "old completion cannot finish a new acceptance, inferred " .. tostring(inferred))
+    equal(s.count("item"), 4, "new acceptance retains objective icons")
+    tests = tests + 1
+end
+
+-- A reset pending before abandonment must not redraw the subsequent acceptance as well.
+do
+    local s = setup(false)
+    s.finish(); s.runJobs()
+    s.setReady(0)
+    s.setObjectives({{type = "item", text = "Wicked Sun Brooch", raw_text = "Wicked Sun Brooch: 0/1",
+        numFulfilled = 0, numRequired = 1, finished = false}})
+    local callbacks, redraws = {}, 0
+    s.modules.AvailableQuests.CalculateAndDrawAll = function() end
+    s.modules.AvailableQuests.RemoveQuest = function(_, callback) callbacks[#callbacks + 1] = callback end
+    s.module:SetObjectivesDirty(s.quest.Id)
+    s.module:UpdateQuest(s.quest.Id)
+    s.modules.QuestLifecycle:AbandonQuest(s.quest.Id)
+    s.modules.QuestLifecycle:AcceptQuest(s.quest.Id)
+    local populate = s.module.PopulateObjectiveNotes
+    s.module.PopulateObjectiveNotes = function(self, quest) redraws = redraws + 1; populate(self, quest) end
+    for _, callback in ipairs(callbacks) do
+        s.modules.QuestieMap:UnloadQuestFrames(s.quest.Id)
+        callback()
+    end
+    s.runJobs()
+    equal(redraws, 1, "only the new acceptance redraws after a deferred reset")
+    equal(s.count("complete"), 0, "deferred reset cannot finish the new incomplete acceptance")
+    tests = tests + 1
+end
+
+-- SmoothReset must discard derived completion before rebuilding source-item objectives.
+for _, change in ipairs({"present", "removed", "cache-missing"}) do
+    local s = setup(false)
+    local tick, stopped, updates = nil, false, 0
+    s.quest.WasComplete, s.quest.isComplete, s.quest.sourceItemId = true, true, 12345
+    s.quest.SpecialObjectives = {}
+    s.modules.QuestiePlayer.currentQuestlog[999] = 999 -- Native-only entries need no derived-state reset.
+    s.setObjectives({})
+    s.env.GetContainerNumSlots = function() return 0 end
+    s.modules.QuestieDB.QueryItemSingle = function(_, field) if field == "name" then return "Source item" end end
+    s.modules.QuestLogCache.TestGameCache = function() return true end
+    s.modules.QuestieMap._mapDrawQueue, s.modules.QuestieMap._minimapDrawQueue = {}, {}
+    s.modules.QuestieDBMIntegration.ClearAll = function() end
+    s.modules.QuestieMenu.OnLogin = function() end
+    s.modules.QuestieProfessions.Update = function() end
+    s.modules.QuestieReputation.Update = function() end
+    s.modules.AvailableQuests.CalculateAndDrawAll = function(callback)
+        if change ~= "present" then
+            if change == "removed" then s.remove() end
+            s.setObjectives(nil)
+        end
+        if callback then callback(true) end
+    end
+    s.env.QuestieCompat.C_Timer.NewTicker = function(_, callback)
+        tick = callback
+        return {Cancel = function() stopped = true end}
+    end
+    s.module.ClearAllNotes, s.module.ClearAllToolTips = function() end, function() end
+    s.module.GetAllQuestIdsNoObjectives = function()
+        equal(s.quest.WasComplete, nil, "redraw clears derived completed state before rebuilding")
+        equal(s.quest.isComplete, nil, "redraw clears derived completion override before rebuilding")
+        s.modules.QuestiePlayer.currentQuestlog = {[s.quest.Id] = s.quest}
+    end
+    s.module.UpdateQuest = function()
+        updates = updates + 1
+        equal(s.quest.Objectives[1].Id, 12345, "redraw reconstructs the missing source-item objective")
+    end
+    s.module:SmoothReset()
+    for _ = 1, 30 do
+        if stopped then break end
+        tick(); s.runJobs()
+    end
+    equal(stopped, true, "full redraw finishes")
+    equal(updates, change == "present" and 1 or 0, "full redraw skips unavailable quests: " .. change)
     tests = tests + 1
 end
 

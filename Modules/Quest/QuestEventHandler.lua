@@ -467,7 +467,10 @@ end
 ---@param questId number
 function _QuestEventHandler:MarkQuestAsAbandoned(questId)
     Questie.Debug(Questie.DEBUG_DEVELOP, "QuestEventHandler:MarkQuestAsAbandoned")
-    if questLog[questId].state == QUEST_LOG_STATES.QUEST_REMOVED then
+    local data = questLog[questId]
+    if data and data.state == QUEST_LOG_STATES.QUEST_REMOVED and not data.removalSeen then
+        -- Item removal can update bags before the native quest row disappears.
+        data.removalSeen, data.timer = true, nil
         Questie.Debug(Questie.DEBUG_INFO, "Quest:", questId, "was abandoned")
 
         TrackerUtils:ClearTomTomTargetForQuest(questId)
@@ -482,7 +485,10 @@ function _QuestEventHandler:MarkQuestAsAbandoned(questId)
         QuestieAnnounce:AbandonedQuest(questId)
         -- The local player no longer has this quest; a party member may still need it.
         QuestiePartyObjectives:ScheduleUpdate(questId)
-        questLog[questId] = nil
+        local index = GetQuestLogIndexByID(questId)
+        if questLog[questId] == data and (not index or index <= 0) then
+            questLog[questId] = nil
+        end
     end
 end
 
@@ -538,8 +544,9 @@ function _QuestEventHandler:UpdateAllQuests(confirmItemRegressions)
     ready = ready or {}
     if unlisted then
         for questId, data in pairs(questLog) do
-            -- Turned-in IDs are outside questIdsToCheck, so unlisted contains any lingering native rows.
-            if data.state == QUEST_LOG_STATES.QUEST_TURNED_IN and data.removalSeen and not unlisted[questId] then
+            -- Removed IDs are outside questIdsToCheck, so unlisted contains any lingering native rows.
+            if data.removalSeen and (data.state == QUEST_LOG_STATES.QUEST_TURNED_IN
+                or data.state == QUEST_LOG_STATES.QUEST_REMOVED) and not unlisted[questId] then
                 questLog[questId] = nil
             end
         end

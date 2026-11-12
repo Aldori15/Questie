@@ -20,13 +20,15 @@ local function harness()
         return modules[name]
     end
     local h = {records = {}, order = {}, removed = {}, draws = {}, broadcasts = {}, snapshots = {},
-        party = {}, callbacks = {}, jobs = {}, timers = {}, questSounds = 0, objectiveSounds = 0, accepts = 0}
+        party = {}, callbacks = {}, jobs = {}, timers = {}, questSounds = 0, objectiveSounds = 0,
+        accepts = 0, abandons = 0}
     env.QuestieLoader = {CreateModule = function(_, name) return module(name) end,
         ImportModule = function(_, name) return module(name) end}
     env.GetTime = function() return 0 end
     env.CreateFrame = function() return {} end
     env.GetCursorInfo = noop
-    env.Questie = {Debug = noop, Warning = error, db = {profile = {}, char = {
+    env.debugstack = function() return "test stack" end
+    env.Questie = {Debug = noop, Print = noop, Error = error, Warning = error, db = {profile = {}, char = {
         complete = {}, TrackerHiddenQuests = {}, TrackerHiddenObjectives = {}, collapsedQuests = {}, AutoUntrackedQuests = {}}},
         SendMessage = function(_, message, id)
             if message == "QC_ID_BROADCAST_QUEST_UPDATE" then
@@ -68,8 +70,10 @@ local function harness()
     module("CommsVisibility").ScheduleSnapshot = function(_, reason) h.snapshots[#h.snapshots + 1] = reason end
     module("QuestieJourney").AcceptQuest = function() h.accepts = h.accepts + 1 end
     module("QuestieJourney").CompleteQuest = noop
+    module("QuestieJourney").AbandonQuest = function() h.abandons = h.abandons + 1 end
     module("QuestieAnnounce").AcceptedQuest = function() error("Recovery must not announce acceptance") end
     module("QuestieAnnounce").CompletedQuest = noop
+    module("QuestieAnnounce").AbandonedQuest = noop
     module("BreadcrumbQuests").CheckQuestBreadcrumbs = noop
     module("TrackerUtils").ClearTomTomTargetForQuest = noop
     module("IsleOfQuelDanas").CheckForActivePhase = function() return false end
@@ -80,6 +84,7 @@ local function harness()
     module("QuestieDB").GetQuest = function(id) return h.records[id].quest end
     module("QuestieDB").QueryQuestSingle = noop
     module("AvailableQuests").CalculateAndDrawAll = noop
+    module("AvailableQuests").ResetLastNpcGuid = noop
     module("AvailableQuests").RemoveQuest = function(id, callback)
         h.removed[id] = true
         if h.deferRemoval then h.callbacks[#h.callbacks + 1] = callback else callback() end
@@ -347,4 +352,89 @@ do
     equal(h:complete(844), 0, "explicit reaccept uses fresh objective progress")
 end
 
-print("Quest log sync regressions passed (item loss, loading snapshots, discovery, adoption, turn-in ordering and native quests)")
+-- Acceptance cleanup must belong to the current acceptance, not just the same quest ID/object.
+for _, change in ipairs({"turned-in", "abandoned", "reaccepted", "cache-missing", "rebuilt"}) do
+    local h = harness()
+    h:add(844, {objective("Beaks", 0, 7)}, nil, true)
+    h:scan()
+    h.deferRemoval = true
+    local lifecycle = h.modules.QuestLifecycle
+    lifecycle:AcceptQuest(844)
+    if change == "turned-in" then
+        lifecycle:CompleteQuest(844)
+        h.cache.RemoveQuest(844)
+        h.order, h.records[844].present = {}, false
+    elseif change == "abandoned" or change == "reaccepted" then
+        lifecycle:AbandonQuest(844)
+        if change == "reaccepted" then lifecycle:AcceptQuest(844) end
+    elseif change == "cache-missing" then
+        h.cache.RemoveQuest(844)
+    else
+        local quest = h.modules.QuestiePlayer.currentQuestlog[844]
+        h.modules.QuestiePlayer.currentQuestlog = {}
+        h.modules.QuestiePlayer.currentQuestlog = {[844] = quest}
+    end
+    h:flush()
+    local expected = (change == "reaccepted" or change == "rebuilt") and 1 or nil
+    equal(h.draws[844], expected, "acceptance draws only current work after " .. change)
+    equal(h.broadcasts[844], expected, "acceptance broadcasts only current work after " .. change)
+end
+
+-- Abandoning Back to Billy removes its granted pie before the native quest row disappears.
+-- A bag-triggered scan of that old row must not recover it as a missed acceptance.
+for _, immediate in ipairs({true, false}) do
+    local h = harness()
+    h:add(84, {}, 1, true)
+    h:add(844, {objective("Beaks", 0, 7)}, nil, true)
+    h.events:UpdateAllQuests()
+    local draws, broadcasts = h.draws[84], h.broadcasts[84]
+    h.events:QuestRemoved(84, immediate)
+    if not immediate then h.events:MarkQuestAsAbandoned(84) end
+    equal(h.modules.QuestiePlayer.currentQuestlog[84], nil, "abandon removes the granted-item quest")
+    h.records[84].flag = nil -- The pie is gone, but the native log still lists the quest.
+    h.events:UpdateAllQuests()
+    equal(h.modules.QuestiePlayer.currentQuestlog[84], nil, "stale abandoned native row cannot be adopted")
+    equal(h.cache.TryGetQuest(84), nil, "stale abandoned native row cannot rebuild cache")
+    h.events:MarkQuestAsAbandoned(84) -- A late removal callback must not repeat abandonment.
+    equal(h.abandons, 1, "abandonment is recorded once")
+    h.order, h.records[84].present = {844}, false
+    h.events:UpdateAllQuests()
+    equal(h.draws[84], draws, "abandoned quest cannot redraw its missing-source-item notes")
+    equal(h.broadcasts[84], broadcasts, "abandoned quest cannot broadcast restored membership")
+    h.env.GetNumQuestLogEntries = function() return #h.order end
+    h.loadModule("Modules/Tracker/TrackerData.lua")
+    local displayed = h.modules.TrackerData.Refresh()
+    equal(displayed[84], nil, "tracker excludes Back to Billy after native removal")
+    assert(displayed[844], "Plainstrider Menace remains tracked")
+    h.order, h.records[84].present, h.records[84].flag = {84, 844}, true, 1
+    h.events:UpdateAllQuests()
+    assert(h.modules.QuestiePlayer.currentQuestlog[84], "a later missed reacceptance can recover after confirmed removal")
+end
+
+-- A real acceptance replaces an abandonment marker even without an intervening absent scan.
+do
+    local h = harness()
+    h:add(84, {}, 1, true)
+    h.events:UpdateAllQuests()
+    h.events:QuestRemoved(84, true)
+    h.modules.QuestieAnnounce.AcceptedQuest = noop
+    h.events:QuestAccepted(1, 84)
+    assert(h.modules.QuestiePlayer.currentQuestlog[84], "explicit reaccept supersedes a retained abandonment marker")
+    equal(h.accepts, 1, "explicit reaccept retains normal acceptance behavior")
+end
+
+-- The native row may disappear before a delayed abandonment timer acknowledges removal.
+do
+    local h = harness()
+    h:add(84, {}, 1, true)
+    h.events:UpdateAllQuests()
+    h.events:QuestRemoved(84)
+    h.order, h.records[84].present = {}, false
+    h.events:UpdateAllQuests()
+    h.events:MarkQuestAsAbandoned(84)
+    h.order, h.records[84].present = {84}, true
+    h.events:UpdateAllQuests()
+    assert(h.modules.QuestiePlayer.currentQuestlog[84], "delayed abandonment releases a marker for an already absent row")
+end
+
+print("Quest log sync regressions passed (item loss, loading snapshots, discovery, adoption, turn-in/abandon ordering, acceptance ownership and native quests)")

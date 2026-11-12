@@ -19,12 +19,44 @@ local QuestieCombatQueue = QuestieLoader:ImportModule("QuestieCombatQueue")
 local CommsVisibility = QuestieLoader:ImportModule("CommsVisibility")
 ---@type AutoRoute
 local AutoRoute = QuestieLoader:ImportModule("AutoRoute")
+---@type QuestLogCache
+local QuestLogCache = QuestieLoader:ImportModule("QuestLogCache")
 
 --- COMPATIBILITY ---
 local C_Timer = QuestieCompat.C_Timer
 
 local tinsert = table.insert
 local pairs = pairs
+
+-- The shared database object survives reacceptance; deferred work needs its own ownership token.
+local acceptances = {}
+
+function QuestLifecycle.GetAcceptance(questId)
+    if not QuestiePlayer.currentQuestlog[questId] then return end
+    acceptances[questId] = acceptances[questId] or {}
+    return acceptances[questId]
+end
+
+function QuestLifecycle.IsCurrentAcceptance(questId, acceptance)
+    return acceptance ~= nil and acceptances[questId] == acceptance
+        and QuestiePlayer.currentQuestlog[questId] ~= nil
+end
+
+function QuestLifecycle.InvalidateQuestWork(questId)
+    acceptances[questId] = nil
+end
+
+function QuestLifecycle.RemoveFramesOfLoggedQuest(questId, onComplete)
+    local acceptance = QuestLifecycle.GetAcceptance(questId)
+    local function current()
+        local index = QuestieCompat.GetQuestLogIndexByID(questId)
+        return QuestLifecycle.IsCurrentAcceptance(questId, acceptance) and index and index > 0
+            and QuestLogCache.TryGetQuest(questId) ~= nil
+    end
+    AvailableQuests.RemoveQuest(questId, function()
+        if current() then onComplete(current) end
+    end)
+end
 
 local function _RemoveQuestsThen(questIds, onComplete)
     local uniqueQuestIds = {}
@@ -95,6 +127,7 @@ function QuestLifecycle:AcceptQuest(questId)
             Questie.Debug(Questie.DEBUG_INFO, "[QuestLifecycle] Accepted Quest:", questId)
 
             QuestiePlayer.currentQuestlog[questId] = quest
+            QuestLifecycle.InvalidateQuestWork(questId)
 
             if allianceTournamentMarkerQuests[questId] then
                 Questie.db.char.complete[13686] = true -- Alliance Tournament Eligibility Marker
@@ -116,11 +149,13 @@ function QuestLifecycle:AcceptQuest(questId)
             -- Remove the starter/finisher frames first, then draw objective notes once the
             -- unload coroutine has finished. This prevents the draw coroutines from racing
             -- with the unload coroutine and removing the newly created objective icons.
-            AvailableQuests.RemoveQuest(questId, function()
+            QuestLifecycle.RemoveFramesOfLoggedQuest(questId, function(current)
                 QuestieQuest:PopulateQuestLogInfo(quest)
+                if not current() then return end
                 -- This needs to happen after QuestieQuest:PopulateQuestLogInfo because that is the place where quest.Objectives is generated
                 Questie:SendMessage("QC_ID_BROADCAST_QUEST_UPDATE", questId)
                 QuestieQuest:PopulateObjectiveNotes(quest)
+                if not current() then return end -- Population can yield to removal or reacceptance.
                 AutoRoute.ScheduleUpdate(0.25)
 
                 -- Run a delayed refresh so newly accepted quests are
@@ -148,10 +183,13 @@ function QuestLifecycle:AdoptQuest(questId, isCurrent)
     if not quest then return end
 
     QuestiePlayer.currentQuestlog[questId] = quest
+    QuestLifecycle.InvalidateQuestWork(questId)
+    local acceptance = QuestLifecycle.GetAcceptance(questId)
     CommsVisibility:ScheduleSnapshot("ACCEPT_QUEST")
     local function current()
         local index = QuestieCompat.GetQuestLogIndexByID(questId)
         return QuestiePlayer.currentQuestlog[questId] == quest and index and index > 0
+            and QuestLifecycle.IsCurrentAcceptance(questId, acceptance) and QuestLogCache.TryGetQuest(questId) ~= nil
             and (not isCurrent or isCurrent())
     end
     AvailableQuests.RemoveQuest(questId, function()
@@ -165,6 +203,7 @@ end
 
 ---@param questId number
 function QuestLifecycle:CompleteQuest(questId)
+    QuestLifecycle.InvalidateQuestWork(questId)
     QuestieQuest:ClearLootedSpawns(questId)
 
     -- Skip quests which are turn in only and are not added to the quest log in the first place
@@ -216,6 +255,7 @@ end
 
 ---@param questId number
 function QuestLifecycle:AbandonQuest(questId)
+    QuestLifecycle.InvalidateQuestWork(questId)
     if (QuestiePlayer.currentQuestlog[questId]) then
         QuestieQuest:ClearLootedSpawns(questId)
 

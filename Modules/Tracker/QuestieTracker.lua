@@ -1191,9 +1191,6 @@ local function _Update(self, force, onlyIfChanged)
                                         line.label:SetText(completionText)
                                         _UpdateLineWidth(line, objectiveMarginLeft)
 
-                                        -- Update Quest has a check for this edge case. Should reset the Quest Icons and show the Quest Finisher
-                                        QuestieQuest:UpdateQuest(quest.Id)
-
                                         -- Hide the Secondary Quest Item Button
                                         if secondaryButton and secondaryButtonAlpha ~= 0 then
                                             line.altButton:SetParent(UIParent)
