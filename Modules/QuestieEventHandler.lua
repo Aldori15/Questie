@@ -175,7 +175,7 @@ function QuestieEventHandler:RegisterLateEvents()
     end)
 
     -- Events to update a players professions and reputations
-    Questie:RegisterBucketEvent("CHAT_MSG_SKILL", 2, _EventHandler.ChatMsgSkill)
+    Questie:RegisterBucketEvent({"CHAT_MSG_SKILL", "SKILL_LINES_CHANGED"}, 2, _EventHandler.ChatMsgSkill)
     Questie:RegisterBucketEvent("CHAT_MSG_COMBAT_FACTION_CHANGE", 2, _EventHandler.ChatMsgCompatFactionChange)
     Questie:RegisterEvent("CHAT_MSG_SYSTEM", _EventHandler.ChatMsgSystem)
 
@@ -546,9 +546,9 @@ function _EventHandler:ModifierStateChanged(key, down)
     end
 end
 
---- Fires when some chat messages about skills are displayed
+--- Refreshes professions after skill chat or skill-line changes.
 function _EventHandler:ChatMsgSkill()
-    Questie.Debug(Questie.DEBUG_DEVELOP, "[EVENT] CHAT_MSG_SKILL")
+    Questie.Debug(Questie.DEBUG_DEVELOP, "[EVENT] Profession skills changed")
 
     -- This needs to be done to draw new quests that just came available
     local isProfUpdate, isNewProfession = QuestieProfessions:Update()

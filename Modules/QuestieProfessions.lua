@@ -48,12 +48,19 @@ function QuestieProfessions:Init()
     end
 end
 
---- Returns if a skill increased and learning a new profession, does not however return if a skill is unlearned
----@return boolean HasProfessionUpdate @Returns true if the players profession skill has increased
+--- Reports skill increases and professions learned or removed.
+---@return boolean HasProfessionUpdate @Returns true if profession requirements may have changed
 ---@return boolean HasNewProfession @Returns true if the player has learned a new profession
 function QuestieProfessions:Update()
     Questie.Debug(Questie.DEBUG_DEVELOP, "QuestieProfession: Update")
-    ExpandSkillHeader(0)
+    -- Expanding fires SKILL_LINES_CHANGED; leave already expanded headers alone.
+    for i = 1, GetNumSkillLines() do
+        local _, isHeader, isExpanded = GetSkillLineInfo(i)
+        if isHeader and not isExpanded then
+            ExpandSkillHeader(0)
+            break
+        end
+    end
     local hasProfessionUpdate = false
     local hasNewProfession = false
 
@@ -87,6 +94,13 @@ function QuestieProfessions:Update()
                 Questie.Debug(Questie.DEBUG_DEVELOP, "Profession update: " .. temporaryPlayerProfessions[professionId][1] .. " " .. oldRank .. " -> " .. newRank)
                 hasProfessionUpdate = true
             end
+        end
+    end
+    for professionId, profession in pairs(playerProfessions) do
+        if not temporaryPlayerProfessions[professionId] then
+            Questie.Debug(Questie.DEBUG_DEVELOP, "Unlearned profession: " .. profession[1] .. "(" .. professionId .. ")")
+            QuestieQuest.ResetAutoblacklistCategory("skill")
+            hasProfessionUpdate = true
         end
     end
     playerProfessions = temporaryPlayerProfessions
