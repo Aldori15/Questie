@@ -436,6 +436,46 @@ do
     assert(tip.npcAndObjectOrder["Patrol NPC"]["Quest 1"], "faded active icon remains in explicit path tooltip")
     assert(tip.npcAndObjectOrder["Patrol NPC"]["Quest 2"], "distant faded route owner remains in path tooltip")
     equal(tip._owner, env.Minimap, "path tooltip rebuild owner remains map root")
+
+    -- Rebuild the real chain tooltip with only its row/title rendering stubbed.
+    local titles, reasons = {}, {}
+    local db, lib = mods.QuestieDB, mods.QuestieLib
+    db.DoableStates = {WRONG_RACE = 1, WRONG_CLASS = 2, PROFESSION_MISSING = 3, PROFESSION_SPECIALIZATION = 4}
+    db.GetQuest = function() end
+    db.QueryQuestSingle = function(id, field) if field == "nextQuestInChain" then return id < 3 and id + 1 or 0 end end
+    db.IsDoableVerbose = function(id) return "Unavailable", true, reasons[id] end
+    mods.QuestieCorrections.hiddenQuests, mods.QuestieCorrections.questTooltipHints = {}, {}
+    mods.QuestieReputation.GetReputationReward = function() end
+    lib.GetEffectiveQuestLevel = function() return 10 end
+    lib.SortQuestIDsByLevel = function(_, entries)
+        local ids = {}
+        for id in pairs(entries) do ids[#ids + 1] = id end
+        table.sort(ids)
+        return ids
+    end
+    private.GetNextQuestInChainLines = function(id) return "Follow-up " .. id, "" end
+    mods.TooltipLayout.CreateRows = function()
+        return {AddLine = function() end, AddDoubleLine = function(_, title) titles[#titles + 1] = title end}
+    end
+    mods.TooltipLayout.Render = function() end
+    tip.npcAndObjectOrder = {["NPC"] = {{questId = 1, title = "Quest 1", type = ""}}}
+    tip.questOrder, tip.manualOrder = {}, {}
+    env.IsShiftKeyDown = function() return true end
+    env.Questie.db.profile.enableTooltipsNextInChain = true
+    local function rebuild(firstReason, secondReason)
+        titles, reasons[2], reasons[3] = {}, firstReason, secondReason
+        tip:_Rebuild()
+        return table.concat(titles, "|")
+    end
+    for _, reason in pairs(db.DoableStates) do
+        assert(not rebuild(reason):find("Follow-up", 1, true), "ineligible profession/race/class stops before the first follow-up")
+    end
+    local later = rebuild(nil, db.DoableStates.PROFESSION_SPECIALIZATION)
+    assert(later:find("Follow-up 2", 1, true) and not later:find("Follow-up 3", 1, true),
+        "each hop checks specialization before adding its title")
+    local ordinary = rebuild()
+    assert(ordinary:find("Follow-up 2", 1, true) and ordinary:find("Follow-up 3", 1, true),
+        "ordinary chains retain all follow-ups")
 end
 
 do

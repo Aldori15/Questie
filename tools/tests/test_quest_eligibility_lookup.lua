@@ -43,7 +43,7 @@ modules.QuestieLib = {TableMemoizeFunction = function(_, fn)
     return setmetatable({}, {__index = function(tbl, key) local value = fn(key); tbl[key] = value; return value end})
 end}
 modules.QuestieServer = {GetQuestAvailabilityState = function(_, id) return state.bridge[id] end,
-    IsQuestDisabled = function() return nil end,
+    IsQuestDisabled = function(_, id) return state.serverDisabled == id end,
     IsQuestConditionRestricted = function() return nil end,
     IsICCQuestActive = function(_, id) return state.bridge[id] end,
     IsWintergraspQuestActive = function() end, IsPooledQuestActive = function() end}
@@ -104,6 +104,12 @@ add(211)
 add(26, {preQuestSingle = {200}})
 add(27, {preQuestSingle = {200, 211}})
 add(28, {preQuestGroup = {-200}})
+add(29, {requiredSkill = {164, 200}, disabledByQuest = 305})
+add(30, {requiredSpecialization = 9787, availableUntilCompleted = 306})
+add(31, {preQuestSingle = {200}, disabledByQuest = 305})
+add(32, {requiredLevel = 81, availableUntilCompleted = 306})
+add(33, {requiredClasses = 2, disabledByQuest = 305})
+add(34, {requiredRaces = 2, availableUntilCompleted = 306})
 add(14107)
 local function compile()
     local global = env.Questie.db.global
@@ -188,6 +194,26 @@ verifyReason(26, false, reasons.NO_PREQUESTSINGLE, "abandoning alternative resto
 env.Questie.db.char.complete[211] = true
 verifyReason(27, true, reasons.AVAILABLE, "another OR prerequisite can fulfill the requirement")
 env.Questie.db.char.complete[211] = nil
+
+-- Obsolete branches report their disabling relation before profession, level or prerequisite failures.
+modules.QuestiePlayer.currentQuestlog[305] = {}
+env.Questie.db.char.complete[306] = true
+state.profession, state.specialization = false, false
+verifyReason(29, false, reasons.DISABLED_BY, "active disabling quest precedes missing profession")
+verifyReason(30, false, reasons.DISABLING_QUEST_COMPLETED, "completed disabling quest precedes specialization")
+verifyReason(31, false, reasons.DISABLED_BY, "active disabling quest precedes missing prerequisite")
+verifyReason(32, false, reasons.DISABLING_QUEST_COMPLETED, "completed disabling quest precedes low level")
+verifyReason(33, false, reasons.WRONG_CLASS, "class restriction retains priority over disabling quest")
+verifyReason(34, false, reasons.WRONG_RACE, "race restriction retains priority over disabling quest")
+db.activeChildQuests[29] = true
+verifyReason(29, true, reasons.PARENT_ACTIVE, "active parent retains priority over disabling quest")
+state.serverDisabled, state.bridge[29] = 29, false
+verifyReason(29, false, reasons.SERVER_DISABLED, "server rejection retains priority over active parent and disabling quest")
+state.serverDisabled, state.bridge[29], db.activeChildQuests[29] = nil, nil, nil
+modules.QuestiePlayer.currentQuestlog[305], env.Questie.db.char.complete[306] = nil, nil
+verifyReason(29, false, reasons.PROFESSION_MISSING, "removing disabling quest restores profession explanation")
+verifyReason(30, false, reasons.PROFESSION_SPECIALIZATION, "clearing disabling completion restores specialization explanation")
+state.profession, state.specialization = true, true
 
 -- Exercise Journey's existing categorizer with the production reason codes.
 local savedLibStub, savedTinsert = env.LibStub, env.tinsert

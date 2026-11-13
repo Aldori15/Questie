@@ -3155,6 +3155,30 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
         end
     end
 
+    -- Check if this quest has a quest that disables it while in quest log
+    local disabledByQuest = queryRequirements(questId, "disabledByQuest")
+    if disabledByQuest and disabledByQuest ~= 0 then
+        if currentQuestlog[disabledByQuest] then
+            if returnText and returnBrief then
+                return l10n("Unavailable")..l10n(": ")..l10n("Disabling quest is active"), true, DoableStates.DISABLED_BY
+            elseif returnText and not returnBrief then
+                return "Disabling quest " .. disabledByQuest .. " is in the quest log for quest " .. questId, true, DoableStates.DISABLED_BY
+            end
+        end
+    end
+
+    -- Check if this quest is visible until you turn in a certain quest
+    local availableUntilCompleted = queryRequirements(questId, "availableUntilCompleted")
+    if availableUntilCompleted and availableUntilCompleted ~= 0 then
+        if completedQuests[availableUntilCompleted] then
+            if returnText and returnBrief then
+                return l10n("Unavailable")..l10n(": ")..l10n("Disabling quest already turned in"), true, DoableStates.DISABLING_QUEST_COMPLETED
+            elseif returnText and not returnBrief then
+                return "Quest " .. questId .. " is not available because " .. availableUntilCompleted .. " has been turned in", true, DoableStates.DISABLING_QUEST_COMPLETED
+            end
+        end
+    end
+
     -- Check if a quest which is exclusive to the current has already been completed or accepted
     -- If yes the current quest can't be accepted
     local ExclusiveQuestGroup = queryRequirements(questId, "exclusiveTo")
@@ -3455,18 +3479,6 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
         end
     end
 
-    -- Check if this quest has a quest that disables it while in quest log
-    local disabledByQuest = queryRequirements(questId, "disabledByQuest")
-    if disabledByQuest and disabledByQuest ~= 0 then
-        if currentQuestlog[disabledByQuest] then
-            if returnText and returnBrief then
-                return l10n("Unavailable")..l10n(": ")..l10n("Disabling quest is active"), true, DoableStates.DISABLED_BY
-            elseif returnText and not returnBrief then
-                return "Disabling quest " .. disabledByQuest .. " is in the quest log for quest " .. questId, true, DoableStates.DISABLED_BY
-            end
-        end
-    end
-
     -- Daily quest not active (based on ShouldBeHidden)
     if DailyQuests.ShouldBeHidden(questId, completedQuests, currentQuestlog) then
         if returnText and returnBrief then
@@ -3481,18 +3493,6 @@ function QuestieDB.IsDoableVerbose(questId, debugPrint, returnText, returnBrief)
             return l10n("Unavailable")..l10n(": ")..l10n("Daily quest limit reached"), true, DoableStates.INACTIVE_DAILY
         elseif returnText then
             return "Daily quest " .. questId .. " is unavailable because daily quest limit is reached", true, DoableStates.INACTIVE_DAILY
-        end
-    end
-
-    -- Check if this quest is visible until you turn in a certain quest
-    local availableUntilCompleted = queryRequirements(questId, "availableUntilCompleted")
-    if availableUntilCompleted and availableUntilCompleted ~= 0 then
-        if completedQuests[availableUntilCompleted] then
-            if returnText and returnBrief then
-                return l10n("Unavailable")..l10n(": ")..l10n("Disabling quest already turned in"), true, DoableStates.DISABLING_QUEST_COMPLETED
-            elseif returnText and not returnBrief then
-                return "Quest " .. questId .. " is not available because " .. availableUntilCompleted .. " has been turned in", true, DoableStates.DISABLING_QUEST_COMPLETED
-            end
         end
     end
 
