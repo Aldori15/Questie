@@ -4338,4 +4338,43 @@ do
     tests = tests + 1
 end
 
+-- Missing source names must not change location filtering or lose map/tooltip metadata.
+for _, sourceType in ipairs({"NPC", "GameObject"}) do
+    for _, register in ipairs({true, false}) do
+        local state, available, frames = starterRendererSetup({[823] = {[12] = {{10, 20}}}}, {[844] = {823}})
+        local mods, env = state.modules, state.env
+        local db, tips = mods.QuestieDB, mods.QuestieTooltips
+        local source = {id = 823, npcFlags = 2, spawns = {[12] = {{10, 20}}}}
+        if sourceType == "NPC" then source.waypoints = {[40] = {{{30, 40}, {35, 45}}}} end
+        db.GetNPC, db.GetObject = function() return source end, function() return source end
+        db.QueryNPCSingle = function(_, field) return source[field] end
+        db.HasAzerothCoreLocationCondition = function() return not register end
+        db.IsAzerothCoreAvailabilityConditionFulfilled = function() return register end
+        setmetatable(mods.l10n, {__call = function(_, text) return text == "Unknown" and "Inconnu" or text end})
+        tips.private = {}
+        assert(loadfile("Modules/Tooltips/Tooltip.lua", "t", env))()
+        local key = (sourceType == "NPC" and "m_" or "o_") .. source.id
+        local expected = "Inconnu (" .. key .. ")"
+        local quest = {Id = 844, Starts = {[sourceType] = {823}}, requiredLevel = 80, level = 80}
+        available.DrawAvailableQuest(quest)
+        equal(#frames[844], sourceType == "NPC" and 2 or 1, "missing names preserve static and waypoint-only locations")
+        for _, frame in ipairs(frames[844]) do
+            equal(frame.data.Name, expected, "map icon gets localized fallback even without local tooltip registration")
+        end
+        local registered = tips.lookupByKey[key]
+        equal(registered ~= nil, register, "location conditions still control tooltip registration")
+        if register then
+            equal(registered["844 " .. expected .. " 823"].name, expected, "tooltip uses the same source name")
+            equal(tips.lookupKeysByQuestId[844][key], true, "preserve the fork's tooltip-key set")
+        end
+        tips:RegisterQuestStartTooltip(845, nil, source.id, key, sourceType)
+        equal(tips.lookupByKey[key]["845 " .. expected .. " 823"].name, expected,
+            "direct registrations also tolerate a nil source name")
+        source.name, frames[844] = "Named source", nil
+        available.DrawAvailableQuest(quest)
+        equal(frames[844][1].data.Name, "Named source", "known names remain unchanged")
+        tests = tests + 1
+    end
+end
+
 print("Server bridge: " .. tests .. " regression groups passed")

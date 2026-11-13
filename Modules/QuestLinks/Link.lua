@@ -88,6 +88,9 @@ end
 ---@return string
 function QuestieLink:GetQuestLinkStringById(questId)
     local questName = QuestieDB.QueryQuestSingle(questId, "name")
+    if not questName or questName == "" then
+        return QuestieCompat.GetQuestLink(questId) or (l10n("Quest") .. " " .. tostring(questId))
+    end
     local questLevel, _ = QuestieLib.GetEffectiveQuestLevel(questId)
 
     return QuestieLink:GetQuestLinkString(questLevel, questName, questId)
@@ -108,8 +111,10 @@ function QuestieLink:GetQuestInsertStringById(questId)
     return QuestieCompat:GetQuestInsertStringById(questId)
 end
 
----@return string
+---@return string?
 function QuestieLink:GetQuestHyperLink(questId, senderGUID)
+    local questName = QuestieDB.QueryQuestSingle(questId, "name")
+    if not questName or questName == "" then return end
     local coloredQuestName = QuestieLib:GetColoredQuestName(questId, Questie.db.profile.trackerShowQuestLevel, true)
     local questLevel, _ = QuestieLib.GetEffectiveQuestLevel(questId)
     local isRepeatable = QuestieDB.IsRepeatable(questId)

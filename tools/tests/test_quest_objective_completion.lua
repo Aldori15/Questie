@@ -587,4 +587,36 @@ for _, case in ipairs({
     tests = tests + 1
 end
 
+-- Nameless NPC/object finishers retain tooltips, duplicate cleanup, and both map paths.
+for _, kind in ipairs({"monster", "object"}) do
+    local s = setup(false)
+    local mods = s.modules
+    setmetatable(mods.l10n, {__call = function(_, text) return text == "Unknown" and "Inconnu" or text end})
+    mods.QuestieTooltips.private = {}
+    assert(loadfile("Modules/Tooltips/Tooltip.lua", "t", s.env))()
+    local tips = mods.QuestieTooltips
+    local key = (kind == "monster" and "m_" or "o_") .. "123"
+    tips.lookupByKey[key] = {}
+    tips.GetTooltip = function() return {"Existing quest", "Existing objective"} end
+    local finisher = {id = 123, spawns = {[394] = {{40, 35}}}, waypoints = {[40] = {{{50, 50}, {55, 55}}}}}
+    mods.QuestieDB.GetNPC, mods.QuestieDB.GetObject = function() return finisher end, function() return finisher end
+    mods.ZoneDB.IsDungeonZone = function() return false end
+    mods.QuestieMap.DrawWaypoints = function() end
+    local drawnNames = {}
+    local draw = mods.QuestieMap.DrawWorldIcon
+    mods.QuestieMap.DrawWorldIcon = function(self, data, ...)
+        drawnNames[#drawnNames + 1] = data.Name
+        return draw(self, data, ...)
+    end
+    s.quest.Finisher = {Id = 123, Type = kind}
+    s.setReady(1)
+    s.module:AddFinisher(s.quest)
+    local expected = "Inconnu (" .. key .. ")"
+    equal(#drawnNames, 2, "nameless finisher draws static and waypoint-only locations")
+    for _, name in ipairs(drawnNames) do equal(name, expected, "finisher icons share localized fallback") end
+    equal(tips.lookupByKey[key][s.quest.Id .. " " .. expected .. " 123"].name, expected,
+        "finisher tooltip uses the same fallback name")
+    tests = tests + 1
+end
+
 print("Quest objective completion regression tests passed (" .. tests .. " groups)")

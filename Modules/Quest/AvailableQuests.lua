@@ -21,6 +21,8 @@ local QuestieQuestBlacklist = QuestieLoader:ImportModule("QuestieQuestBlacklist"
 local IsleOfQuelDanas = QuestieLoader:ImportModule("IsleOfQuelDanas")
 ---@type QuestieLib
 local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
+---@type l10n
+local l10n = QuestieLoader:ImportModule("l10n")
 ---@type QuestieEvent
 local QuestieEvent = QuestieLoader:ImportModule("QuestieEvent")
 ---@type DailyQuestComms
@@ -1710,12 +1712,13 @@ _AddStarter = function(starter, quest, tooltipKey, limit)
         starterType = "itemFromObject"
     end
 
+    local starterName = starter.name or (l10n("Unknown") .. " (" .. tooltipKey .. ")")
     local isDungeonQuest = QuestieDB.IsDungeonQuest(quest.Id)
     local isRaidQuest = QuestieDB.IsRaidQuest(quest.Id)
 
     if _ShouldRegisterQuestStartTooltip(quest.Id)
         and (not directNpcStarter or _NpcStarterLocalTooltipAvailable(starter)) then
-        QuestieTooltips:RegisterQuestStartTooltip(quest.Id, starter.name, starter.id, tooltipKey, (starterType or "NPC"))
+        QuestieTooltips:RegisterQuestStartTooltip(quest.Id, starterName, starter.id, tooltipKey, (starterType or "NPC"))
     end
 
     local starterIcons = {}
@@ -1737,7 +1740,7 @@ _AddStarter = function(starter, quest, tooltipKey, limit)
                         IconScale = _GetIconScaleForAvailable(),
                         Type = "available",
                         QuestData = quest,
-                        Name = starter.name,
+                        Name = starterName,
                         IsObjectiveNote = false,
                         StarterType = starterType,
                         StarterEntryId = starter.id,
@@ -1794,7 +1797,7 @@ _AddStarter = function(starter, quest, tooltipKey, limit)
                             IconScale = _GetIconScaleForAvailable(),
                             Type = "available",
                             QuestData = quest,
-                            Name = starter.name,
+                            Name = starterName,
                             IsObjectiveNote = false,
                             StarterType = starterType,
                             StarterEntryId = starter.id,

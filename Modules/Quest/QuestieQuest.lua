@@ -1213,6 +1213,7 @@ function QuestieQuest:AddFinisher(quest)
         end
 
         if finisher ~= nil then
+            local finisherName = finisher.name or (l10n("Unknown") .. " (" .. key .. ")")
             local finisherType = quest.Finisher.Type == "object" and "Object" or nil
 
             -- Certain race conditions can occur when the NPC/Objects are both the Quest Starter and Quest Finisher
@@ -1229,7 +1230,7 @@ function QuestieQuest:AddFinisher(quest)
                                 Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest] AddFinisher - Removing duplicate Quest Title!")
 
                                 -- Remove duplicate Quest Title
-                                QuestieTooltips.lookupByKey[key][tostring(questId) .. " " .. finisher.name] = nil
+                                QuestieTooltips.lookupByKey[key][tostring(questId) .. " " .. finisherName] = nil
 
                                 -- Now check to see if the dup has a Special Objective
                                 local objText = string.match(line, ".*|cFFcbcbcb.*")
@@ -1255,7 +1256,7 @@ function QuestieQuest:AddFinisher(quest)
                 end
             end
 
-            QuestieTooltips:RegisterQuestStartTooltip(quest.Id, finisher.name, finisher.id, key, "Finisher")
+            QuestieTooltips:RegisterQuestStartTooltip(quest.Id, finisherName, finisher.id, key, "Finisher")
 
             local finisherIcons = {}
             local finisherLocs = {}
@@ -1274,7 +1275,7 @@ function QuestieQuest:AddFinisher(quest)
                                 IconScale = _GetIconScaleForAvailable(),
                                 Type = "complete",
                                 QuestData = quest,
-                                Name = finisher.name,
+                                Name = finisherName,
                                 IsObjectiveNote = false,
                                 FinisherType = finisherType,
                                 FinisherEntryId = finisher.id,
@@ -1328,7 +1329,7 @@ function QuestieQuest:AddFinisher(quest)
                                 IconScale = _GetIconScaleForAvailable(),
                                 Type = "complete",
                                 QuestData = quest,
-                                Name = finisher.name,
+                                Name = finisherName,
                                 IsObjectiveNote = false,
                                 FinisherType = finisherType,
                                 FinisherEntryId = finisher.id,

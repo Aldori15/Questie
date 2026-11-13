@@ -100,7 +100,7 @@ function QuestieAnnounce:AnnounceObjectiveToChannel(questId, objectiveText, obje
 
         local localMessage
         if Questie.db.profile.questAnnounceLocally == true then
-            localMessage = l10n("%s for %s!", objective, QuestieLink:GetQuestHyperLink(questId))
+            localMessage = l10n("%s for %s!", objective, QuestieLink:GetQuestHyperLink(questId) or questLink)
         end
 
         _QuestieAnnounce:AnnounceToChannel(message, localMessage)
@@ -202,7 +202,7 @@ function QuestieAnnounce:AnnounceQuestItemLootedToChannel(questId, itemId)
 
         local localMessage
         if Questie.db.profile.questAnnounceLocally == true then
-            localMessage = l10n("Picked up %s which starts %s!", itemLink, QuestieLink:GetQuestHyperLink(questId))
+            localMessage = l10n("Picked up %s which starts %s!", itemLink, QuestieLink:GetQuestHyperLink(questId) or questLink)
         end
 
         _QuestieAnnounce:AnnounceToChannel(message, localMessage)
@@ -215,7 +215,7 @@ end
 ---@param questId QuestId
 ---@param itemId ItemId
 function _QuestieAnnounce:AnnounceSelf(questId, itemId)
-    local questHyperLink = QuestieLink:GetQuestHyperLink(questId);
+    local questHyperLink = QuestieLink:GetQuestHyperLink(questId) or QuestieLink:GetQuestLinkStringById(questId);
     local itemLink = select(2, GetItemInfo(itemId));
 
     Questie:Print(l10n("You picked up %s which starts %s!", itemLink, questHyperLink));
@@ -315,7 +315,7 @@ function QuestieAnnounce:AcceptedQuest(questId)
 
         local localMessage
         if Questie.db.profile.questAnnounceLocally == true then
-            localMessage = l10n("Quest %s: %s", l10n('Accepted'), QuestieLink:GetQuestHyperLink(questId) or "no quest name")
+            localMessage = l10n("Quest %s: %s", l10n('Accepted'), QuestieLink:GetQuestHyperLink(questId) or questLink)
         end
 
         _QuestieAnnounce:AnnounceToChannel(message, localMessage)
@@ -332,7 +332,7 @@ function QuestieAnnounce:AbandonedQuest(questId)
 
         local localMessage
         if Questie.db.profile.questAnnounceLocally == true then
-            localMessage = l10n("Quest %s: %s", l10n('Abandoned'), QuestieLink:GetQuestHyperLink(questId) or "no quest name")
+            localMessage = l10n("Quest %s: %s", l10n('Abandoned'), QuestieLink:GetQuestHyperLink(questId) or questLink)
         end
 
         _QuestieAnnounce:AnnounceToChannel(message, localMessage)
@@ -349,7 +349,7 @@ function QuestieAnnounce:CompletedQuest(questId)
 
         local localMessage
         if Questie.db.profile.questAnnounceLocally == true then
-            localMessage = l10n("Quest %s: %s", l10n('Completed'), QuestieLink:GetQuestHyperLink(questId) or "no quest name")
+            localMessage = l10n("Quest %s: %s", l10n('Completed'), QuestieLink:GetQuestHyperLink(questId) or questLink)
         end
 
         _QuestieAnnounce:AnnounceToChannel(message, localMessage)
@@ -359,8 +359,8 @@ end
 ---@param questId QuestId
 ---@param breadcrumbQuestId QuestId
 function QuestieAnnounce.IncompleteBreadcrumbQuest(questId, breadcrumbQuestId)
-    local questLink = QuestieLink:GetQuestHyperLink(questId)
-    local breadcrumbQuestLink = QuestieLink:GetQuestHyperLink(breadcrumbQuestId)
+    local questLink = QuestieLink:GetQuestHyperLink(questId) or QuestieLink:GetQuestLinkStringById(questId)
+    local breadcrumbQuestLink = QuestieLink:GetQuestHyperLink(breadcrumbQuestId) or QuestieLink:GetQuestLinkStringById(breadcrumbQuestId)
 
     local message = l10n("You have accepted %s without completing its breadcrumb quest %s", questLink, breadcrumbQuestLink)
     Questie:Print(message)
