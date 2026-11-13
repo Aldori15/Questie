@@ -476,3 +476,31 @@ equal(first.attributes.item1, "item:100", "native item uses the existing secure 
 assert(not first:SetItem(100, 900001, 24), "ordinary items still require quest-item metadata")
 equal(first.attributes.item1, nil, "rejected item clears the previous secure action")
 print("Tracker quest-item button regressions passed")
+
+-- Profile changes must not touch a base frame that a disabled tracker never created.
+loadModule("Modules/Tracker/TrackerBaseFrame.lua")
+local baseModule = loader:ImportModule("TrackerBaseFrame")
+local tracker = loader:ImportModule("QuestieTracker")
+local enableCalls, disableCalls = 0, 0
+tracker.Enable = function() enableCalls = enableCalls + 1 end
+tracker.Disable = function() disableCalls = disableCalls + 1 end
+local timerCount, queueCount = #delayed, #queued
+env.Questie.db.profile.trackerEnabled = false
+env.Questie.db.profile.TrackerLocation = {"TOPLEFT", env.UIParent, "TOPLEFT", 10, -20}
+baseModule:OnProfileChange()
+env.Questie.db.profile.TrackerLocation = nil
+baseModule:OnProfileChange()
+equal(enableCalls, 0, "disabled profiles do not enable the tracker")
+equal(disableCalls, 0, "uninitialized tracker needs no disable call")
+equal(baseModule.IsInitialized, false, "disabled profile changes skip initialization")
+equal(env.Questie_BaseFrame, nil, "disabled profile changes create no frame")
+equal(#delayed, timerCount, "disabled profile changes schedule no updates")
+equal(#queued, queueCount, "disabled profile changes queue no work")
+
+-- Switching to an enabled profile still delegates initialization to the tracker.
+env.Questie.db.profile.trackerEnabled = true
+baseModule:OnProfileChange()
+equal(enableCalls, 1, "enabled profile initializes the previously disabled tracker")
+equal(disableCalls, 0, "enabling does not disable the tracker")
+equal(#delayed, timerCount, "initialization returns before scheduling position updates")
+print("Tracker profile-change regressions passed")
