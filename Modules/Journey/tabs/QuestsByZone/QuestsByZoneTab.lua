@@ -8,8 +8,6 @@ local _QuestieJourney = QuestieJourney.private
 local QuestieJourneyUtils = QuestieLoader:ImportModule("QuestieJourneyUtils")
 ---@type QuestiePlayer
 local QuestiePlayer = QuestieLoader:ImportModule("QuestiePlayer")
----@type QuestieProfessions
-local QuestieProfessions = QuestieLoader:ImportModule("QuestieProfessions")
 ---@type QuestieDB
 local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 ---@type ZoneDB
@@ -32,7 +30,7 @@ end
 
 local _CreateContinentDropdown, _CreateZoneDropdown
 local _HandleAllZonesSelection, _HandleContinentSelection, _HandleZoneSelection
-local _GetCategorySelectText, _GetRelevantProfessions
+local _GetCategorySelectText
 
 local selectedContinentId
 local contDropdown, zoneDropdown, treegroup
@@ -96,23 +94,6 @@ _GetCategorySelectText = function(categoryId)
     return l10n('Select Zone')
 end
 
-_GetRelevantProfessions = function()
-    local professionList = QuestieJourney.zones[QuestieJourney.questCategoryKeys.PROFESSIONS] or {}
-    local playerProfessions = QuestieProfessions:GetPlayerProfessionNames()
-
-    local relevantProfessions = {}
-    for id, possibleName in pairs(professionList) do
-        for _, name in pairs(playerProfessions) do
-            if possibleName == name then
-                relevantProfessions[id] = professionList[id]
-                break
-            end
-        end
-    end
-
-    return relevantProfessions
-end
-
 _CreateContinentDropdown = function()
     local dropdown = AceGUI:Create("Dropdown")
     local list = {
@@ -171,12 +152,6 @@ _CreateZoneDropdown = function()
     end
 
     local zones = QuestieJourney.zones[selectedContinentId]
-    if selectedContinentId == QuestieJourney.questCategoryKeys.PROFESSIONS then
-        zones = _GetRelevantProfessions()
-        if not next(zones) then
-            zones = nil
-        end
-    end
 
     if currentZoneId then
         currentZoneId = ZoneDB:GetParentZoneId(currentZoneId) or currentZoneId
@@ -322,28 +297,13 @@ _HandleContinentSelection = function(key, _)
         _QuestieJourney.questsByZone:ManageTree(treegroup, nil)
         zoneDropdown.frame:Show()
     elseif (key.value == QuestieJourney.questCategoryKeys.PROFESSIONS) then
-        local professionList = QuestieJourney.zones[key.value]
-        local playerProfessions = QuestieProfessions:GetPlayerProfessionNames()
-
-        local relevantProfessions = {}
-        for id, possibleName in pairs(professionList) do
-            for _, name in pairs(playerProfessions) do
-                if possibleName == name then
-                    relevantProfessions[id] = professionList[id]
-                    break
-                end
-            end
-        end
+        local professionList = QuestieJourney.zones[key.value] or {}
+        local sortedProfessions = QuestieJourneyUtils:GetSortedZoneKeys(professionList)
         local text = l10n('Select Profession')
-        if (not next(relevantProfessions)) then
-            text = l10n('No Professions learned')
-            zoneDropdown:SetDisabled(true)
-            _QuestieJourney.questsByZone:ManageTree(treegroup, nil)
-        else
-            zoneDropdown:SetDisabled(false)
-        end
-        zoneDropdown:SetList(relevantProfessions)
+        zoneDropdown:SetDisabled(false)
+        zoneDropdown:SetList(professionList, sortedProfessions)
         zoneDropdown:SetText(text)
+        _QuestieJourney.questsByZone:ManageTree(treegroup, nil)
         zoneDropdown.frame:Show()
     elseif (key.value == QuestieJourney.questCategoryKeys.PET_BATTLES) then
         local zoneTree = _QuestieJourney.questsByZone:CollectZoneQuests(QuestieDB.sortKeys.PET_BATTLE)
