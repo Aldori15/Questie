@@ -133,6 +133,22 @@ function TrackerUtils:ShowObjectiveOnMap(objective)
     end
 end
 
+---@param objectives QuestObjective[]
+function TrackerUtils:ShowQuestObjectivesOnMap(objectives)
+    local bestZone, bestDistance
+    for _, objective in pairs(objectives) do
+        local spawn, zone, _, _, _, distance = QuestieMap:GetNearestSpawn(objective)
+        if spawn and (not bestDistance or distance < bestDistance) then
+            bestZone, bestDistance = zone, distance
+        end
+    end
+    if bestZone then
+        WorldMapFrame:Show()
+        WorldMapFrame:SetMapID(ZoneDB:GetUiMapIdByAreaId(bestZone))
+        TrackerUtils:FlashObjectives(objectives)
+    end
+end
+
 ---@param quest table The table provided by QuestieDB.GetQuest(questId)
 function TrackerUtils:ShowFinisherOnMap(quest)
     local spawn, zone = QuestieMap:GetNearestQuestSpawn(quest)
@@ -146,7 +162,19 @@ end
 
 ---@param objective table The table provided by QuestieDB.GetQuest(questId).Objectives[objective]
 function TrackerUtils:FlashObjective(objective)
-    if next(objective.AlreadySpawned) then
+    TrackerUtils:FlashObjectives({objective})
+end
+
+---@param objectives QuestObjective[]
+function TrackerUtils:FlashObjectives(objectives)
+    local hasSpawned = false
+    for _, objective in pairs(objectives) do
+        if objective.AlreadySpawned and next(objective.AlreadySpawned) then
+            hasSpawned = true
+            break
+        end
+    end
+    if hasSpawned then
         local toFlash = {}
         -- ugly code
         for _, framelist in pairs(QuestieMap.questIdFrames) do
@@ -163,17 +191,23 @@ function TrackerUtils:FlashObjective(objective)
         end
 
 
-        for _, spawn in pairs(objective.AlreadySpawned) do
-            if spawn.mapRefs then
-                for _, frame in pairs(spawn.mapRefs) do
-                    tinsert(toFlash, frame)
-                    if frame._hidden_by_flash then
-                        frame:Show()
-                    end
+        local queued = {}
+        for _, objective in pairs(objectives) do
+            for _, spawn in pairs(objective.AlreadySpawned or {}) do
+                if spawn.mapRefs then
+                    for _, frame in pairs(spawn.mapRefs) do
+                        if not queued[frame] then
+                            queued[frame] = true
+                            tinsert(toFlash, frame)
+                            if frame._hidden_by_flash then
+                                frame:Show()
+                            end
 
-                    -- todo: move into frame.session
-                    frame._hidden_by_flash = nil
-                    frame._size = frame:GetWidth()
+                            -- todo: move into frame.session
+                            frame._hidden_by_flash = nil
+                            frame._size = frame:GetWidth()
+                        end
+                    end
                 end
             end
         end

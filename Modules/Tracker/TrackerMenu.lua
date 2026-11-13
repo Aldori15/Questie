@@ -23,6 +23,7 @@ local QuestieCombatQueue = QuestieLoader:ImportModule("QuestieCombatQueue")
 ---@type QuestieLib
 local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
 local TrackerData = QuestieLoader:ImportModule("TrackerData")
+local QuestLifecycle = QuestieLoader:ImportModule("QuestLifecycle")
 
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
@@ -182,6 +183,60 @@ TrackerMenu.addShowObjectivesOnMapOption = function(menu, quest, objective)
             end
 
             TrackerUtils:ShowObjectiveOnMap(objective)
+        end
+    })
+end
+
+local function _GetLocatedQuestObjectives(quest)
+    local objectives = {}
+    for _, list in ipairs({quest.Objectives, quest.SpecialObjectives}) do
+        for _, objective in pairs(list) do
+            if not objective.Completed and objective.spawnList and next(objective.spawnList) then
+                tinsert(objectives, objective)
+            end
+        end
+    end
+    return objectives
+end
+
+TrackerMenu.addShowQuestObjectivesOnMapOption = function(menu, quest)
+    if quest:IsComplete() ~= 0 or not next(_GetLocatedQuestObjectives(quest)) then return end
+    local acceptance = QuestLifecycle.GetAcceptance(quest.Id)
+    tinsert(menu, {
+        text = l10n('Show on Map'),
+        func = function()
+            LibDropDown:CloseDropDownMenus()
+            -- The menu can outlive quest removal or reacceptance.
+            if not QuestLifecycle.IsCurrentAcceptance(quest.Id, acceptance)
+                or not TrackerData.ContainsQuest(quest.Id) or TrackerData.GetQuest(quest.Id) ~= quest
+                or quest:IsComplete() ~= 0 then return end
+
+            local objectives = _GetLocatedQuestObjectives(quest)
+            if not next(objectives) then return end
+            local needHiddenUpdate = false
+            if Questie.db.char.TrackerFocus and Questie.db.char.TrackerFocus ~= quest.Id then
+                TrackerUtils:UnFocus()
+                needHiddenUpdate = true
+            end
+
+            local hiddenQuests = Questie.db.char.TrackerHiddenQuests
+            if quest.HideIcons or (hiddenQuests and hiddenQuests[quest.Id]) then
+                quest.HideIcons = nil
+                if hiddenQuests then hiddenQuests[quest.Id] = nil end
+                needHiddenUpdate = true
+            end
+            local hiddenObjectives = Questie.db.char.TrackerHiddenObjectives
+            for _, objective in ipairs(objectives) do
+                local key = tostring(quest.Id) .. " " .. tostring(objective.Index)
+                if objective.HideIcons or (hiddenObjectives and hiddenObjectives[key]) then
+                    objective.HideIcons = nil
+                    if hiddenObjectives then hiddenObjectives[key] = nil end
+                    needHiddenUpdate = true
+                end
+            end
+
+            if needHiddenUpdate then QuestieQuest.ToggleQuestNotes(true) end
+            TrackerUtils:ShowQuestObjectivesOnMap(objectives)
         end
     })
 end
@@ -506,6 +561,7 @@ function TrackerMenu:GetMenuForQuest(quest)
     end
     TrackerMenu.minMaxQuestOption(menu, quest)
     TrackerMenu.addShowHideQuestsOption(menu, quest)
+    TrackerMenu.addShowQuestObjectivesOnMapOption(menu, quest)
     TrackerMenu.addShowFinisherOnMapOption(menu, quest)
     TrackerMenu.addShowInQuestLogOption(menu, quest)
     TrackerMenu.addLinkToChatOption(menu, quest)
