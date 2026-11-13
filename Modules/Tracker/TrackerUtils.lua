@@ -44,6 +44,7 @@ local function _RefreshWorldMapPins()
 end
 
 local objectiveFlashTicker
+local objectiveFlashRestore
 local zoneCache = {}
 local bindTruthTable = {
     ['left'] = function(button)
@@ -160,195 +161,126 @@ function TrackerUtils:ShowFinisherOnMap(quest)
     end
 end
 
----@param objective table The table provided by QuestieDB.GetQuest(questId).Objectives[objective]
-function TrackerUtils:FlashObjective(objective)
-    TrackerUtils:FlashObjectives({objective})
+---@param quest Quest
+function TrackerUtils:ShowQuestOnMap(quest)
+    self:ShowFinisherOnMap(quest)
 end
 
----@param objectives QuestObjective[]
-function TrackerUtils:FlashObjectives(objectives)
-    local hasSpawned = false
-    for _, objective in pairs(objectives) do
-        if objective.AlreadySpawned and next(objective.AlreadySpawned) then
-            hasSpawned = true
-            break
+local function _FlashMapFrames(frames)
+    if objectiveFlashRestore then objectiveFlashRestore() end
+
+    local targets, hidden, patrolData = {}, {}, {}
+    for _, frame in pairs(frames) do
+        if not frame.miniMapIcon and frame.data then
+            targets[frame] = {data = frame.data, width = frame:GetWidth(), height = frame:GetHeight()}
+            patrolData[frame.data] = true
         end
     end
-    if hasSpawned then
-        local toFlash = {}
-        -- ugly code
-        for _, framelist in pairs(QuestieMap.questIdFrames) do
-            for _, frameName in pairs(framelist) do
-                local icon = _G[frameName]
-                if not icon.miniMapIcon then
-                    -- todo: move into frame.session
-                    if icon:IsShown() then
-                        icon._hidden_by_flash = true
-                        icon:Hide()
-                    end
-                end
-            end
+    if not next(targets) then return end
+
+    local function HideIcon(frameName)
+        local icon = _G[frameName]
+        if icon and not icon.miniMapIcon and not targets[icon] and icon:IsShown() then
+            hidden[icon] = icon.data
+            icon._hidden_by_flash = true
+            icon:Hide()
         end
-
-
-        local queued = {}
-        for _, objective in pairs(objectives) do
-            for _, spawn in pairs(objective.AlreadySpawned or {}) do
-                if spawn.mapRefs then
-                    for _, frame in pairs(spawn.mapRefs) do
-                        if not queued[frame] then
-                            queued[frame] = true
-                            tinsert(toFlash, frame)
-                            if frame._hidden_by_flash then
-                                frame:Show()
-                            end
-
-                            -- todo: move into frame.session
-                            frame._hidden_by_flash = nil
-                            frame._size = frame:GetWidth()
-                        end
-                    end
-                end
-            end
-        end
-        local patrolData = {}
-        for _, frame in ipairs(toFlash) do patrolData[frame.data] = true end
-        if QuestieWaypoints.SetSolo then QuestieWaypoints.SetSolo(patrolData) end
-        local flashW = 1
-        local flashB = true
-        local flashDone = 0
-        objectiveFlashTicker = C_Timer.NewTicker(0.1, function()
-            for _, frame in pairs(toFlash) do
-                frame:SetWidth(frame._size + flashW)
-                frame:SetHeight(frame._size + flashW)
-            end
-            if flashB then
-                if flashW < 10 then
-                    flashW = flashW + (16 - flashW) / 2 + 0.06
-                    if flashW >= 9.5 then
-                        flashB = false
-                    end
-                end
-            else
-                if flashW > 0 then
-                    flashW = flashW - 2
-                    --flashW = (flashW + (-flashW) / 3) - 0.06
-                    if flashW < 1 then
-                        --flashW = 0
-                        flashB = true
-                        -- ugly code
-                        if flashDone > 0 then
-                            C_Timer.After(0.1, function()
-                                objectiveFlashTicker:Cancel()
-                                for _, frame in pairs(toFlash) do
-                                    frame:SetWidth(frame._size)
-                                    frame:SetHeight(frame._size)
-                                    frame._size = nil
-                                end
-                            end)
-                            C_Timer.After(0.5, function()
-                                for _, framelist in pairs(QuestieMap.questIdFrames) do
-                                    for _, frameName in pairs(framelist) do
-                                        local icon = _G[frameName]
-                                        if icon._hidden_by_flash then
-                                            icon._hidden_by_flash = nil
-                                            icon:Show()
-                                        end
-                                    end
-                                end
-                                if QuestieWaypoints.SetSolo then QuestieWaypoints.SetSolo(nil) end
-                                _RefreshWorldMapPins()
-                            end)
-                        end
-                        flashDone = flashDone + 1
-                    end
-                end
-            end
-        end)
     end
-end
-
----@param quest table The table provided by QuestieDB.GetQuest(questId)
-function TrackerUtils:FlashFinisher(quest)
-    local toFlash = {}
-    -- ugly code
-    for questId, framelist in pairs(QuestieMap.questIdFrames) do
-        if questId ~= quest.Id then
-            for _, frameName in pairs(framelist) do
-                local icon = _G[frameName]
-                if not icon.miniMapIcon then
-                    -- todo: move into frame.session
-                    if icon:IsShown() then
-                        icon._hidden_by_flash = true
-                        icon:Hide()
-                    end
-                end
-            end
-        else
-            for _, frameName in pairs(framelist) do
-                local icon = _G[frameName]
-                if not icon.miniMapIcon then
-                    icon._size = icon:GetWidth()
-                    tinsert(toFlash, icon)
-                end
-            end
+    for _, framelist in pairs(QuestieMap.questIdFrames) do
+        for _, frameName in pairs(framelist) do HideIcon(frameName) end
+    end
+    for _, entries in pairs(QuestieMap.manualFrames or {}) do
+        for _, framelist in pairs(entries) do
+            for _, frameName in pairs(framelist) do HideIcon(frameName) end
         end
     end
 
-    local patrolData = {}
-    for _, frame in ipairs(toFlash) do patrolData[frame.data] = true end
+    local function RestoreSizes()
+        for frame, target in pairs(targets) do
+            if not target.restored then
+                if frame.data == target.data then
+                    frame:SetWidth(target.width)
+                    frame:SetHeight(target.height)
+                end
+                target.restored = true
+            end
+        end
+    end
+    local ticker
+    local function RestoreFlash()
+        if objectiveFlashTicker ~= ticker then return end
+        ticker:Cancel()
+        RestoreSizes()
+        for frame, data in pairs(hidden) do
+            if frame.data == data and frame._hidden_by_flash then
+                frame._hidden_by_flash = nil
+                frame:Show()
+            end
+        end
+        objectiveFlashTicker, objectiveFlashRestore = nil, nil
+        if QuestieWaypoints.SetSolo then QuestieWaypoints.SetSolo(nil) end
+        _RefreshWorldMapPins()
+    end
+
     if QuestieWaypoints.SetSolo then QuestieWaypoints.SetSolo(patrolData) end
-    local flashW = 1
-    local flashB = true
-    local flashDone = 0
-    objectiveFlashTicker = C_Timer.NewTicker(0.1, function()
-        for _, frame in pairs(toFlash) do
-            frame:SetWidth(frame._size + flashW)
-            frame:SetHeight(frame._size + flashW)
-        end
-        if flashB then
-            if flashW < 10 then
-                flashW = flashW + (16 - flashW) / 2 + 0.06
-                if flashW >= 9.5 then
-                    flashB = false
-                end
+    local flashW, growing, flashDone, finishing = 1, true, 0, false
+    ticker = C_Timer.NewTicker(0.065, function()
+        if objectiveFlashTicker ~= ticker or finishing then return end
+        for frame, target in pairs(targets) do
+            if frame.data == target.data then
+                frame:SetWidth(target.width + flashW)
+                frame:SetHeight(target.height + flashW)
             end
+        end
+        if growing then
+            flashW = flashW + (16 - flashW) / 2 + 0.06
+            if flashW >= 9.5 then growing = false end
         else
-            if flashW > 0 then
-                flashW = flashW - 2
-                --flashW = (flashW + (-flashW) / 3) - 0.06
-                if flashW < 1 then
-                    --flashW = 0
-                    flashB = true
-                    -- ugly code
-                    if flashDone > 0 then
-                        C_Timer.After(0.1, function()
-                            objectiveFlashTicker:Cancel()
-                            for _, frame in pairs(toFlash) do
-                                frame:SetWidth(frame._size)
-                                frame:SetHeight(frame._size)
-                                frame._size = nil
-                            end
-                        end)
-                        C_Timer.After(0.5, function()
-                            for _, framelist in pairs(QuestieMap.questIdFrames) do
-                                for _, frameName in pairs(framelist) do
-                                    local icon = _G[frameName]
-                                    if icon._hidden_by_flash then
-                                        icon._hidden_by_flash = nil
-                                        icon:Show()
-                                    end
-                                end
-                            end
-                            if QuestieWaypoints.SetSolo then QuestieWaypoints.SetSolo(nil) end
-                            _RefreshWorldMapPins()
-                        end)
-                    end
-                    flashDone = flashDone + 1
+            flashW = flashW - 2
+            if flashW < 1 then
+                growing = true
+                flashDone = flashDone + 1
+                if flashDone == 2 then
+                    finishing = true
+                    C_Timer.After(0.1, function()
+                        if objectiveFlashTicker ~= ticker then return end
+                        ticker:Cancel()
+                        RestoreSizes()
+                    end)
+                    C_Timer.After(0.5, RestoreFlash)
                 end
             end
         end
     end)
+    objectiveFlashTicker, objectiveFlashRestore = ticker, RestoreFlash
+end
+
+---@param objective table The table provided by QuestieDB.GetQuest(questId).Objectives[objective]
+function TrackerUtils:FlashObjective(objective)
+    self:FlashObjectives({objective})
+end
+
+---@param objectives QuestObjective[]
+function TrackerUtils:FlashObjectives(objectives)
+    local frames = {}
+    for _, objective in pairs(objectives) do
+        for _, spawn in pairs(objective.AlreadySpawned or {}) do
+            for _, frame in pairs(spawn.mapRefs or {}) do
+                frames[frame] = frame
+            end
+        end
+    end
+    _FlashMapFrames(frames)
+end
+
+---@param quest table The table provided by QuestieDB.GetQuest(questId)
+function TrackerUtils:FlashFinisher(quest)
+    local frames = {}
+    for _, frameName in pairs(QuestieMap.questIdFrames[quest.Id] or {}) do
+        local frame = _G[frameName]
+        if frame then frames[frame] = frame end
+    end
+    _FlashMapFrames(frames)
 end
 
 ---@param bind string
@@ -663,6 +595,10 @@ function TrackerUtils:ShowVoiceOverPlayButtons()
                     if not Questie.db.profile.trackerFadeQuestItemButtons then
                         TrackerLinePool.SetAllItemButtonAlpha(0)
                     end
+
+                    if Questie.db.profile.trackerShowQuestFocusButtons and not Questie.db.profile.trackerFadeQuestFocusButtons then
+                        TrackerLinePool.SetAllStatusIconAlpha(0)
+                    end
                 end
             else
                 if MouseIsOver(Questie_BaseFrame) then
@@ -679,6 +615,10 @@ function TrackerUtils:ShowVoiceOverPlayButtons()
 
                 if not Questie.db.profile.trackerFadeQuestItemButtons then
                     TrackerLinePool.SetAllItemButtonAlpha(1)
+                end
+
+                if Questie.db.profile.trackerShowQuestFocusButtons and not Questie.db.profile.trackerFadeQuestFocusButtons then
+                    TrackerLinePool.SetAllStatusIconAlpha(1)
                 end
             end
         end

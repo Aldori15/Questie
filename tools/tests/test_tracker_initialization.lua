@@ -109,6 +109,7 @@ function methods:SetCooldown(start, duration, enabled)
     self.cooldownWrites = (self.cooldownWrites or 0) + 1
 end
 function methods:SetParent(parent) self.parent = parent end
+function methods:EnableMouse(value) self.mouseEnabled = value end
 
 env.UIParent = object("UIParent")
 local templates = {}
@@ -195,6 +196,7 @@ loadModule("Compat/UI.lua")
 loadModule("Modules/Tracker/TrackerHeaderFrame.lua")
 loadModule("Modules/Tracker/TrackerQuestFrame.lua")
 loadModule("Modules/Tracker/TrackerQuestItemButtons.lua")
+loadModule("Modules/Tracker/QuestFocusButton.lua")
 loadModule("Modules/Tracker/TrackerLinePool.lua")
 local headerModule = loader:ImportModule("TrackerHeaderFrame")
 local questModule = loader:ImportModule("TrackerQuestFrame")
@@ -504,3 +506,26 @@ equal(enableCalls, 1, "enabled profile initializes the previously disabled track
 equal(disableCalls, 0, "enabling does not disable the tracker")
 equal(#delayed, timerCount, "initialization returns before scheduling position updates")
 print("Tracker profile-change regressions passed")
+
+-- The existing pooled status frame becomes the focus button and releases its row identity on reset.
+loadModule("Modules/Quest/Lifecycle/QuestLifecycle.lua")
+local activeQuest = {Id = 100, IsComplete = function() return 0 end}
+loader:ImportModule("QuestiePlayer").currentQuestlog = {[100] = activeQuest}
+loader:ImportModule("TrackerData").ContainsQuest = function(id) return id == 100 end
+loader:ImportModule("TrackerData").GetQuest = function(id) if id == 100 then return activeQuest end end
+loader:ImportModule("QuestieMap").GetNearestQuestSpawn = function() return {50, 50}, 215 end
+env.Questie.db.profile.trackerShowQuestFocusButtons = true
+local status = env.linePool1.statusIcon
+loader:ImportModule("QuestFocusButton").SetQuest(status, activeQuest, false)
+equal(status.texture.texture[1], "Interface/AddOns/Questie-335/Icons\\poi_incomplete.blp", "pooled status uses supplied BLP")
+equal(status.mouseEnabled, true, "pooled status accepts focus clicks")
+equal(status:GetWidth(), 15, "focus size follows quest font")
+assert(status:GetScript("OnClick"), "pooled status has focus click handler")
+pool.ResetLinesForChange()
+equal(env.linePool1.statusIcon, status, "pool keeps the existing status frame")
+equal(status.questId, nil, "row reset releases quest identity")
+equal(status.expectedQuest, nil, "row reset releases captured quest")
+equal(status.acceptance, nil, "row reset releases acceptance token")
+equal(status.mouseEnabled, false, "row reset disables focus clicks")
+equal(status:IsShown(), false, "row reset hides the focus control")
+print("Tracker pooled focus-button regressions passed")

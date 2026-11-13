@@ -1,5 +1,6 @@
 ---@class TrackerLinePool
 local TrackerLinePool = QuestieLoader:CreateModule("TrackerLinePool")
+local QuestFocusButton = QuestieLoader:ImportModule("QuestFocusButton")
 -------------------------
 --Import QuestieTracker modules.
 -------------------------
@@ -504,6 +505,7 @@ function TrackerLinePool.Initialize(questFrame)
         statusIcon:SetPoint("RIGHT", expandQuest, "LEFT", -2, 0)
         statusIcon:SetFrameLevel(100)
         statusIcon:EnableMouse(false)
+        QuestFocusButton.Configure(statusIcon)
         statusIcon:Hide()
 
         line.statusIcon = statusIcon
@@ -544,6 +546,13 @@ function TrackerLinePool.ResetLinesForChange()
             line.expandQuest.mode = nil
             line.expandQuest.questId = nil
             line.expandQuest.zoneId = nil
+        end
+        if line.statusIcon then
+            line.statusIcon.questId = nil
+            line.statusIcon.expectedQuest = nil
+            line.statusIcon.acceptance = nil
+            line.statusIcon:EnableMouse(false)
+            line.statusIcon:Hide()
         end
         if line.expandZone then
             line.expandZone.mode = nil
@@ -591,7 +600,7 @@ function TrackerLinePool.UpdateWrappedLineWidths(trackerLineWidth)
     local trackerFontSizeQuest = Questie.db.profile.trackerFontSizeQuest
     local trackerMarginLeft = 14
     local trackerMarginRight = 30
-    local questMarginLeft = (trackerMarginLeft + trackerMarginRight) - (18 - trackerFontSizeQuest)
+    local questMarginLeft = (trackerMarginLeft + trackerMarginRight) - (18 - trackerFontSizeQuest) + QuestFocusButton.GetColumnWidth()
     local objectiveMarginLeft = questMarginLeft + trackerFontSizeQuest
     local questItemButtonSize = 12 + trackerFontSizeQuest
 
@@ -932,7 +941,7 @@ TrackerLinePool.SetMode = function(self, mode)
             self.label:SetHeight(trackerFontSizeQuest)
             self.button = nil
             if self.statusIcon then
-                if mode == "quest" then
+                if mode == "quest" and not Questie.db.profile.trackerShowQuestFocusButtons then
                     self.statusIcon.texture:SetWidth(trackerFontSizeQuest)
                     self.statusIcon.texture:SetHeight(trackerFontSizeQuest)
                     self.statusIcon:SetWidth(trackerFontSizeQuest)

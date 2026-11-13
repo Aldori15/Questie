@@ -149,6 +149,14 @@ do
         methods[name] = noop
     end
     function methods:Hide() self.shown = false end
+    function methods:ClearAllPoints() self.point = nil end
+    function methods:SetPoint(...) self.point = {...} end
+    function methods:SetParent(parent) self.parent = parent end
+    function methods:GetParent() return self.parent end
+    function methods:SetAlpha(alpha) self.alpha = alpha end
+    function methods:GetAlpha() return self.alpha or 0 end
+    function methods:EnableMouse(enabled) self.mouseEnabled = enabled end
+    function methods:SetTexture(texture) self.texturePath = texture end
     function methods:Show() self.shown = true end
     function methods:IsShown() return self.shown end
     function methods:SetMode(mode) self.mode = mode end
@@ -177,6 +185,10 @@ do
     pool.GetNextLine = function()
         local row = frame()
         for _, name in ipairs({"label", "expandQuest", "expandZone", "criteriaMark", "playButton"}) do row[name] = frame() end
+        if profile.trackerShowQuestFocusButtons then
+            row.statusIcon = frame()
+            row.statusIcon.parent, row.statusIcon.texture = row, frame()
+        end
         rows[#rows + 1] = row
         return row
     end
@@ -237,6 +249,8 @@ do
     env.GetScreenWidth = function() return 2000 end
     env.GetScreenHeight = function() return 1000 end
     env.InCombatLockdown = function() return false end
+    library.AddonPath = "Interface/AddOns/Questie-335/"
+    loadModule("Modules/Tracker/QuestFocusButton.lua", env)
     loadModule("Modules/Tracker/TrackerVisibility.lua", env)
     loadModule("Modules/Tracker/TrackerAchievements.lua", env)
     loadModule("Modules/Tracker/QuestieTracker.lua", env)
@@ -317,6 +331,36 @@ do
         if row.mode == "objective" and row.label.text:find("Activate device: 1/1", 1, true) then nativeObjective = true end
     end
     assert(nativeTitle and nativeObjective, "Native title and unfinished full-counter objective survive real rendering")
+
+    -- Render the real quest title with the focus column and two faded item controls.
+    quest.NativeOnly = nil
+    profile.trackerShowQuestFocusButtons = true
+    loader:ImportModule("QuestiePlayer").currentQuestlog = {[quest.Id] = quest}
+    loader:ImportModule("TrackerData").ContainsQuest = function(id) return id == quest.Id end
+    loader:ImportModule("TrackerData").GetQuest = function(id) if id == quest.Id then return quest end end
+    loader:ImportModule("QuestieMap").GetNearestQuestSpawn = function() return {50, 50}, 3483 end
+    loadModule("Modules/Quest/Lifecycle/QuestLifecycle.lua", env)
+    utils.GetQuestItemButtonState = function() return {1001, 1002}, false end
+    local items, itemIndex = {}, 0
+    pool.GetNextItemButton = function()
+        itemIndex = itemIndex + 1
+        local item = frame()
+        item.SetItem = function() return true end
+        item.GetPoint = function() return "TOPLEFT", questFrame, "TOPLEFT", 0, 0 end
+        items[itemIndex] = item
+        return item
+    end
+    methods.GetPoint = function() return "TOPLEFT", questFrame, "TOPLEFT", 0, 0 end
+    tracker:Update(true)
+    local titleRow
+    for _, row in ipairs(rows) do if row.mode == "quest" then titleRow = row end end
+    assert(titleRow and titleRow.statusIcon.isFocusButton, "real redraw reuses status control for quest focus")
+    equal(titleRow.statusIcon.texture.texturePath, library.AddonPath .. "Icons\\poi_incomplete.blp", "real redraw wires BLP texture")
+    equal(items[1].point[4], 17, "primary item clears focus column")
+    equal(items[2].point[4], 43, "secondary item clears primary item and focus column")
+    equal(titleRow.label.point[4], 81, "faded secondary item still reserves title space")
+    equal(titleRow.label:GetWidth(), base:GetWidth() - 81 - 30, "formatting preserves secondary item title margin")
+    equal(items[2]:GetAlpha(), 0, "fixture exercises transparent item controls")
     groups = groups + 1
 end
 print("Tracker objective-text regressions passed (" .. groups .. " groups)")

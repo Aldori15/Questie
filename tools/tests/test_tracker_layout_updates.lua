@@ -68,6 +68,9 @@ module("QuestieLib").GetFullObjectiveText = function(text) return text end
 setmetatable(module("l10n"), {__call = function(_, text) return text end})
 run(read("Modules/Tracker/TrackerData.lua"))
 run(read("Modules/Tracker/TrackerUtils.lua"))
+module("QuestieLib").AddonPath = "Interface/AddOns/Questie-335/"
+run(read("Modules/Tracker/QuestFocusButton.lua"))
+env.QuestFocusButton = module("QuestFocusButton")
 env.TrackerData, env.TrackerUtils = module("TrackerData"), module("TrackerUtils")
 local tracker = module("QuestieTracker")
 env.QuestieTracker = tracker

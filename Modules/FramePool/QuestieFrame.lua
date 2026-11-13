@@ -326,6 +326,7 @@ function _QuestieFrame:UpdateTexture(texture)
 end
 
 function _QuestieFrame:Unload()
+    self._hidden_by_flash = nil
     if QuestieWaypoints.RemoveOwner then QuestieWaypoints.RemoveOwner(self) end
     if QuestieWaypoints.OwnerChanged then QuestieWaypoints.OwnerChanged(self) end
     if self.serverPatrolTracked then

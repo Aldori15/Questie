@@ -37,6 +37,11 @@ TrackerMenu.menuFrame = LibDropDown:Create_UIDropDownMenu("QuestieTrackerMenuFra
 
 local tinsert = table.insert
 
+local function _RefreshFocus()
+    QuestieQuest:RefreshQuestIconVisibility()
+    QuestieCombatQueue:Queue(function() QuestieTracker:Update(true) end)
+end
+
 -- Create local Quest Menu functions
 TrackerMenu.addFocusOption = function(menu, quest, objective)
     if Questie.db.char.TrackerFocus and type(Questie.db.char.TrackerFocus) == "string" and Questie.db.char.TrackerFocus == tostring(quest.Id) .. " " .. tostring(objective.Index) then
@@ -45,7 +50,7 @@ TrackerMenu.addFocusOption = function(menu, quest, objective)
             func = function()
                 LibDropDown:CloseDropDownMenus()
                 TrackerUtils:UnFocus()
-                QuestieQuest:ToggleNotes(true)
+                _RefreshFocus()
             end
         })
     else
@@ -54,7 +59,7 @@ TrackerMenu.addFocusOption = function(menu, quest, objective)
             func = function()
                 LibDropDown:CloseDropDownMenus()
                 TrackerUtils:FocusObjective(quest.Id, objective.Index)
-                QuestieQuest:ToggleNotes(false)
+                _RefreshFocus()
             end
         })
     end
@@ -180,6 +185,7 @@ TrackerMenu.addShowObjectivesOnMapOption = function(menu, quest, objective)
 
             if needHiddenUpdate then
                 QuestieQuest.ToggleQuestNotes(true)
+                QuestieCombatQueue:Queue(function() QuestieTracker:Update(true) end)
             end
 
             TrackerUtils:ShowObjectiveOnMap(objective)
@@ -235,7 +241,10 @@ TrackerMenu.addShowQuestObjectivesOnMapOption = function(menu, quest)
                 end
             end
 
-            if needHiddenUpdate then QuestieQuest.ToggleQuestNotes(true) end
+            if needHiddenUpdate then
+                QuestieQuest.ToggleQuestNotes(true)
+                QuestieCombatQueue:Queue(function() QuestieTracker:Update(true) end)
+            end
             TrackerUtils:ShowQuestObjectivesOnMap(objectives)
         end
     })
@@ -392,7 +401,7 @@ TrackerMenu.addFocusUnfocusOption = function(menu, quest)
             func = function()
                 LibDropDown:CloseDropDownMenus()
                 TrackerUtils:UnFocus()
-                QuestieQuest:ToggleNotes(true)
+                _RefreshFocus()
             end
         })
     else
@@ -401,7 +410,7 @@ TrackerMenu.addFocusUnfocusOption = function(menu, quest)
             func = function()
                 LibDropDown:CloseDropDownMenus()
                 TrackerUtils:FocusQuest(quest.Id)
-                QuestieQuest:ToggleNotes(false)
+                _RefreshFocus()
             end
         })
     end

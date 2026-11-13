@@ -52,12 +52,15 @@ for _, surface in ipairs({"MAP", "MINIMAP"}) do
     h.draw(frame, 844, surface)
     h.map.ProcessQueue()
     equal(h.visible[frame], true, surface .. " original icon draws")
+    frame._hidden_by_flash = true
     h.pool:UnloadFrame(frame)
+    equal(frame._hidden_by_flash, nil, surface .. " unloading clears the flash visibility marker")
     equal(h.visible[frame], nil, surface .. " original icon unloads")
     h.pool:UnloadFrame(frame)
     equal(frame._needsUnload, nil, surface .. " duplicate unload cannot flag a pooled frame")
     local reused = h.pool:GetFrame()
     equal(reused, frame, surface .. " released frame is reused")
+    equal(reused._hidden_by_flash, nil, surface .. " reused frame cannot inherit temporary flash visibility")
     assert(h.pool:GetFrame() ~= reused, surface .. " duplicate unload cannot return a frame twice")
     h.draw(reused, 868, surface)
     h.map.ProcessQueue()
@@ -83,7 +86,9 @@ for _, surface in ipairs({"MAP", "MINIMAP"}) do
     local h = harness()
     local frame = h.pool:GetFrame()
     h.draw(frame, 844, surface)
+    frame._hidden_by_flash = true
     h.pool:UnloadFrame(frame)
+    equal(frame._hidden_by_flash, nil, surface .. " pending unload also clears flash visibility")
     h.pool:UnloadFrame(frame)
     equal(frame._needsUnload, true, surface .. " queued unload stays pending")
     equal(frame.data.Id, 844, surface .. " pending draw retains its data")
@@ -99,4 +104,4 @@ for _, surface in ipairs({"MAP", "MINIMAP"}) do
     equal(h.visible[reused], true, surface .. " cancelled frame can draw another icon")
 end
 
-print("Frame pool regressions passed (duplicate unloads, reuse flags and deferred map/minimap draws)")
+print("Frame pool regressions passed (duplicate unloads, reuse/flash flags and deferred map/minimap draws)")

@@ -20,8 +20,8 @@ local function setup()
     env.QuestLogListScrollFrame = {ScrollBar = {}}
     env.IsAddOnLoaded = function() return false end
     local timer = {}
-    function timer.NewTicker(_, callback)
-        local ticker = {callback = callback, Cancel = function(self) self.cancelled = true end}
+    function timer.NewTicker(interval, callback)
+        local ticker = {interval = interval, callback = callback, Cancel = function(self) self.cancelled = true end}
         s.timers[#s.timers + 1] = ticker
         return ticker
     end
@@ -46,6 +46,7 @@ local function setup()
     local questModule = module("QuestieQuest")
     questModule.ToggleQuestNotes = function(show) equal(show, true, "show action reveals notes"); s.toggles = s.toggles + 1 end
     questModule.ClearLootedSpawns, questModule.PopulateQuestLogInfo, questModule.PopulateObjectiveNotes = noop, noop, noop
+    questModule.RefreshQuestIconVisibility = noop
     module("QuestieTooltips").RemoveQuest = noop
     module("QuestieCombatQueue").Queue = function(_, callback) callback() end
     module("QuestieTracker").Update, module("QuestieTracker").RemoveQuest = noop, noop
@@ -226,4 +227,133 @@ do
     equal(s.shared.width, 16, "single-objective cleanup restores dimensions")
     groups = groups + 1
 end
-print("Tracker Show on Map: " .. groups .. " groups passed (menus, ownership, visibility, nearest map and batched flashing)")
+do
+    local s = setup()
+    s.shared.height = 20
+    s.utils:FlashObjective(s.first)
+    equal(s.timers[1].interval, 0.065, "flash uses the faster supported ticker interval")
+    s:step(); s:step()
+    assert(s.shared.width > 16, "first flash has enlarged its target before restart")
+    local previous = s.timers[1]
+    s.utils:FlashObjective(s.first)
+    equal(previous.cancelled, true, "rapid restart cancels the preceding ticker")
+    equal(s.shared.width, 16, "restart restores original width before taking a new snapshot")
+    equal(s.shared.height, 20, "restart preserves the original independent height")
+    previous.callback()
+    equal(s.shared.width, 16, "stale recurring callback cannot resize the replacement flash")
+    s:finish()
+    equal(s.shared.width, 16, "rapid repeated flash restores original width")
+    equal(s.shared.height, 20, "rapid repeated flash restores original height")
+    groups = groups + 1
+end
+for _, firstKind in ipairs({"objective", "finisher"}) do
+    local s = setup()
+    if firstKind == "objective" then s.utils:FlashObjective(s.first)
+    else s.utils:FlashFinisher({Id = 200}) end
+    local previous = s.timers[1]
+    for _ = 1, 100 do
+        previous.callback()
+        if #s.afters > 0 then break end
+    end
+    equal(#s.afters, 2, "old " .. firstKind .. " flash has queued both cleanup delays")
+    local pending = s.afters
+    s.afters = {}
+    if firstKind == "objective" then s.utils:FlashFinisher({Id = 200})
+    else s.utils:FlashObjective(s.first) end
+    local successor, solo = s.timers[2], s.solo
+    local selected = firstKind == "objective" and s.other or s.shared
+    local unrelated = firstKind == "objective" and s.shared or s.other
+    equal(previous.cancelled, true, "successor stops the old " .. firstKind .. " ticker")
+    previous.callback()
+    for _, callback in ipairs(pending) do callback.callback() end
+    assert(not successor.cancelled, "old delayed cleanup cannot cancel its successor")
+    equal(s.solo, solo, "old delayed cleanup cannot clear successor patrol isolation")
+    equal(selected.shown, true, "successor selected icon remains visible")
+    equal(unrelated.shown, false, "old cleanup cannot restore successor's unrelated icons")
+    s:finish()
+    equal(s.shared.width, 16, "objective/finisher succession restores the objective size")
+    equal(s.other.width, 16, "objective/finisher succession restores the other quest size")
+    assert(s.shared.shown and s.other.shown, "latest cleanup restores both originally shown icons")
+    groups = groups + 1
+end
+for _, kind in ipairs({"objective", "finisher"}) do
+    local s = setup()
+    local town, hiddenTown, minimap = s:icon(7954), s:icon(4772, false), s:icon(1)
+    minimap.miniMapIcon = true
+    local map = s.modules.QuestieMap
+    map.questIdFrames[7954], map.questIdFrames[4772] = nil, nil
+    map.manualFrames = {["Riding Trainer"] = {[7954] = {"Icon5"}, [4772] = {"Icon6"}}}
+    if kind == "objective" then s.utils:FlashObjective(s.first)
+    else s.utils:FlashFinisher(s.quest) end
+    equal(town.shown, false, kind .. " flash temporarily hides a shown townsfolk icon")
+    equal(hiddenTown.shown, false, kind .. " flash preserves a hidden townsfolk icon")
+    equal(minimap.shown, true, kind .. " flash leaves minimap icons shown")
+    equal(minimap.width, 16, kind .. " flash leaves minimap dimensions unchanged")
+    s:finish()
+    equal(town.shown, true, kind .. " cleanup restores originally shown townsfolk")
+    equal(town._hidden_by_flash, nil, kind .. " cleanup clears its temporary visibility marker")
+    equal(hiddenTown.shown, false, kind .. " cleanup leaves originally hidden townsfolk hidden")
+    equal(minimap.shown, true, kind .. " cleanup preserves minimap visibility")
+    groups = groups + 1
+end
+do
+    local s = setup()
+    s.utils:FlashObjective(s.first)
+    s:step()
+    s.shared.data = {Id = 999}
+    s.shared.width, s.shared.height = 30, 31
+    s:step()
+    equal(s.shared.width, 30, "old flash cannot resize a pooled target with replacement data")
+    equal(s.shared.height, 31, "old flash cannot resize the replacement height")
+    s:finish()
+    equal(s.shared.width, 30, "old cleanup cannot restore a replacement target's width")
+    equal(s.shared.height, 31, "old cleanup cannot restore a replacement target's height")
+    groups = groups + 1
+end
+do
+    local s = setup()
+    s.utils:FlashObjective(s.first)
+    equal(s.other._hidden_by_flash, true, "unrelated icon is temporarily hidden")
+    s.other.data = {Id = 999}
+    s:finish()
+    equal(s.other.shown, false, "old cleanup cannot show an unrelated frame reused with new data")
+    groups = groups + 1
+end
+do
+    local s = setup()
+    local extra = s:icon(100)
+    s.utils:ShowQuestOnMap(s.quest)
+    equal(s.mapShows, 1, "quest focus opens the native world map")
+    equal(s.mapId, 1012, "quest focus uses the existing nearest quest spawn")
+    assert(s.solo[s.shared.data] and s.solo[extra.data], "quest focus flashes all of the quest's world-map icons")
+    s:finish()
+    equal(extra.width, 16, "quest focus cleanup restores all selected icons")
+    groups = groups + 1
+end
+do
+    local s = setup()
+    local profile = s.env.Questie.db.profile
+    profile.trackerShowQuestFocusButtons, profile.trackerFadeQuestFocusButtons = true, true
+    s.char.isTrackerExpanded = true
+    s.env.IsAddOnLoaded = function() return true end
+    s.env.MouseIsOver = function() return true end
+    s.env.Questie_BaseFrame = {}
+    local shift, alpha = true, nil
+    s.env.IsShiftKeyDown = function() return shift end
+    local pool = s.modules.TrackerLinePool
+    pool.SetAllPlayButtonAlpha, pool.SetAllExpandQuestAlpha, pool.SetAllItemButtonAlpha = noop, noop, noop
+    pool.SetAllStatusIconAlpha = function(value) alpha = value end
+    s.modules.TrackerFadeTicker.Fade, s.modules.TrackerFadeTicker.Unfade = noop, noop
+    s.utils:ShowVoiceOverPlayButtons()
+    shift = false
+    s.utils:ShowVoiceOverPlayButtons()
+    equal(alpha, nil, "VoiceOver leaves independently fading focus controls to the fade ticker")
+    profile.trackerFadeQuestFocusButtons, shift = false, true
+    s.utils:ShowVoiceOverPlayButtons()
+    equal(alpha, 0, "VoiceOver Shift hides non-fading focus controls")
+    shift = false
+    s.utils:ShowVoiceOverPlayButtons()
+    equal(alpha, 1, "VoiceOver release restores non-fading focus controls")
+    groups = groups + 1
+end
+print("Tracker Show on Map: " .. groups .. " groups passed (menus, ownership, visibility, nearest map and flash races)")

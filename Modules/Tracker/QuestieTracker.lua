@@ -1,5 +1,6 @@
 ---@class QuestieTracker
 local QuestieTracker = QuestieLoader:CreateModule("QuestieTracker")
+local QuestFocusButton = QuestieLoader:ImportModule("QuestFocusButton")
 -------------------------
 --Import QuestieTracker modules.
 -------------------------
@@ -674,7 +675,7 @@ local function _Update(self, force, onlyIfChanged)
     -- Setup local QuestieTracker:Update vars
     local trackerFontSizeZone = Questie.db.profile.trackerFontSizeZone
     local trackerFontSizeQuest = Questie.db.profile.trackerFontSizeQuest
-    local questMarginLeft = (trackerMarginLeft + trackerMarginRight) - (18 - trackerFontSizeQuest)
+    local questMarginLeft = (trackerMarginLeft + trackerMarginRight) - (18 - trackerFontSizeQuest) + QuestFocusButton.GetColumnWidth()
     local objectiveMarginLeft = questMarginLeft + trackerFontSizeQuest
     local questItemButtonSize = 12 + trackerFontSizeQuest
     local objectiveColor = Questie.db.profile.trackerColorObjectives
@@ -688,7 +689,6 @@ local function _Update(self, force, onlyIfChanged)
 
     local primaryButton = false
     local secondaryButton = false
-    local secondaryButtonAlpha
 
     -- Begin populating the Tracker with Quests
     local _UpdateQuests = function()
@@ -862,8 +862,12 @@ local function _Update(self, force, onlyIfChanged)
 
                     line.label:SetText(TrackerObjectiveText.GetQuestTitleText(coloredQuestName, questDetails[quest.Id] and questDetails[quest.Id].questCompletePercent))
 
-                    -- Set status icon (yellow question mark for 100%, gray for incomplete)
-                    if line.statusIcon and line.statusIcon.texture then
+                    if Questie.db.profile.trackerShowQuestFocusButtons then
+                        QuestFocusButton.SetQuest(line.statusIcon, quest, complete == 1 or (complete ~= -1 and quest.isComplete == true))
+                    elseif line.statusIcon and line.statusIcon.texture then
+                        line.statusIcon.isFocusButton = nil
+                        line.statusIcon:EnableMouse(false)
+                        line.statusIcon:SetAlpha(1)
                         local completeIcon = Questie.usedIcons[Questie.ICON_TYPE_COMPLETE] or Questie.icons["complete"]
                         local incompleteIcon = Questie.usedIcons[Questie.ICON_TYPE_INCOMPLETE] or Questie.icons["incomplete"]
                         local pct = questDetails[quest.Id] and questDetails[quest.Id].questCompletePercent
@@ -925,7 +929,7 @@ local function _Update(self, force, onlyIfChanged)
                             end
 
                             -- Attach button to Quest Title linePool
-                            button:SetPoint("TOPLEFT", button.line, "TOPLEFT", 0, 0)
+                            button:SetPoint("TOPLEFT", button.line, "TOPLEFT", QuestFocusButton.GetColumnWidth(), 0)
                             button:SetParent(button.line)
                             button:Show()
 
@@ -983,7 +987,7 @@ local function _Update(self, force, onlyIfChanged)
                                 frame = parent
                             end
 
-                            if not Questie.db.char.collapsedQuests[quest.Id] and altButton:GetAlpha() > 0 then
+                            if not Questie.db.char.collapsedQuests[quest.Id] then
                                 -- Set and indent Quest Title linePool
                                 altButton.line.label:ClearAllPoints()
                                 altButton.line.label:SetPoint("TOPLEFT", altButton.line, "TOPLEFT", questMarginLeft + 2 + questItemButtonSize, 0)
@@ -997,30 +1001,15 @@ local function _Update(self, force, onlyIfChanged)
 
                                 -- Re-compare largest text Label in the tracker with Secondary Button/Quest and current Label, then save widest width
                                 trackerLineWidth = math_max(trackerLineWidth, altButton.line.label:GetUnboundedStringWidth() + questMarginLeft + questItemButtonSize)
-                            elseif altButton:GetAlpha() == 0 then
-                                -- Set Quest Title linePool
-                                altButton.line.label:ClearAllPoints()
-                                altButton.line.label:SetPoint("TOPLEFT", altButton.line, "TOPLEFT", questMarginLeft, 0)
-
-                                -- Recheck and Remeasure Quest Label text width and update tracker width
-                                QuestieTracker:UpdateWidth(altButton.line.label:GetUnboundedStringWidth() + questMarginLeft + trackerMarginRight)
-
-                                -- Reset Quest Title Label and linePool widths
-                                altButton.line.label:SetWidth(trackerBaseFrame:GetWidth() - questMarginLeft - trackerMarginRight)
-                                altButton.line:SetWidth(altButton.line.label:GetWidth() + questMarginLeft)
-
-                                -- Re-compare largest text Label in the tracker with current Label, then save widest width
-                                trackerLineWidth = math_max(trackerLineWidth, altButton.line.label:GetUnboundedStringWidth() + questMarginLeft)
                             end
 
                             -- Attach button to Quest Title linePool
-                            altButton:SetPoint("TOPLEFT", altButton.line, "TOPLEFT", 2 + questItemButtonSize, 0)
+                            altButton:SetPoint("TOPLEFT", altButton.line, "TOPLEFT", QuestFocusButton.GetColumnWidth() + 2 + questItemButtonSize, 0)
                             altButton:SetParent(altButton.line)
                             altButton:Show()
 
                             -- Set flag to shift objective lines
                             secondaryButton = true
-                            secondaryButtonAlpha = altButton:GetAlpha()
 
                             -- If the Quest Zone or Quest is minimized then set UIParent and hide buttons since the buttons are normally attached to the Quest frame.
                             -- If buttons are left attached to the Quest frame and if the Tracker frame is hidden in combat, then it would also try and hide the
@@ -1039,9 +1028,18 @@ local function _Update(self, force, onlyIfChanged)
                         line.altButton = altButton
                     end
 
+                    if not Questie.db.profile.trackerShowQuestFocusButtons and line.statusIcon then
+                        local itemVisible = (line.button and line.button:IsShown()) or (line.altButton and line.altButton:IsShown())
+                        if line.expandQuest:IsShown() and not itemVisible then
+                            line.statusIcon:Show()
+                        else
+                            line.statusIcon:Hide()
+                        end
+                    end
+
                     -- Set Secondary Quest Item Button Margins (QBC - Quest Button Check)
                     local lineLabelWidthQBC, lineLabelBaseFrameQBC, lineWidthQBC
-                    if secondaryButton and secondaryButtonAlpha ~= 0 then
+                    if secondaryButton then
                         lineLabelWidthQBC = objectiveMarginLeft + trackerMarginRight + questItemButtonSize
                         lineLabelBaseFrameQBC = objectiveMarginLeft + trackerMarginRight + questItemButtonSize
                         lineWidthQBC = objectiveMarginLeft + questItemButtonSize
@@ -1053,6 +1051,7 @@ local function _Update(self, force, onlyIfChanged)
                     end
 
                     -- Set Quest Line states
+                    line.questHasSecondaryQIB = secondaryButton and not Questie.db.char.collapsedQuests[quest.Id]
                     line:Show()
                     line.label:Show()
 
@@ -1192,7 +1191,7 @@ local function _Update(self, force, onlyIfChanged)
                                         _UpdateLineWidth(line, objectiveMarginLeft)
 
                                         -- Hide the Secondary Quest Item Button
-                                        if secondaryButton and secondaryButtonAlpha ~= 0 then
+                                        if secondaryButton then
                                             line.altButton:SetParent(UIParent)
                                             line.altButton:Hide()
                                         end
@@ -1265,7 +1264,7 @@ local function _Update(self, force, onlyIfChanged)
 
                                 -- Hide the Secondary Quest Item Button. There are some quests with usable items after a quest is completed I
                                 -- have yet to encounter a completed quest where both a Primary and Secondary "usable" Quest Item was needed.
-                                if secondaryButton and secondaryButtonAlpha ~= 0 then
+                                if secondaryButton then
                                     line.altButton:SetParent(UIParent)
                                     line.altButton:Hide()
                                 end
@@ -1301,24 +1300,6 @@ local function _Update(self, force, onlyIfChanged)
                     -- Adds 2 pixels and "Padding Between Quests" setting in Tracker Options
                     line:SetHeight(line.label:GetHeight() + (Questie.db.profile.trackerQuestPadding + 2))
 
-                    if line.statusIcon then
-                        local itemVisible = (line.button and line.button:IsShown()) or (line.altButton and line.altButton:IsShown())
-                        if (line.expandQuest and line.expandQuest:IsShown()) and not itemVisible then
-                            line.statusIcon:SetParent(line)
-                            line.statusIcon:ClearAllPoints()
-                            if line.expandQuest then
-                                line.statusIcon:SetPoint("RIGHT", line.expandQuest, "LEFT", -2, 0)
-                                local fl = line.expandQuest:GetFrameLevel() or 100
-                                line.statusIcon:SetFrameLevel(fl + 1)
-                            else
-                                line.statusIcon:SetPoint("TOPLEFT", line, "TOPLEFT", 0, 0)
-                                line.statusIcon:SetFrameLevel(100)
-                            end
-                            line.statusIcon:Show()
-                        else
-                            line.statusIcon:Hide()
-                        end
-                    end
                 end
 
                 primaryButton = false
@@ -1761,7 +1742,7 @@ function QuestieTracker:UpdateFormatting()
         local trackerVarsCombined = trackerLineWidth + trackerMarginRight
         TrackerLinePool.UpdateWrappedLineWidths(trackerLineWidth)
         local trackerFontSizeQuest = Questie.db.profile.trackerFontSizeQuest
-        local questMarginLeft = (trackerMarginLeft + trackerMarginRight) - (18 - trackerFontSizeQuest)
+        local questMarginLeft = (trackerMarginLeft + trackerMarginRight) - (18 - trackerFontSizeQuest) + QuestFocusButton.GetColumnWidth()
         local objectiveMarginLeft = questMarginLeft + trackerFontSizeQuest
         local questItemButtonSize = 12 + trackerFontSizeQuest
 
@@ -1789,10 +1770,11 @@ function QuestieTracker:UpdateFormatting()
         end)
 
         TrackerLinePool.UpdateQuestTitleLines(function(line)
-            line.label:SetWidth(trackerBaseFrame:GetWidth() - questMarginLeft - trackerMarginRight)
-            line:SetWidth(line.label:GetWidth() + questMarginLeft)
+            local margin = questMarginLeft + (line.questHasSecondaryQIB and (questItemButtonSize + 2) or 0)
+            line.label:SetWidth(trackerBaseFrame:GetWidth() - margin - trackerMarginRight)
+            line:SetWidth(line.label:GetWidth() + margin)
 
-            trackerLineWidth = math_max(trackerLineWidth, line.label:GetUnboundedStringWidth() + questMarginLeft)
+            trackerLineWidth = math_max(trackerLineWidth, line.label:GetUnboundedStringWidth() + margin)
         end)
         QuestieTracker:UpdateHeight()
         TrackerQuestFrame:Update()
