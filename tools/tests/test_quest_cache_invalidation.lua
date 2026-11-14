@@ -19,8 +19,10 @@ env.GetCVar = function() return "" end
 env.StaticPopupDialogs = {}
 env.Questie = {started = true, Debug = noop, Error = error,
     db = {global = {}, profile = {}, char = {complete = {}, hidden = {}}}}
-env.QuestieCompat = {C_QuestLog = {}, C_Timer = {}, C_DateAndTime = {},
-    GetQuestTagInfo = function() return 0, "" end}
+local tagTimers, tagReads, totalTagReads = {}, {}, 0
+env.QuestieCompat = {C_QuestLog = {}, C_Timer = {After = function(delay, callback)
+    tagTimers[#tagTimers + 1] = {delay, callback}
+end}, C_DateAndTime = {}}
 modules.ZoneDB = {zoneIDs = {ICECROWN = 210}}
 modules.l10n = setmetatable({}, {__call = function(_, text) return text end})
 modules.QuestieCorrections = {hiddenQuests = {}, itemObjectiveFirst = {}}
@@ -35,6 +37,17 @@ modules.QuestieLib = {GetEffectiveQuestLevel = function() return 10, 1 end,
         end})
     end}
 local function loadModule(path) assert(loadfile(path, "t", env))() end
+loadModule("Compat/QuestTag.lua")
+local tagFile = assert(io.open("Compat/QuestLog.lua", "r"))
+local tagSource = tagFile:read("*a"):gsub("\r\n", "\n"); tagFile:close()
+local adapter = assert(tagSource:match("(local questTagToName = %b{}.-function QuestieCompat.GetQuestTagInfo%(questId%).-\nend)"))
+assert(load(adapter, "@Compat/QuestLog.lua:quest-tag", "t", env))()
+local nativeTagInfo = env.QuestieCompat.GetQuestTagInfo
+env.QuestieCompat.GetQuestTagInfo = function(id)
+    totalTagReads = totalTagReads + 1
+    if id then tagReads[id] = (tagReads[id] or 0) + 1 end
+    return nativeTagInfo(id)
+end
 loadModule("Database/QuestieDB.lua")
 for _, name in ipairs({"quest", "npc", "object", "item"}) do loadModule("Database/" .. name .. "DB.lua") end
 loadModule("Modules/QuestieStream.lua")
@@ -71,6 +84,31 @@ local thread = coroutine.create(function() db:Initialize() end)
 while coroutine.status(thread) ~= "dead" do
     local ok, message = coroutine.resume(thread); assert(ok, message)
 end
+
+-- The 3.3.5 adapter reads a static table: absent tags are final, not pending API data.
+local function verifyTag(id, expectedId, expectedName, reads)
+    local tagId, name = db.GetQuestTagInfo(id)
+    equal(tagId, expectedId, "tag ID for quest " .. tostring(id))
+    equal(name, expectedName, "tag name for quest " .. tostring(id))
+    tagId, name = db.GetQuestTagInfo(id)
+    equal(tagId, expectedId, "cached tag ID for quest " .. tostring(id))
+    equal(name, expectedName, "cached tag name for quest " .. tostring(id))
+    if id then equal(tagReads[id] or 0, reads, "adapter reads for quest " .. id) end
+    equal(#tagTimers, 0, "tag lookup never schedules an API retry")
+end
+verifyTag(844, nil, nil, 1)
+verifyTag(1318, 81, "Dungeon", 1) -- Uncorrected tag exercises the real static adapter.
+verifyTag(166, 81, "Dungeon", 0)
+verifyTag(19, 1, "Elite", 0) -- Native tag name is Group; the correction remains authoritative.
+verifyTag(999999, nil, nil, 1)
+local readsBeforeNil = totalTagReads
+verifyTag(nil, nil, nil)
+equal(totalTagReads, readsBeforeNil, "nil quest ID never reaches the adapter")
+env.QuestieCompat.QuestTag[844], env.QuestieCompat.QuestTag[1318] = 81, 62
+verifyTag(844, nil, nil, 1)
+verifyTag(1318, 81, "Dungeon", 1)
+env.QuestieCompat.QuestTag[844], env.QuestieCompat.QuestTag[1318] = nil, 81
+print("Quest tag cache: static tags, untagged quests, corrections and nil guards passed without timers")
 assert(db.QuestPointers[7], "correction-only fixture has a real compiled pointer")
 equal(db.HasQuestData(7), false, "correction-only fixture is not usable database data")
 equal(db.GetQuest(7), nil, "map/lifecycle paths cannot construct correction-only quest objects")

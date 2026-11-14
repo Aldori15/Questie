@@ -155,7 +155,6 @@ end
 
 --- COMPATIBILITY ---
 local C_QuestLog = QuestieCompat.C_QuestLog
-local C_Timer = QuestieCompat.C_Timer
 local GetQuestTagInfo = QuestieCompat.GetQuestTagInfo
 local IsSpellKnown = IsSpellKnown
 local IsQuestFlaggedCompleted = QuestieCompat.IsQuestFlaggedCompleted or C_QuestLog.IsQuestFlaggedCompleted
@@ -2160,8 +2159,7 @@ end
 
 local questTagInfoCache = {}
 
---- Wrapper function for the GetQuestTagInfo API to correct
---- quests that are falsely marked by Blizzard and cache the results.
+--- Cache local quest tags and apply quest-specific corrections.
 ---@param questId number
 ---@return number|nil questTagId
 ---@return string|nil questTagName
@@ -2177,23 +2175,9 @@ function QuestieDB.GetQuestTagInfo(questId)
         questTagId, questTagName = questTagCorrections[questId][1], questTagCorrections[questId][2]
     else
         questTagId, questTagName = GetQuestTagInfo(questId)
-
-        if questTagId == nil and questTagName == nil then
-            -- Retry the API call after a short delay, as the API tends to incorrectly return nil on the first call.
-            -- Doing it here asserts, we only call the API twice per quest at most.
-            local retryQuestId = questId
-            C_Timer.After(1, function()
-                if not retryQuestId then
-                    return
-                end
-
-                local retryQuestTagId, retryQuestTagName = GetQuestTagInfo(retryQuestId)
-                questTagInfoCache[retryQuestId] = {retryQuestTagId, retryQuestTagName}
-            end)
-        end
     end
 
-    -- cache the result to avoid hitting the API throttling limit
+    -- Cache untagged quests too; the local tag table needs no delayed retry.
     questTagInfoCache[questId] = {questTagId, questTagName}
 
     return questTagId, questTagName
