@@ -420,7 +420,14 @@ function QuestDetailsFrame:Draw(container, quest)
     end
 
     if QuestieDB.IsRepeatable(quest.Id) then
-        local repeatableLabel = _CreateLabel(Questie:Colorize(l10n("Repeatable"), "yellow"), true)
+        local repeatableType = QuestieDB.IsDailyQuest(quest.Id) and "Daily"
+            or QuestieDB.IsWeeklyQuest(quest.Id) and "Weekly"
+            or QuestieDB.IsMonthlyQuest(quest.Id) and "Monthly"
+        local labelText = Questie:Colorize(l10n("Repeatable") .. (repeatableType and l10n(": ") or ""), "yellow")
+        if repeatableType then
+            labelText = labelText .. l10n(repeatableType)
+        end
+        local repeatableLabel = _CreateLabel(labelText, true)
         container:AddChild(repeatableLabel)
     end
 

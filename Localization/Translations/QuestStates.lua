@@ -140,6 +140,7 @@ local questStateLocales = {
         ["esES"] = "Mensual",
         ["esMX"] = "Mensual",
         ["frFR"] = "Mensuel",
+        ["koKR"] = "월간",
         ["ptBR"] = "Mensual",
         ["ruRU"] = "Ежемесячно",
         ["zhCN"] = "每月任务",
