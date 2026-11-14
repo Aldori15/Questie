@@ -121,8 +121,17 @@ local function _ClearTable(tbl)
     end
 end
 
+-- These offers change during the fire event; absence cannot prove daily unavailability.
+local availabilityInferenceBlacklist = {
+    [11131] = true, -- Stop the Fires! (Alliance)
+    [11219] = true, -- Stop the Fires! (Horde)
+    [12135] = true, -- "Let the Fires Come!" (Alliance)
+    [12139] = true, -- "Let the Fires Come!" (Horde)
+}
+
 local function _ShouldTrackNpcAvailability(questId)
-    return QuestieDB.IsDailyQuest(questId) or QuestieDB.IsWeeklyQuest(questId) or QuestieDB.IsMonthlyQuest(questId)
+    return not availabilityInferenceBlacklist[questId]
+        and (QuestieDB.IsDailyQuest(questId) or QuestieDB.IsWeeklyQuest(questId) or QuestieDB.IsMonthlyQuest(questId))
 end
 
 function AvailableQuests.CanInferQuestAvailability(npcId, unit)
@@ -278,13 +287,14 @@ local function _PruneRestrictedQuestgiverObservations(syncState)
         local bucket = _EnsureUnavailableQuestSyncBucket(syncState, bucketName)
         local bucketChanged = false
         for npcId, quests in pairs(bucket.byNpc) do
-            if not AvailableQuests.CanInferQuestAvailability(npcId) then
-                for questId, evidence in pairs(quests) do
-                    -- A GUID records an explicit live positive at observation time.
-                    if type(evidence) ~= "string" then quests[questId], bucketChanged = nil, true end
+            local canInfer = AvailableQuests.CanInferQuestAvailability(npcId)
+            for questId, evidence in pairs(quests) do
+                -- A GUID records an explicit live positive at observation time.
+                if availabilityInferenceBlacklist[questId] or (not canInfer and type(evidence) ~= "string") then
+                    quests[questId], bucketChanged = nil, true
                 end
-                if not next(quests) then bucket.byNpc[npcId] = nil end
             end
+            if not next(quests) then bucket.byNpc[npcId] = nil end
         end
         if bucketChanged then
             bucket.byQuest = {}
@@ -955,7 +965,7 @@ function AvailableQuests.RemoveQuestsForToday(npcId, questIds, unit)
     local removedAnyQuest = false
     for _, questId in pairs(questIds) do
         -- NPC/comms inference cannot replace authoritative pool/faction state.
-        if QuestieServer:GetQuestAvailabilityState(questId) == nil then
+        if not availabilityInferenceBlacklist[questId] and QuestieServer:GetQuestAvailabilityState(questId) == nil then
             if availableQuests[questId] or QuestieMap.questIdFrames[questId] or QuestieTooltips.lookupKeysByQuestId[questId] then
                 AvailableQuests.RemoveAvailableQuest(questId)
                 removedAnyQuest = true
@@ -1074,7 +1084,8 @@ function AvailableQuests.MergeUnavailableQuestSnapshot(snapshot)
                         local syncState = _GetUnavailableQuestSyncState()
                         local bucket = _GetUnavailableQuestBucketForQuest(syncState, questId)
                         local alreadyKnown = bucket and bucket.byNpc[npcId] and bucket.byNpc[npcId][questId]
-                        if not alreadyKnown and QuestieServer:GetQuestAvailabilityState(questId) == nil then
+                        if not availabilityInferenceBlacklist[questId] and not alreadyKnown
+                            and QuestieServer:GetQuestAvailabilityState(questId) == nil then
                             tinsert(newQuestIds, questId)
                         end
                     end
@@ -1110,7 +1121,8 @@ end
 ---@param questId QuestId
 ---@return boolean
 local function _ShouldCacheUnavailableQuest(questId)
-    return QuestieServer:GetQuestAvailabilityState(questId) == nil
+    return not availabilityInferenceBlacklist[questId]
+        and QuestieServer:GetQuestAvailabilityState(questId) == nil
         and (QuestieDB.IsDailyQuest(questId) or QuestieDB.IsWeeklyQuest(questId))
         and QuestieDB:IsAzerothCoreAvailabilityConditionFulfilled(questId)
         and QuestieDB.IsDoable(questId)

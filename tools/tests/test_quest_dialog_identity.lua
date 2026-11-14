@@ -110,7 +110,7 @@ local function harness()
     local byNpc = upvalue(available.ValidateAvailableQuestsFromGossipShow, "availableQuestsByNpc")
     local h = {auto = module("QuestieAuto"), available = available, units = units, actions = actions,
         calls = calls, broadcasts = broadcasts, drawn = drawn, db = db, compat = compat,
-        player = module("QuestiePlayer"), titles = availableTitles}
+        player = module("QuestiePlayer"), titles = availableTitles, global = env.Questie.db.global}
     function h:npc(id, questIds)
         byNpc[id] = {}; for _, questId in ipairs(questIds) do byNpc[id][questId] = true end
     end
@@ -207,6 +207,56 @@ h.units.questnpc = rawGuid(111, true); h:mark(111, 10); h:mark(222, 10)
 h.available.ValidateAvailableQuestsFromQuestDetail()
 equal(h.available.IsUnavailableForCurrentReset(10), false, "Weekly offers also clear persisted observations")
 equal(h.available.GetUnavailableQuestSnapshot(), nil, "An explicit offer removes all stale weekly records")
+
+-- The matron's fire-event offers can change before the daily reset.
+local fireQuests = {11131, 11219, 12135, 12139}
+for _, questId in ipairs(fireQuests) do
+    for _, method in ipairs({"ValidateAvailableQuestsFromGossipShow", "ValidateAvailableQuestsFromQuestGreeting",
+        "ValidateAvailableQuestsFromQuestDetail"}) do
+        h = harness(); h.units.npc, h.units.questnpc = rawGuid(111), rawGuid(111)
+        -- Inject the candidates too, so the test exercises dialog inference itself.
+        h:npc(111, {questId, 11}); h.available[method]()
+        equal(h.available.IsUnavailableForCurrentReset(questId), false, "A missing fire-event offer is not unavailable today")
+        equal(h.available.IsUnavailableForCurrentReset(11), true, "Ordinary daily inference still works")
+        equal(#h.broadcasts, 1, "Ordinary daily absence is still broadcast")
+        equal(#h.broadcasts[1].quests, 1, "Fire-event absence is excluded from the broadcast")
+        equal(h.broadcasts[1].quests[1], 11, "Only the ordinary daily is broadcast")
+    end
+
+    h = harness()
+    local removed = 0
+    h.available.RemoveAvailableQuest = function() removed = removed + 1 end
+    -- A visible map pin must survive a received HideDailyQuests report.
+    upvalue(h.available.RemoveQuestsForToday, "QuestieMap").questIdFrames[questId] = {}
+    h.available.RemoveQuestsForToday(111, {questId})
+    equal(removed, 0, "A received fire-event absence cannot remove its map pin")
+    equal(h.available.GetUnavailableQuestSnapshot(), nil, "Received fire-event absence is not saved or rebroadcast")
+    equal(h.available.MergeUnavailableQuestSnapshot({daily = {{npcId = 111, questIds = {questId}}}}), false,
+        "A fire-event-only snapshot does not change availability")
+    h.available.MergeUnavailableQuestSnapshot({daily = {{npcId = 111, questIds = {questId, 11}}}})
+    local snapshot = h.available.GetUnavailableQuestSnapshot()
+    equal(#snapshot.daily[1].questIds, 1, "Mixed snapshots retain ordinary dailies only")
+    equal(snapshot.daily[1].questIds[1], 11, "Ordinary daily survives snapshot filtering")
+end
+
+-- Reloading repairs old saved observations, including explicit GUID evidence.
+h = harness()
+local legacy = {nextReset = 1791306000, byNpc = {[111] = {[11] = true}, [222] = {}}, byQuest = {[11] = true}}
+for _, questId in ipairs(fireQuests) do
+    legacy.byNpc[111][questId], legacy.byNpc[222][questId] = true, rawGuid(222)
+    legacy.byQuest[questId] = true
+end
+h.global.unavailableQuestSyncState = {["Dialog realm"] = {daily = legacy}}
+for _, questId in ipairs(fireQuests) do
+    equal(h.available.IsUnavailableForCurrentReset(questId), false, "Old fire-event exclusions are repaired on load")
+    equal(legacy.byQuest[questId], nil, "Old fire-event exclusion is removed from the saved index")
+    equal(legacy.byNpc[111][questId], nil, "Old fire-event observation is removed from its source")
+end
+equal(legacy.byNpc[222], nil, "Fire-event-only source is removed, even with GUID evidence")
+equal(h.available.IsUnavailableForCurrentReset(11), true, "Repair preserves unrelated daily observations")
+equal(#h.available.GetUnavailableQuestSnapshot().daily[1].questIds, 1, "Repaired snapshots omit fire-event quests")
+equal(h.available.GetUnavailableQuestSnapshotDelta({daily = {{npcId = 111, questIds = {11}}}}), nil,
+    "Repaired snapshot deltas cannot rebroadcast fire-event exclusions")
 
 -- Missing map guidance must not invent completion or discard client progress.
 do
