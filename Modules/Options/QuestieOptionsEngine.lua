@@ -147,8 +147,79 @@ local function IsSettingsWidget(widget)
     return false
 end
 
+local function UpdateButtonStyle(widget)
+    local style = widget.questieSettingsButtonStyle
+    if not style then return end
+    local button = widget.frame
+    if widget.disabled then
+        button:SetBackdropColor(0.065, 0.065, 0.075, 1)
+        button:SetBackdropBorderColor(0.18, 0.18, 0.18, 1)
+    elseif style.pressed then
+        button:SetBackdropColor(0.04, 0.06, 0.08, 1)
+        button:SetBackdropBorderColor(0.22, 0.37, 0.49, 1)
+    elseif style.hovered then
+        button:SetBackdropColor(0.10, 0.17, 0.22, 1)
+        button:SetBackdropBorderColor(0.25, 0.45, 0.60, 1)
+    else
+        button:SetBackdropColor(0.10, 0.10, 0.12, 1)
+        button:SetBackdropBorderColor(0.28, 0.28, 0.28, 1)
+    end
+end
+
+local function RestoreButtonStyle(widget)
+    local style = widget.questieSettingsButtonStyle
+    if not style then return end
+    widget.questieSettingsButtonStyle = nil
+    local button = widget.frame
+    if style.backdrop then button:SetBackdrop(style.backdrop) end
+    if style.backgroundColor[1] then button:SetBackdropColor(unpack(style.backgroundColor)) end
+    if style.borderColor[1] then button:SetBackdropBorderColor(unpack(style.borderColor)) end
+    if not style.backdrop then button:SetBackdrop(nil) end
+    for _, texture in ipairs(style.textures) do texture[1]:SetAlpha(texture[2]) end
+end
+
+local function StyleButton(widget)
+    local button = widget.frame
+    -- ElvUI marks buttons it owns with this flag; keep that skin intact.
+    if button.isSkinned or widget.questieSettingsButtonStyle then return end
+    local style = {backdrop = button:GetBackdrop(), backgroundColor = {button:GetBackdropColor()},
+        borderColor = {button:GetBackdropBorderColor()}, textures = {}}
+    for _, getter in ipairs({"GetNormalTexture", "GetPushedTexture", "GetDisabledTexture", "GetHighlightTexture"}) do
+        local texture = button[getter](button)
+        if texture then
+            style.textures[#style.textures + 1] = {texture, texture:GetAlpha()}
+            texture:SetAlpha(0)
+        end
+    end
+    widget.questieSettingsButtonStyle = style
+    button:SetBackdrop({bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Buttons\\WHITE8X8",
+        edgeSize = 1, insets = {left = 1, right = 1, top = 1, bottom = 1}})
+    if not widget.questieSettingsButtonHooks then
+        widget.questieSettingsButtonHooks = true
+        local release = widget.OnRelease
+        widget.OnRelease = function(self, ...)
+            RestoreButtonStyle(self)
+            if release then return release(self, ...) end
+        end
+        for _, event in ipairs({"OnEnter", "OnLeave", "OnMouseDown", "OnMouseUp", "OnEnable", "OnDisable", "OnHide"}) do
+            button:HookScript(event, function()
+                local current = widget.questieSettingsButtonStyle
+                if not current then return end
+                if event == "OnEnter" then current.hovered = true
+                elseif event == "OnLeave" or event == "OnHide" then current.hovered, current.pressed = false, false
+                elseif event == "OnMouseDown" then current.pressed = true
+                elseif event == "OnMouseUp" or event == "OnDisable" then current.pressed = false end
+                UpdateButtonStyle(widget)
+            end)
+        end
+    end
+    UpdateButtonStyle(widget)
+end
+
 local function StyleWidget(widget)
-    if widget.type == "CheckBox" and widget.highlight then
+    if widget.type == "Button" then
+        StyleButton(widget)
+    elseif widget.type == "CheckBox" and widget.highlight then
         local option = widget:GetUserData("option")
         if not option or option.style ~= "radio" then
             if widget.highlight:SetTexture(QuestieLib.AddonPath .. "Icons\\checkbox-minimal-highlight.blp") == false then
@@ -334,6 +405,7 @@ local function CreateSettingsFrame()
     selectedCategory = keys[1]
     frame:SetScript("OnHide", function()
         AceGUI:ClearFocus()
+        CloseDropDownMenus()
         panel:ReleaseChildren()
     end)
     FitToScreen()
@@ -436,6 +508,7 @@ end
 function QuestieOptionsEngine:SelectCategory(key)
     if not options.args[key] then return end
     AceGUI:ClearFocus()
+    CloseDropDownMenus()
     selectedCategory = key
     self:RefreshStates()
 end

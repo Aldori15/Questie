@@ -28,6 +28,7 @@ env.UnitClass, env.UnitRace = function() return "Warrior", "WARRIOR" end, functi
 env.UnitFactionGroup, env.GetLocale = function() return "Alliance" end, function() return "enUS" end
 env.GetBuildInfo = function() return "3.3.5", "12340", "", 30300 end
 env.CloseSpecialWindows = function() return false end
+env.CloseDropDownMenus = function() s.menuShown, s.submenuShown = false, false end
 env.UISpecialFrames, env.StaticPopupDialogs = {}, {}
 env.ACCEPT, env.CANCEL, env.OKAY, env.STATICPOPUP_NUMDIALOGS = "Accept", "Cancel", "Okay", 4
 env.NORMAL_FONT_COLOR_CODE, env.FONT_COLOR_CODE_CLOSE, env.ERR_NOT_IN_COMBAT = "|cffffffff", "|r", "In combat"
@@ -52,17 +53,51 @@ function frameMethods:GetParent() return self.parent end
 function frameMethods:SetFrameLevel(value) self.frameLevel = value end
 function frameMethods:GetFrameLevel() return self.frameLevel or (self.parent and self.parent:GetFrameLevel() + 1) or 0 end
 function frameMethods:SetNormalFontObject(value) self.normalFont = value end
-function frameMethods:SetHighlightFontObject(value) self.highlightFont = value end
+function frameMethods:SetHighlightFontObject(value)
+    self.highlightFontWrites = (self.highlightFontWrites or 0) + 1
+    assert((type(value) == "string" and value ~= "") or (type(value) == "table" and value.nativeFont),
+        "Usage: SetHighlightFontObject(fontname)")
+    self.highlightFont = value
+end
 function frameMethods:SetDisabledFontObject(value) self.disabledFont = value end
 function frameMethods:GetName() return self.name end
 function frameMethods:GetFrameStrata() return "DIALOG" end
 function frameMethods:SetText(value) self.text = value end
 function frameMethods:SetTextColor(...) self.textColor = {...} end
+function frameMethods:SetJustifyV(value) self.justifyV = value end
 function frameMethods:SetTexture(value) self.texture = value end
+function frameMethods:SetAlpha(value) self.alpha = value end
+function frameMethods:GetAlpha() return self.alpha == nil and 1 or self.alpha end
+function frameMethods:SetBackdrop(value) self.backdrop = value end
+function frameMethods:GetBackdrop() return self.backdrop end
+function frameMethods:SetBackdropColor(...) self.backdropColor = {...} end
+function frameMethods:GetBackdropColor() return env.unpack(self.backdropColor or {1, 1, 1, 1}) end
+function frameMethods:SetBackdropBorderColor(...) self.borderColor = {...} end
+function frameMethods:GetBackdropBorderColor() return env.unpack(self.borderColor or {1, 1, 1, 1}) end
+function frameMethods:GetNormalTexture() return self.normalTexture end
+function frameMethods:GetPushedTexture() return self.pushedTexture end
+function frameMethods:GetDisabledTexture() return self.disabledTexture end
+function frameMethods:GetHighlightTexture() return self.highlightTexture end
+function frameMethods:GetNormalFontObject() return self.normalFont end
+function frameMethods:GetHighlightFontObject() return self.highlightFont end
+function frameMethods:GetDisabledFontObject() return self.disabledFont end
+function frameMethods:GetFontString()
+    if not self.fontString then self.fontString = self:CreateFontString() end
+    return self.fontString
+end
 function frameMethods:EnableMouse(value) self.mouseEnabled = value end
 function frameMethods:SetHighlightTexture(value) self.highlightTexture = value end
-function frameMethods:Enable() self.disabled = false end
-function frameMethods:Disable() self.disabled = true end
+function frameMethods:Enable()
+    local changed = self.disabled
+    self.disabled = false
+    if changed and self.scripts.OnEnable then self.scripts.OnEnable(self) end
+end
+function frameMethods:Disable()
+    local changed = not self.disabled
+    self.disabled = true
+    if changed and self.scripts.OnDisable then self.scripts.OnDisable(self) end
+end
+function frameMethods:IsEnabled() return not self.disabled end
 function frameMethods:RegisterEvent(event) self.events[event] = true end
 function frameMethods:SetScript(event, callback) self.scripts[event] = callback end
 function frameMethods:GetScript(event) return self.scripts[event] end
@@ -82,13 +117,19 @@ end
 function frameMethods:IsShown() return self.shown end
 function frameMethods:CreateTexture() return env.CreateFrame("Texture", nil, self) end
 function frameMethods:CreateFontString() return env.CreateFrame("FontString", nil, self) end
-env.CreateFrame = function(kind, name, parent)
+env.CreateFrame = function(kind, name, parent, template)
     assert(kind == "Frame" or kind == "Button" or kind == "GameTooltip" or kind == "Texture" or kind == "FontString",
         "unexpected native frame type: " .. tostring(kind))
     local frame = setmetatable({kind = kind, name = name, parent = parent, scripts = {}, points = {}, events = {}, shown = true},
         {__index = frameMethods})
     s.frames[#s.frames + 1] = frame
     if name then env[name] = frame end
+    if template == "UIPanelButtonTemplate" then
+        for _, key in ipairs({"normalTexture", "pushedTexture", "disabledTexture", "highlightTexture"}) do
+            frame[key] = env.CreateFrame("Texture", nil, frame)
+        end
+        frame.normalFont, frame.highlightFont, frame.disabledFont = {nativeFont = true}, {nativeFont = true}, {nativeFont = true}
+    end
     return frame
 end
 env.UIParent = env.CreateFrame("Frame")
@@ -115,14 +156,6 @@ function widgetMethods:Fire(event, ...)
     if callback then return callback(self, event, ...) end
 end
 function widgetMethods:AddChild(child) child.parent = self; self.children[#self.children + 1] = child end
-function widgetMethods:ReleaseChildren()
-    for _, child in ipairs(self.children) do
-        child:ReleaseChildren()
-        child:Fire("OnRelease")
-        child.released = true
-    end
-    self.children = {}
-end
 function widgetMethods:SetLayout(layout) self.layout = layout end
 function widgetMethods:SetDisabled(value) self.disabled = value end
 function widgetMethods:SetText(value) self.text = value end
@@ -145,6 +178,7 @@ for _, name in ipairs({"SetTriState", "SetDescription", "SetFontObject", "SetSta
 local function widget(kind)
     local value = setmetatable({type = kind, userdata = {}, callbacks = {}, children = {},
         frame = env.CreateFrame("Frame")}, {__index = widgetMethods})
+    value.events = value.callbacks
     value.frame:SetSize(170, 20)
     if kind == "CheckBox" then value.highlight = value.frame:CreateTexture() end
     if kind == "ColorPicker" then
@@ -162,12 +196,22 @@ gui.WidgetRegistry = {}
 gui.RegisterWidgetType = function(_, name, constructor) gui.WidgetRegistry[name] = constructor end
 gui.RegisterAsContainer = function(_, value)
     value.userdata, value.callbacks, value.children = {}, {}, {}
+    value.events = value.callbacks
     setmetatable(value, {__index = widgetMethods})
     s.widgets[#s.widgets + 1] = value
     return value
 end
+gui.RegisterAsWidget = function(_, value)
+    value.frame.obj = value
+    return gui:RegisterAsContainer(value)
+end
+gui.GetNextWidgetNum = function() s.widgetNumber = (s.widgetNumber or 0) + 1; return s.widgetNumber end
 gui.Create = function(_, kind)
-    if gui.WidgetRegistry[kind] then return gui.WidgetRegistry[kind]() end
+    if gui.WidgetRegistry[kind] then
+        local value = gui.WidgetRegistry[kind]()
+        if value.OnAcquire then value:OnAcquire() end
+        return value
+    end
     assert(({ScrollFrame = true, InlineGroup = true, SimpleGroup = true, CheckBox = true, Slider = true,
         Dropdown = true, Button = true, Icon = true, ColorPicker = true, Label = true, InteractiveLabel = true,
         EditBox = true, Heading = true, LSM30_Font = true})[kind], "unsupported AceGUI widget: " .. kind)
@@ -175,6 +219,28 @@ gui.Create = function(_, kind)
 end
 gui.ClearFocus = function() s.focusCleared = (s.focusCleared or 0) + 1 end
 gui.GetWidgetVersion = function() return 1 end
+do
+    local file = assert(io.open("Libs/AceGUI-3.0/AceGUI-3.0.lua", "r"))
+    local source = file:read("*a"):gsub("\r\n", "\n")
+    file:close()
+    local release = assert(source:match("(function AceGUI:Release%(widget%).-\nend)"))
+    local children = assert(source:match("(WidgetContainerBase.ReleaseChildren = function%(self%).-\n\tend)"))
+    env._releaseGui, env._releaseContainers = gui, widgetMethods
+    compile([[
+        local AceGUI, WidgetContainerBase = _releaseGui, _releaseContainers
+        local UIParent = UIParent
+        local delWidget = function(widget) widget.released = true end
+        local safecall = function(callback, ...)
+            if not callback then return end
+            local ok, result = pcall(callback, ...)
+            if not ok then geterrorhandler()(result) end
+            return result
+        end
+    ]] .. release .. "\n" .. children, "production AceGUI release lifecycle")()
+    env._releaseGui, env._releaseContainers = nil, nil
+end
+env.PlaySound = noop
+loadFile("Libs/AceGUI-3.0/widgets/AceGUIWidget-Button.lua")
 loadFile("Libs/AceConfig-3.0/AceConfigRegistry-3.0/AceConfigRegistry-3.0.lua")
 loadFile("Libs/AceConfig-3.0/AceConfigDialog-3.0/AceConfigDialog-3.0.lua")
 local registry, dialog = env.LibStub("AceConfigRegistry-3.0"), env.LibStub("AceConfigDialog-3.0")
@@ -693,6 +759,172 @@ assert(journey:IsShown() and not engine:IsShown(),
     "real Journey toggle closes settings before opening Journey")
 journey:ToggleJourneyWindow()
 equal(journey:IsShown(), false, "real Journey toggle can close Journey again")
+groups = groups + 1
+
+engine:ShowFrame(); engine:SelectCategory("controls"); tick()
+local skinHost = control("execute").parent
+local textureKeys = {"normalTexture", "pushedTexture", "disabledTexture", "highlightTexture"}
+local function sameColor(actual, expected, label)
+    for index = 1, 4 do near(actual[index], expected[index], label .. " component " .. index) end
+end
+local function mouse(button, event, ...)
+    local callback = assert(button:GetScript(event), "button keeps its " .. event .. " handler")
+    callback(button, ...)
+end
+for _, existingBackdrop in ipairs({false, true}) do
+    local buttonWidget = gui:Create("Button") -- The shipped Ace widget, not a synthetic control.
+    local button = buttonWidget.frame
+    local nativeBackdrop = existingBackdrop and {bgFile = "another/background", edgeFile = "another/border"} or nil
+    local nativeBackground, nativeBorder = {0.6, 0.5, 0.4, 0.3}, {0.2, 0.3, 0.4, 0.5}
+    button:SetBackdrop(nativeBackdrop)
+    button:SetBackdropColor(env.unpack(nativeBackground))
+    button:SetBackdropBorderColor(env.unpack(nativeBorder))
+    local normalFont, hoverFont, disabledFont = button:GetNormalFontObject(), button:GetHighlightFontObject(), button:GetDisabledFontObject()
+    local clickHandler = button:GetScript("OnClick")
+    local alpha = {}
+    for index, key in ipairs(textureKeys) do alpha[key] = index / 4; button[key]:SetAlpha(alpha[key]) end
+    local clicks, enters, releases = 0, 0, 0
+    buttonWidget:SetCallback("OnClick", function() clicks = clicks + 1 end)
+    buttonWidget:SetCallback("OnEnter", function() enters = enters + 1 end)
+    buttonWidget.OnRelease = function(self)
+        equal(self, buttonWidget, "prior release method receives its widget")
+        equal(button:GetBackdrop(), nativeBackdrop, "native backdrop is restored before prior release runs")
+        releases = releases + 1
+    end
+    skinHost:AddChild(buttonWidget)
+    button:Show()
+    local styledBackdrop = assert(button:GetBackdrop(), "settings buttons receive a flat backdrop")
+    equal(styledBackdrop.edgeSize, 1, "settings buttons use a thin border")
+    equal(button:GetNormalFontObject(), normalFont, "normal native gold font is preserved")
+    equal(button:GetDisabledFontObject(), disabledFont, "disabled native font is preserved")
+    equal(button:GetHighlightFontObject(), hoverFont, "native hover font is untouched")
+    equal(button:GetScript("OnClick"), clickHandler, "skinning does not replace the Ace click handler")
+    for _, key in ipairs(textureKeys) do equal(button[key]:GetAlpha(), 0, "native art is hidden: " .. key) end
+    local resting = {button:GetBackdropColor()}
+    mouse(button, "OnEnter")
+    equal(enters, 1, "native Ace hover callback still fires")
+    local hovered = {button:GetBackdropColor()}
+    assert(hovered[2] > resting[2], "hover visibly brightens the flat button")
+    mouse(button, "OnMouseDown", "LeftButton")
+    local pressed = {button:GetBackdropColor()}
+    assert(pressed[1] < hovered[1], "pressed state darkens the flat button")
+    mouse(button, "OnMouseUp", "LeftButton")
+    sameColor({button:GetBackdropColor()}, hovered, "mouse-up restores hover appearance")
+    mouse(button, "OnClick", "LeftButton")
+    equal(clicks, 1, "native Ace click still dispatches its original callback")
+    buttonWidget:SetDisabled(true)
+    local disabledColor = {button:GetBackdropColor()}
+    assert(disabledColor[1] < resting[1], "disabled appearance is visibly muted")
+    buttonWidget:SetDisabled(false)
+    sameColor({button:GetBackdropColor()}, hovered, "enabling restores hover appearance")
+    mouse(button, "OnLeave")
+    sameColor({button:GetBackdropColor()}, resting, "leaving restores normal appearance")
+    mouse(button, "OnMouseDown", "LeftButton")
+    button:Hide()
+    sameColor({button:GetBackdropColor()}, resting, "hiding clears pressed appearance")
+    skinHost:ReleaseChildren()
+    equal(releases, 1, "prior release method runs once")
+    equal(button:GetBackdrop(), nativeBackdrop, "release restores the original backdrop, including nil")
+    sameColor({button:GetBackdropColor()}, nativeBackground, "release restores native background color")
+    sameColor({button:GetBackdropBorderColor()}, nativeBorder, "release restores native border color")
+    equal(button:GetHighlightFontObject(), hoverFont, "release leaves the native hover font untouched")
+    equal(button.highlightFontWrites, nil, "skinning never calls the native hover-font setter")
+    for _, key in ipairs(textureKeys) do equal(button[key]:GetAlpha(), alpha[key], "release restores native art alpha: " .. key) end
+    buttonWidget.parent = gui:Create("SimpleGroup")
+    buttonWidget:OnAcquire()
+    mouse(button, "OnEnter"); mouse(button, "OnMouseDown", "LeftButton")
+    buttonWidget:SetDisabled(true); buttonWidget:SetDisabled(false)
+    mouse(button, "OnMouseUp", "LeftButton"); mouse(button, "OnLeave")
+    equal(button:GetBackdrop(), nativeBackdrop, "pooled widget stays unstyled outside Questie")
+    sameColor({button:GetBackdropColor()}, nativeBackground, "inactive hooks do not recolor a pooled widget")
+    skinHost:AddChild(buttonWidget)
+    equal(button:GetBackdrop().edgeSize, 1, "a reused widget can be styled for another settings cycle")
+    skinHost:ReleaseChildren()
+    equal(releases, 2, "restyling does not duplicate the prior release chain")
+    equal(button:GetBackdrop(), nativeBackdrop, "second release restores the native backdrop again")
+    equal(button:GetHighlightFontObject(), hoverFont, "restyling leaves the native hover font untouched")
+end
+local alreadySkinned = gui:Create("Button")
+alreadySkinned.frame.isSkinned = true
+local skinBackdrop = {bgFile = "external/skin"}
+alreadySkinned.frame:SetBackdrop(skinBackdrop)
+skinHost:AddChild(alreadySkinned)
+equal(alreadySkinned.frame:GetBackdrop(), skinBackdrop, "an externally skinned button retains its backdrop")
+for _, key in ipairs(textureKeys) do equal(alreadySkinned.frame[key]:GetAlpha(), 1, "external skin texture alpha is untouched") end
+equal(alreadySkinned.frame:GetScript("OnMouseDown"), nil, "external skin does not receive Questie hooks")
+skinHost:ReleaseChildren()
+equal(alreadySkinned.frame:GetBackdrop(), skinBackdrop, "release leaves an external skin untouched")
+groups = groups + 1
+
+local strictFont = gui:Create("Button").frame
+for _, value in ipairs({false, {unsupportedFont = true}}) do
+    local ok, message = pcall(strictFont.SetHighlightFontObject, strictFont, value or nil)
+    assert(not ok and tostring(message):find("Usage: SetHighlightFontObject", 1, true),
+        "native font setter rejects nil and unsupported values")
+end
+for _, value in ipairs({false, {unsupportedFont = true}}) do
+    local buttonWidget = gui:Create("Button")
+    local native = buttonWidget.frame
+    native.highlightFont = value or nil
+    local before = native:GetHighlightFontObject()
+    skinHost:AddChild(buttonWidget)
+    mouse(native, "OnEnter"); mouse(native, "OnLeave")
+    skinHost:ReleaseChildren()
+    equal(native.highlightFontWrites, nil, "styling/releasing never round-trips a native font getter")
+    equal(native:GetHighlightFontObject(), before, "unsupported font getter values remain untouched")
+end
+groups = groups + 1
+
+local menuCalls = {}
+local menu = loader:ImportModule("QuestieMenu")
+for _, method in ipairs({"ShowTownsfolk", "ShowProfessions", "ShowVendors"}) do
+    menu[method] = function(_, page)
+        equal(page, 1, "Other Icons menu opens at its first page")
+        menuCalls[method] = (menuCalls[method] or 0) + 1
+        s.menuShown = true
+    end
+end
+engine:SelectCategory("actual_icons"); tick()
+for _, key in ipairs({"townsfolkOptions", "professionOptions", "vendorOptions"}) do
+    local button = control(key).frame
+    mouse(button, "OnClick", "LeftButton")
+end
+for _, method in ipairs({"ShowTownsfolk", "ShowProfessions", "ShowVendors"}) do
+    equal(menuCalls[method], 1, "Other Icons dispatches its real option callback: " .. method)
+end
+for iteration = 1, 6 do
+    mouse(control("iconOverridesToggle").frame, "OnClick", "LeftButton")
+    tick()
+    local visible = not cloned.args.actual_icons.args.iconOverrides.hidden()
+    equal(pcall(control, "iconTypeSlay"), visible, "override controls are rebuilt only while the section is expanded")
+    for _, widget in ipairs(s.widgets) do
+        if not widget.released then
+            local count, last = 0, 0
+            for index in pairs(widget.children) do
+                count, last = count + 1, math.max(last, index)
+            end
+            equal(count, last, "repeated release/rebuild leaves dense Ace child arrays")
+        end
+    end
+end
+groups = groups + 1
+for _, key in ipairs({"townsfolkOptions", "professionOptions", "vendorOptions"}) do
+    engine:ShowFrame()
+    engine:SelectCategory("actual_icons"); tick()
+    mouse(control(key).frame, "OnClick", "LeftButton")
+    assert(s.menuShown, "Other Icons flyout remains open after its button redraw")
+    s.submenuShown = true
+    engine:RefreshStates(); tick()
+    assert(s.menuShown and s.submenuShown, "refreshing settings does not dismiss an active flyout")
+    engine:SelectCategory("actual_tracker"); tick()
+    assert(not s.menuShown and not s.submenuShown, "switching categories dismisses flyout and submenus")
+    engine:SelectCategory("actual_icons"); tick()
+    mouse(control(key).frame, "OnClick", "LeftButton")
+    assert(s.menuShown, "flyout can reopen after changing categories")
+    s.submenuShown = true
+    engine:HideFrame()
+    assert(not s.menuShown and not s.submenuShown, "closing settings dismisses flyout and submenus")
+end
 groups = groups + 1
 assert(not next(s.errors), s.errors[1])
 print("Standalone options engine: " .. groups .. " groups passed (real Ace validation, callbacks, profiles and native frame lifecycle)")
