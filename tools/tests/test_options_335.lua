@@ -69,24 +69,13 @@ loader:CreateModule("QuestieOptionsUtils").Spacer = function() return {} end
 local l10n = loader:CreateModule("l10n")
 setmetatable(l10n, {__call = function(_, value) return value end})
 
-local registered, opened, engineInitialized, legacyOpens = nil, nil, nil, 0
-local frame = {SetMinResize = noop}
-local configFrame = {frame = frame, Hide = function(self) self.shown = false end,
-    IsShown = function(self) return self.shown end, SetLayout = noop, EnableResize = noop}
+local registered, engineInitialized
 env.PlaySound, env.InCombatLockdown = noop, function() return false end
 loader:CreateModule("QuestieJourney").IsShown = function() return false end
-env.CreateFrame = function()
-    return {SetSize = noop, SetPoint = noop, SetText = noop, SetScript = noop}
-end
+env.CreateFrame = forbidden
 local libraries = {
-    ["AceGUI-3.0"] = {Create = function() return configFrame end},
-    ["AceConfigDialog-3.0"] = {AddToBlizOptions = forbidden, SetDefaultSize = noop,
-        Open = function()
-            assert(registered.args.advanced_tab.args.weeklyResetDay, "settings exist before the UI opens")
-            opened = true
-            legacyOpens = legacyOpens + 1
-            configFrame.shown = true
-        end},
+    ["AceGUI-3.0"] = {Create = forbidden},
+    ["AceConfigDialog-3.0"] = {AddToBlizOptions = forbidden, SetDefaultSize = forbidden, Open = forbidden},
     ["AceConfig-3.0"] = {RegisterOptionsTable = function(_, name, options)
         equal(name, "Questie", "registered options name")
         assert(options.args.advanced_tab.args.initDelay, "settings exist at registration")
@@ -99,7 +88,7 @@ local libraries = {
 env.LibStub = function(name) return assert(libraries[name], "unexpected library: " .. name) end
 loader:CreateModule("QuestieOptionsEngine").Initialize = function(_, schema)
     equal(schema, registered, "standalone engine receives the registered source schema")
-    equal(env.QuestieConfigFrame, configFrame, "legacy frame exists before standalone engine initialization")
+    equal(env.QuestieConfigFrame, nil, "initialization does not create a legacy settings window")
     engineInitialized = true
 end
 local engineCalls = {toggle = 0, hide = 0, refresh = 0}
@@ -123,11 +112,11 @@ while coroutine.status(initialization) ~= "dead" do
     local ok, message = coroutine.resume(initialization)
     assert(ok, message)
 end
-assert(opened, "options frame initialization completed")
 assert(engineInitialized, "standalone settings engine initializes with the existing options")
 equal(options.Initialize, initialize, "initialization method is not replaced")
-equal(env.QuestieConfigFrame, configFrame, "initialized frame published")
-equal(env.UISpecialFrames[1], "QuestieConfigFrame", "frame can close with Escape")
+equal(env.QuestieConfigFrame, nil, "no legacy settings frame is published")
+equal(next(env.UISpecialFrames), nil, "controller does not register an obsolete Escape frame")
+equal(options.OpenOldConfigWindow, nil, "obsolete settings command method is absent")
 
 local instant = registered.args.general_tab.args.interface_options_group.args.instantQuest
 local nameplate = registered.args.nameplate_tab.args.nameplate_options_group.args.nameplateEnabled
@@ -197,18 +186,31 @@ equal(strata, "TOOLTIP", "reload prompt remains above other windows")
 equal(popup.timeout, 0, "reload prompt does not expire")
 equal(popup.hideOnEscape, true, "reload prompt can be dismissed")
 tests = tests + 1
-local legacyBefore = legacyOpens
 options:OpenConfigWindow()
 equal(engineCalls.toggle, 1, "default options entry opens the standalone engine")
-equal(legacyOpens, legacyBefore, "default options entry does not open the legacy dialog")
-options:OpenOldConfigWindow()
-equal(engineCalls.hide, 1, "legacy options entry first closes standalone settings")
-equal(legacyOpens, legacyBefore + 1, "explicit legacy entry retains the old dialog")
 options:RefreshIfShown()
 equal(engineCalls.refresh, 1, "profile refresh reaches standalone settings")
-equal(legacyOpens, legacyBefore + 2, "profile refresh also updates a visible legacy dialog")
 options:HideFrame()
-equal(configFrame:IsShown(), false, "shared hide closes the legacy frame")
-equal(engineCalls.hide, 2, "shared hide also closes standalone settings")
+equal(engineCalls.hide, 1, "shared hide closes standalone settings")
+equal(env.QuestieConfigFrame, nil, "entry points never allocate a second settings window")
+tests = tests + 1
+env.string = setmetatable({trim = function(value) return value:match("^%s*(.-)%s*$") end}, {__index = string})
+local messages, commands = {}, {}
+env.print = function(message) messages[#messages + 1] = message end
+env.Questie.Colorize = function(_, value) return value end
+env.Questie.RegisterChatCommand = function(_, command, callback) commands[command] = callback end
+loadModule("Modules/QuestieSlash.lua")
+local slash = loader:ImportModule("QuestieSlash")
+slash.RegisterSlashCommands()
+equal(commands.questie, slash.HandleCommands, "primary slash command uses the real dispatcher")
+local before = engineCalls.toggle
+commands.questie("")
+commands.questie("options")
+equal(engineCalls.toggle, before + 2, "both settings slash commands reach the standalone engine")
+commands.questie("oldoptions")
+equal(engineCalls.toggle, before + 2, "removed settings command does not open a window")
+equal(#messages, 1, "removed settings command reports invalid input")
+assert(messages[1]:find("Invalid command", 1, true), "removed settings command follows normal invalid-command handling")
+equal(env.QuestieConfigFrame, nil, "slash commands never allocate the obsolete settings frame")
 tests = tests + 1
 print("3.3.5 options regression tests passed (" .. tests .. " groups)")

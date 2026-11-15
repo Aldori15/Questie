@@ -695,10 +695,10 @@ function _EventHandler:GroupLeft()
     previousGroupRoster = {}
 end
 
-local optionsHiddenByCombat, journeyHiddenByCombat = false, false
+local journeyHiddenByCombat = false
 
 function QuestieEventHandler:CancelWindowRestores()
-    optionsHiddenByCombat, journeyHiddenByCombat = false, false
+    journeyHiddenByCombat = false
 end
 
 function _EventHandler:PlayerRegenDisabled()
@@ -707,14 +707,6 @@ function _EventHandler:PlayerRegenDisabled()
     -- Let's make sure the frame exists - might be nil if player is in combat upon login
     if QuestieTracker then
         QuestieTracker.HandleCombatStarted()
-    end
-
-    -- Let's make sure the frame exists - might be nil if player is in combat upon login
-    if QuestieConfigFrame then
-        if QuestieConfigFrame:IsShown() then
-            optionsHiddenByCombat = true
-            QuestieConfigFrame:Hide()
-        end
     end
 
     -- Let's make sure the frame exists - might be nil if player is in combat upon login
@@ -730,11 +722,6 @@ function _EventHandler:PlayerRegenEnabled()
     Questie.Debug(Questie.DEBUG_DEVELOP, "[EVENT] PLAYER_REGEN_ENABLED")
     if QuestieTracker then
         QuestieTracker.HandleCombatEnded()
-    end
-
-    if optionsHiddenByCombat then
-        QuestieConfigFrame:Show()
-        optionsHiddenByCombat = false
     end
 
     if journeyHiddenByCombat then

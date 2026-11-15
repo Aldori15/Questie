@@ -51,11 +51,6 @@ function QuestieSlash.HandleCommands(input)
         return ;
     end
 
-    if mainCommand == "oldoptions" then
-        QuestieOptions:OpenOldConfigWindow()
-        return
-    end
-
     -- /questie help || /questie ?
     if mainCommand == "help" or mainCommand == "?" then
         print(Questie:Colorize(l10n("Questie Commands"), "yellow"));

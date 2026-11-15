@@ -26,7 +26,7 @@ local function Invoke(member, info, ...)
 end
 
 -- Copy schema nodes only. Handlers, media lists and AceDB must retain their identities.
--- The original table remains available in the legacy options window.
+-- The source table remains registered for existing change notifications.
 local function CopyOptions(source, inheritedDisabled)
     local copy = {}
     for key, value in pairs(source) do copy[key] = value end
@@ -81,7 +81,7 @@ local function AddRowBreak(args, key, after)
 end
 
 -- Legacy spacer widths assume a particular window width. Adapt presentation only;
--- leave the original option paths and callbacks intact for both dialogs.
+-- leave the original option paths and callbacks intact.
 local function AdaptLayouts()
     for _, tab in pairs(options.args) do
         local args = tab.args

@@ -184,7 +184,7 @@ local loader = env.QuestieLoader
 local l10n = loader:CreateModule("l10n")
 setmetatable(l10n, {__call = function(_, value) return value end})
 loader:CreateModule("QuestieLib").AddonPath = "Interface/AddOns/Questie-335/"
-loader:CreateModule("QuestieOptions").HideFrame = function() s.legacyHidden = true end
+loader:CreateModule("QuestieOptions").HideFrame = function() s.optionsHidden = true end
 loader:ImportModule("QuestieEventHandler").CancelWindowRestores = noop
 local journey = loader:CreateModule("QuestieJourney")
 journey.IsShown = function() return s.journey end
@@ -374,7 +374,7 @@ s.combat = false
 groups = groups + 1
 
 engine:ShowFrame()
-assert(engine:IsShown() and s.legacyHidden, "standalone settings open and hide the legacy window")
+assert(engine:IsShown() and s.optionsHidden, "standalone settings use the shared window close entry point")
 equal(env.QuestieSettingsFrame.heading.text, "Default controls", "sidebar selects first visible category")
 assert(env.QuestieSettingsFrame.scale <= 1, "native settings frame fits the screen")
 equal(control("font").list, fonts, "real AceConfig renders the media selector")
@@ -567,26 +567,26 @@ for _, width in ipairs({548, 568, 708}) do
         end
     end
 end
-local legacyPanel = gui:Create("QuestieSettingsPanel")
-dialog:Open("Questie", legacyPanel, "actual_general")
+local baselinePanel = gui:Create("QuestieSettingsPanel")
+dialog:Open("Questie", baselinePanel, "actual_general")
 local oldAt = geometry(control("questCompleteSound").parent.children, 708)
 local _, oldToggleY = oldAt(control("questCompleteSound"))
 local _, oldPreviewY = oldAt(control("questCompleteSoundButton"))
-assert(oldToggleY ~= oldPreviewY, "the unchanged legacy sound schema reproduces the wider-row wrapping regression")
-dialog:Open("Questie", legacyPanel, "actual_icons")
+assert(oldToggleY ~= oldPreviewY, "the source sound schema reproduces the wider-row wrapping regression")
+dialog:Open("Questie", baselinePanel, "actual_icons")
 oldAt = geometry(control("showNormalQuestsMap").parent.children, 708)
 local _, oldLabelY = oldAt(control("showNormalQuestsLabel"))
 local _, oldMapY = oldAt(control("showNormalQuestsMap"))
-assert(oldLabelY ~= oldMapY, "the unchanged legacy matrix reproduces split category rows")
-legacyPanel:ReleaseChildren()
+assert(oldLabelY ~= oldMapY, "the source matrix reproduces split category rows")
+baselinePanel:ReleaseChildren()
 equal(schema.args.actual_general.args.sound_options_group.args.soundLineBreak.width, 0.1,
-    "legacy sound layout remains unchanged")
+    "source sound layout remains unchanged")
 equal(schema.args.actual_icons.args.iconOverrides.args.iconTypeSlay.width, 0.796,
-    "legacy override widths remain unchanged")
+    "source override widths remain unchanged")
 equal(schema.args.actual_nameplate.args.nameplate_options_group.args.nameplateDescSpacer.hidden, nil,
-    "legacy nameplate spacers remain visible")
+    "source nameplate spacer definitions remain unchanged")
 equal(schema.args.actual_nameplate.args.nameplate_options_group.args.nameplateScale.width, 2.7,
-    "legacy nameplate slider width remains unchanged")
+    "source nameplate slider width remains unchanged")
 groups = groups + 1
 
 local settingsFrame = env.QuestieSettingsFrame
@@ -634,7 +634,7 @@ local file = assert(io.open("Modules/QuestieEventHandler.lua", "r"))
 local eventSource = file:read("*a"):gsub("\r\n", "\n")
 file:close()
 local combatSource = assert(eventSource:match(
-    "(local optionsHiddenByCombat.-function _EventHandler:PlayerRegenEnabled%(%).-\nend)"))
+    "(local journeyHiddenByCombat.-function _EventHandler:PlayerRegenEnabled%(%).-\nend)"))
 local combatModule = loader:ImportModule("QuestieEventHandler")
 local events = combatModule.private
 env._settingsCombatEvents = combatModule
@@ -646,11 +646,9 @@ compile([[
     local QuestieTracker = QuestieLoader:ImportModule("QuestieTracker")
     local QuestieJourney = QuestieLoader:ImportModule("QuestieJourney")
 ]] .. combatSource, "production settings combat events")()
-env.QuestieConfigFrame = env.CreateFrame("Frame")
-for _, previous in ipairs({"legacy", "journey"}) do
+for _, priorJourney in ipairs({false, true}) do
     for _, closeDuringCombat in ipairs({false, true}) do
-        engine:HideFrame(); env.QuestieConfigFrame:Hide(); s.journey = false
-        if previous == "legacy" then env.QuestieConfigFrame:Show() else s.journey = true end
+        engine:HideFrame(); s.journey = priorJourney
         s.combat = true
         events:PlayerRegenDisabled()
         engine:ShowFrame()
@@ -658,16 +656,15 @@ for _, previous in ipairs({"legacy", "journey"}) do
         s.combat = false
         events:PlayerRegenEnabled()
         equal(engine:IsShown(), not closeDuringCombat, "combat end preserves the user's new settings window state")
-        assert(not env.QuestieConfigFrame:IsShown() and not s.journey,
-            "selecting standalone settings cancels restoration of the earlier " .. previous .. " window")
+        assert(not s.journey, "selecting settings cancels restoration of an earlier Journey window")
     end
-    engine:HideFrame()
-    if previous == "legacy" then env.QuestieConfigFrame:Show() else s.journey = true end
-    events:PlayerRegenDisabled()
-    events:PlayerRegenEnabled()
-    equal(previous == "legacy" and env.QuestieConfigFrame:IsShown() or s.journey, true,
-        "ordinary combat still restores the previously hidden " .. previous .. " window")
 end
+engine:HideFrame(); s.journey = true
+events:PlayerRegenDisabled()
+assert(not s.journey, "combat hides Journey")
+events:PlayerRegenEnabled()
+assert(s.journey, "ordinary combat restores the previously hidden Journey window")
+equal(env.QuestieConfigFrame, nil, "combat handling does not create a legacy settings window")
 groups = groups + 1
 
 local hide = assert(controllerSource:match("(function QuestieOptions:HideFrame%(%).-\nend)"))
@@ -692,8 +689,8 @@ compile([[
 ]] .. toggle, "production Journey toggle")()
 engine:ShowFrame()
 journey:ToggleJourneyWindow()
-assert(journey:IsShown() and not engine:IsShown() and not env.QuestieConfigFrame:IsShown(),
-    "real Journey toggle closes both settings windows before opening Journey")
+assert(journey:IsShown() and not engine:IsShown(),
+    "real Journey toggle closes settings before opening Journey")
 journey:ToggleJourneyWindow()
 equal(journey:IsShown(), false, "real Journey toggle can close Journey again")
 groups = groups + 1

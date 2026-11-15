@@ -1,24 +1,8 @@
 ---@class QuestieOptions
 local QuestieOptions = QuestieLoader:CreateModule("QuestieOptions");
--------------------------
---Import modules.
--------------------------
----@type QuestieQuest
-local QuestieQuest = QuestieLoader:ImportModule("QuestieQuest");
----@type QuestieJourney
-local QuestieJourney = QuestieLoader:ImportModule("QuestieJourney");
----@type l10n
-local l10n = QuestieLoader:ImportModule("l10n")
----@type QuestieCombatQueue
-local QuestieCombatQueue = QuestieLoader:ImportModule("QuestieCombatQueue")
 local QuestieOptionsEngine = QuestieLoader:ImportModule("QuestieOptionsEngine")
 
 QuestieOptions.tabs = { ... }
-QuestieConfigFrame = nil
-
-local AceGUI = LibStub("AceGUI-3.0")
----@type AceConfigDialog-3.0
-local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 
 StaticPopupDialogs["QUESTIE_RELOAD"] = {
     text = "Changes you have made require a UI reload",
@@ -38,26 +22,8 @@ StaticPopupDialogs["QUESTIE_RELOAD"] = {
 
 -- Forward declaration
 local _CreateOptionsTable
-local journeyButton
 
-local function _TrySkinJourneyButton()
-    if (not journeyButton) or journeyButton.__QuestieElvUISkinned then return end
-    if not (IsAddOnLoaded and IsAddOnLoaded("ElvUI")) then return end
-
-    local elvUi = _G.ElvUI
-    if type(elvUi) ~= "table" then return end
-
-    local E = unpack(elvUi)
-    if not E or type(E.GetModule) ~= "function" then return end
-
-    local S = E:GetModule("Skins", true)
-    if S and type(S.HandleButton) == "function" then
-        S:HandleButton(journeyButton)
-        journeyButton.__QuestieElvUISkinned = true
-    end
-end
-
----Initializes the frames for the options menu
+---Initializes option definitions and the settings engine.
 function QuestieOptions:Initialize()
     Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieOptions]: Initializing...")
 
@@ -69,47 +35,6 @@ function QuestieOptions:Initialize()
 
     coroutine.yield()
 
-    ---@type AceGUIFrame, AceGUIFrame
-    local configFrame = AceGUI:Create("Frame")
-
-    configFrame:Hide()
-    coroutine.yield()
-
-    AceConfigDialog:SetDefaultSize("Questie", 640, 700)
-    AceConfigDialog:Open("Questie", configFrame) -- load the options into configFrame
-    configFrame:SetLayout("Fill")
-    configFrame:EnableResize(false)
-    configFrame.frame:SetMinResize(550, 400)
-
-    configFrame:Hide()
-    coroutine.yield()
-
-    journeyButton = CreateFrame("Button", nil, configFrame.frame, "UIPanelButtonTemplate")
-    journeyButton:SetSize(140, 24)
-    journeyButton:SetPoint("TOPRIGHT", configFrame.frame, "TOPRIGHT", -50, -13)
-    journeyButton:SetText(l10n('My Journey'))
-    journeyButton:SetScript("OnClick", function()
-        QuestieCombatQueue:Queue(function()
-            QuestieJourney:ToggleJourneyWindow()
-            QuestieOptions:HideFrame()
-        end)
-    end)
-    journeyButton:SetScript("OnEnter", function(self)
-        GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
-        GameTooltip:AddLine(l10n("My Journey"), 1, 0.82, 0, true)
-        GameTooltip:AddLine(l10n("Toggles the My Journey window"), 1, 1, 1, true)
-        GameTooltip:Show()
-    end)
-    journeyButton:SetScript("OnLeave", function()
-        GameTooltip:Hide()
-    end)
-    _TrySkinJourneyButton()
-
-    configFrame:Hide()
-    coroutine.yield()
-
-    QuestieConfigFrame = configFrame
-    table.insert(UISpecialFrames, "QuestieConfigFrame")
     QuestieOptionsEngine:Initialize(optionsTable)
 
     Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieOptions]: Initialization done")
@@ -118,9 +43,6 @@ end
 -- Generic function to hide the config frame.
 function QuestieOptions:HideFrame()
     QuestieOptionsEngine:HideFrame()
-    if QuestieConfigFrame and QuestieConfigFrame:IsShown() then
-        QuestieConfigFrame:Hide();
-    end
 end
 
 -- Open the configuration window
@@ -128,28 +50,8 @@ function QuestieOptions:OpenConfigWindow()
     QuestieOptionsEngine:ToggleConfigWindow()
 end
 
--- Keep the original dialog available while the new settings window is tested.
-function QuestieOptions:OpenOldConfigWindow()
-    QuestieOptionsEngine:HideFrame()
-    if QuestieJourney:IsShown() then QuestieJourney:ToggleJourneyWindow() end
-    if InCombatLockdown() then
-        QuestieCombatQueue:Queue(function() QuestieOptions:OpenOldConfigWindow() end)
-        return
-    end
-    if not QuestieConfigFrame:IsShown() then
-        _TrySkinJourneyButton()
-        PlaySound("igPlayerInviteDecline")
-        AceConfigDialog:Open("Questie", QuestieConfigFrame)
-    else
-        QuestieConfigFrame:Hide()
-    end
-end
-
 function QuestieOptions:RefreshIfShown()
     QuestieOptionsEngine:RefreshIfShown()
-    if QuestieConfigFrame and QuestieConfigFrame:IsShown() then
-        AceConfigDialog:Open("Questie", QuestieConfigFrame)
-    end
 end
 
 -- get option value
