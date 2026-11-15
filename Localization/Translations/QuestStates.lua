@@ -216,7 +216,7 @@ local questStateLocales = {
         ["ptBR"] = "Masmorra",
         ["ruRU"] = "Подземелье",
         ["zhCN"] = "地下城",
-        ["zhTW"] = "地下城",
+        ["zhTW"] = "地城",
     },
     ["Raid (10)"] = {
         ["enUS"] = true,

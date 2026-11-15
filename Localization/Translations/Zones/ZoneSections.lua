@@ -107,7 +107,7 @@ local zoneSectionLocales = {
         ["enUS"] = true,
         ["frFR"] = "Donjons et raids",
         ["esES"] = "Mazmorras y bandas",
-        ["zhTW"] = "地下城與團隊副本",
+        ["zhTW"] = "地城與團隊副本",
         ["zhCN"] = "地下城和团队副本",
     },
     ["Instance"] = {
