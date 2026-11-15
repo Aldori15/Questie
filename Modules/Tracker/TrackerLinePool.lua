@@ -864,7 +864,7 @@ TrackerLinePool.OnClickAchieve = function(self, button)
         if (IsModifiedClick("CHATLINK") and ChatEdit_GetActiveWindow()) then
             ChatEdit_InsertLink(GetAchievementLink(self.Quest.Id))
         else
-            if Questie.db.char.trackedAchievementIds[self.Quest.Id] then
+            if IsTrackedAchievement(self.Quest.Id) then
                 QuestieTracker:UntrackAchieveId(self.Quest.Id)
                 QuestieTracker:UpdateAchieveTrackerCache(self.Quest.Id)
 
@@ -873,10 +873,6 @@ TrackerLinePool.OnClickAchieve = function(self, button)
                 end
 
                 AchievementFrameAchievements_ForceUpdate()
-
-                QuestieCombatQueue:Queue(function()
-                    QuestieTracker:Update()
-                end)
             else
                 -- Assume this is an Objective of an Achievement
                 UIErrorsFrame:AddMessage(format(l10n("You can't untrack an objective of an achievement.")), 1.0, 0.1, 0.1, 1.0)

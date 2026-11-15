@@ -7,6 +7,8 @@ local TrackerQuestTimers = QuestieLoader:CreateModule("TrackerQuestTimers")
 local QuestieTracker = QuestieLoader:ImportModule("QuestieTracker")
 ---@type TrackerLinePool
 local TrackerLinePool = QuestieLoader:ImportModule("TrackerLinePool")
+---@type TrackerAchievements
+local TrackerAchievements = QuestieLoader:ImportModule("TrackerAchievements")
 -------------------------
 --Import Questie modules.
 -------------------------
@@ -57,12 +59,14 @@ function TrackerQuestTimers:HideBlizzardTimer()
     if WatchFrame then
         WatchFrame:Hide()
     end
+    TrackerAchievements.RefreshDragonUI()
 end
 
 function TrackerQuestTimers:ShowBlizzardTimer()
     if WatchFrame then
         WatchFrame:Show()
     end
+    TrackerAchievements.RefreshDragonUI()
 end
 
 ---@param quest table

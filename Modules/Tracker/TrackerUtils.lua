@@ -655,7 +655,7 @@ function TrackerUtils.HasQuest()
     local hasQuest
 
     if (GetNumQuestWatches(true) == 0) then
-        if (GetNumTrackedAchievements(true) == 0) then
+        if (GetNumTrackedAchievements() == 0) then
             hasQuest = false
         else
             hasQuest = true

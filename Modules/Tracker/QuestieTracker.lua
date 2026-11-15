@@ -167,6 +167,7 @@ function QuestieTracker.Initialize()
 
     if not Questie.db.profile.trackerEnabled then
         QuestieTracker.SetupDisabledWatchRefresh()
+        C_Timer.After(0.5, TrackerAchievements.Initialize)
         return
     end
 
@@ -501,8 +502,6 @@ function QuestieTracker:Disable()
     QuestieTracker:ResetVoiceOverFrame()
     Questie.db.char.TrackedQuests = {}
     Questie.db.char.AutoUntrackedQuests = {}
-
-    TrackerAchievements.ClearSavedTracking()
 
     StaticPopup_Show("QUESTIE_RELOAD")
 end
@@ -1363,7 +1362,7 @@ local function _Update(self, force, onlyIfChanged)
                         else
                             line.expandZone:SetMode(1)
                             local text = zoneName == "Achievements" and l10n("Achievements") or zoneName
-                            line.label:SetText("|cFFC0C0C0" .. text .. ": " .. GetNumTrackedAchievements(true) .. "/10|r")
+                            line.label:SetText("|cFFC0C0C0" .. text .. ": " .. GetNumTrackedAchievements() .. "/10|r")
                         end
 
                         -- Checks the minAllQuestsInZone[zone] table and if empty, zero out the table.
@@ -1947,7 +1946,7 @@ function QuestieTracker:Unhook()
         GetNumQuestWatches = QuestieTracker.GetNumQuestWatches
     end
 
-    TrackerAchievements.RestoreQueryHooks()
+    TrackerAchievements.RestoreBlizzardAchievements()
 
     QuestieTracker.alreadyHooked = nil
 end
@@ -1972,8 +1971,6 @@ function QuestieTracker:HookBaseTracker()
 
         hooksecurefunc("AddQuestWatch", function(index, watchTimer) QuestieTracker:AQW_Insert(index, watchTimer) end)
         hooksecurefunc("RemoveQuestWatch", QuestieTracker.RemoveQuestWatch)
-
-        TrackerAchievements.RegisterHooks()
 
         QuestieTracker.alreadyHookedSecure = true
     end
@@ -2023,7 +2020,7 @@ function QuestieTracker:HookBaseTracker()
         end
     end
 
-    TrackerAchievements.InstallQueryHooks()
+    TrackerAchievements.HideBlizzardAchievements()
 
     if Questie.db.profile.showBlizzardQuestTimer then
         TrackerQuestTimers:ShowBlizzardTimer()
@@ -2195,7 +2192,6 @@ function QuestieTracker:AQW_Insert(index, expire)
 end
 
 -- Preserve the entry points used by tracker menus, pooled rows, and events.
-QuestieTracker.RemoveTrackedAchievement = TrackerAchievements.RemoveTrackedAchievement
 QuestieTracker.UpdateAchieveTrackerCache = TrackerAchievements.UpdateAchieveTrackerCache
 QuestieTracker.UntrackAchieveId = TrackerAchievements.UntrackAchieveId
 QuestieTracker.TrackAchieve = TrackerAchievements.TrackAchieve

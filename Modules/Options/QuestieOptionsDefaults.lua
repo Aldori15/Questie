@@ -268,7 +268,6 @@ function QuestieOptionsDefaults:Load()
             collapsedZones = {},
             minAllQuestsInZone = {},
             collapsedQuests = {},
-            trackedAchievementIds = {},
             autoRouteOrder = {},
         },
         global = {

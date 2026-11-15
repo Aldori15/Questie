@@ -646,10 +646,6 @@ TrackerMenu.addUntrackAchieveOption = function(menu, achieve)
             end
 
             AchievementFrameAchievements_ForceUpdate()
-
-            QuestieCombatQueue:Queue(function()
-                QuestieTracker:Update()
-            end)
         end
     })
 end
@@ -662,10 +658,8 @@ function TrackerMenu:GetMenuForAchievement(achieve)
     TrackerMenu.addAchieveLinkToChatOption(menu, achieve)
     TrackerMenu.addShowInAchievementsOption(menu, achieve)
 
-    for trackedId, _ in pairs(Questie.db.char.trackedAchievementIds) do
-        if trackedId == achieve.Id then
-            TrackerMenu.addUntrackAchieveOption(menu, achieve)
-        end
+    if IsTrackedAchievement(achieve.Id) then
+        TrackerMenu.addUntrackAchieveOption(menu, achieve)
     end
 
     tinsert(menu, {

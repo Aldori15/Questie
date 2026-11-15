@@ -134,15 +134,7 @@ end
 local FACTION_STANDING_CHANGED_PATTERN
 
 local function _HasTrackedAchievements()
-    if not (Questie and Questie.db and Questie.db.char and Questie.db.char.trackedAchievementIds) then
-        return false
-    end
-
-    for _ in pairs(Questie.db.char.trackedAchievementIds) do
-        return true
-    end
-
-    return false
+    return GetNumTrackedAchievements() > 0
 end
 
 function QuestieEventHandler:RegisterEarlyEvents()
@@ -216,10 +208,6 @@ function QuestieEventHandler:RegisterLateEvents()
 
         AchievementFrameAchievements_ForceUpdate()
 
-        QuestieCombatQueue:Queue(function()
-            QuestieTracker:Update()
-        end)
-
         -- AzerothCore can gate quest availability directly on earned
         -- achievements, so refresh quest markers immediately.
         AvailableQuests.CalculateAndDrawAll()
@@ -235,10 +223,7 @@ function QuestieEventHandler:RegisterLateEvents()
     -- TODO: Fired when a timed event for an achievement begins or ends. The achievement does not have to be actively tracked for this to trigger.
     Questie:RegisterEvent("TRACKED_ACHIEVEMENT_UPDATE", function(self, achieveId)
         Questie.Debug(Questie.DEBUG_DEVELOP, "[EVENT] TRACKED_ACHIEVEMENT_UPDATE")
-        QuestieCombatQueue:Queue(function()
-            QuestieTracker:UpdateAchieveTrackerCache(achieveId)
-            QuestieTracker:Update()
-        end)
+        QuestieTracker:UpdateAchieveTrackerCache(achieveId)
     end)
 
     Questie:RegisterEvent("CRITERIA_UPDATE", function()
@@ -256,9 +241,7 @@ function QuestieEventHandler:RegisterLateEvents()
         criteriaUpdateQueued = true
         C_Timer.After(0.1, function()
             criteriaUpdateQueued = nil
-            QuestieCombatQueue:Queue(function()
-                QuestieTracker:Update()
-            end)
+            QuestieTracker:UpdateAchieveTrackerCache()
         end)
     end)
     -- Money based Achievement updates

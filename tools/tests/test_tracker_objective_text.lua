@@ -293,11 +293,8 @@ do
     end
     equal(finished, 6, "resizing completes both redraws")
 
-    -- The achievement renderer must consume the controller's synchronized cache.
-    local achievements = loader:ImportModule("TrackerAchievements")
-    env.Questie.db.char.trackedAchievementIds = {[978] = true}
-    env.WatchFrame_Update = noop
-    achievements.Initialize()
+    -- The achievement renderer must read native watches without a separate saved cache.
+    env.GetTrackedAchievements = function() return 978 end
     setmetatable(loader:ImportModule("l10n"), {__call = function(_, text) return text end})
     env.GetNumTrackedAchievements = function() return 1 end
     env.GetAchievementInfo = function(id)
@@ -312,7 +309,7 @@ do
         tracker:Update(true)
         equal(#rows, 7, "redraw includes achievement heading/title/criterion")
         local index = first and 2 or 6
-        equal(rows[index].label.text, "|cFFFFFF003000 Quests Completed|r", "achievement title rendered from moved cache")
+        equal(rows[index].label.text, "|cFFFFFF003000 Quests Completed|r", "achievement title rendered from native watches")
         assert(rows[index + 1].label.text:find("4/3000", 1, true), "achievement progress rendered")
     end
     equal(finished, 8, "both achievement ordering settings complete layout")

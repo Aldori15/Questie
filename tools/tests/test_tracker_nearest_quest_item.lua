@@ -42,7 +42,7 @@ local function setup(enabled)
     env.InCombatLockdown = function() return s.inCombat end
     env.GetItemSpell = function(id) return s.spells[id] end
     env.QuestieCompat = {GetQuestLogIndexByID = function(id) return s.quests[id] and id end,
-        C_Timer = {NewTicker = function(interval, callback)
+        C_Timer = {After = function() end, NewTicker = function(interval, callback)
             s.tickers[#s.tickers + 1] = {interval = interval, callback = callback}
         end}}
     loadModule("Modules/Libs/QuestieLoader.lua", env)
