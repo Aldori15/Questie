@@ -1548,73 +1548,9 @@ local function _Update(self, force, onlyIfChanged)
 
                                     -- Set Objectives with more than one Objective number criteria
                                     if not (completed or quantityNeeded == 1 or quantityProgress == quantityNeeded) then
-                                        local objectiveText, headingText, progressText = TrackerObjectiveText.GetAchievementProgressText(objDesc, quantityProgress, quantityNeeded, quantityString)
+                                        local objectiveText = TrackerObjectiveText.GetAchievementProgressText(objDesc, quantityProgress, quantityNeeded, quantityString)
                                         line.label:SetText(objectiveText)
-
-                                        -- Check and measure Objective text width and update tracker width
-                                        QuestieTracker:UpdateWidth(line.label:GetUnboundedStringWidth() + objectiveMarginLeft + trackerMarginRight)
-
-                                        -- Set Label width
-                                        line.label:SetWidth(trackerBaseFrame:GetWidth() - objectiveMarginLeft - trackerMarginRight)
-
-                                        -- Split Objective description and Progress/Needed into seperate lines
-                                        if (trackerLineWidth < line.label:GetUnboundedStringWidth() + objectiveMarginLeft) and (line.label:GetWidth() < line.label:GetUnboundedStringWidth() + 5) then
-                                            -- Set Objective text
-                                            line.label:SetText(headingText)
-
-                                            -- Check and measure Objective text width and update tracker width
-                                            QuestieTracker:UpdateWidth(line.label:GetUnboundedStringWidth() + objectiveMarginLeft + trackerMarginRight)
-
-                                            -- Set Label and Line widths
-                                            line.label:SetWidth(trackerBaseFrame:GetWidth() - objectiveMarginLeft - trackerMarginRight)
-                                            line:SetWidth(line.label:GetWidth() + objectiveMarginLeft)
-
-                                            -- Compare largest text Label in the tracker with current Label, then save widest width
-                                            trackerLineWidth = math_max(trackerLineWidth, line.label:GetUnboundedStringWidth() + objectiveMarginLeft)
-
-                                            -- Adds 1 pixel between split Objectives
-                                            line:SetHeight(line.label:GetHeight() + 1)
-
-                                            -- Set Objective state
-                                            line:Show()
-                                            line.label:Show()
-
-                                            -- Get next line in linePool
-                                            line = TrackerLinePool.GetNextLine()
-
-                                            -- Safety check - make sure we didn't run over our linePool limit.
-                                            if not line then break end
-
-                                            -- Set Line Mode, Types, Clickers
-                                            line:SetMode("objective")
-                                            line:SetOnClick("achieve")
-                                            line:SetQuest(objId)
-                                            line:SetObjective("objective")
-                                            line.expandZone:Hide()
-                                            line.expandQuest:Hide()
-                                            line.criteriaMark:Hide()
-                                            line.playButton:Hide()
-
-                                            -- Set Objective Label
-                                            line.label:ClearAllPoints()
-                                            line.label:SetPoint("TOPLEFT", line, "TOPLEFT", objectiveMarginLeft, 0)
-
-                                            -- Set Objective text
-                                            line.label:SetText(progressText)
-
-                                            -- Check and measure Objective text width and update tracker width
-                                            QuestieTracker:UpdateWidth(line.label:GetUnboundedStringWidth() + objectiveMarginLeft + trackerMarginRight)
-
-                                            -- Set Label and Line widths
-                                            line.label:SetWidth(trackerBaseFrame:GetWidth() - objectiveMarginLeft - trackerMarginRight)
-                                            line:SetWidth(line.label:GetWidth() + objectiveMarginLeft)
-                                        else
-                                            -- Set Line widths
-                                            line:SetWidth(line.label:GetWidth() + objectiveMarginLeft)
-
-                                            -- Compare largest text Label in the tracker with current Label, then save widest width
-                                            trackerLineWidth = math_max(trackerLineWidth, line.label:GetUnboundedStringWidth() + objectiveMarginLeft)
-                                        end
+                                        _UpdateLineWidth(line, objectiveMarginLeft)
 
                                         -- Set Objectives with a single Objective number criteria
                                     else
