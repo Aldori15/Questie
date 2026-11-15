@@ -69,18 +69,23 @@ loader:CreateModule("QuestieOptionsUtils").Spacer = function() return {} end
 local l10n = loader:CreateModule("l10n")
 setmetatable(l10n, {__call = function(_, value) return value end})
 
-local registered, opened
+local registered, opened, engineInitialized, legacyOpens = nil, nil, nil, 0
 local frame = {SetMinResize = noop}
-local configFrame = {frame = frame, Hide = noop, SetLayout = noop, EnableResize = noop}
+local configFrame = {frame = frame, Hide = function(self) self.shown = false end,
+    IsShown = function(self) return self.shown end, SetLayout = noop, EnableResize = noop}
+env.PlaySound, env.InCombatLockdown = noop, function() return false end
+loader:CreateModule("QuestieJourney").IsShown = function() return false end
 env.CreateFrame = function()
     return {SetSize = noop, SetPoint = noop, SetText = noop, SetScript = noop}
 end
 local libraries = {
     ["AceGUI-3.0"] = {Create = function() return configFrame end},
-    ["AceConfigDialog-3.0"] = {AddToBlizOptions = noop, SetDefaultSize = noop,
+    ["AceConfigDialog-3.0"] = {AddToBlizOptions = forbidden, SetDefaultSize = noop,
         Open = function()
             assert(registered.args.advanced_tab.args.weeklyResetDay, "settings exist before the UI opens")
             opened = true
+            legacyOpens = legacyOpens + 1
+            configFrame.shown = true
         end},
     ["AceConfig-3.0"] = {RegisterOptionsTable = function(_, name, options)
         equal(name, "Questie", "registered options name")
@@ -92,6 +97,16 @@ local libraries = {
     ["LibSharedMedia-3.0"] = {MediaType = {SOUND = "sound"}, List = function() return {} end},
 }
 env.LibStub = function(name) return assert(libraries[name], "unexpected library: " .. name) end
+loader:CreateModule("QuestieOptionsEngine").Initialize = function(_, schema)
+    equal(schema, registered, "standalone engine receives the registered source schema")
+    equal(env.QuestieConfigFrame, configFrame, "legacy frame exists before standalone engine initialization")
+    engineInitialized = true
+end
+local engineCalls = {toggle = 0, hide = 0, refresh = 0}
+local engine = loader:ImportModule("QuestieOptionsEngine")
+engine.ToggleConfigWindow = function() engineCalls.toggle = engineCalls.toggle + 1 end
+engine.HideFrame = function() engineCalls.hide = engineCalls.hide + 1 end
+engine.RefreshIfShown = function() engineCalls.refresh = engineCalls.refresh + 1 end
 loadModule("Modules/Options/QuestieOptions.lua")
 local options = loader:ImportModule("QuestieOptions")
 local initialize = options.Initialize
@@ -109,6 +124,7 @@ while coroutine.status(initialization) ~= "dead" do
     assert(ok, message)
 end
 assert(opened, "options frame initialization completed")
+assert(engineInitialized, "standalone settings engine initializes with the existing options")
 equal(options.Initialize, initialize, "initialization method is not replaced")
 equal(env.QuestieConfigFrame, configFrame, "initialized frame published")
 equal(env.UISpecialFrames[1], "QuestieConfigFrame", "frame can close with Escape")
@@ -180,5 +196,19 @@ popup.OnShow({SetFrameStrata = function(_, value) strata = value end})
 equal(strata, "TOOLTIP", "reload prompt remains above other windows")
 equal(popup.timeout, 0, "reload prompt does not expire")
 equal(popup.hideOnEscape, true, "reload prompt can be dismissed")
+tests = tests + 1
+local legacyBefore = legacyOpens
+options:OpenConfigWindow()
+equal(engineCalls.toggle, 1, "default options entry opens the standalone engine")
+equal(legacyOpens, legacyBefore, "default options entry does not open the legacy dialog")
+options:OpenOldConfigWindow()
+equal(engineCalls.hide, 1, "legacy options entry first closes standalone settings")
+equal(legacyOpens, legacyBefore + 1, "explicit legacy entry retains the old dialog")
+options:RefreshIfShown()
+equal(engineCalls.refresh, 1, "profile refresh reaches standalone settings")
+equal(legacyOpens, legacyBefore + 2, "profile refresh also updates a visible legacy dialog")
+options:HideFrame()
+equal(configFrame:IsShown(), false, "shared hide closes the legacy frame")
+equal(engineCalls.hide, 2, "shared hide also closes standalone settings")
 tests = tests + 1
 print("3.3.5 options regression tests passed (" .. tests .. " groups)")

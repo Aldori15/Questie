@@ -59,15 +59,11 @@ function TrackerHeaderFrame.Initialize(baseFrame)
                 QuestieJourney:ToggleJourneyWindow()
             end
 
-            QuestieCombatQueue:Queue(function()
-                QuestieOptions:OpenConfigWindow()
-            end)
+            QuestieOptions:OpenConfigWindow()
 
             return
         elseif button == "RightButton" then
-            if QuestieConfigFrame:IsShown() then
-                QuestieConfigFrame:Hide()
-            end
+            QuestieOptions:HideFrame()
 
             QuestieCombatQueue:Queue(function()
                 QuestieJourney:ToggleJourneyWindow()

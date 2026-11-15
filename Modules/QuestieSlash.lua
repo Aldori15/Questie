@@ -42,15 +42,18 @@ function QuestieSlash.HandleCommands(input)
     local subCommand = commands[2]
 
     -- /questie
-    if mainCommand == "" or not mainCommand then
-        QuestieCombatQueue:Queue(function()
-            QuestieOptions:OpenConfigWindow();
-        end)
+    if mainCommand == "" or not mainCommand or mainCommand == "options" then
+        QuestieOptions:OpenConfigWindow()
 
         if QuestieJourney:IsShown() then
             QuestieJourney:ToggleJourneyWindow();
         end
         return ;
+    end
+
+    if mainCommand == "oldoptions" then
+        QuestieOptions:OpenOldConfigWindow()
+        return
     end
 
     -- /questie help || /questie ?
@@ -73,8 +76,7 @@ function QuestieSlash.HandleCommands(input)
         Questie.db.profile.enabled = (not Questie.db.profile.enabled)
         QuestieQuest:ToggleNotes(Questie.db.profile.enabled);
 
-        -- Close config window if it's open to avoid desyncing the Checkbox
-        QuestieOptions:HideFrame();
+        QuestieOptions:RefreshIfShown()
         return;
     end
 

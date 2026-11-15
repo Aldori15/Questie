@@ -696,6 +696,11 @@ function _EventHandler:GroupLeft()
 end
 
 local optionsHiddenByCombat, journeyHiddenByCombat = false, false
+
+function QuestieEventHandler:CancelWindowRestores()
+    optionsHiddenByCombat, journeyHiddenByCombat = false, false
+end
+
 function _EventHandler:PlayerRegenDisabled()
     Questie.Debug(Questie.DEBUG_DEVELOP, "[EVENT] PLAYER_REGEN_DISABLED")
 

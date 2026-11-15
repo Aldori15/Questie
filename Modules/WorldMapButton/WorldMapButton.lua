@@ -14,8 +14,6 @@ local QuestieOptions = QuestieLoader:ImportModule("QuestieOptions")
 local QuestieJourney = QuestieLoader:ImportModule("QuestieJourney")
 ---@type QuestieMenu
 local QuestieMenu = QuestieLoader:ImportModule("QuestieMenu")
----@type QuestieCombatQueue
-local QuestieCombatQueue = QuestieLoader:ImportModule("QuestieCombatQueue")
 
 local KButtons = QuestieCompat.KButtons or LibStub("Krowi_WorldMapButtons-1.4")
 
@@ -228,18 +226,12 @@ QuestieWorldMapButtonMixin = {
                     UpdateTooltip(mapButton)
                 end
 
-                QuestieOptions:HideFrame()
+                QuestieOptions:RefreshIfShown()
                 return
             elseif IsShiftKeyDown() then
-                QuestieOptions:HideFrame()
                 QuestieJourney:HideJourneyWindow()
-                if InCombatLockdown() then
-                    Questie:Print(l10n("Questie will open after combat ends."))
-                end
-                QuestieCombatQueue:Queue(function()
-                    CloseFullscreenWorldMap()
-                    QuestieOptions:OpenConfigWindow()
-                end)
+                CloseFullscreenWorldMap()
+                QuestieOptions:OpenConfigWindow()
                 return
             elseif IsModifierKeyDown() then
                 return

@@ -423,18 +423,11 @@ function _MinimapIcon:CreateDataBrokerObject()
                         end
                     end
 
-                    -- Close config window if it's open to avoid desyncing the Checkbox
-                    QuestieOptions:HideFrame();
+                    QuestieOptions:RefreshIfShown()
                     return;
                 elseif IsShiftKeyDown() then
-                    QuestieOptions:HideFrame();
                     QuestieJourney:HideJourneyWindow()
-                    if InCombatLockdown() then
-                        Questie:Print(l10n("Questie will open after combat ends."))
-                    end
-                    QuestieCombatQueue:Queue(function()
-                        QuestieOptions:OpenConfigWindow()
-                    end)
+                    QuestieOptions:OpenConfigWindow()
                     return;
                 elseif IsModifierKeyDown() then
                     return;

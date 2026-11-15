@@ -386,8 +386,8 @@ function QuestieOptions.tabs.advanced:Initialize()
                 type = "toggle",
                 order = 5.08,
                 disabled = function() return not Questie.db.profile.debugEnabled; end,
-                name = function() return l10n('Enable Debug').."-PRINT" end,
-                desc = function() return l10n('Enable or disable debug functionality.').."-PRINT" end,
+                name = function() return l10n('Enable Debug-PRINT'); end,
+                desc = function() return l10n('Enable or disable debug print functionality.'); end,
                 width = "full",
                 get = function () return Questie.db.profile.debugEnabledPrint; end,
                 set = function (_, value)
@@ -397,11 +397,11 @@ function QuestieOptions.tabs.advanced:Initialize()
             debugLevel = {
                 type = "multiselect",
                 values = {
-                    [0] = "DEBUG_CRITICAL",
-                    [1] = "DEBUG_ELEVATED",
-                    [2] = "DEBUG_INFO",
-                    [3] = "DEBUG_DEVELOP",
-                    [4] = "DEBUG_SPAM",
+                    [0] = l10n("DEBUG_CRITICAL"),
+                    [1] = l10n("DEBUG_ELEVATED"),
+                    [2] = l10n("DEBUG_INFO"),
+                    [3] = l10n("DEBUG_DEVELOP"),
+                    [4] = l10n("DEBUG_SPAM"),
                 },
                 order = 5.09,
                 name = function() return l10n('Debug level to print'); end,

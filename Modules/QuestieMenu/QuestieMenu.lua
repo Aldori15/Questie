@@ -928,9 +928,7 @@ function QuestieMenu:Show(hideDelay)
         end
     end})
     tinsert(menuTable, { text= l10n("Questie Options"), func=function()
-        QuestieCombatQueue:Queue(function()
-            QuestieOptions:OpenConfigWindow()
-        end)
+        QuestieOptions:OpenConfigWindow()
     end})
 
     tinsert(menuTable, { text= l10n('My Journey'), func=function()
