@@ -953,7 +953,15 @@ function QuestieMenu:Show(hideDelay)
     LibDropDown:EasyMenu(menuTable, QuestieMenu.menu, "cursor", -80, -15, "MENU", hideDelay or 2)
 end
 
+local function CloseOpenFlyout(menu)
+    if menu and UIDROPDOWNMENU_OPEN_MENU == menu and DropDownList1 and DropDownList1:IsShown() then
+        LibDropDown:CloseDropDownMenus()
+        return true
+    end
+end
+
 function QuestieMenu:ShowTownsfolk(hideDelay)
+    if CloseOpenFlyout(self.menuTowns) then return end
     if not Questie.db.profile.townsfolkConfig then
         Questie.db.profile.townsfolkConfig = {}
     end
@@ -967,6 +975,7 @@ function QuestieMenu:ShowTownsfolk(hideDelay)
 end
 
 function QuestieMenu:ShowProfessions(hideDelay)
+    if CloseOpenFlyout(self.menuProfs) then return end
     if not Questie.db.profile.townsfolkConfig then
         Questie.db.profile.townsfolkConfig = {}
     end
@@ -979,6 +988,7 @@ function QuestieMenu:ShowProfessions(hideDelay)
 end
 
 function QuestieMenu:ShowVendors(hideDelay)
+    if CloseOpenFlyout(self.menuVendors) then return end
     if not Questie.db.profile.townsfolkConfig then
         Questie.db.profile.townsfolkConfig = {}
     end

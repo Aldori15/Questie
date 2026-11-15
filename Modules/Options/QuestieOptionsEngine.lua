@@ -226,6 +226,20 @@ local function StyleWidget(widget)
                 widget.highlight:SetTexture("Interface\\Buttons\\UI-CheckBox-Highlight")
             end
         end
+    elseif widget.type == "ScrollFrame" and not widget.questieSettingsScrollHooks then
+        widget.questieSettingsScrollHooks = true
+        local function dismissFlyout()
+            if IsSettingsWidget(widget) then CloseDropDownMenus() end
+        end
+        widget.scrollframe:HookScript("OnMouseWheel", dismissFlyout)
+        widget.scrollbar:HookScript("OnMouseDown", dismissFlyout)
+        local name = widget.scrollbar:GetName()
+        if name then
+            for _, suffix in ipairs({"ScrollUpButton", "ScrollDownButton"}) do
+                local button = _G[name .. suffix]
+                if button then button:HookScript("OnMouseDown", dismissFlyout) end
+            end
+        end
     elseif widget.type == "ColorPicker" and not widget.questieSettingsColorHook then
         widget.questieSettingsColorHook = true
         widget.frame:HookScript("OnClick", function()

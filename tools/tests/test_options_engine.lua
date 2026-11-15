@@ -28,7 +28,10 @@ env.UnitClass, env.UnitRace = function() return "Warrior", "WARRIOR" end, functi
 env.UnitFactionGroup, env.GetLocale = function() return "Alliance" end, function() return "enUS" end
 env.GetBuildInfo = function() return "3.3.5", "12340", "", 30300 end
 env.CloseSpecialWindows = function() return false end
-env.CloseDropDownMenus = function() s.menuShown, s.submenuShown = false, false end
+env.CloseDropDownMenus = function()
+    s.menuShown, s.submenuShown = false, false
+    s.menuCloses = (s.menuCloses or 0) + 1
+end
 env.UISpecialFrames, env.StaticPopupDialogs = {}, {}
 env.ACCEPT, env.CANCEL, env.OKAY, env.STATICPOPUP_NUMDIALOGS = "Accept", "Cancel", "Okay", 4
 env.NORMAL_FONT_COLOR_CODE, env.FONT_COLOR_CODE_CLOSE, env.ERR_NOT_IN_COMBAT = "|cffffffff", "|r", "In combat"
@@ -47,6 +50,15 @@ function frameMethods:SetHeight(value) self.height = value end
 function frameMethods:SetSize(width, height) self.width, self.height = width, height end
 function frameMethods:GetWidth() return self.width or 100 end
 function frameMethods:GetHeight() return self.height or 100 end
+function frameMethods:SetMinMaxValues(minimum, maximum) self.minimum, self.maximum = minimum, maximum end
+function frameMethods:SetValueStep(value) self.valueStep = value end
+function frameMethods:GetValue() return self.value or 0 end
+function frameMethods:SetValue(value)
+    self.value = value
+    if self.scripts.OnValueChanged then self.scripts.OnValueChanged(self, value) end
+end
+function frameMethods:EnableMouseWheel(value) self.mouseWheel = value end
+function frameMethods:SetScrollChild(value) self.scrollChild = value end
 function frameMethods:SetScale(value) self.scale = value end
 function frameMethods:SetParent(value) self.parent = value end
 function frameMethods:GetParent() return self.parent end
@@ -118,7 +130,8 @@ function frameMethods:IsShown() return self.shown end
 function frameMethods:CreateTexture() return env.CreateFrame("Texture", nil, self) end
 function frameMethods:CreateFontString() return env.CreateFrame("FontString", nil, self) end
 env.CreateFrame = function(kind, name, parent, template)
-    assert(kind == "Frame" or kind == "Button" or kind == "GameTooltip" or kind == "Texture" or kind == "FontString",
+    assert(kind == "Frame" or kind == "Button" or kind == "GameTooltip" or kind == "Texture" or kind == "FontString"
+        or kind == "ScrollFrame" or kind == "Slider",
         "unexpected native frame type: " .. tostring(kind))
     local frame = setmetatable({kind = kind, name = name, parent = parent, scripts = {}, points = {}, events = {}, shown = true},
         {__index = frameMethods})
@@ -129,6 +142,15 @@ env.CreateFrame = function(kind, name, parent, template)
             frame[key] = env.CreateFrame("Texture", nil, frame)
         end
         frame.normalFont, frame.highlightFont, frame.disabledFont = {nativeFont = true}, {nativeFont = true}, {nativeFont = true}
+    elseif template == "UIPanelScrollBarTemplate" then
+        frame:SetScript("OnMouseDown", function() frame.nativeDrags = (frame.nativeDrags or 0) + 1 end)
+        for _, suffix in ipairs({"ScrollUpButton", "ScrollDownButton"}) do
+            local arrow = env.CreateFrame("Button", name .. suffix, frame)
+            arrow:SetScript("OnMouseDown", function()
+                arrow.nativePresses = (arrow.nativePresses or 0) + 1
+                frame:SetValue(frame:GetValue() + 1)
+            end)
+        end
     end
     return frame
 end
@@ -241,6 +263,7 @@ do
 end
 env.PlaySound = noop
 loadFile("Libs/AceGUI-3.0/widgets/AceGUIWidget-Button.lua")
+loadFile("Libs/AceGUI-3.0/widgets/AceGUIContainer-ScrollFrame.lua")
 loadFile("Libs/AceConfig-3.0/AceConfigRegistry-3.0/AceConfigRegistry-3.0.lua")
 loadFile("Libs/AceConfig-3.0/AceConfigDialog-3.0/AceConfigDialog-3.0.lua")
 local registry, dialog = env.LibStub("AceConfigRegistry-3.0"), env.LibStub("AceConfigDialog-3.0")
@@ -925,6 +948,58 @@ for _, key in ipairs({"townsfolkOptions", "professionOptions", "vendorOptions"})
     engine:HideFrame()
     assert(not s.menuShown and not s.submenuShown, "closing settings dismisses flyout and submenus")
 end
+groups = groups + 1
+engine:ShowFrame(); engine:SelectCategory("actual_icons"); tick()
+local activeScroll
+for index = #s.widgets, 1, -1 do
+    local widget = s.widgets[index]
+    if widget.type == "ScrollFrame" and not widget.released then activeScroll = widget; break end
+end
+assert(activeScroll and activeScroll.scrollframe and activeScroll.scrollbar,
+    "settings use the shipped Ace scroll container")
+activeScroll.scrollframe:SetHeight(100)
+activeScroll.content:SetHeight(2000)
+activeScroll.scrollBarShown = true
+activeScroll.scrollbar:SetValue(100)
+local function dismissByInput(frame, event, ...)
+    s.menuShown, s.submenuShown = true, true
+    local before = s.menuCloses
+    mouse(frame, event, ...)
+    assert(not s.menuShown and not s.submenuShown, "scroll input closes the flyout and its submenus")
+    equal(s.menuCloses, before + 1, "one input closes dropdowns once")
+end
+local previousValue = activeScroll.scrollbar:GetValue()
+dismissByInput(activeScroll.scrollframe, "OnMouseWheel", 1)
+assert(activeScroll.scrollbar:GetValue() ~= previousValue, "the native Ace wheel handler still moves the scroll position")
+dismissByInput(activeScroll.scrollbar, "OnMouseDown", "LeftButton")
+equal(activeScroll.scrollbar.nativeDrags, 1, "scrollbar drag preserves its native handler")
+for _, suffix in ipairs({"ScrollUpButton", "ScrollDownButton"}) do
+    local arrow = assert(env[activeScroll.scrollbar:GetName() .. suffix])
+    dismissByInput(arrow, "OnMouseDown", "LeftButton")
+    equal(arrow.nativePresses, 1, "scroll arrow preserves its native handler")
+end
+s.menuShown, s.submenuShown = true, true
+local before = s.menuCloses
+activeScroll.scrollbar:SetValue(200)
+activeScroll:FixScroll()
+assert(s.menuShown and s.submenuShown, "programmatic scroll positioning does not dismiss menus")
+equal(s.menuCloses, before, "scroll value/layout callbacks do not close dropdowns")
+-- Real Ace release clears owner userdata. Reacquire the same container for a foreign app.
+gui:Release(activeScroll)
+activeScroll.parent = gui:Create("SimpleGroup")
+activeScroll:OnAcquire()
+activeScroll:SetStatusTable({scrollvalue = 0})
+activeScroll.scrollframe:SetHeight(100); activeScroll.content:SetHeight(2000)
+activeScroll.scrollBarShown = true
+s.menuShown, s.submenuShown = true, true
+before = s.menuCloses
+mouse(activeScroll.scrollframe, "OnMouseWheel", 1)
+mouse(activeScroll.scrollbar, "OnMouseDown", "LeftButton")
+for _, suffix in ipairs({"ScrollUpButton", "ScrollDownButton"}) do
+    mouse(env[activeScroll.scrollbar:GetName() .. suffix], "OnMouseDown", "LeftButton")
+end
+assert(s.menuShown and s.submenuShown, "foreign pooled scroll containers leave other menus open")
+equal(s.menuCloses, before, "inactive settings hooks do not close a foreign app's menus")
 groups = groups + 1
 assert(not next(s.errors), s.errors[1])
 print("Standalone options engine: " .. groups .. " groups passed (real Ace validation, callbacks, profiles and native frame lifecycle)")

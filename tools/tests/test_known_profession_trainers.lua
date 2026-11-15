@@ -113,8 +113,11 @@ end
 env.UIDROPDOWNMENU_MAXLEVELS = 3
 local function display(entries, level)
     local name = "DropDownList" .. level
-    local list = env[name] or {GetName = function() return name end, IsShown = function() return true end}
+    local list = env[name] or {GetName = function() return name end,
+        IsShown = function(self) return self.shown end,
+        Show = function(self) self.shown = true end, Hide = function(self) self.shown = false end}
     env[name] = list
+    list:Show()
     list.numButtons = 0
     for index, info in ipairs(entries) do
         local buttonName = name .. "Button" .. index
@@ -351,4 +354,58 @@ equal(skillResets, resets + 2, "learning through a skill-line-only event resets 
 equal(questRedraws, redraws + 3, "learning through a skill-line-only event redraws quests")
 equal(professions:HasProfessionAndSkillLevel({cooking, 1}), true, "skill-line-only learning updates the cache")
 equal(#scheduled, 0, "learning event bucket settles")
+
+-- Use the real menu builders and native adapter; native globals own open state.
+local menuBuilds, menuCloses, lastMenu = 0, 0
+env.CreateFrame = function(_, name)
+    return {GetName = function() return name end}
+end
+env.CloseDropDownMenus = function(level)
+    menuCloses = menuCloses + 1
+    for index = level or 1, env.UIDROPDOWNMENU_MAXLEVELS do
+        if env["DropDownList" .. index] then env["DropDownList" .. index]:Hide() end
+    end
+    if not level or level == 1 then env.UIDROPDOWNMENU_OPEN_MENU = nil end
+end
+env.EasyMenu = function(items, frame)
+    menuBuilds, lastMenu = menuBuilds + 1, items
+    for index = 1, env.UIDROPDOWNMENU_MAXLEVELS do
+        if env["DropDownList" .. index] then env["DropDownList" .. index]:Hide() end
+    end
+    env.UIDROPDOWNMENU_OPEN_MENU = frame
+    display(items, 1)
+end
+env.CloseDropDownMenus()
+for _, case in ipairs({{"ShowTownsfolk", "menuTowns"}, {"ShowProfessions", "menuProfs"}, {"ShowVendors", "menuVendors"}}) do
+    local show, key = case[1], case[2]
+    local before = menuBuilds
+    menu[show](menu, 1)
+    equal(menuBuilds, before + 1, "first click builds " .. show)
+    equal(env.UIDROPDOWNMENU_OPEN_MENU, menu[key], "native state identifies " .. show)
+    assert(env.DropDownList1:IsShown(), "first click opens " .. show)
+    display({{text = "Nested menu"}}, 2)
+    menu[show](menu, 1)
+    equal(menuBuilds, before + 1, "second click closes before reinitializing " .. show)
+    assert(not env.DropDownList1:IsShown() and not env.DropDownList2:IsShown(), "second click closes all submenu levels")
+    menu[show](menu, 1)
+    equal(menuBuilds, before + 2, "third click reopens " .. show)
+    assert(env.DropDownList1:IsShown(), "reopened flyout is visible")
+    lastMenu[#lastMenu].func() -- Native dropdown code closes after the Cancel action.
+    env.CloseDropDownMenus()
+    menu[show](menu, 1)
+    equal(menuBuilds, before + 3, "cancelling does not strand toggle state for " .. show)
+    env.DropDownList1:Hide() -- Native auto-hide may retain OPEN_MENU temporarily.
+    menu[show](menu, 1)
+    equal(menuBuilds, before + 4, "an auto-hidden menu can reopen despite a stale native owner")
+    assert(env.DropDownList1:IsShown(), "auto-hidden flyout opens again")
+    env.CloseDropDownMenus()
+end
+menu:ShowTownsfolk(1)
+local beforeSwitch = menuBuilds
+menu:ShowProfessions(1)
+equal(menuBuilds, beforeSwitch + 1, "a different flyout button switches menus")
+equal(env.UIDROPDOWNMENU_OPEN_MENU, menu.menuProfs, "switching uses the new native menu owner")
+menu:ShowVendors(1)
+equal(env.UIDROPDOWNMENU_OPEN_MENU, menu.menuVendors, "vendor button also switches an existing flyout")
+assert(env.DropDownList1:IsShown() and menuCloses > 0, "switching never leaves the requested flyout hidden")
 print("PASS: profession trainers, immediate/external unlearning, shared skill-event bucket, collapsed headers, progression and cache invalidation")
