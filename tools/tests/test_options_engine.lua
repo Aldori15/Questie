@@ -437,6 +437,37 @@ local function near(actual, expected, label)
         label .. ": expected " .. expected .. ", got " .. actual)
 end
 local groups = 0
+do
+    local option = cloned.args.actual_tracker.args.group_tracker.args.showPlayButtons
+    local utils, tracker = loader:ImportModule("TrackerUtils"), loader:ImportModule("QuestieTracker")
+    local oldLoaded, oldUpdate = utils.IsVoiceOverLoaded, tracker.Update
+    local updates = 0
+    tracker.Update = function(_, force)
+        equal(force, true, "playback preference immediately redraws the tracker")
+        updates = updates + 1
+    end
+    equal(option.get(), true, "existing profiles inherit enabled playback from AceDB defaults")
+    equal(option.hidden(), true, "playback option is hidden without compatible VoiceOver")
+    utils.IsVoiceOverLoaded = function() return true end
+    equal(option.hidden(), false, "compatible VoiceOver exposes the playback option")
+    option.set(nil, false)
+    equal(option.get(), false, "playback preference can be disabled")
+    equal(option.hidden(), false, "disabled playback leaves its option available for reenabling")
+    option.set(nil, true)
+    equal(option.get(), true, "playback preference can be enabled")
+    equal(updates, 2, "each playback preference change requests a redraw")
+    utils.IsVoiceOverLoaded, tracker.Update = oldLoaded, oldUpdate
+    local oldTranslations = l10n.translations
+    l10n.translations = {}
+    loadFile("Localization/Translations/Options/Tracker.lua")
+    for _, key in ipairs({option.name(), option.desc()}) do
+        for _, locale in ipairs({"enUS", "deDE", "esES", "esMX", "frFR", "koKR", "ptBR", "ruRU", "zhCN", "zhTW"}) do
+            assert(l10n.translations[key][locale], "playback option translation missing: " .. key .. " / " .. locale)
+        end
+    end
+    l10n.translations = oldTranslations
+    groups = groups + 1
+end
 assert(cloned ~= schema and cloned.args ~= schema.args, "standalone schema is independent")
 equal(cloned.handler, handler, "handler identity is preserved")
 equal(cloned.args.profiles.handler, schema.args.profiles.handler, "real AceDBOptions handler is preserved")

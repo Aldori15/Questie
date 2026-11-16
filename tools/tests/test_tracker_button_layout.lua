@@ -24,7 +24,7 @@ local function setup()
         ImportModule = function(_, name) return module(name) end}
     env.QuestieCompat = {C_Timer = {}, WorldMapFrame = {}}
     env.QuestLogListScrollFrame = {}
-    env.Questie = {db = {profile = {trackerFontSizeQuest = 10}, char = {}}}
+    env.Questie = {db = {profile = {trackerFontSizeQuest = 10, trackerShowPlayButtons = true}, char = {}}}
     local s = {env = env, modules = modules, voice = false}
     env.IsAddOnLoaded = function() return s.voice end
     env.VoiceOver = {QuestOverlayUI = {questPlayButtons = {}, displayedButtons = {},
@@ -85,6 +85,14 @@ do
                         local center = (m.itemButtonLeft + m.quest - 2) / 2
                         assert(math.abs(m.expandQuestRight - m.buttonSize / 2 - center) <= 0.5,
                             "expand icon is centered in its column")
+                        s.profile.trackerShowPlayButtons = false
+                        local hidden = s.utils:GetTrackerMargins()
+                        local removed = voice and (m.playButtonSize + 2) or 0
+                        for _, key in ipairs({"quest", "objective", "itemButtonLeft", "expandQuestRight"}) do
+                            equal(m[key] - hidden[key], removed, "hidden playback reclaims only its own column: " .. key)
+                        end
+                        equal(hidden.statusLeft, m.statusLeft, "hiding playback preserves the focus/status anchor")
+                        s.profile.trackerShowPlayButtons = true
                     end
                 end
             end
@@ -240,6 +248,14 @@ do
     button.scripts.OnClick(button)
     local sound = assert(voice.QuestOverlayUI.questPlayButtons[1].soundData)
     local stopped = assert(sound.stopCallback)
+    s.profile.trackerShowPlayButtons = false
+    button.scripts.OnClick(button)
+    assert(playing[sound], "disabled tracker playback cannot stop existing VoiceOver audio")
+    button:SetPlayButton(1)
+    assert(not button.shown and button.mode == nil, "disabling playback clears the pooled control")
+    s.profile.trackerShowPlayButtons = true
+    button:SetPlayButton(1)
+    assert(button.shown and button.texture:find("Stop", 1, true), "reenabling playback restores the queued audio state")
     local otherSound = {}
     voice.QuestOverlayUI.questPlayButtons[2].soundData = otherSound
     line.Quest = {Id = 2}

@@ -593,7 +593,7 @@ function TrackerUtils:GetTrackerMargins()
     local statusSlot = Questie.db.profile.trackerShowQuestFocusButtons and (buttonSize + 2)
         or (passiveStatusShown and (fontSize + 2) or 0)
     local playButtonSize = buttonSize + 2
-    local playSlot = self:IsVoiceOverLoaded() and (playButtonSize + 2) or 0
+    local playSlot = Questie.db.profile.trackerShowPlayButtons and self:IsVoiceOverLoaded() and (playButtonSize + 2) or 0
     local itemColumn = itemColumnShown and itemButtonSize or buttonSize
     local itemButtonLeft = statusSlot + playSlot
     local quest = itemButtonLeft + itemColumn + 2

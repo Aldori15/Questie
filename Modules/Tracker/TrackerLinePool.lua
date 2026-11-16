@@ -365,7 +365,8 @@ function TrackerLinePool.Initialize(questFrame)
         playButton:SetHighlightTexture("Interface\\BUTTONS\\UI-Panel-MinimizeButton-Highlight")
 
         playButton.SetPlayButton = function(self, questId)
-            if not questId or questId <= 0 or not TrackerUtils:IsVoiceOverLoaded() then
+            if not questId or questId <= 0 or not Questie.db.profile.trackerShowPlayButtons
+                or not TrackerUtils:IsVoiceOverLoaded() then
                 self.mode = nil
                 self:Hide()
                 return
@@ -384,7 +385,7 @@ function TrackerLinePool.Initialize(questFrame)
         playButton:RegisterForClicks("LeftButtonUp")
         playButton:SetScript("OnClick", function(self)
             local questId = self.mode
-            if not questId or not TrackerUtils:IsVoiceOverLoaded()
+            if not questId or not Questie.db.profile.trackerShowPlayButtons or not TrackerUtils:IsVoiceOverLoaded()
                 or not line.Quest or line.Quest.Id ~= questId then return end
             local questIndex = GetQuestLogIndexByID(questId)
             if not questIndex or questIndex <= 0 then return end
