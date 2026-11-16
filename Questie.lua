@@ -11,6 +11,10 @@ local QuestieQuest = QuestieLoader:ImportModule("QuestieQuest")
 local MinimapIcon = QuestieLoader:ImportModule("MinimapIcon")
 ---@type TrackerBaseFrame
 local TrackerBaseFrame = QuestieLoader:ImportModule("TrackerBaseFrame")
+---@type QuestieNameplate
+local QuestieNameplate = QuestieLoader:ImportModule("QuestieNameplate")
+---@type QuestieDBMIntegration
+local QuestieDBMIntegration = QuestieLoader:ImportModule("QuestieDBMIntegration")
 ---@type QuestieValidateGameCache
 local QuestieValidateGameCache = QuestieLoader:ImportModule("QuestieValidateGameCache")
 ---@type QuestieLib
@@ -59,6 +63,14 @@ function Questie:RefreshConfig(_, db, profileName)
     MinimapIcon:Refresh()
     QuestieQuest:SmoothReset()
     TrackerBaseFrame:OnProfileChange()
+    if Questie.db.profile.nameplateTargetFrameEnabled then
+        QuestieNameplate:RedrawFrameIcon()
+        QuestieNameplate:DrawTargetFrame()
+    else
+        QuestieNameplate:HideCurrentTargetFrame()
+    end
+    QuestieDBMIntegration:ChangeZoomLevel(Questie.db.profile.DBMHUDZoom)
+    QuestieDBMIntegration:ChangeRefreshRate(Questie.db.profile.DBMHUDRefresh)
     CommsVisibility:ScheduleSnapshot("PROFILE_CHANGED")
     Questie.Debug(Questie.DEBUG_DEVELOP, "Switched Ace Profile!")
 end

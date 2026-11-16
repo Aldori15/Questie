@@ -11,10 +11,62 @@ local AceConfigRegistry = LibStub("AceConfigRegistry-3.0")
 
 local APP_NAME = "QuestieSettings"
 local PANEL_TYPE = "QuestieSettingsPanel"
+local DROPDOWN_TYPE = "QuestieSettingsDropdown"
 local WINDOW_WIDTH, WINDOW_HEIGHT = 820, 680
 local frame, panel, eventFrame, options, selectedCategory
 local categoryButtons = {}
 local ownedColorCallback
+local lazyDropdownRegistered
+
+local function RegisterLazyDropdown()
+    if not AceGUI.WidgetRegistry.Dropdown then return end
+    AceGUI:RegisterWidgetType(DROPDOWN_TYPE, function()
+        -- Use a separate widget pool; other addons keep the original Dropdown and its eager menus.
+        local widget = AceGUI.WidgetRegistry.Dropdown()
+        widget.type = DROPDOWN_TYPE
+        local acquire, release, setList = widget.OnAcquire, widget.OnRelease, widget.SetList
+        widget.OnAcquire = function(self)
+            acquire(self)
+            self:SetCallback("OnClosed", function(control)
+                control.pullout:Clear()
+                control.questieMenuBuilt = nil
+            end)
+        end
+        widget.SetList = function(self, list, order, itemType)
+            self.list, self.questieListOrder, self.questieItemType = list or {}, order, itemType
+            self.questieMenuBuilt = nil
+            if self.open then
+                setList(self, self.list, order, itemType)
+                self.questieMenuBuilt = true
+            else
+                self.pullout:Clear()
+                self.hasClose = nil
+            end
+            self:SetValue(self.value)
+        end
+        local function prepareMenu()
+            if not widget.open and not widget.questieMenuBuilt then
+                setList(widget, widget.list, widget.questieListOrder, widget.questieItemType)
+                widget.questieMenuBuilt = true
+            end
+            if AceConfigDialog.tooltip then AceConfigDialog.tooltip:Hide() end
+        end
+        for _, button in ipairs({widget.button, widget.button_cover}) do
+            local click = button:GetScript("OnClick")
+            button:SetScript("OnClick", function(self, ...)
+                if widget.disabled then return end
+                prepareMenu()
+                return click(self, ...)
+            end)
+        end
+        widget.OnRelease = function(self)
+            release(self)
+            self.questieListOrder, self.questieItemType, self.questieMenuBuilt = nil, nil, nil
+        end
+        return widget
+    end, 1)
+    lazyDropdownRegistered = true
+end
 
 local function Invoke(member, info, ...)
     if type(member) == "function" then
@@ -30,6 +82,11 @@ end
 local function CopyOptions(source, inheritedDisabled)
     local copy = {}
     for key, value in pairs(source) do copy[key] = value end
+    if lazyDropdownRegistered and source.type == "select" and source.style ~= "radio"
+        and (not source.dialogControl or source.dialogControl == "Dropdown")
+        and (not source.control or source.control == "Dropdown") then
+        copy.dialogControl = DROPDOWN_TYPE
+    end
     local disabled = source.disabled
     if disabled == nil then disabled = inheritedDisabled end
     if source.args then
@@ -427,6 +484,7 @@ end
 
 function QuestieOptionsEngine:Initialize(source)
     if options then return end
+    RegisterLazyDropdown()
     options = CopyOptions(source)
     AdaptLayouts()
     LibStub("AceConfig-3.0"):RegisterOptionsTable(APP_NAME, options)
