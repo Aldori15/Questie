@@ -107,6 +107,38 @@ function QuestieAnnounce:AnnounceObjectiveToChannel(questId, objectiveText, obje
     end
 end
 
+-- Resolve WoW's singular/plural markup before sending objective text to chat.
+local function _ResolveGrammarEscapes(text, count)
+    if type(text) ~= "string" then
+        return text
+    end
+
+    return (text:gsub("|4([^;]*);", function(forms)
+        local candidates = {}
+        for form in (forms .. ":"):gmatch("([^:]*):") do
+            candidates[#candidates + 1] = form
+        end
+
+        local index = 1
+        if type(count) == "number" then
+            if #candidates == 2 then
+                index = count == 1 and 1 or 2
+            elseif #candidates == 3 then
+                local lastDigit, lastTwoDigits = count % 10, count % 100
+                if lastDigit == 1 and lastTwoDigits ~= 11 then
+                    index = 1
+                elseif lastDigit >= 2 and lastDigit <= 4 and (lastTwoDigits < 12 or lastTwoDigits > 14) then
+                    index = 2
+                else
+                    index = 3
+                end
+            end
+        end
+        -- Unrecognized layouts use their first form, matching upstream's fallback.
+        return candidates[index]
+    end))
+end
+
 local _has_seen_incomplete = {}
 local _has_sent_announce = {}
 local _announced_progress = {}
@@ -176,7 +208,7 @@ function QuestieAnnounce:ObjectiveChanged(questId, text, numFulfilled, numRequir
         if numFulfilled > 0 and Questie.db.profile.questAnnounceObjectiveProgress then
             if _announced_progress[objectiveStateKey] ~= numFulfilled then
                 _announced_progress[objectiveStateKey] = numFulfilled
-                QuestieAnnounce:AnnounceObjectiveToChannel(questId, text, objectiveProgress, true)
+                QuestieAnnounce:AnnounceObjectiveToChannel(questId, _ResolveGrammarEscapes(text, numFulfilled), objectiveProgress, true)
             end
         end
     end
@@ -188,7 +220,7 @@ function QuestieAnnounce:ObjectiveChanged(questId, text, numFulfilled, numRequir
         _has_seen_incomplete[objectiveStateKey] = nil
         _has_sent_announce[objectiveStateKey] = true
         _announced_progress[objectiveStateKey] = numFulfilled
-        QuestieAnnounce:AnnounceObjectiveToChannel(questId, text, objectiveProgress)
+        QuestieAnnounce:AnnounceObjectiveToChannel(questId, _ResolveGrammarEscapes(text, numFulfilled), objectiveProgress)
     end
 end
 
