@@ -477,7 +477,8 @@ function _QuestieFrame:ShouldBeHidden()
         -- i.e. (iconType == "available")  ==  (iconType ~= "monster" and iconType ~= "object" and iconType ~= "event" and iconType ~= "item" and iconType ~= "complete"):
         or (iconType == "available"
             and (
-                   ((not QuestieIconVisibility:IsEnabled("available", isMinimap)) and normal)
+                   profile.showAvailableQuests == false
+                or ((not QuestieIconVisibility:IsEnabled("available", isMinimap)) and normal)
                 or ((not QuestieIconVisibility:IsEnabled("repeatable", isMinimap)) and repeatable)
                 or ((not QuestieIconVisibility:IsEnabled("trivialRepeatable", isMinimap)) and trivialRepeatable)
                 or ((not QuestieIconVisibility:IsEnabled("event", isMinimap)) and event)

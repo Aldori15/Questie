@@ -815,13 +815,13 @@ function QuestieMenu.buildQuestMenu()
         {
             text = l10n("Available Quest"),
             func = function()
-                local value = not QuestieIconVisibility:IsEnabledAnywhere("available")
-                QuestieIconVisibility:SetBoth("available", value)
+                local value = Questie.db.profile.showAvailableQuests == false
+                Questie.db.profile.showAvailableQuests = value
                 _RunFastAvailableRefresh(true)
             end,
             icon = QuestieLib.AddonPath.."Icons\\available.blp",
             notCheckable = false,
-            checked = function() return QuestieIconVisibility:IsEnabledAnywhere("available") end,
+            checked = function() return Questie.db.profile.showAvailableQuests ~= false end,
             isNotRadio = true,
             keepShownOnClick = true
         },

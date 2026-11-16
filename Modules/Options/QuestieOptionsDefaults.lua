@@ -76,6 +76,7 @@ function QuestieOptionsDefaults:Load()
             enableTurninMapIcons = true,
             enableTurninMinimapIcons = true,
             enableAvailable = true,
+            showAvailableQuests = true,
             enableAvailableMapIcons = true,
             enableAvailableMinimapIcons = true,
             enableTooltips = true,
