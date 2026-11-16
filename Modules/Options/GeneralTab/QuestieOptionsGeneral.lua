@@ -261,7 +261,7 @@ function QuestieOptions.tabs.general:Initialize()
                     minimapButtonEnabled = {
                         type = "toggle",
                         order = 5.3,
-                        name = function() return l10n('Enable Minimap Button'); end,
+                        name = function() return l10n('Show Minimap Button'); end,
                         desc = function() return l10n('Enable or disable the Questie minimap button. You can still access the options menu with /questie.'); end,
                         width = 1.55,
                         get = function() return not Questie.db.profile.minimap.hide; end,
