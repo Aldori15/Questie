@@ -3,7 +3,10 @@
 local modules = {l10n = {translations = {}}}
 local env = setmetatable({}, {__index = _G})
 env._G, env.tinsert = env, table.insert
-env.bit = {band = function() return 0 end}
+env.bit = {band = function(flags, mask)
+    -- These NPC service flags are individual bits.
+    return math.floor(flags / mask) % 2 == 1 and mask or 0
+end}
 env.hooksecurefunc = function() end
 env.Questie = {Debug = function() end, db = {global = {}, profile = {}}}
 env.QuestieLoader = {ImportModule = function(_, name)
@@ -35,7 +38,7 @@ local town, keys = modules.Townsfolk, modules.QuestieProfessions.professionKeys
 local categories = town.GetProfessionTrainers()
 local db = modules.QuestieDB
 db.npcKeys = {name = 1, subName = 2, spawns = 3, npcFlags = 4}
-db.npcFlags = {}
+db.npcFlags = {BANKER = 131072, BATTLEMASTER = 1048576}
 db.npcData, db.itemData, db.itemKeys = {}, {}, {foodType = 1}
 local function contains(ids, id)
     for _, value in ipairs(ids or {}) do if value == id then return true end end
@@ -67,6 +70,15 @@ db.npcData[11557][2] = nil
 db.npcData[7954][2] = "Mechanostrider Pilot"
 db.npcData[514] = nil
 db.npcData[999999] = {"Barber", "Barber", {[12] = {{50, 50}}}, 0}
+-- Service flags, not subtitles, identify bankers and battlemasters.
+for index, subtitle in ipairs({false, "", "Translated title"}) do
+    db.npcData[900000 + index] = {"Banker " .. index, subtitle or nil, nil, 131073}
+    db.npcData[900010 + index] = {"Battlemaster " .. index, subtitle or nil, nil, 1048577}
+end
+db.npcData[900020] = {"[DND] Banker", nil, nil, 131072}
+db.npcData[900021] = {"[DND] Battlemaster", nil, nil, 1048576}
+db.npcData[900022] = {"Ordinary NPC", "Banker", nil, 0}
+db.npcData[900023] = {"Ordinary NPC", "Battlemaster", nil, 0}
 town.GetClassTrainers = function() return {HUNTER = {}, MAGE = {}} end
 town.GetMeetingStones = function() return {} end
 town.GetFactionSpecificMailboxes = function() return {}, {} end
@@ -79,6 +91,12 @@ local function initialize()
 end
 initialize()
 local global = env.Questie.db.global
+for index = 1, 3 do
+    assert(contains(global.townsfolk.Banker, 900000 + index), "bankers do not require subtitles")
+    assert(contains(global.townsfolk.Battlemaster, 900010 + index), "battlemasters do not require subtitles")
+end
+assert(#global.townsfolk.Banker == 3, "bankers still exclude DND and unflagged NPCs")
+assert(#global.townsfolk.Battlemaster == 3, "battlemasters still exclude DND and unflagged NPCs")
 for category, ids in pairs(categories) do
     local target = category == "RIDING" and global.townsfolk["Riding Trainer"]
         or category == "WEAPON_MASTER" and global.townsfolk["Weapon Master"]
