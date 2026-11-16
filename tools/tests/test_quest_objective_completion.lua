@@ -186,7 +186,7 @@ for _, change in ipairs({"present", "removed", "cache-missing"}) do
     s.quest.SpecialObjectives = {}
     s.modules.QuestiePlayer.currentQuestlog[999] = 999 -- Native-only entries need no derived-state reset.
     s.setObjectives({})
-    s.env.GetContainerNumSlots = function() return 0 end
+    s.env.GetItemCount = function() return 0 end
     s.modules.QuestieDB.QueryItemSingle = function(_, field) if field == "name" then return "Source item" end end
     s.modules.QuestLogCache.TestGameCache = function() return true end
     s.modules.QuestieMap._mapDrawQueue, s.modules.QuestieMap._minimapDrawQueue = {}, {}
@@ -646,7 +646,7 @@ for _, missing in ipairs({true, false}) do
     local s = setup(false)
     s.quest.sourceItemId = 12345
     s.quest.Objectives, s.quest.ObjectiveData = {}, {}
-    s.env.GetContainerNumSlots = function() return 0 end
+    s.env.GetItemCount = function() return 0 end
     s.setObjectives({})
     if missing then s.setObjectives(nil) end
     local reads, get = 0, s.modules.QuestLogCache.GetQuestObjectives

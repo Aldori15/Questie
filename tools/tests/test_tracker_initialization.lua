@@ -161,10 +161,23 @@ loader:CreateModule("QuestieDB").QueryItemSingle = function(itemId, field)
     equal(field, "class", "item eligibility queries the class")
     return itemClasses[itemId]
 end
-env.GetItemCount = function(itemId, _, includeCharges)
-    equal(includeCharges, true, "item button counts charges")
-    chargeReads = chargeReads + 1
-    return charges[itemId] or 0
+env.GetItemCount = function(itemId, includeBank, includeCharges)
+    equal(includeBank, false, "item button excludes bank items")
+    if includeCharges then
+        chargeReads = chargeReads + 1
+        return charges[itemId] or 0
+    end
+    for _, bag in pairs(bags) do
+        for _, item in ipairs(bag) do if item.id == itemId then return 1 end end
+    end
+    for _, item in pairs(equipment) do if item.id == itemId then return 1 end end
+    return 0
+end
+env.GetItemIcon = function(itemId)
+    for _, bag in pairs(bags) do
+        for _, item in ipairs(bag) do if item.id == itemId then return item.texture end end
+    end
+    for _, item in pairs(equipment) do if item.id == itemId then return item.texture end end
 end
 env.GetItemCooldown = function(itemId)
     cooldownReads = cooldownReads + 1
@@ -261,7 +274,7 @@ while coroutine.status(initialization) ~= "dead" do
     for index = 1, 250 do
         local line = env["linePool" .. index]
         if line then
-            equal(line.label.GetUnboundedStringWidth, env.QuestieCompat.GetUnboundedStringWidth, "pooled text-width adapter")
+            equal(line.label:GetUnboundedStringWidth(), env.QuestieCompat.GetUnboundedStringWidth(line.label), "pooled text-width adapter preserves measurement")
             equal(line.label.GetWrappedWidth, line.label.GetWidth, "pooled wrapped-width adapter")
             equal(line.label.GetNumLines, env.QuestieCompat.GetNumLines, "pooled line-count adapter")
         end
@@ -414,27 +427,29 @@ equal(button:IsShown(), false, "rejected item button hidden")
 equal(button.events.BAG_UPDATE, nil, "hidden button stops watching bags")
 equal(button:SetItem(999, 203, 20), false, "missing quest items are rejected")
 
--- Refresh work is throttled and events invalidate the appropriate timers.
+-- Cooldown and charges are event-driven; only range checks poll.
 assert(button:SetItem(101, 201, 20))
 targetExists, friendlyTarget = true, false
 rangeValues[101] = true
 local update = button:GetScript("OnUpdate")
 local oldCooldownReads, oldChargeReads, oldRangeReads = cooldownReads, chargeReads, rangeReads
 update(button, 0.01)
-equal(cooldownReads, oldCooldownReads + 1, "first visible update checks cooldown")
-equal(chargeReads, oldChargeReads + 1, "first visible update checks charges")
+equal(cooldownReads, oldCooldownReads, "visible update does not query cooldown")
+equal(chargeReads, oldChargeReads, "visible update does not query charges")
 equal(rangeReads, oldRangeReads + 1, "first visible update checks range")
 update(button, 0.01)
-equal(cooldownReads, oldCooldownReads + 1, "cooldown checks throttled")
-equal(chargeReads, oldChargeReads + 1, "charge checks throttled")
+equal(cooldownReads, oldCooldownReads, "repeated frames do not query cooldown")
+equal(chargeReads, oldChargeReads, "repeated frames do not query charges")
 equal(rangeReads, oldRangeReads + 1, "range checks throttled")
 button:OnEvent("BAG_UPDATE_COOLDOWN")
-equal(button.cooldownTimer, 0, "cooldown event invalidates cooldown timer")
+equal(cooldownReads, oldCooldownReads + 1, "cooldown event refreshes immediately")
+equal(chargeReads, oldChargeReads, "cooldown event does not query charges")
+charges[101] = 5
 button:OnEvent("BAG_UPDATE")
-equal(button.chargeTimer, 0, "bag event invalidates charges")
-button.chargeTimer = 1
+equal(button.charges, 5, "bag event immediately refreshes charges")
+charges[101] = 2
 button:OnEvent("PLAYER_EQUIPMENT_CHANGED")
-equal(button.chargeTimer, 0, "equipment event invalidates charges")
+equal(button.charges, 2, "equipment event immediately refreshes charges")
 button:OnEvent("PLAYER_TARGET_CHANGED")
 equal(button.rangeTimer, -1, "target event invalidates range")
 equal(button.range:IsShown(), false, "target event clears old range marker")
@@ -442,7 +457,11 @@ button:Hide()
 oldCooldownReads = cooldownReads
 update(button, 1)
 equal(cooldownReads, oldCooldownReads, "hidden buttons skip refresh work")
+charges[101] = 4
+cooldownValues[101] = {15, 30, 1}
 button:Show()
+equal(button.charges, 4, "show refreshes changes missed while hidden")
+equal(button.cooldownStart, 15, "show refreshes cooldown missed while hidden")
 
 -- Unused buttons release item state and can be reused on the next layout pass.
 pool.ResetButtonsForChange()
@@ -458,7 +477,6 @@ pool.HideUnusedButtons()
 equal(first:IsShown(), true, "used button stays visible")
 equal(second:IsShown(), false, "unused button hidden")
 equal(second.itemId, nil, "unused item cleared")
-equal(second.cooldownTimer, nil, "unused cooldown timer cleared")
 equal(second.cooldownStart, nil, "unused cooldown cache cleared")
 equal(#second.clicks, 0, "unused button cannot receive clicks")
 equal(second:GetScript("OnEnter"), nil, "unused tooltip disabled")
@@ -477,6 +495,20 @@ assert(first:SetItem(100, 900001, 24, true), "native quest item bypasses missing
 equal(first.attributes.item1, "item:100", "native item uses the existing secure action")
 assert(not first:SetItem(100, 900001, 24), "ordinary items still require quest-item metadata")
 equal(first.attributes.item1, nil, "rejected item clears the previous secure action")
+
+-- Keyring items and uncached textures work without any native slot scans.
+env.GetContainerNumSlots = function() error("item button scanned bags") end
+env.GetInventoryItemID = function() error("item button scanned equipment") end
+bags[-2] = {{id = 103}}
+itemClasses[103], charges[103] = 12, 1
+assert(first:SetItem(103, 204, 20), "keyring quest item is usable")
+equal(first.normalTexture, "Interface\\Icons\\INV_Misc_QuestionMark", "unknown texture gets a usable placeholder")
+cooldownValues[103] = {20, 30, 1}
+first:OnEvent("BAG_UPDATE_COOLDOWN")
+local previousCooldownWrites = cooldownFrames[first].cooldownWrites
+assert(first:SetItem(101, 205, 20), "visible button can be reassigned")
+equal(first.cooldownStart, 20, "reassignment applies the new item's active cooldown")
+equal(cooldownFrames[first].cooldownWrites, previousCooldownWrites + 1, "reassignment resets the previous item's animation cache")
 print("Tracker quest-item button regressions passed")
 
 -- Profile changes must not touch a base frame that a disabled tracker never created.

@@ -1138,7 +1138,6 @@ end
 ---@return boolean @Returns true if quest.sourceItemId matches an item in a players bag
 function QuestieQuest:CheckQuestSourceItem(questId, makeObjective)
     local quest = QuestieDB.GetQuest(questId)
-    local sourceItem = true
     if quest and quest.sourceItemId > 0 then
         -- Quest starting items can be consumed when the quest is accepted.
         -- Their absence should only matter if the item is also a real quest objective.
@@ -1158,22 +1157,15 @@ function QuestieQuest:CheckQuestSourceItem(questId, makeObjective)
             return true
         end
 
-        for bag = -2, 4 do
-            for slot = 1, GetContainerNumSlots(bag) do
-                local itemId = select(10, QuestieCompat.GetContainerItemInfo(bag, slot))
-                if itemId == quest.sourceItemId then
-                    return true
-                end
-            end
-
-            sourceItem = false
+        if GetItemCount(quest.sourceItemId, false) > 0 then
+            return true
         end
 
         -- If we are missing the sourceItem for zero objective quests then make an objective for it so the
         -- player has a visual indication as to what item is missing and so the quest has a "tag" of some kind.
         -- Also double check the quests leaderboard and make sure an objective doesn't already exist.
         local leaderBoard
-        if (not sourceItem) and makeObjective and QuestLogCache.TryGetQuest(questId) and _IsQuestInLog(questId) then
+        if makeObjective and QuestLogCache.TryGetQuest(questId) and _IsQuestInLog(questId) then
             leaderBoard = QuestieQuest:GetAllLeaderBoardDetails(questId)
         end
         if leaderBoard and not leaderBoard[1] then

@@ -47,6 +47,17 @@ local lineIndex = 0
 local linePool = {}
 local lineMarginLeft = 10
 
+local function GetCachedUnboundedStringWidth(label)
+    local text = label:GetText()
+    local font, size, flags = label:GetFont()
+    if label.measuredWidth == nil or label.measuredText ~= text or label.measuredFont ~= font
+        or label.measuredFontSize ~= size or label.measuredFontFlags ~= flags then
+        label.measuredWidth = QuestieCompat.GetUnboundedStringWidth(label)
+        label.measuredText, label.measuredFont, label.measuredFontSize, label.measuredFontFlags = text, font, size, flags
+    end
+    return label.measuredWidth
+end
+
 local function _UpdatePlayButton(playButton)
     local questId = playButton.mode
     local button = VoiceOver.QuestOverlayUI.questPlayButtons[questId]
@@ -127,7 +138,7 @@ function TrackerLinePool.Initialize(questFrame)
         line:SetWidth(1)
         line:SetHeight(1)
         line.label = line:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-        line.label.GetUnboundedStringWidth = QuestieCompat.GetUnboundedStringWidth
+        line.label.GetUnboundedStringWidth = GetCachedUnboundedStringWidth
         line.label.GetWrappedWidth = line.label.GetWidth
         line.label.GetNumLines = QuestieCompat.GetNumLines
         line.label:SetJustifyH("LEFT")

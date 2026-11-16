@@ -20,8 +20,6 @@ local LSM30 = LibStub("LibSharedMedia-3.0")
 local buttonPoolSize = 25
 local buttonIndex = 0
 local buttonPool = {}
-local ITEM_BUTTON_UPDATE_INTERVAL = 0.1
-local ITEM_BUTTON_CHARGE_UPDATE_INTERVAL = 0.2
 local ITEM_BUTTON_RANGE_UPDATE_INTERVAL = 0.3
 
 -- Called after the tracker line frames are initialized, outside combat.
@@ -43,33 +41,17 @@ function TrackerQuestItemButtons.Initialize()
             local validTexture
             self.itemId = nil
             self.itemName = nil
+            self.cooldownStart, self.cooldownDuration, self.cooldownEnabled = nil, nil, nil
 
-            for bag = -2, 4 do
-                for slot = 1, GetContainerNumSlots(bag) do
-                    local texture, _, _, _, _, _, _, _, _, itemId = QuestieCompat.GetContainerItemInfo(bag, slot)
-                    if questItemId == itemId and (isNativeQuestItem or QuestieDB.QueryItemSingle(itemId, "class") == 12) then
-                        validTexture = texture
-                        self.itemId = questItemId
-                        break
-                    end
-                end
-            end
-
-            -- Edge case to find "equipped" quest items since they will no longer be in the players bag
-            if (not validTexture) then
-                for inventorySlot = 1, 19 do
-                    local itemId = GetInventoryItemID("player", inventorySlot)
-                    if questItemId == itemId and (isNativeQuestItem or QuestieDB.QueryItemSingle(itemId, "class") == 12) then
-                        validTexture = GetInventoryItemTexture("player", inventorySlot)
-                        self.itemId = questItemId
-                        break
-                    end
-                end
+            -- Native counting includes carried and equipped items, but excludes the bank.
+            if GetItemCount(questItemId, false) > 0 and (isNativeQuestItem or QuestieDB.QueryItemSingle(questItemId, "class") == 12) then
+                validTexture = GetItemIcon(questItemId) or "Interface\\Icons\\INV_Misc_QuestionMark"
+                self.itemId = questItemId
             end
 
             if validTexture and self.itemId then
                 self.questID = questId
-                self.charges = GetItemCount(self.itemId, nil, true)
+                self.charges = GetItemCount(self.itemId, false, true) or 0
                 self.rangeTimer = -1
 
                 self:SetNormalTexture(validTexture)
@@ -87,12 +69,10 @@ function TrackerQuestItemButtons.Initialize()
 
                 self:SetAttribute("type1", "item")
                 self:SetAttribute("item1", "item:" .. self.itemId)
-                self:Show()
 
                 -- Cooldown Updates
                 cooldown:SetSize(size - 4, size - 4)
                 cooldown:SetPoint("CENTER", self, "CENTER", 0, 0)
-                cooldown:Hide()
 
                 -- Range Updates
                 self.range:SetText("●")
@@ -108,6 +88,12 @@ function TrackerQuestItemButtons.Initialize()
                 end
                 self.count:SetPoint("BOTTOMRIGHT", self, "BOTTOMRIGHT", -2, 3)
 
+                if self:IsShown() then
+                    self:RefreshCooldown()
+                else
+                    self:Show()
+                end
+
                 return true
             else
                 self.questID = nil
@@ -122,11 +108,13 @@ function TrackerQuestItemButtons.Initialize()
             if (event == "PLAYER_TARGET_CHANGED") then
                 self.rangeTimer = -1
                 self.range:Hide()
+            elseif not self.itemId then
+                return
             elseif event == "BAG_UPDATE_COOLDOWN" then
-                self.cooldownTimer = 0
+                self:RefreshCooldown()
             elseif event == "BAG_UPDATE" or event == "PLAYER_EQUIPMENT_CHANGED" then
-                self.cooldownTimer = 0
-                self.chargeTimer = 0
+                self:RefreshCooldown()
+                self:RefreshCharges()
             end
         end
 
@@ -156,7 +144,7 @@ function TrackerQuestItemButtons.Initialize()
         end
 
         btn.RefreshCharges = function(self)
-            local charges = GetItemCount(self.itemId, nil, true) or 0
+            local charges = GetItemCount(self.itemId, false, true) or 0
             if charges ~= self.charges then
                 self.charges = charges
                 if self.charges > 1 then
@@ -167,7 +155,7 @@ function TrackerQuestItemButtons.Initialize()
                 end
 
                 if self.charges == 0 then
-                    Questie.Debug(Questie.DEBUG_DEVELOP, "[TrackerQuestItemButtons: Button.OnUpdate]")
+                    Questie.Debug(Questie.DEBUG_DEVELOP, "[TrackerQuestItemButtons: Button.RefreshCharges]")
                     QuestieCombatQueue:Queue(function()
                         C_Timer.After(0.2, function()
                             QuestieTracker:Update()
@@ -217,20 +205,6 @@ function TrackerQuestItemButtons.Initialize()
                 return
             end
 
-            local cooldownTimer = (self.cooldownTimer or 0) - elapsed
-            if cooldownTimer <= 0 then
-                self:RefreshCooldown()
-                cooldownTimer = ITEM_BUTTON_UPDATE_INTERVAL
-            end
-            self.cooldownTimer = cooldownTimer
-
-            local chargeTimer = (self.chargeTimer or 0) - elapsed
-            if chargeTimer <= 0 then
-                self:RefreshCharges()
-                chargeTimer = ITEM_BUTTON_CHARGE_UPDATE_INTERVAL
-            end
-            self.chargeTimer = chargeTimer
-
             if UnitExists("target") then
                 local rangeTimer = (self.rangeTimer or 0) - elapsed
                 if rangeTimer <= 0 then
@@ -248,9 +222,11 @@ function TrackerQuestItemButtons.Initialize()
             self:RegisterEvent("BAG_UPDATE_COOLDOWN")
             self:RegisterEvent("BAG_UPDATE")
             self:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
-            self.cooldownTimer = 0
-            self.chargeTimer = 0
             self.rangeTimer = -1
+            if self.itemId then
+                self:RefreshCooldown()
+                self:RefreshCharges()
+            end
         end
 
         btn.OnHide = function(self)
@@ -341,8 +317,6 @@ function TrackerQuestItemButtons.HideUnusedButtons()
             button.itemName = nil
             button.lineID = nil
             button.fontSize = nil
-            button.cooldownTimer = nil
-            button.chargeTimer = nil
             button.rangeTimer = nil
             button.cooldownStart = nil
             button.cooldownDuration = nil
