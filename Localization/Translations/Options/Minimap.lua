@@ -184,7 +184,7 @@ local minimapOptionsLocales = {
     },
     ["Show Minimap Coordinates"] = {
         ["ptBR"] = "Coordenadas do minimapa",
-        ["ruRU"] = "Координаты",
+        ["ruRU"] = "Координаты (миникарта)",
         ["deDE"] = "Minimap-Koordinanten",
         ["koKR"] = "미니맵 좌표",
         ["esMX"] = "Coordenadas de minimapa",

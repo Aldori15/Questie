@@ -388,7 +388,7 @@ local mapOptionsLocales = {
     },
     ["Show Map Coordinates"] = {
         ["ptBR"] = "Coordenadas do mapa e cursor",
-        ["ruRU"] = "Координаты",
+        ["ruRU"] = "Координаты (карта)",
         ["deDE"] = "Karten- und Zeiger-Koordinaten",
         ["koKR"] = "지도 및 커서 좌표",
         ["esMX"] = "Coordenadas de mapa y ratón",
