@@ -565,64 +565,44 @@ function TrackerUtils:FocusQuest(questId)
 end
 
 function TrackerUtils:IsVoiceOverLoaded()
-    if (IsAddOnLoaded("AI_VoiceOver") and IsAddOnLoaded("AI_VoiceOverData_Vanilla")) then
-        return true
-    end
+    if not (IsAddOnLoaded("VoiceOverRedux") or IsAddOnLoaded("AI_VoiceOver")
+        or IsAddOnLoaded("AI_VoiceOver_Continued")) then return false end
 
-    return false
+    local voice = VoiceOver
+    local overlay, data, queue = voice and voice.QuestOverlayUI, voice and voice.DataModules, voice and voice.SoundQueue
+    local enums, utils = voice and voice.Enums, voice and voice.Utils
+    return overlay and type(overlay.questPlayButtons) == "table" and type(overlay.displayedButtons) == "table"
+        and type(overlay.CreatePlayButton) == "function" and type(overlay.UpdatePlayButtonTexture) == "function"
+        and data and type(data.PrepareSound) == "function" and type(data.GetQuestLogQuestGiverTypeAndID) == "function"
+        and type(data.GetObjectName) == "function" and queue and type(queue.Contains) == "function"
+        and type(queue.AddSoundToQueue) == "function" and type(queue.RemoveSoundFromQueue) == "function"
+        and enums and enums.SoundEvent and enums.SoundEvent.QuestAccept
+        and enums.GUID and type(enums.GUID.CanHaveID) == "function"
+        and utils and type(utils.MakeGUID) == "function" and true or false
 end
 
-function TrackerUtils:ShowVoiceOverPlayButtons()
-    if self:IsVoiceOverLoaded() then
-        if Questie.db.char.isTrackerExpanded then
-            if IsShiftKeyDown() and MouseIsOver(Questie_BaseFrame) then
-                if Questie_BaseFrame.isSizing == true or Questie_BaseFrame.isMoving == true then
-                    Questie.Debug(Questie.DEBUG_SPAM, "[TrackerUtils:ShowVoiceOverPlayButtons]")
-                else
-                    Questie.Debug(Questie.DEBUG_INFO, "[TrackerUtils:ShowVoiceOverPlayButtons]")
-                end
-            end
+local itemColumnShown, passiveStatusShown = false, false
 
-            if IsShiftKeyDown() then
-                if MouseIsOver(Questie_BaseFrame) then
-                    TrackerLinePool.SetAllPlayButtonAlpha(1)
-                    TrackerFadeTicker.Fade()
+function TrackerUtils:SetTrackerColumns(itemsShown, statusShown)
+    itemColumnShown, passiveStatusShown = itemsShown == true, statusShown == true
+end
 
-                    if not Questie.db.profile.trackerFadeMinMaxButtons then
-                        TrackerLinePool.SetAllExpandQuestAlpha(0)
-                    end
-
-                    if not Questie.db.profile.trackerFadeQuestItemButtons then
-                        TrackerLinePool.SetAllItemButtonAlpha(0)
-                    end
-
-                    if Questie.db.profile.trackerShowQuestFocusButtons and not Questie.db.profile.trackerFadeQuestFocusButtons then
-                        TrackerLinePool.SetAllStatusIconAlpha(0)
-                    end
-                end
-            else
-                if MouseIsOver(Questie_BaseFrame) then
-                    TrackerLinePool.SetAllPlayButtonAlpha(0)
-                    TrackerFadeTicker.Unfade()
-                else
-                    TrackerLinePool.SetAllPlayButtonAlpha(0)
-                    TrackerFadeTicker.Fade()
-                end
-
-                if not Questie.db.profile.trackerFadeMinMaxButtons then
-                    TrackerLinePool.SetAllExpandQuestAlpha(1)
-                end
-
-                if not Questie.db.profile.trackerFadeQuestItemButtons then
-                    TrackerLinePool.SetAllItemButtonAlpha(1)
-                end
-
-                if Questie.db.profile.trackerShowQuestFocusButtons and not Questie.db.profile.trackerFadeQuestFocusButtons then
-                    TrackerLinePool.SetAllStatusIconAlpha(1)
-                end
-            end
-        end
-    end
+function TrackerUtils:GetTrackerMargins()
+    local fontSize = Questie.db.profile.trackerFontSizeQuest
+    local buttonSize, itemButtonSize = fontSize + 3, fontSize + 12
+    local statusSlot = Questie.db.profile.trackerShowQuestFocusButtons and (buttonSize + 2)
+        or (passiveStatusShown and (fontSize + 2) or 0)
+    local playButtonSize = buttonSize + 2
+    local playSlot = self:IsVoiceOverLoaded() and (playButtonSize + 2) or 0
+    local itemColumn = itemColumnShown and itemButtonSize or buttonSize
+    local itemButtonLeft = statusSlot + playSlot
+    local quest = itemButtonLeft + itemColumn + 2
+    return {
+        left = 14, right = 30, quest = quest, objective = quest + fontSize,
+        buttonSize = buttonSize, itemButtonSize = itemButtonSize, itemButtonLeft = itemButtonLeft,
+        expandQuestRight = quest - 2 - math.floor((itemColumn - buttonSize) / 2),
+        playButtonSize = playButtonSize, playButtonRight = itemButtonLeft - 2, statusLeft = 0,
+    }
 end
 
 function TrackerUtils:UpdateVoiceOverPlayButtons()
@@ -647,6 +627,9 @@ function TrackerUtils:UpdateVoiceOverPlayButtons()
                 end
             end
         end
+        TrackerLinePool.UpdateQuestTitleLines(function(line)
+            line.playButton:SetPlayButton(line.Quest.Id)
+        end)
     end
 end
 

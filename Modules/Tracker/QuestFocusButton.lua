@@ -48,7 +48,9 @@ function QuestFocusButton.SetQuest(button, quest, isComplete)
     button:ClearAllPoints()
     button:SetPoint("TOPLEFT", button:GetParent(), "TOPLEFT", 0, 1)
     local texture = (isComplete == true or isComplete == 1) and "complete" or "incomplete"
-    button.texture:SetTexture(QuestieLib.AddonPath .. "Icons\\poi_" .. texture .. (focused and "_focused" or "") .. ".blp")
+    local path = QuestieLib.AddonPath .. "Icons\\poi_" .. texture .. (focused and "_focused" or "") .. ".blp"
+    button.texture:SetTexture(path)
+    button:SetHighlightTexture(path, "ADD")
     if not Questie.db.profile.trackerFadeQuestFocusButtons then
         button:SetAlpha(1)
     elseif not wasFocusButton then

@@ -27,6 +27,7 @@ local specialItem, itemReady, playerLevel = nil, true, 80
 local unpackValues = unpack or table.unpack
 env.GetTime = function() return clock end
 env.InCombatLockdown = function() return combat end
+env.IsAddOnLoaded = function() return false end
 env.GetQuestTimers = function() return unpackValues(timers) end
 env.GetItemCount = function(id) return bags[id] or 0 end
 env.GetItemSpell = function() return itemReady and "Use item" or nil end
@@ -81,7 +82,7 @@ env.TrackerBaseFrame = {Update = function()
     if failLayout then failLayout = false; error("interrupted layout") end
 end}
 env.TrackerLinePool = {ResetLinesForChange = noop, ResetButtonsForChange = noop,
-    HideAllStatusIcons = noop, GetLastLine = function() end}
+    HideAllStatusIcons = noop, RefreshHighlight = noop, GetLastLine = function() end}
 env.TrackerQuestOrder = {GetSortedQuestIds = function(_, quests)
     assert(quests[1] == known and quests[2], "layout must use refreshed mapped and native records")
     return {}, {}

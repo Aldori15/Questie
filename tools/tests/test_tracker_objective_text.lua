@@ -162,6 +162,8 @@ do
     function methods:SetMode(mode) self.mode = mode end
     function methods:SetQuest(quest) self.quest = quest end
     function methods:SetWidth(width) self.width = width end
+    function methods:SetSize(width, height) self.width, self.height = width, height end
+    function methods:SetHighlightTexture(texture) self.highlightTexture = texture end
     function methods:GetWidth() return self.width or 500 end
     function methods:SetHeight(height) self.height = height end
     function methods:GetHeight() return self.height or 12 end
@@ -182,6 +184,7 @@ do
     pool.ResetLinesForChange = function() rows = {} end
     pool.ResetButtonsForChange, pool.HideAllStatusIcons = noop, noop
     pool.HideUnusedLines, pool.HideUnusedButtons, pool.UpdateWrappedLineWidths = noop, noop, noop
+    pool.RefreshHighlight = noop
     pool.GetNextLine = function()
         local row = frame()
         for _, name in ipairs({"label", "expandQuest", "expandZone", "criteriaMark", "playButton"}) do row[name] = frame() end
@@ -208,12 +211,14 @@ do
         loader:ImportModule(name).Update = noop
     end
     loader:ImportModule("TrackerQuestTimers").GetRemainingTime = noop
+    env.IsAddOnLoaded = function() return false end
+    env.QuestLogListScrollFrame = {ScrollBar = {}}
+    loadModule("Modules/Tracker/TrackerUtils.lua", env)
     local utils = loader:ImportModule("TrackerUtils")
     utils.GetCompletionText = noop
     utils.GetUsableQuestItemIds = function() return {} end
     utils.GetQuestItemButtonState = function() return {}, false end
     utils.HasQuest = function() return true end
-    utils.ShowVoiceOverPlayButtons = noop
     utils.UpdateVoiceOverPlayButtons = function() finished = finished + 1 end
     loader:ImportModule("QuestieCombatQueue").Queue = function(_, callback) callback() end
     loader:ImportModule("QuestLogCache").questLog_DO_NOT_MODIFY = {}
@@ -355,8 +360,8 @@ do
     equal(titleRow.statusIcon.texture.texturePath, library.AddonPath .. "Icons\\poi_incomplete.blp", "real redraw wires BLP texture")
     equal(items[1].point[4], 17, "primary item clears focus column")
     equal(items[2].point[4], 43, "secondary item clears primary item and focus column")
-    equal(titleRow.label.point[4], 81, "faded secondary item still reserves title space")
-    equal(titleRow.label:GetWidth(), base:GetWidth() - 81 - 30, "formatting preserves secondary item title margin")
+    equal(titleRow.label.point[4], 69, "faded secondary item still reserves title space")
+    equal(titleRow.label:GetWidth(), base:GetWidth() - 69 - 30, "formatting preserves secondary item title margin")
     equal(items[2]:GetAlpha(), 0, "fixture exercises transparent item controls")
     groups = groups + 1
 end

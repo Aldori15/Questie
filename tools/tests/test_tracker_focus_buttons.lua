@@ -75,6 +75,7 @@ local function setup()
         SetWidth = function(self, width) self.width = width end,
         SetHeight = function(self, height) self.height = height end,
         GetParent = function(self) return self.parent end,
+        SetHighlightTexture = function(self, texture, mode) self.highlightTexture, self.highlightMode = texture, mode end,
         ClearAllPoints = function(self) self.point = nil end,
         SetPoint = function(self, ...) self.point = {...} end,
         SetAlpha = function(self, alpha) self.alpha = alpha end,
@@ -114,6 +115,8 @@ do
             s:render(complete)
             local name = "poi_" .. (complete and "complete" or "incomplete") .. (focused and "_focused" or "") .. ".blp"
             equal(s.texture, s.modules.QuestieLib.AddonPath .. "Icons\\" .. name, "four-state focus texture")
+            equal(s.button.highlightTexture, s.texture, "hover highlights the current focus icon itself")
+            equal(s.button.highlightMode, "ADD", "native additive hover keeps the focus icon shape")
         end
     end
     equal(s.button.width, 15, "focus button follows quest font size")

@@ -623,6 +623,13 @@ end
 -- Only a completed layout is current. Explicit requests invalidate before throttling.
 local layoutRevision
 
+local function IsQuestShown(questId, quest, complete)
+    local profile, char = Questie.db.profile, Questie.db.char
+    return (complete ~= 1 or profile.trackerShowCompleteQuests or quest.trackTimedQuest or quest.timedBlizzardQuest)
+        and ((profile.autoTrackQuests and not char.AutoUntrackedQuests[questId])
+            or (not profile.autoTrackQuests and char.TrackedQuests[questId]))
+end
+
 local function _Update(self, force, onlyIfChanged)
     if not onlyIfChanged then layoutRevision = nil end
     -- Prevents calling the tracker too often, especially when the QuestieCombatQueue empties after combat ends
@@ -672,16 +679,32 @@ local function _Update(self, force, onlyIfChanged)
     trackerLineWidth = 0
 
     -- Setup local QuestieTracker:Update vars
+    local sortedQuestIds, questDetails = TrackerQuestOrder:GetSortedQuestIds(quests)
     local trackerFontSizeZone = Questie.db.profile.trackerFontSizeZone
     local trackerFontSizeQuest = Questie.db.profile.trackerFontSizeQuest
-    local questMarginLeft = (trackerMarginLeft + trackerMarginRight) - (18 - trackerFontSizeQuest) + QuestFocusButton.GetColumnWidth()
-    local objectiveMarginLeft = questMarginLeft + trackerFontSizeQuest
-    local questItemButtonSize = 12 + trackerFontSizeQuest
+    local itemColumnShown, questTitlesShown = false, false
+    for _, questId in ipairs(sortedQuestIds) do
+        local details = questDetails[questId]
+        local quest = details.quest
+        local complete = quest:IsComplete()
+        if IsQuestShown(questId, quest, complete) and not Questie.db.char.collapsedZones[details.zoneName] then
+            questTitlesShown = true
+            local timedQuest = quest.trackTimedQuest or quest.timedBlizzardQuest
+            local minimizable = complete == 1 or complete == -1 or (#quest.Objectives == 0 and quest.isComplete == true)
+            local autoCollapsed = Questie.db.profile.collapseCompletedQuests and minimizable and not timedQuest
+            if not Questie.db.char.collapsedQuests[questId] and not autoCollapsed then
+                local items, usableWhenComplete = TrackerUtils:GetQuestItemButtonState(quest, complete)
+                if items[1] and (complete ~= 1 or usableWhenComplete) then itemColumnShown = true end
+            end
+        end
+    end
+    TrackerUtils:SetTrackerColumns(itemColumnShown, questTitlesShown)
+    local margins = TrackerUtils:GetTrackerMargins()
+    local questMarginLeft, objectiveMarginLeft = margins.quest, margins.objective
+    local questItemButtonSize = margins.itemButtonSize
     local objectiveColor = Questie.db.profile.trackerColorObjectives
 
     local line
-
-    local sortedQuestIds, questDetails = TrackerQuestOrder:GetSortedQuestIds(quests)
 
     local firstQuestInZone = false
     local zoneCheck
@@ -693,7 +716,7 @@ local function _Update(self, force, onlyIfChanged)
     local _UpdateQuests = function()
         for _, questId in ipairs(sortedQuestIds) do
             -- reset objectiveMarginLeft for each quest, it can be increased if there are quest items
-            objectiveMarginLeft = questMarginLeft + trackerFontSizeQuest
+            local objectiveMarginLeft = margins.objective
 
             local quest = questDetails[questId].quest
             local cachedObjectives = QuestLogCache.questLog_DO_NOT_MODIFY[questId] and QuestLogCache.questLog_DO_NOT_MODIFY[questId].objectives
@@ -702,10 +725,7 @@ local function _Update(self, force, onlyIfChanged)
             local timeRemainingString, timeRemaining = TrackerQuestTimers:GetRemainingTime(quest, nil, true)
             local timedQuest = (quest.trackTimedQuest or quest.timedBlizzardQuest)
 
-            if (complete ~= 1 or Questie.db.profile.trackerShowCompleteQuests or timedQuest)
-                and (Questie.db.profile.autoTrackQuests and not Questie.db.char.AutoUntrackedQuests[questId])
-                or ((complete ~= 1 or Questie.db.profile.trackerShowCompleteQuests or timedQuest)
-                    and not Questie.db.profile.autoTrackQuests and Questie.db.char.TrackedQuests[questId]) then
+            if IsQuestShown(questId, quest, complete) then
                 -- Add Quest Zones
                 if zoneCheck ~= zoneName then
                     firstQuestInZone = true
@@ -798,7 +818,8 @@ local function _Update(self, force, onlyIfChanged)
                     line.criteriaMark:Hide()
 
                     -- Set Min/Max Button and default states
-                    line.expandQuest:SetPoint("TOPRIGHT", line, "TOPLEFT", questMarginLeft - 8, 1)
+                    line.expandQuest:ClearAllPoints()
+                    line.expandQuest:SetPoint("TOPRIGHT", line, "TOPLEFT", margins.expandQuestRight, 1)
                     line.expandQuest.zoneId = zoneName
 
 
@@ -928,7 +949,8 @@ local function _Update(self, force, onlyIfChanged)
                             end
 
                             -- Attach button to Quest Title linePool
-                            button:SetPoint("TOPLEFT", button.line, "TOPLEFT", QuestFocusButton.GetColumnWidth(), 0)
+                            button:ClearAllPoints()
+                            button:SetPoint("TOPLEFT", button.line, "TOPLEFT", margins.itemButtonLeft, 1)
                             button:SetParent(button.line)
                             button:Show()
 
@@ -1003,7 +1025,8 @@ local function _Update(self, force, onlyIfChanged)
                             end
 
                             -- Attach button to Quest Title linePool
-                            altButton:SetPoint("TOPLEFT", altButton.line, "TOPLEFT", QuestFocusButton.GetColumnWidth() + 2 + questItemButtonSize, 0)
+                            altButton:ClearAllPoints()
+                            altButton:SetPoint("TOPLEFT", altButton.line, "TOPLEFT", margins.quest, 1)
                             altButton:SetParent(altButton.line)
                             altButton:Show()
 
@@ -1427,7 +1450,8 @@ local function _Update(self, force, onlyIfChanged)
 
                         -- Set Min/Max Button and default states
                         line.expandQuest:Show()
-                        line.expandQuest:SetPoint("TOPRIGHT", line, "TOPLEFT", questMarginLeft - 8, 1)
+                        line.expandQuest:ClearAllPoints()
+                        line.expandQuest:SetPoint("TOPRIGHT", line, "TOPLEFT", margins.expandQuestRight, 1)
                         line.expandQuest.zoneId = zoneName
 
                         -- The minAllQuestsInZone table is always blank until a player Shift+Clicks the Zone header (MouseDown).
@@ -1618,6 +1642,7 @@ local function _Update(self, force, onlyIfChanged)
     if line then
         QuestieTracker:UpdateFormatting()
     end
+    TrackerLinePool.RefreshHighlight()
 
     layoutRevision = revision
 
@@ -1677,9 +1702,9 @@ function QuestieTracker:UpdateFormatting()
         local trackerVarsCombined = trackerLineWidth + trackerMarginRight
         TrackerLinePool.UpdateWrappedLineWidths(trackerLineWidth)
         local trackerFontSizeQuest = Questie.db.profile.trackerFontSizeQuest
-        local questMarginLeft = (trackerMarginLeft + trackerMarginRight) - (18 - trackerFontSizeQuest) + QuestFocusButton.GetColumnWidth()
-        local objectiveMarginLeft = questMarginLeft + trackerFontSizeQuest
-        local questItemButtonSize = 12 + trackerFontSizeQuest
+        local margins = TrackerUtils:GetTrackerMargins()
+        local questMarginLeft, objectiveMarginLeft = margins.quest, margins.objective
+        local questItemButtonSize = margins.itemButtonSize
 
         TrackerLinePool.UpdateObjectiveLines(function(line)
             if line.questHasSecondaryQIB then
@@ -1723,7 +1748,6 @@ function QuestieTracker:UpdateFormatting()
         trackerBaseFrame:SetMinResize(TrackerLinePool.GetFirstLine().label:GetUnboundedStringWidth() + 40, Questie.db.profile.trackerFontSizeZone + 22)
     end
 
-    TrackerUtils:ShowVoiceOverPlayButtons()
     TrackerUtils:UpdateVoiceOverPlayButtons()
 end
 

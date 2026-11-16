@@ -330,30 +330,4 @@ do
     equal(extra.width, 16, "quest focus cleanup restores all selected icons")
     groups = groups + 1
 end
-do
-    local s = setup()
-    local profile = s.env.Questie.db.profile
-    profile.trackerShowQuestFocusButtons, profile.trackerFadeQuestFocusButtons = true, true
-    s.char.isTrackerExpanded = true
-    s.env.IsAddOnLoaded = function() return true end
-    s.env.MouseIsOver = function() return true end
-    s.env.Questie_BaseFrame = {}
-    local shift, alpha = true, nil
-    s.env.IsShiftKeyDown = function() return shift end
-    local pool = s.modules.TrackerLinePool
-    pool.SetAllPlayButtonAlpha, pool.SetAllExpandQuestAlpha, pool.SetAllItemButtonAlpha = noop, noop, noop
-    pool.SetAllStatusIconAlpha = function(value) alpha = value end
-    s.modules.TrackerFadeTicker.Fade, s.modules.TrackerFadeTicker.Unfade = noop, noop
-    s.utils:ShowVoiceOverPlayButtons()
-    shift = false
-    s.utils:ShowVoiceOverPlayButtons()
-    equal(alpha, nil, "VoiceOver leaves independently fading focus controls to the fade ticker")
-    profile.trackerFadeQuestFocusButtons, shift = false, true
-    s.utils:ShowVoiceOverPlayButtons()
-    equal(alpha, 0, "VoiceOver Shift hides non-fading focus controls")
-    shift = false
-    s.utils:ShowVoiceOverPlayButtons()
-    equal(alpha, 1, "VoiceOver release restores non-fading focus controls")
-    groups = groups + 1
-end
 print("Tracker Show on Map: " .. groups .. " groups passed (menus, ownership, visibility, nearest map and flash races)")

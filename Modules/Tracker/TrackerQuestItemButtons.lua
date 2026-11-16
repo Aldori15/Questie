@@ -7,6 +7,7 @@ local QuestieTracker = QuestieLoader:ImportModule("QuestieTracker")
 local TrackerBaseFrame = QuestieLoader:ImportModule("TrackerBaseFrame")
 ---@type TrackerFadeTicker
 local TrackerFadeTicker = QuestieLoader:ImportModule("TrackerFadeTicker")
+local TrackerLinePool = QuestieLoader:ImportModule("TrackerLinePool")
 ---@type QuestieCombatQueue
 local QuestieCombatQueue = QuestieLoader:ImportModule("QuestieCombatQueue")
 ---@type QuestieDB
@@ -265,12 +266,15 @@ function TrackerQuestItemButtons.Initialize()
             GameTooltip:Show()
 
             TrackerFadeTicker.Unfade(self)
+            local line = self:GetParent()
+            if line and line.Quest then TrackerLinePool.OnHighlightEnter(line) end
         end
 
         btn.OnLeave = function(self)
             GameTooltip:Hide()
 
             TrackerFadeTicker.Fade(self)
+            TrackerLinePool.OnHighlightLeave()
         end
 
         btn.FakeHide = function(self)

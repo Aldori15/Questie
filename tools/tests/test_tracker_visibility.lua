@@ -44,7 +44,7 @@ local function setup(options)
     loader:ImportModule("QuestieCombatQueue").Initialize()
     local utils = loader:ImportModule("TrackerUtils")
     utils.HasQuest = function() return s.hasQuest end
-    utils.ShowVoiceOverPlayButtons, utils.UpdateVoiceOverPlayButtons = noop, noop
+    utils.UpdateVoiceOverPlayButtons = noop
     for _, name in ipairs({"TrackerBaseFrame", "TrackerHeaderFrame", "TrackerQuestFrame"}) do loader:ImportModule(name).Update = noop end
     local pool = loader:ImportModule("TrackerLinePool")
     pool.HideUnusedLines, pool.HideUnusedButtons = noop, noop
