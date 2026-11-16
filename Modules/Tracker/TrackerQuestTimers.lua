@@ -164,6 +164,7 @@ function TrackerQuestTimers:UpdateTimerFrame(frame, questId, timeRemainingString
             _ApplyTimerText(timerFrame, timeRemainingString)
         else
             Questie.Debug(Questie.DEBUG_SPAM, "[TrackerQuestTimers] Quest Timer Expired!")
+            timerFrame.label:SetText("")
             if timer and timer.frame == timerFrame and timer.questId == timerQuestId then
                 timer = nil
             end

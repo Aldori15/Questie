@@ -1085,7 +1085,7 @@ local function _Update(self, force, onlyIfChanged)
                         if quest.timedBlizzardQuest then
                             timerLabelText = Questie:Colorize(l10n("Blizzard Timer Active") .. "!", "blue")
                         elseif timeRemaining then
-                            if timeRemaining <= 1 then
+                            if timeRemaining <= 0 then
                                 timerLabelText = Questie:Colorize(l10n("Time's up!"), "lightBlue")
                             else
                                 timerLabelText = Questie:Colorize(timeRemainingString, "lightBlue")
