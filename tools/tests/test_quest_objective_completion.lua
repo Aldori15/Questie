@@ -619,4 +619,50 @@ for _, kind in ipairs({"monster", "object"}) do
     tests = tests + 1
 end
 
+-- Tooltip refreshes can retain an objective while asynchronous removal clears its cache.
+for _, change in ipairs({"removed", "cache-missing", "present"}) do
+    local s = setup(false)
+    local objective = s.quest.Objectives[1]
+    objective.isUpdated = false
+    s.setObjectives({{type = "item", text = "Wicked Sun Brooch", raw_text = "Wicked Sun Brooch: 1/1",
+        numFulfilled = 1, numRequired = 1, finished = true}})
+    local reads = 0
+    local get = s.modules.QuestLogCache.GetQuestObjectives
+    s.modules.QuestLogCache.GetQuestObjectives = function(...)
+        reads = reads + 1
+        return get(...)
+    end
+    if change == "removed" then s.remove() end
+    if change == "cache-missing" then s.setObjectives(nil) end
+    objective:Update()
+    equal(reads, change == "present" and 1 or 0, "objective refresh only reads a live cache: " .. change)
+    equal(objective.Collected, change == "present" and 1 or 0, "stale refresh preserves progress: " .. change)
+    equal(objective.Completed, change == "present", "live objective still updates completion: " .. change)
+    tests = tests + 1
+end
+
+-- A missing source item is only synthesized when a valid empty leaderboard exists.
+for _, missing in ipairs({true, false}) do
+    local s = setup(false)
+    s.quest.sourceItemId = 12345
+    s.quest.Objectives, s.quest.ObjectiveData = {}, {}
+    s.env.GetContainerNumSlots = function() return 0 end
+    s.setObjectives({})
+    if missing then s.setObjectives(nil) end
+    local reads, get = 0, s.modules.QuestLogCache.GetQuestObjectives
+    s.modules.QuestLogCache.GetQuestObjectives = function(...)
+        reads = reads + 1
+        return get(...)
+    end
+    local ok, message = pcall(function() s.module:CheckQuestSourceItem(s.quest.Id, true) end)
+    assert(ok, "source-item refresh tolerates missing leaderboard: " .. tostring(message))
+    equal(reads, missing and 0 or 1, "source-item refresh only reads a live cache")
+    if missing then
+        equal(next(s.quest.Objectives), nil, "missing cache cannot invent a source-item objective")
+    else
+        equal(s.quest.Objectives[1].Id, 12345, "valid empty leaderboard retains source-item guidance")
+    end
+    tests = tests + 1
+end
+
 print("Quest objective completion regression tests passed (" .. tests .. " groups)")

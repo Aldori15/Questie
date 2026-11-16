@@ -437,6 +437,36 @@ do
     assert(tip.npcAndObjectOrder["Patrol NPC"]["Quest 2"], "distant faded route owner remains in path tooltip")
     equal(tip._owner, env.Minimap, "path tooltip rebuild owner remains map root")
 
+    -- An unloading route can share a tooltip with live routes. Skip its local objective, not the whole cluster.
+    local player = env.QuestieLoader:ImportModule("QuestiePlayer")
+    local cache = env.QuestieLoader:ImportModule("QuestLogCache")
+    player.currentQuestlog = {[2] = {}}
+    local cached = {[2] = {}}
+    cache.TryGetQuest = function(id) return cached[id] end
+    local oldObjectiveTooltip = private.GetObjectiveTooltip
+    private.GetObjectiveTooltip = function() return {} end
+    first.data.Type, second.data.Type = "monster", "monster"
+    first.data.ObjectiveData = {Description = "Removed objective", Update = function() error("removed objective updated") end}
+    second.data.ObjectiveData = {Description = "Live objective", Update = function() end}
+    local function collect()
+        local ok, message = pcall(show, first, tip, env.Minimap, {first, second})
+        assert(not ok and tostring(message):find(sentinel, 1, true), tostring(message))
+    end
+    collect()
+    assert(not tip.questOrder[1] and tip.questOrder[2], "retired local objective cannot hide a live cluster member")
+    player.currentQuestlog[1] = {}
+    collect()
+    assert(not tip.questOrder[1], "an objective whose cache was removed stays out of map tooltips")
+    player.currentQuestlog[1] = nil
+    first.data.ObjectiveData.IsPartyObjective = true
+    first.data.ObjectiveData.Update = function() end
+    collect()
+    assert(tip.questOrder[1] and tip.questOrder[2], "party objectives survive without local quest membership or cache")
+    private.GetObjectiveTooltip = oldObjectiveTooltip
+    first.data.Type, second.data.Type = "available", "available"
+    first.data.ObjectiveData, second.data.ObjectiveData = nil, nil
+    collect()
+
     -- Rebuild the real chain tooltip with only its row/title rendering stubbed.
     local titles, reasons = {}, {}
     local db, lib = mods.QuestieDB, mods.QuestieLib

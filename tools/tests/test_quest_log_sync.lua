@@ -437,4 +437,94 @@ do
     assert(h.modules.QuestiePlayer.currentQuestlog[84], "delayed abandonment releases a marker for an already absent row")
 end
 
-print("Quest log sync regressions passed (item loss, loading snapshots, discovery, adoption, turn-in/abandon ordering, acceptance ownership and native quests)")
+-- GetAllQuestIds yields after five quests; live removals and tooltips can run between batches.
+local function beginQuestLogRebuild()
+    local h = harness()
+    for id = 1, 6 do h:add(id, {objective("Item", 0, 1)}, nil, true) end
+    h.events:UpdateAllQuests()
+    local draws = {}
+    for id = 1, 6 do draws[id] = h.draws[id] end
+    local thread = coroutine.create(function() h.modules.QuestieQuest:GetAllQuestIds() end)
+    local ok, message = coroutine.resume(thread)
+    assert(ok, message)
+    equal(coroutine.status(thread), "suspended", "rebuild pauses between quest batches")
+    local pending
+    for id = 1, 6 do
+        if h.draws[id] == draws[id] then pending = id; break end
+    end
+    assert(pending, "one snapshot quest waits for the next rebuild batch")
+    return h, thread, pending
+end
+local function finishQuestLogRebuild(thread)
+    while coroutine.status(thread) ~= "dead" do
+        local ok, message = coroutine.resume(thread)
+        assert(ok, message)
+    end
+end
+
+do
+    local h, thread, pending = beginQuestLogRebuild()
+    assert(h.cache.TryGetQuest(pending), "pending quest remains cached during the rebuild")
+    assert(h.env.QuestieCompat.GetQuestLogIndexByID(pending) > 0, "pending quest remains in the native log")
+    equal(h.modules.QuestiePlayer.currentQuestlog[pending], h.records[pending].quest,
+        "rebuild preserves pending accepted membership")
+
+    h.env.UnitName = function() return "Tester" end
+    h.env.QuestieCompat.IsInGroup = function() return false end
+    h.modules.QuestiePlayer.numberOfGroupMembers = 0
+    h.modules.QuestiePlayer.GetPartyMemberByName = noop
+    local lib = h.modules.QuestieLib
+    lib.AddonPath = "Interface\\AddOns\\Questie-335\\"
+    lib.GetColoredQuestName = function(_, id) return "Quest " .. id end
+    lib.GetRGBForObjective = function() return "|cFFFFFFFF" end
+    lib.GetObjectiveDescription = function(_, entry) return entry.Description end
+    lib.SortQuestIDsByLevel = function(_, ids)
+        local sorted = {}
+        for id in pairs(ids) do sorted[#sorted + 1] = id end
+        table.sort(sorted)
+        return sorted
+    end
+    h.modules.QuestieDB.GetItemDroprate = noop
+    h.loadModule("Modules/Tooltips/Tooltip.lua")
+    h.modules.QuestieComms.remotePlayerEnabled = {}
+    local tips = h.modules.QuestieTooltips
+    local entry = {Index = 1, Id = 1, Type = "monster", Description = "Rebuild objective",
+        Needed = 1, Collected = 0, Update = noop}
+    h.records[pending].quest.Objectives[1] = entry
+    tips:RegisterObjectiveTooltip(pending, "m_1", entry)
+    local lines = tips:GetTooltip("m_1")
+    assert(tips.lookupByKey.m_1[pending .. " 1"], "hover during rebuild cannot purge an accepted objective")
+    assert(lines and #lines == 2 and lines[2]:find("Rebuild objective", 1, true),
+        "hover during rebuild retains the objective text")
+    finishQuestLogRebuild(thread)
+end
+
+do
+    local h, thread, pending = beginQuestLogRebuild()
+    local draws = h.draws[pending]
+    h.events:QuestTurnedIn(pending)
+    h.events:QuestRemoved(pending)
+    h.records[pending].present = false
+    for index, id in ipairs(h.order) do
+        if id == pending then table.remove(h.order, index); break end
+    end
+    finishQuestLogRebuild(thread)
+    equal(h.modules.QuestiePlayer.currentQuestlog[pending], nil, "old rebuild snapshot cannot restore a turned-in quest")
+    equal(h.cache.TryGetQuest(pending), nil, "rebuild leaves the turned-in cache removed")
+    equal(h.draws[pending], draws, "rebuild cannot draw the removed snapshot quest")
+end
+
+do
+    local h, thread, pending = beginQuestLogRebuild()
+    local quest, draws = h.records[pending].quest, h.draws[pending]
+    h.events:QuestRemoved(pending, true)
+    h.modules.QuestieAnnounce.AcceptedQuest = noop
+    h.events:QuestAccepted(h.env.QuestieCompat.GetQuestLogIndexByID(pending), pending)
+    equal(h.modules.QuestiePlayer.currentQuestlog[pending], quest, "reacceptance reuses the database quest object")
+    equal(h.draws[pending], draws + 1, "new acceptance draws its objectives once")
+    finishQuestLogRebuild(thread)
+    equal(h.draws[pending], draws + 1, "old rebuild cannot redraw a replacement acceptance")
+    equal(h.accepts, 1, "reacceptance is recorded once during rebuild")
+end
+
+print("Quest log sync regressions passed (item loss, loading snapshots, discovery, adoption, turn-in/abandon ordering, acceptance ownership, rebuilds and native quests)")

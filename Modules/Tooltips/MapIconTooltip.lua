@@ -12,6 +12,7 @@ local QuestieReputation = QuestieLoader:ImportModule("QuestieReputation")
 local QuestieCorrections = QuestieLoader:ImportModule("QuestieCorrections")
 ---@type QuestiePlayer
 local QuestiePlayer = QuestieLoader:ImportModule("QuestiePlayer")
+local QuestLogCache = QuestieLoader:ImportModule("QuestLogCache")
 ---@type QuestieEvent
 local QuestieEvent = QuestieLoader:ImportModule("QuestieEvent")
 ---@type QuestieDB
@@ -209,7 +210,9 @@ function MapIconTooltip.ShowOnTooltip(self, targetTooltip, owner, icons)
 
                     local tip = _MapIconTooltip:GetAvailableOrCompleteTooltip(icon)
                     npcAndObjectOrder[iconData.Name][tip.title] = tip
-                elseif iconData.ObjectiveData and iconData.ObjectiveData.Description then
+                elseif iconData.ObjectiveData and iconData.ObjectiveData.Description
+                    and (iconData.ObjectiveData.IsPartyObjective
+                        or (QuestiePlayer.currentQuestlog[iconData.Id] and QuestLogCache.TryGetQuest(iconData.Id))) then
                     local key = iconData.Id
                     if not questOrder[key] then
                         questOrder[key] = {};

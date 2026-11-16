@@ -30,6 +30,7 @@ modules.AvailableQuests = {RemoveAvailableQuest = noop}
 modules.QuestiePlayer = {currentQuestlog = {}, faction = "Alliance",
     HasRequiredRace = function() return true end, HasRequiredClass = function() return true end}
 modules.QuestLogCache = {questLog_DO_NOT_MODIFY = {[1] = {isComplete = 0}, [3] = {isComplete = 1}}}
+modules.QuestLogCache.TryGetQuest = function(id) return modules.QuestLogCache.questLog_DO_NOT_MODIFY[id] end
 modules.QuestieLib = {GetEffectiveQuestLevel = function() return 10, 1 end,
     TableMemoizeFunction = function(_, fn)
         return setmetatable({}, {__index = function(tbl, key)
@@ -138,8 +139,13 @@ local event = modules.QuestieEvent
 local file = assert(io.open("Modules/Quest/QuestieQuest.lua", "r"))
 local source = file:read("*a"):gsub("\r\n", "\n"); file:close()
 env.QuestiePlayer = player
+loadModule("Modules/Quest/Lifecycle/QuestLifecycle.lua")
+env.QuestLifecycle = modules.QuestLifecycle
 local guardSource = assert(source:match("(local function _IsCurrentObjectiveDraw.-\nend)"))
-local canDraw = assert(load(guardSource .. "\nreturn _IsCurrentObjectiveDraw", "@QuestieQuest.lua", "t", env))()
+local currentDraw = assert(load(guardSource .. "\nreturn _IsCurrentObjectiveDraw", "@QuestieQuest.lua", "t", env))()
+local function canDraw(quest, objective, cache)
+    return currentDraw(quest, objective, cache, modules.QuestLifecycle.GetAcceptance(quest.Id))
+end
 local starter = db.GetQuestStartInfo(2)
 equal(starter.Id, 2, "starter quest ID")
 equal(starter.name, "Fixture quest 2", "starter name")
@@ -463,3 +469,52 @@ player.currentQuestlog[1] = nil
 drain()
 equal(markerX(1, objective), nil, "asynchronous refresh cannot redraw abandoned acceptance")
 print("Quest cache invalidation: active identities, real NPC/objective/special/finisher coordinates, visibility, unchanged locations and stale-draw guards passed")
+
+-- Special objectives survive on the shared database object across acceptances.
+-- A draw still preparing its first frames has nothing for removal to unload.
+local lifecycle = modules.QuestLifecycle
+for _, change in ipairs({"removed", "reaccepted", "queued-reaccepted", "present", "party"}) do
+    player.currentQuestlog[1] = active
+    lifecycle.InvalidateQuestWork(1)
+    frames, jobs = {}, {}
+    local special = {Id = npcId, Type = "monster", Index = 65, Description = "Persistent special objective",
+        Completed = false, AlreadySpawned = {}, Update = noop, IsPartyObjective = change == "party",
+        spawnList = {[npcId] = {Id = npcId, Name = "Special target", Spawns = {[12] = {}},
+            Icon = 123, GetIconScale = function() return 1 end}}}
+    for index = 1, 61 do special.spawnList[npcId].Spawns[12][index] = {10 + index / 100, 20} end
+    active.Objectives, active.SpecialObjectives = {}, {special}
+    local acceptance = lifecycle.GetAcceptance(1)
+    local thread
+    if change == "party" then
+        player.currentQuestlog[1] = nil
+        thread = coroutine.create(function() questModule:PopulateObjective(active, 0, special, true) end)
+    else
+        questModule:UpdateObjectiveNotes(active)
+        equal(#jobs, 1, "one special-objective draw queued")
+        thread = table.remove(jobs, 1).thread
+    end
+    local function removeAcceptance()
+        lifecycle.InvalidateQuestWork(1)
+        player.currentQuestlog[1] = nil
+        active.Objectives = {}
+        if change ~= "removed" then
+            player.currentQuestlog[1] = active
+            assert(lifecycle.GetAcceptance(1) ~= acceptance, "reacceptance owns a new token")
+        end
+    end
+    if change == "queued-reaccepted" then removeAcceptance() end
+    local ok, message = coroutine.resume(thread); assert(ok, message)
+    if change ~= "party" and change ~= "queued-reaccepted" then
+        equal(coroutine.status(thread), "suspended", "preparation yields before its first frame")
+        equal(#frames, 0, "no frame yet exists for removal to invalidate")
+    end
+    if change == "removed" or change == "reaccepted" then
+        removeAcceptance()
+    end
+    while coroutine.status(thread) ~= "dead" do
+        ok, message = coroutine.resume(thread); assert(ok, message)
+    end
+    equal(#frames, (change == "present" or change == "party") and 61 or 0,
+        "only current or party preparation draws: " .. change)
+end
+print("Quest acceptance drawing: removed, reaccepted, queued, valid and party special objectives passed (5 groups)")

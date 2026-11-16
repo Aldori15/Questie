@@ -19,6 +19,10 @@ env.QuestieLoader = {
 }
 modules.ZoneDB = {zoneIDs = {ICECROWN = 210}}
 modules.QuestLogCache = {questLog_DO_NOT_MODIFY = {}}
+modules.QuestLogCache.TryGetQuest = function(id) return modules.QuestLogCache.questLog_DO_NOT_MODIFY[id] end
+env.QuestieCompat.GetQuestLogIndexByID = function(id)
+    if modules.QuestLogCache.TryGetQuest(id) then return 1 end
+end
 modules.QuestieLib = {ColorWheel = function() return {} end}
 assert(loadfile("Database/QuestieDB.lua", "t", env))()
 assert(loadfile("Modules/Quest/QuestieQuest.lua", "t", env))()

@@ -272,6 +272,8 @@ do
         assert(mask == 2); return math.floor(value / 2) % 2 * 2
     end}
     env.FixtureLog = {GetQuest = function() return state.entry end}
+    env.FixtureLog.TryGetQuest = env.FixtureLog.GetQuest
+    env.FixturePlayer = {currentQuestlog = {[155] = true}}
     env.FixtureDB = {questEventTooltipTargets = {[155] = {{"monster", 467}}}}
     env.FixtureAvailable = {RemoveQuest = function(_, callback) callback() end}
     env.FixtureLib = {GetFullObjectiveText = function(text) return text end}
@@ -279,6 +281,7 @@ do
     local prefix = 'local QuestieQuest, _QuestieQuest = FixtureQuest, FixturePrivate\n'
         .. 'local Questie, QuestieLib = FixtureAddon, FixtureLib\n'
         .. 'local QuestLogCache, AvailableQuests = FixtureLog, FixtureAvailable\n'
+        .. 'local QuestiePlayer = FixturePlayer\nlocal _IsQuestInLog = function() return true end\n'
         .. 'local QuestieDB = FixtureDB\n'
         .. 'local _UpdateOptionalTravelHints = function() end\n'
     loadFunction("Modules/Quest/QuestieQuest.lua", "function _QuestieQuest.ObjectiveUpdate(self)", prefix, env)

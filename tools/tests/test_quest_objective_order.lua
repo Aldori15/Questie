@@ -62,6 +62,7 @@ db.questData = rows
 loadModule("Modules/QuestieStream.lua")
 loadModule("Database/compiler.lua")
 loadModule("Modules/Quest/QuestieQuest.lua")
+loadModule("Modules/Quest/Lifecycle/QuestLifecycle.lua")
 loadModule("Modules/Quest/QuestieQuestPrivates.lua")
 local compiler, questModule = modules.DBCompiler, modules.QuestieQuest
 
@@ -184,6 +185,7 @@ local native = {
     {type = "monster", text = "Slitherblade Sorceress", numFulfilled = 0, numRequired = 5},
 }
 modules.QuestLogCache.GetQuest = function() return {isComplete = 0} end
+modules.QuestLogCache.TryGetQuest = modules.QuestLogCache.GetQuest
 modules.QuestLogCache.GetQuestObjectives = function() return native end
 local frames, tooltips = {}, {}
 modules.QuestiePlayer.currentQuestlog = {}

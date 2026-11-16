@@ -98,8 +98,11 @@ local function _UnloadQuestFrames(questId, callback)
 end
 
 local function _RunPopulateObjective(quest, objectiveIndex, objective, blockItemTooltips, onComplete)
+    -- Capture before scheduling: the same database object can be accepted again before the thread starts.
+    local acceptance = not objective.IsPartyObjective and QuestLifecycle.GetAcceptance(quest.Id)
+    if not objective.IsPartyObjective and not acceptance then return end
     if coRunning() then
-        QuestieQuest:PopulateObjective(quest, objectiveIndex, objective, blockItemTooltips)
+        QuestieQuest:PopulateObjective(quest, objectiveIndex, objective, blockItemTooltips, acceptance)
         if onComplete then
             onComplete()
         end
@@ -107,7 +110,7 @@ local function _RunPopulateObjective(quest, objectiveIndex, objective, blockItem
     end
 
     return ThreadLib.ThreadCallbackInstant(function()
-        QuestieQuest:PopulateObjective(quest, objectiveIndex, objective, blockItemTooltips)
+        QuestieQuest:PopulateObjective(quest, objectiveIndex, objective, blockItemTooltips, acceptance)
     end, function(success)
         if success and onComplete then
             onComplete()
@@ -881,17 +884,30 @@ function QuestieQuest:GetAllQuestIds()
 
     assert(coRunning(), "GetAllQuestIds must be called from a coroutine")
 
-    QuestiePlayer.currentQuestlog = {}
+    -- Keep still-logged quests visible to tooltip and lifecycle consumers while the rebuild yields.
+    for questId in pairs(QuestiePlayer.currentQuestlog) do
+        if not QuestLogCache.TryGetQuest(questId) or not _IsQuestInLog(questId) then
+            QuestiePlayer.currentQuestlog[questId] = nil
+            QuestLifecycle.InvalidateQuestWork(questId)
+        end
+    end
 
-    -- Snapshot titles before yielding so the live quest-log cache cannot change during traversal.
-    local questTitles = {}
+    local questSnapshots = {}
     for questId, data in pairs(QuestLogCache.questLog_DO_NOT_MODIFY) do
-        questTitles[questId] = data.title
+        questSnapshots[questId] = {
+            cache = data,
+            quest = QuestiePlayer.currentQuestlog[questId],
+            acceptance = QuestLifecycle.GetAcceptance(questId),
+        }
     end
 
     local yieldCounter = 0
-    for questId, title in pairs(questTitles) do
-        if QuestieDB.HasQuestData(questId) then
+    for questId, snapshot in pairs(questSnapshots) do
+        -- Removal or reacceptance can replace both cache data and ownership while another quest is drawn.
+        if QuestLogCache.TryGetQuest(questId) == snapshot.cache and _IsQuestInLog(questId)
+            and QuestiePlayer.currentQuestlog[questId] == snapshot.quest
+            and (not snapshot.acceptance or QuestLifecycle.IsCurrentAcceptance(questId, snapshot.acceptance))
+            and QuestieDB.HasQuestData(questId) then
             --Keep the object in the questlog to save searching
             local quest = QuestieDB.GetQuest(questId)
 
@@ -1156,7 +1172,11 @@ function QuestieQuest:CheckQuestSourceItem(questId, makeObjective)
         -- If we are missing the sourceItem for zero objective quests then make an objective for it so the
         -- player has a visual indication as to what item is missing and so the quest has a "tag" of some kind.
         -- Also double check the quests leaderboard and make sure an objective doesn't already exist.
-        if (not sourceItem) and makeObjective and (not QuestieQuest:GetAllLeaderBoardDetails(quest.Id)[1]) then
+        local leaderBoard
+        if (not sourceItem) and makeObjective and QuestLogCache.TryGetQuest(questId) and _IsQuestInLog(questId) then
+            leaderBoard = QuestieQuest:GetAllLeaderBoardDetails(questId)
+        end
+        if leaderBoard and not leaderBoard[1] then
             local itemName = QuestieDB.QueryItemSingle(quest.sourceItemId, "name")
             quest.Objectives = {
                 [1] = {
@@ -1374,13 +1394,17 @@ end
 
 -- Draw preparation and patrol drawing can yield while completion or removal unloads
 -- the quest. Only resume work for the same active objective and spawn cache.
-local function _IsCurrentObjectiveDraw(quest, objective, spawnCache)
+local function _IsCurrentObjectiveDraw(quest, objective, spawnCache, acceptance)
     if objective.Completed or objective.AlreadySpawned ~= spawnCache then
         return false
     end
 
     if objective.IsPartyObjective then
         return true
+    end
+
+    if not QuestLifecycle.IsCurrentAcceptance(quest.Id, acceptance) then
+        return false
     end
 
     local status = quest:IsComplete()
@@ -1408,11 +1432,17 @@ end
 ---@param objectiveIndex ObjectiveIndex
 ---@param objective QuestObjective
 ---@param blockItemTooltips any
-function QuestieQuest:PopulateObjective(quest, objectiveIndex, objective, blockItemTooltips)
+function QuestieQuest:PopulateObjective(quest, objectiveIndex, objective, blockItemTooltips, acceptance)
     assert(coRunning(), "PopulateObjective must be called from a coroutine")
     Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest:PopulateObjective]", objective.Description)
 
-    if objective.Optional and not _IsCurrentObjectiveDraw(quest, objective, objective.AlreadySpawned) then
+    if not objective.IsPartyObjective then
+        acceptance = acceptance or QuestLifecycle.GetAcceptance(quest.Id)
+        if not QuestLifecycle.IsCurrentAcceptance(quest.Id, acceptance)
+            or not QuestLogCache.TryGetQuest(quest.Id) or not _IsQuestInLog(quest.Id) then return end
+    end
+
+    if objective.Optional and not _IsCurrentObjectiveDraw(quest, objective, objective.AlreadySpawned, acceptance) then
         return
     end
 
@@ -1505,13 +1535,13 @@ function QuestieQuest:PopulateObjective(quest, objectiveIndex, objective, blockI
         end
 
         local spawnCache = objective.AlreadySpawned
-        local iconsToDraw, _ = _DetermineIconsToDraw(quest, objective, objectiveIndex, objectiveCenter)
-        if not _IsCurrentObjectiveDraw(quest, objective, spawnCache) then
+        local iconsToDraw, _ = _DetermineIconsToDraw(quest, objective, objectiveIndex, objectiveCenter, acceptance)
+        if not _IsCurrentObjectiveDraw(quest, objective, spawnCache, acceptance) then
             return
         end
 
         local icon, iconPerZone = _DrawObjectiveIcons(quest.Id, iconsToDraw, objective, maxPerType)
-        _DrawObjectiveWaypoints(quest, objective, icon, iconPerZone)
+        _DrawObjectiveWaypoints(quest, objective, icon, iconPerZone, acceptance)
     end
 end
 
@@ -1746,7 +1776,7 @@ end
 ---@param objective QuestObjective
 ---@param objectiveIndex ObjectiveIndex
 ---@param objectiveCenter {x:X, y:Y}
-_DetermineIconsToDraw = function(quest, objective, objectiveIndex, objectiveCenter)
+_DetermineIconsToDraw = function(quest, objective, objectiveIndex, objectiveCenter, acceptance)
     Questie.Debug(Questie.DEBUG_INFO, "[QuestieQuest:_DetermineIconsToDraw]")
 
     local iconsToDraw = {}
@@ -1835,7 +1865,7 @@ _DetermineIconsToDraw = function(quest, objective, objectiveIndex, objectiveCent
                             if yieldCount >= TICKS_PER_YIELD and coRunning() and not objective.IsPartyObjective then
                                 yieldCount = 0
                                 coYield()
-                                if not _IsCurrentObjectiveDraw(quest, objective, spawnCache) then
+                                if not _IsCurrentObjectiveDraw(quest, objective, spawnCache, acceptance) then
                                     return {}, spawnItemId
                                 end
                             end
@@ -2031,7 +2061,7 @@ local function _HasEarlierObjectiveForNPC(quest, objective, npcId)
     return false
 end
 
-_DrawObjectiveWaypoints = function(quest, objective, icon, iconPerZone)
+_DrawObjectiveWaypoints = function(quest, objective, icon, iconPerZone, acceptance)
     local yieldCount = 0
     local hostileRouteCountPerZone = {}
     local spawnCache = objective.AlreadySpawned
@@ -2055,7 +2085,7 @@ _DrawObjectiveWaypoints = function(quest, objective, icon, iconPerZone)
     for _, spawnData in pairs(objective.spawnList) do -- spawnData.Name, spawnData.Spawns
         if spawnData.Waypoints and not _HasEarlierObjectiveForNPC(quest, objective, spawnData.Id) then
             for zone, waypoints in pairs(spawnData.Waypoints) do
-                if not _IsCurrentObjectiveDraw(quest, objective, spawnCache) then
+                if not _IsCurrentObjectiveDraw(quest, objective, spawnCache, acceptance) then
                     return
                 end
 
@@ -2237,6 +2267,10 @@ function _QuestieQuest.ObjectiveUpdate(self)
     if self.isUpdated then
         return
     end
+
+    -- Hover callbacks and queued work can outlive the quest's cached objectives.
+    if not QuestiePlayer.currentQuestlog[self.questId] or not _IsQuestInLog(self.questId)
+        or not QuestLogCache.TryGetQuest(self.questId) then return end
 
     local questObjectives = QuestieQuest:GetAllLeaderBoardDetails(self.questId) -- DO NOT MODIFY THE RETURNED TABLE
 
