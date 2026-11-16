@@ -79,7 +79,6 @@ local function setup(nativeIds, savedIds, options)
     setmetatable(l10n, {__call = function(_, text) return text end})
     loader:CreateModule("QuestieCombatQueue").Queue = function(_, callback) s.queued[#s.queued + 1] = callback end
     loader:CreateModule("TrackerQuestTimers").HideBlizzardTimer = noop
-    loader:ImportModule("TrackerQuestTimers").ShowBlizzardTimer = noop
     s.tracker = loader:ImportModule("QuestieTracker")
     -- Native Wrath can report membership through TRACKED_ACHIEVEMENT_UPDATE too.
     local function notify(id)
@@ -612,24 +611,25 @@ do
     local profile = s.env.Questie.db.profile
     profile.showBlizzardQuestTimer = true
     local refreshed = d.refreshes
-    timers:ShowBlizzardTimer()
-    assert(watch.shown and d.has("timer"), "real ShowBlizzardTimer restores the native timer in DragonUI")
-    assert(not d.has("quest") and not d.has("achievement"), "showing Blizzard timers does not restore duplicate tracker rows")
-    assert(d.refreshes > refreshed, "real ShowBlizzardTimer refreshes DragonUI")
-    profile.showBlizzardQuestTimer = false
-    refreshed = d.refreshes
     timers:HideBlizzardTimer()
-    assert(not watch.shown and not d.has("timer"), "real HideBlizzardTimer removes the DragonUI timer row")
+    assert(not watch.shown and not d.has("timer"), "legacy saved preference cannot restore the DragonUI timer row")
+    assert(not d.has("quest") and not d.has("achievement"), "Questie keeps native quest and achievement rows hidden")
     assert(d.refreshes > refreshed, "real HideBlizzardTimer refreshes DragonUI")
-    assert(d.has("recipe") and d.has("other"), "timer toggles preserve recipe and third-party rows")
+    assert(d.has("recipe") and d.has("other"), "timer policy preserves recipe and third-party rows")
+    s.tracker:Unhook()
+    assert(watch.shown and d.has("quest") and d.has("achievement") and d.has("timer"),
+        "unhooking Questie restores the native tracker and every DragonUI row")
+    s.tracker:HookBaseTracker()
+    assert(not watch.shown and not d.has("quest") and not d.has("achievement") and not d.has("timer"),
+        "rehooking Questie suppresses all native tracker rows including timers")
     profile.trackerEnabled = false
-    timers:ShowBlizzardTimer()
-    assert(d.has("quest") and d.has("achievement") and d.has("timer"),
-        "disabling Questie restores all DragonUI rows regardless of Questie's timer preference")
+    s.tracker:Unhook()
+    assert(watch.shown and d.has("quest") and d.has("achievement") and d.has("timer"),
+        "disabling Questie restores all DragonUI rows despite the obsolete saved preference")
     equal(s.env.DragonUI.db.profile.questtracker, settings, "compatibility never replaces DragonUI settings")
     equal(settings.enabled, true, "compatibility never disables DragonUI's tracker setting")
-    equal(#d.collectors, 1, "real timer toggles keep one DragonUI collector")
-    equal(s.watched(978), true, "real timer toggles preserve native achievement membership")
+    equal(#d.collectors, 1, "tracker transitions keep one DragonUI collector")
+    equal(s.watched(978), true, "tracker transitions preserve native achievement membership")
     s.nativeQueriesUnchanged()
     groups = groups + 1
 end

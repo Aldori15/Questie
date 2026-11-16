@@ -203,31 +203,6 @@ local trackerOptionsLocales = {
         ["frFR"] = "Si cette option est cochée, les objectifs des hauts faits terminées seront automatiquement supprimés du suivi de quêtes de Questie.",
     },
     ---------------------------------------------------------
-    ["Show Blizzard Timer"] = {
-        ["ptBR"] = "Mostrar temporizador da Blizzard",
-        ["ruRU"] = "Таймер Blizzard",
-        ["deDE"] = "Blizzard Timer anzeigen",
-        ["koKR"] = "블리자드 타이머 표시",
-        ["esMX"] = "Mostrar temporizador de Blizzard",
-        ["enUS"] = true,
-        ["zhCN"] = "显示暴雪计时器",
-        ["zhTW"] = "顯示內建任務計時器",
-        ["esES"] = "Mostrar temporizador de Blizzard",
-        ["frFR"] = "Chrono par défaut",
-    },
-    ["When this is checked, the default Blizzard Timer Frame for Quests will be shown instead of being embedded inside the Questie Tracker."] = {
-        ["ptBR"] = "Quando isso estiver marcado, o Quadro de temporizador padrão da Blizzard para missões será mostrado em vez de incorporado no rastreador.",
-        ["ruRU"] = "Когда включено, будет отображаться стандартный таймер Blizzard вместо встраивания его в трекер",
-        ["deDE"] = "Wenn diese Option aktiviert ist, wird der Standard-Blizzard-Timer-Frame für Quests angezeigt, anstatt in den Tracker eingebettet zu sein.",
-        ["koKR"] = "이 옵션을 선택하면 추적기에 내장 된 대신 퀘스트에 대한 기본 블리자드 타이머 프레임이 표시됩니다.",
-        ["esMX"] = "Cuando esto está marcado, se mostrará el Marco predeterminado del temporizador de Blizzard para las misiones en lugar de estar incrustado dentro del rastreador.",
-        ["enUS"] = true,
-        ["zhCN"] = "启用后，任务计时器将会显示",
-        ["zhTW"] = "啟用時，會顯示遊戲內建的任務計時器框架，而不會內嵌在任務清單裡面。",
-        ["esES"] = "Cuando esto está marcado, se mostrará el Marco predeterminado del temporizador de Blizzard para las misiones en lugar de estar incrustado dentro del rastreador.",
-        ["frFR"] = "Active l'affichage du chronomètre de l'interface de base pour les quêtes au lieu d'indiquer le temps restant directement dans le suivi des quêtes.",
-    },
-    ---------------------------------------------------------
     ["Enable Tracker Header"] = {
         ["ptBR"] = "Ativar cabeçalho do rastreador",
         ["ruRU"] = "Вкл/выкл",

@@ -47,7 +47,7 @@ function Questie:OnInitialize()
 end
 
 function Questie:OnEnable()
-    if (Questie.db.profile.trackerEnabled and not Questie.db.profile.showBlizzardQuestTimer) then
+    if Questie.db.profile.trackerEnabled then
         WatchFrame:Hide()
     end
 end

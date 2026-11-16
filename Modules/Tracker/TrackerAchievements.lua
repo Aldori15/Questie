@@ -62,8 +62,7 @@ local function _FilterDragonUIRows(blocks)
     if not QuestieTracker.started or not Questie.db.profile.trackerEnabled or QuestieTracker.disableHooks then return end
     for index = #blocks, 1, -1 do
         local kind = blocks[index].kind
-        if kind == "quest" or kind == "achievement"
-            or (kind == "timer" and not Questie.db.profile.showBlizzardQuestTimer) then
+        if kind == "quest" or kind == "achievement" or kind == "timer" then
             table.remove(blocks, index)
         end
     end

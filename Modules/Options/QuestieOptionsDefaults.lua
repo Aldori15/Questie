@@ -108,7 +108,6 @@ function QuestieOptionsDefaults:Load()
             hideCompletedQuestObjectives = false,
             hideBlizzardCompletionText = false,
             hideCompletedAchieveObjectives = true,
-            showBlizzardQuestTimer = false,
             trackerHeaderEnabled = true,
             moveHeaderToBottom = false,
             stickyDurabilityFrame = false,

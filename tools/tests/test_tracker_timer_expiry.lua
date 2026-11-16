@@ -98,8 +98,6 @@ end
 local text, active = initial(timedQuest, 0, "0 Secs")
 equal(text, "Time's up!", "initial zero time is expired")
 equal(active, false, "initial expired timer does not start polling")
-text = initial({timedBlizzardQuest = true}, 12, "12 Secs")
-equal(text, "Blizzard Timer Active!", "native timer rendering remains supported")
 print("Tracker timer expiry passed: zero boundary, immediate combat cleanup, row reuse and stored-frame retirement")
 ]]
 if setfenv then setfenv(assert(loadstring(source, "tracker timer expiry regression")), _G)()

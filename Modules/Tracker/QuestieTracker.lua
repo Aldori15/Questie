@@ -625,7 +625,7 @@ local layoutRevision
 
 local function IsQuestShown(questId, quest, complete)
     local profile, char = Questie.db.profile, Questie.db.char
-    return (complete ~= 1 or profile.trackerShowCompleteQuests or quest.trackTimedQuest or quest.timedBlizzardQuest)
+    return (complete ~= 1 or profile.trackerShowCompleteQuests or quest.trackTimedQuest)
         and ((profile.autoTrackQuests and not char.AutoUntrackedQuests[questId])
             or (not profile.autoTrackQuests and char.TrackedQuests[questId]))
 end
@@ -689,7 +689,7 @@ local function _Update(self, force, onlyIfChanged)
         local complete = quest:IsComplete()
         if IsQuestShown(questId, quest, complete) and not Questie.db.char.collapsedZones[details.zoneName] then
             questTitlesShown = true
-            local timedQuest = quest.trackTimedQuest or quest.timedBlizzardQuest
+            local timedQuest = quest.trackTimedQuest
             local minimizable = complete == 1 or complete == -1 or (#quest.Objectives == 0 and quest.isComplete == true)
             local autoCollapsed = Questie.db.profile.collapseCompletedQuests and minimizable and not timedQuest
             if not Questie.db.char.collapsedQuests[questId] and not autoCollapsed then
@@ -723,7 +723,7 @@ local function _Update(self, force, onlyIfChanged)
             local complete = quest:IsComplete()
             local zoneName = questDetails[questId].zoneName
             local timeRemainingString, timeRemaining = TrackerQuestTimers:GetRemainingTime(quest, nil, true)
-            local timedQuest = (quest.trackTimedQuest or quest.timedBlizzardQuest)
+            local timedQuest = quest.trackTimedQuest
 
             if IsQuestShown(questId, quest, complete) then
                 -- Add Quest Zones
@@ -1082,9 +1082,7 @@ local function _Update(self, force, onlyIfChanged)
                         local timerLabelText
                         local activeTimer = false
 
-                        if quest.timedBlizzardQuest then
-                            timerLabelText = Questie:Colorize(l10n("Blizzard Timer Active") .. "!", "blue")
-                        elseif timeRemaining then
+                        if timeRemaining then
                             if timeRemaining <= 0 then
                                 timerLabelText = Questie:Colorize(l10n("Time's up!"), "lightBlue")
                             else
@@ -1898,7 +1896,9 @@ function QuestieTracker:Unhook()
 
     QuestieTracker.disableHooks = true
 
-    TrackerQuestTimers:ShowBlizzardTimer()
+    if WatchFrame then
+        WatchFrame:Show()
+    end
 
     -- Quest Hooks
     if QuestieTracker.IsQuestWatched then
@@ -1982,11 +1982,7 @@ function QuestieTracker:HookBaseTracker()
 
     TrackerAchievements.HideBlizzardAchievements()
 
-    if Questie.db.profile.showBlizzardQuestTimer then
-        TrackerQuestTimers:ShowBlizzardTimer()
-    else
-        TrackerQuestTimers:HideBlizzardTimer()
-    end
+    TrackerQuestTimers:HideBlizzardTimer()
 
     QuestieTracker.alreadyHooked = true
     QuestieCombatQueue:Queue(function()
@@ -2097,8 +2093,7 @@ function QuestieTracker:AQW_Insert(index, expire)
     lastAQW = now
     QuestieTracker.last_aqw = index
 
-    -- This removes quests from the Blizzard QuestWatchFrame so when the option "Show Blizzard Timer" is enabled,
-    -- that is all the player will see. This also prevents hitting the Blizzard Quest Watch Limit.
+    -- Questie owns quest tracking while enabled; avoid hitting Blizzard's quest watch limit.
     RemoveQuestWatch(index, true)
 
     if questId > 0 then

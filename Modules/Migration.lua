@@ -178,6 +178,9 @@ local migrationFunctions = {
             Questie.db.profile.waypointMinimapEnabled = false
         end
     end,
+    [33] = function()
+        Questie.db.profile.showBlizzardQuestTimer = nil
+    end,
 }
 
 function Migration:Migrate()
