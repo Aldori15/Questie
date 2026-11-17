@@ -169,7 +169,7 @@ function QuestieOptionsDefaults:Load()
                 rejectSharedInBattleground = false,
                 abandonBreadcrumbFollowup = false,
             },
-            questAnnounceChannel = "party",
+            questAnnounceChannel = "disabled",
             questAnnounceItems = true,
             questAnnounceAccepted = false,
             questAnnounceAbandoned = false,

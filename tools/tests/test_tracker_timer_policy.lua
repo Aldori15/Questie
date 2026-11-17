@@ -85,14 +85,30 @@ watch.shown = true
 env.Questie:OnEnable()
 equal(watch.shown, true, "startup preserves native tracker when Questie tracker is disabled")
 
--- Only the obsolete setting is retired when upgrading an existing profile.
+-- Timer cleanup preserves unrelated preferences when upgrading an existing profile.
 env.table = setmetatable({getn = function(value) return #value end}, {__index = table})
 loadModule("Modules/Migration.lua")
 module("Migration"):Migrate()
-equal(profile.migrationVersion, 33, "timer cleanup migration completes")
+equal(profile.migrationVersion, 34, "profile migrations complete")
 equal(profile.showBlizzardQuestTimer, nil, "migration removes obsolete saved preference")
 equal(profile.trackerShowCompleteQuests, false, "migration preserves unrelated tracker preference")
 profile.trackerShowCompleteQuests = true
 module("Migration"):Migrate()
 equal(profile.trackerShowCompleteQuests, true, "already migrated profile retains subsequent preferences")
+
+-- Announcement migration runs once per profile and preserves later user choices.
+for _, channel in ipairs({"party", "raid", "both", "disabled", false}) do
+    local migrated = {migrationVersion = 33, questAnnounceChannel = channel or nil,
+        questAnnounceLocally = true, questAnnounceItems = true, questieShutUp = false}
+    env.Questie.db.profile = migrated
+    module("Migration"):Migrate()
+    equal(migrated.questAnnounceChannel, "disabled", "migration disables every previous channel")
+    equal(migrated.migrationVersion, 34, "announcement migration records completion")
+    equal(migrated.questAnnounceLocally, true, "local announcement preference preserved")
+    equal(migrated.questAnnounceItems, true, "starter-item preference preserved")
+    equal(migrated.questieShutUp, false, "master silence preference preserved")
+    migrated.questAnnounceChannel = "party"
+    module("Migration"):Migrate()
+    equal(migrated.questAnnounceChannel, "party", "manual re-enabling survives repeated migration")
+end
 print("Tracker timer policy passed: native ownership, legacy settings, startup, Questie countdowns and migration")

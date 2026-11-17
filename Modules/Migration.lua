@@ -181,6 +181,9 @@ local migrationFunctions = {
     [33] = function()
         Questie.db.profile.showBlizzardQuestTimer = nil
     end,
+    [34] = function()
+        Questie.db.profile.questAnnounceChannel = "disabled"
+    end,
 }
 
 function Migration:Migrate()
