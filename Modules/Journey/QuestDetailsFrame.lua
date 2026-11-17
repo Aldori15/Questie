@@ -102,6 +102,7 @@ local function _AddLinkedQuestParagraph(frame, lookup, header)
             local linkedQuest = QuestieDB.GetQuest(questId)
             if linkedQuest then
                 local label = _QuestieJourney:GetInteractiveQuestLabel(linkedQuest)
+                label:SetFullWidth(true)
                 label:SetCallback("OnClick", function()
                     _QuestieJourney:HideJourneyTooltip()
                     -- Search controls are created when the tab opens, including from zone/faction views.
@@ -447,6 +448,21 @@ function QuestDetailsFrame:Draw(container, quest)
     if quest.preQuestGroup and next(quest.preQuestGroup) then
         QuestieJourneyUtils:Spacer(container)
         _AddLinkedQuestParagraph(container, quest.preQuestGroup, l10n("Requires all of these quests to be finished"))
+    end
+
+    local nextQuestId = QuestieDB.QueryQuestSingle(quest.Id, "nextQuestInChain") or 0
+    if nextQuestId == 0 then nextQuestId = QuestieDB.QueryQuestSingle(quest.Id, "breadcrumbForQuestId") or 0 end
+    local nextQuestIds, visitedQuestIds = {}, {[quest.Id] = true}
+    while nextQuestId > 0 and not visitedQuestIds[nextQuestId] and not QuestieCorrections.hiddenQuests[nextQuestId] do
+        visitedQuestIds[nextQuestId] = true
+        nextQuestIds[#nextQuestIds + 1] = nextQuestId
+        local followingQuestId = QuestieDB.QueryQuestSingle(nextQuestId, "nextQuestInChain") or 0
+        if followingQuestId == 0 then followingQuestId = QuestieDB.QueryQuestSingle(nextQuestId, "breadcrumbForQuestId") or 0 end
+        nextQuestId = followingQuestId
+    end
+    if #nextQuestIds > 0 then
+        QuestieJourneyUtils:Spacer(container)
+        _AddLinkedQuestParagraph(container, nextQuestIds, l10n("Next in chain:"))
     end
 
     QuestieJourneyUtils:Spacer(container)

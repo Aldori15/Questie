@@ -16,6 +16,7 @@ env.QuestieLoader = {CreateModule = function(_, name) return module(name) end, I
 env.Questie = {db = {char = {complete = {}, hidden = {}}, profile = {}}, Colorize = function(_, text) return text end}
 env.QuestieCompat = {C_Timer = {After = noop}}
 env.UnitLevel = function() return 80 end
+env.YES, env.NO = "Yes", "No"
 env.GetItemInfo = function() return "Item", "item:5" end
 env.GetItemIcon = noop
 env.IsShiftKeyDown = function() return shift end
@@ -31,6 +32,8 @@ local function create(_, kind)
     function widget:AddChild(child) self.children[#self.children + 1] = child end
     function widget:ReleaseChildren() self.children = {} end
     function widget:SetText(value) self.value = value end
+    function widget:SetTitle(value) self.title = value end
+    function widget:SetFullWidth(value) self.fullWidth = value end
     function widget:GetText() return self.value or "" end
     function widget:SetUserData(key, value) self.userdata[key] = value end
     function widget:GetUserData(key) return self.userdata[key] end
@@ -115,6 +118,7 @@ end}
 drawQuest(details, create(nil, "SimpleGroup"), {Id = 5, name = "Parent", preQuestSingle = {-6}, preQuestGroup = {7, 8}})
 equal(#links, 3, "single and grouped prerequisite links rendered")
 for _, link in ipairs(links) do
+    equal(link.fullWidth, true, "prerequisite links use the available paragraph width")
     tooltipShown = true
     link:Fire("OnClick")
     equal(searchOpened, true, "search created before linked navigation")
@@ -158,6 +162,72 @@ equal(tooltipShown, false, "source hover tooltip hidden")
 equal(rendered[#rendered].type, "npc", "item source immediately opens NPC details")
 equal(rendered[#rendered].id, 6, "item source opens the right NPC")
 equal(#chat, 1, "source navigation does not insert a chat link")
+
+-- The real details renderer shows reference chains, independent of the player's eligibility.
+local function drawChain(records, hidden)
+    local query, isDoable = db.QueryQuestSingle, db.IsDoableVerbose
+    local corrections = module("QuestieCorrections")
+    local previousHidden = corrections.hiddenQuests
+    local linkReads = 0
+    db.QueryQuestSingle = function(id, field)
+        if field == "nextQuestInChain" or field == "breadcrumbForQuestId" then
+            linkReads = linkReads + 1
+            assert(linkReads <= 40, "cyclic chains must not hang the details renderer")
+            return records[id] and records[id][field]
+        end
+        return query(id, field)
+    end
+    db.IsDoableVerbose = function() return "Different class", true, "WRONG_CLASS" end
+    corrections.hiddenQuests = hidden or {}
+    local frame = create(nil, "SimpleGroup")
+    drawQuest(details, frame, {Id = 1, name = "Chain root"})
+    db.QueryQuestSingle, db.IsDoableVerbose = query, isDoable
+    corrections.hiddenQuests = previousHidden
+    local section
+    for _, child in ipairs(frame.children) do
+        if child.kind == "InlineGroup" and child.title == "Next in chain:" then
+            assert(not section, "only one follow-up section is rendered")
+            section = child
+        end
+    end
+    local ids = {}
+    for _, link in ipairs(section and section.children or {}) do
+        ids[#ids + 1] = link:GetUserData("id")
+        equal(link.fullWidth, true, "linked follow-up uses the available paragraph width")
+    end
+    return table.concat(ids, ","), section
+end
+for _, missing in ipairs({"zero", "nil"}) do
+    local ids, section = drawChain({[1] = {nextQuestInChain = missing == "zero" and 0 or nil, breadcrumbForQuestId = 2},
+        [2] = {nextQuestInChain = 3}, [3] = {nextQuestInChain = 0}})
+    equal(ids, "2,3", "initial " .. missing .. " link follows breadcrumb and keeps later chain order")
+    assert(section, "breadcrumb chain has a localized section")
+end
+do
+    local ids, section = drawChain({[1] = {nextQuestInChain = 2, breadcrumbForQuestId = 4},
+        [2] = {nextQuestInChain = 0, breadcrumbForQuestId = 3}})
+    equal(ids, "2,3", "explicit chain wins and breadcrumb fallback works at later steps")
+    tooltipShown, searchOpened = true, false
+    section.children[1]:Fire("OnClick")
+    equal(searchOpened, true, "follow-up link creates Advanced Search before navigation")
+    equal(tooltipShown, false, "follow-up navigation dismisses the hover tooltip")
+    equal(rendered[#rendered].id, 2, "follow-up link opens its own quest details")
+    equal(widgets.TreeGroup.selected, "2", "follow-up link selects its quest in search")
+    equal(#chat, 1, "follow-up navigation does not insert chat links")
+end
+equal(drawChain({[1] = {nextQuestInChain = 2}, [2] = {breadcrumbForQuestId = 3},
+    [3] = {nextQuestInChain = 2}}), "2,3", "mixed cycles do not duplicate follow-ups")
+equal(drawChain({[1] = {nextQuestInChain = 2}, [2] = {nextQuestInChain = 1}}), "2", "cycle does not redisplay the root quest")
+equal(drawChain({[1] = {breadcrumbForQuestId = 1}}), "", "self-link is omitted")
+equal(drawChain({[1] = {nextQuestInChain = 2}, [2] = {nextQuestInChain = 3}}, {[3] = true}), "2", "hidden follow-up stops the reference chain")
+for _, records in ipairs({{}, {[1] = {nextQuestInChain = 0}},
+    {[1] = {nextQuestInChain = -2, breadcrumbForQuestId = 3}}}) do
+    local ids, section = drawChain(records)
+    equal(ids, "", "absent or negative endpoint has no follow-ups")
+    equal(section, nil, "absent chain has no empty section")
+end
+local _, hiddenSection = drawChain({[1] = {nextQuestInChain = 2}}, {[2] = true})
+equal(hiddenSection, nil, "hidden first follow-up has no empty section")
 
 -- Compare Journey's displayed threshold with the native 3.3.5 green ranges.
 -- The native helper indexes {4, 4, 5, 5, 6, 6, 7, 7, 8, ...} by player level / 5.
@@ -227,4 +297,4 @@ for _, tab in ipairs({journey.private.questsByZone, journey.private.questsByFact
     equal(#pooledTree.rows, 0, "empty quest result remains blank")
 end
 
-print("Journey navigation, difficulty, and pooled-tree regressions passed")
+print("Journey navigation, quest chains, difficulty, and pooled-tree regressions passed")
