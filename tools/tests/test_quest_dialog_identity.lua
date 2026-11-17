@@ -72,6 +72,8 @@ local function harness()
     loadFunction("Compat/Compat.lua", "function QuestieCompat.UnitGUID(unit)",
         'local GUIDType = {[1]="GameObject", [3]="Creature", [5]="Vehicle"}\n', env)
     local db = module("QuestieDB")
+    db.questTagIds = {ESCORT = 84}
+    db.GetQuestTagInfo = noop
     local names = {[10] = "Offered quest", [11] = "Other daily", [12] = "Server choice",
         [13] = "Condition quest", [14] = "High level", [15] = "Active quest", [20] = "Offered quest"}
     db.QueryQuestSingle = function(id, field)
@@ -133,6 +135,23 @@ for _, case in ipairs({{"GOSSIP_SHOW", "npc", "SelectGossipAvailableQuest"},
     h = harness(); h.units.npc, h.units.questnpc = rawGuid(111, true), rawGuid(111, true)
     h.auto.private.disallowedNPCs = {[111] = true}; h.auto[case[1]]()
     equal(h.actions[case[3]], 1, case[1] .. " does not apply NPC exclusions to objects")
+end
+-- Tagged escorts stay manual even when absent from either exclusion-list format.
+for _, list in ipairs({false, {accept = {}, turnIn = {}}, {}}) do
+    for _, tag in ipairs({false, 1, 84}) do
+        for _, case in ipairs({{"GOSSIP_SHOW", "SelectGossipAvailableQuest"},
+            {"QUEST_GREETING", "SelectAvailableQuest"}, {"QUEST_DETAIL", "AcceptQuest"}}) do
+            local h = harness()
+            h.units.npc, h.units.questnpc = rawGuid(111), rawGuid(111)
+            h.auto.private.disallowedQuests = list or nil
+            h.db.GetQuestTagInfo = function() return tag or nil end
+            h.auto[case[1]]()
+            local expected
+            if tag ~= 84 then expected = 1 end
+            equal(h.actions[case[2]], expected,
+                case[1] .. " only auto-accepts non-escort tags")
+        end
+    end
 end
 local h = harness(); h.auto.QUEST_DETAIL()
 equal(h.actions.AcceptQuest, 1, "An item offer without a giver still accepts")

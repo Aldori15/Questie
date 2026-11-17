@@ -147,10 +147,13 @@ _IsQuestAllowedToAccept = function(questId)
 
     if questId and questId > 0 then
         local disallowedQuests = _QuestieAuto.disallowedQuests
-        if disallowedQuests and disallowedQuests.accept then
-            return not disallowedQuests.accept[questId]
-        elseif disallowedQuests then
-            return not disallowedQuests[questId]
+        local acceptDisallowed = disallowedQuests and (disallowedQuests.accept or disallowedQuests)
+        if acceptDisallowed and acceptDisallowed[questId] then
+            return false
+        end
+
+        if QuestieDB.GetQuestTagInfo(questId) == QuestieDB.questTagIds.ESCORT then
+            return false
         end
     end
 
