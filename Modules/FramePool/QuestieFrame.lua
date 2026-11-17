@@ -141,6 +141,23 @@ function _QuestieFrame.SetVertexColor(self, r, g, b, a)
     self.a = a or 1
 end
 
+function QuestieFrame.ResetHoverHighlights(self)
+    if self.data then
+        if QuestieWaypoints.SetHighlighted then QuestieWaypoints.SetHighlighted(self.data, false) end
+
+        if self.data.touchedPins then
+            for i = #self.data.touchedPins, 1, -1 do
+                local entry = self.data.touchedPins[i]
+                local icon = entry.icon;
+                if icon.data == entry.data then
+                    icon.texture:SetVertexColor(unpack(entry.color));
+                end
+            end
+            self.data.touchedPins = nil;
+        end
+    end
+end
+
 function _QuestieFrame:OnLeave()
     if WorldMapTooltip then
         WorldMapTooltip:Hide()
@@ -150,21 +167,10 @@ function _QuestieFrame:OnLeave()
     if GameTooltip then
         GameTooltip:Hide()
         GameTooltip._Rebuild = nil
+        GameTooltip.ShownAsMapIcon = false
     end
 
-    if self.data then
-        if QuestieWaypoints.SetHighlighted then QuestieWaypoints.SetHighlighted(self.data, false) end
-
-        if self.data.touchedPins then
-            for i = #self.data.touchedPins, 1, -1 do
-                local entry = self.data.touchedPins[i]
-                local icon = entry.icon;
-                icon.texture:SetVertexColor(unpack(entry.color));
-            end
-            self.data.touchedPins = nil;
-        end
-    end
-    GameTooltip.ShownAsMapIcon = false
+    QuestieFrame.ResetHoverHighlights(self)
 
     QuestieCompat.SetupTooltip(self, true)
 end

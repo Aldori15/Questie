@@ -73,6 +73,7 @@ local strfind = string.find
 
 -- Local Vars
 local trackerLineWidth = 0
+local requestedWidth
 local trackerMarginRight = 30
 local trackerMarginLeft = 14
 local lastAQW = GetTime()
@@ -677,6 +678,7 @@ local function _Update(self, force, onlyIfChanged)
 
     -- This is needed so the Tracker can also decrease its width
     trackerLineWidth = 0
+    requestedWidth = nil
 
     -- Setup local QuestieTracker:Update vars
     local sortedQuestIds, questDetails = TrackerQuestOrder:GetSortedQuestIds(quests)
@@ -785,7 +787,7 @@ local function _Update(self, force, onlyIfChanged)
                     -- Setup Min/Max Button
                     line.expandZone:ClearAllPoints()
                     line.expandZone:SetPoint("TOPLEFT", line, "TOPLEFT", 0, 0)
-                    line.expandZone:SetWidth(line.label:GetWidth())
+                    line.expandZone:SetWidth(line.label:GetUnboundedStringWidth())
                     line.expandZone:SetHeight(line.label:GetHeight())
                     line.expandZone:Show()
 
@@ -1413,7 +1415,7 @@ local function _Update(self, force, onlyIfChanged)
                         -- Setup Min/Max Button
                         line.expandZone:ClearAllPoints()
                         line.expandZone:SetPoint("TOPLEFT", line.label, "TOPLEFT", 0, 0)
-                        line.expandZone:SetWidth(line.label:GetWidth())
+                        line.expandZone:SetWidth(line.label:GetUnboundedStringWidth())
                         line.expandZone:SetHeight(line.label:GetHeight())
                         line.expandZone:Show()
 
@@ -1671,6 +1673,8 @@ function QuestieTracker:UpdateFormatting()
     if not allowFormattingUpdate then
         return
     end
+    -- Formatting can run without a new draw after the width or font changes.
+    requestedWidth = nil
 
     if TrackerBaseFrame.isSizing == true or TrackerBaseFrame.isMoving == true or TrackerQuestOrder.FilterProximityTimer == true then
         Questie.Debug(Questie.DEBUG_SPAM, "[QuestieTracker:UpdateFormatting]")
@@ -1750,6 +1754,11 @@ function QuestieTracker:UpdateFormatting()
 end
 
 function QuestieTracker:UpdateWidth(trackerVarsCombined)
+    -- Only grow during each layout pass; narrower rows must not resize the whole tracker again.
+    if requestedWidth and trackerVarsCombined <= requestedWidth then
+        return
+    end
+    requestedWidth = trackerVarsCombined
     local trackerWidthByRatio = GetScreenWidth() * Questie.db.profile.trackerWidthRatio
     local trackerWidthByManual = Questie.db.profile.TrackerWidth
     local trackerHeaderFrameWidth = (trackerHeaderFrame:GetWidth() + Questie.db.profile.trackerFontSizeHeader + 10)

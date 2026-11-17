@@ -205,4 +205,90 @@ table.remove(queue, 1)()
 equal(requests[#requests], "forced", "geometry refresh bypasses unchanged-data check")
 equal(events.UI_SCALE_CHANGED, nil, "no unsupported native event")
 tracker.Update, tracker.UpdateFromQuestLog = oldUpdate, oldCheck
+
+-- The event fixture skips row creation. Reuse the full renderer fixture to observe
+-- native frame resizes, header hit areas, and formatting without another redraw.
+local renderer = read("tools/tests/test_tracker_objective_text.lua")
+local marker = "    for _, enabled in ipairs({false, true, false, true}) do"
+renderer = renderer:sub(1, assert(renderer:find(marker, 1, true)) - 1) .. [=[
+    local writes, pass = {}, 1
+    base.SetWidth = function(self, width)
+        writes[#writes + 1] = {pass, width}
+        methods.SetWidth(self, width)
+    end
+    local format = tracker.UpdateFormatting
+    tracker.UpdateFormatting = function(self)
+        pass = pass + 1
+        return format(self)
+    end
+    tracker:Update(true)
+    local previousByPass = {}
+    for _, write in ipairs(writes) do
+        local previous = previousByPass[write[1]]
+        assert(not previous or write[2] > previous, "each pass resizes only for a wider row")
+        previousByPass[write[1]] = write[2]
+    end
+    assert(#writes > 0 and #writes <= 4, "ordinary layout avoids repeated narrower frame resizes")
+
+    -- A new draw may shrink, even after a wider layout filled the request cache.
+    local oldWidth = base:GetWidth()
+    title = "Q"
+    quest.Objectives[1].Description, quest.Objectives[2].Description = "A", "B"
+    tracker:Update(true)
+    assert(base:GetWidth() < oldWidth, "new layout can shrink after shorter content")
+
+    -- Both kinds of section headers must limit their hit areas to actual text.
+    profile.TrackerWidth = 600
+    setmetatable(loader:ImportModule("l10n"), {__call = function(_, text) return text end})
+    env.GetTrackedAchievements = function() return 978 end
+    env.GetNumTrackedAchievements = function() return 1 end
+    env.GetAchievementInfo = function() return 978, "3000 Quests Completed", nil, nil, nil, nil, nil, "Complete 3000 quests" end
+    env.GetAchievementNumCriteria = function() return 1 end
+    env.GetAchievementCriteriaInfo = function() return "Quests completed", nil, false, 4, 3000, nil, nil, nil, "4/3000" end
+    tracker:Update(true)
+    equal(base:GetWidth(), 600, "manual width remains independent of row widths")
+    local headers = 0
+    for _, row in ipairs(rows) do
+        if row.mode == "zone" then
+            headers = headers + 1
+            equal(row.expandZone:GetWidth(), row.label:GetUnboundedStringWidth(), "section click area follows its text")
+            assert(row.expandZone:GetWidth() < row.label:GetWidth(), "empty header space is not clickable")
+        end
+    end
+    equal(headers, 2, "quest zone and achievement headers are both exercised")
+
+    profile.TrackerWidth = 0
+    methods.GetWrappedWidth = methods.GetWidth
+    loader:ImportModule("TrackerBaseFrame").isSizing = true
+    profile.trackerWidthRatio = 0.2
+    tracker:UpdateFormatting()
+    equal(base:GetWidth(), 400, "auto sizing uses the current ratio without redrawing")
+    profile.trackerWidthRatio = 0.15
+    tracker:UpdateFormatting()
+    equal(base:GetWidth(), 300, "formatting-only ratio reduction resets the width request")
+
+    -- A new fixed size must also apply when content and its requested width stay the same.
+    profile.TrackerWidth = 420
+    tracker:UpdateFormatting()
+    equal(base:GetWidth(), 420, "formatting applies a changed fixed width")
+    profile.TrackerWidth = 350
+    tracker:UpdateFormatting()
+    equal(base:GetWidth(), 350, "formatting can shrink a fixed width")
+    env.Questie.db.char.isTrackerExpanded = false
+    tracker:UpdateFormatting()
+    equal(base:GetWidth(), header:GetWidth() + profile.trackerFontSizeHeader + 10, "collapsed tracker keeps its header width")
+    env.Questie.db.char.isTrackerExpanded = true
+    profile.trackerHeaderEnabled = false
+    loader:ImportModule("TrackerBaseFrame").isSizing = false
+    profile.TrackerWidth = 200
+    tracker:UpdateFormatting()
+    equal(base:GetWidth(), 200, "headerless tracker preserves its fixed width")
+    profile.TrackerWidth = 0
+    loader:ImportModule("TrackerBaseFrame").isSizing = true
+    tracker:UpdateFormatting()
+    equal(base:GetWidth(), 300, "headerless tracker follows auto ratio sizing")
+end
+]=]
+if setfenv then setfenv(assert(loadstring(renderer, "tracker resize regression")), _G)()
+else assert(load(renderer, "tracker resize regression", "t", _G))() end
 print("PASS: tracker revisions/layout skipping, native/mapped progress, items, timers, explicit/forced updates, combat, queue priority, and 3.3.5 geometry events")

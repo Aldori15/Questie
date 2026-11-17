@@ -18,6 +18,7 @@ local QuestieTracker = QuestieLoader:ImportModule("QuestieTracker")
 local QuestieDBMIntegration = QuestieLoader:ImportModule("QuestieDBMIntegration")
 ---@type QuestieMap
 local QuestieMap = QuestieLoader:ImportModule("QuestieMap")
+local QuestiePartyObjectives = QuestieLoader:ImportModule("QuestiePartyObjectives")
 ---@type QuestieFramePool
 local QuestieFramePool = QuestieLoader:ImportModule("QuestieFramePool")
 ---@type QuestieLib
@@ -212,6 +213,7 @@ function QuestieQuest:RefreshQuestIconVisibility()
     ThreadLib.Thread(function()
         _QuestieQuest:_HideQuestIcons()
         _QuestieQuest:_ShowQuestIcons()
+        if QuestiePartyObjectives.ScheduleUpdate then QuestiePartyObjectives:ScheduleUpdate() end
     end, 0, "Error in QuestieQuest.RefreshQuestIconVisibility")
 end
 
@@ -550,6 +552,8 @@ function QuestieQuest:SmoothReset()
             if QuestieQuest._resetAgain then
                 QuestieQuest._resetAgain = nil
                 QuestieQuest:SmoothReset()
+            elseif QuestiePartyObjectives.ScheduleUpdate then
+                QuestiePartyObjectives:ScheduleUpdate()
             end
             return true
         end
@@ -1392,7 +1396,7 @@ local function _IsCurrentObjectiveDraw(quest, objective, spawnCache, acceptance)
     end
 
     if objective.IsPartyObjective then
-        return true
+        return not objective.IsCurrentDraw or objective.IsCurrentDraw()
     end
 
     if not QuestLifecycle.IsCurrentAcceptance(quest.Id, acceptance) then
@@ -1854,7 +1858,7 @@ _DetermineIconsToDraw = function(quest, objective, objectiveIndex, objectiveCent
                             end
 
                             yieldCount = yieldCount + 1
-                            if yieldCount >= TICKS_PER_YIELD and coRunning() and not objective.IsPartyObjective then
+                            if yieldCount >= TICKS_PER_YIELD and coRunning() then
                                 yieldCount = 0
                                 coYield()
                                 if not _IsCurrentObjectiveDraw(quest, objective, spawnCache, acceptance) then
@@ -1894,6 +1898,7 @@ _DrawObjectiveIcons = function(questId, iconsToDraw, objective, maxPerType)
     local spawnedIconCount = 0
     local icon
     local iconPerZone = {}
+    local spawnCache = objective.AlreadySpawned
 
     local iconCount, orderedList = _GetIconsSortedByDistance(iconsToDraw)
 
@@ -1911,6 +1916,13 @@ _DrawObjectiveIcons = function(questId, iconsToDraw, objective, maxPerType)
     end
 
     for i = 1, iconCount do
+        if objective.IsPartyObjective and i > 1 and (i - 1) % TICKS_PER_YIELD == 0 then
+            coYield()
+            if objective.Completed or objective.AlreadySpawned ~= spawnCache
+                or (objective.IsCurrentDraw and not objective.IsCurrentDraw()) then
+                return icon, iconPerZone
+            end
+        end
         icon = orderedList[i]
         if spawnedIconCount > maxPerType then
             Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieQuest] Too many icons for quest:", questId)
@@ -2102,7 +2114,7 @@ _DrawObjectiveWaypoints = function(quest, objective, icon, iconPerZone, acceptan
                     end
 
                     yieldCount = yieldCount + 1
-                    if yieldCount >= TICKS_PER_YIELD and coRunning() and not objective.IsPartyObjective then
+                    if yieldCount >= TICKS_PER_YIELD and coRunning() then
                         yieldCount = 0
                         coYield()
                     end

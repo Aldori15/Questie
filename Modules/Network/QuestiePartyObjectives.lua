@@ -23,6 +23,8 @@ local QuestieFramePool = QuestieLoader:ImportModule("QuestieFramePool")
 local QuestLogCache = QuestieLoader:ImportModule("QuestLogCache")
 ---@type CommsVisibility
 local CommsVisibility = QuestieLoader:ImportModule("CommsVisibility")
+local MapIconTooltip = QuestieLoader:ImportModule("MapIconTooltip")
+local QuestieIconVisibility = QuestieLoader:ImportModule("QuestieIconVisibility")
 
 local NOP_FUNCTION = function() end
 
@@ -36,7 +38,8 @@ local CallErrorHandler = CallErrorHandler or geterrorhandler()
 
 local MAX_GROUP_SIZE = 5
 local MAX_PARTY_ICONS = 500
-local CHUNK_SIZE = 50
+local CHUNK_SIZE = 10
+local ICONS_PER_FRAME = 50
 
 local typeCharToFull = {
     ["m"] = "monster",
@@ -57,12 +60,6 @@ local processingGeneration = 0
 
 -- Forward declarations (these reference each other).
 local _ScheduleProcessing, _ProcessScheduled, _ProcessQueue
-
----@param questId number
----@return boolean @true if the local player currently has this quest in their log
-local function _PlayerHasQuest(questId)
-    return QuestLogCache.questLog_DO_NOT_MODIFY[questId] ~= nil
-end
 
 -- The objective needs a non-nil Description or the map icon tooltip skips it entirely
 -- (see MapIconTooltip "iconData.ObjectiveData.Description" check). The compiled database
@@ -154,31 +151,57 @@ local function _CountIcons(objective)
     return count
 end
 
--- Unload an objective's icons. We only unload an icon if it still holds the exact data table
--- we drew it with: party icons are keyed by questId in QuestieMap.questIdFrames, the same key
--- the local player's own quest uses, so an icon may have already been unloaded and recycled.
--- _Qframe.Unload sets `data = nil` on unload, so unloaded/reused frames are skipped.
----@param objective table
-local function _UnloadObjective(objective)
-    for _, spawn in pairs(objective.AlreadySpawned) do
-        for _, mapIcon in pairs(spawn.mapRefs) do
-            if mapIcon.data == spawn.data then
-                QuestieFramePool:UnloadFrame(mapIcon)
-            end
+-- Frames may be recycled before the next batch runs; retain their original data.
+local pendingUnloads = {}
+local nextUnload = 1
+local unloadScheduled = false
+local function _ProcessUnloads()
+    local stop = math.min(nextUnload + ICONS_PER_FRAME - 1, #pendingUnloads)
+    while nextUnload <= stop do
+        local pending = pendingUnloads[nextUnload]
+        nextUnload = nextUnload + 1
+        if pending[1].data == pending[2] then
+            local ok, err = pcall(QuestieFramePool.UnloadFrame, QuestieFramePool, pending[1])
+            if not ok then pcall(CallErrorHandler, err) end
         end
-        for _, minimapIcon in pairs(spawn.minimapRefs) do
-            if minimapIcon.data == spawn.data then
-                QuestieFramePool:UnloadFrame(minimapIcon)
-            end
-        end
+    end
+    if nextUnload <= #pendingUnloads then
+        C_Timer.After(0, _ProcessUnloads)
+    else
+        pendingUnloads, nextUnload, unloadScheduled = {}, 1, false
     end
 end
 
----@param objectives table[]
-local function _UnloadObjectives(objectives)
+local function _UnloadObjectivesLater(objectives)
     for _, objective in pairs(objectives) do
-        _UnloadObjective(objective)
+        for _, spawn in pairs(objective.AlreadySpawned) do
+            for _, refs in ipairs({spawn.mapRefs, spawn.minimapRefs}) do
+                for _, icon in pairs(refs) do
+                    pendingUnloads[#pendingUnloads + 1] = {icon, spawn.data}
+                end
+            end
+        end
     end
+    if not unloadScheduled and nextUnload <= #pendingUnloads then
+        unloadScheduled = true
+        C_Timer.After(0, _ProcessUnloads)
+    end
+end
+
+local function _HasAllIcons(entry)
+    local count = 0
+    for _, objective in pairs(entry.objectives) do
+        for _, spawn in pairs(objective.AlreadySpawned) do
+            for _, icon in pairs(spawn.mapRefs) do
+                if icon.data ~= spawn.data or icon._needsUnload then return false end
+                count = count + 1
+            end
+            for _, icon in pairs(spawn.minimapRefs) do
+                if icon.data ~= spawn.data or icon._needsUnload then return false end
+            end
+        end
+    end
+    return count == entry.iconCount
 end
 
 ---@param questId number
@@ -187,26 +210,22 @@ local function _ClearQuest(questId)
     if not entry then
         return
     end
-    _UnloadObjectives(entry.objectives)
+    _UnloadObjectivesLater(entry.objectives)
     if entry.counted then
         drawnIconCount = drawnIconCount - entry.iconCount
     end
     drawnByQuest[questId] = nil
 end
 
--- Draw a single party quest's objectives (assumes it has already been cleared).
----@param questId number
----@param generation number
-local function _DrawQuest(questId, generation)
-    -- Quests the local player has are drawn by the normal pipeline; don't double up.
-    if _PlayerHasQuest(questId) or drawnIconCount >= MAX_PARTY_ICONS then
-        return
-    end
-
+local function _CollectIndices(questId)
     local players = QuestieComms.remoteQuestLogs[questId]
-    if not players then
-        return
-    end
+    if not players then return end
+    local localEntry = QuestLogCache.questLog_DO_NOT_MODIFY[questId]
+    local localQuest = localEntry and QuestieDB.GetQuest(questId)
+    local localDrawsNothing = localEntry and (localEntry.isComplete == 1 or localEntry.isComplete == -1
+        or (localQuest and localQuest.isComplete == true))
+    local localObjectives = localEntry and localEntry.objectives or {}
+    local localMapped = localQuest and localQuest.Objectives or {}
 
     -- An objective index is drawn if at least one online party member still needs it. Offline
     -- members and failed quests are ignored so their objective icons are not actionable.
@@ -217,7 +236,11 @@ local function _DrawQuest(questId, generation)
             for objectiveIndex, objective in pairs(objectives) do
                 if objective.status ~= "F" then
                     reportedIndices[objectiveIndex] = true
-                    if not objective.finished then
+                    local localObjective = localObjectives[objectiveIndex]
+                    local mapped = localMapped[objectiveIndex]
+                    local drawnLocally = localEntry and not localDrawsNothing and localObjective
+                        and not localObjective.finished and mapped and not mapped.Completed
+                    if not objective.finished and not drawnLocally then
                         neededIndices[objectiveIndex] = objective
                     end
                 end
@@ -227,6 +250,30 @@ local function _DrawQuest(questId, generation)
     if not next(neededIndices) then
         return
     end
+    return neededIndices, reportedIndices, not localEntry or localDrawsNothing
+end
+
+local function _GetDrawSignature(needed, reported, drawSpecials)
+    if not needed then return end
+    local parts = {tostring(drawSpecials), tostring(Questie.db.profile.enabled),
+        tostring(Questie.db.profile.enableMapIcons), tostring(Questie.db.profile.enableMiniMapIcons)}
+    for index, objective in pairs(needed) do
+        parts[#parts + 1] = index .. ":" .. tostring(objective.type) .. ":" .. tostring(objective.id)
+    end
+    for index in pairs(reported) do parts[#parts + 1] = "k" .. index end
+    if QuestieIconVisibility.IsEnabled then
+        parts[#parts + 1] = "map:" .. tostring(QuestieIconVisibility:IsEnabled("objective", false))
+        parts[#parts + 1] = "mini:" .. tostring(QuestieIconVisibility:IsEnabled("objective", true))
+    else
+        parts[#parts + 1] = "objectives:" .. tostring(QuestieIconVisibility:IsEnabledAnywhere("objective"))
+    end
+    table.sort(parts)
+    return table.concat(parts, ",")
+end
+
+-- Draw only objectives not already supplied by the local quest pipeline.
+local function _DrawQuest(questId, generation, neededIndices, reportedIndices, drawSpecials, signature)
+    if drawnIconCount >= MAX_PARTY_ICONS then return end
 
     local quest = QuestieDB.GetQuest(questId)
     if not (quest and quest.ObjectiveData) then
@@ -240,9 +287,13 @@ local function _DrawQuest(questId, generation)
     local iconCount = 0
     local entry = { objectives = objectives, iconCount = 0, counted = false }
     drawnByQuest[questId] = entry
+    local completeDraw = true
+    local function _IsCurrentDraw()
+        return generation == processingGeneration and drawnByQuest[questId] == entry and _ShouldDraw()
+    end
 
     local function _AbortDraw()
-        _UnloadObjectives(objectives)
+        _UnloadObjectivesLater(objectives)
         if drawnByQuest[questId] == entry then
             drawnByQuest[questId] = nil
         end
@@ -250,6 +301,7 @@ local function _DrawQuest(questId, generation)
 
     for objectiveIndex, remoteObjective in pairs(neededIndices) do
         if drawnIconCount + iconCount >= MAX_PARTY_ICONS then
+            completeDraw = false
             break
         end
 
@@ -293,6 +345,7 @@ local function _DrawQuest(questId, generation)
                 -- Marks this as a party member's objective (the local player does not have the
                 -- quest), so the map tooltip doesn't label it with the local player's name.
                 IsPartyObjective = true,
+                IsCurrentDraw = _IsCurrentDraw,
                 -- Skip in-world unit/item tooltip registration; the map icon tooltip already
                 -- shows party members via QuestieComms, and this avoids leaking tooltip entries.
                 hasRegisteredTooltips = true,
@@ -300,14 +353,21 @@ local function _DrawQuest(questId, generation)
             }
 
             objectives[#objectives + 1] = objective
+            local spawnCache = objective.AlreadySpawned
             QuestieQuest:PopulateObjective(quest, objectiveIndex, objective, true)
-            if generation ~= processingGeneration then
+            if objective.AlreadySpawned ~= spawnCache then
+                _UnloadObjectivesLater({{AlreadySpawned = spawnCache}})
+                _AbortDraw()
+                return
+            end
+            if not _IsCurrentDraw() then
                 _AbortDraw()
                 return
             end
             local objectiveIconCount = _CountIcons(objective)
             if drawnIconCount + iconCount + objectiveIconCount > MAX_PARTY_ICONS then
-                _UnloadObjective(objective)
+                completeDraw = false
+                _UnloadObjectivesLater({objective})
                 objectives[#objectives] = nil
                 break
             end
@@ -331,7 +391,7 @@ local function _DrawQuest(questId, generation)
 
         -- Match the local quest pipeline: linked extras disappear when every visible party member
         -- has completed that objective. Unlinked (0/nil) and invalid links remain visible.
-        if not hasValidLink or neededIndices[linkedObjectiveIndex] then
+        if (hasValidLink and neededIndices[linkedObjectiveIndex]) or (not hasValidLink and drawSpecials) then
             visibleSpecialObjectives[#visibleSpecialObjectives + 1] = special
         end
     end
@@ -339,6 +399,7 @@ local function _DrawQuest(questId, generation)
     local specialCounter = 0
     for _, special in ipairs(visibleSpecialObjectives) do
         if drawnIconCount + iconCount >= MAX_PARTY_ICONS then
+            completeDraw = false
             break
         end
 
@@ -356,19 +417,27 @@ local function _DrawQuest(questId, generation)
             AlreadySpawned = {},
             Update = NOP_FUNCTION,
             IsPartyObjective = true,
+            IsCurrentDraw = _IsCurrentDraw,
             hasRegisteredTooltips = true,
             registeredItemTooltips = true,
         }
 
         objectives[#objectives + 1] = objective
+        local spawnCache = objective.AlreadySpawned
         QuestieQuest:PopulateObjective(quest, objective.Index, objective, true)
-        if generation ~= processingGeneration then
+        if objective.AlreadySpawned ~= spawnCache then
+            _UnloadObjectivesLater({{AlreadySpawned = spawnCache}})
+            _AbortDraw()
+            return
+        end
+        if not _IsCurrentDraw() then
             _AbortDraw()
             return
         end
         local objectiveIconCount = _CountIcons(objective)
         if drawnIconCount + iconCount + objectiveIconCount > MAX_PARTY_ICONS then
-            _UnloadObjective(objective)
+            completeDraw = false
+            _UnloadObjectivesLater({objective})
             objectives[#objectives] = nil
             break
         end
@@ -376,13 +445,14 @@ local function _DrawQuest(questId, generation)
         entry.iconCount = iconCount
     end
 
-    if generation ~= processingGeneration then
+    if not _IsCurrentDraw() then
         _AbortDraw()
         return
     end
     if #objectives > 0 then
         entry.counted = true
         drawnIconCount = drawnIconCount + iconCount
+        entry.signature = completeDraw and signature or nil
     else
         drawnByQuest[questId] = nil
     end
@@ -419,12 +489,26 @@ _ProcessQueue = function(queue, index, generation)
             local questId = queue[i]
             -- A malformed or incomplete quest must not abort the entire party queue.
             -- The next refresh can clear and retry this quest once its data is ready.
-            local success = xpcall(function()
-                _ClearQuest(questId)
-                _DrawQuest(questId, generation)
-            end, CallErrorHandler)
+            -- A child coroutine isolates errors without preventing yields on Lua 5.1.
+            local worker = coroutine.create(function()
+                local needed, reported, drawSpecials = _CollectIndices(questId)
+                local signature = _GetDrawSignature(needed, reported, drawSpecials)
+                local entry = drawnByQuest[questId]
+                if signature and entry and entry.signature == signature and _HasAllIcons(entry) then
+                    if MapIconTooltip.RefreshQuest then MapIconTooltip.RefreshQuest(questId) end
+                else
+                    _ClearQuest(questId)
+                    if signature then _DrawQuest(questId, generation, needed, reported, drawSpecials, signature) end
+                end
+            end)
+            local success, err = coroutine.resume(worker)
+            while success and coroutine.status(worker) == "suspended" do
+                coroutine.yield()
+                success, err = coroutine.resume(worker)
+            end
             if not success then
-                _ClearQuest(questId)
+                CallErrorHandler(err)
+                if generation == processingGeneration then _ClearQuest(questId) end
             end
         end
 
@@ -483,7 +567,10 @@ _ProcessScheduled = function()
     if fullRefreshPending then
         fullRefreshPending = false
         dirtyQuests = {}
-        QuestiePartyObjectives:Clear()
+        -- Retire departed quests without rebuilding the unchanged ones.
+        for questId in pairs(drawnByQuest) do
+            if not QuestieComms.remoteQuestLogs[questId] then queue[#queue + 1] = questId end
+        end
         for questId in pairs(QuestieComms.remoteQuestLogs) do
             queue[#queue + 1] = questId
         end
@@ -526,7 +613,7 @@ function QuestiePartyObjectives:Clear()
     processing = false
 
     for _, entry in pairs(drawnByQuest) do
-        _UnloadObjectives(entry.objectives)
+        _UnloadObjectivesLater(entry.objectives)
     end
     drawnByQuest = {}
     drawnIconCount = 0

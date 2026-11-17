@@ -25,6 +25,7 @@ local WeaponMasterSkills = QuestieLoader:ImportModule("WeaponMasterSkills")
 ---@type Phasing
 local Phasing = QuestieLoader:ImportModule("Phasing")
 local QuestieWaypoints = QuestieLoader:ImportModule("QuestieWaypoints")
+local QuestiePartyObjectives = QuestieLoader:ImportModule("QuestiePartyObjectives")
 
 --- COMPATIBILITY ---
 local C_Timer = QuestieCompat.C_Timer
@@ -210,6 +211,7 @@ local function _SnapshotQuestFrames(questId, iconType, noteType)
     for name in pairs(frameNames) do
         local frame = _G[name]
         local data = frame and frame.data
+        if not frame then frameNames[name] = nil end
         if frame and data
             and ((not iconType) or data.Icon == iconType)
             and ((not noteType) or data.Type == noteType) then
@@ -257,6 +259,9 @@ function QuestieMap:UnloadQuestFrames(questId, iconType, noteType, yieldRefresh)
                     coYield()
                 end
             end
+        end
+        if not iconType and not noteType and QuestiePartyObjectives.ScheduleUpdate then
+            QuestiePartyObjectives:ScheduleUpdate(questId)
         end
     end
 end

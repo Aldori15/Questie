@@ -593,6 +593,7 @@ function _QuestEventHandler:UpdateAllQuests(confirmItemRegressions)
                 QuestieNameplate:UpdateNameplate()
                 if QuestiePlayer.currentQuestlog[questId] then
                     QuestieQuest:UpdateQuest(questId)
+                    QuestiePartyObjectives:ScheduleUpdate(questId)
                 else
                     local data = questLog[questId]
                     QuestLifecycle:AdoptQuest(questId, function() return questLog[questId] == data end)

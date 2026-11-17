@@ -2,6 +2,7 @@
 local MapIconTooltip = QuestieLoader:CreateModule("MapIconTooltip");
 local _MapIconTooltip = {}
 local QuestieWaypoints = QuestieLoader:ImportModule("QuestieWaypoints")
+local QuestieFrame = QuestieLoader:ImportModule("QuestieFrame")
 local tinsert = table.insert;
 
 ---@type QuestieMap
@@ -53,6 +54,7 @@ local TRANSPARENT_ICON_TEXTURE = ""
 
 
 local lastTooltipShowTimestamp = GetTime()
+local pathTooltip
 
 -- helper function to format a label with a colon, respecting localization rules
 local function FormatLabelWithColon(label)
@@ -124,6 +126,13 @@ function MapIconTooltip.ShowOnTooltip(self, targetTooltip, owner, icons)
 
     local Tooltip = targetTooltip or QuestieCompat.SetupTooltip(self) or GameTooltip;
     Tooltip._owner = owner or self;
+    Tooltip._showIcon, Tooltip._showData = self, self.data
+    Tooltip._showOwner, Tooltip._showIcons = owner, icons
+    Tooltip._showIconData = {}
+    for _, listed in ipairs(icons or {}) do
+        Tooltip._showIconData[listed] = listed.data
+    end
+    if owner then pathTooltip = Tooltip end
     Tooltip:SetOwner(owner or self, "ANCHOR_CURSOR"); --"ANCHOR_CURSOR" or (self, self)
 
     local maxDistCluster = 1
@@ -193,6 +202,7 @@ function MapIconTooltip.ShowOnTooltip(self, targetTooltip, owner, icons)
             local entry = {}
             entry.color = { icon.texture.r, icon.texture.g, icon.texture.b, icon.texture.a };
             entry.icon = icon;
+            entry.data = iconData;
             if Questie.db.profile.questObjectiveColors then
                 icon.texture:SetVertexColor(1, 1, 1, 1);   -- If different colors are active simply change it to the regular icon color
             else
@@ -601,6 +611,46 @@ function MapIconTooltip.ShowOnTooltip(self, targetTooltip, owner, icons)
     Tooltip:SetFrameStrata("TOOLTIP");
     Tooltip.ShownAsMapIcon = true
     Tooltip:Show();
+end
+
+local function _RefreshTooltip(tooltip, questId)
+    if not tooltip then return end
+    local icon, owner = tooltip._showIcon, tooltip._showOwner
+    if not tooltip.ShownAsMapIcon or not tooltip:IsShown() or not icon or not icon.data
+        or icon.data ~= tooltip._showData or tooltip:GetOwner() ~= (owner or icon)
+        or not (tooltip.questOrder and tooltip.questOrder[questId]) then
+        return
+    end
+    -- Patrol paths can show faded or hidden icon copies, but their root must remain visible.
+    if (owner and owner.IsVisible and not owner:IsVisible())
+        or (not owner and (icon.hidden or (icon.IsVisible and not icon:IsVisible()))) then
+        return
+    end
+    local _, _, _, alpha = icon.texture:GetVertexColor()
+    if alpha == 0 and not owner then return end
+
+    local icons
+    if tooltip._showIcons then
+        icons = {}
+        for _, listed in ipairs(tooltip._showIcons) do
+            if listed.data and listed.data == tooltip._showIconData[listed] then
+                icons[#icons + 1] = listed
+            end
+        end
+    end
+
+    QuestieFrame.ResetHoverHighlights(icon)
+    lastTooltipShowTimestamp = 0
+    MapIconTooltip.ShowOnTooltip(icon, tooltip, owner, icons)
+end
+
+-- Recollect progress for open tooltips without replacing their owner or reviving recycled pins.
+function MapIconTooltip.RefreshQuest(questId)
+    _RefreshTooltip(GameTooltip, questId)
+    if WorldMapTooltip ~= GameTooltip then _RefreshTooltip(WorldMapTooltip, questId) end
+    if pathTooltip ~= GameTooltip and pathTooltip ~= WorldMapTooltip then
+        _RefreshTooltip(pathTooltip, questId)
+    end
 end
 
 local isLastMinimapInside, lastMinimapInsideCheckTimestamp
