@@ -53,6 +53,7 @@ local function fixture()
         ImportModule = function(_, name) return module(name) end}
     module("TrackerData").GetQuest = function(id) return f.quests[id] end
     module("TrackerData").ContainsQuest = function(id) return f.present[id] end
+    module("TrackerUtils").CanShareQuest = function() return f.canShare ~= false end
     module("TrackerData").GetColoredQuestName = function(quest, levels)
         return (levels and "[12] " or "") .. "Quest " .. quest.Id
     end
@@ -93,6 +94,34 @@ local function fixture()
     end
     function f:tick() self.tickers[#self.tickers].callback() end
     return f
+end
+
+do
+    local f = fixture()
+    local line = f:line()
+    f:progress(844)
+    local profile = f.env.Questie.db.profile
+    for _, bind in ipairs({"disabled", "invalid", "hyperleft"}) do
+        profile.trackerbindShareQuest = bind
+        f.module.Show(line)
+        assert(not f:contains("Share Quest"), "disabled or unknown shortcuts have no share hint")
+    end
+    profile.trackerbindShareQuest = "altright"
+    f.module.Show(line)
+    assert(f:contains("(Alt + Right Click: Share Quest)"), "hint describes configured modifier and button")
+    f.canShare = false
+    f:tick()
+    assert(not f:contains("Share Quest") and f:contains("Friend"), "unpushable quests retain progress without share hint")
+    f.canShare = true
+    profile.trackerbindSetTomTom = "altright"
+    f:tick()
+    assert(not f:contains("Share Quest"), "TomTom priority suppresses conflicting share hint")
+    line.Quest.NativeOnly = true
+    f:tick()
+    assert(f:contains("Share Quest"), "native-only quests skip TomTom and retain share hint")
+    profile.trackerbindShareQuest = "left"
+    f:tick()
+    assert(f:contains("(Left Click: Share Quest)"), "unmodified shortcut hint")
 end
 
 -- Verify the first-display layout pass is synchronous and adds no progress reads or timers.

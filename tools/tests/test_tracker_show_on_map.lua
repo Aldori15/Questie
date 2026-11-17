@@ -26,7 +26,8 @@ local function setup()
         return ticker
     end
     function timer.After(delay, callback) s.afters[#s.afters + 1] = {due = s.time + delay, callback = callback} end
-    env.QuestieCompat = {C_Timer = timer, C_Map = {}, GetQuestLogIndexByID = function(id) return s.native[id] and 1 end,
+    env.QuestieCompat = {IsInGroup = function() return false end, IsInRaid = function() return false end,
+        C_Timer = timer, C_Map = {}, GetQuestLogIndexByID = function(id) return s.native[id] and 1 end,
         HBDPins = {UpdateWorldMap = function()
             s.refreshes = s.refreshes + 1
             for _, icon in ipairs(s.icons) do if icon.offMap then icon.texture:Hide() end end

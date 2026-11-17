@@ -2,6 +2,30 @@
 local l10n = QuestieLoader:ImportModule("l10n")
 
 local trackerUILocales = {
+    ["Share Quest"] = {
+        ["enUS"] = true,
+        ["deDE"] = "Quest teilen",
+        ["esES"] = "Compartir misión",
+        ["esMX"] = "Compartir misión",
+        ["frFR"] = "Partager la quête",
+        ["koKR"] = "퀘스트 공유",
+        ["ptBR"] = "Compartilhar missão",
+        ["ruRU"] = "Поделиться заданием",
+        ["zhCN"] = "共享任务",
+        ["zhTW"] = "分享任務",
+    },
+    ["Can't share a Quest while in combat."] = {
+        ["enUS"] = true,
+        ["deDE"] = "Quests können im Kampf nicht geteilt werden.",
+        ["esES"] = "No se puede compartir una misión durante el combate.",
+        ["esMX"] = "No se puede compartir una misión durante el combate.",
+        ["frFR"] = "Impossible de partager une quête en combat.",
+        ["koKR"] = "전투 중에는 퀘스트를 공유할 수 없습니다.",
+        ["ptBR"] = "Não é possível compartilhar uma missão durante o combate.",
+        ["ruRU"] = "Невозможно поделиться заданием во время боя.",
+        ["zhCN"] = "战斗中无法共享任务。",
+        ["zhTW"] = "戰鬥中無法分享任務。",
+    },
     ["Questie Tracker"] = {
         ["ptBR"] = "Rastreador de Questie",
         ["ruRU"] = "Активные задания",

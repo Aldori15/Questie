@@ -137,6 +137,7 @@ function QuestieOptionsDefaults:Load()
             autoRouteEnabled = false,
             trackerbindOpenQuestLog = 'left',
             trackerbindUntrack = "shiftleft",
+            trackerbindShareQuest = "disabled",
             trackerSetpoint = "TOPLEFT",
             trackerFontSizeHeader = 12,
             trackerFontHeader = 'Friz Quadrata TT',

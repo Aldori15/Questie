@@ -293,6 +293,31 @@ function TrackerUtils:IsBindTrue(bind, button)
     return bind and button and bindTruthTable[bind] and bindTruthTable[bind](button)
 end
 
+local function WithQuestSelected(questId, callback)
+    local index = GetQuestLogIndexByID(questId)
+    if not index or index <= 0 then return end
+    local previous = GetQuestLogSelection()
+    SelectQuestLogEntry(index)
+    local result = callback()
+    SelectQuestLogEntry(previous or 0)
+    return result
+end
+
+function TrackerUtils.CanShareQuest(questId)
+    if not (QuestieCompat.IsInGroup() or QuestieCompat.IsInRaid()) then return false end
+    return WithQuestSelected(questId, GetQuestLogPushable) and true or false
+end
+
+function TrackerUtils.ShareQuest(questId)
+    if InCombatLockdown() then
+        Questie:Print(l10n("Can't share a Quest while in combat."))
+        return false
+    end
+    if not TrackerUtils.CanShareQuest(questId) then return false end
+    WithQuestSelected(questId, QuestLogPushQuest)
+    return true
+end
+
 ---@param itemId number
 ---@return boolean
 function TrackerUtils:IsQuestItemUsable(itemId)

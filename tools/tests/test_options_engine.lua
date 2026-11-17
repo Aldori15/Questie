@@ -1081,5 +1081,15 @@ assert(dialog.tooltip:IsShown(), "foreign pooled controls preserve their own Ace
 env.GameTooltip:Hide()
 dialog.tooltip:Hide()
 groups = groups + 1
+engine:ShowFrame(); engine:SelectCategory("actual_tracker"); tick()
+local shareControl = assert(control("shareQuest"), "tracker exposes share shortcut control")
+local priorUntrack = db.profile.trackerbindUntrack
+local priorOpen = db.profile.trackerbindOpenQuestLog
+equal(db.profile.trackerbindShareQuest, "disabled", "sharing defaults disabled")
+shareControl:Fire("OnValueChanged", "altright"); tick()
+equal(db.profile.trackerbindShareQuest, "altright", "share setting uses real Ace callback")
+equal(db.profile.trackerbindUntrack, priorUntrack, "share setting preserves untrack binding")
+equal(db.profile.trackerbindOpenQuestLog, priorOpen, "share setting preserves quest log binding")
+groups = groups + 1
 assert(not next(s.errors), s.errors[1])
 print("Standalone options engine: " .. groups .. " groups passed (real Ace validation, callbacks, profiles and native frame lifecycle)")

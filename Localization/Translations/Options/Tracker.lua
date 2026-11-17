@@ -2,6 +2,30 @@
 local l10n = QuestieLoader:ImportModule("l10n")
 
 local trackerOptionsLocales = {
+    ["Share / Link Quest"] = {
+        ["enUS"] = true,
+        ["deDE"] = "Quest teilen / verlinken",
+        ["esES"] = "Compartir / enlazar misión",
+        ["esMX"] = "Compartir / enlazar misión",
+        ["frFR"] = "Partager / Lier la quête",
+        ["koKR"] = "퀘스트 공유 / 링크",
+        ["ptBR"] = "Compartilhar / vincular missão",
+        ["ruRU"] = "Поделиться заданием / ссылка",
+        ["zhCN"] = "共享 / 链接任务",
+        ["zhTW"] = "分享 / 連結任務",
+    },
+    ["This shortcut shares a Quest with your group when the chat input box is NOT visible, otherwise this will link a Quest to chat."] = {
+        ["enUS"] = true,
+        ["deDE"] = "Dieser Kurzbefehl teilt eine Quest mit deiner Gruppe, wenn das Chat-Eingabefeld NICHT sichtbar ist. Andernfalls wird die Quest im Chat verlinkt.",
+        ["esES"] = "Este atajo comparte una misión con tu grupo cuando el cuadro de entrada del chat NO está visible; de lo contrario, enlaza la misión en el chat.",
+        ["esMX"] = "Este atajo comparte una misión con tu grupo cuando el cuadro de entrada del chat NO está visible; de lo contrario, enlaza la misión en el chat.",
+        ["frFR"] = "Ce raccourci partage une quête avec votre groupe lorsque le champ de discussion n'est PAS visible ; sinon, il insère un lien vers la quête dans la discussion.",
+        ["koKR"] = "채팅 입력창이 보이지 않을 때는 이 단축키로 파티에 퀘스트를 공유하고, 입력창이 보일 때는 채팅에 퀘스트 링크를 삽입합니다.",
+        ["ptBR"] = "Este atalho compartilha uma missão com seu grupo quando a caixa de entrada do bate-papo NÃO está visível; caso contrário, insere um link da missão no bate-papo.",
+        ["ruRU"] = "Это сочетание клавиш позволяет поделиться заданием с группой, если поле ввода чата НЕ открыто. В противном случае в чат вставляется ссылка на задание.",
+        ["zhCN"] = "当聊天输入框不可见时，此快捷键会向队伍共享任务；否则，会将任务链接插入聊天输入框。",
+        ["zhTW"] = "當聊天輸入框不可見時，此快捷鍵會向隊伍分享任務；否則，會將任務連結插入聊天輸入框。",
+    },
     ["Tracker"] = {
         ["ptBR"] = "Rastreador",
         ["ruRU"] = "Трекер",

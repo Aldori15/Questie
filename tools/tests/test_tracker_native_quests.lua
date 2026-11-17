@@ -49,7 +49,8 @@ env.UIParent, env.StaticPopupDialogs = {}, {}
 local char = {TrackedQuests = {}, AutoUntrackedQuests = {}, collapsedQuests = {}, collapsedZones = {}}
 local profile = {trackerEnabled = true, autoTrackQuests = false, trackerSortObjectives = "byZone", trimObjectiveText = true}
 env.Questie = {db = {char = char, profile = profile}, Debug = noop, Colorize = function(_, text) return text end}
-env.QuestieCompat = {GetQuestLogTitle = logTitle, GetQuestLogIndexByID = logIndex,
+env.QuestieCompat = {IsInGroup = function() return false end, IsInRaid = function() return false end,
+    GetQuestLogTitle = logTitle, GetQuestLogIndexByID = logIndex,
     GetQuestLink = function(id) return "|Hquest:" .. id .. ":20|h[Native quest]|h" end,
     C_Map = {GetBestMapForUnit = function() end}, C_Timer = {NewTicker = function() return {Cancel = noop} end},
     LibUIDropDownMenu = {Create_UIDropDownMenu = function() return {} end}}

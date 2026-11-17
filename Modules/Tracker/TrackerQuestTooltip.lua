@@ -6,6 +6,7 @@ local QuestLogCache = QuestieLoader:ImportModule("QuestLogCache")
 local QuestieComms = QuestieLoader:ImportModule("QuestieComms")
 local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
 local QuestiePlayer = QuestieLoader:ImportModule("QuestiePlayer")
+local TrackerUtils = QuestieLoader:ImportModule("TrackerUtils")
 local l10n = QuestieLoader:ImportModule("l10n")
 local C_Timer = QuestieCompat.C_Timer
 
@@ -83,6 +84,20 @@ local function _AddObjective(text, collected, needed, finished)
     tooltip:AddLine("  " .. color .. text .. "|r", 1, 1, 1, true)
 end
 
+local function _AddShareHint(quest)
+    local bind = Questie.db.profile.trackerbindShareQuest
+    if not bind or bind == "disabled"
+        or (not quest.NativeOnly and bind == Questie.db.profile.trackerbindSetTomTom) then return end
+    local modifier, button = bind:match("^(%a-)(left)$")
+    if not button then modifier, button = bind:match("^(%a-)(right)$") end
+    local modifiers = {shift = "Shift", ctrl = "Control", alt = "Alt"}
+    if not button or (modifier ~= "" and not modifiers[modifier]) or not TrackerUtils.CanShareQuest(quest.Id) then return end
+    local text = l10n(button == "left" and "Left Click" or "Right Click")
+    if modifiers[modifier] then text = l10n(modifiers[modifier]) .. " + " .. text end
+    tooltip:AddLine(" ")
+    tooltip:AddLine("(" .. text .. l10n(": ") .. l10n("Share Quest") .. ")", 0.6, 0.6, 0.6)
+end
+
 local function _Refresh()
     local line = hoveredLine
     local quest = _CanShow() and _GetQuest(line)
@@ -133,6 +148,7 @@ local function _Refresh()
                 objective.fulfilled, objective.required, objective.finished)
         end
     end
+    _AddShareHint(quest)
     tooltip:Show()
     if not layoutInitialized then
         -- Settle wrapped-line height on the first display before the next hover refresh.

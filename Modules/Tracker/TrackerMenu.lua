@@ -283,6 +283,16 @@ TrackerMenu.addLinkToChatOption = function(menu, quest)
     })
 end
 
+TrackerMenu.addShareQuestOption = function(menu, quest)
+    tinsert(menu, {
+        text = l10n("Share Quest"),
+        func = function()
+            LibDropDown:CloseDropDownMenus()
+            TrackerUtils.ShareQuest(quest.Id)
+        end,
+    })
+end
+
 TrackerMenu.addShowInQuestLogOption = function(menu, quest)
     tinsert(menu, {
         text = l10n('Show in Quest Log'),
@@ -521,6 +531,7 @@ function TrackerMenu:GetMenuForQuest(quest)
 
     if quest.NativeOnly then
         tinsert(menu, {text = TrackerData.GetColoredQuestName(quest, Questie.db.profile.enableTooltipsQuestLevel, true), isTitle = true})
+        if TrackerUtils.CanShareQuest(quest.Id) then TrackerMenu.addShareQuestOption(menu, quest) end
         TrackerMenu.minMaxQuestOption(menu, quest)
         TrackerMenu.addShowInQuestLogOption(menu, quest)
         TrackerMenu.addLinkToChatOption(menu, quest)
@@ -563,6 +574,7 @@ function TrackerMenu:GetMenuForQuest(quest)
     tinsert(menu, { text = coloredQuestName, isTitle = true })
 
     TrackerMenu.addObjectiveOption(menu, subMenu, quest)
+    if TrackerUtils.CanShareQuest(quest.Id) then TrackerMenu.addShareQuestOption(menu, quest) end
     TrackerMenu.addFocusUnfocusOption(menu, quest)
     TrackerMenu.addTomTomOption(menu, quest, nil)
     if IsAddOnLoaded("TomTom") then

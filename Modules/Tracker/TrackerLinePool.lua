@@ -826,6 +826,13 @@ TrackerLinePool.OnClickQuest = function(self, button)
         else
             TrackerUtils:SetTomTomTargetToDungeonEntrance(self.Quest)
         end
+    elseif TrackerUtils:IsBindTrue(Questie.db.profile.trackerbindShareQuest, button) then
+        if ChatEdit_GetActiveWindow() then
+            local link = TrackerData.GetQuestLink(self.Quest)
+            if link then ChatEdit_InsertLink(link) end
+        else
+            TrackerUtils.ShareQuest(self.Quest.Id)
+        end
     elseif TrackerUtils:IsBindTrue(Questie.db.profile.trackerbindUntrack, button) then
         if (IsModifiedClick("CHATLINK") and ChatEdit_GetActiveWindow()) then
             ChatEdit_InsertLink(TrackerData.GetQuestLink(self.Quest))

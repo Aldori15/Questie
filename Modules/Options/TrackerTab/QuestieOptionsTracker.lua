@@ -210,6 +210,21 @@ function QuestieOptions.tabs.tracker:Initialize()
                             Questie.db.profile.trackerbindUntrack = key
                         end
                     },
+                    Spacer_Share = QuestieOptionsUtils:Spacer(8.1),
+                    shareQuest = {
+                        type = "select",
+                        order = 8.2,
+                        values = _GetShortcuts(),
+                        style = "dropdown",
+                        width = 1.5,
+                        name = function() return l10n("Share / Link Quest") end,
+                        desc = function() return l10n("This shortcut shares a Quest with your group when the chat input box is NOT visible, otherwise this will link a Quest to chat.") end,
+                        disabled = function() return not Questie.db.profile.trackerEnabled end,
+                        get = function() return Questie.db.profile.trackerbindShareQuest end,
+                        set = function(_, key)
+                            Questie.db.profile.trackerbindShareQuest = key
+                        end
+                    },
                     Spacer_Sliders = QuestieOptionsUtils:Spacer(9),
                     questPadding = {
                         type = "range",
