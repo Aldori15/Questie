@@ -129,4 +129,39 @@ for _, key in ipairs({"Share / Link Quest", "This shortcut shares a Quest with y
         assert(translations.translations[key][locale], key .. " missing " .. locale)
     end
 end
-print("Tracker quest sharing: native selection, group, combat, stale menus, shortcuts and all locale checks passed")
+-- Menu links must use the active edit box, not the first edit box's visibility.
+do
+    local insertLink = env.ChatEdit_InsertLink
+    env.ChatFrame1EditBox = {IsVisible = function() return true end}
+    env.GetAchievementLink = function(id) return "achievement:" .. id end
+    local opened, inserted, draft
+    env.ChatFrame_OpenChat = function(link) opened = link end
+    env.ChatEdit_InsertLink = function(link)
+        if s.chat then inserted = link; draft = draft .. link end
+    end
+    for _, case in ipairs({
+        {add = menu.addLinkToChatOption, record = {Id = 900001}, link = getLink({Id = 900001})},
+        {add = menu.addLinkToChatOption, record = {Id = 900001, NativeOnly = true}, link = getLink({Id = 900001})},
+        {add = menu.addAchieveLinkToChatOption, record = {Id = 6}, link = "achievement:6"},
+    }) do
+        for _, active in ipairs({false, true}) do
+            s.chat = active and {} or nil -- Active box can belong to a different chat frame.
+            opened, inserted, draft = nil, nil, "Existing draft "
+            local entries = {}
+            case.add(entries, case.record)
+            local closes = s.closes
+            entries[1].func()
+            equal(s.closes, closes + 1, "menu link closes dropdown")
+            if active then
+                equal(inserted, case.link, "link inserted into active edit box")
+                equal(draft, "Existing draft " .. case.link, "active draft preserved")
+                equal(opened, nil, "active chat is not reopened")
+            else
+                equal(opened, case.link, "idle visible edit box opens chat with link")
+                equal(inserted, nil, "inactive chat does not receive insertion")
+            end
+        end
+    end
+    env.ChatEdit_InsertLink = insertLink
+end
+print("Tracker quest sharing and menu links: native selection, combat, shortcuts, chat focus and all locales passed")
