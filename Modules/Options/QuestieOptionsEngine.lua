@@ -274,6 +274,23 @@ local function StyleButton(widget)
 end
 
 local function StyleWidget(widget)
+    if not widget.questieSettingsTooltipHook then
+        widget.questieSettingsTooltipHook = true
+        widget.frame:HookScript("OnHide", function(self)
+            if not IsSettingsWidget(widget) then return end
+            -- Ace owns its description tooltip; native controls may use GameTooltip.
+            for _, tooltip in ipairs({AceConfigDialog.tooltip, GameTooltip}) do
+                local owner = tooltip:GetOwner()
+                while owner do
+                    if owner == self then
+                        tooltip:Hide()
+                        break
+                    end
+                    owner = owner:GetParent()
+                end
+            end
+        end)
+    end
     if widget.type == "Button" then
         StyleButton(widget)
     elseif widget.type == "CheckBox" and widget.highlight then

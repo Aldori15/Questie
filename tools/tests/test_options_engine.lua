@@ -73,6 +73,9 @@ function frameMethods:SetHighlightFontObject(value)
 end
 function frameMethods:SetDisabledFontObject(value) self.disabledFont = value end
 function frameMethods:GetName() return self.name end
+function frameMethods:SetOwner(owner) self.owner = owner end
+function frameMethods:GetOwner() return self.owner end
+function frameMethods:AddLine(text) self.lines = self.lines or {}; self.lines[#self.lines + 1] = text end
 function frameMethods:GetFrameStrata() return "DIALOG" end
 function frameMethods:SetText(value) self.text = value end
 function frameMethods:SetTextColor(...) self.textColor = {...} end
@@ -155,6 +158,7 @@ env.CreateFrame = function(kind, name, parent, template)
     return frame
 end
 env.UIParent = env.CreateFrame("Frame")
+env.GameTooltip = env.CreateFrame("GameTooltip")
 env.UIParent:SetSize(1024, 768)
 env.InterfaceOptionsFramePanelContainer = env.CreateFrame("Frame")
 env.InterfaceOptionsFrame, env.GameMenuFrame, env.ColorPickerFrame =
@@ -1031,6 +1035,51 @@ for _, suffix in ipairs({"ScrollUpButton", "ScrollDownButton"}) do
 end
 assert(s.menuShown and s.submenuShown, "foreign pooled scroll containers leave other menus open")
 equal(s.menuCloses, before, "inactive settings hooks do not close a foreign app's menus")
+groups = groups + 1
+
+-- Hiding controls must dismiss their own tooltips without relying on OnLeave.
+local function hoverOption()
+    engine:ShowFrame(); engine:SelectCategory("actual_icons"); tick()
+    local widget = control("alwaysGlowMap")
+    widget:Fire("OnEnter")
+    equal(dialog.tooltip:GetOwner(), widget.frame, "real Ace tooltip belongs to the option frame")
+    assert(dialog.tooltip:IsShown(), "hovered option tooltip is visible")
+    return widget
+end
+local hovered = hoverOption()
+engine:HideFrame()
+assert(not dialog.tooltip:IsShown(), "closing settings hides the option tooltip without OnLeave")
+hovered = hoverOption()
+engine:SelectCategory("actual_tracker"); tick()
+assert(not dialog.tooltip:IsShown(), "changing category dismisses the released option's tooltip")
+hovered = hoverOption()
+hovered.frame:Hide()
+assert(not dialog.tooltip:IsShown(), "hiding an individual option dismisses its tooltip")
+hovered = hoverOption()
+local child = env.CreateFrame("Button", nil, hovered.frame)
+env.GameTooltip:SetOwner(child); env.GameTooltip:Show()
+hovered.frame:Hide()
+assert(not env.GameTooltip:IsShown(), "child-owned tooltips follow their hidden settings control")
+hovered = hoverOption()
+env.GameTooltip:SetOwner(env.UIParent); env.GameTooltip:Show()
+dialog.tooltip:SetOwner(env.UIParent); dialog.tooltip:Show()
+engine:HideFrame()
+assert(env.GameTooltip:IsShown(), "closing settings preserves unrelated tooltip ownership")
+assert(dialog.tooltip:IsShown(), "closing settings preserves another Ace application's tooltip")
+
+hovered = hoverOption()
+gui:Release(hovered)
+assert(not dialog.tooltip:IsShown(), "release hides tooltip before Ace clears owner userdata")
+hovered:SetUserData("appName", "ForeignAddon")
+hovered.parent = nil
+hovered.frame:Show()
+env.GameTooltip:SetOwner(hovered.frame); env.GameTooltip:Show()
+dialog.tooltip:SetOwner(hovered.frame); dialog.tooltip:Show()
+hovered.frame:Hide()
+assert(env.GameTooltip:IsShown(), "pooled controls used by other addons ignore the settings cleanup hook")
+assert(dialog.tooltip:IsShown(), "foreign pooled controls preserve their own Ace tooltip behavior")
+env.GameTooltip:Hide()
+dialog.tooltip:Hide()
 groups = groups + 1
 assert(not next(s.errors), s.errors[1])
 print("Standalone options engine: " .. groups .. " groups passed (real Ace validation, callbacks, profiles and native frame lifecycle)")
