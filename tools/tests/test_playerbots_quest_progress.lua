@@ -26,6 +26,12 @@ function UnitName(unit)
     if raidRoster then return raidRoster[tonumber(unit:match("raid(%d+)"))] end
     return roster[tonumber(unit:match("party(%d+)"))]
 end
+QuestieCompat.GetGroupUnitByName = function(name)
+    if name == "Owner" then return "player" end
+    for index, member in ipairs(raidRoster or roster) do
+        if member == name then return (raidRoster and "raid" or "party") .. index end
+    end
+end
 function UnitIsConnected(unit) return connected[UnitName(unit)] ~= false end
 function UnitGUID(unit) return guids[UnitName(unit)] end
 function GetNumPartyMembers() return raidRoster and 0 or #roster end

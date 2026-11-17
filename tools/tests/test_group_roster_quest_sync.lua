@@ -1,7 +1,7 @@
 -- Run from the Questie addon root with Lua 5.1 or 5.2+.
 -- Regressions: native quest-log requests on party growth, real-player cleanup on
 -- departure, preservation during disconnects, and restoration on rejoining.
--- Loads the production event handler and the production RemoveRemotePlayer function.
+-- Loads the production event handler and communications module.
 
 local function equal(actual, expected, label)
     assert(actual == expected,
@@ -42,6 +42,7 @@ local function unitName(unit)
 end
 
 env.UnitName = unitName
+env.GetTime = function() return 100 end
 env.GetNumPartyMembers = function() return groupSize >= 2 and groupSize - 1 or 0 end
 env.GetNumRaidMembers = function() return 0 end
 env.UnitIsConnected = function(unit)
@@ -63,6 +64,8 @@ env.Questie = {
 }
 env.QuestieCompat = {
     C_Timer = {},
+    C_Map = {},
+    HBD = {},
     GetNumGroupMembers = function() return groupSize end,
     GetGroupUnitByName = function(name)
         if name == "Owner" then return "player" end
@@ -91,15 +94,9 @@ comms.data = {
         removedTooltips[name] = (removedTooltips[name] or 0) + 1
         tooltipOwners[name] = nil
     end,
+    RegisterTooltip = function(_, _, name) tooltipOwners[name] = true end,
+    ResetAll = function() tooltipOwners = {} end,
 }
-comms.CheckInGroup = function(_, name)
-    return env.QuestieCompat.GetGroupUnitByName(name) ~= nil
-end
-comms.ResetAll = function(self)
-    self.remoteQuestLogs = {}
-    tooltipOwners = {}
-end
-
 env.QuestieComms = comms
 local partyObjectives = getModule("QuestiePartyObjectives")
 env.QuestiePartyObjectives = partyObjectives
@@ -125,26 +122,7 @@ local function loadProduction(path)
     chunk()
 end
 
--- Load the real cleanup function without executing the entire comms module,
--- which otherwise requires the WoW addon runtime and serializer libraries.
-local function loadProductionRemoteCleanup()
-    local f = assert(io.open("Modules/Network/QuestieComms.lua", "rb"))
-    local source = f:read("*a"):gsub("\r\n", "\n")
-    f:close()
-    local code = assert(source:match(
-        "(function QuestieComms:RemoveRemotePlayer%(name%).-)\nfunction QuestieComms:SortRemotePlayers"),
-        "Could not locate production QuestieComms:RemoveRemotePlayer")
-    local chunk
-    if setfenv then
-        chunk = assert(loadstring(code, "QuestieComms.RemoveRemotePlayer"))
-        setfenv(chunk, env)
-    else
-        chunk = assert(load(code, "QuestieComms.RemoveRemotePlayer", "t", env))
-    end
-    chunk()
-end
-
-loadProductionRemoteCleanup()
+loadProduction("Modules/Network/QuestieComms.lua")
 loadProduction("Modules/QuestieEventHandler.lua")
 local handler = getModule("QuestieEventHandler").private
 local groupRosterUpdate = assert(handler.GroupRosterUpdate)
@@ -230,9 +208,16 @@ assert(not tooltipOwners.Testtwoo,
     "same-size replacement retained departed tooltip")
 
 -- Full group departure resets the roster baseline for a fresh group.
+comms:InsertQuestDataPacket({id = 790, objectives = {{id = 123, typ = "m", ful = 1, req = 7}}}, "Replacement")
+comms.remoteQuestLogs[791] = {Nearby = {{fulfilled = 2, required = 7}}}
+tooltipOwners.Nearby = true
 setRoster(0)
 assert(handler.GroupLeft, "GroupLeft handler unavailable")
 handler:GroupLeft()
+assert(not comms.remoteQuestLogs[790] and not tooltipOwners.Replacement,
+    "GroupLeft retained group-specific quest or tooltip data")
+assert(comms.remoteQuestLogs[791].Nearby and tooltipOwners.Nearby,
+    "GroupLeft must preserve unrelated nearby quest and tooltip data")
 update(2, 4, "new group after GroupLeft does not request twice")
 assert(prunes > 0 and visibilitySnapshots > 0 and redraws > 0,
     "roster changes must continue updating visibility and objectives")

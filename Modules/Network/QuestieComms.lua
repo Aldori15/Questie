@@ -38,6 +38,27 @@ QuestieComms.remotePlayerClasses = {}
 QuestieComms.remotePlayerEnabled = {}
 QuestieComms.remotePlayerTimes = {}
 
+-- Nearby/YELL players must survive group departures until their normal expiry.
+local remoteGroupPlayers = {}
+
+local function _StoreRemoteGroupQuest(questId, playerName, objectives)
+    if not GetGroupUnitByName(playerName) then return false end
+    remoteGroupPlayers[playerName] = true
+    QuestieComms.remoteQuestLogs[questId] = QuestieComms.remoteQuestLogs[questId] or {}
+    QuestieComms.remoteQuestLogs[questId][playerName] = objectives
+    QuestieComms.data:RegisterTooltip(questId, playerName, objectives)
+    return true
+end
+
+local function _RemoveRemoteQuestData(name)
+    remoteGroupPlayers[name] = nil
+    QuestieComms.data:RemovePlayer(name)
+    for questId, players in pairs(QuestieComms.remoteQuestLogs) do
+        players[name] = nil
+        if not next(players) then QuestieComms.remoteQuestLogs[questId] = nil end
+    end
+end
+
 -- The idea here is that all messages with the same "base number" are compatible
 -- New message versions increase the number by 0.1, and if the message becomes "incompatible" you increase with 1
 -- Say if the message is 1.5 it is valid as long as it is < 2. If it is 2.5 it is not compatible for example.
@@ -436,18 +457,7 @@ function QuestieComms:InsertQuestDataPacketV2_noclass_RenameMe(questPacket, play
                 offset = offset + 4
             end
             if not (allDone and disableCompleteQuests) then
-                if not QuestieComms.remoteQuestLogs[questPacketid] then
-                    QuestieComms.remoteQuestLogs[questPacketid] = {}
-                end
-                -- Create empty player.
-                if not QuestieComms.remoteQuestLogs[questPacketid][playerName] then
-                    QuestieComms.remoteQuestLogs[questPacketid][playerName] = {}
-                end
-
-                QuestieComms.remoteQuestLogs[questPacketid][playerName] = objectives
-
-                --Write to tooltip data
-                QuestieComms.data:RegisterTooltip(questPacketid, playerName, objectives)
+                _StoreRemoteGroupQuest(questPacketid, playerName, objectives)
             end
 
             QuestiePartyObjectives:ScheduleUpdate(questPacketid)
@@ -531,19 +541,28 @@ function QuestieComms:RemoveRemotePlayer(name)
     QuestieComms.remotePlayerClasses[name] = nil
 
     if not QuestieComms:CheckInGroup(name) then
-        -- Remove tooltip registrations before deleting quest data.
-        QuestieComms.data:RemovePlayer(name)
-
-        for questId, players in pairs(QuestieComms.remoteQuestLogs) do
-            players[name] = nil
-
-            if not next(players) then
-                QuestieComms.remoteQuestLogs[questId] = nil
-            end
-        end
+        _RemoveRemoteQuestData(name)
     end
 
     QuestiePartyObjectives:ScheduleUpdate()
+end
+
+function QuestieComms:PruneRemoteGroupPlayers()
+    local changed = false
+    for name in pairs(remoteGroupPlayers) do
+        if not QuestieComms:CheckInGroup(name) then
+            _RemoveRemoteQuestData(name)
+            changed = true
+        end
+    end
+    if changed then QuestiePartyObjectives:ScheduleUpdate() end
+    return changed
+end
+
+function QuestieComms:RemoveAllRemoteGroupPlayers()
+    local changed = next(remoteGroupPlayers) ~= nil
+    for name in pairs(remoteGroupPlayers) do _RemoveRemoteQuestData(name) end
+    if changed then QuestiePartyObjectives:ScheduleUpdate() end
 end
 
 function QuestieComms:SortRemotePlayers()
@@ -856,15 +875,6 @@ function QuestieComms:InsertQuestDataPacket(questPacket, playerName)
     if questPacket and playerName ~= UnitName("player") then
         --Does it contain id and objectives?
         if(questPacket.objectives and questPacket.id) then
-            -- Create empty quest.
-            if not QuestieComms.remoteQuestLogs[questPacket.id] then
-                QuestieComms.remoteQuestLogs[questPacket.id] = {}
-            end
-            -- Create empty player.
-            if not QuestieComms.remoteQuestLogs[questPacket.id][playerName] then
-                QuestieComms.remoteQuestLogs[questPacket.id][playerName] = {}
-            end
-
             local questStatus = questPacket.status
             if questStatus ~= "I" and questStatus ~= "C" and questStatus ~= "F" then
                 questStatus = nil
@@ -883,12 +893,9 @@ function QuestieComms:InsertQuestDataPacket(questPacket, playerName)
                     status = questStatus,
                 }
             end
-            QuestieComms.remoteQuestLogs[questPacket.id][playerName] = objectives;
-
-            --Write to tooltip data
-            QuestieComms.data:RegisterTooltip(questPacket.id, playerName, objectives);
-
-            QuestiePartyObjectives:ScheduleUpdate(questPacket.id)
+            if _StoreRemoteGroupQuest(questPacket.id, playerName, objectives) then
+                QuestiePartyObjectives:ScheduleUpdate(questPacket.id)
+            end
         end
     end
 end
@@ -1125,6 +1132,10 @@ function _QuestieComms.OnCommReceived_unsafe(prefix, message, distribution, send
     --print("[" .. distribution .."][" .. sender .. "] " .. message)
     Questie.Debug(Questie.DEBUG_DEVELOP, "|cFF22FF22", "sender:", "|r", sender, "distribution:", distribution, "Packet length:", string.len(message))
     if message and sender and sender ~= UnitName("player") then
+        if (distribution == "PARTY" or distribution == "RAID" or distribution == "WHISPER"
+            or distribution == "INSTANCE_CHAT") and not QuestieComms:CheckInGroup(sender) then
+            return
+        end
         local decompressedData
         if distribution == "YELL" then
             --print("Decompressing YELL data")
@@ -1204,5 +1215,6 @@ end
 function QuestieComms:ResetAll()
     QuestieComms.data:ResetAll()
     QuestieComms.remoteQuestLogs = {}
+    remoteGroupPlayers = {}
     QuestiePartyObjectives:ScheduleUpdate()
 end

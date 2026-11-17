@@ -632,6 +632,9 @@ function _EventHandler.GroupRosterUpdate()
 
     _PruneDepartedGroupMembers()
 
+    -- Covers full Name-Realm keys and data received before the first roster snapshot.
+    local groupMembersChanged = QuestieComms:PruneRemoteGroupPlayers()
+
     -- An existing party gained a member. Request quest logs so
     -- current members receive the newcomer's objectives too.
     if previousMembers >= 2 and currentMembers > previousMembers then
@@ -648,7 +651,7 @@ function _EventHandler.GroupRosterUpdate()
     -- Only redraw/resync when the group size changed (crossing the draw threshold / members
     -- joining or leaving) or a quest-sharing member changed online status. Pure zone changes also
     -- fire GROUP_ROSTER_UPDATE and must NOT trigger a redraw.
-    if sizeChanged or onlineChanged then
+    if sizeChanged or onlineChanged or groupMembersChanged then
         CommsVisibility:ScheduleSnapshot("GROUP_ROSTER_UPDATE")
         QuestiePartyObjectives:ScheduleUpdate()
     end
@@ -681,8 +684,8 @@ function _EventHandler:GroupJoined()
 end
 
 function _EventHandler:GroupLeft()
-    --Resets both QuestieComms.remoteQuestLog and QuestieComms.data
-    QuestieComms:ResetAll()
+    -- Preserve unrelated Nearby/YELL data and its normal four-minute expiry.
+    QuestieComms:RemoveAllRemoteGroupPlayers()
     CommsVisibility:ResetAll()
     DailyQuestComms.CancelPendingUnavailableQuestGroupResponses()
     QuestiePartyObjectives:Clear()
