@@ -253,7 +253,7 @@ function QuestieTracker.Initialize()
                 for _, questId in pairs(tempQuestIDs) do
                     local questIndex = GetQuestLogIndexByID(questId)
                     if questIndex then
-                        QuestieTracker:AQW_Insert(questIndex, QUEST_WATCH_NO_EXPIRE)
+                        QuestieTracker:AQW_Insert(questIndex, QUEST_WATCH_NO_EXPIRE, true)
                     end
                 end
             end
@@ -2075,7 +2075,8 @@ function QuestieTracker:UntrackQuestId(questId)
     end)
 end
 
-function QuestieTracker:AQW_Insert(index, expire)
+---@param keepCollapsed boolean? Preserve saved collapse state when importing native watches.
+function QuestieTracker:AQW_Insert(index, expire, keepCollapsed)
     Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieTracker:AQW_Insert]")
     if (not Questie.db.profile.trackerEnabled) or (index == 0) or (index == nil) then
         return
@@ -2131,14 +2132,15 @@ function QuestieTracker:AQW_Insert(index, expire)
         local quest = TrackerData.GetQuest(questId)
 
         if quest then
-            -- Make sure quests or zones (re)added to the tracker isn't in a minimized state
-            local zoneId = quest.NativeOnly and TrackerQuestOrder.GetQuestGroupName(quest) or quest.zoneOrSort
-            if Questie.db.char.collapsedQuests[questId] == true then
-                Questie.db.char.collapsedQuests[questId] = nil
-            end
-
-            if Questie.db.char.collapsedZones[zoneId] == true then
-                Questie.db.char.collapsedZones[zoneId] = nil
+            -- Explicit tracking expands the quest; startup imports preserve saved collapse state.
+            if not keepCollapsed then
+                local zoneId = TrackerQuestOrder.GetQuestGroupName(quest)
+                if Questie.db.char.collapsedQuests[questId] == true then
+                    Questie.db.char.collapsedQuests[questId] = nil
+                end
+                if Questie.db.char.collapsedZones[zoneId] == true then
+                    Questie.db.char.collapsedZones[zoneId] = nil
+                end
             end
 
             -- Unhide quest icons when retracking quests.

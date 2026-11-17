@@ -30,7 +30,9 @@ env.GetQuestLogSpecialItemInfo = function(index)
     if rows[index].id == 900001 then return "|Hitem:99999:0|h[Test item]|h", "texture", 1 end
 end
 env.GetTime = function() return clock end
-env.GetNumQuestWatches = function() return 0 end
+local nativeWatches = {2, 4}
+env.GetNumQuestWatches = function() return #nativeWatches end
+env.GetQuestIndexForWatch = function(index) return nativeWatches[index] end
 env.LibStub = function() return {} end
 env.GetItemCount = function(id) return id == 99999 and 1 or 0 end
 env.GetItemSpell = function(id) if id == 99999 then return "Use item" end end
@@ -134,6 +136,88 @@ profile.trackerSortObjectives = "byLevel"
 loadModule("Modules/Tracker/QuestieTracker.lua")
 local tracker = module("QuestieTracker")
 local group = order.GetQuestGroupName(quests[900001])
+
+-- Run the real deferred startup import with both mapped and native-only watches.
+-- Removing the first native watch shifts its index, so the production ID snapshot matters.
+do
+    local saved, startupQueue, startupTimers, updates = {}, {}, {}, 0
+    local function replace(owner, key, value)
+        saved[#saved + 1] = {owner, key, owner[key]}
+        owner[key] = value
+    end
+    replace(env, "DurabilityFrame", {GetPoint = noop})
+    replace(env, "QuestLog_Update", noop)
+    replace(env, "RemoveQuestWatch", function(index)
+        for watch = #nativeWatches, 1, -1 do
+            if nativeWatches[watch] == index then table.remove(nativeWatches, watch) end
+        end
+    end)
+    replace(env.QuestieCompat.C_Timer, "After", function(_, callback) startupTimers[#startupTimers + 1] = callback end)
+    replace(module("QuestieCombatQueue"), "Queue", function(_, callback) startupQueue[#startupQueue + 1] = callback end)
+    for _, name in ipairs({"TrackerBaseFrame", "TrackerHeaderFrame", "TrackerQuestFrame"}) do
+        replace(module(name), "Initialize", function() return {} end)
+    end
+    for _, name in ipairs({"TrackerLinePool", "TrackerFadeTicker", "TrackerNearestQuestItem", "TrackerAchievements"}) do
+        replace(module(name), "Initialize", noop)
+    end
+    replace(tracker, "SetupKeybinding", noop)
+    replace(tracker, "HookBaseTracker", noop)
+    replace(tracker, "HandleZoneChanged", noop)
+    replace(tracker, "Update", function() updates = updates + 1 end)
+    for _, sortMode in ipairs({"byZone", "byLevel"}) do
+        profile.trackerSortObjectives = sortMode
+        local knownGroup = order.GetQuestGroupName(known)
+        local nativeGroup = order.GetQuestGroupName(quests[900001])
+        for _, automatic in ipairs({false, true}) do
+            profile.autoTrackQuests = automatic
+            nativeWatches = {2, 4}
+            tracker.started = nil
+            char.TrackedQuests = {}
+            char.collapsedQuests[100], char.collapsedQuests[900001] = true, true
+            char.collapsedZones[knownGroup], char.collapsedZones[nativeGroup] = true, true
+            clock = clock + 1
+            coroutine.wrap(tracker.Initialize)()
+            while #startupTimers > 0 do table.remove(startupTimers, 1)() end
+            while #startupQueue > 0 do table.remove(startupQueue, 1)() end
+            equal(#nativeWatches, 0, "startup consumes both native watches despite shifting watch indices")
+            for _, id in ipairs({100, 900001}) do
+                equal(char.collapsedQuests[id], true, "startup preserves collapsed quest " .. id)
+                if not automatic then equal(char.TrackedQuests[id], true, "manual mode imports native watch " .. id) end
+            end
+            equal(char.collapsedZones[knownGroup], true, "startup preserves mapped quest group: " .. sortMode)
+            equal(char.collapsedZones[nativeGroup], true, "startup preserves native quest group: " .. sortMode)
+        end
+    end
+    assert(updates > 0, "startup import still refreshes the tracker")
+    for index = #saved, 1, -1 do
+        local entry = saved[index]
+        entry[1][entry[2]] = entry[3]
+    end
+    tracker.started, tracker.last_aqw = nil, nil
+    char.TrackedQuests = {}
+    profile.autoTrackQuests, profile.trackerSortObjectives = false, "byLevel"
+end
+
+for _, sortMode in ipairs({"byZone", "byLevel"}) do
+    profile.trackerSortObjectives = sortMode
+    for _, id in ipairs({100, 900001}) do
+        local displayGroup = order.GetQuestGroupName(data.GetQuest(id))
+        char.TrackedQuests[id] = nil
+        char.collapsedQuests[id], char.collapsedZones[displayGroup] = true, true
+        clock = clock + 1
+        tracker:AQW_Insert(logIndex(id), 0)
+        equal(char.TrackedQuests[id], true, "Explicit tracking adds quest " .. id)
+        equal(char.collapsedQuests[id], nil, "Explicit tracking expands quest " .. id)
+        equal(char.collapsedZones[displayGroup], nil, "Explicit tracking expands actual " .. sortMode .. " group")
+        tracker:UntrackQuestId(id)
+    end
+end
+profile.trackerSortObjectives = "byLevel"
+local trackedBefore = char.TrackedQuests[100]
+tracker:AQW_Insert(nil, 0, true)
+tracker:AQW_Insert(0, 0, true)
+equal(char.TrackedQuests[100], trackedBefore, "Invalid import indices cannot change tracking")
+
 char.collapsedQuests[900001], char.collapsedZones[group] = true, true
 clock = clock + 1
 tracker:AQW_Insert(4, 0)
