@@ -144,6 +144,9 @@ setmetatable(l10n, {__call = function(_, text) return text end})
 loader:CreateModule("QuestieTracker").HasQuest = function() return true end
 loader:CreateModule("QuestieCombatQueue").Queue = function(_, callback) callback() end
 loader:CreateModule("QuestieLib").AddonPath = "Interface/AddOns/Questie-335/"
+local tooltipHides = 0
+loader:CreateModule("TrackerQuestTooltip").Hide = function() tooltipHides = tooltipHides + 1 end
+loader:ImportModule("TrackerQuestTooltip").Show = noop
 
 local bags, equipment, itemClasses, charges = {}, {}, {}, {}
 local cooldownValues, rangeValues, itemNames = {}, {}, {}
@@ -325,7 +328,9 @@ equal(button.count:IsShown(), true, "multiple charges visible")
 equal(button.events.BAG_UPDATE, true, "shown button watches bags")
 equal(button.events.PLAYER_EQUIPMENT_CHANGED, true, "shown button watches equipment")
 equal(cooldownFrames[button]:GetWidth(), 20, "cooldown inset preserved")
+local beforeItemHoverHides = tooltipHides
 button:OnEnter()
+equal(tooltipHides, beforeItemHoverHides + 1, "item hover immediately dismisses quest progress tooltip")
 equal(env.GameTooltip.owner, button, "tooltip uses item button")
 equal(env.GameTooltip.link, "item:100:0:0:0:0:0:0:0", "item tooltip hyperlink")
 equal(unfaded, button, "hover unfades item button")
@@ -553,7 +558,9 @@ equal(status.texture.texture[1], "Interface/AddOns/Questie-335/Icons\\poi_incomp
 equal(status.mouseEnabled, true, "pooled status accepts focus clicks")
 equal(status:GetWidth(), 15, "focus size follows quest font")
 assert(status:GetScript("OnClick"), "pooled status has focus click handler")
+local previousTooltipHides = tooltipHides
 pool.ResetLinesForChange()
+assert(tooltipHides > previousTooltipHides, "row reset dismisses the quest progress tooltip")
 equal(env.linePool1.statusIcon, status, "pool keeps the existing status frame")
 equal(status.questId, nil, "row reset releases quest identity")
 equal(status.expectedQuest, nil, "row reset releases captured quest")

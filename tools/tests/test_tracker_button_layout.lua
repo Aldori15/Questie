@@ -285,6 +285,11 @@ do
     local s = setup()
     local pool, rows = s.modules.TrackerLinePool, {}
     local hovered
+    local tooltipHides, tooltipShows, tooltipLine = 0, 0
+    s.modules.TrackerQuestTooltip = {
+        Hide = function() tooltipHides = tooltipHides + 1; tooltipLine = nil end,
+        Show = function(line) tooltipShows = tooltipShows + 1; tooltipLine = line end,
+    }
     local methods = {}
     function methods:IsVisible() return self.visible ~= false end
     function methods:GetParent() return self.parent end
@@ -308,23 +313,30 @@ do
     local source = read("Modules/Tracker/TrackerLinePool.lua")
     local first = assert(source:find("TrackerLinePool.OnHighlightEnter = function", 1, true))
     local last = assert(source:find("TrackerLinePool.SetMode = function", first, true))
-    compile("local TrackerLinePool = QuestieLoader:ImportModule('TrackerLinePool')\nlocal linePool = rows\n"
+    compile("local TrackerLinePool = QuestieLoader:ImportModule('TrackerLinePool')\n"
+        .. "local TrackerQuestTooltip = QuestieLoader:ImportModule('TrackerQuestTooltip')\nlocal linePool = rows\n"
         .. source:sub(first, last - 1), "production tracker highlight lifecycle", s.env)()
     hovered = rows[1].button
     pool.RefreshHighlight()
     equal(rows[1].alpha, 1, "hovered item highlights its quest title")
     equal(rows[2].alpha, 1, "hovered item highlights its quest objectives")
     equal(rows[3].alpha, 0.5, "hovered item dims unrelated quests")
+    equal(tooltipLine, rows[1], "hover restoration passes the current row to tooltip validation")
+    equal(tooltipHides, 1, "redraw clears the previous tooltip first")
     rows[1].Quest = otherQuest
     pool.RefreshHighlight()
     equal(rows[2].alpha, 0.5, "redraw clears the previous quest highlight under a stationary cursor")
     equal(rows[3].alpha, 1, "redraw highlights the reused row's current quest")
+    equal(tooltipLine.Quest, otherQuest, "tooltip refresh follows the reused row's current record")
     rows[1].button.parent = {}
     pool.RefreshHighlight()
     equal(rows[2].alpha, 1, "detached secure items cannot preserve a stale highlight")
     hovered = nil
+    local previousTooltipShows = tooltipShows
     pool.RefreshHighlight()
     equal(rows[3].alpha, 1, "leaving the tracker clears dimming")
+    equal(tooltipLine, nil, "leaving all rows clears the hovered tooltip")
+    equal(tooltipShows, previousTooltipShows, "unhovered redraw does not start a new tooltip")
     groups = groups + 1
 end
 print("Tracker button layout: " .. groups .. " groups passed")

@@ -8,6 +8,7 @@ local TrackerBaseFrame = QuestieLoader:ImportModule("TrackerBaseFrame")
 ---@type TrackerFadeTicker
 local TrackerFadeTicker = QuestieLoader:ImportModule("TrackerFadeTicker")
 local TrackerLinePool = QuestieLoader:ImportModule("TrackerLinePool")
+local TrackerQuestTooltip = QuestieLoader:ImportModule("TrackerQuestTooltip")
 ---@type QuestieCombatQueue
 local QuestieCombatQueue = QuestieLoader:ImportModule("QuestieCombatQueue")
 ---@type QuestieDB
@@ -237,6 +238,7 @@ function TrackerQuestItemButtons.Initialize()
         end
 
         btn.OnEnter = function(self)
+            TrackerQuestTooltip.Hide()
             GameTooltip:SetOwner(self, "ANCHOR_CURSOR")
             GameTooltip:SetHyperlink("item:" .. tostring(self.itemId) .. ":0:0:0:0:0:0:0")
             GameTooltip:Show()

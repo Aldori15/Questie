@@ -30,6 +30,7 @@ local QuestieCombatQueue = QuestieLoader:ImportModule("QuestieCombatQueue")
 ---@type QuestieLib
 local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
 local TrackerData = QuestieLoader:ImportModule("TrackerData")
+local TrackerQuestTooltip = QuestieLoader:ImportModule("TrackerQuestTooltip")
 ---@type l10n
 local l10n = QuestieLoader:ImportModule("l10n")
 
@@ -268,12 +269,16 @@ function TrackerLinePool.Initialize(questFrame)
         line:SetScript("OnEnter", function(self)
             TrackerLinePool.OnHighlightEnter(self)
             TrackerFadeTicker.Unfade()
+            TrackerQuestTooltip.Show(self)
         end)
 
         line:SetScript("OnLeave", function(self)
             TrackerLinePool.OnHighlightLeave(self)
             TrackerFadeTicker.Fade()
+            TrackerQuestTooltip.Hide(self)
         end)
+
+        line:SetScript("OnHide", TrackerQuestTooltip.Hide)
 
         -- create objective complete criteria marks
         local criteriaMark = CreateFrame("Button", "linePool.criteriaMark" .. i, line)
@@ -528,6 +533,7 @@ function TrackerLinePool.Initialize(questFrame)
 
         for _, button in ipairs({statusIcon, playButton, expandQuest}) do
             button:HookScript("OnEnter", function()
+                TrackerQuestTooltip.Hide(line)
                 TrackerLinePool.OnHighlightEnter(line)
                 TrackerFadeTicker.Unfade()
             end)
@@ -561,6 +567,7 @@ function TrackerLinePool.ResetLinesForChange()
         return
     end
 
+    TrackerQuestTooltip.Hide()
     for _, line in pairs(linePool) do
         line.mode = nil
         line.trackTimedQuest = nil
@@ -911,6 +918,7 @@ end
 -- Reused rows can move under a stationary cursor when quests or objectives change.
 function TrackerLinePool.RefreshHighlight()
     TrackerLinePool.OnHighlightLeave()
+    TrackerQuestTooltip.Hide()
     for i = 1, TrackerLinePool.GetHighestIndex() do
         local line = linePool[i]
         if line:IsVisible() then
@@ -925,6 +933,7 @@ function TrackerLinePool.RefreshHighlight()
             end
             if hovered then
                 TrackerLinePool.OnHighlightEnter(line.expandZone:IsVisible() and line.expandZone or line)
+                TrackerQuestTooltip.Show(line)
                 return
             end
         end
