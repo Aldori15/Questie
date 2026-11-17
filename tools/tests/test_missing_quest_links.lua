@@ -109,11 +109,35 @@ for _, id in ipairs({2, 4, 5}) do
     for _, method in ipairs({"AcceptedQuest", "AbandonedQuest", "CompletedQuest"}) do
         checkMessage(function() announce[method](announce, id) end, method)
     end
-    itemQuestId, profile.questAnnounceItems = id, false
+    itemQuestId, profile.questAnnounceLocally = id, false
     checkMessage(function() announce:ItemLooted("|Hitem:" .. (200 + id) .. "|h[Quest item]|h", "Player", nil, nil, "Player") end,
         "self item announcement")
-    profile.questAnnounceItems = true
+    profile.questAnnounceLocally = true
     checkMessage(function() announce.IncompleteBreadcrumbQuest(1, id) end, "incomplete breadcrumb")
     checkMessage(function() assert(module("BreadcrumbQuests").AbandonQuest(2, id)) end, "breadcrumb abandonment")
 end
-print("Missing quest links: native fallbacks, chat preservation and announcement/breadcrumb formats passed")
+-- Solo starter-item notifications honor their item toggle and the master silence setting.
+profile.questAnnounceChannel = "disabled"
+itemQuestId = 1
+local itemId = 500
+local getItemInfo = env.GetItemInfo
+env.GetItemInfo = function(id) return "Item " .. id, "[Item " .. id .. "]" end
+for _, items in ipairs({true, false}) do
+    for _, locally in ipairs({true, false}) do
+        for _, shutUp in ipairs({true, false}) do
+            itemId = itemId + 1
+            profile.questAnnounceItems, profile.questAnnounceLocally, profile.questieShutUp = items, locally, shutUp
+            local before = #printed
+            announce:ItemLooted("|Hitem:" .. itemId .. "|h[Test]|h", "Player", nil, nil, "Player")
+            local expected = items and not shutUp and 1 or 0
+            equal(#printed, before + expected, "starter-item notification respects settings")
+            if expected == 1 then
+                local wording = locally and "Picked up " or "You picked up "
+                equal(printed[#printed], wording .. "[Item " .. itemId .. "] which starts "
+                    .. link:GetQuestHyperLink(1) .. "!", "enabled notification preserves wording and links")
+            end
+        end
+    end
+end
+env.GetItemInfo = getItemInfo
+print("Missing quest links: native fallbacks, chat preservation, announcement formats and item settings passed")
