@@ -297,4 +297,31 @@ for _, tab in ipairs({journey.private.questsByZone, journey.private.questsByFact
     equal(#pooledTree.rows, 0, "empty quest result remains blank")
 end
 
-print("Journey navigation, quest chains, difficulty, and pooled-tree regressions passed")
+-- Restoring a saved selection must tolerate either missing tree input.
+do
+    local zone = journey.private.questsByZone
+    local separator = string.char(1)
+    local saved = "a" .. separator .. "6"
+    local tree = {{value = "a", children = {{value = 6}}}}
+    local selections, scheduled = {}, {}
+    local target = {SelectByValue = function(_, value) selections[#selections + 1] = value end}
+    env.strsplit = function(_, value) return value:match("([^" .. separator .. "]+)" .. separator .. "(.*)") end
+    local after = env.QuestieCompat.C_Timer.After
+    env.QuestieCompat.C_Timer.After = function(_, callback) scheduled[#scheduled + 1] = callback end
+    journey.private.lastZoneSelection[3] = saved
+    zone:RestoreSavedQuestSelection(nil, tree)
+    zone:RestoreSavedQuestSelection(target, nil)
+    zone:RestoreSavedQuestSelection(nil, nil)
+    equal(journey.private.lastZoneSelection[3], saved, "missing tree inputs preserve the saved selection")
+    equal(#selections, 0, "missing tree inputs do not select a row")
+    equal(#scheduled, 0, "missing tree inputs do not schedule a detail redraw")
+    zone:RestoreSavedQuestSelection(target, tree)
+    equal(selections[1], saved, "valid tree still restores its selected quest")
+    equal(#scheduled, 1, "valid restoration still schedules details")
+    zone:RestoreSavedQuestSelection(target, {{value = "p", children = {{value = 6}}}})
+    equal(journey.private.lastZoneSelection[3], "p" .. separator .. "6", "restoration follows category changes")
+    zone:RestoreSavedQuestSelection(target, {})
+    equal(journey.private.lastZoneSelection[3], nil, "valid empty tree clears an obsolete selection")
+    env.QuestieCompat.C_Timer.After = after
+end
+print("Journey navigation, quest chains, difficulty, pooled trees, and selection restoration passed")
