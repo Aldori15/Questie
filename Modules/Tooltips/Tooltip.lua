@@ -527,7 +527,7 @@ function QuestieTooltips:GetTooltip(key, playerZone, npcStarterState)
                 end
             elseif (not finishedAndUnacceptedQuests[questId]) then
                 local objective = tooltip.objective
-                if not (objective.IsSourceItem or objective.IsRequiredSourceItem) then
+                if objective.Update and not (objective.IsSourceItem or objective.IsRequiredSourceItem) then
                     -- Tooltip was registered for a real "objective" and not for a sourceItem or requiredSourceItem
                     objective:Update()
                 end

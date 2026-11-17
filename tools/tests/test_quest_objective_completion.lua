@@ -665,4 +665,51 @@ for _, missing in ipairs({true, false}) do
     tests = tests + 1
 end
 
+-- Missing-source-item placeholders must render without requiring a live updater.
+do
+    local s = setup(false)
+    local mods = s.modules
+    s.quest.sourceItemId = 12345
+    s.quest.Objectives, s.quest.ObjectiveData, s.quest.SpecialObjectives = {}, {}, {}
+    s.env.GetItemCount = function() return 0 end
+    s.setObjectives({})
+    equal(s.module:CheckQuestSourceItem(s.quest.Id, true), false, "missing source item creates guidance")
+    local objective = s.quest.Objectives[1]
+    equal(objective.Update, nil, "production placeholder has no updater")
+    s.env.QuestieCompat.IsInGroup = function() return false end
+    s.env.UnitName = function() return "Player" end
+    mods.QuestiePlayer.numberOfGroupMembers = 1
+    mods.QuestiePlayer.GetPartyMemberByName = function() end
+    mods.QuestieComms = {remotePlayerEnabled = {}}
+    mods.QuestieDB.GetItemDroprate = function() end
+    mods.QuestieLib.AddonPath = "Interface\\AddOns\\Questie-335\\"
+    mods.QuestieLib.GetColoredQuestName = function() return "Quest name" end
+    mods.QuestieLib.GetRGBForObjective = function() return "gold" end
+    mods.QuestieLib.GetObjectiveDescription = function(_, value) return value.Description end
+    mods.QuestieLib.SortQuestIDsByLevel = function(_, values)
+        local ids = {}; for id in pairs(values) do ids[#ids + 1] = id end
+        table.sort(ids); return ids
+    end
+    mods.QuestieTooltips.private = {}
+    assert(loadfile("Modules/Tooltips/Tooltip.lua", "t", s.env))()
+    s.module.RegisterObjectiveTooltips(s.quest)
+    local tips = mods.QuestieTooltips
+    for refresh = 1, 3 do
+        local lines = tips:GetTooltip("m_1")
+        equal(lines[1], "Quest name", "placeholder keeps quest title")
+        equal(lines[2], "   gold12345: 0/1", "placeholder keeps item progress on refresh " .. refresh)
+    end
+    local updates = 0
+    objective.Update = function(self) updates = updates + 1; self.Collected = 1 end
+    equal(tips:GetTooltip("m_1")[2], "   gold12345: 1/1", "real objectives still refresh progress")
+    equal(updates, 1, "real updater runs once per refresh")
+    for _, flag in ipairs({"IsSourceItem", "IsRequiredSourceItem"}) do
+        objective[flag] = true
+        tips:GetTooltip("m_1")
+        equal(updates, 1, flag .. " still bypasses updater")
+        objective[flag] = nil
+    end
+    tests = tests + 1
+end
+
 print("Quest objective completion regression tests passed (" .. tests .. " groups)")
