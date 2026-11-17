@@ -232,6 +232,32 @@ for _, mode in ipairs({"missing", "active", "completed", "abandoned"}) do
     equal(#tree[blocked and 6 or 5].children, 1, "Journey places " .. mode .. " prerequisite in correct category")
     equal(#tree[blocked and 5 or 6].children, 0, "Journey has no duplicate prerequisite category")
 end
+-- An active disabling quest belongs in Unobtainable, rather than Missing Requirement.
+assert(loadfile("Modules/Journey/QuestieJourneyFactions.lua", "t", env))()
+assert(loadfile("Modules/Journey/tabs/QuestsByFaction/QuestsByFactions.lua", "t", env))()
+local reputation = modules.QuestieReputation
+local savedRewards = reputation.GetReputationReward
+reputation.GetReputationReward = function() end
+modules.QuestieJourney.factionMap = {[72] = {[16] = true}}
+modules.QuestieLib.SortQuestIDsByLevel = function() return {{80, 16}} end
+for _, mode in ipairs({"inactive", "active", "abandoned"}) do
+    modules.QuestiePlayer.currentQuestlog[305] = mode == "active" and {} or nil
+    local zone = modules.QuestieJourney.private.questsByZone:CategorizeQuests({[16] = true})
+    local faction = modules.QuestieJourney.private.questsByFaction:CollectFactionQuests(72)
+    for _, tree in ipairs({zone, faction}) do
+        local category = mode == "active" and 6 or 2
+        equal(#tree[category].children, 1, "Journey places " .. mode .. " disabling condition in correct category")
+        equal(#tree[5].children, 0, "disabled-by condition is not a missing prerequisite")
+        if mode == "active" then
+            assert(tree[6].text:find("[ 1 ]", 1, true), "unobtainable counter includes the disabled quest")
+            assert(tree[5].text:find("[ 0/0 ]", 1, true), "missing requirement counter excludes the disabled quest")
+        else
+            equal(#tree[6].children, 0, "removing disabling quest restores availability")
+        end
+    end
+end
+reputation.GetReputationReward = savedRewards
+modules.QuestieJourney.factionMap = nil
 env.LibStub, env.tinsert = savedLibStub, savedTinsert
 modules.QuestieLib.SortQuestIDsByLevel, modules.QuestieLib.GetColoredQuestName = savedSort, savedName
 
