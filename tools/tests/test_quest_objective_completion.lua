@@ -712,4 +712,62 @@ do
     tests = tests + 1
 end
 
+-- Creature and object entry IDs can overlap without identifying the same item source.
+for _, objectFirst in ipairs({false, true}) do
+    local s = setup(false)
+    s.env.Questie.ICON_TYPE_LOOT, s.env.Questie.ICON_TYPE_OBJECT = "loot", "object"
+    s.env.Questie.db.profile.lootScale, s.env.Questie.db.profile.objectScale = 0.7, 0.9
+    s.modules.QuestieCorrections = {questNPCBlacklist = {}}
+    local creature = {Type = "monster", Id = 5}
+    local object = {Type = "object", Id = 5}
+    local sources = objectFirst and {object, creature, object} or {creature, object, creature}
+    sources[4] = {Type = "monster", Id = 6}
+    s.env.pairs = function(value)
+        if value == sources then return ipairs(value) end
+        return pairs(value)
+    end
+    s.modules.QuestieDB.GetItem = function() return {Id = 12345, Sources = sources} end
+    s.modules.QuestieDB.QueryNPCSingle = function(id, field)
+        if field == "name" then return "Creature " .. id end
+        if field == "spawns" then return {[394] = {{10, 20}}} end
+        if field == "waypoints" then return {[394] = {{{11, 21}, {12, 22}}}} end
+        if field == "rank" then return 0 end
+    end
+    s.modules.QuestieDB.QueryObjectSingle = function(_, field)
+        if field == "name" then return "Crate" end
+        if field == "spawns" then return {[394] = {{80, 90}}} end
+    end
+    assert(loadfile("Modules/Quest/QuestieQuestPrivates.lua", "t", s.env))()
+    local spawnList = s.module.private.objectiveSpawnListCallTable.item(12345, {Description = "Collect item"})
+    local byTooltip, count = {}, 0
+    for _, source in pairs(spawnList) do byTooltip[source.TooltipKey] = source; count = count + 1 end
+    equal(count, 3, "same-kind duplicates merge while different kinds remain separate")
+    assert(byTooltip.m_5 and byTooltip.o_5, "numeric ID collision lost an item source")
+    equal(byTooltip.m_5.Name, "Creature 5", "creature retains name")
+    equal(byTooltip.o_5.Name, "Crate", "object retains name")
+    equal(byTooltip.m_5.Icon, "loot", "creature retains loot icon")
+    equal(byTooltip.o_5.Icon, "object", "object retains object icon")
+    equal(byTooltip.m_5.GetIconScale(), 0.7, "creature retains loot scale")
+    equal(byTooltip.o_5.GetIconScale(), 0.9, "object retains object scale")
+    equal(byTooltip.m_5.Spawns[394][1][1], 10, "creature coordinates stay separate")
+    equal(byTooltip.o_5.Spawns[394][1][1], 80, "object coordinates stay separate")
+    equal(#byTooltip.m_5.Spawns[394], objectFirst and 1 or 2, "creature duplicates still merge")
+    equal(#byTooltip.o_5.Spawns[394], objectFirst and 2 or 1, "object duplicates still merge")
+    equal(next(byTooltip.o_5.Waypoints), nil, "object cannot inherit creature patrols")
+    assert(next(byTooltip.m_5.Waypoints), "creature retains patrols")
+    equal(spawnList[5], objectFirst and byTooltip.o_5 or byTooltip.m_5, "first source retains numeric key")
+    equal(spawnList[6], byTooltip.m_6, "uncontested source retains numeric lookup")
+    for _, vendorFirst in ipairs({false, true}) do
+        local vendor = {Type = "monster", Id = 5, Vendor = true}
+        sources = vendorFirst and {vendor, creature} or {creature, vendor}
+        table.insert(sources, objectFirst and 1 or #sources + 1, object)
+        local combined = s.module.private.objectiveSpawnListCallTable.item(12345, {Description = "Buy or loot item"})
+        local vendorSources = {}
+        for _, source in pairs(combined) do vendorSources[source.TooltipKey] = source end
+        equal(vendorSources.m_5.Hostile, false, "vendor overrides drop hostility in either source order")
+        equal(vendorSources.o_5.Hostile, true, "vendor override cannot change colliding object's metadata")
+    end
+    tests = tests + 1
+end
+
 print("Quest objective completion regression tests passed (" .. tests .. " groups)")

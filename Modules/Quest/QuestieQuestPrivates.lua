@@ -246,7 +246,12 @@ item = function(itemId, objective, objectiveData)
                     Questie.Error("Missing objective data for", source.Type, "'", objective, "'", source.Id)
                 else
                     for id, sourceData in pairs(sourceList) do
-                        if (not ret[id]) then
+                        -- Creature and object IDs belong to separate namespaces.
+                        local key = id
+                        if ret[key] and ret[key].TooltipKey ~= sourceData.TooltipKey then
+                            key = sourceData.TooltipKey
+                        end
+                        if (not ret[key]) then
                             local icon, GetIconScale
                             if source.Type == "object" then
                                 icon = objective.Icon or Questie.ICON_TYPE_OBJECT
@@ -256,7 +261,7 @@ item = function(itemId, objective, objectiveData)
                                 GetIconScale = _GetIconScaleForLoot
                             end
 
-                            ret[id] = {
+                            ret[key] = {
                                 Id = id,
                                 Name = sourceData.Name,
                                 Hostile = not source.Vendor,
@@ -269,8 +274,12 @@ item = function(itemId, objective, objectiveData)
                                 IconScale = GetIconScale(),
                             }
                         end
+                        -- Buying an item does not require fighting the vendor, even if it also drops it.
+                        if source.Vendor then
+                            ret[key].Hostile = false
+                        end
                         if sourceData.Spawns then
-                            local itemSpawns = ret[id].Spawns
+                            local itemSpawns = ret[key].Spawns
                             for zone, spawns in pairs(sourceData.Spawns) do
                                 if (not itemSpawns[zone]) then
                                     itemSpawns[zone] = {}
@@ -283,7 +292,7 @@ item = function(itemId, objective, objectiveData)
                             end
                         end
                         if sourceData.Waypoints then
-                            local itemWaypoints = ret[id].Waypoints
+                            local itemWaypoints = ret[key].Waypoints
                             for zone, spawns in pairs(sourceData.Waypoints) do
                                 if (not itemWaypoints[zone]) then
                                     itemWaypoints[zone] = {}
