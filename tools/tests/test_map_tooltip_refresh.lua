@@ -171,4 +171,69 @@ do
     equal(unloaded.texture.writes, 0, "unloaded icon is not recolored")
     equal(owner.data.touchedPins, nil, "hover bookkeeping is retired")
 end
-print("Map tooltip refresh passed: native surfaces, patrol ownership, live progress and recycled hover colors")
+-- Render the real giver-tooltip chain using cached records, rather than testing a copied traversal.
+local function renderChain(links, config)
+    config = config or {}
+    local s = setup()
+    local icon = s.icon(1)
+    s.show(icon)
+    local tip = s.env.WorldMapTooltip
+    tip.npcAndObjectOrder = {Trainer = {{questId = 1, title = "Root quest", type = "Available"}}}
+    tip.questOrder = {}
+    s.shift = config.shift ~= false
+    s.env.Questie.db.profile.enableTooltipsNextInChain = config.enabled ~= false
+    local db, lib = s.modules.QuestieDB, s.modules.QuestieLib
+    db.DoableStates = {WRONG_RACE = "race", WRONG_CLASS = "class",
+        PROFESSION_MISSING = "profession", PROFESSION_SPECIALIZATION = "specialization"}
+    db.QueryQuestSingle = function(id, field) return links[id] and links[id][field] end
+    db.IsDoableVerbose = function(id) return false, nil, config.reasons and config.reasons[id] end
+    s.modules.QuestXP.GetQuestRewardMoney = function() return 0 end
+    s.modules.QuestieCorrections.hiddenQuests = config.hidden or {}
+    s.modules.QuestieCorrections.questTooltipHints = {}
+    s.modules.QuestieReputation.GetReputationReward = function() end
+    local shown = {}
+    lib.GetEffectiveQuestLevel = function() return 10 end
+    lib.GetColoredQuestName = function(_, id)
+        shown[#shown + 1] = id
+        assert(#shown <= 20, "cyclic quest links must not hang the tooltip renderer")
+        return "Quest " .. id
+    end
+    tip:_Rebuild()
+    return shown, tip
+end
+
+for _, absent in ipairs({"zero", "nil"}) do
+    local shown, tip = renderChain({[1] = {nextQuestInChain = absent == "zero" and 0 or nil, breadcrumbForQuestId = 2},
+        [2] = {nextQuestInChain = 3}, [3] = {nextQuestInChain = 0}})
+    equal(table.concat(shown, ","), "2,3", absent .. " chain field follows the breadcrumb target")
+    contains(tip, "Next in chain:")
+end
+do
+    local shown = renderChain({[1] = {nextQuestInChain = 2},
+        [2] = {nextQuestInChain = 0, breadcrumbForQuestId = 3}, [3] = {nextQuestInChain = 0}})
+    equal(table.concat(shown, ","), "2,3", "breadcrumb fallback works at later chain steps")
+    shown = renderChain({[1] = {nextQuestInChain = 2, breadcrumbForQuestId = 3}, [2] = {nextQuestInChain = 0}})
+    equal(table.concat(shown, ","), "2", "ordinary chain takes precedence over breadcrumb")
+    shown = renderChain({[1] = {nextQuestInChain = -2, breadcrumbForQuestId = 3}})
+    equal(#shown, 0, "negative explicit chain endpoint does not fall back to a breadcrumb")
+    shown = renderChain({})
+    equal(#shown, 0, "missing chain and breadcrumb links end cleanly")
+    shown = renderChain({[1] = {nextQuestInChain = 2}, [2] = {nextQuestInChain = 3},
+        [3] = {nextQuestInChain = 0, breadcrumbForQuestId = 2}})
+    equal(table.concat(shown, ","), "2,3", "mixed-link cycle renders each follow-up only once")
+    shown = renderChain({[1] = {nextQuestInChain = 0, breadcrumbForQuestId = 1}})
+    equal(#shown, 0, "self-link does not repeat the hovered quest")
+    shown = renderChain({[1] = {nextQuestInChain = 2}, [2] = {nextQuestInChain = 1}})
+    equal(table.concat(shown, ","), "2", "cycle back to hovered quest does not repeat it")
+end
+for _, stop in ipairs({"race", "class", "profession", "specialization", "hidden"}) do
+    local config = stop == "hidden" and {hidden = {[3] = true}} or {reasons = {[3] = stop}}
+    local shown = renderChain({[1] = {breadcrumbForQuestId = 2}, [2] = {breadcrumbForQuestId = 3}}, config)
+    equal(table.concat(shown, ","), "2", "chain retains existing eligibility stop: " .. stop)
+end
+for _, config in ipairs({{shift = false}, {enabled = false}}) do
+    local shown, tip = renderChain({[1] = {breadcrumbForQuestId = 2}}, config)
+    equal(#shown, 0, "follow-up display still requires Shift and its existing option")
+    assert(not table.concat(tip.lines, "\n"):find("Next in chain:", 1, true), "disabled chain has no empty heading")
+end
+print("Map tooltip refresh passed: native surfaces, patrol ownership, live progress, hover colors and breadcrumb chains")
