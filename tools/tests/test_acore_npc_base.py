@@ -96,7 +96,6 @@ class NpcBaseTests(unittest.TestCase):
             saved = {"npcs": {str(k): v for k, v in source.items()},
                      "geometryProvenance": provenance, "diagnostics": {}}
             arguments = ["--creature-sql", str(directory / "creature.sql"),
-                         "--gameobject-sql", str(directory / "gameobject.sql"),
                          "--creature-multispawn-sql", str(directory / "creature_multispawn.sql")]
             with patch.object(exporter, "ROOT", directory), \
                  patch.object(audit.reader, "find_map_difficulty_dbc", return_value=directory / "MapDifficulty.dbc"), \
@@ -107,7 +106,8 @@ class NpcBaseTests(unittest.TestCase):
                 for _ in range(2):
                     self.assertEqual(exporter.main(arguments), 0)
                     for call in audit.source_signature.call_args_list:
-                        self.assertEqual(call.args[-1], (directory / "gameobject.sql").resolve())
+                        self.assertEqual(call.args[2], (directory / "creature.sql").resolve())
+                        self.assertEqual(call.args[3], (directory / "creature_multispawn.sql").resolve())
                     output = directory / "Database/AzerothCore/acoreNpcDB.lua"
                     report = directory / "tools/reports/acore_npc_base_candidate.json"
                     contents = output.read_bytes()
