@@ -330,7 +330,31 @@ env.Questie.LOWLEVEL_NONE, env.Questie.LOWLEVEL_ALL, env.Questie.LOWLEVEL_OFFSET
 env.IsMacClient, env.GetExpansionLevel = function() return false end, function() return 2 end
 env.GetCVar, env.InCombatLockdown = function() return "0" end, function() return s.combat end
 env.QuestieCompat = {C_Timer = {}, CALENDAR_WEEKDAY_NAMES = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"}}
-env.bit = bit or bit32
+local function combineBits(a, b, mode)
+    local result, place = 0, 1
+
+    while a > 0 or b > 0 do
+        local x, y = a % 2 == 1, b % 2 == 1
+
+        if (mode == "and" and x and y)
+            or (mode == "or" and (x or y))
+            or (mode == "xor" and x ~= y) then
+            result = result + place
+        end
+
+        a = math.floor(a / 2)
+        b = math.floor(b / 2)
+        place = place * 2
+    end
+
+    return result
+end
+
+env.bit = bit or bit32 or {
+    band = function(a, b) return combineBits(a, b, "and") end,
+    bor = function(a, b) return combineBits(a, b, "or") end,
+    bxor = function(a, b) return combineBits(a, b, "xor") end,
+}
 l10n.GetFallbackLocale = function(_, locale) return locale end
 loader:ImportModule("QuestieIconVisibility").IsEnabled = function() return true end
 loader:ImportModule("QuestieIconVisibility").IsEnabledAnywhere = function() return true end
