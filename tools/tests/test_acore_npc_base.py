@@ -96,6 +96,7 @@ class NpcBaseTests(unittest.TestCase):
             saved = {"npcs": {str(k): v for k, v in source.items()},
                      "geometryProvenance": provenance, "diagnostics": {}}
             arguments = ["--creature-sql", str(directory / "creature.sql"),
+                         "--gameobject-sql", str(directory / "gameobject.sql"),
                          "--creature-multispawn-sql", str(directory / "creature_multispawn.sql")]
             with patch.object(exporter, "ROOT", directory), \
                  patch.object(audit.reader, "find_map_difficulty_dbc", return_value=directory / "MapDifficulty.dbc"), \
@@ -105,6 +106,8 @@ class NpcBaseTests(unittest.TestCase):
                 previous = None
                 for _ in range(2):
                     self.assertEqual(exporter.main(arguments), 0)
+                    for call in audit.source_signature.call_args_list:
+                        self.assertEqual(call.args[-1], (directory / "gameobject.sql").resolve())
                     output = directory / "Database/AzerothCore/acoreNpcDB.lua"
                     report = directory / "tools/reports/acore_npc_base_candidate.json"
                     contents = output.read_bytes()
@@ -786,27 +789,27 @@ class NpcBaseTests(unittest.TestCase):
             lua = db_snapshot.lua_executable()
         except ValueError:
             self.skipTest("Lua unavailable")
-        pool = (ADDON_ROOT / "Modules/FramePool/QuestieFramePool.lua").read_text(encoding="utf-8")
-        start = pool.index("function QuestieFramePool:CreateWaypoints(")
-        draw = pool[start:pool.index("\nend", start) + len("\nend")]
         setup = '''
 local modules = {ZoneDB={zoneIDs={STORMWIND_CITY=1519,IRONFORGE=1537,TELDRASSIL=141,
                                 ORGRIMMAR=1637,THUNDER_BLUFF=1638,UNDERCITY=1497}}}
 QuestieLoader={CreateModule=function(_, key) modules[key]={}; return modules[key] end,
                ImportModule=function(_, key) return modules[key] or {} end}
 local lines = {}
-tinsert = table.insert
-QuestieFramePool={CreateLine=function(_, icon, x1, y1, x2, y2, width, color, zone)
-    lines[#lines+1]={zone,x1,y1,x2,y2}
-    return {}
-end}
 '''
         cases = '''
 local routes = {[12]={{{1,1},{2,2}},{{5,5},{6,6}}},[85]={{{3,3},{4,4}},{{7,7}}}}
 local compiled = modules.QuestieCorrections:OptimizeWaypoints(routes)
 assert(#compiled[12]==2 and #compiled[85]==2 and #compiled[85][2]==1)
-for zone, paths in pairs(compiled) do QuestieFramePool:CreateWaypoints({},paths,nil,nil,zone) end
-assert(#lines==3, "separate visits and a singleton must produce exactly three lines")
+for zone, paths in pairs(compiled) do
+    local built = modules.WaypointGeometry.BuildPolylines(paths, zone, function(x, y)
+        return x * 1000, y * 1000, 0
+    end)
+    for _, line in ipairs(built) do
+        lines[#lines+1] = {zone, line.points[1].x, line.points[1].y,
+                            line.points[#line.points].x, line.points[#line.points].y}
+    end
+end
+assert(#lines==3, "separate visits and a singleton must produce exactly three drawable paths")
 local expected = {[12]={[1]=2,[5]=6},[85]={[3]=4}}
 for _, line in ipairs(lines) do
     assert(expected[line[1]][line[2]]==line[4], "line must stay inside its original section")
@@ -817,7 +820,8 @@ end
             path = directory / "test.lua"
             path.write_text(setup + "\ndofile(" + json.dumps((ADDON_ROOT / "Modules/Libs/RamerDouglasPeucker.lua").as_posix()) + ")\n"
                             + "dofile(" + json.dumps((ADDON_ROOT / "Database/Corrections/QuestieCorrections.lua").as_posix()) + ")\n"
-                            + draw + "\n" + cases, encoding="utf-8")
+                            + "dofile(" + json.dumps((ADDON_ROOT / "Modules/Map/Waypoints/WaypointGeometry.lua").as_posix()) + ")\n"
+                            + cases, encoding="utf-8")
             result = subprocess.run([lua, str(path)], capture_output=True, text=True, encoding="utf-8")
             self.assertEqual(result.returncode, 0, result.stderr)
 
@@ -836,12 +840,11 @@ end
                 exporter.write_stream(stream, records)
             init = (ADDON_ROOT / "Modules/QuestieInit.lua").read_text(encoding="utf-8")
             loader = init[init.index("function QuestieInit:LoadDatabase(key)"):init.index("function _QuestieInit.StartStageCoroutine()")]
-            pool = (ADDON_ROOT / "Modules/FramePool/QuestieFramePool.lua").read_text(encoding="utf-8")
-            start = pool.index("function QuestieFramePool:CreateWaypoints(")
-            draw_waypoints = pool[start:pool.index("\nend", start) + len("\nend")]
             path = directory / "test.lua"
             path.write_text('QuestieDB={}; QuestieInit={}; loadstring=loadstring or load; coYield=coroutine.yield\n'
-                            'QuestieLoader={ImportModule=function() return QuestieDB end}\n' + loader +
+                            'local modules={QuestieDB=QuestieDB}\n'
+                            'QuestieLoader={CreateModule=function(_, key) modules[key]={}; return modules[key] end, '
+                            'ImportModule=function(_, key) return modules[key] or QuestieDB end}\n' + loader +
                             '\ndofile(' + json.dumps(candidate.as_posix()) + ')\n'
                             'local thread=coroutine.create(function() QuestieInit:LoadDatabase("npcData") end)\n'
                             'repeat local ok,err=coroutine.resume(thread); assert(ok,err) until coroutine.status(thread)=="dead"\n'
@@ -850,9 +853,10 @@ end
                             'assert(point[1]==10 and point[2]==20 and point[3]==nil and point[4]==3 and point[5]==571)\n'
                             'local paths=QuestieDB.npcData[1][QuestieDB.npcKeys.waypoints][210]\n'
                             'assert(#paths==1 and #paths[1]==1 and paths[1][1][1]==30 and paths[1][1][2]==40)\n'
-                            'QuestieFramePool={CreateLine=function() error("A destination must not create a patrol line") end}\n'
-                            'tinsert=table.insert\n' + draw_waypoints +
-                            '\nassert(#QuestieFramePool:CreateWaypoints({},paths)==0)\n', encoding="utf-8")
+                            'dofile(' + json.dumps((ADDON_ROOT / "Modules/Map/Waypoints/WaypointGeometry.lua").as_posix()) + ')\n'
+                            'local drawn=modules.WaypointGeometry.BuildPolylines(paths,210,function(x,y) '
+                            'return x*1000,y*1000,0 end)\n'
+                            'assert(#drawn==0,"A destination must not create a patrol line")\n', encoding="utf-8")
             result = subprocess.run([lua, str(path)], capture_output=True, text=True, encoding="utf-8")
             self.assertEqual(result.returncode, 0, result.stderr)
 
@@ -864,20 +868,18 @@ end
         source = (ADDON_ROOT / "Modules/Quest/QuestieQuest.lua").read_text(encoding="utf-8")
         start = source.index("_DrawObjectiveWaypoints = function(")
         draw = source[start:source.index("\nend", start) + len("\nend")]
-        source = (ADDON_ROOT / "Modules/FramePool/QuestieFramePool.lua").read_text(encoding="utf-8")
-        start = source.index("function QuestieFramePool:CreateWaypoints(")
-        create_lines = source[start:source.index("\nend", start) + len("\nend")]
         setup = '''
 local lineCount = 0
 tinsert = table.insert
 TICKS_PER_YIELD = 100
 Questie = {Debug = function() end}
-QuestieFramePool = {CreateLine = function()
-    lineCount = lineCount + 1
-    return {}
-end}
+local modules = {}
+QuestieLoader = {CreateModule = function(_, key) modules[key] = {}; return modules[key] end}
 QuestieMap = {DrawWaypoints = function(_, icon, paths, zone)
-    QuestieFramePool:CreateWaypoints(icon, paths, nil, nil, zone)
+    local built = modules.WaypointGeometry.BuildPolylines(paths, zone, function(x, y)
+        return x * 1000, y * 1000, 0
+    end)
+    lineCount = lineCount + #built
 end}
 _IsCurrentObjectiveDraw = function() return true end
 _HasEarlierObjectiveForNPC = function() return false end
@@ -904,7 +906,9 @@ check({npc({patrol,patrol,destination},false)},2,"friendly patrol behavior is un
 '''
         with db_snapshot.temporary_directory(ADDON_ROOT / "tools/reports") as directory:
             path = directory / "test.lua"
-            path.write_text(setup + create_lines + "\n" + draw + "\n" + cases, encoding="utf-8")
+            path.write_text(setup + "\ndofile(" +
+                            json.dumps((ADDON_ROOT / "Modules/Map/Waypoints/WaypointGeometry.lua").as_posix()) +
+                            ")\n" + draw + "\n" + cases, encoding="utf-8")
             result = subprocess.run([lua, str(path)], capture_output=True, text=True, encoding="utf-8")
             self.assertEqual(result.returncode, 0, result.stderr)
 
