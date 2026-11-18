@@ -19,12 +19,13 @@ import generate_acore_npc_corrections as reader
 import acore_cpp_geometry
 import acore_npc_health
 import acore_transport_geometry
+import acore_scripted_geometry
 
 
 ROOT = Path(__file__).resolve().parents[1]
 TABLES = ("creature_template", "creature_classlevelstats", "creature_queststarter", "game_event_creature_quest", "creature_questender",
           "factiontemplate_dbc", "creature_addon", "creature_template_addon", "waypoint_data", "waypoints", "smart_scripts",
-          "event_scripts", "game_event_creature")
+          "event_scripts", "game_event_creature", "gameobject", "gameobject_template")
 ANCHORS = {1, 3, 4, 115, 1629, 2, 5, 6, 116, 1610}
 REPO_INPUTS = ("Database/Zones/zoneTables.lua", "Compat/UiMapData.lua", "Modules/Phasing.lua",
                "Modules/Network/QuestieServer.lua", "tools/generate_acore_npc_corrections.py",
@@ -53,6 +54,7 @@ def source_signature(source, repo, creature, multispawn, difficulty, wdm):
     paths.update(source / "data/sql/base/db_world" / f"{table}.sql" for table in TABLES)
     paths.add(source / "src/server/game/Battlefield/Zones/BattlefieldWG.h")
     paths.update(source / name for name in acore_cpp_geometry.SOURCE_FILES)
+    paths.update(source / name for name in acore_scripted_geometry.NPC_SCRIPT_SOURCE_FILES)
     paths.update(source / name for name in acore_npc_health.SOURCE_FILES)
     external = [creature, multispawn, difficulty,
                 wdm / "patch-enUS-M extracted/DBFilesClient/DungeonMap.csv",

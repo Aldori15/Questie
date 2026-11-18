@@ -130,8 +130,22 @@ coverage without copying legacy coordinates. Eligibility calculations are unchan
 
 ```powershell
 Invoke-QuestiePython tools/generate_acore_quest_base.py generate `
-    --acore-source $acoreSource --spell-sql $spellSql
+    --acore-source $acoreSource --spell-sql $spellSql `
+    --creature-sql $creatureSql --area-group-dbc $areaGroupDbc
 ```
+
+Set `$areaGroupDbc` to the matching client's `AreaGroup.dbc` (beside
+`MapDifficulty.dbc`). The creature export must retain calculated `areaId`.
+The Fel Spirits guide uses those inputs to select Berserkers inside the relic's
+permitted area, preserving the spirit kill objective and avoiding invented
+permanent spirit spawns. Missing or changed source proofs stop generation.
+
+For fixes to summoned quest locations, regenerate only the NPC base (step 2)
+and quest base (step 4), then recompile Questie's database in-game. Items,
+objects, drops and XP need not be regenerated when their inputs are unchanged.
+NPC fixed summons now include reviewed gameobject owners; their positions come
+from SmartAI summon XYZ and the owning object's map. Aeranas's custom script is
+fingerprinted separately and requires review if its behavior changes.
 
 ### 5. Quest relation and metadata review
 

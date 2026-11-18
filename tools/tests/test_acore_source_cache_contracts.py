@@ -87,6 +87,7 @@ class SourceCacheContractTests(unittest.TestCase):
             multispawn = directory / "creature_multispawn.sql"
             gameobject = directory / "gameobject.sql"
             difficulty = directory / "MapDifficulty.dbc"
+            area_group = directory / "AreaGroup.dbc"
             wdm = directory / "wdm"
 
             def file_hash(path):
@@ -100,8 +101,8 @@ class SourceCacheContractTests(unittest.TestCase):
                 (obj, lambda: obj.source_signature(source, repo, gameobject, difficulty, wdm,
                                                   creature, multispawn, spell),
                  "gameobject_template", [gameobject, difficulty, creature, multispawn, spell]),
-                (quest, lambda: quest.source_signature(source, spell, "spell", {"1": [100]}),
-                 "quest_template", [spell]),
+                (quest, lambda: quest.source_signature(source, spell, "spell", {"1": [100]}, creature, area_group),
+                 "quest_template", [spell, creature, area_group]),
             ]
             for audit, signature, table, exports in variants:
                 with self.subTest(audit=audit.__name__), ExitStack() as stack:
@@ -122,6 +123,9 @@ class SourceCacheContractTests(unittest.TestCase):
                         inputs.append(repo / "Compat/UiMapData.lua")
                     elif audit is quest:
                         inputs.append(repo / "Compat/UiMapData.lua")
+                        inputs.append(repo / "tools/acore_quest_summon_guides.py")
+                    if audit is npc:
+                        inputs.append(source / npc.acore_scripted_geometry.NPC_SCRIPT_SOURCE_FILES[0])
                     for path in inputs:
                         path.parent.mkdir(parents=True, exist_ok=True)
                         path.write_bytes(b"original fixture")

@@ -395,7 +395,17 @@ class QuestBaseTests(unittest.TestCase):
                  patch.object(exporter.audit, "load_source", return_value=saved), \
                  contextlib.redirect_stdout(io.StringIO()):
                 for _ in range(2):
-                    self.assertEqual(exporter.main(["--spell-sql", str(directory / "spell.sql")]), 0)
+                    creature_sql = directory / "creature.sql"
+                    area_group_dbc = directory / "AreaGroup.dbc"
+                    self.assertEqual(exporter.main([
+                        "--spell-sql", str(directory / "spell.sql"),
+                        "--creature-sql", str(creature_sql),
+                        "--area-group-dbc", str(area_group_dbc),
+                    ]), 0)
+                    signature_calls = exporter.audit.source_signature.call_args_list
+                    self.assertGreaterEqual(len(signature_calls), 2)
+                    for call in signature_calls:
+                        self.assertEqual(call.args[4:], (creature_sql.resolve(), area_group_dbc.resolve()))
             output = (directory / "Database/AzerothCore/acoreQuestDB.lua").read_text()
             self.assertIn('QuestieDB.questKeys', output)
             self.assertIn('QuestieDB.questData', output)

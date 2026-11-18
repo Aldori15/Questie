@@ -1513,9 +1513,24 @@ def build_acore_npcs(
         index_partial_waypoint_coverage(provenance, waypoints_by_entry, path_origins,
                                         unmapped_waypoint_paths)
         import acore_scripted_geometry
+        object_templates, object_rows = {}, []
+        if any(int(row.get("source_type") or 0) == 1 for row in smart_script_rows):
+            object_templates, object_template_skips = load_keyed_table(
+                source_root, "gameobject_template", "entry", include_modules)
+            object_rows, object_skips = load_filtered_row_table(
+                source_root, "gameobject", ("guid",), lambda row: True, include_modules,
+                ignore_statement=acore_scripted_geometry.rotation_only_update)
+            if object_template_skips or object_skips:
+                raise ValueError("Gameobject summon context has skipped SQL mutations; review before generation")
+        objects_by_entry = defaultdict(list)
+        for spawn in object_rows:
+            objects_by_entry[int(spawn.get("id") or 0)].append(spawn)
         provenance["scriptedGeometry"] = acore_scripted_geometry.collect(
             smart_script_rows, creatures_by_entry, guid_to_creature, template_rows,
-            zone_maps, escort_waypoint_by_path)
+            zone_maps, escort_waypoint_by_path, object_templates=object_templates,
+            objects_by_entry=objects_by_entry,
+            guid_to_object={int(row["guid"]): row for row in object_rows},
+            reviewed_child_scripts=acore_scripted_geometry.reviewed_npc_scripts(source_root, template_rows))
         import acore_cpp_geometry
         provenance["cppGeometry"] = acore_cpp_geometry.collect(source_root, zone_maps)
         cpp_zones = acore_cpp_geometry.collect_source_zones(source_root)

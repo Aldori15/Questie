@@ -395,6 +395,8 @@ def main(argv=None):
         child = commands.add_parser(name)
         child.add_argument("--acore-source", type=Path, default=Path("P:/AC/source"))
         child.add_argument("--spell-sql", type=Path, required=True)
+        child.add_argument("--creature-sql", type=Path, help="Creature export retaining calculated areaId for summon guides")
+        child.add_argument("--area-group-dbc", type=Path, help="Matching client AreaGroup.dbc for quest-item use restrictions")
         child.add_argument("--spell-table", default="spell")
         child.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
         child.add_argument("--source-cache", type=Path, default=Path("tools/reports/acore_quest_source_model.json"))
@@ -409,11 +411,14 @@ def main(argv=None):
         arguments.insert(0, "generate")
     args = parser.parse_args(arguments)
     source, spell = args.acore_source.resolve(), args.spell_sql.resolve()
+    creature_sql = args.creature_sql.resolve() if args.creature_sql else None
+    area_group_dbc = args.area_group_dbc.resolve() if args.area_group_dbc else None
     cache = shared.local_output(ROOT, args.source_cache)
     manifest_path = local_path(args.manifest, "tools/data", ".json")
     snapshot_path = args.snapshot if args.command == "bootstrap" else args.compare_snapshot
     targets = [manifest_path] if args.command == "bootstrap" else [local_path(args.output, "tools/reports", ".lua"), shared.local_output(ROOT, args.report)]
     inputs = {cache, spell, *([snapshot_path.resolve()] if snapshot_path else [])}
+    inputs.update(path for path in (creature_sql, area_group_dbc) if path)
     if args.command == "generate":
         inputs.add(manifest_path)
     if len(set(targets)) != len(targets) or any(p in inputs for p in targets):
@@ -426,8 +431,9 @@ def main(argv=None):
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         validate_manifest(manifest)
         tool_candidates = manifest.get("sourceToolCandidates", {})
-    signature = audit.source_signature(source, spell, args.spell_table, tool_candidates)
-    saved = audit.load_source(source, spell, args.spell_table, signature, cache, tool_candidates=tool_candidates)
+    signature = audit.source_signature(source, spell, args.spell_table, tool_candidates, creature_sql, area_group_dbc)
+    saved = audit.load_source(source, spell, args.spell_table, signature, cache, tool_candidates=tool_candidates,
+                              creature_sql=creature_sql, area_group_dbc=area_group_dbc)
     if any(saved["diagnostics"].values()) or any(row["skippedMutations"] for row in saved["tableCoverage"].values()):
         raise ValueError("Quest source diagnostics require review before generation")
     model = {int(key): row for key, row in saved["quests"].items()}
@@ -466,7 +472,7 @@ def main(argv=None):
         raise ValueError(f"Quest candidate differs from baseline ({comparison['changedRecords']} records; IDs {ids}); no candidate or manifest published")
     if candidate_size(records, starter_selections, event_tooltips, optional_objectives) > manifest["limits"]["maxOutputBytes"]:
         raise ValueError("Quest candidate exceeds its baseline size budget")
-    if audit.source_signature(source, spell, args.spell_table, tool_candidates) != signature:
+    if audit.source_signature(source, spell, args.spell_table, tool_candidates, creature_sql, area_group_dbc) != signature:
         raise ValueError("Quest source inputs changed during generation")
     if snapshot_path and (db_snapshot.file_hash(snapshot_path) != snapshot_sha or any(
             db_snapshot.file_hash(ROOT / name) != digest for name, digest in metadata["sources"].items())):

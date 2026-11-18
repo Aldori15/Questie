@@ -23,6 +23,7 @@ import acore_quest_cpp_credits as cpp_credits
 import acore_quest_script_events as script_events
 import acore_quest_area_scripts as area_scripts
 import acore_quest_smart_guides as smart_guides
+import acore_quest_summon_guides as summon_guides
 import generate_acore_npc_corrections as coordinates
 
 
@@ -79,6 +80,7 @@ def guide_spell_fields(row):
     result.update({f"Reagent{i}": int(metadata_reader.get_numbered_spell_field(row, "Reagent", i) or 0)
                    for i in range(1, 9)})
     result["RequiresSpellFocus"] = int(row.get("RequiresSpellFocus") or 0)
+    result["AreaGroupId"] = int(row.get("AreaGroupID", row.get("AreaGroupId", 0)) or 0)
     return result
 
 
@@ -122,7 +124,7 @@ def project_escort_endpoint(node, spawn, quest, zone_maps):
         {"map": map_id, "position_x": x, "position_y": y}, zone_maps)
 
 
-def source_signature(source, spell_sql, spell_table, tool_candidates=None):
+def source_signature(source, spell_sql, spell_table, tool_candidates=None, creature_sql=None, area_group_dbc=None):
     paths = {p.resolve() for table in TABLE_KEYS for p in sql_reader.source_sql_files(source, table)}
     paths.update(source / "data/sql/base/db_world" / f"{table}.sql" for table in TABLE_KEYS)
     paths.update(source / name for name in (
@@ -136,6 +138,7 @@ def source_signature(source, spell_sql, spell_table, tool_candidates=None):
     paths.update(source / path for path in getattr(guides, "CORE_SOURCE_FILES", ()))
     paths.update(source / path for path in area_scripts.CORE_SOURCE_FILES)
     paths.update(source / path for path in smart_guides.CORE_SOURCE_FILES)
+    paths.update(source / path for path in summon_guides.CORE_SOURCE_FILES)
     paths.update(cpp_events.source_files(source))
     for root in metadata_reader.get_excluded_module_sql_roots(source):
         paths.update(p.resolve() for p in root.rglob("*.sql"))
@@ -146,6 +149,8 @@ def source_signature(source, spell_sql, spell_table, tool_candidates=None):
                 "acore_quest_smart_guides.py",
                "acore_quest_script_events.py",
                "acore_quest_cpp_credits.py",
+               "acore_quest_summon_guides.py",
+               "acore_scripted_geometry.py",
                "acore_item_compatibility.py",
                "generate_acore_npc_corrections.py")
     return {"version": 7, "sourceRoot": str(source), "includeModules": False,
@@ -153,6 +158,8 @@ def source_signature(source, spell_sql, spell_table, tool_candidates=None):
             "sourceRevision": revision.stdout.strip() if revision.returncode == 0 else None,
             "sourceFiles": {str(p.relative_to(source)): db_snapshot.file_hash(p) for p in sorted(paths)},
             "spellExport": {"path": str(spell_sql), "sha256": db_snapshot.file_hash(spell_sql), "table": spell_table},
+            "summonGuideInputs": {name: {"path": str(path), "sha256": db_snapshot.file_hash(path)} if path else None
+                                  for name, path in (("creatureExport", creature_sql), ("areaGroupDbc", area_group_dbc))},
             "readers": {name: db_snapshot.file_hash(ROOT / "tools" / name) for name in readers},
             "mapInputs": {name: db_snapshot.file_hash(ROOT / name)
                           for name in ("Database/Zones/zoneTables.lua", "Compat/UiMapData.lua")},
@@ -361,7 +368,8 @@ def missing_spell_references(missing_ids, items, quests):
     return references
 
 
-def load_source(source, spell_sql, spell_table, signature, cache, refresh=False, tool_candidates=None):
+def load_source(source, spell_sql, spell_table, signature, cache, refresh=False, tool_candidates=None,
+                creature_sql=None, area_group_dbc=None):
     if cache.exists() and not refresh:
         saved = json.loads(cache.read_text(encoding="utf-8"))
         if saved.get("signature") == signature:
@@ -552,6 +560,24 @@ def load_source(source, spell_sql, spell_table, signature, cache, refresh=False,
             rows("smart_scripts"), container_sources, rows("creature_template"),
              npc_spellclick_rows=rows("npc_spellclick_spells"), quest_relations=relations,
              gossip_options=rows("gossip_menu_option"), spell_scripts=rows("spell_script_names"))
+        summon_spawns = None
+        if creature_sql:
+            summon_spawns, skipped = coordinates.load_rows_from_sql_file(creature_sql, "creature", ("guid",))
+            if skipped:
+                raise ValueError("Quest summon-guide creature export has skipped SQL mutations")
+            coverage["summon_guide_creature_export"] = {"rows": len(summon_spawns), "skippedMutations": skipped}
+        if 10909 in eligible_templates:
+            summon_guides.validate_source(source)
+        summon_locations = summon_guides.derive(
+            eligible_templates, item_templates, complete_spells, rows("smart_scripts"), rows("conditions"),
+            summon_spawns, summon_guides.load_area_groups(area_group_dbc) if area_group_dbc else {},
+            lambda spawn, quest: project_escort_endpoint(spawn, spawn, quest, zone_maps))
+        for quest_id, additions in summon_locations["guides"].items():
+            selected = extra_guides["guides"].setdefault(quest_id, {})
+            for value in additions.values():
+                selected[f"n:{max((int(k[2:]) for k in selected), default=0) + 1}"] = value
+        extra_guides["evidence"].extend(summon_locations["evidence"])
+        extra_guides["omissions"].extend(summon_locations["omissions"])
         guides.append_interaction_hints(extra_guides, interactions["interactions"],
                                        set(area_guides["guides"]) | set(escort_guides["guides"]))
         guides.append_fishing_hints(extra_guides, eligible_templates, item_templates,
@@ -591,7 +617,7 @@ def load_source(source, spell_sql, spell_table, signature, cache, refresh=False,
         quests[str(quest_id)] = row
     for key, children in derive_child_quests(quests).items():
         quests[key]["s:childQuests"] = children
-    if source_signature(source, spell_sql, spell_table, tool_candidates) != signature:
+    if source_signature(source, spell_sql, spell_table, tool_candidates, creature_sql, area_group_dbc) != signature:
         raise ValueError("Quest source inputs changed during extraction")
     unresolved_source_spells = [row["spellId"] for row in spell_coverage["missingSpellReferences"] if row["requiredSourceItemQuestIds"]]
     if rotation_updates:
@@ -665,12 +691,16 @@ def main(argv=None):
     parser.add_argument("--snapshot", type=Path, required=True)
     parser.add_argument("--acore-source", type=Path, default=Path("P:/AC/source"))
     parser.add_argument("--spell-sql", type=Path, required=True)
+    parser.add_argument("--creature-sql", type=Path)
+    parser.add_argument("--area-group-dbc", type=Path)
     parser.add_argument("--spell-table", default="spell")
     parser.add_argument("--source-cache", type=Path, default=Path("tools/reports/acore_quest_source_model.json"))
     parser.add_argument("--report", type=Path, default=Path("tools/reports/acore_quest_source_audit.json"))
     parser.add_argument("--refresh-source", action="store_true")
     args = parser.parse_args(argv)
     source, spell_sql = args.acore_source.resolve(), args.spell_sql.resolve()
+    creature_sql = args.creature_sql.resolve() if args.creature_sql else None
+    area_group_dbc = args.area_group_dbc.resolve() if args.area_group_dbc else None
     report, cache = (shared.local_output(ROOT, p) for p in (args.report, args.source_cache))
     if report == cache or args.snapshot.resolve() in (report, cache):
         raise ValueError("Report, cache and snapshot must use different paths")
@@ -679,8 +709,9 @@ def main(argv=None):
     baseline, fields, overrides, metadata = shared.read_static_records(args.snapshot, ROOT, "quest")
     if tuple(fields) != FIELDS:
         raise ValueError("Unexpected quest schema; review field coverage")
-    signature = source_signature(source, spell_sql, args.spell_table)
-    saved = load_source(source, spell_sql, args.spell_table, signature, cache, args.refresh_source)
+    signature = source_signature(source, spell_sql, args.spell_table, creature_sql=creature_sql, area_group_dbc=area_group_dbc)
+    saved = load_source(source, spell_sql, args.spell_table, signature, cache, args.refresh_source,
+                        creature_sql=creature_sql, area_group_dbc=area_group_dbc)
     model = {int(key): row for key, row in saved["quests"].items()}
     data = {"snapshotSha256": snapshot_sha, "sourceInputs": signature,
             "counts": {"snapshotQuests": len(baseline), "sourceQuests": len(model), "schemaFields": len(fields),
@@ -697,7 +728,7 @@ def main(argv=None):
                             "Race masks are raw quest metadata; NPC friendliness inference and protected legacy overrides are not applied.",
                             "Objectives contain SQL target IDs, not complete script-driven display targets or Questie helper metadata.",
                             "Spell export uses the existing metadata loader with numeric SQL spell overrides; arbitrary scripts and pending updates are outside the model."]}
-    if source_signature(source, spell_sql, args.spell_table) != signature:
+    if source_signature(source, spell_sql, args.spell_table, creature_sql=creature_sql, area_group_dbc=area_group_dbc) != signature:
         raise ValueError("Quest source inputs changed during audit")
     if db_snapshot.file_hash(args.snapshot) != snapshot_sha or any(
             db_snapshot.file_hash(ROOT / name) != digest for name, digest in metadata["sources"].items()):

@@ -1,5 +1,7 @@
 """Fixed summons need real SmartAI callers, current coordinates and map context."""
 import copy
+import hashlib
+import re
 import unittest
 from unittest.mock import patch
 
@@ -8,6 +10,7 @@ import acore_scripted_geometry as scripts
 import generate_acore_npc_corrections as reader
 import generate_acore_npc_base as base
 import audit_acore_npc_sources as audit
+import db_snapshot
 
 
 def action(kind, owner, index, typ, first=0, second=0, target=1, **values):
@@ -209,6 +212,57 @@ class ScriptedGeometryTests(unittest.TestCase):
             with self.subTest(tail=tail):
                 self.assertEqual(child["spawns"], {})
                 self.assertTrue(child["failures"]["spawns"])
+
+
+class ObjectOwnedNpcGeometryTests(unittest.TestCase):
+    def test_aeranas_requires_review_of_the_whole_custom_script(self):
+        with db_snapshot.temporary_directory(ADDON_ROOT / "tools/reports") as root:
+            path = root / scripts.NPC_SCRIPT_SOURCE_FILES[0]
+            path.parent.mkdir(parents=True)
+            code = 'enum Aeranas { SPELL_SHOCK = 12553\n};\nclass npc_aeranas : public CreatureScript { void Reset() { SetFaction(35); }\n};'
+            path.write_text(code, encoding="utf-8")
+            expected = hashlib.sha256(re.sub(r"\s+", "", code).encode()).hexdigest()
+            with patch.object(scripts, "AERANAS_SCRIPT_SHA256", expected):
+                self.assertEqual(scripts.reviewed_npc_scripts(root, {17085: {"ScriptName": "npc_aeranas"}}),
+                                 {17085: "npc_aeranas"})
+                path.write_text(code.replace("SetFaction(35)", "NearTeleportTo(1, 2, 3, 4)"), encoding="utf-8")
+                with self.assertRaisesRegex(ValueError, "Aeranas script changed"):
+                    scripts.reviewed_npc_scripts(root, {17085: {"ScriptName": "npc_aeranas"}})
+                path.write_text(code.replace("12553", "99999"), encoding="utf-8")
+                with self.assertRaisesRegex(ValueError, "Aeranas script changed"):
+                    scripts.reviewed_npc_scripts(root, {17085: {"ScriptName": "npc_aeranas"}})
+            self.assertEqual(scripts.reviewed_npc_scripts(root, {17085: {"ScriptName": "different_script"}}), {})
+
+    def packet(self, **changes):
+        owner = {"id": 160445, "guid": 77, "map": 0, "zoneId": 0, "phaseMask": 1}
+        row = action(1, 160445, 0, 12, 9136, target=8, target_x=30, target_y=40, target_z=2)
+        row.update(changes)
+        with patch.object(reader, "resolve_coordinate_zone", return_value=(46, [80, 45])) as project:
+            packet = scripts.collect([row], {}, {}, {9136: {"ScriptName": ""}}, {}, {},
+                                     object_templates={160445: {"AIName": "SmartGameObjectAI"}},
+                                     objects_by_entry={160445: [owner]}, guid_to_object={77: owner})
+        return packet["entries"]["9136"], project
+
+    def test_gameobject_owner_supplies_map_without_inventing_npc_guid_or_legacy_coordinates(self):
+        data, project = self.packet()
+        self.assertEqual(data["spawns"], audit.typed({46: [[80, 45]]}))
+        self.assertEqual(data["origins"]["spawns"]["n:46"]["n:1"], ["smart-summon:1:160445:0:0:map:0"])
+        placement = project.call_args.args[0]
+        self.assertEqual(placement["map"], 0)
+        self.assertEqual(placement["position_x"], 30)
+        self.assertNotIn("guid", placement)
+
+    def test_relative_summon_is_not_promoted_to_a_fixed_position(self):
+        data, project = self.packet(target_type=1)
+        self.assertFalse(data["spawns"])
+        self.assertTrue(data["failures"]["spawns"])
+        project.assert_not_called()
+
+    def test_rotation_exception_cannot_hide_coordinate_or_script_mutations(self):
+        self.assertTrue(scripts.rotation_only_update(
+            "UPDATE `gameobject` SET `rotation2`=SIN(`orientation`/2) WHERE `guid`=1"))
+        for assignment in ("position_x=1", "ScriptName='override'", "rotation2=0"):
+            self.assertFalse(scripts.rotation_only_update("UPDATE gameobject SET " + assignment + " WHERE guid=1"))
 
 
 if __name__ == "__main__":
