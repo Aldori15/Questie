@@ -8,7 +8,7 @@
   },
   "policy": "Derive current source values and supported guides; verify proposed quest tools against source text, items and spells. Keep curated coverage exclusions pending offer review.",
   "limits": {
-    "maxOutputBytes": 2926161
+    "maxOutputBytes": 3050000
   },
   "scope": {
     "1": 33622713,

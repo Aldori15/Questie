@@ -527,5 +527,21 @@ class QuestSourceAuditTests(unittest.TestCase):
             self.assertFalse(cache.exists())
 
 
+class SpellGuideNormalizationTests(unittest.TestCase):
+    def test_sql_only_summon_keeps_native_target_aliases(self):
+        result = audit.guide_spell_fields({"Effect_1": 28, "EffectMiscValue_1": 11064,
+                                          "ImplicitTargetA_1": 22, "ImplicitTargetB_1": 18,
+                                          "EffectMiscValueB_1": 64})
+        self.assertEqual(result["EffectImplicitTargetA1"], 22)
+        self.assertEqual(result["EffectImplicitTargetB1"], 18)
+        self.assertEqual(result["EffectMiscValueB1"], 64)
+
+    def test_explicit_zero_sql_target_overrides_export_target(self):
+        result = audit.guide_spell_fields({"EffectImplicitTargetA1": 6, "ImplicitTargetA_1": 0,
+                                          "EffectImplicitTargetB1": 46, "ImplicitTargetB_1": 18})
+        self.assertEqual(result["EffectImplicitTargetA1"], 0)
+        self.assertEqual(result["EffectImplicitTargetB1"], 18)
+
+
 if __name__ == "__main__":
     unittest.main()

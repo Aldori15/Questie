@@ -233,8 +233,9 @@ class ObjectOwnedNpcGeometryTests(unittest.TestCase):
                     scripts.reviewed_npc_scripts(root, {17085: {"ScriptName": "npc_aeranas"}})
             self.assertEqual(scripts.reviewed_npc_scripts(root, {17085: {"ScriptName": "different_script"}}), {})
 
-    def packet(self, **changes):
-        owner = {"id": 160445, "guid": 77, "map": 0, "zoneId": 0, "phaseMask": 1}
+    def packet(self, owner_changes=None, **changes):
+        owner = {"id": 160445, "guid": 77, "map": 0, "zoneId": 46, "phaseMask": 1}
+        owner.update(owner_changes or {})
         row = action(1, 160445, 0, 12, 9136, target=8, target_x=30, target_y=40, target_z=2)
         row.update(changes)
         with patch.object(reader, "resolve_coordinate_zone", return_value=(46, [80, 45])) as project:
@@ -256,6 +257,13 @@ class ObjectOwnedNpcGeometryTests(unittest.TestCase):
         data, project = self.packet(target_type=1)
         self.assertFalse(data["spawns"])
         self.assertTrue(data["failures"]["spawns"])
+        project.assert_not_called()
+
+    def test_missing_object_zone_requires_export_instead_of_guessing_map_axes(self):
+        data, project = self.packet(owner_changes={"zoneId": 0})
+        self.assertFalse(data["spawns"])
+        self.assertTrue(any("actor zone context is unavailable" in row["reasons"]
+                            for row in data["failures"]["spawns"]))
         project.assert_not_called()
 
     def test_rotation_exception_cannot_hide_coordinate_or_script_mutations(self):

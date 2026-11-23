@@ -828,6 +828,9 @@ def resolve_coordinate_zone(row, zone_maps):
             if point:
                 return zone_id, point
 
+        if row.get("require_zone_context"):
+            continue
+
         fallback_candidates = []
         for ui_id in zone_maps["ui_by_instance"].get(map_id, []):
             data = zone_maps["ui_map_data"].get(ui_id)
@@ -1200,6 +1203,7 @@ def build_acore_npcs(
     provenance=None,
     transport_templates=None,
     taxi_nodes=None,
+    gameobject_sql=None,
 ):
     source_root = Path(source_root)
     map_difficulty_dbc = find_map_difficulty_dbc(source_root, map_difficulty_dbc)
@@ -1517,9 +1521,12 @@ def build_acore_npcs(
         if any(int(row.get("source_type") or 0) == 1 for row in smart_script_rows):
             object_templates, object_template_skips = load_keyed_table(
                 source_root, "gameobject_template", "entry", include_modules)
-            object_rows, object_skips = load_filtered_row_table(
-                source_root, "gameobject", ("guid",), lambda row: True, include_modules,
-                ignore_statement=acore_scripted_geometry.rotation_only_update)
+            if gameobject_sql:
+                object_rows, object_skips = load_rows_from_sql_file(Path(gameobject_sql), "gameobject", ("guid",))
+            else:
+                object_rows, object_skips = load_filtered_row_table(
+                    source_root, "gameobject", ("guid",), lambda row: True, include_modules,
+                    ignore_statement=acore_scripted_geometry.rotation_only_update)
             if object_template_skips or object_skips:
                 raise ValueError("Gameobject summon context has skipped SQL mutations; review before generation")
         objects_by_entry = defaultdict(list)

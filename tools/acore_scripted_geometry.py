@@ -171,13 +171,13 @@ def collect(scripts, creatures_by_entry, guid_to_creature, templates, zone_maps,
                     errors.add("actor map/ordinary phase is unavailable")
                 else:
                     maps.add(number(spawn, "map"))
-                if number(spawn, "zoneId") <= 0 and not is_object:
+                if number(spawn, "zoneId") <= 0:
                     errors.add("actor zone context is unavailable")
                 elif number(spawn, "zoneId") > 0:
                     zones.add(number(spawn, "zoneId"))
         if len(maps) != 1:
             errors.add("summon map is unavailable or ambiguous")
-        if len(zones) > 1 or not zones and any(actor[0] != 1 for actor in roots):
+        if len(zones) != 1:
             errors.add("summon zone context is unavailable or ambiguous")
         if errors:
             data["failures"]["spawns"].append({"source": identity, "reasons": sorted(errors)})
@@ -186,6 +186,8 @@ def collect(scripts, creatures_by_entry, guid_to_creature, templates, zone_maps,
         point_source = {"map": map_id, "zoneId": next(iter(zones), 0),
                         "position_x": row["target_x"], "position_y": row["target_y"],
                         "position_z": row["target_z"], "phaseMask": 1}
+        if any(actor[0] == 1 for actor in roots):
+            point_source["require_zone_context"] = True
         zone, point = reader.resolve_coordinate_zone(point_source, zone_maps)
         if zone is None or point is None:
             data["failures"]["spawns"].append({"source": identity, "reasons": ["unmappable summon position"]})

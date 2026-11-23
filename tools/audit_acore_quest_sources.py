@@ -24,6 +24,8 @@ import acore_quest_script_events as script_events
 import acore_quest_area_scripts as area_scripts
 import acore_quest_smart_guides as smart_guides
 import acore_quest_summon_guides as summon_guides
+import acore_quest_classic_guides as classic_guides
+import acore_quest_spell_guides as spell_guides
 import generate_acore_npc_corrections as coordinates
 
 
@@ -59,6 +61,7 @@ TABLE_KEYS = {
     "npc_spellclick_spells": ("npc_entry", "spell_id"),
     "gossip_menu_option": ("MenuID", "OptionID"),
     "spell_script_names": ("spell_id", "ScriptName"),
+    "event_scripts": ("id", "delay", "command", "datalong", "datalong2", "dataint", "x", "y", "z", "o"),
     **{table: (("eventEntry", "id", "quest") if table.startswith("game_event_") else ("id", "quest"))
        for table in relation_reader.TARGET_TABLES},
 }
@@ -74,8 +77,17 @@ def typed(value):
 
 def guide_spell_fields(row):
     """Keep effect, focus and reagent inputs needed by source-derived guides."""
+    # AC's custom spell_dbc names these columns without the Effect prefix.
+    # Normalize SQL overrides before reading merged export/SQL spell fields,
+    # retaining explicit zeros as overrides too.
+    row = dict(row)
+    for side in ("A", "B"):
+        for index in range(1, 4):
+            value = metadata_reader.get_numbered_spell_field(row, "ImplicitTarget" + side, index)
+            if value is not None:
+                row[f"EffectImplicitTarget{side}_{index}"] = value
     result = {f"{prefix}{i}": int(metadata_reader.get_numbered_spell_field(row, prefix, i) or 0)
-              for prefix in ("Effect", "EffectMiscValue", "EffectTriggerSpell", "EffectItemType", "EffectApplyAuraName",
+              for prefix in ("Effect", "EffectMiscValue", "EffectMiscValueB", "EffectTriggerSpell", "EffectItemType", "EffectApplyAuraName",
                              "EffectImplicitTargetA", "EffectImplicitTargetB") for i in range(1, 4)}
     result.update({f"Reagent{i}": int(metadata_reader.get_numbered_spell_field(row, "Reagent", i) or 0)
                    for i in range(1, 9)})
@@ -139,6 +151,8 @@ def source_signature(source, spell_sql, spell_table, tool_candidates=None, creat
     paths.update(source / path for path in area_scripts.CORE_SOURCE_FILES)
     paths.update(source / path for path in smart_guides.CORE_SOURCE_FILES)
     paths.update(source / path for path in summon_guides.CORE_SOURCE_FILES)
+    paths.update(source / path for path in classic_guides.CORE_SOURCE_FILES)
+    paths.update(source / path for path in spell_guides.CORE_SOURCE_FILES)
     paths.update(cpp_events.source_files(source))
     for root in metadata_reader.get_excluded_module_sql_roots(source):
         paths.update(p.resolve() for p in root.rglob("*.sql"))
@@ -150,6 +164,7 @@ def source_signature(source, spell_sql, spell_table, tool_candidates=None, creat
                "acore_quest_script_events.py",
                "acore_quest_cpp_credits.py",
                "acore_quest_summon_guides.py",
+               "acore_quest_classic_guides.py", "acore_quest_spell_guides.py", "acore_cpp_geometry.py",
                "acore_scripted_geometry.py",
                "acore_item_compatibility.py",
                "generate_acore_npc_corrections.py")
@@ -568,9 +583,10 @@ def load_source(source, spell_sql, spell_table, signature, cache, refresh=False,
             coverage["summon_guide_creature_export"] = {"rows": len(summon_spawns), "skippedMutations": skipped}
         if 10909 in eligible_templates:
             summon_guides.validate_source(source)
+        area_groups = summon_guides.load_area_groups(area_group_dbc) if area_group_dbc else {}
         summon_locations = summon_guides.derive(
             eligible_templates, item_templates, complete_spells, rows("smart_scripts"), rows("conditions"),
-            summon_spawns, summon_guides.load_area_groups(area_group_dbc) if area_group_dbc else {},
+            summon_spawns, area_groups,
             lambda spawn, quest: project_escort_endpoint(spawn, spawn, quest, zone_maps))
         for quest_id, additions in summon_locations["guides"].items():
             selected = extra_guides["guides"].setdefault(quest_id, {})
@@ -578,6 +594,24 @@ def load_source(source, spell_sql, spell_table, signature, cache, refresh=False,
                 selected[f"n:{max((int(k[2:]) for k in selected), default=0) + 1}"] = value
         extra_guides["evidence"].extend(summon_locations["evidence"])
         extra_guides["omissions"].extend(summon_locations["omissions"])
+        classic_locations = classic_guides.derive(
+            eligible_templates, item_templates, complete_spells, rows("smart_scripts"), rows("conditions"),
+            rows("creature_template"), object_templates, rows("spell_script_names"), source_root=source)
+        source_locations = spell_guides.derive(
+            eligible_templates, item_templates, complete_spells, rows("smart_scripts"), rows("conditions"),
+            rows("creature_template"), object_templates, summon_spawns or rows("creature"), rows("gameobject"),
+            rows("event_scripts"), credit_sources,
+            lambda spawn, quest: project_escort_endpoint(spawn, spawn, quest, zone_maps),
+            existing_guides={**extra_guides["guides"], **classic_locations["guides"]},
+            source_root=source, area_groups=area_groups)
+        for packet in (classic_locations, source_locations):
+            for quest_id, additions in packet["guides"].items():
+                selected = extra_guides["guides"].setdefault(quest_id, {})
+                for value in additions.values():
+                    if value not in selected.values():
+                        selected[f"n:{max((int(k[2:]) for k in selected), default=0) + 1}"] = value
+            extra_guides["evidence"].extend(packet["evidence"])
+            extra_guides["omissions"].extend(packet["omissions"])
         guides.append_interaction_hints(extra_guides, interactions["interactions"],
                                        set(area_guides["guides"]) | set(escort_guides["guides"]))
         guides.append_fishing_hints(extra_guides, eligible_templates, item_templates,

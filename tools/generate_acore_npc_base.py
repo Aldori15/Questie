@@ -770,6 +770,7 @@ def main(argv=None):
         child = commands.add_parser(command)
         child.add_argument("--acore-source", type=Path, default=Path("P:/AC/source"))
         child.add_argument("--creature-sql", type=Path, required=True)
+        child.add_argument("--gameobject-sql", type=Path, help="Calculated zone/area context for gameobject-owned summons")
         child.add_argument("--creature-multispawn-sql", type=Path, required=True)
         child.add_argument("--wdm-root", type=Path, default=audit.reader.DEFAULT_WDM_ROOT)
         child.add_argument("--map-difficulty-dbc", type=Path)
@@ -786,19 +787,23 @@ def main(argv=None):
     args = parser.parse_args(arguments)
     source, creature, multispawn, wdm = (p.resolve() for p in (args.acore_source, args.creature_sql, args.creature_multispawn_sql, args.wdm_root))
     difficulty = audit.reader.find_map_difficulty_dbc(source, args.map_difficulty_dbc).resolve()
+    gameobject_sql = args.gameobject_sql.resolve() if args.gameobject_sql else None
     cache = shared.local_output(ROOT, args.source_cache)
     manifest_path = local_path(args.manifest, "tools/data", ".json")
     snapshot_path = args.snapshot if args.command == "bootstrap" else args.compare_snapshot
     targets = [manifest_path] if args.command == "bootstrap" else [local_path(args.output, "tools/reports", ".lua"), shared.local_output(ROOT, args.report)]
     inputs = {cache, creature, multispawn, difficulty, *([snapshot_path.resolve()] if snapshot_path else [])}
+    if gameobject_sql:
+        inputs.add(gameobject_sql)
     if args.command == "generate":
         inputs.add(manifest_path)
     if len(set(targets)) != len(targets) or any(p in inputs for p in targets):
         raise ValueError("Output paths must differ from inputs and each other")
     if args.command == "bootstrap" and not args.force and any(p.exists() for p in targets):
         raise ValueError("Output already exists; review it or explicitly use --force")
-    signature = audit.source_signature(source, ROOT, creature, multispawn, difficulty, wdm)
-    saved = audit.load_source(source, ROOT, creature, multispawn, difficulty, wdm, signature, cache)
+    signature = audit.source_signature(source, ROOT, creature, multispawn, difficulty, wdm, gameobject_sql)
+    saved = audit.load_source(source, ROOT, creature, multispawn, difficulty, wdm, signature, cache,
+                              gameobject_sql=gameobject_sql)
     if any(saved["diagnostics"].values()):
         raise ValueError("NPC source diagnostics require review before generation")
     model = {int(key): value for key, value in saved["npcs"].items()}
@@ -830,7 +835,7 @@ def main(argv=None):
         raise ValueError("NPC candidate differs from baseline; no candidate or manifest published")
     if candidate_size(records, scripted_spawns, runtime_geometry) > manifest["limits"]["maxOutputBytes"]:
         raise ValueError("NPC candidate exceeds its baseline size budget")
-    if audit.source_signature(source, ROOT, creature, multispawn, difficulty, wdm) != signature:
+    if audit.source_signature(source, ROOT, creature, multispawn, difficulty, wdm, gameobject_sql) != signature:
         raise ValueError("NPC source inputs changed during generation")
     if snapshot_path and (db_snapshot.file_hash(snapshot_path) != snapshot_sha or any(
             db_snapshot.file_hash(ROOT / name) != digest for name, digest in metadata["sources"].items())):

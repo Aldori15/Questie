@@ -104,6 +104,7 @@ Explicit quest-bound escort paths are excluded from ordinary NPC patrol lines.
 ```powershell
 Invoke-QuestiePython tools/generate_acore_npc_base.py generate `
     --acore-source $acoreSource `
+    --gameobject-sql $gameobjectSql `
     --creature-sql $creatureSql `
     --creature-multispawn-sql $creatureMultispawnSql `
     --map-difficulty-dbc $mapDifficultyDbc --wdm-root $wdmRoot
@@ -146,6 +147,27 @@ objects, drops and XP need not be regenerated when their inputs are unchanged.
 NPC fixed summons now include reviewed gameobject owners; their positions come
 from SmartAI summon XYZ and the owning object's map. Aeranas's custom script is
 fingerprinted separately and requires review if its behavior changes.
+
+Use the calculated `gameobject` export for NPC generation so an object's
+zone can disambiguate its summon coordinates. Quest guides use explicit
+source relationships to show where to interact, cast a quest spell, summon a
+target, or receive credit. Each guide follows the original objective's progress.
+Template-wide kill credit guides reuse NPC locations. Guides that depend on a
+specific spawn or area keep their bounded coordinates. The quest output limit
+allows for this extra coverage and still guards against unexpected growth.
+
+After regenerating, run the location audit to review remaining coverage:
+
+```powershell
+python -B tools/report_quest_location_gaps.py `
+    --npc-source-cache tools/reports/acore_npc_source_model.json `
+    --quest-source-cache tools/reports/acore_quest_source_model.json
+```
+
+The JSON report lists possible gaps in base locations for objectives, starters,
+and finishers. It records alternate guide coverage and flags cached source leads
+for review. Runtime event, phase, dungeon and eligibility rules can affect what
+appears in-game.
 
 ### 5. Quest relation and metadata review
 

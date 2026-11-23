@@ -44,7 +44,7 @@ def typed(value):
     return value
 
 
-def source_signature(source, repo, creature, multispawn, difficulty, wdm):
+def source_signature(source, repo, creature, multispawn, difficulty, wdm, gameobject_sql=None):
     taxi = difficulty.with_name("TaxiPathNode.dbc").resolve()
     transport_paths = {source / name for name in acore_transport_geometry.SOURCE_FILES}
     for table in ("gameobject_template", "transports"):
@@ -59,6 +59,8 @@ def source_signature(source, repo, creature, multispawn, difficulty, wdm):
     external = [creature, multispawn, difficulty,
                 wdm / "patch-enUS-M extracted/DBFilesClient/DungeonMap.csv",
                 wdm / "patch-enUS-M extracted/DBFilesClient/DungeonMapChunk.csv"]
+    if gameobject_sql:
+        external.append(gameobject_sql)
     revision = subprocess.run(["git", "-C", str(source), "rev-parse", "HEAD"], capture_output=True, text=True)
     return {"version": 2, "includeModules": False, "sourceRoot": str(source), "repoRoot": str(repo),
             "sourceRevision": revision.stdout.strip() if revision.returncode == 0 else None,
@@ -79,7 +81,8 @@ def model_digest(saved):
                                      separators=(",", ":")).encode()).hexdigest()
 
 
-def load_source(source, repo, creature, multispawn, difficulty, wdm, signature, cache, refresh=False):
+def load_source(source, repo, creature, multispawn, difficulty, wdm, signature, cache, refresh=False,
+                gameobject_sql=None):
     if cache.exists() and not refresh:
         saved = json.loads(cache.read_text(encoding="utf-8"))
         if saved.get("signature") == signature:
@@ -162,7 +165,8 @@ def load_source(source, repo, creature, multispawn, difficulty, wdm, signature, 
         # Missing transport/scripted coverage must remain visible in the audit.
         npcs, stats = reader.build_acore_npcs(source, repo_root=repo, creature_sql=creature,
                                              creature_multispawn_sql=multispawn, map_difficulty_dbc=difficulty,
-                                             wdm_root=wdm, provenance=provenance, **transport_options)
+                                             wdm_root=wdm, provenance=provenance,
+                                             gameobject_sql=gameobject_sql, **transport_options)
     finally:
         sql_reader.load_row_table, reader.load_row_table = original_rows, npc_rows
         reader.load_rows_from_sql_file, reader.load_filtered_row_table = original_external, original_filtered
@@ -170,7 +174,7 @@ def load_source(source, repo, creature, multispawn, difficulty, wdm, signature, 
         for name, (sql_function, npc_function) in mutation_functions.items():
             setattr(sql_reader, name, sql_function)
             setattr(reader, name, npc_function)
-    if source_signature(source, repo, creature, multispawn, difficulty, wdm) != signature:
+    if source_signature(source, repo, creature, multispawn, difficulty, wdm, gameobject_sql) != signature:
         raise ValueError("NPC source inputs changed during extraction")
     saved = {"signature": signature,
              "geometryProvenance": provenance,
@@ -295,6 +299,7 @@ def main(argv=None):
     parser.add_argument("--snapshot", type=Path, required=True)
     parser.add_argument("--acore-source", type=Path, default=Path("P:/AC/source"))
     parser.add_argument("--creature-sql", type=Path, required=True)
+    parser.add_argument("--gameobject-sql", type=Path, help="Calculated zone/area context for gameobject-owned summons")
     parser.add_argument("--creature-multispawn-sql", type=Path, required=True)
     parser.add_argument("--map-difficulty-dbc", type=Path)
     parser.add_argument("--wdm-root", type=Path, default=reader.DEFAULT_WDM_ROOT)
@@ -305,6 +310,7 @@ def main(argv=None):
     source, creature, multispawn, wdm = (p.resolve() for p in (args.acore_source, args.creature_sql,
                                                             args.creature_multispawn_sql, args.wdm_root))
     difficulty = reader.find_map_difficulty_dbc(source, args.map_difficulty_dbc).resolve()
+    gameobject_sql = args.gameobject_sql.resolve() if args.gameobject_sql else None
     report, cache = (shared.local_output(ROOT, p) for p in (args.report, args.source_cache))
     if report == cache or args.snapshot.resolve() in (report, cache):
         raise ValueError("Report, cache and snapshot must use different paths")
@@ -313,8 +319,9 @@ def main(argv=None):
     baseline, fields, overrides, metadata = shared.read_static_records(args.snapshot, ROOT, "npc")
     if fields != reader.FIELD_ORDER:
         raise ValueError("Unexpected NPC schema; review reader field coverage")
-    signature = source_signature(source, ROOT, creature, multispawn, difficulty, wdm)
-    saved = load_source(source, ROOT, creature, multispawn, difficulty, wdm, signature, cache, args.refresh_source)
+    signature = source_signature(source, ROOT, creature, multispawn, difficulty, wdm, gameobject_sql)
+    saved = load_source(source, ROOT, creature, multispawn, difficulty, wdm, signature, cache, args.refresh_source,
+                        gameobject_sql=gameobject_sql)
     model = {int(key): row for key, row in saved["npcs"].items()}
     report_data = {"snapshotSha256": snapshot_digest, "sourceInputs": signature,
                    "counts": {"snapshotNpcs": len(baseline), "sourceNpcs": len(model), "schemaFields": len(fields)},
@@ -330,7 +337,7 @@ def main(argv=None):
                                    "Friendliness currently uses SQL factiontemplate_dbc, not the full client FactionTemplate.dbc.",
                                    "Coordinates, path order, phases, difficulty masks and identity slots are compared without rounding or dropping metadata.",
                                    "Player conditions, arbitrary scripts, modules and pending SQL updates are outside this source model."]}
-    if source_signature(source, ROOT, creature, multispawn, difficulty, wdm) != signature:
+    if source_signature(source, ROOT, creature, multispawn, difficulty, wdm, gameobject_sql) != signature:
         raise ValueError("NPC source inputs changed during audit")
     if db_snapshot.file_hash(args.snapshot) != snapshot_digest or any(
             db_snapshot.file_hash(ROOT / name) != digest for name, digest in metadata["sources"].items()):

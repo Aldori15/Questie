@@ -96,8 +96,8 @@ class SourceCacheContractTests(unittest.TestCase):
 
             variants = [
                 (item, lambda: item.source_signature(source, "full", spell), "item_template", [spell]),
-                (npc, lambda: npc.source_signature(source, repo, creature, multispawn, difficulty, wdm),
-                 "creature_template", [creature, multispawn, difficulty]),
+                (npc, lambda: npc.source_signature(source, repo, creature, multispawn, difficulty, wdm, gameobject),
+                 "creature_template", [creature, multispawn, difficulty, gameobject]),
                 (obj, lambda: obj.source_signature(source, repo, gameobject, difficulty, wdm,
                                                   creature, multispawn, spell),
                  "gameobject_template", [gameobject, difficulty, creature, multispawn, spell]),
