@@ -159,11 +159,10 @@ local function _PrimeObjectiveState(objectiveStateKey, numFulfilled, numRequired
 end
 
 ---@param questId number
----@param text string
----@param numRequired number
+---@param objectiveIndex number
 ---@return string
-local function _GetObjectiveStateKey(questId, text, numRequired)
-    return tostring(questId) .. "\001" .. tostring(text or "") .. "\001" .. tostring(numRequired or "")
+local function _GetObjectiveStateKey(questId, objectiveIndex)
+    return tostring(questId) .. "\001" .. tostring(objectiveIndex)
 end
 
 ---@param questId number
@@ -193,8 +192,8 @@ end
 ---@param text string
 ---@param numFulfilled number
 ---@param numRequired number
-function QuestieAnnounce:ObjectiveChanged(questId, text, numFulfilled, numRequired)
-    local objectiveStateKey = _GetObjectiveStateKey(questId, text, numRequired)
+function QuestieAnnounce:ObjectiveChanged(questId, objectiveIndex, text, numFulfilled, numRequired)
+    local objectiveStateKey = _GetObjectiveStateKey(questId, objectiveIndex)
     local objectiveProgress = tostring(numFulfilled) .. "/" .. tostring(numRequired)
 
     -- Reload/login quest log hydration should establish baseline progress without re-announcing old objectives.
