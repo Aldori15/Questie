@@ -184,15 +184,22 @@ _ShouldAutoAcceptQuest = function(questId, gossipQuest)
 
     local autoAccept = _GetAutoAcceptSettings()
 
-    local isTrivial = gossipQuest and gossipQuest.isTrivial
-    if isTrivial == nil and questId and questId > 0 then
-        local questLevel = QuestieDB.QueryQuestSingle(questId, "questLevel")
-        if questLevel then
-            isTrivial = QuestieDB.IsTrivial(questLevel)
+    if not autoAccept.trivial then
+        local questLevel = gossipQuest and gossipQuest.questLevel
+        if questId and questId > 0 then
+            questLevel = QuestieDB.QueryQuestSingle(questId, "questLevel") or questLevel
         end
-    end
-    if (not autoAccept.trivial) and isTrivial then
-        return false
+
+        local isTrivial
+        if questLevel ~= nil then
+            isTrivial = QuestieDB.IsTrivial(questLevel)
+        elseif gossipQuest then
+            isTrivial = gossipQuest.isTrivial
+        end
+
+        if isTrivial then
+            return false
+        end
     end
 
     local isRepeatable = gossipQuest and gossipQuest.repeatable
