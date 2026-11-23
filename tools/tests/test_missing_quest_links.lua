@@ -140,4 +140,42 @@ for _, items in ipairs({true, false}) do
     end
 end
 env.GetItemInfo = getItemInfo
+
+-- Exercise quest-link progress with the original sparse objective indices.
+local addPlayerProgress
+for index = 1, 30 do
+    local name, value = debug.getupvalue(link.CreateQuestTooltip, index)
+    if name == "_AddPlayerQuestProgress" then
+        addPlayerProgress = value
+        break
+    end
+end
+assert(addPlayerProgress)
+env.Questie.Colorize = function(_, text) return text end
+db.IsComplete = function() return 0 end
+lib.GetObjectiveDescription = function(_, objective) return objective.Description end
+lib.GetRGBForObjective = function() return "" end
+module("QuestiePlayer").currentQuestlog = {[1] = true}
+local cache = module("QuestLogCache")
+local native = {type = "item", raw_text = "Étoffe de laine : 2/5"}
+cache.TryGetQuest = function() return {objectives = {[3] = native}} end
+local objective = {Index = 3, Type = "item", Description = "Wool Cloth", Collected = 2, Needed = 5}
+local function progressLine()
+    local lines = {}
+    addPlayerProgress({AddLine = function(_, text) lines[#lines + 1] = text end}, {Id = 1, Objectives = {[3] = objective}})
+    return lines[3]
+end
+profile.trimObjectiveText = false
+equal(progressLine(), " - Étoffe de laine : 2/5|r", "untrimmed quest links preserve native wording and counter placement")
+profile.trimObjectiveText = true
+equal(progressLine(), " - Wool Cloth: 2/5|r", "trimmed quest links keep their existing format")
+profile.trimObjectiveText = false
+objective.Collected = 3
+equal(progressLine(), " - Wool Cloth: 3/5|r", "updated progress wins over a stale client text counter")
+objective.Collected, objective.IsRequiredSourceItem = 2, true
+equal(progressLine(), " - Wool Cloth: 2/5|r", "synthetic source items cannot borrow a native row")
+objective.IsRequiredSourceItem = nil
+objective.Type, objective.Needed, native.type, native.raw_text = "event", 0, "event", "Read the note."
+equal(progressLine(), " - Read the note.|r", "untrimmed action instructions keep their text without a fabricated counter")
+
 print("Missing quest links: native fallbacks, chat preservation, announcement formats and item settings passed")

@@ -7,6 +7,8 @@ local QuestieLink = QuestieLoader:CreateModule("QuestieLink")
 local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 ---@type QuestieLib
 local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
+---@type QuestLogCache
+local QuestLogCache = QuestieLoader:ImportModule("QuestLogCache")
 ---@type QuestieEvent
 local QuestieEvent = QuestieLoader:ImportModule("QuestieEvent")
 ---@type QuestiePlayer
@@ -507,12 +509,25 @@ _AddPlayerQuestProgress = function(tooltip, quest, starterName, starterZoneName,
         if (QuestieDB.IsComplete(quest.Id) == 0) then
             _AddTooltipLine(tooltip, " ")
             _AddColoredTooltipLine(tooltip, l10n("Your progress")..l10n(": "), "gold")
+            local cached = not Questie.db.profile.trimObjectiveText and QuestLogCache.TryGetQuest(quest.Id)
             for _, objective in pairs(quest.Objectives) do
-                local objDesc = QuestieLib:GetObjectiveDescription(objective)
+                local native = cached and cached.objectives[objective.Index]
+                local text
+                if native and native.type == objective.Type and not objective.IsSourceItem and not objective.IsRequiredSourceItem then
+                    local collected, needed = native.raw_text:match("(%d+)%s*/%s*(%d+)")
+                    -- An event can update cached counts before the client's text catches up.
+                    if not collected or (tonumber(collected) == objective.Collected and tonumber(needed) == objective.Needed) then
+                        text = native.raw_text
+                    end
+                end
 
-                if objective.Needed > 0 then
+                if not text and objective.Needed and objective.Needed > 0 then
+                    local objDesc = QuestieLib:GetObjectiveDescription(objective)
                     local lineEnding = tostring(objective.Collected) .. "/" .. tostring(objective.Needed)
-                    _AddTooltipLine(tooltip, " - " .. QuestieLib:GetRGBForObjective(objective) .. objDesc .. ": " .. lineEnding.."|r")
+                    text = objDesc .. ": " .. lineEnding
+                end
+                if text then
+                    _AddTooltipLine(tooltip, " - " .. QuestieLib:GetRGBForObjective(objective) .. text .. "|r")
                 end
             end
         -- Completed Quest (not turned in): display quest ended by npc and zone
