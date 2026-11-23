@@ -388,8 +388,11 @@ end
 
 _GetCalendarEventName = function(name, texture)
     if type(name) == "string" then
+        local exactMatch = CALENDAR_EVENT_NAME_ALIASES[name]
+        if exactMatch then return exactMatch end
+
         for calendarName, eventName in pairs(CALENDAR_EVENT_NAME_ALIASES) do
-            if name == calendarName or name == l10n(calendarName) then
+            if l10n.translations[calendarName] and name == l10n(calendarName) then
                 return eventName
             end
         end
