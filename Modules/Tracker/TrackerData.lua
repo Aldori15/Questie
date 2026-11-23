@@ -133,7 +133,7 @@ end
 ---Enumerate beyond the visible count to include quests under collapsed headers.
 function TrackerData.Refresh()
     local quests, present, headers, precedingHeader = {}, {}, {}, nil
-    for id, quest in pairs(QuestiePlayer.currentQuestlog) do quests[id] = quest end
+    local mappedQuests = QuestiePlayer.currentQuestlog
     local visibleEntries = GetNumQuestLogEntries()
     for index = 1, 75 do
         local title, level, _, isHeader, _, complete, frequency, id = QuestieCompat.GetQuestLogTitle(index)
@@ -152,6 +152,10 @@ function TrackerData.Refresh()
                     header = headers[GetQuestSortIndex(index)]
                 end
                 quests[id] = RefreshNativeQuest(id, title, level, header, complete, frequency, index)
+            else
+                -- The native log owns membership. A GM reward can skip the
+                -- reward-dialog hook and leave a mapped quest cached.
+                quests[id] = mappedQuests[id]
             end
         end
     end

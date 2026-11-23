@@ -301,6 +301,30 @@ do
     assert(h.modules.QuestiePlayer.currentQuestlog[844], "new missed acceptance can recover after confirmed removal")
 end
 
+-- A GM reward bypasses the reward-dialog hook. The tracker can see an empty
+-- native log and then a new accept while the old mapped quest is still cached.
+do
+    local h = harness()
+    h.env.GetNumQuestLogEntries = function() return #h.order end
+    h.loadModule("Modules/Tracker/TrackerData.lua")
+    local trackerData = h.modules.TrackerData
+    h:add(12238, {}, 1, true)
+    h.events:UpdateAllQuests()
+    assert(trackerData.Refresh()[12238], "completed quest remains visible before reward")
+
+    h.order, h.records[12238].present = {}, false
+    h.events:QuestLogUpdate()
+    local emptyDisplay = trackerData.Refresh()
+
+    h:add(12633, {}, 1, true)
+    h.events:QuestLogUpdate()
+    assert(h.modules.QuestiePlayer.currentQuestlog[12238], "old mapped quest still cached without reward event")
+    local displayed = trackerData.Refresh()
+    equal(displayed[12238], nil, "rewarded quest cannot reappear after another accept")
+    equal(next(emptyDisplay), nil, "empty native quest log has no tracker rows")
+    assert(displayed[12633], "new quest stays visible")
+end
+
 -- A scan can observe absence between turn-in and removal notifications.
 -- Keep turn-in state until removal arrives so it cannot become an abandonment.
 do

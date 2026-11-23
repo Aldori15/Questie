@@ -47,7 +47,12 @@ local function setup(mode, useCombatQueue)
         [2000] = {mapType = 3, parentMapID = 2}, [2] = {mapType = 2, name = "Continent B"},
         [3000] = {mapType = 3, parentMapID = 3000, name = "Detached map"},
     }
-    env.QuestieCompat = {GetQuestLogTitle = function() end, C_Map = {
+    env.QuestieCompat = {GetQuestLogTitle = function(index)
+        for id, quest in pairs(s.quests) do
+            if index == 1 then return "Quest " .. id, quest.level, nil, false, false, nil, nil, id end
+            index = index - 1
+        end
+    end, C_Map = {
         GetBestMapForUnit = function() return s.playerMap or 1000 end,
         GetMapInfo = function(id) return maps[id] end,
         GetAreaInfo = function(id) return ({[200] = "Beta"})[id] end,
@@ -74,6 +79,7 @@ local function setup(mode, useCombatQueue)
         return id == 400 and "Dungeon" or nil
     end
     module("QuestiePlayer").currentQuestlog = s.quests
+    module("QuestieDB").HasQuestData = function(id) return s.quests[id] ~= nil end
     module("QuestieLib").GetQuestTypeSuffixPriority = function(id) return s.priorities[id] or 0 end
     module("QuestieMap").GetNearestQuestSpawn = function(_, quest)
         s.nearestReads = s.nearestReads + 1
