@@ -104,7 +104,7 @@ end
 
 -- The tooltips prefer FullDescription (the objective text including "slain", see
 -- QuestieLib:GetObjectiveDescription), which QuestieQuest extracts from the local quest log
--- when trimObjectiveText is inactive. The local player does not have a party member's quest,
+-- for local objectives. The local player does not always have a party member's quest,
 -- so rebuild the text from the client's own quest log format string for the objective type.
 local objectiveTypePatterns = {
     monster = QUEST_MONSTERS_KILLED, -- "%s slain: %d/%d"
@@ -116,7 +116,7 @@ local objectiveTypePatterns = {
 ---@param description string
 ---@return string?
 local function _GetFullDescription(objType, description)
-    if Questie.db.profile.trimObjectiveText or description == "" then
+    if description == "" then
         return nil
     end
     local pattern = objectiveTypePatterns[objType]

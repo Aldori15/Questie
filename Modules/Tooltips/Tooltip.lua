@@ -571,7 +571,8 @@ function QuestieTooltips:GetTooltip(key, playerZone, npcStarterState)
                             end
                             dropRateText = "  |cFF999999" .. dropIcon .. "[" .. FormatDropText(dropRateData[1]) .. "%]|r";
                         end
-                        if objective.Needed and ((not finishedAndUnacceptedQuests[questId]) or objective.Collected ~= objective.Needed) then
+                        if objective.Needed and objective.HasCounter ~= false
+                            and ((not finishedAndUnacceptedQuests[questId]) or objective.Collected ~= objective.Needed) then
                             local questProgress = tostring(objective.Collected) .. "/" .. tostring(objective.Needed)
                             if Questie.db.profile.showQuestProgressFirst then
                                 text = "   " .. color .. questProgress .. " " .. QuestieLib:GetObjectiveDescription(objective) .. dropRateText;

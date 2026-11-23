@@ -165,17 +165,13 @@ local function progressLine()
     addPlayerProgress({AddLine = function(_, text) lines[#lines + 1] = text end}, {Id = 1, Objectives = {[3] = objective}})
     return lines[3]
 end
-profile.trimObjectiveText = false
-equal(progressLine(), " - Étoffe de laine : 2/5|r", "untrimmed quest links preserve native wording and counter placement")
-profile.trimObjectiveText = true
-equal(progressLine(), " - Wool Cloth: 2/5|r", "trimmed quest links keep their existing format")
-profile.trimObjectiveText = false
+equal(progressLine(), " - Étoffe de laine : 2/5|r", "quest links preserve native wording and counter placement")
 objective.Collected = 3
 equal(progressLine(), " - Wool Cloth: 3/5|r", "updated progress wins over a stale client text counter")
 objective.Collected, objective.IsRequiredSourceItem = 2, true
 equal(progressLine(), " - Wool Cloth: 2/5|r", "synthetic source items cannot borrow a native row")
 objective.IsRequiredSourceItem = nil
 objective.Type, objective.Needed, native.type, native.raw_text = "event", 0, "event", "Read the note."
-equal(progressLine(), " - Read the note.|r", "untrimmed action instructions keep their text without a fabricated counter")
+equal(progressLine(), " - Read the note.|r", "action instructions keep their text without a fabricated counter")
 
 print("Missing quest links: native fallbacks, chat preservation, announcement formats and item settings passed")

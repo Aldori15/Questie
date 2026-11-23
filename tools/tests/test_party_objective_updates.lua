@@ -167,6 +167,16 @@ end
 
 do
     local s = setup()
+    s.modules.QuestieLib.GetFullObjectiveText = function(text)
+        return text:match("^(.*): %d+/%d+$")
+    end
+    s.quest(1)
+    s.update()
+    equal(s.pins[1].data.ObjectiveData.FullDescription, "Target 1 slain", "party fallback uses the client objective wording")
+end
+
+do
+    local s = setup()
     s.quest(10)
     s.update()
     local draws = s.draws

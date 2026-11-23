@@ -89,7 +89,7 @@ equal(watch.shown, true, "startup preserves native tracker when Questie tracker 
 env.table = setmetatable({getn = function(value) return #value end}, {__index = table})
 loadModule("Modules/Migration.lua")
 module("Migration"):Migrate()
-equal(profile.migrationVersion, 34, "profile migrations complete")
+equal(profile.migrationVersion, 35, "profile migrations complete")
 equal(profile.showBlizzardQuestTimer, nil, "migration removes obsolete saved preference")
 equal(profile.trackerShowCompleteQuests, false, "migration preserves unrelated tracker preference")
 profile.trackerShowCompleteQuests = true
@@ -98,12 +98,13 @@ equal(profile.trackerShowCompleteQuests, true, "already migrated profile retains
 
 -- Announcement migration runs once per profile and preserves later user choices.
 for _, channel in ipairs({"party", "raid", "both", "disabled", false}) do
-    local migrated = {migrationVersion = 33, questAnnounceChannel = channel or nil,
+    local migrated = {migrationVersion = 33, questAnnounceChannel = channel or nil, trimObjectiveText = true,
         questAnnounceLocally = true, questAnnounceItems = true, questieShutUp = false}
     env.Questie.db.profile = migrated
     module("Migration"):Migrate()
     equal(migrated.questAnnounceChannel, "disabled", "migration disables every previous channel")
-    equal(migrated.migrationVersion, 34, "announcement migration records completion")
+    equal(migrated.migrationVersion, 35, "profile migrations record completion")
+    equal(migrated.trimObjectiveText, nil, "migration removes the retired objective wording setting")
     equal(migrated.questAnnounceLocally, true, "local announcement preference preserved")
     equal(migrated.questAnnounceItems, true, "starter-item preference preserved")
     equal(migrated.questieShutUp, false, "master silence preference preserved")

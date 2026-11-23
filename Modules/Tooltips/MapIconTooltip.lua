@@ -773,8 +773,10 @@ function _MapIconTooltip:GetObjectiveTooltip(icon)
     if iconData.ObjectiveData.Needed then
         if iconData.ObjectiveData.Type == "spell" and iconData.ObjectiveData.spawnList[iconData.ObjectiveTargetId].ItemId then
             text = color .. tostring(QuestieDB.QueryItemSingle(iconData.ObjectiveData.spawnList[iconData.ObjectiveTargetId].ItemId, "name"))
-        else
+        elseif iconData.ObjectiveData.HasCounter ~= false then
             text = color .. tostring(iconData.ObjectiveData.Collected) .. "/" .. tostring(iconData.ObjectiveData.Needed) .. " " .. text
+        else
+            text = color .. text
         end
     end
     if QuestieComms then
@@ -812,7 +814,7 @@ function _MapIconTooltip:GetObjectiveTooltip(icon)
 
                     local remoteText = QuestieLib:GetObjectiveDescription(iconData.ObjectiveData)
 
-                    if objectiveEntry and objectiveEntry.fulfilled and objectiveEntry.required then
+                    if iconData.ObjectiveData.HasCounter ~= false and objectiveEntry and objectiveEntry.fulfilled and objectiveEntry.required then
                         local fulfilled = objectiveEntry.fulfilled;
                         local required = objectiveEntry.required;
                         remoteText = remoteColor .. tostring(fulfilled) .. "/" .. tostring(required) .. " " .. remoteText .. colorizedPlayerName;

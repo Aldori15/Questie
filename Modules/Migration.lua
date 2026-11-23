@@ -184,6 +184,9 @@ local migrationFunctions = {
     [34] = function()
         Questie.db.profile.questAnnounceChannel = "disabled"
     end,
+    [35] = function()
+        Questie.db.profile.trimObjectiveText = nil
+    end,
 }
 
 function Migration:Migrate()

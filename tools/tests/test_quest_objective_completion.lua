@@ -124,6 +124,25 @@ local function setup(historical)
         remove = function() active = false; modules.QuestiePlayer.currentQuestlog[12960] = nil end}
 end
 
+do
+    local s = setup(false)
+    s.modules.QuestieLib.GetFullObjectiveText = function(text)
+        return text:match("^(.*): %d+/%d+$")
+    end
+    local objective = s.quest.Objectives[1]
+    s.setObjectives({{type = "item", text = "Wicked Sun Brooch", raw_text = "Collect Wicked Sun Brooch: 0/1"}})
+    s.module:SetObjectivesDirty(s.quest.Id)
+    objective:Update()
+    equal(objective.FullDescription, "Collect Wicked Sun Brooch", "mapped objective keeps native wording")
+    equal(objective.HasCounter, true, "mapped objective detects its native counter")
+    s.setObjectives({{type = "event", text = "Use the brooch", raw_text = "Use the brooch."}})
+    s.module:SetObjectivesDirty(s.quest.Id)
+    objective:Update()
+    equal(objective.FullDescription, "Use the brooch.", "counter-free instruction retains its punctuation")
+    equal(objective.HasCounter, false, "counter-free instruction is flagged for display")
+    tests = tests + 1
+end
+
 for _, history in ipairs({false, true}) do
     local s = setup(history)
     s.module:UpdateObjectiveNotes(s.quest); s.runJobs()

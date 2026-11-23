@@ -89,6 +89,12 @@ for _, objective in ipairs({{Collected = 0, Needed = 0}, {Collected = "?", Neede
 end
 
 -- Read settings on each call so changing the profile requires no module reload.
+equal(library.GetFullObjectiveText("Kobold Worker slain: 2/8"), "Kobold Worker slain", "native kill wording survives")
+equal(library.GetFullObjectiveText("击杀狗头人：2/8"), "击杀狗头人", "full-width counter separator")
+equal(library.GetFullObjectiveText("2/8 Cibles tuées."), "Cibles tuées.", "leading counter preserves native punctuation")
+local instruction = {NativeText = "Use the brooch.", HasCounter = false, Collected = 0, Needed = 1}
+equal(formatter.GetQuestObjectiveText(instruction, "Unused"),
+    library:GetRGBForObjective(instruction) .. "- Use the brooch.|r", "mapped instructions stay counter-free")
 profile.showQuestPercent = false
 for _, mode in ipairs({"white", "minimal", "whiteAndGreen", "whiteToGreen", "redToGreen"}) do
     profile.trackerColorObjectives = mode
@@ -324,7 +330,7 @@ do
     quest.Objectives = {{Index = 1, NativeIndex = 1, NativeOnly = true, HasCounter = true,
         Type = "object", Description = "Activate device", NativeText = "Activate device: 1/1",
         Collected = 1, Needed = 1, Completed = false}}
-    profile.trimObjectiveText, profile.showQuestPercent, profile.hideCompletedQuestObjectives = false, false, true
+    profile.showQuestPercent, profile.hideCompletedQuestObjectives = false, true
     library.PrintDifficultyColor = function(_, _, name) return name end
     tracker:Update(true)
     local nativeTitle, nativeObjective

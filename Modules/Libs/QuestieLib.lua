@@ -162,7 +162,10 @@ function QuestieLib:GetObjectiveDescription(objective)
     if (not objective) then
         return ""
     end
-    local desc = objective.FullDescription or objective.Description
+    if objective.FullDescription then
+        return objective.FullDescription
+    end
+    local desc = objective.Description
     if (not desc) then
         return ""
     end
@@ -819,16 +822,12 @@ function QuestieLib.UpdateLastKnownDailyReset()
     Questie.db.global.lastKnownDailyReset[realmName] = getCurrentTimestamp() + QuestieCompat.GetQuestResetTime()
 end
 
---- Returns the full objective text without progress numbers if trimObjectiveText is disabled, otherwise returns nil
---- (e.g. "Kill Hogger: 0/1" -> "Kill Hogger")
+--- Extracts the native wording when a progress counter appears at the start or end.
 ---@param rawObjectiveText string
 ---@return string|nil
 function QuestieLib.GetFullObjectiveText(rawObjectiveText)
-    if Questie.db.profile.trimObjectiveText then
-        return nil
-    end
-
-    -- Grab the entire objective text including "slain".
-    -- First pattern is for non-Chinese clients, second is for Chinese clients where the colon is different.
-    return smatch(rawObjectiveText, "^(.*):%s*%d+/%d+$") or smatch(rawObjectiveText, "^(.*)：%s*%d+/%d+$")
+    if not rawObjectiveText then return nil end
+    return smatch(rawObjectiveText, "^(.-)%s*:%s*%d+%s*/%s*%d+%s*$")
+        or smatch(rawObjectiveText, "^(.-)%s*：%s*%d+%s*/%s*%d+%s*$")
+        or smatch(rawObjectiveText, "^%d+%s*/%s*%d+%s+(.+)$")
 end

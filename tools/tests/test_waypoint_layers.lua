@@ -381,7 +381,7 @@ do
     loadFile("Modules/Migration.lua")
     mods.Migration:Migrate()
     equal(env.Questie.db.profile.waypointMinimapEnabled, false, "migration preserves previous all-lines-disabled preference")
-equal(env.Questie.db.profile.migrationVersion, 34, "migration advances existing profile")
+    equal(env.Questie.db.profile.migrationVersion, 35, "migration advances existing profile")
 end
 
 do

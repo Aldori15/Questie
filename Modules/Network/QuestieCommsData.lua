@@ -77,7 +77,9 @@ function QuestieComms.data:GetTooltip(tooltipKey)
                 end
                 tooltipData[questId][playerName][objectiveIndex].text = oName
                 tooltipData[questId][playerName][objectiveIndex].fulfilled = objective.fulfilled;
-                tooltipData[questId][playerName][objectiveIndex].required = objective.required;
+                if not localObjective or localObjective.HasCounter ~= false then
+                    tooltipData[questId][playerName][objectiveIndex].required = objective.required
+                end
                 tooltipData[questId][playerName][objectiveIndex].status = objective.status;
             end
         end

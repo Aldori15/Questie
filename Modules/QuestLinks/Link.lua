@@ -509,7 +509,7 @@ _AddPlayerQuestProgress = function(tooltip, quest, starterName, starterZoneName,
         if (QuestieDB.IsComplete(quest.Id) == 0) then
             _AddTooltipLine(tooltip, " ")
             _AddColoredTooltipLine(tooltip, l10n("Your progress")..l10n(": "), "gold")
-            local cached = not Questie.db.profile.trimObjectiveText and QuestLogCache.TryGetQuest(quest.Id)
+            local cached = QuestLogCache.TryGetQuest(quest.Id)
             for _, objective in pairs(quest.Objectives) do
                 local native = cached and cached.objectives[objective.Index]
                 local text
@@ -521,7 +521,7 @@ _AddPlayerQuestProgress = function(tooltip, quest, starterName, starterZoneName,
                     end
                 end
 
-                if not text and objective.Needed and objective.Needed > 0 then
+                if not text and objective.HasCounter ~= false and objective.Needed and objective.Needed > 0 then
                     local objDesc = QuestieLib:GetObjectiveDescription(objective)
                     local lineEnding = tostring(objective.Collected) .. "/" .. tostring(objective.Needed)
                     text = objDesc .. ": " .. lineEnding

@@ -47,7 +47,7 @@ env.ExpandQuestHeader = noop
 env.QuestLog_UpdateQuestDetails, env.QuestLog_Update = noop, noop
 env.UIParent, env.StaticPopupDialogs = {}, {}
 local char = {TrackedQuests = {}, AutoUntrackedQuests = {}, collapsedQuests = {}, collapsedZones = {}}
-local profile = {trackerEnabled = true, autoTrackQuests = false, trackerSortObjectives = "byZone", trimObjectiveText = true}
+local profile = {trackerEnabled = true, autoTrackQuests = false, trackerSortObjectives = "byZone"}
 env.Questie = {db = {char = char, profile = profile}, Debug = noop, Colorize = function(_, text) return text end}
 env.QuestieCompat = {IsInGroup = function() return false end, IsInRaid = function() return false end,
     GetQuestLogTitle = logTitle, GetQuestLogIndexByID = logIndex,
@@ -77,7 +77,6 @@ local cache = {[900001] = {objectives = {[1] = {text = "Collect crystals", raw_t
         numFulfilled = 0, numRequired = 1, raw_finished = false}}}}
 module("QuestLogCache").questLog_DO_NOT_MODIFY = cache
 local lib = module("QuestieLib")
-lib.GetFullObjectiveText = function(text) if not profile.trimObjectiveText then return text:gsub(": %d+/%d+$", "") end end
 lib.PrintDifficultyColor = function(_, _, text) return text end
 lib.GetColoredQuestName = function() return "Known colored title" end
 lib.GetQuestTypeSuffixPriority = function() return 0 end
@@ -115,11 +114,8 @@ equal(quests[900002].Objectives[1].Completed, false, "Unfinished 1/1 does not be
 equal(quests[900001].sourceItemId, 99999, "Native quest item ID")
 equal(module("TrackerUtils"):GetUsableQuestItemIds(quests[900001])[1], 99999, "Usable native item without database entry")
 local format = module("TrackerObjectiveText").GetQuestObjectiveText
-profile.trimObjectiveText = false
 assert(format(quests[900001].Objectives[1], "Unused"):find("Collect crystals: 2/5", 1, true), "Accepted progress replaces stale native counter")
 assert(format(quests[900002].Objectives[1], "Unused"):find("red", 1, true), "Unfinished full-counter action is not green")
-profile.trimObjectiveText = true
-assert(format(quests[900002].Objectives[1], "Activate device"):find("red", 1, true), "Trimmed action retains native completion")
 equal(format(quests[900002].Objectives[2], "Unused"), "red- Speak to the engineer|r", "Log instruction has no invented counter")
 local previous = quests[900001].Objectives
 cache[900001] = nil

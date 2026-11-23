@@ -2203,7 +2203,6 @@ function QuestieQuest:PopulateQuestLogInfo(quest)
                     questId = quest.Id,
                     _lastUpdate = 0,
                     Description = objective.text,
-                    FullDescription = QuestieLib.GetFullObjectiveText(objective.raw_text),
                     spawnList = {},
                     AlreadySpawned = {},
                     Update = _QuestieQuest.ObjectiveUpdate,
@@ -2296,7 +2295,12 @@ function _QuestieQuest.ObjectiveUpdate(self)
 
             self.Type = obj.type;
             self.Description = obj.text
-            self.FullDescription = QuestieLib.GetFullObjectiveText(obj.raw_text)
+            if self.NativeText ~= obj.raw_text then
+                self.NativeText = obj.raw_text
+                local description = QuestieLib.GetFullObjectiveText(obj.raw_text)
+                self.HasCounter = description ~= nil
+                self.FullDescription = description or obj.raw_text
+            end
             self.Collected = tonumber(numFulfilled);
             self.Needed = tonumber(numRequired);
             self.Completed = (self.Needed == self.Collected and self.Needed > 0) or (finished and (self.Needed == 0 or (not self.Needed))) -- some objectives get removed on PLAYER_LOGIN because isComplete is set to true at random????

@@ -34,7 +34,7 @@ local function AppendObjectives(parts, objectives, cached)
     for _, index in ipairs(indices) do
         local objective = objectives[index]
         AppendSignature(parts, index, objective.Type, objective.Description, objective.NativeText,
-            objective.FullDescription, objective.HasCounter, objective.Collected, objective.Needed, objective.Completed)
+            objective.HasCounter, objective.Collected, objective.Needed, objective.Completed)
         local live = cached and cached[objective.NativeIndex or objective.Index or index]
         if live then
             AppendSignature(parts, live.text, live.raw_text, live.numFulfilled, live.numRequired, live.raw_finished)
@@ -114,7 +114,6 @@ local function RefreshNativeQuest(id, title, level, header, complete, frequency,
             objective.Type = live.type
             objective.Description = live.text
             objective.NativeText = live.raw_text or live.text
-            objective.FullDescription = QuestieLib.GetFullObjectiveText(objective.NativeText)
             objective.HasCounter = counterTypes[live.type] and (objective.NativeText:find("%d+/%d+") ~= nil)
             objective.Collected, objective.Needed = live.numFulfilled or 0, live.numRequired or 1
             -- Use native completion, not counter equality or database completion inference.
