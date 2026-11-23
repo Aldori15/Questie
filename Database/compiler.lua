@@ -29,7 +29,7 @@ local coYield = coroutine.yield
 local coRunning = coroutine.running
 
 -- Bump for schema or base-database migration changes to invalidate cached DB blobs.
-QuestieDBCompiler.compiledSchemaVersion = 71
+QuestieDBCompiler.compiledSchemaVersion = 72
 
 ---@alias CompilerTypes
 ---| "u8"
@@ -510,9 +510,8 @@ QuestieDBCompiler.writers = {
     end,
     ["u8u16array"] = function(stream, value)
         if value then
-            local count = 0 for _ in pairs(value) do count = count + 1 end
-            stream:WriteByte(count)
-            for _,v in pairs(value) do
+            stream:WriteByte(#value)
+            for _, v in ipairs(value) do
                 stream:WriteShort(v)
             end
         else
@@ -521,9 +520,8 @@ QuestieDBCompiler.writers = {
     end,
     ["u8s16pairs"] = function(stream, value)
         if value then
-            local count = 0 for _ in pairs(value) do count = count + 1 end
-            stream:WriteByte(count)
-            for _,v in pairs(value) do
+            stream:WriteByte(#value)
+            for _, v in ipairs(value) do
                 stream:WriteShort((v[1] or 0) + 32767)
                 stream:WriteShort((v[2] or 0) + 32767)
             end
@@ -533,9 +531,8 @@ QuestieDBCompiler.writers = {
     end,
     ["u16u16array"] = function(stream, value)
         if value then
-            local count = 0 for _ in pairs(value) do count = count + 1 end
-            stream:WriteShort(count)
-            for _,v in pairs(value) do
+            stream:WriteShort(#value)
+            for _, v in ipairs(value) do
                 stream:WriteShort(v)
             end
         else
@@ -544,9 +541,8 @@ QuestieDBCompiler.writers = {
     end,
     ["u8s24pairs"] = function(stream, value)
         if value then
-            local count = 0 for _ in pairs(value) do count = count + 1 end
-            stream:WriteByte(count)
-            for _,v in pairs(value) do
+            stream:WriteByte(#value)
+            for _, v in ipairs(value) do
                 stream:WriteInt24((v[1] or 0) + 8388608)
                 stream:WriteInt24((v[2] or 0) + 8388608)
             end
@@ -556,9 +552,8 @@ QuestieDBCompiler.writers = {
     end,
     ["u8u24array"] = function(stream, value)
         if value then
-            local count = 0 for _ in pairs(value) do count = count + 1 end
-            stream:WriteByte(count)
-            for _,v in pairs(value) do
+            stream:WriteByte(#value)
+            for _, v in ipairs(value) do
                 stream:WriteInt24(v)
             end
         else
@@ -567,9 +562,8 @@ QuestieDBCompiler.writers = {
     end,
     ["u8s24array"] = function(stream, value)
         if value then
-            local count = 0 for _ in pairs(value) do count = count + 1 end
-            stream:WriteByte(count)
-            for _,v in pairs(value) do
+            stream:WriteByte(#value)
+            for _, v in ipairs(value) do
                 stream:WriteInt24(v + 8388608)
             end
         else
@@ -578,9 +572,8 @@ QuestieDBCompiler.writers = {
     end,
     ["u16u24array"] = function(stream, value)
         if value then
-            local count = 0 for _ in pairs(value) do count = count + 1 end
-            stream:WriteShort(count)
-            for _,v in pairs(value) do
+            stream:WriteShort(#value)
+            for _, v in ipairs(value) do
                 stream:WriteInt24(v)
             end
         else
@@ -589,9 +582,8 @@ QuestieDBCompiler.writers = {
     end,
     ["u8u16stringarray"] = function(stream, value)
         if value then
-            local count = 0 for _ in pairs(value) do count = count + 1 end
-            stream:WriteByte(count)
-            for _,v in pairs(value) do
+            stream:WriteByte(#value)
+            for _, v in ipairs(value) do
                 stream:WriteShortString(v or "nil")
             end
         else
@@ -617,10 +609,9 @@ QuestieDBCompiler.writers = {
             local count = 0 for _ in pairs(value) do count = count + 1 end
             stream:WriteByte(count)
             for zone, spawnlist in pairs(value) do
-                count = 0 for _ in pairs(spawnlist) do count = count + 1 end
                 stream:WriteShort(zone)
-                stream:WriteShort(count)
-                for _, spawn in pairs(spawnlist) do
+                stream:WriteShort(#spawnlist)
+                for _, spawn in ipairs(spawnlist) do
                     if spawn[1] == -1 and spawn[2] == -1 then -- instance spawn
                         stream:WriteInt24(0) -- 0 instead
                     else
@@ -731,7 +722,7 @@ QuestieDBCompiler.writers = {
     end,
     ["reflist"] = function(stream, value)
         stream:WriteByte(#value)
-        for _, v in pairs(value) do
+        for _, v in ipairs(value) do
             stream:WriteByte(QuestieDBCompiler.refTypesReversed[v[1]])
             stream:WriteInt24(v[2])
         end
@@ -756,12 +747,10 @@ QuestieDBCompiler.writers = {
             stream:WriteByte(count)
             for zone, spawnlists in pairs(value) do
                 stream:WriteShort(zone)
-                count = 0 for _ in pairs(spawnlists) do count = count + 1 end
-                stream:WriteByte(count)
-                for _, spawnlist in pairs(spawnlists) do
-                    count = 0 for _ in pairs(spawnlist) do count = count + 1 end
-                    stream:WriteShort(count)
-                    for _, spawn in pairs(spawnlist) do
+                stream:WriteByte(#spawnlists)
+                for _, spawnlist in ipairs(spawnlists) do
+                    stream:WriteShort(#spawnlist)
+                    for _, spawn in ipairs(spawnlist) do
                         if spawn[1] == -1 and spawn[2] == -1 then -- instance spawn
                             stream:WriteInt24(0) -- 0 instead
                         else
@@ -937,6 +926,13 @@ end
 
 function QuestieDBCompiler:CompileItems()
     QuestieDBCompiler:CompileTableCoroutine(QuestieDB.itemData, QuestieDB.itemCompilerTypes, QuestieDB.itemCompilerOrder, QuestieDB.itemKeys, "item", "Item", 128)
+end
+
+-- The client can run the validator without Blizzard's optional debug tools.
+local function dumpValidationTables(compiled, source)
+    if type(DevTools_Dump) == "function" then
+        DevTools_Dump({["Compiled Table:"] = compiled, ["Base Table:"] = source})
+    end
 end
 
 local function equals(a, b)
@@ -1241,10 +1237,7 @@ function QuestieDBCompiler:ValidateNPCs()
             elseif type(a) == "table" then
                 if not equals(a, (b or {})) then
                     Questie.Warning("Nonmatching table at " .. key .. "  " .. id .. " for ID: ".. npcId)
-                    DevTools_Dump({
-                        ["Compiled Table:"] = a,
-                        ["Base Table:"] = b
-                    })
+                    dumpValidationTables(a, b)
                     return failValidation()
                 end
             end
@@ -1289,10 +1282,7 @@ function QuestieDBCompiler:ValidateObjects()
             elseif type(a) == "table" then
                 if not equals(a, (b or {})) then
                     Questie.Warning("Nonmatching table at " .. key .. "  " .. id  .. " for ID: ".. objectId)
-                    DevTools_Dump({
-                        ["Compiled Table:"] = a,
-                        ["Base Table:"] = b
-                    })
+                    dumpValidationTables(a, b)
                     return failValidation()
                 end
             end
@@ -1377,10 +1367,7 @@ function QuestieDBCompiler:ValidateItems()
             elseif type(a) == "table" then
                 if not equals(a, (b or {})) then
                     Questie.Warning("Nonmatching table at " .. key .. "  " .. id  .. " for ID: ".. itemId)
-                    DevTools_Dump({
-                        ["Compiled Table:"] = a,
-                        ["Base Table:"] = b
-                    })
+                    dumpValidationTables(a, b)
                     return failValidation()
                 end
             end
@@ -1465,10 +1452,7 @@ function QuestieDBCompiler:ValidateQuests()
                 local normalizedBase = normalizeQuestTableForValidation(key, b)
                 if not equals(a, normalizedBase) then
                     Questie.Warning("Nonmatching table at " .. key .. "  " .. id .. " for ID: ".. questId)
-                    DevTools_Dump({
-                        ["Compiled Table:"] = a,
-                        ["Base Table:"] = normalizedBase
-                    })
+                    dumpValidationTables(a, normalizedBase)
                     return failValidation()
                 end
             end
