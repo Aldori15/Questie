@@ -1686,6 +1686,19 @@ _GetQuestIcon = function(quest)
     return Questie.ICON_TYPE_AVAILABLE
 end
 
+local DUNGEON_MAP_TYPE = 4 -- QuestieCompat's map data uses this value on 3.3.5.
+
+local function _GetOutdoorDropperRank(rank, zone)
+    if not rank or rank == 0 or ZoneDB.IsDungeonZone(zone) then return nil end
+
+    -- WDM floors can have their own area IDs outside the dungeon lookup table.
+    local mapId = ZoneDB:GetUiMapIdByAreaId(zone)
+    local mapInfo = mapId and QuestieCompat.C_Map.GetMapInfo(mapId)
+    if mapInfo and mapInfo.mapType == DUNGEON_MAP_TYPE then return nil end
+
+    return rank
+end
+
 ---@param starter table Either an object or an NPC
 ---@param quest Quest
 ---@param tooltipKey string the tooltip key. For objects it's "o_<ID>", for NPCs it's "m_<ID>"
@@ -1727,6 +1740,9 @@ _AddStarter = function(starter, quest, tooltipKey, limit)
     local starterName = starter.name or (l10n("Unknown") .. " (" .. tooltipKey .. ")")
     local isDungeonQuest = QuestieDB.IsDungeonQuest(quest.Id)
     local isRaidQuest = QuestieDB.IsRaidQuest(quest.Id)
+    local killedForItem = starterType == "itemFromMonster" and not (starter.friendly and starter.npcFlags
+        and bit.band(starter.npcFlags, QuestieDB.npcFlags.VENDOR) ~= 0)
+    local dropperRank = killedForItem and starter.rank or nil
 
     if _ShouldRegisterQuestStartTooltip(quest.Id)
         and (not directNpcStarter or _NpcStarterLocalTooltipAvailable(starter)) then
@@ -1739,11 +1755,13 @@ _AddStarter = function(starter, quest, tooltipKey, limit)
     for zone, spawns in pairs(starter.spawns or {}) do
         local alreadyAddedSpawns = {}
         if zone and spawns and QuestieDB:IsAzerothCoreAvailabilityConditionFulfilledForSpawnZone(quest.Id, zone) then
+            local outdoorDropperRank = _GetOutdoorDropperRank(dropperRank, zone)
             local coords
             for spawnIndex = 1, #spawns do
                 coords = spawns[spawnIndex]
                 if Phasing.IsSpawnDataVisible(coords) and (not directNpcStarter or _NpcStarterLocationAvailable(starter, zone, coords)) and (limit == 0 or added < limit) and (#spawns == 1 or _HasProperDistanceToAlreadyAddedSpawns(coords, alreadyAddedSpawns)) then
                     visibleStarterZones[zone] = true
+                    local atDungeonEntrance = coords[1] == -1 or coords[2] == -1
 
                     local data = {
                         Id = quest.Id,
@@ -1756,12 +1774,13 @@ _AddStarter = function(starter, quest, tooltipKey, limit)
                         IsObjectiveNote = false,
                         StarterType = starterType,
                         StarterEntryId = starter.id,
+                        DropperRank = not atDungeonEntrance and outdoorDropperRank or nil,
                         isDungeonQuest = isDungeonQuest,
                         isRaidQuest = isRaidQuest,
                         IsItemStartQuestSource = starterType == "itemFromMonster" or starterType == "itemFromObject",
                     }
 
-                    if (coords[1] == -1 or coords[2] == -1) then
+                    if atDungeonEntrance then
                         local dungeonLocation = ZoneDB:GetDungeonLocation(zone)
                         if dungeonLocation then
                             for _, value in ipairs(dungeonLocation) do
@@ -1813,6 +1832,7 @@ _AddStarter = function(starter, quest, tooltipKey, limit)
                             IsObjectiveNote = false,
                             StarterType = starterType,
                             StarterEntryId = starter.id,
+                            DropperRank = _GetOutdoorDropperRank(dropperRank, zone),
                             isDungeonQuest = isDungeonQuest,
                             isRaidQuest = isRaidQuest,
                             IsItemStartQuestSource = starterType == "itemFromMonster" or starterType == "itemFromObject",
@@ -1825,10 +1845,7 @@ _AddStarter = function(starter, quest, tooltipKey, limit)
                     end
                 end
                 if starterIcons[zone] then
-                    QuestieMap:DrawWaypoints(starterIcons[zone], waypoints, zone,
-                        starterType == "itemFromMonster" and not (starter.friendly and starter.npcFlags
-                            and bit.band(starter.npcFlags, QuestieDB.npcFlags.VENDOR) ~= 0) and true or nil,
-                        tooltipKey)
+                    QuestieMap:DrawWaypoints(starterIcons[zone], waypoints, zone, killedForItem and true or nil, tooltipKey)
                 end
             end
         end

@@ -174,6 +174,7 @@ function MapIconTooltip.ShowOnTooltip(self, targetTooltip, owner, icons)
 
     local usedText = {}
     local npcAndObjectOrder = {};
+    local giverRanks = {}
     local questOrder = {};
     local manualOrder = {}
     local manualOrderSeen = {}
@@ -220,6 +221,10 @@ function MapIconTooltip.ShowOnTooltip(self, targetTooltip, owner, icons)
 
                     local tip = _MapIconTooltip:GetAvailableOrCompleteTooltip(icon)
                     npcAndObjectOrder[iconData.Name][tip.title] = tip
+                    local rank = iconData.DropperRank
+                    if rank and rank >= 1 and rank <= 4 then
+                        giverRanks[iconData.Name] = giverRanks[iconData.Name] or rank
+                    end
                 elseif iconData.ObjectiveData and iconData.ObjectiveData.Description
                     and (iconData.ObjectiveData.IsPartyObjective
                         or (QuestiePlayer.currentQuestlog[iconData.Id] and QuestLogCache.TryGetQuest(iconData.Id))) then
@@ -300,19 +305,22 @@ function MapIconTooltip.ShowOnTooltip(self, targetTooltip, owner, icons)
         table.sort(giverNames)
         for _, npcOrObjectName in ipairs(giverNames) do
             local quests = self.npcAndObjectOrder[npcOrObjectName]
+            local rank = giverRanks[npcOrObjectName]
+            local rankLabel = rank and ((rank == 2 or rank == 4) and (ITEM_QUALITY3_DESC or "Rare") or l10n("Elite"))
+            local giverLabel = rankLabel and (npcOrObjectName .. " (" .. rankLabel .. ")") or npcOrObjectName
             haveGiver = true
             if shift and (not firstLine) then
                 -- Spacer between NPCs
                 tooltipRows:AddLine("             ")
             end
             if (firstLine and not shift) then
-                tooltipRows:AddDoubleLine(npcOrObjectName, "(" .. l10n('Hold Shift') .. ")", 0.2, 1, 0.2, 0.43, 0.43, 0.43);
+                tooltipRows:AddDoubleLine(giverLabel, "(" .. l10n('Hold Shift') .. ")", 0.2, 1, 0.2, 0.43, 0.43, 0.43);
                 firstLine = false;
             elseif (firstLine and shift) then
-                tooltipRows:AddLine(npcOrObjectName, 0.2, 1, 0.2);
+                tooltipRows:AddLine(giverLabel, 0.2, 1, 0.2);
                 firstLine = false;
             else
-                tooltipRows:AddLine(npcOrObjectName, 0.2, 1, 0.2);
+                tooltipRows:AddLine(giverLabel, 0.2, 1, 0.2);
             end
 
             for _, questData in ipairs(GetSortedQuests(quests)) do

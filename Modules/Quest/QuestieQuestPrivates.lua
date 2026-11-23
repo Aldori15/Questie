@@ -130,7 +130,7 @@ monster = function(npcId, objective)
     local rank = QuestieDB.QueryNPCSingle(npcId, "rank")
 
     local enableSpawns = not QuestieCorrections.questNPCBlacklist[npcId]
-    local enableWaypoints = enableSpawns and 2 ~= rank -- a rare mob spawn. todo: option for this
+    local enableWaypoints = enableSpawns and rank ~= 2 and rank ~= 4 -- Rare elites and rares keep their spawn pins.
 
     ---@type SpawnListNPC
     local monster = {

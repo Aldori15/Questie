@@ -236,4 +236,22 @@ for _, config in ipairs({{shift = false}, {enabled = false}}) do
     equal(#shown, 0, "follow-up display still requires Shift and its existing option")
     assert(not table.concat(tip.lines, "\n"):find("Next in chain:", 1, true), "disabled chain has no empty heading")
 end
-print("Map tooltip refresh passed: native surfaces, patrol ownership, live progress, hover colors and breadcrumb chains")
+for _, mini in ipairs({false, true}) do
+    for _, case in ipairs({{0, ""}, {1, " (Elite)"}, {2, " (Rare)"}, {3, " (Elite)"}, {4, " (Rare)"}}) do
+        local s = setup()
+        local db = s.modules.QuestieDB
+        db.questTagIds, db.GetQuestTagInfo, db.QueryQuestSingle = {}, function() return 99 end, noop
+        db.IsMonthlyQuest, db.IsWeeklyQuest, db.IsDailyQuest, db.IsRepeatable = noop, noop, noop, noop
+        s.modules.QuestieEvent.activeQuests = {}
+        s.modules.QuestieReputation.GetReputationReward = noop
+        s.modules.QuestieCorrections.questTooltipHints = {}
+        s.env.ITEM_QUALITY3_DESC = "Rare"
+        local ordinary, dropper = s.icon(1, mini), s.icon(2, mini)
+        ordinary.data = {Id = 1, Type = "available", Name = "Creature"}
+        dropper.data = {Id = 2, Type = "available", Name = "Creature", DropperRank = case[1]}
+        local tip = mini and s.env.GameTooltip or s.env.WorldMapTooltip
+        s.show(ordinary, tip, nil, {ordinary, dropper})
+        equal(tip.lines[1], "Creature" .. case[2] .. " (Hold Shift)", "starter rank is shown on the giver heading")
+    end
+end
+print("Map tooltip refresh passed: native surfaces, patrol ownership, live progress, hover colors, breadcrumb chains and starter ranks")
