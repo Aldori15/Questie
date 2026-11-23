@@ -235,15 +235,17 @@ function QuestEventHandler:RegisterEvents()
                             foundQuestItem = true
                             break
                         else
-                            if quest.Objectives and #quest.Objectives > 0 then
-                                for _, objective in pairs(quest.Objectives) do
-                                    if text_arg1 == objective.Description then
+                            for _, objective in pairs(quest.Objectives or {}) do
+                                if objective.Type == "item" and objective.Id then
+                                    local itemName = GetItemInfo(objective.Id)
+                                    if itemName and text_arg1 == itemName then
                                         questName = quest.name
                                         foundQuestItem = true
                                         break
                                     end
                                 end
                             end
+                            if foundQuestItem then break end
                         end
                     end
                 end
