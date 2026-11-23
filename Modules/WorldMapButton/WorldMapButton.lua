@@ -20,8 +20,20 @@ local KButtons = QuestieCompat.KButtons or LibStub("Krowi_WorldMapButtons-1.4")
 local mapButton
 local lastWorldMapButtonEffectiveScale
 local lastWorldMapFrameEffectiveScale
+local lastFilterLeft, lastFilterBottom, lastFilterRight, lastFilterTop
 local isRefreshingWorldMapButtonLayout
 local worldMapFrameUpdateHooked
+
+local function _GetDragonUIFilterBounds()
+    local filter = _G.DragonUIWorldMapFilterButton
+    if not filter or not filter:IsVisible() then return end
+
+    local left, bottom, right, top = filter:GetLeft(), filter:GetBottom(), filter:GetRight(), filter:GetTop()
+    if not (left and bottom and right and top) then return end
+
+    local scale = filter:GetEffectiveScale()
+    return left * scale, bottom * scale, right * scale, top * scale, scale
+end
 
 local function _GetOccupiedCornerOffset(worldMapButtonFrame, corner)
     local occupiedOffset
@@ -103,6 +115,13 @@ local function RefreshWorldMapButtonLayout()
         occupiedGap = isRightSide and 15 or -15
     end
 
+    -- DragonUI resizes the map canvas while keeping its Filters button at UI scale.
+    local filterScale
+    lastFilterLeft, lastFilterBottom, lastFilterRight, lastFilterTop, filterScale = _GetDragonUIFilterBounds()
+    if filterScale then
+        buttonScale = filterScale / worldMapButtonFrame:GetEffectiveScale()
+    end
+
     local occupiedOffset = _GetOccupiedCornerOffset(anchorFrame, corner)
     if occupiedOffset ~= nil then
         xOffset = occupiedOffset + occupiedGap
@@ -115,8 +134,20 @@ local function RefreshWorldMapButtonLayout()
     mapButton:ClearAllPoints()
     mapButton:SetFrameStrata(worldMapButtonFrame:GetFrameStrata())
     mapButton:SetFrameLevel(worldMapButtonFrame:GetFrameLevel() + 1)
-    mapButton:SetPoint(corner, anchorFrame, corner, xOffset, yOffset)
     mapButton:SetScale(buttonScale)
+    mapButton:SetPoint(corner, anchorFrame, corner, xOffset, yOffset)
+
+    -- DragonUI anchors its Filters button to its own border instead of the canvas.
+    if corner == "TOPRIGHT" and lastFilterLeft then
+        local left, bottom, right, top = mapButton:GetLeft(), mapButton:GetBottom(), mapButton:GetRight(), mapButton:GetTop()
+        local scale = mapButton:GetEffectiveScale()
+        if left and bottom and right and top
+            and left * scale < lastFilterRight and right * scale > lastFilterLeft
+            and bottom * scale < lastFilterTop and top * scale > lastFilterBottom then
+            xOffset = xOffset + lastFilterLeft / scale - right - 4
+            mapButton:SetPoint(corner, anchorFrame, corner, xOffset, yOffset)
+        end
+    end
 
     lastWorldMapButtonEffectiveScale = worldMapButtonFrame.GetEffectiveScale and worldMapButtonFrame:GetEffectiveScale() or worldMapButtonFrame:GetScale() or 1
     lastWorldMapFrameEffectiveScale = _G.WorldMapFrame and (_G.WorldMapFrame.GetEffectiveScale and _G.WorldMapFrame:GetEffectiveScale() or _G.WorldMapFrame:GetScale() or lastWorldMapButtonEffectiveScale) or lastWorldMapButtonEffectiveScale
@@ -135,7 +166,10 @@ local function EnsureWorldMapButtonHooks()
             local currentButtonEffectiveScale = self.GetEffectiveScale and self:GetEffectiveScale() or self:GetScale() or 1
             local currentFrameEffectiveScale = worldMapFrame and worldMapFrame.GetEffectiveScale and worldMapFrame:GetEffectiveScale() or currentButtonEffectiveScale
 
-            if currentButtonEffectiveScale ~= lastWorldMapButtonEffectiveScale or currentFrameEffectiveScale ~= lastWorldMapFrameEffectiveScale then
+            local filterLeft, filterBottom, filterRight, filterTop = _GetDragonUIFilterBounds()
+            if currentButtonEffectiveScale ~= lastWorldMapButtonEffectiveScale or currentFrameEffectiveScale ~= lastWorldMapFrameEffectiveScale
+                or filterLeft ~= lastFilterLeft or filterBottom ~= lastFilterBottom
+                or filterRight ~= lastFilterRight or filterTop ~= lastFilterTop then
                 RefreshWorldMapButtonLayout()
             end
         end)
