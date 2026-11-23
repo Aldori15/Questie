@@ -454,6 +454,11 @@ def derive_required_tool_items(quest, item_templates, spells, candidate_ids=(), 
     templates = index["templates"]
     objective_items = {_number(quest, f"RequiredItemId{i}") for i in range(1, 7)} - {0}
     provided = _number(quest, "StartItem")
+    quest_id = _number(quest, "ID")
+    provided_template = templates.get(provided, {})
+    starts_this_quest = quest_id > 0 and int(
+        provided_template.get("startquest") or provided_template.get("StartQuest") or 0
+    ) == quest_id
     drops = {_number(quest, f"ItemDrop{i}") for i in range(1, 5)} - {0}
     seeds = drops | ({provided} if provided else set())
     result, reasons = set(), defaultdict(list)
@@ -472,7 +477,8 @@ def derive_required_tool_items(quest, item_templates, spells, candidate_ids=(), 
             if reason not in reasons[str(item)]:
                 reasons[str(item)].append(reason)
 
-    if provided:
+    # The item that opens the quest needs independent evidence to become a map objective.
+    if provided and not starts_this_quest:
         add(provided, "questProvidedItem")
     for item in drops:
         add(item, "questItemDrop")

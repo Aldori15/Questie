@@ -354,6 +354,26 @@ class QuestCompatibilityTests(unittest.TestCase):
         # Even a named compatibility candidate must not reintroduce material markers.
         self.assertEqual(compat.derive_required_tool_items(quest, items, spells, [36923]), [43299])
 
+    def test_starter_item_is_not_a_required_tool_on_its_own(self):
+        quest = {"ID": 635, "StartItem": 4614, "LogDescription": "Find the crystal from your vision."}
+        items = {4614: {"name": "Pendant of Myzrael", "startquest": 635}}
+        self.assertEqual(compat.derive_required_tool_items(quest, items, {}, [4614]), [])
+
+        # The same item can still be provided as a tool for a different quest.
+        self.assertEqual(compat.derive_required_tool_items({**quest, "ID": 642}, items, {}), [4614])
+
+    def test_starter_item_can_have_an_independent_source_requirement(self):
+        quest = {"ID": 11452, "StartItem": 34090, "ItemDrop1": 34090}
+        items = {34090: {"StartQuest": 11452}}
+        packet = compat.derive_required_tool_items(quest, items, {}, with_reasons=True)
+        self.assertEqual(packet["items"], [34090])
+        self.assertEqual(packet["reasons"], {"34090": [{"rule": "questItemDrop"}]})
+
+        quest["RequiredItemId1"] = 34090
+        packet = compat.derive_required_tool_items(quest, items, {}, with_reasons=True)
+        self.assertEqual(packet["items"], [])
+        self.assertEqual(packet["omittedObjectiveItems"], [34090])
+
     def test_ordinary_materials_need_explicit_quest_source_evidence(self):
         for item_class in (3, 5, 7):  # Gems, reagents, trade goods.
             with self.subTest(item_class=item_class):
