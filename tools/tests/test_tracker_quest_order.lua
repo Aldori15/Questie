@@ -33,9 +33,11 @@ equal(moduleEntries, 1, "quest-order controller registered exactly once")
 local function setup(mode, useCombatQueue)
     local env = setmetatable({}, {__index = _G})
     env._G, env.strmatch = env, string.match
-    local s = {quests = {}, spawns = {}, priorities = {}, tickers = {}, queued = {}, updates = 0,
+    local s = {quests = {}, spawns = {}, priorities = {}, tickers = {}, queued = {}, updates = 0, questTimers = {},
         x = 0, y = 0, worldInstance = 1, positionAvailable = true, inInstance = false, nearestReads = 0}
-    env.Questie = {db = {profile = {trackerSortObjectives = mode, trackerEnabled = true}, char = {}}, Debug = function() end}
+    env.Questie = {db = {profile = {trackerSortObjectives = mode, trackerEnabled = true,
+        autoTrackQuests = true, trackerShowCompleteQuests = true},
+        char = {AutoUntrackedQuests = {}, TrackedQuests = {}}}, Debug = function() end}
     env.GetTime = function() return 0 end
     env.GetNumQuestLogEntries = function() return 0 end
     env.debugstack = function() end
@@ -80,6 +82,10 @@ local function setup(mode, useCombatQueue)
     end
     module("QuestiePlayer").currentQuestlog = s.quests
     module("QuestieDB").HasQuestData = function(id) return s.quests[id] ~= nil end
+    module("TrackerQuestTimers").GetRemainingTimeByQuestId = function(_, id)
+        assert(not s.inCombat, "sorting cannot change quest log selection during combat")
+        return nil, s.questTimers[id]
+    end
     module("QuestieLib").GetQuestTypeSuffixPriority = function(id) return s.priorities[id] or 0 end
     module("QuestieMap").GetNearestQuestSpawn = function(_, quest)
         s.nearestReads = s.nearestReads + 1
@@ -136,7 +142,7 @@ local expected = {
     byComplete = {30, 50, 40, 20, 10}, byCompleteReversed = {10, 40, 20, 30, 50},
     byLevel = {40, 20, 10, 30, 50}, byLevelReversed = {50, 30, 10, 40, 20},
     byProximity = {20, 50, 10, 40, 30}, byProximityReversed = {30, 40, 10, 50, 20},
-    byZonePlayerProximity = {30, 20, 10, 40, 50}, byZonePlayerProximityReversed = {30, 40, 10, 20, 50},
+    byZonePlayerProximity = {30, 20, 10, 40, 50}, byZonePlayerProximityReversed = {50, 40, 10, 20, 30},
 }
 local headings = {byComplete = "Quests (By %% Complete)", byCompleteReversed = "Quests (By %% Complete Reversed)",
     byLevel = "Quests (By Level)", byLevelReversed = "Quests (By Level Reversed)",
@@ -177,6 +183,43 @@ for _, mode in ipairs({"byProximity", "byProximityReversed", "byZonePlayerProxim
     equal(#s.tickers, 1, "one proximity timer")
     equal(s.tickers[1].interval, 5, "five-second proximity interval")
     s.sort(); equal(#s.tickers, 1, "repeated sorting does not duplicate timer")
+    tests = tests + 1
+end
+
+-- Zone proximity ranks whole groups by the nearest eligible destination.
+do
+    local s = setup("byZonePlayerProximity")
+    local profile, char = s.env.Questie.db.profile, s.env.Questie.db.char
+    s.quest(1, 10, 100, {}, false, 4, 100)
+    s.quest(2, 10, 100, {}, false, 30, 100)
+    local ready = s.quest(3, 10, 200, {}, true, 2, 100)
+    s.quest(4, 10, 200, {}, false, 20, 100)
+    s.quest(5, 10, 300, {}, false, 999999999, nil)
+    s.quests[5].NativeOnly, s.quests[5].zoneName = true, "Aardvark"
+    order(s.sort(), {3, 4, 1, 2, 5}, "minimum distance ranks groups and unknown group is last")
+    order(s.sort("byZonePlayerProximityReversed"), {2, 1, 4, 3, 5}, "reverse ranks groups and keeps unknown last")
+    char.AutoUntrackedQuests[3] = true
+    order(s.sort("byZonePlayerProximity"), {1, 2, 3, 4, 5}, "untracked quest cannot rank its group")
+    profile.autoTrackQuests, char.TrackedQuests[1], char.TrackedQuests[4] = false, true, true
+    order(s.sort(), {1, 2, 3, 4, 5}, "manual tracking uses the same visibility rules")
+    profile.autoTrackQuests, char.AutoUntrackedQuests[3] = true, nil
+    profile.trackerShowCompleteQuests = false
+    order(s.sort(), {1, 2, 3, 4, 5}, "hidden completed quest cannot rank its group")
+    s.questTimers[3] = 30
+    order(s.sort(), {3, 4, 1, 2, 5}, "newly complete timed quest ranks without a prior renderer pass")
+    ready.trackTimedQuest, s.questTimers[3] = true, nil
+    order(s.sort(), {1, 2, 3, 4, 5}, "expired timer cannot rank a hidden completed quest")
+    s.inCombat = true
+    order(s.sort(), {3, 4, 1, 2, 5}, "combat sort uses last rendered timer state")
+    s.inCombat, s.spawns[4].distance = false, 4
+    order(s.sort(), {3, 4, 1, 2, 5}, "equal group distances use alphabetical headings")
+    s.spawns[4].distance = 5
+    s.sort()
+    s.spawns[4].distance, s.x = 3, 0.02
+    s.tickers[#s.tickers].callback()
+    equal(#s.queued, 1, "movement that changes only the zone order queues a redraw")
+    s.queued[1]()
+    order(s.renderedIds, {3, 4, 1, 2, 5}, "movement redraw uses fresh zone distances")
     tests = tests + 1
 end
 

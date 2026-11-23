@@ -624,13 +624,6 @@ end
 -- Only a completed layout is current. Explicit requests invalidate before throttling.
 local layoutRevision
 
-local function IsQuestShown(questId, quest, complete)
-    local profile, char = Questie.db.profile, Questie.db.char
-    return (complete ~= 1 or profile.trackerShowCompleteQuests or quest.trackTimedQuest)
-        and ((profile.autoTrackQuests and not char.AutoUntrackedQuests[questId])
-            or (not profile.autoTrackQuests and char.TrackedQuests[questId]))
-end
-
 local function _Update(self, force, onlyIfChanged)
     if not onlyIfChanged then layoutRevision = nil end
     -- Prevents calling the tracker too often, especially when the QuestieCombatQueue empties after combat ends
@@ -689,7 +682,7 @@ local function _Update(self, force, onlyIfChanged)
         local details = questDetails[questId]
         local quest = details.quest
         local complete = quest:IsComplete()
-        if IsQuestShown(questId, quest, complete) and not Questie.db.char.collapsedZones[details.zoneName] then
+        if TrackerData.IsQuestShown(questId, complete, quest.trackTimedQuest) and not Questie.db.char.collapsedZones[details.zoneName] then
             questTitlesShown = true
             local timedQuest = quest.trackTimedQuest
             local minimizable = complete == 1 or complete == -1 or (#quest.Objectives == 0 and quest.isComplete == true)
@@ -727,7 +720,7 @@ local function _Update(self, force, onlyIfChanged)
             local timeRemainingString, timeRemaining = TrackerQuestTimers:GetRemainingTime(quest, nil, true)
             local timedQuest = quest.trackTimedQuest
 
-            if IsQuestShown(questId, quest, complete) then
+            if TrackerData.IsQuestShown(questId, complete, timedQuest) then
                 -- Add Quest Zones
                 if zoneCheck ~= zoneName then
                     firstQuestInZone = true

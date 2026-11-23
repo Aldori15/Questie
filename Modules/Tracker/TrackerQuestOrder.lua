@@ -10,6 +10,7 @@ local QuestieTracker = QuestieLoader:ImportModule("QuestieTracker")
 ---@type QuestieCombatQueue
 local QuestieCombatQueue = QuestieLoader:ImportModule("QuestieCombatQueue")
 local TrackerData = QuestieLoader:ImportModule("TrackerData")
+local TrackerQuestTimers = QuestieLoader:ImportModule("TrackerQuestTimers")
 ---@type QuestieMap
 local QuestieMap = QuestieLoader:ImportModule("QuestieMap")
 ---@type QuestieCoords
@@ -205,20 +206,43 @@ local function _IsProximitySort(sortObj)
         or sortObj == "byZonePlayerProximity" or sortObj == "byZonePlayerProximityReversed"
 end
 
+local function _CanRankZone(questId, quest)
+    local complete = quest:IsComplete()
+    local timedQuest = quest.trackTimedQuest
+    if complete == 1 and not Questie.db.profile.trackerShowCompleteQuests
+        and TrackerData.IsQuestShown(questId, complete, true) and not InCombatLockdown() then
+        -- Read the Wrath timer before the first layout and after expiration.
+        -- The movement ticker can also sort during combat, when selection is deferred.
+        local _, remaining = TrackerQuestTimers:GetRemainingTimeByQuestId(questId)
+        timedQuest = remaining ~= nil
+    end
+    return TrackerData.IsQuestShown(questId, complete, timedQuest)
+end
+
 local function _SortByProximity(sortedQuestIds, questDetails, sortObj)
     local byZone = sortObj == "byZonePlayerProximity" or sortObj == "byZonePlayerProximityReversed"
     local reversed = sortObj == "byProximityReversed" or sortObj == "byZonePlayerProximityReversed"
     local continent = _GetContinent(C_Map.GetBestMapForUnit("player"))
-    local proximity = {}
+    local proximity, zoneDistances = {}, {}
     for _, questId in ipairs(sortedQuestIds) do
-        local distance, _, questContinent = _GetNearestQuestSortData(questDetails[questId].quest)
+        local details = questDetails[questId]
+        local distance, zone, questContinent = _GetNearestQuestSortData(details.quest)
         proximity[questId] = {distance = distance, continent = questContinent}
+        if byZone and zone and distance and _CanRankZone(questId, details.quest) then
+            local name = details.zoneName
+            zoneDistances[name] = math.min(zoneDistances[name] or math.huge, distance)
+        end
     end
 
     table.sort(sortedQuestIds, function(a, b)
         if byZone and questDetails[a].zoneName ~= questDetails[b].zoneName then
-            -- Reversing proximity never reverses the zone headings.
-            return questDetails[a].zoneName < questDetails[b].zoneName
+            local aZone, bZone = questDetails[a].zoneName, questDetails[b].zoneName
+            local aDistance, bDistance = zoneDistances[aZone], zoneDistances[bZone]
+            if aDistance == bDistance then return aZone < bZone end
+            if not aDistance then return false end
+            if not bDistance then return true end
+            if reversed then return aDistance > bDistance end
+            return aDistance < bDistance
         end
         local aHere, bHere = proximity[a].continent == continent, proximity[b].continent == continent
         if aHere ~= bHere then

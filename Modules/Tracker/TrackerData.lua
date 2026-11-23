@@ -175,6 +175,13 @@ function TrackerData.ContainsQuest(id)
     return index ~= nil and index > 0
 end
 
+function TrackerData.IsQuestShown(questId, complete, timedQuest)
+    local profile, char = Questie.db.profile, Questie.db.char
+    return (complete ~= 1 or profile.trackerShowCompleteQuests or timedQuest)
+        and ((profile.autoTrackQuests and not char.AutoUntrackedQuests[questId])
+            or (not profile.autoTrackQuests and char.TrackedQuests[questId]))
+end
+
 function TrackerData.RemoveQuest(id)
     nativeQuests[id] = nil
 end
