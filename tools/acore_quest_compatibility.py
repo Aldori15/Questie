@@ -459,7 +459,18 @@ def derive_required_tool_items(quest, item_templates, spells, candidate_ids=(), 
     starts_this_quest = quest_id > 0 and int(
         provided_template.get("startquest") or provided_template.get("StartQuest") or 0
     ) == quest_id
-    drops = {_number(quest, f"ItemDrop{i}") for i in range(1, 5)} - {0}
+    drop_slots = range(1, 5)
+    drops = {_number(quest, f"ItemDrop{i}") for i in drop_slots} - {0}
+    # ItemDrop controls loot eligibility and cleanup. A single copy of an inert
+    # starter does not establish another objective when the quest has a target
+    # of its own. Preserve delivery, usable items and explicit requirements.
+    if (starts_this_quest and provided in drops and provided not in objective_items
+            and not index["itemSpells"].get(provided)
+            and any(_number(quest, f"RequiredNpcOrGoCount{i}") > 0
+                    and _number(quest, f"RequiredNpcOrGo{i}") != 0 for i in drop_slots)
+            and not any(_number(quest, f"ItemDrop{i}") == provided
+                        and _number(quest, f"ItemDropQuantity{i}") > 1 for i in drop_slots)):
+        drops.remove(provided)
     seeds = drops | ({provided} if provided else set())
     result, reasons = set(), defaultdict(list)
 

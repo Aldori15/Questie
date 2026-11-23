@@ -363,16 +363,36 @@ class QuestCompatibilityTests(unittest.TestCase):
         self.assertEqual(compat.derive_required_tool_items({**quest, "ID": 642}, items, {}), [4614])
 
     def test_starter_item_can_have_an_independent_source_requirement(self):
-        quest = {"ID": 11452, "StartItem": 34090, "ItemDrop1": 34090}
-        items = {34090: {"StartQuest": 11452}}
+        quest = {"ID": 12631, "StartItem": 38660, "ItemDrop1": 38660}
+        items = {38660: {"StartQuest": 12631}}
         packet = compat.derive_required_tool_items(quest, items, {}, with_reasons=True)
-        self.assertEqual(packet["items"], [34090])
-        self.assertEqual(packet["reasons"], {"34090": [{"rule": "questItemDrop"}]})
+        self.assertEqual(packet["items"], [38660])
+        self.assertEqual(packet["reasons"], {"38660": [{"rule": "questItemDrop"}]})
 
-        quest["RequiredItemId1"] = 34090
+        quest["RequiredItemId1"] = 38660
         packet = compat.derive_required_tool_items(quest, items, {}, with_reasons=True)
         self.assertEqual(packet["items"], [])
-        self.assertEqual(packet["omittedObjectiveItems"], [34090])
+        self.assertEqual(packet["omittedObjectiveItems"], [38660])
+
+    def test_inert_starter_drops_do_not_compete_with_kill_or_object_objectives(self):
+        cases = ((11452, 34090, 24023), (11453, 34091, 24023), (13043, 42772, 30404),
+                 (25, 100, -200))
+        for quest_id, starter, target in cases:
+            with self.subTest(quest=quest_id):
+                quest = {"ID": quest_id, "StartItem": starter, "ItemDrop1": starter,
+                         "ItemDropQuantity1": 1, "RequiredNpcOrGo1": target, "RequiredNpcOrGoCount1": 1}
+                items = {starter: {"startquest": quest_id}}
+                self.assertEqual(compat.derive_required_tool_items(quest, items, {}), [])
+
+    def test_starter_drop_with_a_use_spell_or_additional_copies_stays_mapped(self):
+        quest = {"ID": 25, "StartItem": 100, "ItemDrop1": 100, "ItemDropQuantity1": 1,
+                 "RequiredNpcOrGo1": 200, "RequiredNpcOrGoCount1": 1}
+        items = {100: {"startquest": 25, "spellid_1": 300}}
+        self.assertEqual(compat.derive_required_tool_items(quest, items, {}), [100])
+
+        items[100].pop("spellid_1")
+        quest["ItemDropQuantity1"] = 2
+        self.assertEqual(compat.derive_required_tool_items(quest, items, {}), [100])
 
     def test_ordinary_materials_need_explicit_quest_source_evidence(self):
         for item_class in (3, 5, 7):  # Gems, reagents, trade goods.
