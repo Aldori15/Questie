@@ -291,6 +291,37 @@ function MapIconTooltip.ShowOnTooltip(self, targetTooltip, owner, icons)
     local breadcrumbLabelPrefix = "  " .. BREADCRUMB_TOOLTIP_ICON_TEXTURE .. " "
     local breadcrumbTitleIndent = nestedQuestTitleIndent
 
+    local function _AddNextInChainRows(tooltipRows, questId)
+        local DoableStates = QuestieDB.DoableStates
+        local nextQuestId = QuestieDB.QueryQuestSingle(questId, "nextQuestInChain") or 0
+        if nextQuestId == 0 then nextQuestId = QuestieDB.QueryQuestSingle(questId, "breadcrumbForQuestId") or 0 end
+
+        local firstInChain = true
+        local visitedQuestIds = {[questId] = true}
+        while nextQuestId > 0 and not visitedQuestIds[nextQuestId] and not QuestieCorrections.hiddenQuests[nextQuestId] do
+            local _, _, returnReason = QuestieDB.IsDoableVerbose(nextQuestId, false, true, true)
+            if returnReason == DoableStates.WRONG_RACE or returnReason == DoableStates.WRONG_CLASS or
+                returnReason == DoableStates.PROFESSION_MISSING or returnReason == DoableStates.PROFESSION_SPECIALIZATION then
+                break
+            end
+
+            visitedQuestIds[nextQuestId] = true
+            if firstInChain then
+                tooltipRows:AddLine(nextQuestLabelPrefix .. l10n("Next in chain:"), 0.86, 0.86, 0.86)
+                firstInChain = false
+            end
+
+            local nextQuestLevel = QuestieLib.GetEffectiveQuestLevel(nextQuestId)
+            local nextQuestTitle, nextQuestReward = _MapIconTooltip.GetNextQuestInChainLines(
+                nextQuestId, nextQuestLevel, nestedQuestTitleIndent)
+            tooltipRows:AddDoubleLine(nextQuestTitle, nextQuestReward, 1, 1, 1)
+
+            local nextNextQuestId = QuestieDB.QueryQuestSingle(nextQuestId, "nextQuestInChain") or 0
+            if nextNextQuestId == 0 then nextNextQuestId = QuestieDB.QueryQuestSingle(nextQuestId, "breadcrumbForQuestId") or 0 end
+            nextQuestId = nextNextQuestId
+        end
+    end
+
     Tooltip._Rebuild = function(self)
         -- generate the tooltips
         local xpString = l10n('xp');
@@ -427,36 +458,7 @@ function MapIconTooltip.ShowOnTooltip(self, targetTooltip, owner, icons)
                 end
 
                 if shift and Questie.db.profile.enableTooltipsNextInChain then
-                    local DoableStates = QuestieDB.DoableStates
-                    local nextQuestId = QuestieDB.QueryQuestSingle(questData.questId, "nextQuestInChain") or 0
-                    if nextQuestId == 0 then nextQuestId = QuestieDB.QueryQuestSingle(questData.questId, "breadcrumbForQuestId") or 0 end
-                    if nextQuestId > 0 and (not QuestieCorrections.hiddenQuests[nextQuestId]) then
-                        local _, _, returnReason = QuestieDB.IsDoableVerbose(nextQuestId, false, true, true)
-                        local firstInChain = true;
-                        local visitedQuestIds = {[questData.questId] = true}
-                        while nextQuestId > 0 and not visitedQuestIds[nextQuestId] and (not QuestieCorrections.hiddenQuests[nextQuestId]) and (returnReason ~= DoableStates.WRONG_RACE and returnReason ~= DoableStates.WRONG_CLASS and
-                            returnReason ~= DoableStates.PROFESSION_MISSING and returnReason ~= DoableStates.PROFESSION_SPECIALIZATION) do
-                            visitedQuestIds[nextQuestId] = true
-                            if firstInChain then
-                                tooltipRows:AddLine(nextQuestLabelPrefix .. l10n("Next in chain:"), 0.86, 0.86, 0.86)
-                                firstInChain = false;
-                            end
-
-                            local nextQuestLevel = QuestieLib.GetEffectiveQuestLevel(nextQuestId)
-                            local nextQuestTitle, nextQuestReward = _MapIconTooltip.GetNextQuestInChainLines(
-                                nextQuestId, nextQuestLevel, nestedQuestTitleIndent)
-                            tooltipRows:AddDoubleLine(nextQuestTitle, nextQuestReward, 1, 1, 1)
-
-                            local nextNextQuestId = QuestieDB.QueryQuestSingle(nextQuestId, "nextQuestInChain") or 0
-                            if nextNextQuestId == 0 then nextNextQuestId = QuestieDB.QueryQuestSingle(nextQuestId, "breadcrumbForQuestId") or 0 end
-                            if nextNextQuestId <= 0 then
-                                break
-                            end
-
-                            nextQuestId = nextNextQuestId
-                            _, _, returnReason = QuestieDB.IsDoableVerbose(nextQuestId, false, true, true)
-                        end
-                    end
+                    _AddNextInChainRows(tooltipRows, questData.questId)
                 end
 
             end
@@ -558,6 +560,10 @@ function MapIconTooltip.ShowOnTooltip(self, targetTooltip, owner, icons)
                         tooltipRows:AddLine("   " .. defaultQuestColor .. textLine);
                     end
                 end
+            end
+
+            if shift and Questie.db.profile.enableTooltipsNextInChain and Questie.db.profile.enableTooltipsNextInChainOnActiveQuests then
+                _AddNextInChainRows(tooltipRows, questId)
             end
         end
 
