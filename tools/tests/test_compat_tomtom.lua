@@ -228,4 +228,21 @@ equal(replacement.Player.value, "Player: 50.0, 25.0", "replacement frame updates
 env.TomTom = nil
 compat.PatchTomTomWorldCoords()
 equal(coords:GetScript("OnUpdate"), update, "missing TomTom is harmless")
+
+-- Use the actual ZoneDB mappings for the two neighboring Hellfire dungeons.
+env.QuestieLoader.CreateModule = function(_, name) return assert(modules[name], name) end
+for _, name in ipairs({"QuestiePlayer", "QuestieDB", "QuestieCorrections", "QuestieEvent"}) do
+    modules[name] = {}
+end
+loadModule("Database/Zones/zoneTables.lua")
+loadModule("Database/Zones/zoneDB.lua")
+uiData[1944] = uiData[1003] -- Hellfire Peninsula stands in for the native Outland zone.
+uiData[246] = {mapID = 711.1, instance = 540, wdmInstanceMap = true}
+uiData[261] = {mapID = 726.1, instance = 542, wdmInstanceMap = true}
+env.TomTom = {AddZWaypoint = function(_, ...)
+    waypoints[#waypoints + 1] = {n = select("#", ...), ...}
+    return uid
+end}
+waypoint(modules.ZoneDB:GetUiMapIdByAreaId(3535), 3, 1, 47.7, 52.0) -- Quest 9525 uses area 3535.
+waypoint(modules.ZoneDB:GetUiMapIdByAreaId(3713), 3, 1, 46.0, 51.8)
 print("TomTom compatibility regressions passed")

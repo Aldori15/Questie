@@ -49,7 +49,6 @@ local alternativeDungeonAreaIdToDungeonAreaId = {}
 
 -- Overrides for UiMapId to AreaId
 local UiMapIdOverrides = {
-    [246] = 3713,
     -- Continent maps are not real NPC/object zones, but the client can return them
     -- from C_Map.GetBestMapForUnit("player") while inside caves or similar sub-areas.
     [113] = 0, -- Northrend
