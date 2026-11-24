@@ -1835,14 +1835,14 @@ tinsert(QuestieEvent.eventQuests, {"Hallow's End", 13474}) -- Candy Bucket
 tinsert(QuestieEvent.eventQuests, {"Hallow's End", 13501}) -- Candy Bucket
 tinsert(QuestieEvent.eventQuests, {"Hallow's End", 13548}) -- Candy Bucket
 
---tinsert(QuestieEvent.eventQuests, {"Pilgrim's Bounty", 14036}) -- Pilgrim's Bounty
---tinsert(QuestieEvent.eventQuests, {"Pilgrim's Bounty", 14022}) -- Pilgrim's Bounty
+tinsert(QuestieEvent.eventQuests, {"Pilgrim's Bounty", 14022}) -- Pilgrim's Bounty
 tinsert(QuestieEvent.eventQuests, {"Pilgrim's Bounty", 14023}) -- Spice Bread Stuffing
 tinsert(QuestieEvent.eventQuests, {"Pilgrim's Bounty", 14024}) -- Pumpkin Pie
 tinsert(QuestieEvent.eventQuests, {"Pilgrim's Bounty", 14028}) -- Cranberry Chutney
 tinsert(QuestieEvent.eventQuests, {"Pilgrim's Bounty", 14030}) -- They're Ravenous In Darnassus
 tinsert(QuestieEvent.eventQuests, {"Pilgrim's Bounty", 14033}) -- Candied Sweet Potatoes
 tinsert(QuestieEvent.eventQuests, {"Pilgrim's Bounty", 14035}) -- Slow-roasted Turkey
+tinsert(QuestieEvent.eventQuests, {"Pilgrim's Bounty", 14036}) -- Pilgrim's Bounty
 tinsert(QuestieEvent.eventQuests, {"Pilgrim's Bounty", 14037}) -- Spice Bread Stuffing
 tinsert(QuestieEvent.eventQuests, {"Pilgrim's Bounty", 14040}) -- Pumpkin Pie
 tinsert(QuestieEvent.eventQuests, {"Pilgrim's Bounty", 14041}) -- Cranberry Chutney
