@@ -124,7 +124,6 @@ for _, name in ipairs({"QuestieQuestBlacklist", "QuestieNPCBlacklist", "QuestieI
 end
 -- MinimalInit receives blank static blacklist modules and the real Compat
 -- callback still contributes intentional true/false Questie blacklist entries.
-modules.IsleOfQuelDanas = {MAX_ISLE_OF_QUEL_DANAS_PHASES = 9}
 env.QuestieCompat.LoadCorrections = noStatic
 load("Database/Corrections/QuestieCorrections.lua")
 -- Exercise the real pre-compilation startup path. Locale/UI work and waypoint
@@ -309,7 +308,25 @@ local function verifyHandle()
 end
 verifyHandle()
 db.objectData = nil -- Cached startup must work without the raw object table.
+local liveQuestState
+modules.QuestieServerIntegrations = {
+    quelDanasQuestEvents = {[11496] = 101},
+    GetQuelDanasQuestState = function() return liveQuestState end,
+}
+load("Modules/Quest/IsleOfQuelDanas.lua")
+local isle = modules.IsleOfQuelDanas
+local profile = env.Questie.db.profile
+profile.isleOfQuelDanasPhase = isle.MAX_ISLE_OF_QUEL_DANAS_PHASES
 env.QuestieCorrections:MinimalInit()
 verifyHandle()
+equal(env.QuestieCorrections.hiddenQuests[11496], nil, "final phase does not add a permanent blacklist entry")
+equal(isle.GetHiddenQuests()[11496], true, "final phase hides Sanctum Wards")
+profile.isleOfQuelDanasPhase = 1
+equal(isle.GetHiddenQuests()[11496], nil, "switching to Phase 1 restores Sanctum Wards immediately")
+liveQuestState = false
+equal(isle.GetHiddenQuests()[11496], true, "live inactive event overrides manual Phase 1")
+liveQuestState = true
+profile.isleOfQuelDanasPhase = isle.MAX_ISLE_OF_QUEL_DANAS_PHASES
+equal(isle.GetHiddenQuests()[11496], nil, "live active event overrides manual final phase")
 print("Gathering coordinates survive startup, compilation and cached reload; Root Samples sources preserved")
 print("AzerothCore complete-base smoke test passed")

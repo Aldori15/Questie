@@ -23,8 +23,6 @@ local ObjectRuntimeCorrections = QuestieLoader:ImportModule("ObjectRuntimeCorrec
 ---@type QuestRuntimeCorrections
 local QuestRuntimeCorrections = QuestieLoader:ImportModule("QuestRuntimeCorrections")
 
----@type IsleOfQuelDanas
-local IsleOfQuelDanas = QuestieLoader:ImportModule("IsleOfQuelDanas")
 
 -- Static data belongs to the generated bases. This module initializes runtime
 -- faction overrides, blacklists, race inference and waypoint optimization.
@@ -97,16 +95,6 @@ do
         QuestieCorrections.questItemBlacklist = filterExpansion(QuestieItemBlacklist:Load())
         QuestieCorrections.questNPCBlacklist = filterExpansion(QuestieNPCBlacklist:Load())
         QuestieCorrections.hiddenQuests = filterExpansion(QuestieQuestBlacklist:Load())
-
-        -- Isle of Quel'Danas Phase Blacklist
-        if Questie.db.profile.isleOfQuelDanasPhase == IsleOfQuelDanas.MAX_ISLE_OF_QUEL_DANAS_PHASES then
-            for id, hide in pairs(IsleOfQuelDanas.quests[Questie.db.profile.isleOfQuelDanasPhase]) do
-                -- This has to be a nil-check, because the value could be false
-                if (QuestieCorrections.hiddenQuests[id] == nil) then
-                    QuestieCorrections.hiddenQuests[id] = hide
-                end
-            end
-        end
 
         -- Wotlk Blacklist
         -- We only add blacklist if no blacklist entry for the quest already exists

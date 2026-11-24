@@ -450,7 +450,8 @@ QuestieInit.Stages[3] = function() -- run as a coroutine
 
     if Questie.db.profile.showSunsReachQuests and (not Questie.db.profile.isIsleOfQuelDanasPhaseReminderDisabled) then
         C_Timer.After(2, function()
-            Questie:Print(l10n("Current active phase of Isle of Quel'Danas is '%s'. Check the Advanced settings to change the phase or disable this message.", IsleOfQuelDanas.localizedPhaseNames[Questie.db.profile.isleOfQuelDanasPhase]))
+            Questie:Print(l10n("Saved fallback phase for Isle of Quel'Danas: %s. Live server data takes precedence when available. Change the phase or disable this reminder under %s.",
+                IsleOfQuelDanas.localizedPhaseNames[Questie.db.profile.isleOfQuelDanasPhase], l10n("Icons")))
         end)
     end
 
