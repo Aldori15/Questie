@@ -77,7 +77,13 @@ function frameMethods:SetOwner(owner) self.owner = owner end
 function frameMethods:GetOwner() return self.owner end
 function frameMethods:AddLine(text) self.lines = self.lines or {}; self.lines[#self.lines + 1] = text end
 function frameMethods:GetFrameStrata() return "DIALOG" end
-function frameMethods:SetText(value) self.text = value end
+function frameMethods:SetText(value)
+    self.text = value
+    if self.scripts.OnTextChanged then self.scripts.OnTextChanged(self) end
+end
+function frameMethods:GetText() return self.text or "" end
+function frameMethods:SetAutoFocus(value) self.autoFocus = value end
+function frameMethods:ClearFocus() self.hasFocus = false end
 function frameMethods:SetTextColor(...) self.textColor = {...} end
 function frameMethods:SetJustifyV(value) self.justifyV = value end
 function frameMethods:SetTexture(value) self.texture = value end
@@ -134,7 +140,7 @@ function frameMethods:CreateTexture() return env.CreateFrame("Texture", nil, sel
 function frameMethods:CreateFontString() return env.CreateFrame("FontString", nil, self) end
 env.CreateFrame = function(kind, name, parent, template)
     assert(kind == "Frame" or kind == "Button" or kind == "GameTooltip" or kind == "Texture" or kind == "FontString"
-        or kind == "ScrollFrame" or kind == "Slider",
+        or kind == "ScrollFrame" or kind == "Slider" or kind == "EditBox",
         "unexpected native frame type: " .. tostring(kind))
     local frame = setmetatable({kind = kind, name = name, parent = parent, scripts = {}, points = {}, events = {}, shown = true},
         {__index = frameMethods})
@@ -398,11 +404,25 @@ end
 local unrelatedAccept = function() s.unrelatedAccepted = true end
 env.StaticPopupDialogs.UNRELATED = {OnAccept = unrelatedAccept}
 registry:RegisterOptionsTable("Questie", schema)
+loadFile("Modules/Libs/utf8.lua")
+loadFile("Modules/Options/QuestieOptionsSearch.lua")
 loadFile("Modules/Options/QuestieOptionsEngine.lua")
 local engine = loader:ImportModule("QuestieOptionsEngine")
 engine:Initialize(schema)
 local cloned = registry:GetOptionsTable("QuestieSettings")("dialog", "AceConfigDialog-3.0")
+local timers = {}
+env.QuestieCompat.C_Timer.NewTimer = function(delay, callback)
+    equal(delay, 0.15, "search debounce delay")
+    local timer = {callback = callback, Cancel = function(self) self.cancelled = true end}
+    timers[#timers + 1] = timer
+    return timer
+end
 local function tick()
+    local pending = timers
+    timers = {}
+    for _, timer in ipairs(pending) do
+        if not timer.cancelled then timer.callback() end
+    end
     for _, frame in ipairs(s.frames) do
         local update = frame:GetScript("OnUpdate")
         if update then update(frame) end
@@ -1124,6 +1144,52 @@ equal(tomtomOption.hidden(), true, "TomTom binding is hidden without its API")
 env.TomTom = {AddWaypoint = function() end}
 equal(tomtomOption.hidden(), false, "usable TomTom API reveals the binding")
 env.TomTom = nil
+groups = groups + 1
+
+engine:ShowFrame()
+engine:SelectCategory("controls")
+local search = settingsFrame.searchBox
+search:SetText("zzzz")
+search:SetText("UNEXPLORED areas")
+equal(settingsFrame.heading.text, db:GetCurrentProfile() .. " controls", "typing does not immediately rebuild the panel")
+tick()
+control("hideUnexploredMapIconsToggle")
+equal(settingsFrame.heading.text, "Icons", "cross-tab search selects the matching category")
+assert(not pcall(control, "showNormalQuestsMap"), "unmatched grid rows are filtered")
+search:SetText("minimap available normal quests")
+tick()
+local grid = control("showNormalQuestsMap").parent
+local at = geometry(grid.children, 708)
+local _, labelY = at(control("showNormalQuestsLabel"))
+local _, mapY = at(control("showNormalQuestsMap"))
+local _, minimapY = at(control("showNormalQuestsMinimap"))
+equal(labelY, mapY, "filtered grid label and map toggle stay together")
+equal(mapY, minimapY, "filtered grid keeps both surfaces aligned")
+control("mapHeader")
+control("minimapHeader")
+assert(not pcall(control, "hideUnexploredMapIconsToggle"), "unmatched controls in the same tab are filtered")
+assert(schema.args.actual_icons.args.quest_icon_toggles_group.args.showNormalQuestsMap.dialogHidden == nil,
+    "only the popup schema is filtered")
+
+local opacity = cloned.args.controls.args.level
+opacity.desc = "Äußerst НАСТРОЙКИ"
+search:SetText("äußerst настройки")
+tick()
+control("level")
+equal(settingsFrame.heading.text, db:GetCurrentProfile() .. " controls", "localized descriptions match case-insensitively")
+opacity.desc = nil
+search:SetText("Available AQ War Effort Quests")
+tick()
+equal(settingsFrame.heading.text, "No matching options", "hidden options are excluded")
+search:SetText("")
+tick()
+control("level")
+search:SetText("unexplored areas")
+engine:HideFrame()
+tick()
+engine:ShowFrame()
+equal(search:GetText(), "", "closing clears pending queries")
+control("level")
 groups = groups + 1
 assert(not next(s.errors), s.errors[1])
 print("Standalone options engine: " .. groups .. " groups passed (real Ace validation, callbacks, profiles and native frame lifecycle)")

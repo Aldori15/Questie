@@ -674,6 +674,18 @@ local genericsLocales = {
         ["zhCN"] = "任务",
         ["zhTW"] = "任務",
     },
+    ["No matching options"] = {
+        ["enUS"] = true,
+        ["deDE"] = "Keine passenden Optionen",
+        ["esES"] = "No hay opciones coincidentes",
+        ["esMX"] = "No hay opciones coincidentes",
+        ["frFR"] = "Aucune option correspondante",
+        ["koKR"] = "일치하는 옵션이 없습니다",
+        ["ptBR"] = "Nenhuma opção correspondente",
+        ["ruRU"] = "Подходящих параметров нет",
+        ["zhCN"] = "没有匹配的选项",
+        ["zhTW"] = "沒有符合的選項",
+    },
 }
 
 for k, v in pairs(genericsLocales) do

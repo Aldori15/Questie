@@ -2,6 +2,7 @@
 local QuestieOptionsEngine = QuestieLoader:CreateModule("QuestieOptionsEngine")
 local QuestieJourney = QuestieLoader:ImportModule("QuestieJourney")
 local QuestieOptions = QuestieLoader:ImportModule("QuestieOptions")
+local QuestieOptionsSearch = QuestieLoader:ImportModule("QuestieOptionsSearch")
 local QuestieEventHandler = QuestieLoader:ImportModule("QuestieEventHandler")
 local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
 local l10n = QuestieLoader:ImportModule("l10n")
@@ -15,6 +16,7 @@ local DROPDOWN_TYPE = "QuestieSettingsDropdown"
 local WINDOW_WIDTH, WINDOW_HEIGHT = 820, 680
 local frame, panel, eventFrame, options, selectedCategory
 local categoryButtons = {}
+local searchText, searchTimer = "", nil
 local ownedColorCallback
 local lazyDropdownRegistered
 
@@ -421,6 +423,36 @@ local function CreateSettingsFrame()
     close:SetPoint("TOPRIGHT", -4, -4)
     close:SetScript("OnClick", function() frame:Hide() end)
 
+    local search = CreateFrame("EditBox", nil, titleBar, "InputBoxTemplate")
+    search:SetSize(220, 24)
+    search:SetPoint("RIGHT", titleBar, "RIGHT", -28, 0)
+    search:SetAutoFocus(false)
+    frame.searchBox = search
+    local searchLabel = titleBar:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    searchLabel:SetPoint("RIGHT", search, "LEFT", -10, 0)
+    searchLabel:SetText(SEARCH or "Search")
+    local clear = CreateFrame("Button", nil, titleBar, "UIPanelCloseButton")
+    clear:SetSize(24, 24)
+    clear:SetPoint("LEFT", search, "RIGHT", 2, 0)
+    clear:Hide()
+    clear:SetScript("OnClick", function() search:SetText("") end)
+    search:SetScript("OnTextChanged", function(self)
+        local text = self:GetText()
+        if text == "" then clear:Hide() else clear:Show() end
+        if searchTimer then searchTimer:Cancel(); searchTimer = nil end
+        if text == searchText or not frame:IsShown() then return end
+        searchTimer = QuestieCompat.C_Timer.NewTimer(0.15, function()
+            searchTimer = nil
+            searchText = text
+            QuestieOptionsEngine:RefreshStates()
+        end)
+    end)
+    search:SetScript("OnEnterPressed", function(self) self:ClearFocus() end)
+    search:SetScript("OnEscapePressed", function(self)
+        self:SetText("")
+        self:ClearFocus()
+    end)
+
     local sidebar = CreateFrame("Frame", nil, frame)
     sidebar:SetPoint("TOPLEFT", 12, -80)
     sidebar:SetPoint("BOTTOMLEFT", 12, 16)
@@ -492,6 +524,11 @@ local function CreateSettingsFrame()
     end
     selectedCategory = keys[1]
     frame:SetScript("OnHide", function()
+        if searchTimer then searchTimer:Cancel(); searchTimer = nil end
+        searchText = ""
+        search:SetText("")
+        search:ClearFocus()
+        QuestieOptionsSearch.Clear()
         AceGUI:ClearFocus()
         CloseDropDownMenus()
         panel:ReleaseChildren()
@@ -551,11 +588,12 @@ end
 
 function QuestieOptionsEngine:RefreshStates()
     if not self:IsShown() then return end
+    local matchingTabs = QuestieOptionsSearch.Filter(options, APP_NAME, searchText)
     local visible = {}
     for _, entry in ipairs(categoryButtons) do
         local hidden = CategoryValue(entry.key, "hidden")
         entry.button:Hide()
-        if not hidden then visible[#visible + 1] = entry end
+        if not hidden and (not matchingTabs or matchingTabs[entry.key]) then visible[#visible + 1] = entry end
     end
     local selectedVisible = false
     for index, entry in ipairs(visible) do
@@ -565,7 +603,7 @@ function QuestieOptionsEngine:RefreshStates()
         button:Show()
         if entry.key == selectedCategory then selectedVisible = true end
     end
-    if not selectedVisible then selectedCategory = visible[1] and visible[1].key end
+    if not selectedVisible and visible[1] then selectedCategory = visible[1].key end
     for _, entry in ipairs(visible) do
         if entry.key == selectedCategory then entry.button.selected:Show() else entry.button.selected:Hide() end
     end
@@ -578,10 +616,11 @@ function QuestieOptionsEngine:RefreshStates()
         frame.journeyButton:Enable()
         frame.journeyButton.text:SetTextColor(1, 1, 1)
     end
-    if selectedCategory then
+    if visible[1] then
         frame.heading:SetText(CategoryValue(selectedCategory, "name"))
         AceConfigDialog:Open(APP_NAME, panel, selectedCategory)
     else
+        frame.heading:SetText(matchingTabs and l10n("No matching options") or "")
         panel:ReleaseChildren()
     end
 end
