@@ -1809,6 +1809,10 @@ function QuestieTracker:UpdateHeight()
     if Questie.db.char.isTrackerExpanded then
         -- Removes any padding from the last line in the tracker
         local currentLine = TrackerLinePool.GetCurrentLine()
+        if not currentLine then
+            return
+        end
+
         local currentLineHeight = math_max(currentLine.label:GetHeight() or 0, currentLine.label:GetStringHeight() or 0)
         currentLine:SetHeight(currentLineHeight)
 
