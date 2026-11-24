@@ -27,6 +27,7 @@ local acceptDisallowed = {
     [1121] = true, -- Get the Goblins Drunk
     [1144] = true, -- Willix the Importer
     [1222] = true, -- Stinky's Escape
+    [1249] = true, -- The Missing Diplomat (Fleeing Tapoke Jahn)
     [1270] = true, -- Stinky's Escape
     [1273] = true, -- Questioning Reethe
     [1324] = true, -- The Missing Diplomat
