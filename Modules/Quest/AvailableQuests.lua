@@ -19,6 +19,7 @@ local QuestieCorrections = QuestieLoader:ImportModule("QuestieCorrections")
 local QuestieQuestBlacklist = QuestieLoader:ImportModule("QuestieQuestBlacklist")
 ---@type IsleOfQuelDanas
 local IsleOfQuelDanas = QuestieLoader:ImportModule("IsleOfQuelDanas")
+local ServerIntegrations = QuestieLoader:ImportModule("QuestieServerIntegrations")
 ---@type QuestieLib
 local QuestieLib = QuestieLoader:ImportModule("QuestieLib")
 ---@type l10n
@@ -1352,7 +1353,7 @@ _CalculateAvailableQuests = function()
     local currentIsleOfQuelDanasQuests = IsleOfQuelDanas.GetHiddenQuests()
     local aqWarEffortQuests = QuestieQuestBlacklist.AQWarEffortQuests
     local scourgeInvasionQuests = QuestieQuestBlacklist.ScourgeInvasionQuests
-    local sunsReachQuests = QuestieQuestBlacklist.SunsReachQuests
+    local sunsReachQuests = ServerIntegrations.quelDanasQuestEvents
 
     QuestieDB.activeChildQuests = {} -- Reset here so we don't need to keep track in the quest event system
     local questLogQuestIds
@@ -1396,7 +1397,7 @@ _CalculateAvailableQuests = function()
             ((not showRaidQuests) and QuestieDB.IsRaidQuest(questId)) or            -- Don't show raid quests if option is disabled
             ((not showAQWarEffortQuests) and aqWarEffortQuests[questId]) or         -- Don't show AQ War Effort quests if the option disabled
             ((not showScourgeInvasionQuests) and scourgeInvasionQuests[questId]) or -- Don't show Scourge Invasion quests if the option is disabled
-            ((not showSunsReachQuests) and sunsReachQuests[questId]) or             -- Hide all Sun's Reach quests if the event is off
+            ((not showSunsReachQuests) and sunsReachQuests[questId]) or             -- Hide Sun's Reach pins when the option is off
             (showSunsReachQuests and currentIsleOfQuelDanasQuests[questId])         -- Phase-based filtering when event is on
         ) then
             nextAvailableQuestSet[questId] = nil

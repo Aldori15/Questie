@@ -31,7 +31,7 @@ modules.QuestieServer = {GetStateControlledQuests = function() end}
 modules.QuestieCorrections = {hiddenQuests = {}}
 modules.QuestieEvent = {activeQuests = {}}
 modules.IsleOfQuelDanas = {GetHiddenQuests = function() return {} end}
-modules.QuestieQuestBlacklist = {AQWarEffortQuests = {}, ScourgeInvasionQuests = {}, SunsReachQuests = {}}
+modules.QuestieQuestBlacklist = {AQWarEffortQuests = {}, ScourgeInvasionQuests = {}}
 modules.QuestieIconVisibility = {IsEnabledAnywhere = function(_, kind) return kind ~= "repeatable" or showRepeatable end}
 modules.QuestieTooltips = {RemoveAvailableQuest = noop}
 modules.QuestieMap = {ForQuestFrames = function(_, id) return drawn[id] end,
@@ -42,6 +42,7 @@ modules.ThreadLib = {Thread = function(fn, _, _, callback)
 end}
 assert(loadfile("Database/QuestieDB.lua", "t", env))()
 assert(loadfile("Modules/Libs/QuestieLib.lua", "t", env))()
+assert(loadfile("Modules/Network/QuestieServerIntegrations.lua", "t", env))()
 local db = modules.QuestieDB
 db.questData = {}
 db.QueryQuestSingle = function(id, field) return data[id] and data[id][field] end
@@ -192,4 +193,27 @@ end
 assert(rereadAfterReset, "resumed scan honors reset instead of reading the old cache")
 calculate()
 for id = 100, 700 do equal(drawn[id], nil, "new refresh respects reset level requirements " .. id) end
+
+-- The display toggle applies equally to all of the server's Sun's Reach event quests.
+assert(loadfile("Modules/Quest/IsleOfQuelDanas.lua", "t", env))()
+local sunReachQuests = modules.QuestieServerIntegrations.quelDanasQuestEvents
+local profile = env.Questie.db.profile
+local liveEventState = true
+modules.QuestieServer.IsEventActive = function() return liveEventState end
+profile.isleOfQuelDanasPhase = 1
+for id in pairs(sunReachQuests) do add(id, 80, 0) end
+add(11481, 80, 0) -- Crisis at the Sunwell is an ordinary quest.
+calculate()
+for id in pairs(sunReachQuests) do equal(drawn[id], true, "live event enables " .. id) end
+profile.showSunsReachQuests = false
+calculate()
+for id in pairs(sunReachQuests) do equal(drawn[id], nil, "toggle hides live event quest " .. id) end
+equal(drawn[11481], true, "ordinary quest remains visible")
+liveEventState = nil
+calculate()
+for id in pairs(sunReachQuests) do equal(drawn[id], nil, "toggle hides fallback event quest " .. id) end
+profile.showSunsReachQuests = true
+calculate()
+equal(drawn[11496], true, "enabled toggle restores Phase 1 quest")
+equal(drawn[11543], nil, "enabled toggle still respects manual phase")
 print("Available quest filters: warm caches, exclusions, settings, levels, live parent/event overrides, unknown flags and suspended resets passed")

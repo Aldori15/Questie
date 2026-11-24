@@ -29,7 +29,7 @@ local function NonnegativeInteger(value)
 end
 
 local function IsQuelDanasQuest(questId)
-    return (Blacklist.SunsReachQuests or {})[questId] or (Integrations.quelDanasQuestEvents or {})[questId]
+    return Integrations.quelDanasQuestEvents[questId] ~= nil
 end
 
 local function IsScourgeQuest(questId)

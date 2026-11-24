@@ -1970,21 +1970,6 @@ QuestieQuestBlacklist.ScourgeInvasionQuests = {
     [12817] = true, -- Investigate the Scourge of Azuremyst
 }
 
-QuestieQuestBlacklist.SunsReachQuests = {
-    -- Battle for Sun's Reach (Isle of Quel'Danas worldstate event)
-    [11496] = true, -- Sanctum Wards
-    [11513] = true, -- Intercepting the Mana Cells
-    [11520] = true, -- Discovering Your Roots
-    [11524] = true, -- Erratic Behavior
-    [11532] = true, -- Distraction at the Dead Scar
-    [11535] = true, -- Making Ready
-    [11538] = true, -- Battle for the Sun's Reach Armory
-    [11539] = true, -- Taking the Harbor
-    [11542] = true, -- Intercept the Reinforcements
-    [11545] = true, -- A Charitable Donation
-    [11549] = true, -- A Magnanimous Benefactor
-}
-
 function QuestieQuestBlacklist.LoadAutoBlacklistWotlk()
     return {
         --! 1.11.1
