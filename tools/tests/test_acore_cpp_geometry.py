@@ -139,6 +139,15 @@ class CppGeometryTests(unittest.TestCase):
         self.assertTrue(entries["12051"]["failures"]["spawns"])
         self.assertFalse(entries["36955"]["failures"]["spawns"])
 
+    def test_scourge_circle_catalog_ignores_only_unrelated_event_subqueries(self):
+        delete = "DELETE FROM `game_event_gameobject` WHERE (`eventEntry` = {}) " \
+                 "AND (`guid` IN (SELECT `guid` FROM `gameobject` WHERE `id` IN (201940)))"
+        insert = "INSERT INTO `game_event_gameobject` (SELECT {}, `guid` FROM `gameobject` WHERE `id` IN (201940))"
+        for statement in (delete, insert):
+            self.assertTrue(cpp.is_unrelated_gameobject_event_mutation(statement.format(8)))
+            self.assertFalse(cpp.is_unrelated_gameobject_event_mutation(statement.format(121)))
+        self.assertFalse(cpp.is_unrelated_gameobject_event_mutation(delete.format(8) + " OR eventEntry = 121"))
+
     def object_fixture(self):
         files = {
             cpp.CULLING + "culling_of_stratholme.h": "GO_MALGANIS_CHEST_N = 190663, GO_MALGANIS_CHEST_H = 193597,",

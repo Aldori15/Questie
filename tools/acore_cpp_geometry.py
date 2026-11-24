@@ -1,4 +1,4 @@
-"""Bounded generation evidence for two explicitly understood AC C++ placements.
+"""Bounded generation evidence for explicitly understood AC C++ placements.
 
 This is not a general C++ interpreter. Changed ownership or movement constructs
 produce review failures instead of retaining coordinates from an earlier source.
@@ -16,9 +16,17 @@ EYE = "src/server/scripts/Northrend/Nexus/EyeOfEternity/"
 ZULDRAK = "src/server/scripts/Northrend/zone_zuldrak.cpp"
 HALLOWS = "src/server/scripts/Events/hallows_end.cpp"
 SPELL_FIXES = "src/server/game/Spells/SpellInfoCorrections.cpp"
+SCOURGE_WORLD_STATE = "src/server/game/World/WorldState.cpp"
+SCOURGE_SCRIPT = "src/server/scripts/World/scourge_invasion.cpp"
+SCOURGE_HEADER = "src/server/scripts/World/scourge_invasion.h"
+SCOURGE_CAMP_DROPPERS = (16141, 16298, 16299)
+SCOURGE_CITY_STARTERS = (16383, 16431, 16531)
+SCOURGE_CIRCLE = 181136
+SCOURGE_ZONE_EVENTS = {121: 618, 122: 440, 123: 16, 124: 4, 125: 139, 126: 46}
 SOURCE_FILES = (HOR + "halls_of_reflection.h", HOR + "halls_of_reflection.cpp",
                 HOR + "instance_halls_of_reflection.cpp", AV + "BattlegroundAV.h",
-                AV + "BattlegroundAV.cpp", "src/server/game/Maps/AreaDefines.h")
+                AV + "BattlegroundAV.cpp", SCOURGE_WORLD_STATE, SCOURGE_SCRIPT, SCOURGE_HEADER,
+                "src/server/game/Maps/AreaDefines.h")
 OBJECT_SOURCE_FILES = (CULLING + "culling_of_stratholme.h", CULLING + "boss_mal_ganis.cpp",
                        ULDUAR + "ulduar.h", ULDUAR + "boss_thorim.cpp", ULDUAR + "boss_mimiron.cpp",
                        EYE + "eye_of_eternity.h", EYE + "boss_malygos.cpp", ZULDRAK, SOURCE_FILES[-1],
@@ -101,6 +109,92 @@ def _function(text, name):
         if not depth:
             return text[start:index]
     raise ValueError("unterminated C++ function: " + name)
+
+
+def is_unrelated_gameobject_event_mutation(statement):
+    """Ignore AC's GUID subqueries only when their event is outside this group."""
+    sql = re.sub(r"[`\s]", "", statement).rstrip(";").lower()
+    guid_query = r"selectguidfromgameobjectwhereidin\(\d+(?:,\d+)*\)"
+    for pattern in (
+        rf"deletefromgame_event_gameobjectwhere\(evententry=(-?\d+)\)and\(guidin\({guid_query}\)\)",
+        rf"insertintogame_event_gameobject\(select(-?\d+),guidfromgameobjectwhereidin\(\d+(?:,\d+)*\)\)",
+    ):
+        match = re.fullmatch(pattern, sql)
+        if match:
+            return int(match[1]) not in SCOURGE_ZONE_EVENTS
+    return False
+
+
+def collect_scourge(source_root, zone_maps, circle_rows, circle_events, waypoint_by_path):
+    """Guide players to possible invasion camps and city attack routes."""
+    import generate_acore_npc_corrections as reader
+    from acore_scripted_geometry import typed
+
+    root = Path(source_root)
+    world, script, header = ((root / path).read_text(encoding="utf-8")
+                             for path in (SCOURGE_WORLD_STATE, SCOURGE_SCRIPT, SCOURGE_HEADER))
+    if _integer(header, "GO_SUMMON_CIRCLE") != SCOURGE_CIRCLE:
+        raise ValueError("Scourge summoning-circle template changed")
+    actor_names = ("NPC_GHOUL_BERSERKER", "NPC_SPECTRAL_SOLDIER", "NPC_SKELETAL_SHOCKTROOPER",
+                   "NPC_FLAMESHOCKER", "NPC_CRACKED_NECROTIC_CRYSTAL", "NPC_FAINT_NECROTIC_CRYSTAL")
+    if tuple(_integer(header, name) for name in actor_names) != (*SCOURGE_CAMP_DROPPERS, *SCOURGE_CITY_STARTERS):
+        raise ValueError("Scourge camp dropper or city starter identity changed")
+    _require(world, "pallid->GetMotionMaster()->MoveWaypoint(pathID, false);")
+    _require(world, "pathID = spawnLoc == 0 ? PATH_UNDERCITY_ROYAL_QUARTER : PATH_UNDERCITY_TRADE_QUARTER;")
+    _require(world, "pathID = spawnLoc == 0 ? PATH_STORMWIND_KEEP : PATH_STORMWIND_TRADE_DISTRICT;")
+    _require(script, "me->SummonCreature(entry, me->GetPosition(), TEMPSUMMON_TIMED_OR_DEAD_DESPAWN")
+    _require(script, "GetClosestGameObjectWithEntry(me, GO_SUMMON_CIRCLE, 2.0f)")
+    _require(script, "NPC_FLAMESHOCKER, me->GetPositionX(), me->GetPositionY(), me->GetPositionZ()")
+    _require(script, "me->GetZoneId() == AREA_UNDERCITY ? SPELL_SUMMON_FAINT_NECROTIC_CRYSTAL : SPELL_SUMMON_CRACKED_NECROTIC_CRYSTAL")
+
+    camps, city = {}, {}
+    for row in circle_rows:
+        guid = int(row["guid"])
+        zone = SCOURGE_ZONE_EVENTS.get(circle_events.get(guid))
+        if zone is None:
+            continue
+        point = reader.convert_world_to_zone(float(row["position_y"]), float(row["position_x"]),
+                                             zone, zone_maps, map_id=int(row["map"]))
+        if not point:
+            raise ValueError(f"Unmapped Scourge summoning circle {guid}")
+        camps.setdefault(zone, []).append((point, f"scourge:gameobject:{guid}"))
+    if camps.keys() != set(SCOURGE_ZONE_EVENTS.values()):
+        raise ValueError("Missing summoning-circle locations for one or more Scourge invasion zones")
+
+    for zone, names in {
+        1519: ("PATH_STORMWIND_KEEP", "PATH_STORMWIND_TRADE_DISTRICT"),
+        1497: ("PATH_UNDERCITY_ROYAL_QUARTER", "PATH_UNDERCITY_TRADE_QUARTER"),
+    }.items():
+        sites = city[zone] = []
+        for name in names:
+            path = _integer(world, name)
+            rows = waypoint_by_path.get(path, ())
+            if len(rows) < 3:
+                raise ValueError(f"Missing Scourge city attack waypoints for {name}")
+            # Sample the route without drawing it as a patrol for its summons.
+            for row in (rows[0], rows[len(rows) // 2], rows[-1]):
+                point = reader.convert_world_to_zone(float(row["position_y"]), float(row["position_x"]),
+                                                     zone, zone_maps, map_id=0)
+                if not point:
+                    raise ValueError(f"Scourge waypoint {path}:{row['point']} falls outside city {zone}")
+                sites.append((point, f"scourge:waypoint_data:{path}:{row['point']}"))
+
+    def record(sites_by_zone):
+        spawns, origins = {}, {}
+        for zone, sites in sites_by_zone.items():
+            unique = {}
+            for point, identity in sites:
+                unique.setdefault(tuple(point), []).append(identity)
+            key = f"n:{zone}"
+            spawns[key] = typed([list(point) for point in unique])
+            origins[key] = {f"n:{i}": values for i, values in enumerate(unique.values(), 1)}
+        return {"spawns": spawns, "origins": {"spawns": origins}, "failures": {"spawns": []}}
+
+    entries = {str(entry): record(camps) for entry in SCOURGE_CAMP_DROPPERS}
+    entries["16383"] = record(city)
+    entries["16431"] = record({1519: city[1519]})
+    entries["16531"] = record({1497: city[1497]})
+    return entries
 
 
 def collect_source_zones(source_root):

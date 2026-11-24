@@ -25,7 +25,7 @@ import acore_scripted_geometry
 ROOT = Path(__file__).resolve().parents[1]
 TABLES = ("creature_template", "creature_classlevelstats", "creature_queststarter", "game_event_creature_quest", "creature_questender",
           "factiontemplate_dbc", "creature_addon", "creature_template_addon", "waypoint_data", "waypoints", "smart_scripts",
-          "event_scripts", "game_event_creature", "gameobject", "gameobject_template")
+          "event_scripts", "game_event_creature", "game_event_gameobject", "gameobject", "gameobject_template")
 ANCHORS = {1, 3, 4, 115, 1629, 2, 5, 6, 116, 1610}
 REPO_INPUTS = ("Database/Zones/zoneTables.lua", "Compat/UiMapData.lua", "Modules/Phasing.lua",
                "Modules/Network/QuestieServer.lua", "tools/generate_acore_npc_corrections.py",

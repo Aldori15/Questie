@@ -1540,6 +1540,20 @@ def build_acore_npcs(
             reviewed_child_scripts=acore_scripted_geometry.reviewed_npc_scripts(source_root, template_rows))
         import acore_cpp_geometry
         provenance["cppGeometry"] = acore_cpp_geometry.collect(source_root, zone_maps)
+        if all(entry in template_rows for entry in
+               (*acore_cpp_geometry.SCOURGE_CAMP_DROPPERS, *acore_cpp_geometry.SCOURGE_CITY_STARTERS)):
+            circles = objects_by_entry.get(acore_cpp_geometry.SCOURGE_CIRCLE, [])
+            circle_guids = {int(row["guid"]) for row in circles}
+            circle_events, skipped_circles = load_filtered_row_table(
+                source_root, "game_event_gameobject", ("eventEntry", "guid"),
+                lambda row: int(row["eventEntry"]) in acore_cpp_geometry.SCOURGE_ZONE_EVENTS
+                and int(row["guid"]) in circle_guids, include_modules,
+                ignore_statement=acore_cpp_geometry.is_unrelated_gameobject_event_mutation)
+            if skipped_circles:
+                raise ValueError("Scourge summoning-circle membership has skipped SQL mutations")
+            provenance["cppGeometry"]["entries"].update(
+                acore_cpp_geometry.collect_scourge(source_root, zone_maps, circles,
+                    {int(row["guid"]): int(row["eventEntry"]) for row in circle_events}, waypoint_by_path))
         cpp_zones = acore_cpp_geometry.collect_source_zones(source_root)
         for key, data in cpp_zones["entries"].items():
             if int(key) not in acore_npcs:
