@@ -197,6 +197,45 @@ local objectiveLocales = {
         ["zhCN"] = "骑上尼尔盖德。",
         ["zhTW"] = "騎上奈傑德。",
     },
+    -- Quest 11665
+    ["Fish for Baby Crocolisk"] = {
+        ["enUS"] = true,
+        ["deDE"] = "Angelt nach einem Krokiliskenbaby.",
+        ["esES"] = "Pesca una cría de crocolisco.",
+        ["esMX"] = "Pesca una cría de crocolisco.",
+        ["frFR"] = "Pêchez un bébé crocilisque.",
+        ["koKR"] = "새끼 악어를 낚으세요.",
+        ["ptBR"] = "Pesque um Crocolisco Bebê.",
+        ["ruRU"] = "Поймайте детеныша кроколиска.",
+        ["zhCN"] = "钓取鳄鱼宝宝。",
+        ["zhTW"] = "釣取鱷魚寶寶。",
+    },
+    -- Quest 13830
+    ["Fish for Phantom Ghostfish"] = {
+        ["enUS"] = true,
+        ["deDE"] = "Angelt nach einem Phantomgeisterfisch.",
+        ["esES"] = "Pesca un espeztro.",
+        ["esMX"] = "Pesca un espeztro.",
+        ["frFR"] = "Pêchez un poisson-fantôme spectral.",
+        ["koKR"] = "허깨비 유령물고기를 낚으세요.",
+        ["ptBR"] = "Pesque um Peixe-espectro Fantasma.",
+        ["ruRU"] = "Поймайте рыбу-призрака.",
+        ["zhCN"] = "钓取幽灵鱼。",
+        ["zhTW"] = "釣取魅影鬼魚。",
+    },
+    -- Quest 13832
+    ["Fish for Corroded Jewelry"] = {
+        ["enUS"] = true,
+        ["deDE"] = "Angelt nach korrodiertem Schmuck.",
+        ["esES"] = "Pesca una joya corroída.",
+        ["esMX"] = "Pesca una joya corroída.",
+        ["frFR"] = "Pêchez un bijou corrodé.",
+        ["koKR"] = "녹슨 장신구를 낚으세요.",
+        ["ptBR"] = "Pesque Joias Corroídas.",
+        ["ruRU"] = "Выловите ржавые драгоценности.",
+        ["zhCN"] = "钓取被腐蚀的珠宝。",
+        ["zhTW"] = "釣取被腐蝕的首飾。",
+    },
 }
 
 for key, translations in pairs(objectiveLocales) do
