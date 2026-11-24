@@ -8,6 +8,7 @@ local QuestieProfessions = QuestieLoader:ImportModule("QuestieProfessions")
 
 local playerClass
 local playerFaction
+local petFoodVendorList, petFoodDiet, petFoodLevel
 
 local function _UpdatePlayerIdentity()
     local _, currentPlayerClass = UnitClass("player")
@@ -339,17 +340,28 @@ function Townsfolk:BuildCharacterTownsfolk()
     return true
 end
 
-local function _UpdatePetFood() -- call on change pet
+local function _UpdatePetFood()
     local itemsByCategory = Questie.db.global.petFoodVendorTypes
     if not itemsByCategory then return end
-    Questie.db.char.vendorList["Pet Food"] = {}
-    -- detect petfood vendors for player's pet
-    for _, key in pairs({GetStablePetFoodTypes(0)}) do
+    local diet
+    if UnitExists("pet") then
+        diet = {GetPetFoodTypes()}
+    else
+        diet = {GetStablePetFoodTypes(0)}
+    end
+
+    local vendorList = Questie.db.char.vendorList
+    local dietKey, level = table.concat(diet, ","), UnitLevel("player")
+    if petFoodVendorList == vendorList and petFoodDiet == dietKey and petFoodLevel == level then return end
+
+    local vendors = {}
+    for _, key in ipairs(diet) do
         if itemsByCategory[key] then
-            Townsfolk:PopulateVendors(itemsByCategory[key], Questie.db.char.vendorList["Pet Food"], true)
+            Townsfolk:PopulateVendors(itemsByCategory[key], vendors, true)
         end
     end
-    Questie.db.char.vendorList["Pet Food"] = _reformatVendors(Questie.db.char.vendorList["Pet Food"])
+    vendorList["Pet Food"] = _reformatVendors(vendors)
+    petFoodVendorList, petFoodDiet, petFoodLevel = vendorList, dietKey, level
 end
 
 local function _UpdateAmmoVendors() -- call on change weapon
@@ -391,6 +403,8 @@ function Townsfolk:EnsureVendorDataInitialized()
     if Questie.db.char.vendorListInitialized then
         if not Questie.db.char.vendorList["Ammo"] then
             Townsfolk:UpdatePlayerVendors()
+        elseif _UpdatePlayerIdentity() == "HUNTER" then
+            _UpdatePetFood()
         end
         return
     end

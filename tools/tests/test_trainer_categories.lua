@@ -117,6 +117,39 @@ do
     assert(#global.petFoodVendorTypes.Bread == 0 and #global.petFoodVendorTypes.Meat == 1, "non-food entries are ignored")
     runStartupTask(town.InitializePetFoodIndex, "HUNTER")
     assert(queries == 4, "hunter with a warm index skips the scan")
+
+    local active, stableDiet
+    local class = "HUNTER"
+    env.UnitClass = function() return nil, class end
+    env.UnitFactionGroup = function() return "Alliance" end
+    env.UnitLevel = function() return 30 end
+    env.UnitExists = function(unit) return unit == "pet" and active ~= nil end
+    env.GetPetFoodTypes = function() return active end
+    env.GetStablePetFoodTypes = function() return stableDiet end
+    db.npcFlags.VENDOR = 128
+    db.QueryNPCSingle = function(_, field) return field == "npcFlags" and 128 or "AH" end
+    db.QueryItemSingle = function(id, field)
+        return field == "requiredLevel" and 20 or {id + 100}
+    end
+    env.Questie.db.char = {vendorListInitialized = true, vendorList = {Ammo = {}, ["Pet Food"] = {}}}
+    local vendors = env.Questie.db.char.vendorList
+    town:EnsureVendorDataInitialized()
+    assert(#vendors["Pet Food"] == 0, "no known diet produces no pet-food vendors")
+    active = "Meat"
+    town:EnsureVendorDataInitialized()
+    assert(vendors["Pet Food"][1] == 201, "summoned pet fixes an already initialized vendor list")
+    local meatVendors = vendors["Pet Food"]
+    town:EnsureVendorDataInitialized()
+    assert(vendors["Pet Food"] == meatVendors, "unchanged diet reuses the vendor list")
+    active = "Raw Fish"
+    town:EnsureVendorDataInitialized()
+    assert(vendors["Pet Food"][1] == 202 and #vendors["Pet Food"] == 1, "new diet replaces the old vendor list")
+    active, stableDiet = nil, "Meat"
+    town:EnsureVendorDataInitialized()
+    assert(vendors["Pet Food"][1] == 201, "dismissed pet can still use its stable diet")
+    class = "MAGE"
+    env.GetStablePetFoodTypes = function() error("non-hunters should never query a diet") end
+    town:EnsureVendorDataInitialized()
 end
 for index = 1, 3 do
     assert(contains(global.townsfolk.Banker, 900000 + index), "bankers do not require subtitles")

@@ -197,6 +197,11 @@ local function toggle(key, forceRemove) -- /run QuestieLoader:ImportModule("Ques
         _spawnTickers[key] = nil
     end
 
+    if key == "Pet Food" then
+        -- A pet change can replace the vendor list since these pins were drawn.
+        QuestieMap:ResetManualFrames(key)
+    end
+
     if Townsfolk:IsVendorCategory(key) or Questie.db.global.professionTrainers[key] then
         Townsfolk:EnsureVendorDataInitialized()
     end
