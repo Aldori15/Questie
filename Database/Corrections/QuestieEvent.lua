@@ -271,6 +271,7 @@ local CALENDAR_EVENT_NAME_ALIASES = {
     ["Kalu'ak Fishing Derby"] = "Kalu'ak Fishing Derby",
     ["Love is in the Air"] = "Love is in the Air",
     ["Lunar Festival"] = "Lunar Festival",
+    ["설날"] = "Lunar Festival",
     ["Midsummer"] = "Midsummer",
     ["Midsummer Fire Festival"] = "Midsummer",
     ["Noblegarden"] = "Noblegarden",

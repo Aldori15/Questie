@@ -299,7 +299,7 @@ local townsfolkLocales = {
         ["enUS"] = true,
         ["zhCN"] = "武器大师",
         ["zhTW"] = "武器大師",
-        ["esES"] = "Maestro armero",
+        ["esES"] = "Maestro de armas",
         ["frFR"] = "Maître d'armes",
     },
     ["Townsfolk"] = {
