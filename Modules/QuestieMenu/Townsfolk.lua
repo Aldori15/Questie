@@ -224,24 +224,6 @@ function Townsfolk.Initialize()
     factionSpecificTownsfolk["Horde"]["Mailbox"] = hordeMailBoxes
     factionSpecificTownsfolk["Alliance"]["Mailbox"] = allianceMailBoxes
 
-    local petFoodVendorTypes = {["Meat"] = {},["Fish"]={},["Cheese"]={},["Bread"]={},["Fungus"]={},["Fruit"]={},["Raw Meat"]={},["Raw Fish"]={}}
-    local petFoodIndexes = {"Meat","Fish","Cheese","Bread","Fungus","Fruit","Raw Meat","Raw Fish"}
-
-    count = 0
-    for id, data in pairs(QuestieDB.itemData) do
-        local foodType = data[QuestieDB.itemKeys.foodType]
-        if foodType then
-            tinsert(petFoodVendorTypes[petFoodIndexes[foodType]], id)
-        end
-        if count > 300 then -- Yield every 300 iterations, 300 is just a madeup number, is pretty fast.
-            count = 0
-            coroutine.yield()
-        end
-        count = count + 1
-    end
-
-    coroutine.yield()
-
     --- Set the globals
     Questie.db.global.townsfolk = townfolk
     Questie.db.global.townsfolkNeedsUpdatedGlobalVendors = true
@@ -249,7 +231,36 @@ function Townsfolk.Initialize()
     Questie.db.global.professionTrainers = professionTrainers
     Questie.db.global.classSpecificTownsfolk = classSpecificTownsfolk
     Questie.db.global.factionSpecificTownsfolk = factionSpecificTownsfolk
-    Questie.db.global.petFoodVendorTypes = petFoodVendorTypes
+    -- The compiled items are changing. A hunter can rebuild this shared index later.
+    Questie.db.global.petFoodVendorTypes = nil
+end
+
+--- Called from the startup coroutine after the compiled item database is available.
+function Townsfolk.InitializePetFoodIndex(class)
+    local global = Questie.db.global
+    if class ~= "HUNTER" or global.petFoodVendorTypes then
+        return
+    end
+
+    local categories = {"Meat", "Fish", "Cheese", "Bread", "Fungus", "Fruit", "Raw Meat", "Raw Fish"}
+    local itemsByCategory = {}
+    for _, category in ipairs(categories) do
+        itemsByCategory[category] = {}
+    end
+
+    local count = 0
+    for id in pairs(QuestieDB.ItemPointers) do
+        local category = categories[QuestieDB.QueryItemSingle(id, "foodType")]
+        if category then
+            tinsert(itemsByCategory[category], id)
+        end
+        count = count + 1
+        if count == 300 then
+            count = 0
+            coroutine.yield()
+        end
+    end
+    global.petFoodVendorTypes = itemsByCategory
 end
 
 function Townsfolk.PostBoot() -- post DB boot (use queries here)
@@ -329,11 +340,13 @@ function Townsfolk:BuildCharacterTownsfolk()
 end
 
 local function _UpdatePetFood() -- call on change pet
+    local itemsByCategory = Questie.db.global.petFoodVendorTypes
+    if not itemsByCategory then return end
     Questie.db.char.vendorList["Pet Food"] = {}
     -- detect petfood vendors for player's pet
     for _, key in pairs({GetStablePetFoodTypes(0)}) do
-        if Questie.db.global.petFoodVendorTypes[key] then
-            Townsfolk:PopulateVendors(Questie.db.global.petFoodVendorTypes[key], Questie.db.char.vendorList["Pet Food"], true)
+        if itemsByCategory[key] then
+            Townsfolk:PopulateVendors(itemsByCategory[key], Questie.db.char.vendorList["Pet Food"], true)
         end
     end
     Questie.db.char.vendorList["Pet Food"] = _reformatVendors(Questie.db.char.vendorList["Pet Food"])

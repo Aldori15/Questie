@@ -82,15 +82,42 @@ db.npcData[900023] = {"Ordinary NPC", "Battlemaster", nil, 0}
 town.GetClassTrainers = function() return {HUNTER = {}, MAGE = {}} end
 town.GetMeetingStones = function() return {} end
 town.GetFactionSpecificMailboxes = function() return {}, {} end
-local function initialize()
-    local thread = coroutine.create(town.Initialize)
-    repeat
-        local ok, err = coroutine.resume(thread)
+local function runStartupTask(task, ...)
+    local thread = coroutine.create(task)
+    local ok, err = coroutine.resume(thread, ...)
+    assert(ok, err)
+    while coroutine.status(thread) ~= "dead" do
+        ok, err = coroutine.resume(thread)
         assert(ok, err)
-    until coroutine.status(thread) == "dead"
+    end
+end
+local function initialize()
+    runStartupTask(town.Initialize)
 end
 initialize()
 local global = env.Questie.db.global
+do
+    global.petFoodVendorTypes = {Meat = {90}}
+    initialize()
+    assert(global.petFoodVendorTypes == nil, "recompile invalidates the previous pet-food index")
+
+    local queries = 0
+    db.ItemPointers = {[101] = true, [102] = true, [103] = true, [104] = true}
+    local foodTypes = {[101] = 1, [102] = 8, [103] = 0}
+    db.QueryItemSingle = function(id, field)
+        assert(field == "foodType")
+        queries = queries + 1
+        return foodTypes[id]
+    end
+    runStartupTask(town.InitializePetFoodIndex, "MAGE")
+    assert(queries == 0 and global.petFoodVendorTypes == nil, "non-hunter skips the scan and leaves no empty cache")
+    runStartupTask(town.InitializePetFoodIndex, "HUNTER")
+    assert(queries == 4 and global.petFoodVendorTypes.Meat[1] == 101, "first hunter on cached DB builds the index")
+    assert(global.petFoodVendorTypes["Raw Fish"][1] == 102, "compiled food types select the correct category")
+    assert(#global.petFoodVendorTypes.Bread == 0 and #global.petFoodVendorTypes.Meat == 1, "non-food entries are ignored")
+    runStartupTask(town.InitializePetFoodIndex, "HUNTER")
+    assert(queries == 4, "hunter with a warm index skips the scan")
+end
 for index = 1, 3 do
     assert(contains(global.townsfolk.Banker, 900000 + index), "bankers do not require subtitles")
     assert(contains(global.townsfolk.Battlemaster, 900010 + index), "battlemasters do not require subtitles")

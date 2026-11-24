@@ -149,6 +149,12 @@ do
     loader:ImportModule("DBCompiler").compiledSchemaVersion = 1
     loader:ImportModule("QuestieLib").GetAddonVersionString = function() return "test" end
     loader:ImportModule("QuestieValidateGameCache").IsCacheGood = function() return true end
+    local dbInitialized = false
+    loader:ImportModule("QuestieDB").Initialize = function() dbInitialized = true end
+    loader:ImportModule("Townsfolk").InitializePetFoodIndex = function(class)
+        assert(dbInitialized, "pet-food startup runs after compiled database initialization")
+        equal(class, "WARRIOR", "startup passes the locale-independent class token")
+    end
     local playerInitialized = false
     loader:ImportModule("QuestiePlayer").Initialize = function()
         equal(s.l10n._objectCacheBuilt, true, "cache ready before player setup")

@@ -94,8 +94,12 @@ local function setup()
     module("QuestieLib").GetFullObjectiveText = function(text) return text end
     local db = module("QuestieDB")
     db.GetQuest = function(id) return s.quests[id] end
-    db.GetNPC, db.GetItem, db.GetObject = function(_, id) return {name = "Target " .. tostring(id)} end,
-        function(_, id) return {name = "Item " .. tostring(id)} end, function(_, id) return {name = "Object " .. tostring(id)} end
+    db.GetNPC = function(_, id) return {name = "Target " .. tostring(id)} end
+    db.GetItem = function(_, id) return {name = "Item " .. tostring(id)} end
+    db.QueryObjectSingle = function(id, field)
+        equal(field, "name", "party fallback queries only the object name")
+        return "Object " .. tostring(id)
+    end
     module("MapIconTooltip").RefreshQuest = function() s.refreshes = s.refreshes + 1 end
     module("QuestieFramePool").UnloadFrame = function(_, pin)
         assert(pin.data, "already released icon unloaded again")
@@ -173,6 +177,15 @@ do
     s.quest(1)
     s.update()
     equal(s.pins[1].data.ObjectiveData.FullDescription, "Target 1 slain", "party fallback uses the client objective wording")
+end
+
+do
+    local s = setup()
+    local quest, remote = s.quest(12)
+    quest.ObjectiveData[1].Type, quest.ObjectiveData[1].Text = "object", nil
+    remote[1].type = "o"
+    s.update()
+    equal(s.pins[1].data.ObjectiveData.Description, "Object 121", "party map fallback shows the object name")
 end
 
 do

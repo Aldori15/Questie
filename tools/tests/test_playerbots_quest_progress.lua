@@ -53,6 +53,10 @@ local quests = {
 module("QuestieDB").GetQuest = function(id) return quests[id] end
 module("QuestieDB").GetNPC = function(_, id) return {name="NPC"..id} end
 module("QuestieDB").GetObject = function(_, id) return {name="Object"..id} end
+module("QuestieDB").QueryObjectSingle = function(id, field)
+    assert(field == "name", "party tooltip queries only the object name")
+    if id == 3189 then return "Attack Plan: Valley of Trials" end
+end
 -- QuestieDB:GetItem always returns a Sources list built from the item's drops.
 local itemSources = {[50432]={{Id=299, Type="monster"}}, [750]={{Id=705, Type="monster"}}}
 module("QuestieDB").GetItem = function(_, id) return {Id=id, name="Item"..id, Sources=itemSources[id] or {}} end
@@ -70,6 +74,10 @@ module("QuestiePartyObjectives").ScheduleUpdate = function(_, id) updates[#updat
 dofile(SOURCE .. "/Modules/Network/QuestieComms.lua")
 dofile(SOURCE .. "/Modules/Network/QuestieCommsData.lua")
 local comms = module("QuestieComms")
+comms.data:RegisterTooltip(786, "Friend", {{id = 3189, type = "o"}, {id = 999, type = "o"}})
+assert(comms.data:GetTooltip("o_3189")[786].Friend[1].text == "Attack Plan: Valley of Trials")
+assert(comms.data:GetTooltip("o_999")[786].Friend[2].text == "Object missing from DB: 999")
+comms.data:RemovePlayer("Friend")
 local function loadAddon()
     dofile(SOURCE .. "/Modules/Network/QuestiePlayerbots.lua")
     module("QuestiePlayerbots"):Initialize()

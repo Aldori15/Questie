@@ -58,8 +58,7 @@ function QuestieComms.data:GetTooltip(tooltipKey)
                     local npc = QuestieDB:GetNPC(objective.id);
                     oName = (npc and npc.name) or ("NPC missing from DB: " .. objective.id);
                 elseif((objective.type == "object" or objective.type == "o") and objective.id) then
-                    local object = QuestieDB:GetObject(objective.id);
-                    oName = (object and object.name) or ("Object missing from DB: " .. objective.id);
+                    oName = QuestieDB.QueryObjectSingle(objective.id, "name") or ("Object missing from DB: " .. objective.id);
                 elseif((objective.type == "item" or objective.type == "i") and objective.id) then
                     local dbItem = QuestieDB:GetItem(objective.id);
                     if(dbItem and dbItem.name and (not dbItem.Hidden)) then

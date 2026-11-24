@@ -296,6 +296,7 @@ QuestieInit.Stages[1] = function() -- run as a coroutine
     Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage1] QuestieDB initializing.")
     coYield()
     QuestieDB:Initialize()
+    Townsfolk.InitializePetFoodIndex(playerClass)
 
     Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieInit:Stage1] Object name cache building.")
     l10n:BuildObjectNameCacheAsync()
