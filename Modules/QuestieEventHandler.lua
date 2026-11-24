@@ -13,6 +13,8 @@ local QuestieJourney = QuestieLoader:ImportModule("QuestieJourney")
 local QuestieComms = QuestieLoader:ImportModule("QuestieComms")
 ---@type QuestieProfessions
 local QuestieProfessions = QuestieLoader:ImportModule("QuestieProfessions")
+---@type QuestieMenu
+local QuestieMenu = QuestieLoader:ImportModule("QuestieMenu")
 ---@type QuestieTracker
 local QuestieTracker = QuestieLoader:ImportModule("QuestieTracker")
 ---@type TrackerBaseFrame
@@ -530,6 +532,7 @@ function _EventHandler:ChatMsgSkill()
 
     -- This needs to be done to draw new quests that just came available
     local isProfUpdate, isNewProfession = QuestieProfessions:Update()
+    QuestieMenu.RefreshProfessionStations()
     if isProfUpdate or isNewProfession then
         AvailableQuests.CalculateAndDrawAll()
     end

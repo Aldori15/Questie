@@ -57,9 +57,6 @@ module("QuestieCorrections").questNPCBlacklist = {}
 module("Townsfolk").IsVendorCategory = function() return false end
 module("Townsfolk").EnsureVendorDataInitialized = noop
 module("InstanceLocations").OnLogin = noop
-local moonwells = false
-module("Moonwell").ShowAll = function() moonwells = true end
-module("Moonwell").HideAll = function() moonwells = false end
 module("QuestieDB").QueryNPCSingle = function(id, field)
     return field == "name" and ("Trainer " .. id) or nil
 end
@@ -71,6 +68,11 @@ map.ShowNPC = function(_, id, _, _, _, _, _, key)
     shown[key][id] = true
     draws = draws + 1
 end
+map.ShowObject = function(_, id, icon, _, title, body, persistent, key)
+    shown[key] = shown[key] or {}
+    shown[key][id] = {icon = icon, title = title, body = body, persistent = persistent}
+end
+map.ResetManualFrames = function(_, key) shown[key] = nil end
 map.UnloadManualFrames = function(_, id, key)
     if shown[key] then shown[key][id] = nil end
 end
@@ -90,6 +92,7 @@ end
 env.UIParent = {CreateFontString = region}
 loadModule("Compat/UI.lua")
 loadModule("Modules/QuestieProfessions.lua")
+loadModule("Modules/Map/ProfessionStations.lua")
 loadModule("Modules/QuestieMenu/QuestieMenu.lua")
 local professions, menu = module("QuestieProfessions"), module("QuestieMenu")
 professions:Init()
@@ -186,13 +189,14 @@ professions:Update()
 equal(draws, before, "unchanged skills never redraw trainers")
 setSkills(alchemy, mining, cooking, tailoring)
 assert(visible(tailoring), "learning updates map immediately")
-local tailoringEntries = findProfession(entries, tailoring).menuList
-display(tailoringEntries, 3)
-assert(tailoringEntries[1].checked() and tailoringEntries[1].disabled)
-tailoringEntries[2].func()
-assert(moonwells, "Moonwell toggle remains independent")
-tailoringEntries[2].func()
-assert(not moonwells)
+local tailoringEntry = findProfession(entries, tailoring)
+assert(tailoringEntry.checked() and tailoringEntry.disabled)
+assert(not tailoringEntry.hasArrow and not tailoringEntry.menuList, "Tailoring is a direct trainer toggle")
+local moonwellEntry = find(menu.buildTownsfolkMenu(), "Moonwell")
+moonwellEntry.func()
+assert(visible("Moonwell"), "Moonwell toggle remains independent")
+moonwellEntry.func()
+assert(not visible("Moonwell"))
 local miningIndex
 for index, data in ipairs(skills) do if data[1] == professions:GetProfessionName(mining) then miningIndex = index + 1 end end
 local resetsBeforeAbandon, redrawsBeforeAbandon = skillResets, questRedraws
@@ -408,4 +412,49 @@ equal(env.UIDROPDOWNMENU_OPEN_MENU, menu.menuProfs, "switching uses the new nati
 menu:ShowVendors(1)
 equal(env.UIDROPDOWNMENU_OPEN_MENU, menu.menuVendors, "vendor button also switches an existing flyout")
 assert(env.DropDownList1:IsShown() and menuCloses > 0, "switching never leaves the requested flyout hidden")
-print("PASS: profession trainers, immediate/external unlearning, shared skill-event bucket, collapsed headers, progression and cache invalidation")
+
+setSkills(alchemy, keys.ENGINEERING, tailoring)
+local townsfolk = menu.buildTownsfolkMenu()
+local stations = {
+    {"Anvil", 141840, "INV_Hammer_20"},
+    {"Forge", 141841, "Spell_Fire_FlameBlades"},
+    {"Alchemy Lab", 183848, "Trade_Alchemy"},
+    {"Moonwell", 20806, "inv_fabric_moonrag_01.blp"},
+}
+for _, station in ipairs(stations) do
+    local key, id, texture = station[1], station[2], "Interface\\Icons\\" .. station[3]
+    local row = find(townsfolk, key)
+    equal(row.icon, texture, key .. " menu texture")
+    row.func()
+    local pin = assert(shown[key][id], key .. " draws the AzerothCore object")
+    equal(pin.icon, texture, key .. " pin texture")
+    equal(pin.title, key, key .. " pin title")
+    equal(pin.persistent, true, key .. " pin is controlled by its toggle")
+    equal(pin.body == nil, key == "Moonwell", key .. " default object ID tooltip")
+end
+
+skills = {{professions:GetProfessionName(mining), 1}}
+skillEvent("SKILL_LINES_CHANGED")
+advance(6)
+equal(visible("Anvil"), false, "unlearning engineering hides anvils")
+equal(visible("Alchemy Lab"), false, "unlearning alchemy hides labs")
+equal(profile.townsfolkConfig["Alchemy Lab"], true, "unlearning retains the saved setting")
+equal(visible("Moonwell"), false, "unlearning tailoring hides moonwells")
+equal(profile.townsfolkConfig["Moonwell"], true, "unlearning retains the old Moonwell preference")
+equal(visible("Forge"), true, "mining keeps forges visible")
+townsfolk = menu.buildTownsfolkMenu()
+for _, row in ipairs(townsfolk) do
+    assert(row.text ~= "Anvil" and row.text ~= "Alchemy Lab" and row.text ~= "Moonwell",
+        "unavailable station rows are hidden")
+end
+find(townsfolk, "Forge").func()
+equal(visible("Forge"), false, "unchecking a station removes its pins")
+
+skills = {{professions:GetProfessionName(alchemy), 1}, {professions:GetProfessionName(tailoring), 1}}
+skillEvent("SKILL_LINES_CHANGED")
+advance(6)
+equal(visible("Alchemy Lab"), true, "learning alchemy restores the saved pins")
+equal(visible("Moonwell"), true, "learning tailoring restores the saved moonwell pins")
+equal(find(menu.buildTownsfolkMenu(), "Moonwell").checked(), true, "Moonwell is checked in Townsfolk")
+equal(visible("Forge"), false, "the forge stays unchecked")
+print("PASS: profession trainers and stations, learning and unlearning, shared skill-event bucket, progression and cache invalidation")

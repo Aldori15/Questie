@@ -35,8 +35,7 @@ local QuestieCombatQueue = QuestieLoader:ImportModule("QuestieCombatQueue")
 local AvailableQuests = QuestieLoader:ImportModule("AvailableQuests")
 ---@type Townsfolk
 local Townsfolk = QuestieLoader:ImportModule("Townsfolk")
----@type Moonwell
-local Moonwell = QuestieLoader:ImportModule("Moonwell")
+local ProfessionStations = QuestieLoader:ImportModule("ProfessionStations")
 ---@type QuestieIconVisibility
 local QuestieIconVisibility = QuestieLoader:ImportModule("QuestieIconVisibility")
 ---@type Phasing
@@ -69,7 +68,6 @@ local _townsfolk_texturemap = {
     ["Weapon Master"] = QuestieLib.AddonPath.."Icons\\weaponmaster.blp",
     ["Barber"] = QuestieLib.AddonPath.."Icons\\barbershop.blp",
     ["Riding Trainer"] = "Interface\\Icons\\ability_mount_ridinghorse",
-    ["Moonwell"] = "Interface\\Icons\\inv_fabric_moonrag_01.blp",
     ["Profession Trainers"] = "Interface\\Minimap\\tracking\\profession",
     ["Ammo"] = "Interface\\Minimap\\tracking\\ammunition",
     ["Bags"] = 133634,--select(10, GetItemInfo(4496)) -- small brown pouch
@@ -101,6 +99,7 @@ QuestieMenu.private.townsfolk_texturemap = _townsfolk_texturemap
 local _spawned = {} -- used to check if we have already spawned an icon for this npc
 local _spawnTickers = {}
 local _trackedProfessions = {}
+local _trackedStations = {}
 local _professionMenuEntries = setmetatable({}, {__mode = "k"})
 local _availableRefreshTicker
 
@@ -183,11 +182,17 @@ local function _RunFastAvailableRefresh(rebuildAll)
 end
 
 local function toggle(key, forceRemove) -- /run QuestieLoader:ImportModule("QuestieMap"):ShowNPC(525, nil, 1, "teaste", {}, true)
-    if key == "Moonwell" then
-        if Questie.db.profile.townsfolkConfig[key] and (not forceRemove) then
-            Moonwell:ShowAll()
-        else
-            Moonwell:HideAll()
+    local station = ProfessionStations.categories[key]
+    if station then
+        local enabled = not forceRemove and Questie.db.profile.townsfolkConfig[key]
+            and ProfessionStations.IsAvailable(station)
+        if _trackedStations[key] then
+            QuestieMap:ResetManualFrames(key)
+        end
+        _trackedStations[key] = enabled and true or nil
+        if enabled then
+            ProfessionStations.Show(key, station)
+            _FlushDrawQueue()
         end
         return
     end
@@ -291,8 +296,8 @@ local function toggle(key, forceRemove) -- /run QuestieLoader:ImportModule("Ques
     end
 end
 
-local function build(key)
-    local icon = _townsfolk_texturemap[key] or ("Interface\\Minimap\\tracking\\" .. strlower(key))
+local function build(key, icon)
+    icon = icon or _townsfolk_texturemap[key] or ("Interface\\Minimap\\tracking\\" .. strlower(key))
 
     return {
         text = l10n(tostring(key)),
@@ -332,6 +337,17 @@ function QuestieMenu.RefreshKnownProfessionTrainers()
         end
     end
     refreshProfessionButtons()
+end
+
+function QuestieMenu.RefreshProfessionStations()
+    local config = Questie.db.profile.townsfolkConfig
+    if not config then return end
+    for key, station in pairs(ProfessionStations.categories) do
+        local enabled = config[key] == true and ProfessionStations.IsAvailable(station)
+        if enabled ~= (_trackedStations[key] == true) then
+            toggle(key)
+        end
+    end
 end
 
 local function buildProfession(key, localizedText)
@@ -617,24 +633,6 @@ local secondaryProfessions = {
     [professionKeys.FISHING] = true
 }
 
-function QuestieMenu.buildTailoringSubmenu()
-    return {
-        buildProfession(professionKeys.TAILORING, l10n(QuestieProfessions:GetProfessionName(professionKeys.TAILORING))),
-        {
-            text = l10n("Moonwell"),
-            func = function()
-                Questie.db.profile.townsfolkConfig["Moonwell"] = not Questie.db.profile.townsfolkConfig["Moonwell"]
-                toggle("Moonwell")
-            end,
-            icon = "Interface\\Icons\\inv_fabric_moonrag_01",
-            notCheckable = false,
-            checked = function() return Questie.db.profile.townsfolkConfig["Moonwell"] end,
-            isNotRadio = true,
-            keepShownOnClick = true
-        }
-    }
-end
-
 function QuestieMenu.buildProfessionMenu()
     Townsfolk:EnsureVendorDataInitialized()
 
@@ -660,18 +658,7 @@ function QuestieMenu.buildProfessionMenu()
     tinsert(profMenu, div)
     for key, _ in pairs(Questie.db.global.professionTrainers) do
         local localizedKey = l10n(QuestieProfessions:GetProfessionName(key))
-        if key == professionKeys.TAILORING then
-            profMenuData[localizedKey] = {
-                text = localizedKey,
-                func = function() end,
-                keepShownOnClick = true,
-                hasArrow = true,
-                menuList = QuestieMenu.buildTailoringSubmenu(),
-                notCheckable = true
-            }
-        else
-            profMenuData[localizedKey] = buildProfession(key, localizedKey)
-        end
+        profMenuData[localizedKey] = buildProfession(key, localizedKey)
         if secondaryProfessions[key] then
             tinsert(secondaryProfMenuSorted, localizedKey)
         else
@@ -805,6 +792,14 @@ function QuestieMenu.buildTownsfolkMenu()
                 townsfolkData[localizedKey] = build(key)
                 tinsert(townsfolkSorted, localizedKey)
             end
+        end
+    end
+
+    for key, station in pairs(ProfessionStations.categories) do
+        if ProfessionStations.IsAvailable(station) then
+            local localizedKey = l10n(key)
+            townsfolkData[localizedKey] = build(key, station.icon)
+            tinsert(townsfolkSorted, localizedKey)
         end
     end
 
