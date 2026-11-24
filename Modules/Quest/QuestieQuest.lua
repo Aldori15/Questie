@@ -266,20 +266,24 @@ function _QuestieQuest:_ShowQuestIcons()
     end
 end
 
--- Manual markers follow map visibility without quest-specific filters.
-local function _ShouldShowManualIcon(icon)
+-- Manual markers follow map visibility and exploration without quest-specific filters.
+local function _ShouldShowManualIcon(icon, category)
     local profile = Questie.db.profile
     if not profile.enabled then return false end
-    if icon.miniMapIcon then return profile.enableMiniMapIcons end
-    return profile.enableMapIcons
+    if icon.miniMapIcon then
+        if not profile.enableMiniMapIcons then return false end
+    elseif not profile.enableMapIcons then
+        return false
+    end
+    return not QuestieMap.utils.IsManualIconUnexplored(category, icon.UiMapID, icon.x, icon.y)
 end
 
 function _QuestieQuest:ShowManualIcons()
-    for _, townsfolk in pairs(QuestieMap.manualFrames) do
+    for category, townsfolk in pairs(QuestieMap.manualFrames) do
         for _, frameList in pairs(townsfolk) do
             for _, frameName in pairs(frameList) do
                 local icon = _G[frameName];
-                if icon ~= nil and icon.hidden and _ShouldShowManualIcon(icon) then
+                if icon ~= nil and icon.hidden and _ShouldShowManualIcon(icon, category) then
                     icon:FakeShow()
                 end
             end
@@ -326,16 +330,68 @@ function QuestieQuest:HideQuestIcons()
 end
 
 function _QuestieQuest:HideManualIcons()
-    for _, townsfolk in pairs(QuestieMap.manualFrames) do
+    for category, townsfolk in pairs(QuestieMap.manualFrames) do
         for _, frameList in pairs(townsfolk) do
             for _, frameName in pairs(frameList) do
                 local icon = _G[frameName];
-                if icon ~= nil and (not icon.hidden) and not _ShouldShowManualIcon(icon) then
+                if icon ~= nil and (not icon.hidden) and not _ShouldShowManualIcon(icon, category) then
                     icon:FakeHide()
                 end
             end
         end
     end
+end
+
+local manualVisibilityRefresh
+local MANUAL_VISIBILITY_SLICE_MS = 4
+
+function QuestieQuest:RefreshManualIconVisibility()
+    if manualVisibilityRefresh then
+        manualVisibilityRefresh:Cancel()
+        manualVisibilityRefresh = nil
+    end
+
+    if not Questie.db.profile.hideUnexploredMapIcons then
+        _QuestieQuest:HideManualIcons()
+        _QuestieQuest:ShowManualIcons()
+        return
+    end
+
+    -- An uncached legacy overlay lookup can redraw the open world map. Spread
+    -- the scan across frames and recheck each list in case its pins were removed.
+    local lists = {}
+    for category, groups in pairs(QuestieMap.manualFrames) do
+        for id, frames in pairs(groups) do
+            lists[#lists + 1] = {category = category, id = id, frames = frames}
+        end
+    end
+    if #lists == 0 then return end
+
+    manualVisibilityRefresh = ThreadLib.ThreadCallbackInstant(function()
+        local sliceStart = debugprofilestop()
+        for _, list in ipairs(lists) do
+            for _, frameName in ipairs(list.frames) do
+                local groups = QuestieMap.manualFrames[list.category]
+                if not groups or groups[list.id] ~= list.frames then break end
+
+                local icon = _G[frameName]
+                if icon then
+                    if _ShouldShowManualIcon(icon, list.category) then
+                        if icon.hidden then icon:FakeShow() end
+                    elseif not icon.hidden then
+                        icon:FakeHide()
+                    end
+                end
+
+                if debugprofilestop() - sliceStart >= MANUAL_VISIBILITY_SLICE_MS then
+                    coYield()
+                    sliceStart = debugprofilestop()
+                end
+            end
+        end
+    end, function()
+        manualVisibilityRefresh = nil
+    end, "QuestieQuest.RefreshManualIconVisibility")
 end
 
 function QuestieQuest:ClearAllNotes()

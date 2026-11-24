@@ -18,7 +18,15 @@ local modules = {
 }
 env.QuestieLoader = {ImportModule = function(_, name) return assert(modules[name], name) end,
     StampLoadBoundary = noop}
-env.WorldMapFrame = {IsVisible = function() return true end, HookScript = noop}
+local visible, events, hooks, timers = false, {}, {}, {}
+env.WorldMapFrame = {IsVisible = function() return visible end, HookScript = function(_, name, hook) hooks[name] = hook end}
+env.Questie = {db = {profile = {hideUnexploredMapIcons = true}},
+    RegisterEvent = function(_, name, callback) events[name] = callback end}
+local function runRefresh()
+    local callback = table.remove(timers, 1)
+    assert(callback, "deferred exploration refresh queued")
+    callback()
+end
 env.hooksecurefunc = noop
 env.GetTime = function() return 100 end
 env.IsInInstance = function() return false end
@@ -54,7 +62,7 @@ for _, id in ipairs({1453, 1454, 1455, 1456, 1457, 1458, 1947, 1954, 1955, 125, 
     data[id] = outdoor(id, 0)
 end
 local maskRow = string.char(33, 43) -- Opaque columns 0 through 10; remaining pixels transparent.
-env.QuestieCompat = {UiMapData = data, ExplorationMasks = {
+env.QuestieCompat = {UiMapData = data, C_Timer = {After = function(_, callback) timers[#timers + 1] = callback end}, ExplorationMasks = {
     ["one\\area1"] = string.rep(maskRow .. "~", 64),
     ["one\\area2"] = string.rep(maskRow .. "~", 64),
 }, Round = function(value) return math.floor(value + 0.5) end}
@@ -118,10 +126,11 @@ overlays = {{"Interface\\WorldMap\\Custom\\Unknown", 200, 200, 100, 100}}
 equal(atPixel(1001, 110, 110), true, "unknown artwork preserves icons inside overlay")
 equal(atPixel(1001, 310, 110), false, "unknown artwork does not reveal outside overlay")
 equal(overlayReads, 2, "cache invalidation reloads overlays")
--- A discovery refresh must clear the cache before invoking the existing visibility refresh.
+-- Discovery refresh invalidates the player's zone before refreshing its pins.
+compat.GetWorldMapUiMapContext = function() return 1002, 1001 end
 overlays = {}
 refreshProbe = function()
-    equal(atPixel(1001, 110, 110), false, "cache cleared before existing visibility refresh")
+    equal(atPixel(1001, 110, 110), false, "player overlay invalidated before visibility refresh")
 end
 modules.QuestieMap.utils.MapExplorationUpdate()
 refreshProbe = nil
@@ -158,7 +167,7 @@ onSelect = function()
         reentries = reentries + 1
         equal(compat.IsInternalMapReadActive(), true, "internal map read guarded")
         equal(atPixel(1001, 110, 110), false, "reentrant query uses pending cache")
-        equal(compat.GetCurrentUiMapID(), 1002, "internal map read preserves displayed context")
+        equal(compat.GetCurrentUiMapID(), 1001, "closed map reports the native selection during the read")
     end
 end
 equal(atPixel(1001, 110, 110), true, "outer query completes after reentry")
@@ -190,4 +199,59 @@ atPixel(1001, 110, 110)
 equal(continent, -1, "chooser restored")
 equal(rawMap, -1, "chooser native map restored")
 equal(compat.IsInternalMapReadActive(), false, "chooser read guard cleared")
+
+-- With the world map open, both fresh reads and discovery must avoid selecting
+-- another map, even when the player is in a different zone from the one shown.
+compat.ClearExplorationCache()
+continent, zone, level, rawMap, visible = 2, 1, 0, 21, true
+overlays = {{"Unknown", 200, 200, 100, 100}}
+local beforeVisibleReads, beforeVisibleZoom = overlayReads, zoomWrites
+equal(atPixel(1002, 110, 110), true, "displayed zone can be read directly")
+equal(atPixel(1001, 110, 110), false, "uncached offscreen zone is deferred")
+equal(overlayReads, beforeVisibleReads + 1, "only the displayed map's overlays were read")
+equal(zoomWrites, beforeVisibleZoom, "open-map reads do not select another map")
+
+rawMap = 11
+refreshProbe = function() equal(atPixel(1001, 110, 110), true, "browsing to the deferred zone reveals its pins") end
+events.WORLD_MAP_UPDATE()
+events.WORLD_MAP_UPDATE()
+equal(#timers, 1, "map updates coalesce")
+runRefresh()
+equal(zoomWrites, beforeVisibleZoom, "browsing refresh makes no map selection")
+rawMap = 21
+overlays = {}
+refreshProbe = function()
+    equal(atPixel(1002, 110, 110), true, "unrelated overlay cache survives player-zone invalidation")
+    equal(atPixel(1001, 110, 110), true, "offscreen stale zone keeps its last known overlays")
+end
+modules.QuestieMap.utils.MapExplorationUpdate()
+equal(overlayReads, beforeVisibleReads + 2, "transition with another zone displayed reads no overlays")
+
+visible = false
+refreshProbe = function()
+    equal(atPixel(1001, 110, 110), false, "closing the map refreshes stale offscreen overlays")
+    equal(atPixel(1002, 110, 110), true, "closing the map retains unrelated cached zones")
+end
+hooks.OnHide()
+runRefresh()
+equal(overlayReads, beforeVisibleReads + 3, "only the stale zone was refreshed after close")
+
+-- Keep cached data fresh even if the player discovers an area with the filter off.
+env.WorldMapFrame.GetScript = noop
+env.Questie.UnregisterEvent, env.Questie.RegisterBucketEvent = noop, noop
+modules.QuestieEventHandler = {private = {
+    MapExplorationUpdated = function() error("disabled filter should not refresh pins") end,
+}}
+modules.QuestEventHandler = {}
+loadModule("Compat/Events.lua")
+compat.QuestieEventHandler_RegisterLateEvents()
+env.Questie.db.profile.hideUnexploredMapIcons = false
+overlays = {{"Unknown", 200, 200, 100, 100}}
+events.ZONE_CHANGED()
+events.ZONE_CHANGED_INDOORS()
+equal(#timers, 1, "zone events coalesce with the filter off")
+runRefresh()
+equal(overlayReads, beforeVisibleReads + 3, "cache invalidation alone reads no overlays")
+equal(atPixel(1001, 110, 110), true, "next visibility check reads the latest discovery")
+equal(overlayReads, beforeVisibleReads + 4, "only the player's map needed a fresh read")
 print("Map exploration compatibility regressions passed")

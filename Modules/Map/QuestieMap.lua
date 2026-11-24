@@ -875,17 +875,13 @@ function QuestieMap:DrawManualIcon(data, areaID, x, y, typ, spawn)
     QuestieMap:QueueDraw(QuestieMap.ICON_MINIMAP_TYPE, Questie, iconMinimap, iconMinimap.UiMapID, x / 100, y / 100, true, true);
     tinsert(QuestieMap.manualFrames[typ][data.id], iconMinimap:GetName())
 
-    -- make sure notes are only shown when they are supposed to
-    if (not Questie.db.profile.enabled) then -- TODO: or (not Questie.db.profile.manualNotes)
+    local profile = Questie.db.profile
+    local hideBoth = not profile.enabled or QuestieMap.utils.IsManualIconUnexplored(typ, uiMapId, x, y)
+    if hideBoth or not profile.enableMapIcons then
         icon:FakeHide()
+    end
+    if hideBoth or not profile.enableMiniMapIcons then
         iconMinimap:FakeHide()
-    else
-        if (not Questie.db.profile.enableMapIcons) then
-            icon:FakeHide()
-        end
-        if (not Questie.db.profile.enableMiniMapIcons) then
-            iconMinimap:FakeHide()
-        end
     end
 
     QuestieMap.utils.RescaleIcon(icon)

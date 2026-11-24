@@ -601,7 +601,7 @@ function QuestieOptions.tabs.icons:Initialize()
                         get = function() return Questie.db.profile.hideUnexploredMapIcons; end,
                         set = function(info, value)
                             Questie.db.profile.hideUnexploredMapIcons = value
-                            QuestieCompat.ClearExplorationCache()
+                            QuestieQuest:RefreshManualIconVisibility()
                             QuestieQuest:RefreshQuestIconVisibility()
                         end,
                     },

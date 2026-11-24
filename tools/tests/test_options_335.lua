@@ -50,17 +50,18 @@ env.SetCVar = function(name, value)
     equal(env.QUEST_FADING_DISABLE, value, "global agrees with CVar")
     cvar = value
 end
-local visibilityCalls, cacheCleared = 0, false
+local visibilityCalls, manualVisibilityCalls = 0, 0
 env.QuestieCompat = {C_Timer = {}, CALENDAR_WEEKDAY_NAMES = {
     "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"},
-    ClearExplorationCache = function() cacheCleared = true end}
+    ClearExplorationCache = forbidden}
 loadModule("Modules/Libs/QuestieLoader.lua")
 local loader = env.QuestieLoader
 local quest = loader:CreateModule("QuestieQuest")
 quest.ToggleNotes = forbidden
+quest.RefreshManualIconVisibility = function()
+    manualVisibilityCalls = manualVisibilityCalls + 1
+end
 quest.RefreshQuestIconVisibility = function()
-    assert(cacheCleared, "exploration cache must be cleared before visibility refresh")
-    cacheCleared = false
     visibilityCalls = visibilityCalls + 1
 end
 loader:CreateModule("QuestieNameplate").HideCurrentFrames = forbidden
@@ -139,6 +140,7 @@ for _, value in ipairs({true, false}) do
     tests = tests + 1
 end
 equal(visibilityCalls, 2, "both visibility changes refreshed")
+equal(manualVisibilityCalls, 2, "both visibility changes refreshed manual pins")
 
 equal(advanced.initDelay.get({"initDelay"}), 0.1, "init-delay display units")
 advanced.initDelay.set({"initDelay"}, 0.7)

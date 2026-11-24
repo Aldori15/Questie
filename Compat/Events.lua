@@ -7,13 +7,15 @@ local _EventHandler = QuestieEventHandler.private
 
 local explorationRefreshPending = false
 local function QueueExplorationRefresh()
-    if explorationRefreshPending or not Questie.db.profile.hideUnexploredMapIcons then return end
+    if explorationRefreshPending then return end
     explorationRefreshPending = true
     -- Zone text can change before the server's exploration update reaches the client.
     QuestieCompat.C_Timer.After(0.5, function()
         explorationRefreshPending = false
         if Questie.db.profile.hideUnexploredMapIcons then
             _EventHandler:MapExplorationUpdated()
+        else
+            QuestieCompat.InvalidatePlayerExploration()
         end
     end)
 end

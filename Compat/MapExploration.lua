@@ -1,6 +1,8 @@
 QuestieLoader:StampLoadBoundary("Compat/MapExploration.lua")
 
 local exploredMapOverlays = {}
+local staleOverlayMaps = {}
+local deferredOverlayMaps = {}
 local mapsWithoutExploration = {
     [1453] = true, [1454] = true, [1455] = true, -- Stormwind, Orgrimmar, Ironforge
     [1456] = true, [1457] = true, [1458] = true, -- Thunder Bluff, Darnassus, Undercity
@@ -11,6 +13,19 @@ local mapsWithoutExploration = {
 
 function QuestieCompat.ClearExplorationCache()
     wipe(exploredMapOverlays)
+    wipe(staleOverlayMaps)
+    wipe(deferredOverlayMaps)
+end
+
+function QuestieCompat.InvalidatePlayerExploration()
+    local _, playerUiMapID = QuestieCompat.GetWorldMapUiMapContext()
+    local data = QuestieCompat.UiMapData[playerUiMapID]
+    if data and data.mapID then
+        local mapID = math.floor(data.mapID)
+        if exploredMapOverlays[mapID] then
+            staleOverlayMaps[mapID] = true
+        end
+    end
 end
 
 local function IsOverlayPixelOpaque(overlay, x, y)
@@ -38,6 +53,31 @@ local function IsOverlayPixelOpaque(overlay, x, y)
     return false
 end
 
+local function ReadSelectedMapOverlays(mapID)
+    if GetCurrentMapAreaID() ~= mapID then return nil end
+
+    -- Mapster's fog removal replaces the overlay count with zero.
+    local getNumOverlays = GetNumMapOverlays
+    local mapster = LibStub("AceAddon-3.0"):GetAddon("Mapster", true)
+    local fogClear = mapster and mapster:GetModule("FogClear", true)
+    if fogClear and fogClear.hooks and fogClear.hooks.GetNumMapOverlays then
+        getNumOverlays = fogClear.hooks.GetNumMapOverlays
+    end
+    local overlays = {}
+    for i = 1, getNumOverlays() do
+        local texture, width, height, left, top = GetMapOverlayInfo(i)
+        if texture and texture ~= "" and width and height and left and top
+            and width > 0 and height > 0 and not texture:lower():find("pixelfix", 1, true) then
+            overlays[#overlays + 1] = {
+                left, top, left + width, top + height,
+                width = width,
+                texture = texture:lower():gsub("^interface\\worldmap\\", ""),
+            }
+        end
+    end
+    return overlays
+end
+
 local function IsMapPositionExplored(uiMapID, x, y)
     local data = QuestieCompat.UiMapData[uiMapID]
     -- Cities, instances and maps without a usable outdoor map have no fog to check.
@@ -47,39 +87,28 @@ local function IsMapPositionExplored(uiMapID, x, y)
     end
     if not x or not y then return true end
 
-    local overlays = exploredMapOverlays[uiMapID]
-    if not overlays then
-        overlays = {}
-        -- Cache before selecting the map to guard against map-update hooks reentering.
-        exploredMapOverlays[uiMapID] = overlays
-        local selected = QuestieCompat.WithLegacyMapRead(uiMapID, function()
-            -- UiMapData stores the native area ID. Map.lua handles legacy selection offsets.
-            if GetCurrentMapAreaID() ~= math.floor(data.mapID) then return false end
-
-            -- Mapster's fog removal replaces the overlay count with zero. Read its
-            -- original API so revealing the map visually does not count as exploration.
-            local getNumOverlays = GetNumMapOverlays
-            local mapster = LibStub("AceAddon-3.0"):GetAddon("Mapster", true)
-            local fogClear = mapster and mapster:GetModule("FogClear", true)
-            if fogClear and fogClear.hooks and fogClear.hooks.GetNumMapOverlays then
-                getNumOverlays = fogClear.hooks.GetNumMapOverlays
+    local mapID = math.floor(data.mapID)
+    local overlays = exploredMapOverlays[mapID]
+    if not overlays or staleOverlayMaps[mapID] then
+        local selected = GetCurrentMapAreaID() == mapID
+        if QuestieCompat.IsInternalMapReadActive() then
+            -- A map event can reenter while a legacy read is still in progress.
+            if not overlays then return false end
+        elseif WorldMapFrame:IsVisible() and not selected then
+            deferredOverlayMaps[mapID] = true
+            if not overlays then return false end
+        else
+            if selected then
+                overlays = ReadSelectedMapOverlays(mapID)
+            else
+                overlays = QuestieCompat.WithLegacyMapRead(uiMapID, function()
+                    return ReadSelectedMapOverlays(mapID)
+                end)
             end
-            for i = 1, getNumOverlays() do
-                local texture, width, height, left, top = GetMapOverlayInfo(i)
-                if texture and texture ~= "" and width and height and left and top
-                    and width > 0 and height > 0 and not texture:lower():find("pixelfix", 1, true) then
-                    overlays[#overlays + 1] = {
-                        left, top, left + width, top + height,
-                        width = width,
-                        texture = texture:lower():gsub("^interface\\worldmap\\", ""),
-                    }
-                end
-            end
-            return true
-        end)
-        if not selected then
-            exploredMapOverlays[uiMapID] = nil
-            return true
+            if not overlays then return true end
+            exploredMapOverlays[mapID] = overlays
+            staleOverlayMaps[mapID] = nil
+            deferredOverlayMaps[mapID] = nil
         end
     end
 
@@ -103,7 +132,31 @@ function QuestieCompat.InitializeMapExplorationCompatibility()
     QuestieMap.utils.IsExplored = IsMapPositionExplored
     local mapExplorationUpdate = QuestieMap.utils.MapExplorationUpdate
     QuestieMap.utils.MapExplorationUpdate = function()
-        QuestieCompat.ClearExplorationCache()
+        QuestieCompat.InvalidatePlayerExploration()
         mapExplorationUpdate()
     end
+
+    local refreshPending
+    local function HasDeferredOverlays()
+        if WorldMapFrame:IsVisible() then
+            return deferredOverlayMaps[GetCurrentMapAreaID()]
+        end
+        return next(deferredOverlayMaps)
+    end
+    local function QueueDeferredExplorationRefresh()
+        if refreshPending or not Questie.db.profile.hideUnexploredMapIcons
+            or QuestieCompat.IsInternalMapReadActive() or not HasDeferredOverlays() then
+            return
+        end
+        refreshPending = true
+        QuestieCompat.C_Timer.After(0, function()
+            refreshPending = false
+            if Questie.db.profile.hideUnexploredMapIcons and HasDeferredOverlays() then
+                if not WorldMapFrame:IsVisible() then wipe(deferredOverlayMaps) end
+                mapExplorationUpdate()
+            end
+        end)
+    end
+    Questie:RegisterEvent("WORLD_MAP_UPDATE", QueueDeferredExplorationRefresh)
+    WorldMapFrame:HookScript("OnHide", QueueDeferredExplorationRefresh)
 end

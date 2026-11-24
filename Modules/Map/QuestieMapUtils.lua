@@ -1,5 +1,6 @@
 ---@type QuestieMap
 local QuestieMap = QuestieLoader:ImportModule("QuestieMap");
+local QuestieQuest = QuestieLoader:ImportModule("QuestieQuest")
 ---@class QuestieMapUtils
 QuestieMap.utils = QuestieMap.utils or {}
 
@@ -170,6 +171,13 @@ function QuestieMap.utils.IsExplored(uiMapId, x, y)
     return IsExplored
 end
 
+function QuestieMap.utils.IsManualIconUnexplored(category, uiMapId, x, y)
+    -- Search results and dedicated instance entrance pins stay visible through fog.
+    return Questie.db.profile.hideUnexploredMapIcons
+        and category ~= "any" and category ~= "instanceDungeon" and category ~= "instanceRaid"
+        and not QuestieMap.utils.IsExplored(uiMapId, x, y)
+end
+
 function QuestieMap.utils.MapExplorationUpdate()
     for _, frameList in pairs(QuestieMap.questIdFrames) do
         for _, frameName in pairs(frameList) do
@@ -181,6 +189,7 @@ function QuestieMap.utils.MapExplorationUpdate()
             end
         end
     end
+    QuestieQuest:RefreshManualIconVisibility()
 end
 
 local function _GetManualScaleProfile(frame, isMinimap)
