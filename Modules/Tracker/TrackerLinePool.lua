@@ -37,7 +37,7 @@ local l10n = QuestieLoader:ImportModule("l10n")
 --- COMPATIBILITY ---
 local GetQuestLogIndexByID = QuestieCompat.GetQuestLogIndexByID
 
-local LibDropDown = QuestieCompat.LibUIDropDownMenu or LibStub:GetLibrary("LibUIDropDownMenuQuestie-4.0")
+local LibDropDown = QuestieCompat.LibUIDropDownMenu
 local LSM30 = LibStub("LibSharedMedia-3.0")
 
 local coYield = coroutine.yield

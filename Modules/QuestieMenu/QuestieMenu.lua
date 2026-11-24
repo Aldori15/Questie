@@ -44,7 +44,7 @@ local Phasing = QuestieLoader:ImportModule("Phasing")
 --- COMPATIBILITY ---
 local C_Timer = QuestieCompat.C_Timer
 
-local LibDropDown = QuestieCompat.LibUIDropDownMenu or LibStub:GetLibrary("LibUIDropDownMenuQuestie-4.0")
+local LibDropDown = QuestieCompat.LibUIDropDownMenu
 local HBD = QuestieCompat.HBD or LibStub("HereBeDragonsQuestie-2.0")
 
 local tinsert = tinsert

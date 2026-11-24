@@ -31,7 +31,7 @@ local l10n = QuestieLoader:ImportModule("l10n")
 --- COMPATIBILITY ---
 local GetQuestLogIndexByID = QuestieCompat.GetQuestLogIndexByID
 
-local LibDropDown = QuestieCompat.LibUIDropDownMenu or LibStub:GetLibrary("LibUIDropDownMenuQuestie-4.0")
+local LibDropDown = QuestieCompat.LibUIDropDownMenu
 
 TrackerMenu.menuFrame = LibDropDown:Create_UIDropDownMenu("QuestieTrackerMenuFrame", UIParent)
 

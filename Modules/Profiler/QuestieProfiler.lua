@@ -784,10 +784,8 @@ end
 -- LibSharedMedia, LibDBIcon, Krowi - and registration is not ownership: the loaded copy may belong to another
 -- addon, so wrapping those tables would count other addons' calls, add overhead to them, and let this report
 -- claim work that is not Questie's. An explicit list rather than a name pattern, because "Questie" in a major
--- is a naming convention rather than a guarantee, and four entries are cheap to keep honest.
--- Named for the folder the code sits in and for whatever Questie's own files call the library - HBD, HBDPins
--- and LibDropDown are the aliases used at 11 call sites across the addon, while the LibStub major is a string
--- nobody types. It reads as the same thing the reader already has in their own file, and it leaves room in the
+-- is a naming convention rather than a guarantee.
+-- Use the HBD and HBDPins aliases from Questie's call sites. This leaves room in the
 -- narrow relation columns, where "Libraries.HereBeDragonsPins.worldmapProvider.HandlePin" lost the function
 -- name to an ellipsis and this does not.
 local PROFILED_LIBRARIES = {
@@ -815,7 +813,6 @@ local PROFILED_LIBRARIES = {
         excludedFields = {"worldmapProviderPin"},
     },
     {major = "HereBeDragonsQuestie-Migrate", name = "Libs.HBDMigrate"},
-    {major = "LibUIDropDownMenuQuestie-4.0", name = "Libs.LibDropDown"},
 }
 
 -- The 3.3.5 compatibility layer implements the same services locally instead of registering LibStub majors.
