@@ -1583,12 +1583,23 @@ def build_acore_npcs(
             selected = [row for row in creature_rows
                         if get_primary_creature_entry(row) in acore_runtime_geometry.DARKMOON_NPCS]
             guids = {int(row["guid"]) for row in selected}
+            vendor_guids = {}
+            for row in creature_rows:
+                guid = int(row["guid"])
+                for entry in get_creature_entries(row, multispawns_by_guid):
+                    if int(template_rows.get(entry, {}).get("npcflag") or 0) & 0x80:
+                        vendor_guids.setdefault(entry, set()).add(guid)
+                        guids.add(guid)
+            skipped_membership_entries = set()
             memberships, membership_skips = load_filtered_row_table(
                 source_root, "game_event_creature", ("eventEntry", "guid"),
                 lambda row: int(row.get("guid") or 0) in guids, include_modules,
-                ignore_statement=acore_runtime_geometry.ignore_unrelated_membership_statement)
+                ignore_statement=lambda statement: acore_runtime_geometry.ignore_unrelated_membership_statement(
+                    statement, skipped_membership_entries))
             if event_skips or membership_skips:
                 raise ValueError("Runtime event geometry has unsupported SQL mutations")
+            skipped_membership_guids = {int(row["guid"]) for row in creature_rows
+                                        if get_primary_creature_entry(row) in skipped_membership_entries}
 
             def project_runtime_point(row, maps):
                 zone, point = resolve_coordinate_zone(row, maps)
@@ -1601,6 +1612,9 @@ def build_acore_npcs(
 
             provenance["runtimeGeometry"] = acore_runtime_geometry.collect(
                 event_rows, selected, memberships, zone_maps, project_runtime_point)
+            provenance["runtimeGeometry"]["seasonalVendors"] = acore_runtime_geometry.seasonal_vendor_events(
+                {entry: guids for entry, guids in vendor_guids.items() if guids.isdisjoint(skipped_membership_guids)},
+                memberships)
 
     skipped_mutations = {
         "creature_template": skipped_creature_template,

@@ -78,6 +78,7 @@ local function setup()
             return changed
         end,
         SetServerDarkmoonLocations = function() return false end,
+        RefreshSeasonalVendors = function() end,
         RefreshAvailableQuests = function() refreshes = refreshes + 1 end,
     }
     modules.QuestieQuestBlacklist = {ScourgeInvasionQuests = {}}
@@ -1241,6 +1242,30 @@ s.reply({"P:WG_STATE:1:0:1"}, "WINTERGRASP,HEARTBEAT")
 equal(#map:GetManualFrames(31109, "hidden"), 0, "reset removes hidden requests too")
 tests = tests + 1
 
+do
+    local db, event = modules.QuestieDB, modules.QuestieEvent
+    local originalNpc = npc
+    npc = {id = 13418, name = "Kaymard Copperpinch", spawns = {[1637] = {{53.33, 66.49}}}}
+    db.seasonalVendorEvents = {[13418] = {2}}
+    local eventActive = false
+    event.GetVendorGeometry = function(_, spawns) if eventActive then return spawns end end
+    map:ShowNPC(13418, nil, nil, nil, nil, nil, "Food & Drink")
+    map:ShowNPC(13418)
+    equal(#map:GetManualFrames(13418, "Food & Drink"), 0, "inactive seasonal vendor has no category pin")
+    equal(#map:GetManualFrames(13418, "any"), 1, "direct lookup still displays historical vendor location")
+    eventActive = true
+    map:RefreshDynamicManualNotes(nil, true)
+    equal(#map:GetManualFrames(13418, "Food & Drink"), 1, "activation redraws an enabled vendor category")
+    eventActive = false
+    map:RefreshDynamicManualNotes(nil, true)
+    equal(#map:GetManualFrames(13418, "Food & Drink"), 0, "event end removes the category pin")
+    equal(#map:GetManualFrames(13418, "any"), 1, "direct lookup pin survives seasonal refresh")
+    map:ResetManualFrames("Food & Drink")
+    map:ResetManualFrames("any")
+    db.seasonalVendorEvents, event.GetVendorGeometry, npc = nil, nil, originalNpc
+    tests = tests + 1
+end
+
 -- Ultham's nearby event-exclusive spawn positions need only one manual pin per zone.
 do
     local originalNpc = npc
@@ -1558,6 +1583,34 @@ for _, widget in ipairs(detailWidgets) do
 end
 equal(foundProgress, true, "production details hook adds world progress block")
 tests = tests + 1
+
+do
+    local s = setup()
+    local env, event, db = s.env, s.modules.QuestieEvent, s.modules.QuestieDB
+    env.QuestieCompat.C_DateAndTime = {GetCurrentCalendarTime = function() return {month = 12, monthDay = 20} end}
+    env.date = function() return "26" end
+    env.CalendarGetNumDayEvents = function() return 1 end
+    env.CalendarGetHolidayInfo = function() return "Feast of Winter Veil", "", "" end
+    s.modules.l10n = setmetatable({}, {__call = function(_, value) return value end})
+    event.private = {}
+    assert(loadfile("Database/Corrections/QuestieEvent.lua", "t", env))()
+    event.eventQuests = {}
+    db.seasonalVendorEvents = {[13418] = {2}, [14844] = {3, 4, 5}}
+    db.npcKeys = {spawns = 7, waypoints = 8}
+    local originalSpawns, fairSpawns = {}, {[215] = {{36, 37}}}
+    db.darkmoonGeometry = {[1] = {[14844] = {[7] = fairSpawns}}}
+    event:Load(true)
+    equal(event.GetVendorGeometry(13418, originalSpawns), originalSpawns, "calendar opens holiday vendor with no bridge")
+    env.Questie.db.profile.showEventQuests = false
+    s.reply({"E:2:0:0:0", "E:5:0:0:1"}, "EVENTS,HEARTBEAT")
+    equal(event.GetVendorGeometry(13418, originalSpawns), nil, "live inactive overrides active calendar")
+    equal(event.GetVendorGeometry(14844, originalSpawns), fairSpawns, "live fair selects its source placements")
+    equal(event.GetVendorGeometry(14961, originalSpawns), originalSpawns, "year-round vendors retain original spawns")
+    s.reply({}, "HEARTBEAT")
+    equal(event.GetVendorGeometry(13418, originalSpawns), originalSpawns, "bridge loss restores calendar state")
+    equal(event.GetVendorGeometry(14844, originalSpawns), nil, "inactive fair has no vendor locations")
+    tests = tests + 1
+end
 
 -- Non-holiday event gates exercise the real event override/fallback implementation,
 -- production IsDoable and the available-icon calculation together.

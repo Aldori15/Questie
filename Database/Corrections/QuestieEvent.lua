@@ -67,6 +67,7 @@ _QuestieEvent.initializeAttempts = 0
 
 ---@type QuestieDB
 local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
+local QuestieServer = QuestieLoader:ImportModule("QuestieServer")
 ---@type QuestieCorrections
 local QuestieCorrections = QuestieLoader:ImportModule("QuestieCorrections")
 ---@type NPCRuntimeCorrections
@@ -349,6 +350,43 @@ local DMF_LOCATIONS = {
     ELWYNN_FOREST = 2,
     TEROKKAR_FOREST = 3,
 }
+
+-- AzerothCore game_event IDs. Darkmoon setup events do not open the vendors.
+local vendorHolidayEvents = {[2] = "Winter Veil", [10] = "Children's Week", [12] = "Hallow's End"}
+local vendorFairLocations = {[3] = DMF_LOCATIONS.TEROKKAR_FOREST, [4] = DMF_LOCATIONS.ELWYNN_FOREST, [5] = DMF_LOCATIONS.MULGORE}
+local vendorCalendarStates = {}
+local vendorEventStates = {}
+
+function QuestieEvent.RefreshSeasonalVendors()
+    if not QuestieDB.seasonalVendorEvents then return end
+
+    local changed = false
+    local function update(eventId)
+        local active = QuestieServer:IsEventActive(eventId)
+        if active == nil then active = vendorCalendarStates[eventId] == true end
+        changed = (vendorEventStates[eventId] ~= active) or changed
+        vendorEventStates[eventId] = active
+    end
+    for eventId in pairs(vendorHolidayEvents) do update(eventId) end
+    for eventId in pairs(vendorFairLocations) do update(eventId) end
+    if changed and Questie.started then
+        QuestieLoader:ImportModule("QuestieMap"):RefreshDynamicManualNotes(nil, true)
+    end
+end
+
+function QuestieEvent.GetVendorGeometry(npcId, spawns, waypoints)
+    local events = QuestieDB.seasonalVendorEvents and QuestieDB.seasonalVendorEvents[npcId]
+    if not events then return spawns, waypoints end
+
+    for _, eventId in ipairs(events) do
+        if vendorEventStates[eventId] then
+            local location = vendorFairLocations[eventId]
+            if not location then return spawns, waypoints end
+            local geometry = QuestieDB.darkmoonGeometry[location][npcId]
+            return geometry[QuestieDB.npcKeys.spawns], geometry[QuestieDB.npcKeys.waypoints]
+        end
+    end
+end
 
 ---@param texture string?
 ---@return number?
@@ -892,8 +930,16 @@ function QuestieEvent:Load(isFinalPass)
         darkmoonLocation = darkmoonLocation or _GetDarkmoonFaireLocationForMonth(currentDate)
         addedActiveQuest = _LoadDarkmoonFaire(darkmoonLocation) or addedActiveQuest
     elseif not calendarAvailable then
-        addedActiveQuest = _LoadDarkmoonFaire() or addedActiveQuest
+        darkmoonLocation = _GetDarkmoonFaireLocation()
+        addedActiveQuest = _LoadDarkmoonFaire(darkmoonLocation) or addedActiveQuest
     end
+    for eventId, name in pairs(vendorHolidayEvents) do
+        vendorCalendarStates[eventId] = activeEvents[name] == true
+    end
+    for eventId, location in pairs(vendorFairLocations) do
+        vendorCalendarStates[eventId] = darkmoonLocation == location
+    end
+    QuestieEvent.RefreshSeasonalVendors()
 
     if isFinalPass then
         -- Clear the quests to save memory once initialization has settled.

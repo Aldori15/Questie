@@ -12,6 +12,7 @@ import math
 import sys
 from pathlib import Path
 
+import acore_runtime_geometry
 import audit_acore_item_sources as shared
 import audit_acore_npc_sources as audit
 import db_snapshot
@@ -721,6 +722,8 @@ def write_stream(stream, records, scripted_spawns=None, runtime_geometry=None):
                      + lua_value(fields(factions["Horde"])) + ' or ' + lua_value(fields(factions["Alliance"])) + '\n')
         stream.write('QuestieDB.darkmoonGeometry = ' + lua_value({"n:" + k: fields(v)
                      for k, v in runtime_geometry["darkmoon"].items()}) + '\n')
+        stream.write('QuestieDB.seasonalVendorEvents = ' + lua_value({"n:" + k: acore_runtime_geometry.typed(v)
+                     for k, v in runtime_geometry.get("seasonalVendors", {}).items()}) + '\n')
 
 
 def candidate_size(records, scripted_spawns=None, runtime_geometry=None):
@@ -826,7 +829,6 @@ def main(argv=None):
     if len(records) > 1000 and runtime_geometry is None:
         raise ValueError("Missing runtime geometry source coverage; refresh the source model")
     if runtime_geometry is not None:
-        import acore_runtime_geometry
         runtime_geometry = acore_runtime_geometry.select_darkmoon_waypoints(runtime_geometry, model, provenance)
     comparison = compare_records(baseline, records) if baseline is not None else None
     if comparison and not comparison["exactParity"]:

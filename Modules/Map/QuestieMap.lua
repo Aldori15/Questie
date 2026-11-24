@@ -16,6 +16,7 @@ local QuestieLib = QuestieLoader:ImportModule("QuestieLib");
 local QuestiePlayer = QuestieLoader:ImportModule("QuestiePlayer");
 ---@type QuestieDB
 local QuestieDB = QuestieLoader:ImportModule("QuestieDB");
+local QuestieEvent = QuestieLoader:ImportModule("QuestieEvent")
 ---@type ZoneDB
 local ZoneDB = QuestieLoader:ImportModule("ZoneDB")
 ---@type l10n
@@ -609,12 +610,21 @@ function QuestieMap:ShowNPC(npcID, icon, scale, title, body, disableShiftToRemov
     local npc = QuestieDB:GetNPC(npcID)
     if (not npc) or (not npc.spawns) then return end
 
-    if Phasing.HasDynamicSpawns(npc.spawns) then
+    local seasonalVendors = QuestieDB.seasonalVendorEvents
+    local seasonalVendor = typ ~= nil and typ ~= "any" and seasonalVendors ~= nil and seasonalVendors[npcID] ~= nil
+    if seasonalVendor or Phasing.HasDynamicSpawns(npc.spawns) then
         typ = typ or "any"
         dynamicManualNotes[typ] = dynamicManualNotes[typ] or {}
         dynamicManualNotes[typ][npcID] = {
             npcID, icon, scale, title, body, disableShiftToRemove, typ, excludeDungeon,
+            seasonalVendor = seasonalVendor,
         }
+    end
+
+    local npcSpawns, npcWaypoints = npc.spawns, npc.waypoints
+    if seasonalVendor then
+        npcSpawns, npcWaypoints = QuestieEvent.GetVendorGeometry(npcID, npcSpawns, npcWaypoints)
+        if not npcSpawns then return end
     end
 
     -- create the icon data
@@ -648,7 +658,7 @@ function QuestieMap:ShowNPC(npcID, icon, scale, title, body, disableShiftToRemov
     local manualIcons = {}
     local visibleSpawnZones = {}
     -- draw the notes
-    for zone, spawns in pairs(npc.spawns) do
+    for zone, spawns in pairs(npcSpawns) do
         if (zone ~= nil and spawns ~= nil) and ((not excludeDungeon) or (not ZoneDB.IsDungeonZone(zone))) then
             for _, coords in ipairs(spawns) do
                 if _IsSpawnVisible(coords) and (not singlePinNpcIds[npcID] or not manualIcons[zone]) then
@@ -669,9 +679,9 @@ function QuestieMap:ShowNPC(npcID, icon, scale, title, body, disableShiftToRemov
         end
     end
     -- draw waypoints
-    if npc.waypoints then
-        for zone, waypoints in pairs(npc.waypoints) do
-            if (visibleSpawnZones[zone] or (not npc.spawns) or (not npc.spawns[zone])) and
+    if npcWaypoints then
+        for zone, waypoints in pairs(npcWaypoints) do
+            if (visibleSpawnZones[zone] or not npcSpawns[zone]) and
                 (not ZoneDB:GetDungeonLocation(zone)) and waypoints[1] and waypoints[1][1] and waypoints[1][1][1] then
                 if not manualIcons[zone] then
                     manualIcons[zone] = QuestieMap:DrawManualIcon(data, zone, waypoints[1][1][1], waypoints[1][1][2], typ)
@@ -682,10 +692,14 @@ function QuestieMap:ShowNPC(npcID, icon, scale, title, body, disableShiftToRemov
     end
 end
 
-function QuestieMap:RefreshDynamicManualNotes(affected)
+function QuestieMap:RefreshDynamicManualNotes(affected, seasonalVendorsOnly)
     local requests = {}
     for _, notes in pairs(dynamicManualNotes) do
-        for _, request in pairs(notes) do requests[#requests + 1] = request end
+        for _, request in pairs(notes) do
+            if not seasonalVendorsOnly or request.seasonalVendor then
+                requests[#requests + 1] = request
+            end
+        end
     end
     for _, request in ipairs(requests) do
         local data

@@ -1,8 +1,10 @@
 """Runtime geometry follows actual fair membership and fixed AC summon events."""
+from io import StringIO
 import unittest
 
 from _test_paths import ADDON_ROOT
 import acore_runtime_geometry as runtime
+import generate_acore_npc_base as exporter
 import generate_acore_npc_corrections as reader
 
 
@@ -40,6 +42,23 @@ class RuntimeGeometryTests(unittest.TestCase):
         self.assertEqual(point["n:8"], self.creatures[0]["guid"])
         self.assertNotIn("n:3", point)
         self.assertEqual(packet["darkmoon"]["2"]["14828"]["s:zoneID"], 12)
+
+    def test_vendor_events_require_every_placement_to_be_seasonal(self):
+        memberships = self.memberships + [
+            {"guid": guid, "eventEntry": event}
+            for guid, event in [(1, 2), (2, 2), (3, 10), (4, -12), (5, 12), (5, 51), (6, 23)]
+        ]
+        fair_guids = {row["guid"] for row in self.creatures if row["id1"] == 14844}
+        events = runtime.seasonal_vendor_events({
+            13418: {1, 2}, 14480: {3}, 14961: {1, 99}, 1: {4}, 2: {5},
+            14844: fair_guids, 14845: fair_guids | {6},
+        }, memberships)
+        self.assertEqual(events, {"13418": [2], "14480": [10], "14844": [3, 4, 5]})
+        packet = dict(self.collect(), seasonalVendors=events)
+        stream = StringIO()
+        exporter.write_stream(stream, {}, runtime_geometry=packet)
+        self.assertIn("QuestieDB.seasonalVendorEvents = {[13418]={[1]=2},[14480]={[1]=10},"
+                      "[14844]={[1]=3,[2]=4,[3]=5}}", stream.getvalue())
 
     def test_source_relocations_and_new_active_spawns_refresh_without_old_coordinates(self):
         row = self.creatures[0]

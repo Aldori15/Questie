@@ -11,6 +11,7 @@ DARKMOON_NPCS = frozenset({10445, 14828, 14829, 14832, 14833, 14841,
 # Questie location -> AC main fair event and actual map zone. Setup events23/77
 # have their own carnie placements and are not active-fair spawn selections.
 DARKMOON_LOCATIONS = {1: (5, 215), 2: (4, 12), 3: (3, 3519)}
+SEASONAL_VENDOR_EVENTS = frozenset({2, 10, 12})
 # Frozen spell-event bindings reviewed against event_scripts. An unknown event
 # summoning one of these NPCs needs a new map-context review, never an XY guess.
 SUMMON_EVENTS = {
@@ -26,7 +27,7 @@ SUMMON_EVENTS = {
 }
 
 
-def review_membership_skips(statements):
+def review_membership_skips(statements, excluded_entries=None):
     """Accept only disjoint event51 mutations whose literal NPC sets are known."""
     accepted = []
     patterns = (
@@ -43,17 +44,37 @@ def review_membership_skips(statements):
         values = match.group(1).split(",")
         if any(not value for value in values) or set(map(int, values)) & DARKMOON_NPCS:
             raise ValueError("Skipped game_event_creature mutation can affect Darkmoon NPCs")
+        if excluded_entries is not None:
+            excluded_entries.update(map(int, values))
         accepted.append(statement)
     return accepted
 
 
-def ignore_unrelated_membership_statement(statement):
+def ignore_unrelated_membership_statement(statement, excluded_entries=None):
     """SQL reader predicate: ignore only the reviewed disjoint event51 forms."""
     try:
-        review_membership_skips([statement])
+        review_membership_skips([statement], excluded_entries)
     except ValueError:
         return False
     return True
+
+
+def seasonal_vendor_events(vendor_guids, memberships):
+    """Only gate vendors whose source placements all require a supported event."""
+    events_by_guid = {}
+    for row in memberships:
+        events_by_guid.setdefault(int(row["guid"]), set()).add(int(row["eventEntry"]))
+    darkmoon_events = {event for event, _ in DARKMOON_LOCATIONS.values()}
+    vendors = {}
+    for entry, guids in vendor_guids.items():
+        placements = {frozenset(events_by_guid.get(guid, ())) for guid in guids}
+        if not placements or any(len(events) != 1 for events in placements):
+            continue
+        events = set().union(*placements)
+        if (len(events) == 1 and events <= SEASONAL_VENDOR_EVENTS
+                or entry in DARKMOON_NPCS and events <= darkmoon_events):
+            vendors[str(entry)] = sorted(events)
+    return vendors
 
 
 def collect(event_rows, creature_rows, memberships, zone_maps, project_point):

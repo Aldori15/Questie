@@ -206,6 +206,7 @@ function Integrations:Refresh()
     if darkmoonChanged and Questie.started then
         QuestieLoader:ImportModule("QuestieQuest"):RefreshNPCSpawns(changedNpcs)
     end
+    Event.RefreshSeasonalVendors()
     changed = darkmoonChanged or changed
     changed = RefreshQuestStates() or changed
     changed = RefreshQuestgivers() or changed

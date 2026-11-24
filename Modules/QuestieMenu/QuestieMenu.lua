@@ -11,6 +11,7 @@ local QuestieJourney = QuestieLoader:ImportModule("QuestieJourney")
 local QuestieMap = QuestieLoader:ImportModule("QuestieMap")
 ---@type QuestieDB
 local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
+local QuestieEvent = QuestieLoader:ImportModule("QuestieEvent")
 ---@type TrackerUtils
 local TrackerUtils = QuestieLoader:ImportModule("TrackerUtils")
 ---@type ZoneDB
@@ -491,6 +492,9 @@ local function _FindNearestTownsfolkSpawn(key, ids, isObjectCategory)
             name = QuestieDB.QueryObjectSingle(id, "name") or l10n(tostring(key))
         elseif _IsFindNearestNPCAllowed(id) then
             spawns = QuestieDB.QueryNPCSingle(id, "spawns")
+            if QuestieDB.seasonalVendorEvents then
+                spawns = QuestieEvent.GetVendorGeometry(id, spawns)
+            end
             name = QuestieDB.QueryNPCSingle(id, "name") or l10n(tostring(key))
         end
 
