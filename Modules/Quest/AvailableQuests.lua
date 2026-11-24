@@ -744,7 +744,7 @@ function AvailableQuests.RefreshVisibleAvailableIcons()
         if newIcon and oldIcon and newIcon ~= oldIcon then
             QuestieMap:ForQuestFrames(questId, function(frame)
                 if frame and frame.data and frame.data.Type == "available" and frame.data.QuestData then
-                    frame:UpdateTexture(Questie.usedIcons[newIcon])
+                    frame.texture:SetTexture(Questie.usedIcons[newIcon])
                     frame.data.Icon = newIcon
                 end
             end)
