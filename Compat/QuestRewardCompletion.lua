@@ -15,6 +15,7 @@ local QUEST_COMPLETE_MSG = string.gsub(ERR_QUEST_COMPLETE_S, "(%%s)", "(.+)")
 -- the exact quest ID. Shared titles retain candidates until the rewarded set
 -- and live quest-log removals disambiguate them.
 local pendingRewardCompletions = {}
+local missingRewardCompletions = {}
 local rewardCompletionQueryScheduled = false
 local rewardCompletionQueryInFlight = false
 local rewardCompletionQuerySerial = 0
@@ -142,19 +143,29 @@ local function ExpireRewardCompletionQuery(querySerial)
             table.remove(pendingRewardCompletions, index)
         end
     end
+    for questId, pending in pairs(missingRewardCompletions) do
+        if pending.minimumQuerySerial <= querySerial then
+            missingRewardCompletions[questId] = nil
+            pending.onTimeout()
+        end
+    end
 
     ScheduleRewardCompletionQuery()
 end
 
+local function HasPendingRewardQueries()
+    return #pendingRewardCompletions > 0 or next(missingRewardCompletions) ~= nil
+end
+
 ScheduleRewardCompletionQuery = function()
-    if rewardCompletionQueryScheduled or rewardCompletionQueryInFlight or #pendingRewardCompletions == 0 then
+    if rewardCompletionQueryScheduled or rewardCompletionQueryInFlight or not HasPendingRewardQueries() then
         return
     end
 
     rewardCompletionQueryScheduled = true
     QuestieCompat.C_Timer.After(REWARD_COMPLETION_QUERY_DELAY, function()
         rewardCompletionQueryScheduled = false
-        if rewardCompletionQueryInFlight or #pendingRewardCompletions == 0 then
+        if rewardCompletionQueryInFlight or not HasPendingRewardQueries() then
             return
         end
 
@@ -167,6 +178,17 @@ ScheduleRewardCompletionQuery = function()
             ExpireRewardCompletionQuery(querySerial)
         end)
     end)
+end
+
+-- Server-side rewards can remove a quest without calling GetQuestReward.
+function QuestieCompat.CheckMissingQuestReward(questId, isCurrent, onTimeout)
+    missingRewardCompletions[questId] = {
+        minimumQuerySerial = rewardCompletionQuerySerial + 1,
+        wasRewarded = QuestieCompat.HasRawServerQuestCompletion(questId),
+        isCurrent = isCurrent,
+        onTimeout = onTimeout,
+    }
+    ScheduleRewardCompletionQuery()
 end
 
 function QuestieCompat.ProcessPendingRewardCompletions()
@@ -254,6 +276,20 @@ function QuestieCompat.ProcessPendingRewardCompletions()
                     pending.minimumQuerySerial = completedQuerySerial + 1
                     pendingRewardCompletions[#pendingRewardCompletions + 1] = pending
                 end
+            end
+        end
+    end
+
+    -- Dialog rewards get first use of the response, so their lifecycle
+    -- changes invalidate any matching missing-log check.
+    for questId, pending in pairs(missingRewardCompletions) do
+        if pending.minimumQuerySerial <= completedQuerySerial then
+            missingRewardCompletions[questId] = nil
+            -- An old reward for a repeatable does not prove this turn-in.
+            if QuestieCompat.HasRawServerQuestCompletion(questId)
+                and (not pending.wasRewarded or not QuestieDB.IsRepeatable(questId))
+                and pending.isCurrent() then
+                CompleteRewardQuest(questId)
             end
         end
     end

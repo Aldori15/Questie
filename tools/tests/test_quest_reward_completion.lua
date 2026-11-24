@@ -293,4 +293,31 @@ for _, id in ipairs({10, 30}) do
     tests = tests + 1
 end
 
+-- A dialog claim and a missing-log check can share the same response.
+do
+    local s = setup({9884})
+    s.claim()
+    s.reward(9884)
+    s.env.QuestieCompat.CheckMissingQuestReward(9884, function() return s.player[9884] ~= nil end,
+        function() error("unexpected missing-reward timeout") end)
+    s.advance(0.5); s.query()
+    equal(s.queries(), 1, "dialog and missing-log checks share the request")
+    equal(#s.history, 1, "dialog completion invalidates the matching missing-log check")
+    tests = tests + 1
+end
+
+-- A historical repeatable reward or a changed log entry cannot confirm a new reward.
+do
+    local s = setup({9884, 9885}, {9884})
+    local compat = s.env.QuestieCompat
+    local function unexpectedTimeout() error("unexpected missing-reward timeout") end
+    s.remove(9884)
+    compat.CheckMissingQuestReward(9884, function() return true end, unexpectedTimeout)
+    s.reward(9885)
+    compat.CheckMissingQuestReward(9885, function() return false end, unexpectedTimeout)
+    s.advance(0.5); s.query()
+    equal(#s.history, 0, "historical or superseded reward evidence is ignored")
+    tests = tests + 1
+end
+
 print("Quest reward completion regression tests passed (" .. tests .. " groups)")

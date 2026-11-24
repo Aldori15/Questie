@@ -301,18 +301,33 @@ do
     assert(h.modules.QuestiePlayer.currentQuestlog[844], "new missed acceptance can recover after confirmed removal")
 end
 
--- A GM reward bypasses the reward-dialog hook. The tracker can see an empty
--- native log and then a new accept while the old mapped quest is still cached.
+-- A GM reward bypasses the reward-dialog hook. The tracker must not display
+-- the quest while the map and completion state wait for exact-ID confirmation.
 do
     local h = harness()
+    local queries, rewarded, completed, rebuilds = 0, {}, {}, 0
+    local compat = h.env.QuestieCompat
+    h.env.ERR_QUEST_COMPLETE_S = "%s completed."
+    h.env.QuestieLoader.StampLoadBoundary = noop
+    h.env.QueryQuestsCompleted = function() queries = queries + 1 end
+    compat.HasRawServerQuestCompletion = function(id) return rewarded[id] == true end
+    compat.RecordServerQuestCompletion = function(id) rewarded[id] = true end
+    h.modules.QuestieDB.IsDailyQuest = function() return false end
+    h.modules.QuestieDB.IsRepeatable = function() return false end
+    h.modules.QuestieJourney.CompleteQuest = function(_, id) completed[id] = (completed[id] or 0) + 1 end
+    h.modules.AvailableQuests.CalculateAndDrawAll = function() rebuilds = rebuilds + 1 end
+    h.loadModule("Compat/QuestRewardCompletion.lua")
     h.env.GetNumQuestLogEntries = function() return #h.order end
     h.loadModule("Modules/Tracker/TrackerData.lua")
     local trackerData = h.modules.TrackerData
+    h:add(14036, {}, 1, true)
     h:add(12238, {}, 1, true)
     h.events:UpdateAllQuests()
     assert(trackerData.Refresh()[12238], "completed quest remains visible before reward")
 
-    h.order, h.records[12238].present = {}, false
+    h.removed[14036], h.removed[12238] = nil, nil
+    h.order, h.records[14036].present, h.records[12238].present = {}, false, false
+    local beforeTimers = #h.timers
     h.events:QuestLogUpdate()
     local emptyDisplay = trackerData.Refresh()
 
@@ -323,6 +338,20 @@ do
     equal(displayed[12238], nil, "rewarded quest cannot reappear after another accept")
     equal(next(emptyDisplay), nil, "empty native quest log has no tracker rows")
     assert(displayed[12633], "new quest stays visible")
+
+    for index = beforeTimers + 1, #h.timers do h.timers[index].callback() end
+    equal(queries, 1, "missing quests share one completed-quest query")
+    local beforeRebuilds = rebuilds
+    rewarded[14036] = true
+    compat.ProcessPendingRewardCompletions()
+    equal(h.removed[14036], true, "server-confirmed GM reward removes the turn-in pin")
+    equal(h.cache.TryGetQuest(14036), nil, "server-confirmed GM reward clears the log cache")
+    equal(h.modules.QuestiePlayer.currentQuestlog[14036], nil, "server-confirmed GM reward clears mapped quest")
+    equal(h.env.Questie.db.char.complete[14036], true, "server-confirmed GM reward satisfies prerequisites")
+    equal(rebuilds, beforeRebuilds + 1, "server-confirmed GM reward redraws available quests")
+    equal(completed[14036], 1, "server-confirmed GM reward is recorded once")
+    equal(completed[12238], nil, "a missing row alone does not confirm reward")
+    assert(h.modules.QuestiePlayer.currentQuestlog[12633], "GM reward leaves other live quests alone")
 end
 
 -- A scan can observe absence between turn-in and removal notifications.

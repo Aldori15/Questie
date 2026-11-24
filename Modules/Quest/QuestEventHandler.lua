@@ -542,8 +542,29 @@ function _QuestEventHandler:UpdateAllQuests(confirmItemRegressions)
         end
     end
 
-    local cacheMiss, changes, _, unlisted, ready = QuestLogCache.CheckForChanges(questIdsToCheck, true, confirmItemRegressions)
+    local cacheMiss, changes, checked, unlisted, ready = QuestLogCache.CheckForChanges(questIdsToCheck, true, confirmItemRegressions)
     ready = ready or {}
+    if checked and QuestieCompat.CheckMissingQuestReward then
+        for questId in pairs(questIdsToCheck) do
+            local data = questLog[questId]
+            if checked[questId] then
+                data.missingRewardCheck = nil
+            elseif not data.missingRewardCheck then
+                local check = {}
+                data.missingRewardCheck = check
+                QuestieCompat.CheckMissingQuestReward(questId, function()
+                    if questLog[questId] ~= data or data.missingRewardCheck ~= check
+                        or data.state ~= QUEST_LOG_STATES.QUEST_ACCEPTED then
+                        return false
+                    end
+                    local index = GetQuestLogIndexByID(questId)
+                    return not index or index <= 0
+                end, function()
+                    if data.missingRewardCheck == check then data.missingRewardCheck = nil end
+                end)
+            end
+        end
+    end
     if unlisted then
         for questId, data in pairs(questLog) do
             -- Removed IDs are outside questIdsToCheck, so unlisted contains any lingering native rows.
