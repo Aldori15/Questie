@@ -336,6 +336,25 @@ def build_optional_extra_objectives(records, packet):
     return result
 
 
+def compact_guide_labels(row):
+    guides = row.get("s:extraObjectives", {})
+    if not any("n:6" in guide for guide in guides.values()):
+        return row
+
+    prefixes = {"item": "i", "monster": "n", "object": "o"}
+    encoded = {}
+    for index, guide in guides.items():
+        label = guide.get("n:6")
+        if label:
+            parts = [label["n:1"]]
+            for slot in range(2, len(label) + 1):
+                reference = label[f"n:{slot}"]
+                parts.append(prefixes[reference["n:1"]] + str(reference["n:2"]))
+            guide = {**guide, "n:6": "|".join(parts)}
+        encoded[index] = guide
+    return {**row, "s:extraObjectives": encoded}
+
+
 def write_stream(stream, records, starter_selections=None, event_tooltips=None, optional_objectives=None):
     stream.write('-- Generated from AzerothCore source and explicit Questie compatibility data.\n')
     stream.write('-- Generator: tools/generate_acore_quest_base.py\n')
@@ -345,7 +364,7 @@ def write_stream(stream, records, starter_selections=None, event_tooltips=None, 
     stream.write('}\n\n')
     writer = LuaBlobWriter(stream, "questData")
     for quest_id, row in sorted(records.items()):
-        writer.write(f'[{quest_id}]={row_to_lua(row, KEYS)},\n')
+        writer.write(f'[{quest_id}]={row_to_lua(compact_guide_labels(row), KEYS)},\n')
     writer.finish()
     if event_tooltips is not None:
         stream.write('\n-- Event actors verified against current AC scripts.\n')

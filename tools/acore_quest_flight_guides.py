@@ -7,6 +7,7 @@ Only follow actual player-targeted taxi actions and quest-state conditions.
 from collections import defaultdict
 
 from acore_item_compatibility import number
+from acore_quest_guide_labels import describe_guide
 
 
 CORE_SOURCE_FILES = (
@@ -173,8 +174,8 @@ def derive(quests, creatures, spells, conditions, scripts, gossip_options,
                 omit(reason or "ambiguousOrMissingFlightAction")
                 continue
             for quest, group, kind, state_mask in candidates:
-                label = "Speak with " + str(actor.get("name") or npc)
-                guides[quest][npc] = {2: 5, 3: label, 4: 0, 5: [["monster", npc]]}
+                description = describe_guide("Speak with %s", ("monster", npc, actor))
+                guides[quest][npc] = {**description, 2: 5, 4: 0, 5: [["monster", npc]]}
                 evidence.append({**context, "questId": quest, "elseGroup": group,
                                  "conditionType": kind, "allowedQuestStateMask": state_mask,
                                  "rule": "questConditionedGossipTaxi",

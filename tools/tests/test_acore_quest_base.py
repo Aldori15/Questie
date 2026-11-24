@@ -61,6 +61,16 @@ class QuestBaseTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "invalid optional"):
             exporter.build_optional_extra_objectives(records, packet)
 
+    def test_generated_guide_keeps_english_and_compact_name_references(self):
+        hint = typed({2: 3, 3: "Use Bane on Target", 4: 0, 5: [["monster", 1200]],
+                      6: ["Use %s on %s", ["item", 7297], ["monster", 1200]]})
+        records = {55: quest(extraObjectives={"n:1": hint})}
+        stream = io.StringIO()
+        exporter.write_stream(stream, records)
+        self.assertIn('[3]="Use Bane on Target"', stream.getvalue())
+        self.assertIn('[6]="Use %s on %s|i7297|n1200"', stream.getvalue())
+        self.assertEqual(hint["n:6"]["n:2"], typed(["item", 7297]))
+
     def test_real_objective_link_cannot_be_marked_optional(self):
         hint = typed({2: 5, 3: "Linked objective", 4: 1, 5: [["monster", 20]]})
         records = {1: quest(extraObjectives={"n:1": hint})}

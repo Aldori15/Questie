@@ -2,6 +2,7 @@
     <Script>QuestieLoader:StampLoadBoundary("Localization/Translations/Translations.xml")</Script>
 
     <Script file="ExtraObjectives.lua"/>
+    <Script file="ExtraObjectivePatterns.lua"/>
 
     <Script file="Journey\MyJourney.lua"/>
     <Script file="Journey\QuestsByZone.lua"/>

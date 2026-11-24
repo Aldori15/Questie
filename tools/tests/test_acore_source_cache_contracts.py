@@ -124,6 +124,7 @@ class SourceCacheContractTests(unittest.TestCase):
                     elif audit is quest:
                         inputs.append(repo / "Compat/UiMapData.lua")
                         inputs.append(repo / "tools/acore_quest_summon_guides.py")
+                        inputs.append(repo / "tools/acore_quest_guide_labels.py")
                     if audit is npc:
                         inputs.append(source / npc.acore_scripted_geometry.NPC_SCRIPT_SOURCE_FILES[0])
                     for path in inputs:

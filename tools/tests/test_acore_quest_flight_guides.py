@@ -32,7 +32,8 @@ class FlightGuideTests(unittest.TestCase):
         packet = flights.derive(*self.args())
         self.assertEqual(set(packet["guides"]), {10163, 10346, 10382})
         self.assertEqual(packet["guides"][10382], [{2: 5, 3: "Speak with Gryphoneer Windbellow",
-                                                   4: 0, 5: [["monster", 20235]]}])
+                                              4: 0, 5: [["monster", 20235]],
+                                              6: ["Speak with %s", ["monster", 20235]]}])
         proofs = {row["questId"]: row for row in packet["evidence"]}
         self.assertEqual(proofs[10382]["conditionType"], 28)
         self.assertEqual(proofs[10382]["taxiPathId"], 607)

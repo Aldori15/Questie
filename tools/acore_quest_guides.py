@@ -4,6 +4,7 @@ import math
 from collections import Counter, defaultdict
 
 from acore_item_compatibility import number, object_display_source
+from acore_quest_guide_labels import describe_guide
 from acore_scripted_geometry import typed
 import acore_quest_flight_guides as flight_guides
 import acore_quest_compatibility as compatibility
@@ -333,8 +334,12 @@ def derive_interaction_guide_packet(quest_templates, creature_templates, object_
             omissions.append({**proof, "reason": "ambiguousFollowInteractionMap"})
             continue
         label = proof.get("label") or str(quests[quest_id].get("AreaDescription") or "").strip()
-        label = label or ("Interact with " if kind == "object" else "Speak with ") + str(template.get("name") or entry)
-        hints.append({**proof, "label": label})
+        hint = {**proof, "label": label}
+        if not label:
+            description = describe_guide("Interact with %s" if kind == "object" else "Speak with %s",
+                                         (kind, entry, template))
+            hint.update(label=description[3], localization=description[6])
+        hints.append(hint)
         evidence.append({**proof, "rule": proof.get("rule", "sourceQuestInteraction")})
         projected = []
         if kind == "object":
@@ -368,7 +373,10 @@ def append_interaction_hints(packet, interactions, skip_quests=()):
         if typed(actor) in existing:
             continue
         index = max((int(key[2:]) for key in hints), default=0) + 1
-        hints[f"n:{index}"] = typed({2: 3, 3: proof["label"], 4: 0, 5: [actor]})
+        hint = {2: 3, 3: proof["label"], 4: 0, 5: [actor]}
+        if "localization" in proof:
+            hint[6] = proof["localization"]
+        hints[f"n:{index}"] = typed(hint)
         packet["evidence"].append({**proof, "rule": proof.get("rule", "sourceQuestInteraction")})
 
 
@@ -833,8 +841,8 @@ def derive_extra_guide_packet(quest_templates, item_templates, object_templates,
                                       "reason": "sharedSpellFocusDoesNotProveQuestLocation" if focus_objects
                                       else "missingSpellFocusObject"})
                 for obj in sorted(focus_objects if len(focus_objects) == 1 else ()):
-                    label = "Use " + str(template.get("name") or item) + " at " + str(objects[obj].get("name") or obj)
-                    hints[(3, label, "object", obj)] = {2: 3, 3: label, 4: 0, 5: [["object", obj]]}
+                    description = describe_guide("Use %s at %s", ("item", item, template), ("object", obj, objects[obj]))
+                    hints[(3, description[3], "object", obj)] = {**description, 2: 3, 4: 0, 5: [["object", obj]]}
                     evidence.append({"questId": quest_id, "rule": "questItemSpellFocus",
                                      "itemId": item, "spellId": spell_id, "objectId": obj})
                 for kind, entry in sorted(target_conditions[spell_id]):
@@ -842,32 +850,32 @@ def derive_extra_guide_packet(quest_templates, item_templates, object_templates,
                     if kind == "object":
                         entry = object_display_source(entry, objects, quest_id)
                     target = (npcs if kind == "monster" else objects)[entry]
-                    label = "Use " + str(template.get("name") or item) + " on " + str(target.get("name") or entry)
-                    hints[(3, label, kind, entry)] = {2: 3, 3: label, 4: 0, 5: [[kind, entry]]}
+                    description = describe_guide("Use %s on %s", ("item", item, template), (kind, entry, target))
+                    hints[(3, description[3], kind, entry)] = {**description, 2: 3, 4: 0, 5: [[kind, entry]]}
                     evidence.append({"questId": quest_id, "rule": "questItemSpellTargetCondition",
                                      "itemId": item, "spellId": spell_id, "kind": kind, "entry": entry})
                     if source_entry != entry:
                         evidence[-1]["sourceEntry"] = source_entry
         for obj in sorted(goobers[quest_id]):
-            label = "Interact with " + str(objects[obj].get("name") or obj)
-            hints[(3, label, "object", obj)] = {2: 3, 3: label, 4: 0, 5: [["object", obj]]}
+            description = describe_guide("Interact with %s", ("object", obj, objects[obj]))
+            hints[(3, description[3], "object", obj)] = {**description, 2: 3, 4: 0, 5: [["object", obj]]}
             evidence.append({"questId": quest_id, "rule": "sourceGooberQuestInteraction", "objectId": obj})
         for npc, spell_id in sorted(vehicle_clicks[quest_id]):
-            label = "Mount " + str(npcs[npc].get("name") or npc)
-            hints[(3, label, "monster", npc)] = {2: 3, 3: label, 4: 0, 5: [["monster", npc]]}
+            description = describe_guide("Mount %s", ("monster", npc, npcs[npc]))
+            hints[(3, description[3], "monster", npc)] = {**description, 2: 3, 4: 0, 5: [["monster", npc]]}
             evidence.append({"questId": quest_id, "rule": "questConditionedVehicleSpellClick",
                              "creatureId": npc, "spellId": spell_id})
         for obj, npc in sorted(summoned_finishers[quest_id]):
-            label = "Use " + str(objects[obj].get("name") or obj) + " to summon " + str(npcs[npc].get("name") or npc)
-            hints[(3, label, "object", obj)] = {2: 3, 3: label, 4: 0, 5: [["object", obj]]}
+            description = describe_guide("Use %s to summon %s", ("object", obj, objects[obj]), ("monster", npc, npcs[npc]))
+            hints[(3, description[3], "object", obj)] = {**description, 2: 3, 4: 0, 5: [["object", obj]]}
             evidence.append({"questId": quest_id, "rule": "activatedObjectSummonsQuestFinisher",
                              "objectId": obj, "creatureId": npc, "sourceType": 1,
                              "eventType": 70, "eventState": 2, "actionType": 12, "targetType": 8})
         for item in sorted(_quest_items(quest, required_only=True)):
             for obj in source_items.get(item, {}).get("objectDrops", ()):
                 for actor in sorted(death_containers[obj]):
-                    label = "Defeat " + str(npcs[actor].get("name") or actor) + " to find " + str(objects[obj].get("name") or obj)
-                    hints[(1, label, "monster", actor)] = {2: 1, 3: label, 4: 0, 5: [["monster", actor]]}
+                    description = describe_guide("Defeat %s to find %s", ("monster", actor, npcs[actor]), ("object", obj, objects[obj]))
+                    hints[(1, description[3], "monster", actor)] = {**description, 2: 1, 4: 0, 5: [["monster", actor]]}
                     evidence.append({"questId": quest_id, "rule": "deathSummonedQuestContainer",
                                      "itemId": item, "objectId": obj, "creatureId": actor})
         travel_keys = set()
@@ -969,14 +977,18 @@ def append_fishing_hints(packet, quest_templates, item_templates, fishing_rows, 
                     source_ids.append(source_id)
             if not points:
                 continue
-            label = "Fish for " + str(items[catch].get("name") or catch)
+            pattern = "Fish for %s"
+            entities = [("item", catch, items[catch])]
             if source_field == "fishingObjectIds":
-                label = "Create a " + str(objects[source_ids[0]]["name"]) + " in water, then fish for " + str(items[catch]["name"])
+                pattern = "Create a %s in water, then fish for %s"
+                entities.insert(0, ("object", source_ids[0], objects[source_ids[0]]))
             if catch != item:
-                label += " and open it for " + str(items[item].get("name") or item)
+                pattern += " and open it for %s"
+                entities.append(("item", item, items[item]))
             hints = packet["guides"].setdefault(quest_id, {})
             index = max((int(key[2:]) for key in hints), default=0) + 1
-            hint = {1: points, 2: 20, 3: label, 4: required.index(item) + 1 if item in required else 0}
+            hint = {**describe_guide(pattern, *entities), 1: points, 2: 20,
+                    4: required.index(item) + 1 if item in required else 0}
             if item not in required:
                 hint[5] = [["item", item]]
             hints[f"n:{index}"] = typed(hint)

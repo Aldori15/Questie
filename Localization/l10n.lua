@@ -84,6 +84,30 @@ local function GetLoadedRecords(data)
     return {}
 end
 
+local function FormatGuideDescription(metadata, records, nameKeys)
+    -- The compact source field is a pattern followed by typed entity IDs,
+    -- for example "Use %s on %s|i7297|n1200".
+    local translations = l10n.translations[metadata:match("^[^|]+")]
+    local template = translations and translations[locale]
+    if type(template) ~= "string" then return nil end
+
+    local names = {}
+    for kind, id in metadata:gmatch("|([ino])(%d+)") do
+        local rows = records[kind]
+        local row = rows[tonumber(id)]
+        local name = row and row[nameKeys[kind]]
+        if not name or name == "" then return nil end
+        names[#names + 1] = name
+    end
+    local missingName = false
+    local description = template:gsub("{(%d+)}", function(index)
+        local name = names[tonumber(index)]
+        if not name then missingName = true end
+        return name
+    end)
+    if not missingName then return description end
+end
+
 function l10n:Initialize()
     local itemData = GetLoadedRecords(QuestieDB.itemData)
     local questData = GetLoadedRecords(QuestieDB.questData)
@@ -140,19 +164,6 @@ function l10n:Initialize()
         end
     end
 
-    -- Generated guides retain English keys until the active locale is known.
-    -- Only translate exact entries available in that locale; source-derived
-    -- descriptions without a translation remain readable without debug noise.
-    for _, quest in pairs(questData) do
-        for _, objective in ipairs(quest[QuestieDB.questKeys.extraObjectives] or {}) do
-            local description = objective[3]
-            local translation = l10n.translations[description]
-            if translation and translation[locale] then
-                objective[3] = l10n(description)
-            end
-        end
-    end
-
     -- Load NPC locales
     for id, data in pairs(npcNameLookup) do
         if npcData[id] and data then
@@ -169,6 +180,25 @@ function l10n:Initialize()
     for id, name in pairs(objectLookup) do
         if objectData[id] and name then
             objectData[id][QuestieDB.objectKeys.name] = name
+        end
+    end
+
+    -- A full-label translation takes precedence. Named patterns use the
+    -- localized rows above. Only the final text is written to the compiled DB.
+    local guideRecords = {i = itemData, n = npcData, o = objectData}
+    local guideNameKeys = {i = QuestieDB.itemKeys.name, n = QuestieDB.npcKeys.name,
+        o = QuestieDB.objectKeys.name}
+    for _, quest in pairs(questData) do
+        for _, objective in ipairs(quest[QuestieDB.questKeys.extraObjectives] or {}) do
+            local description = objective[3]
+            local translation = l10n.translations[description]
+            local metadata = objective[6]
+            if translation and translation[locale] then
+                objective[3] = l10n(description)
+            elseif type(metadata) == "string" then
+                objective[3] = FormatGuideDescription(metadata, guideRecords, guideNameKeys) or description
+            end
+            objective[6] = nil
         end
     end
 

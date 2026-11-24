@@ -22,6 +22,8 @@ local testBit = bit32 or bit or {
 
 local hint = "Speak with Gryphoneer Windbellow"
 local untranslated = "Source-only guide with 50% progress"
+local patterned = "Use Raw item on Raw NPC"
+local missingName = "Use Raw item at Unknown Object"
 local locales = {"enUS", "deDE", "esES", "esMX", "frFR", "koKR", "ptBR", "ruRU", "zhCN", "zhTW"}
 local function setup(locale)
     local modules, warnings = {}, {}
@@ -55,15 +57,18 @@ local function setup(locale)
     db.questData = {
         [1] = {"Raw quest"},
         [10382] = {[29] = {
-            {nil, 3, hint, 0, {{"monster", 20235}}},
+            {nil, 3, hint, 0, {{"monster", 20235}}, "Speak with %s|n1"},
             {nil, 3, untranslated, 0, {{"monster", 20235}}},
+            {nil, 3, patterned, 1, {{"monster", 1}}, "Use %s on %s|i1|n1"},
+            {nil, 3, missingName, 1, {{"object", 2}}, "Use %s at %s|i1|o2"},
         }},
         [10394] = {},
     }
     loadInEnv("Localization/l10n.lua", env)
     loadInEnv("Localization/Translations/ExtraObjectives.lua", env)
+    loadInEnv("Localization/Translations/ExtraObjectivePatterns.lua", env)
     local localeModule = module("l10n")
-    localeModule.itemLookup[locale] = {[1] = "Localized item"}
+    localeModule.itemLookup[locale] = {[1] = "Localized item 100%"}
     localeModule.npcNameLookup[locale] = {[1] = {"Localized NPC", "Localized title"}}
     localeModule.objectLookup[locale] = {[1] = "Localized object"}
     localeModule.questLookup[locale] = {[1] = {"Localized quest", nil, "Localized objective"}}
@@ -76,6 +81,18 @@ local function setup(locale)
             if language ~= "enUS" then
                 assert(type(translations[language]) == "string" and #translations[language] > 0,
                     key .. ": missing translation for " .. language)
+                local expectedTokens = select(2, key:gsub("%%s", ""))
+                if expectedTokens > 0 then
+                    local used = {}
+                    for token in translations[language]:gmatch("{(%d+)}") do
+                        local index = tonumber(token)
+                        assert(index >= 1 and index <= expectedTokens, key .. ": invalid placeholder")
+                        used[index] = true
+                    end
+                    for index = 1, expectedTokens do
+                        assert(used[index], key .. ": missing placeholder in " .. language)
+                    end
+                end
             end
         end
     end
@@ -92,7 +109,7 @@ for _, locale in ipairs(locales) do
     local env, modules, warnings, expected = setup(locale)
     local db, l10n = modules.QuestieDB, modules.l10n
     l10n:Initialize()
-    assert(db.itemData[1][1] == "Localized item" and db.npcData[1][1] == "Localized NPC"
+    assert(db.itemData[1][1] == "Localized item 100%" and db.npcData[1][1] == "Localized NPC"
         and db.npcData[1][2] == "Localized title" and db.objectData[1][1] == "Localized object",
         "materialized item, NPC and object records receive active-locale lookups")
     assert(db.questData[1][1] == "Override quest" and db.questData[1][8][1] == "Override objective",
@@ -100,10 +117,21 @@ for _, locale in ipairs(locales) do
     local guides = db.questData[10382][29]
     assert(guides[1][3] == expected, locale .. ": generated flight hint uses the available translation")
     assert(guides[2][3] == untranslated, locale .. ": unknown descriptions remain unchanged, including percent signs")
+    assert(guides[4][3] == missingName, "missing entity falls back to the original English label")
+    local localizedPattern = guides[3][3]
+    if locale == "enUS" then
+        assert(localizedPattern == patterned, "English keeps the original label")
+    elseif locale == "zhCN" then
+        assert(localizedPattern == "对「Localized NPC」使用「Localized item 100%」。", "localized template reorders names")
+    else
+        assert(localizedPattern:find("Localized item 100%", 1, true)
+            and localizedPattern:find("Localized NPC", 1, true), "pattern uses both localized names")
+    end
     assert(guides[1][2] == 3 and guides[1][4] == 0 and guides[1][5][1][2] == 20235,
         "translation preserves icon, objective association and target identity")
     l10n:Initialize()
     assert(guides[1][3] == expected, "repeated locale initialization preserves the translated description")
+    assert(guides[3][3] == localizedPattern, "repeated locale initialization preserves the formatted label")
 
     -- Exercise the real guide writer/reader, then remove raw data as on a reload.
     loadInEnv("Modules/QuestieStream.lua", env)
@@ -145,9 +173,11 @@ for _, locale in ipairs(locales) do
     stream = modules.QuestieStreamLib:GetStream("raw")
     stream:Load(binary)
     local restored = compiler.readers.extraobjectives(stream)
-    assert(#restored == 2 and restored[1][3] == expected,
+    assert(#restored == 4 and restored[1][3] == expected,
         locale .. ": cached guide retains the translated description without raw quest data")
     assert(restored[2][3] == untranslated, "cached unknown description remains unchanged")
+    assert(restored[3][3] == localizedPattern and restored[3][6] == nil,
+        "compiled guide stores the final label without its generator metadata")
     assert(restored[1][5][1][1] == "monster" and restored[1][5][1][2] == 20235,
         "cached translated guide keeps its NPC target")
     assert(stream._pointer == #binary + 1, "guide reader consumes exactly the stored bytes")

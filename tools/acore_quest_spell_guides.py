@@ -9,6 +9,7 @@ from pathlib import Path
 import re
 
 from acore_item_compatibility import number
+from acore_quest_guide_labels import describe_guide
 from acore_scripted_geometry import typed
 import acore_quest_compatibility as compatibility
 import acore_quest_guides as common
@@ -295,7 +296,7 @@ def derive(quests, items, spells, scripts, conditions, creature_templates, objec
             previous = previous["guides"]
         previous = _rows(previous.get(quest_id, previous.get(str(quest_id), {})))
 
-        def add(actor, index, target, rule, proof, label, area_restrictions=()):
+        def add(actor, index, target, rule, proof, description, area_restrictions=()):
             kind, entry = actor[:2]
             coords, guids = positions(kind, entry, quest_id, actor[2] if len(actor) > 2 else None,
                                       area_restrictions)
@@ -310,7 +311,7 @@ def derive(quests, items, spells, scripts, conditions, creature_templates, objec
                     covered.add(target)
                     return
             key = kind, entry, index
-            hint = {2: 3, 3: label, 4: index}
+            hint = {**description, 2: 3, 4: index}
             template = creatures.get(entry, {})
             template_credit = (kind == "monster" and len(actor) == 2 and not area_restrictions
                                and rule == "sourceCreditProvider"
@@ -332,16 +333,18 @@ def derive(quests, items, spells, scripts, conditions, creature_templates, objec
             for actor, rule, proof in providers[target]:
                 if "requiredHitSpellId" in proof:
                     continue  # The quest item chain must reach the spell that causes the summon.
-                name = (creatures if actor[0] == "monster" else objects).get(actor[1], {}).get("name", str(actor[1]))
-                add(actor, index, target, rule, proof, "Complete the objective near " + str(name))
+                template = (creatures if actor[0] == "monster" else objects).get(actor[1], {})
+                description = describe_guide("Complete the objective near %s", (actor[0], actor[1], template))
+                add(actor, index, target, rule, proof, description)
             for obj in object_providers[target]:
                 template = objects[obj]
                 # Goober quest restrictions may bind it to one other quest.
                 if number(template, "Data1") not in (0, quest_id):
                     continue
-                label = "Use " + str(template.get("name") or obj) + " to summon " + str(creatures.get(target, {}).get("name") or target)
+                description = describe_guide("Use %s to summon %s", ("object", obj, template),
+                                             ("monster", target, creatures.get(target, {})))
                 add(("object", obj), index, target, "gooberEventSummonsObjective",
-                    {"eventId": number(template, "Data2")}, label)
+                    {"eventId": number(template, "Data2")}, description)
 
         for item_id in sorted(common._quest_items(quest)):
             item = items.get(item_id, {})
@@ -355,9 +358,10 @@ def derive(quests, items, spells, scripts, conditions, creature_templates, objec
                         and 21241 in _summon_children(spells.get(root, {}))):
                     index = next(index for target, index in missing if target == 21241)
                     for actor in drink_providers:
-                        label = "Place " + str(item.get("name") or item_id) + " near " + str(creatures[actor[1]].get("name") or actor[1])
+                        description = describe_guide("Place %s near %s", ("item", item_id, item),
+                                                     ("monster", actor[1], creatures[actor[1]]))
                         add(actor, index, 21241, "storedPlayerSpellCredit",
-                            {"itemId": item_id, "itemSpellId": root, "creditSpellId": 36421}, label)
+                            {"itemId": item_id, "itemSpellId": root, "creditSpellId": 36421}, description)
                 for spell, path in _item_spell_paths(root, spells, packet["omissions"], quest_id, item_id):
                     groups = tuple(sorted({number(spells.get(step, {}), "AreaGroupId") for step in path} - {0}))
                     for actor in sorted(target_conditions[spell]):
@@ -367,11 +371,12 @@ def derive(quests, items, spells, scripts, conditions, creature_templates, objec
                                            for provider, _, proof in providers[target])]
                         if not matching:
                             continue
-                        name = (creatures if actor[0] == "monster" else objects)[actor[1]].get("name") or actor[1]
-                        label = "Use " + str(item.get("name") or item_id) + " near " + str(name)
+                        template = (creatures if actor[0] == "monster" else objects)[actor[1]]
+                        description = describe_guide("Use %s near %s", ("item", item_id, item),
+                                                     (actor[0], actor[1], template))
                         for target, index in matching:
                             add(actor, index, target, "questItemTriggeredSpellTarget",
-                                {"itemId": item_id, "spellPath": list(path)}, label, groups)
+                                {"itemId": item_id, "spellPath": list(path)}, description, groups)
         if hints:
             ordered = sorted(hints)
             packet["guides"][quest_id] = typed([hints[key] for key in ordered])

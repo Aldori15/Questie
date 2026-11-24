@@ -165,7 +165,8 @@ class QuestSourceAuditTests(unittest.TestCase):
                 self.assertEqual(saved["quests"]["13221"]["s:triggerEnd"], expected)
                 self.assertEqual(saved["quests"]["13229"]["s:triggerEnd"], expected)
                 fishing = audit.typed([{1: {3518: [[62, 35]]}, 2: 20,
-                                       3: "Fish for World's Largest Mudfish", 4: 1}])
+                                       3: "Fish for World's Largest Mudfish", 4: 1,
+                                       6: ["Fish for %s", ["item", 34868]]}])
                 self.assertEqual(saved["quests"]["11667"]["s:extraObjectives"], fishing)
                 self.assertIn({"questId": 11667, "rule": "reviewedFishingLocation", "itemId": 34868,
                                "fishingItemId": 34868, "fishingAreaIds": [3614]},
@@ -173,7 +174,7 @@ class QuestSourceAuditTests(unittest.TestCase):
                 ghostfish = saved["quests"]["13830"]
                 self.assertEqual(ghostfish["s:extraObjectives"], audit.typed([
                     {1: {3711: [[48.2, 63.4]]}, 2: 20, 3: "Fish for Phantom Ghostfish", 4: 0,
-                     5: [["item", 45902]]}]))
+                     5: [["item", 45902]], 6: ["Fish for %s", ["item", 45902]]}]))
                 self.assertEqual(ghostfish["s:requiredSourceItems"], audit.typed([45902]))
                 self.assertNotIn("s:triggerEnd", ghostfish)
                 self.assertEqual(saved["quests"]["13833"]["s:extraObjectives"]["n:1"]["n:4"], 1)
