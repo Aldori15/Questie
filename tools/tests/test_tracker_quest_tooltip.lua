@@ -54,6 +54,7 @@ local function fixture()
     module("TrackerData").GetQuest = function(id) return f.quests[id] end
     module("TrackerData").ContainsQuest = function(id) return f.present[id] end
     module("TrackerUtils").CanShareQuest = function() return f.canShare ~= false end
+    module("TrackerUtils").IsTomTomAvailable = function() return f.tomtom == true end
     module("TrackerData").GetColoredQuestName = function(quest, levels)
         return (levels and "[12] " or "") .. "Quest " .. quest.Id
     end
@@ -114,6 +115,9 @@ do
     assert(not f:contains("Share Quest") and f:contains("Friend"), "unpushable quests retain progress without share hint")
     f.canShare = true
     profile.trackerbindSetTomTom = "altright"
+    f:tick()
+    assert(f:contains("Share Quest"), "missing TomTom does not suppress the share hint")
+    f.tomtom = true
     f:tick()
     assert(not f:contains("Share Quest"), "TomTom priority suppresses conflicting share hint")
     line.Quest.NativeOnly = true

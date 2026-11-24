@@ -66,6 +66,7 @@ TrackerMenu.addFocusOption = function(menu, quest, objective)
 end
 
 TrackerMenu.addTomTomOption = function(menu, quest, objective)
+    if not TrackerUtils.IsTomTomAvailable() then return end
     tinsert(menu, {
         text = l10n('Set |cFF54e33bTomTom|r Target'),
         func = function()
@@ -577,7 +578,7 @@ function TrackerMenu:GetMenuForQuest(quest)
     if TrackerUtils.CanShareQuest(quest.Id) then TrackerMenu.addShareQuestOption(menu, quest) end
     TrackerMenu.addFocusUnfocusOption(menu, quest)
     TrackerMenu.addTomTomOption(menu, quest, nil)
-    if IsAddOnLoaded("TomTom") then
+    if TrackerUtils.IsTomTomAvailable() then
         TrackerMenu.addRouteOption(menu, quest)
     end
     TrackerMenu.minMaxQuestOption(menu, quest)

@@ -87,7 +87,7 @@ end
 local function _AddShareHint(quest)
     local bind = Questie.db.profile.trackerbindShareQuest
     if not bind or bind == "disabled"
-        or (not quest.NativeOnly and bind == Questie.db.profile.trackerbindSetTomTom) then return end
+        or (not quest.NativeOnly and bind == Questie.db.profile.trackerbindSetTomTom and TrackerUtils.IsTomTomAvailable()) then return end
     local modifier, button = bind:match("^(%a-)(left)$")
     if not button then modifier, button = bind:match("^(%a-)(right)$") end
     local modifiers = {shift = "Shift", ctrl = "Control", alt = "Alt"}

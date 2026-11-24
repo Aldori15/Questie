@@ -358,6 +358,8 @@ env.bit = bit or bit32 or {
 l10n.GetFallbackLocale = function(_, locale) return locale end
 loader:ImportModule("QuestieIconVisibility").IsEnabled = function() return true end
 loader:ImportModule("QuestieIconVisibility").IsEnabledAnywhere = function() return true end
+env.QuestLogScrollFrameScrollBar = env.QuestLogScrollFrameScrollBar or {}
+loadFile("Modules/Tracker/TrackerUtils.lua")
 loader:ImportModule("TrackerUtils").IsVoiceOverLoaded = function() return false end
 local media = env.LibStub:NewLibrary("LibSharedMedia-3.0", 1)
 media.MediaType = {SOUND = "sound"}
@@ -1114,6 +1116,14 @@ shareControl:Fire("OnValueChanged", "altright"); tick()
 equal(db.profile.trackerbindShareQuest, "altright", "share setting uses real Ace callback")
 equal(db.profile.trackerbindUntrack, priorUntrack, "share setting preserves untrack binding")
 equal(db.profile.trackerbindOpenQuestLog, priorOpen, "share setting preserves quest log binding")
+assert(control("shareQuest")):Fire("OnValueChanged", priorUntrack); tick()
+equal(db.profile.trackerbindShareQuest, priorUntrack, "new shortcut assignment takes the chosen click")
+equal(db.profile.trackerbindUntrack, "disabled", "Ace callback disables the previous owner")
+local tomtomOption = loader:ImportModule("QuestieOptions").tabs.tracker:Initialize().args.group_tracker.args.setTomTom
+equal(tomtomOption.hidden(), true, "TomTom binding is hidden without its API")
+env.TomTom = {AddWaypoint = function() end}
+equal(tomtomOption.hidden(), false, "usable TomTom API reveals the binding")
+env.TomTom = nil
 groups = groups + 1
 assert(not next(s.errors), s.errors[1])
 print("Standalone options engine: " .. groups .. " groups passed (real Ace validation, callbacks, profiles and native frame lifecycle)")

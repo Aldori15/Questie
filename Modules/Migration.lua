@@ -187,6 +187,14 @@ local migrationFunctions = {
     [35] = function()
         Questie.db.profile.trimObjectiveText = nil
     end,
+    [36] = function()
+        local profile = Questie.db.profile
+        local untrack = profile.trackerbindUntrack
+        -- Untrack wins over opening the log on both quest and achievement rows.
+        if untrack and untrack ~= "disabled" and profile.trackerbindOpenQuestLog == untrack then
+            profile.trackerbindOpenQuestLog = "disabled"
+        end
+    end,
 }
 
 function Migration:Migrate()

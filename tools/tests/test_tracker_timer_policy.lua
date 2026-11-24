@@ -89,7 +89,7 @@ equal(watch.shown, true, "startup preserves native tracker when Questie tracker 
 env.table = setmetatable({getn = function(value) return #value end}, {__index = table})
 loadModule("Modules/Migration.lua")
 module("Migration"):Migrate()
-equal(profile.migrationVersion, 35, "profile migrations complete")
+equal(profile.migrationVersion, 36, "profile migrations complete")
 equal(profile.showBlizzardQuestTimer, nil, "migration removes obsolete saved preference")
 equal(profile.trackerShowCompleteQuests, false, "migration preserves unrelated tracker preference")
 profile.trackerShowCompleteQuests = true
@@ -103,7 +103,7 @@ for _, channel in ipairs({"party", "raid", "both", "disabled", false}) do
     env.Questie.db.profile = migrated
     module("Migration"):Migrate()
     equal(migrated.questAnnounceChannel, "disabled", "migration disables every previous channel")
-    equal(migrated.migrationVersion, 35, "profile migrations record completion")
+    equal(migrated.migrationVersion, 36, "profile migrations record completion")
     equal(migrated.trimObjectiveText, nil, "migration removes the retired objective wording setting")
     equal(migrated.questAnnounceLocally, true, "local announcement preference preserved")
     equal(migrated.questAnnounceItems, true, "starter-item preference preserved")
@@ -112,4 +112,12 @@ for _, channel in ipairs({"party", "raid", "both", "disabled", false}) do
     module("Migration"):Migrate()
     equal(migrated.questAnnounceChannel, "party", "manual re-enabling survives repeated migration")
 end
+
+local shortcuts = {migrationVersion = 35, trackerbindUntrack = "altleft", trackerbindOpenQuestLog = "altleft",
+    trackerbindShareQuest = "ctrlleft", trackerbindSetTomTom = "ctrlleft"}
+env.Questie.db.profile = shortcuts
+module("Migration"):Migrate()
+equal(shortcuts.trackerbindOpenQuestLog, "disabled", "migration drops the always-shadowed action")
+equal(shortcuts.trackerbindUntrack, "altleft", "migration keeps untrack")
+equal(shortcuts.trackerbindShareQuest, "ctrlleft", "migration keeps context-dependent duplicates")
 print("Tracker timer policy passed: native ownership, legacy settings, startup, Questie countdowns and migration")

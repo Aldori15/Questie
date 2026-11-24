@@ -2,6 +2,42 @@
 local l10n = QuestieLoader:ImportModule("l10n")
 
 local trackerOptionsLocales = {
+    ["This shortcut shares a Quest with your group."] = {
+        ["enUS"] = true,
+        ["deDE"] = "Dieser Shortcut teilt eine Quest mit deiner Gruppe.",
+        ["esES"] = "Este atajo comparte una misión con tu grupo.",
+        ["esMX"] = "Este atajo comparte una misión con tu grupo.",
+        ["frFR"] = "Ce raccourci partage une quête avec votre groupe.",
+        ["koKR"] = "이 단축키는 퀘스트를 파티와 공유합니다.",
+        ["ptBR"] = "Este atalho compartilha uma missão com seu grupo.",
+        ["ruRU"] = "Сочетание клавиш, чтобы поделиться заданием с группой",
+        ["zhCN"] = "此快捷键会将任务共享给你的队伍",
+        ["zhTW"] = "此快捷鍵會將任務分享給你的隊伍",
+    },
+    ["Untrack"] = {
+        ["enUS"] = true,
+        ["deDE"] = "Nicht mehr verfolgen",
+        ["esES"] = "Dejar de rastrear",
+        ["esMX"] = "Dejar de rastrear",
+        ["frFR"] = "Ne plus suivre",
+        ["koKR"] = "추적 취소",
+        ["ptBR"] = "Remover rastreio",
+        ["ruRU"] = "Отмена отслеживания",
+        ["zhCN"] = "取消追踪",
+        ["zhTW"] = "取消追蹤",
+    },
+    ["This shortcut removes a Quest or an Achievement from the Questie Tracker."] = {
+        ["enUS"] = true,
+        ["deDE"] = "Dieser Shortcut entfernt eine Quest oder einen Erfolg aus dem Questie-Tracker.",
+        ["esES"] = "Este atajo elimina una misión o un logro del rastreador.",
+        ["esMX"] = "Este atajo elimina una misión o un logro del rastreador.",
+        ["frFR"] = "Ce raccourci retire une quête ou un haut fait du suivi.",
+        ["koKR"] = "이 단축키는 Questie 추적기에서 퀘스트나 업적을 제거합니다.",
+        ["ptBR"] = "Este atalho remove uma missão ou uma conquista do rastreador.",
+        ["ruRU"] = "Сочетание клавиш для отмены отслеживания задания или достижения в трекере",
+        ["zhCN"] = "此快捷键会将任务或成就从Questie追踪器中移除",
+        ["zhTW"] = "此快捷鍵會將任務或成就從任務清單中移除",
+    },
     ["Share / Link Quest"] = {
         ["enUS"] = true,
         ["deDE"] = "Quest teilen / verlinken",

@@ -189,7 +189,7 @@ function QuestieOptions.tabs.tracker:Initialize()
                         disabled = function() return not Questie.db.profile.trackerEnabled end,
                         get = function() return Questie.db.profile.trackerbindOpenQuestLog end,
                         set = function(_, key)
-                            Questie.db.profile.trackerbindOpenQuestLog = key
+                            TrackerUtils.SetShortcut("trackerbindOpenQuestLog", key)
                         end
                     },
                     Space_Y = QuestieOptionsUtils:HorizontalSpacer(7.1, 0.1),
@@ -199,15 +199,15 @@ function QuestieOptions.tabs.tracker:Initialize()
                         values = _GetShortcuts(),
                         style = 'dropdown',
                         name = function()
-                            return l10n('Untrack / Link')
+                            return l10n('Untrack')
                         end,
                         desc = function()
-                            return l10n('This shortcut removes a Quest or an Achievement from the Questie Tracker when the chat input box is NOT visible, otherwise this will link a Quest or an Achievement to chat.')
+                            return l10n('This shortcut removes a Quest or an Achievement from the Questie Tracker.')
                         end,
                         disabled = function() return not Questie.db.profile.trackerEnabled end,
                         get = function() return Questie.db.profile.trackerbindUntrack end,
                         set = function(_, key)
-                            Questie.db.profile.trackerbindUntrack = key
+                            TrackerUtils.SetShortcut("trackerbindUntrack", key)
                         end
                     },
                     Spacer_Share = QuestieOptionsUtils:Spacer(8.1),
@@ -217,12 +217,12 @@ function QuestieOptions.tabs.tracker:Initialize()
                         values = _GetShortcuts(),
                         style = "dropdown",
                         width = 1.5,
-                        name = function() return l10n("Share / Link Quest") end,
-                        desc = function() return l10n("This shortcut shares a Quest with your group when the chat input box is NOT visible, otherwise this will link a Quest to chat.") end,
+                        name = function() return l10n("Share Quest") end,
+                        desc = function() return l10n("This shortcut shares a Quest with your group.") end,
                         disabled = function() return not Questie.db.profile.trackerEnabled end,
                         get = function() return Questie.db.profile.trackerbindShareQuest end,
                         set = function(_, key)
-                            Questie.db.profile.trackerbindShareQuest = key
+                            TrackerUtils.SetShortcut("trackerbindShareQuest", key)
                         end
                     },
                     Spacer_Sliders = QuestieOptionsUtils:Spacer(9),
@@ -677,7 +677,7 @@ function QuestieOptions.tabs.tracker:Initialize()
                         name = function() return l10n("Automatic |cFF54e33bTomTom|r Route") end,
                         desc = function() return l10n("Automatically point TomTom at the next tracked quest. Quests added to an ordered route from the Tracker are visited first; otherwise Questie uses distance and quest level. Manually set Questie waypoints take priority.") end,
                         disabled = function() return not Questie.db.profile.trackerEnabled end,
-                        hidden = function() return not IsAddOnLoaded("TomTom") end,
+                        hidden = function() return not TrackerUtils.IsTomTomAvailable() end,
                         get = function() return Questie.db.profile.autoRouteEnabled end,
                         set = function(_, value)
                             AutoRoute.SetEnabled(value)
@@ -694,10 +694,10 @@ function QuestieOptions.tabs.tracker:Initialize()
                             return l10n('This shortcut will set the TomTom arrow to point to either an NPC or the first incomplete Quest Objective (if location data is available).\n\nNOTE: This will not work with Achievements.')
                         end,
                         disabled = function() return not Questie.db.profile.trackerEnabled end,
-                        hidden = function() return not IsAddOnLoaded("TomTom") end,
+                        hidden = function() return not TrackerUtils.IsTomTomAvailable() end,
                         get = function() return Questie.db.profile.trackerbindSetTomTom end,
                         set = function(_, key)
-                            Questie.db.profile.trackerbindSetTomTom = key
+                            TrackerUtils.SetShortcut("trackerbindSetTomTom", key)
                         end
                     },
                     trackerSetpoint = {

@@ -48,6 +48,7 @@ loadModule("Modules/Tracker/TrackerMenu.lua")
 loadModule("Modules/Tracker/TrackerLinePool.lua")
 local utils, menu, lines = module("TrackerUtils"), module("TrackerMenu"), module("TrackerLinePool")
 utils.SetTomTomTargetToDungeonEntrance = noop
+utils.ShowQuestLog = function() s.log = true end
 local quest = {Id = 900001, NativeOnly = true, name = "Native quest", Objectives = {}, SpecialObjectives = {},
     IsComplete = function() return 1 end}
 equal(utils.CanShareQuest(nil), false, "missing quest ID")
@@ -87,9 +88,9 @@ equal(s.prints, 1, "combat explains refusal")
 equal(s.pushes, 1, "combat cannot push or queue sharing")
 s.combat = false
 equal(s.pushes, 1, "leaving combat does not replay share")
-s.alt, s.chat = true, {}
+s.shift, s.chat = true, {}
 lines.OnClickQuest({Quest = quest}, "LeftButton")
-equal(s.link, module("TrackerData").GetQuestLink(quest), "share shortcut links native-only quest into open chat")
+equal(s.link, module("TrackerData").GetQuestLink(quest), "Shift-click links a native-only quest into open chat")
 equal(s.pushes, 1, "chat link does not push")
 local getLink = module("TrackerData").GetQuestLink
 module("TrackerData").GetQuestLink = function() return nil end
@@ -98,9 +99,10 @@ lines.OnClickQuest({Quest = quest}, "LeftButton")
 equal(s.link, "existing chat text", "missing quest link preserves chat input")
 equal(s.pushes, 1, "missing chat link does not fall through to sharing")
 module("TrackerData").GetQuestLink = getLink
-s.chat = nil
+s.shift, s.alt = false, true
 lines.OnClickQuest({Quest = quest}, "LeftButton")
-equal(s.pushes, 2, "share shortcut pushes when chat closed")
+equal(s.pushes, 2, "the share shortcut still shares while chat is open")
+s.chat = nil
 env.Questie.db.profile.trackerbindShareQuest = "shiftleft"
 s.alt, s.shift = false, true
 lines.OnClickQuest({Quest = quest}, "LeftButton")
@@ -111,19 +113,51 @@ lines.OnClickQuest({Quest = quest}, "LeftButton")
 equal(s.untracked, 900001, "disabled sharing preserves existing untrack shortcut")
 s.untracked, s.chat = nil, {}
 lines.OnClickQuest({Quest = quest}, "LeftButton")
-equal(s.untracked, nil, "untrack shortcut retains chat-link behavior")
+equal(s.untracked, nil, "Shift-click takes priority when chat is open")
 quest.NativeOnly, s.shift, s.ctrl, s.chat = false, false, true, nil
 env.Questie.db.profile.trackerbindShareQuest = "ctrlleft"
 lines.OnClickQuest({Quest = quest}, "LeftButton")
+equal(s.tomtom, nil, "unavailable TomTom does not consume the shortcut")
+equal(s.pushes, 4, "sharing receives the click without TomTom")
+local tomtomMenu = {}
+menu.addTomTomOption(tomtomMenu, quest, nil)
+equal(#tomtomMenu, 0, "tracker menu omits waypoint actions without TomTom")
+env.TomTom = {AddWaypoint = noop}
+menu.addTomTomOption(tomtomMenu, quest, nil)
+equal(#tomtomMenu, 1, "tracker menu exposes the waypoint action with TomTom")
+lines.OnClickQuest({Quest = quest}, "LeftButton")
 equal(s.tomtom, true, "TomTom keeps priority over sharing")
-equal(s.pushes, 3, "TomTom collision does not share")
+equal(s.pushes, 4, "TomTom collision does not share")
+
+utils.SetShortcut("trackerbindUntrack", "ctrlleft")
+equal(env.Questie.db.profile.trackerbindSetTomTom, "disabled", "assigning untrack clears TomTom's conflicting shortcut")
+equal(env.Questie.db.profile.trackerbindShareQuest, "disabled", "assigning untrack clears the share conflict")
+lines.OnClickQuest({Quest = quest}, "LeftButton")
+equal(s.untracked, quest.Id, "Ctrl-click runs its exact binding")
+local profile = env.Questie.db.profile
+utils.SetShortcut("trackerbindUntrack", "left")
+utils.SetShortcut("trackerbindOpenQuestLog", "altleft")
+s.untracked, s.ctrl, s.alt = nil, false, true
+lines.OnClickQuest({Quest = quest}, "LeftButton")
+equal(s.untracked, nil, "plain Left Click does not shadow Alt-click")
+equal(s.log, true, "Alt-click selects the quest log binding")
+s.log, s.ctrl = nil, true
+lines.OnClickQuest({Quest = quest}, "LeftButton")
+equal(s.log, nil, "Alt+Ctrl does not match Alt")
+equal(s.untracked, nil, "Alt+Ctrl does not match unmodified Left Click")
+equal(profile.trackerbindUntrack, "left", "plain shortcut remains assigned")
+s.alt, s.ctrl, s.shift, s.chat = false, false, true, {}
+env.GetAchievementLink = function(id) return "achievement:" .. id end
+lines.OnClickAchieve({Quest = {Id = 6}}, "LeftButton")
+equal(s.link, "achievement:6", "Shift-click links an achievement with untrack bound elsewhere")
 
 -- Every new player-facing string has an explicit translation for every supported locale.
 local translations = module("l10n")
 translations.translations = {}
 loadModule("Localization/Translations/Options/Tracker.lua")
 loadModule("Localization/Translations/TrackerUI.lua")
-for _, key in ipairs({"Share / Link Quest", "This shortcut shares a Quest with your group when the chat input box is NOT visible, otherwise this will link a Quest to chat.",
+for _, key in ipairs({"Untrack", "This shortcut removes a Quest or an Achievement from the Questie Tracker.",
+    "This shortcut shares a Quest with your group.",
     "Share Quest", "Can't share a Quest while in combat."}) do
     for _, locale in ipairs({"enUS", "deDE", "esES", "esMX", "frFR", "koKR", "ptBR", "ruRU", "zhCN", "zhTW"}) do
         assert(translations.translations[key][locale], key .. " missing " .. locale)

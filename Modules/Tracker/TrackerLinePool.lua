@@ -819,33 +819,31 @@ TrackerLinePool.OnClickQuest = function(self, button)
         LibDropDown:CloseDropDownMenus()
     end
 
-    if not self.Quest.NativeOnly and TrackerUtils:IsBindTrue(Questie.db.profile.trackerbindSetTomTom, button) then
+    local shortcut = TrackerUtils.GetClickShortcut(button)
+    if not shortcut then return end
+
+    local profile = Questie.db.profile
+    if shortcut == "shiftleft" and ChatEdit_GetActiveWindow() then
+        local link = TrackerData.GetQuestLink(self.Quest)
+        if link then ChatEdit_InsertLink(link) end
+    elseif shortcut == profile.trackerbindSetTomTom and not self.Quest.NativeOnly and TrackerUtils.IsTomTomAvailable() then
         local spawn, zone, name = QuestieMap:GetNearestQuestSpawn(self.Quest)
         if spawn then
             TrackerUtils:SetTomTomTarget(name, zone, spawn[1], spawn[2], self.Quest.Id)
         else
             TrackerUtils:SetTomTomTargetToDungeonEntrance(self.Quest)
         end
-    elseif TrackerUtils:IsBindTrue(Questie.db.profile.trackerbindShareQuest, button) then
-        if ChatEdit_GetActiveWindow() then
-            local link = TrackerData.GetQuestLink(self.Quest)
-            if link then ChatEdit_InsertLink(link) end
-        else
-            TrackerUtils.ShareQuest(self.Quest.Id)
+    elseif shortcut == profile.trackerbindShareQuest then
+        TrackerUtils.ShareQuest(self.Quest.Id)
+    elseif shortcut == profile.trackerbindUntrack then
+        QuestieTracker:UntrackQuestId(self.Quest.Id)
+        local questLogFrame = QuestLogExFrame or ClassicQuestLog or QuestLogFrame
+        if questLogFrame and questLogFrame:IsShown() then
+            QuestLog_Update()
         end
-    elseif TrackerUtils:IsBindTrue(Questie.db.profile.trackerbindUntrack, button) then
-        if (IsModifiedClick("CHATLINK") and ChatEdit_GetActiveWindow()) then
-            ChatEdit_InsertLink(TrackerData.GetQuestLink(self.Quest))
-        else
-            QuestieTracker:UntrackQuestId(self.Quest.Id)
-            local questLogFrame = QuestLogExFrame or ClassicQuestLog or QuestLogFrame
-            if questLogFrame:IsShown() then
-                QuestLog_Update()
-            end
-        end
-    elseif TrackerUtils:IsBindTrue(Questie.db.profile.trackerbindOpenQuestLog, button) then
+    elseif shortcut == profile.trackerbindOpenQuestLog then
         TrackerUtils:ShowQuestLog(self.Quest)
-    elseif button == "RightButton" then
+    elseif shortcut == "right" then
         local menu = TrackerMenu:GetMenuForQuest(self.Quest)
         LibDropDown:EasyMenu(menu, TrackerMenu.menuFrame, "cursor", 0, 0, "MENU")
     end
@@ -862,25 +860,28 @@ TrackerLinePool.OnClickAchieve = function(self, button)
         LibDropDown:CloseDropDownMenus()
     end
 
-    if TrackerUtils:IsBindTrue(Questie.db.profile.trackerbindUntrack, button) then
-        if (IsModifiedClick("CHATLINK") and ChatEdit_GetActiveWindow()) then
-            ChatEdit_InsertLink(GetAchievementLink(self.Quest.Id))
-        else
-            if IsTrackedAchievement(self.Quest.Id) then
-                QuestieTracker:UntrackAchieveId(self.Quest.Id)
-                QuestieTracker:UpdateAchieveTrackerCache(self.Quest.Id)
+    local shortcut = TrackerUtils.GetClickShortcut(button)
+    if not shortcut then return end
 
-                if (not AchievementFrame) then
-                    AchievementFrame_LoadUI()
-                end
+    local profile = Questie.db.profile
+    if shortcut == "shiftleft" and ChatEdit_GetActiveWindow() then
+        local link = GetAchievementLink(self.Quest.Id)
+        if link then ChatEdit_InsertLink(link) end
+    elseif shortcut == profile.trackerbindUntrack then
+        if IsTrackedAchievement(self.Quest.Id) then
+            QuestieTracker:UntrackAchieveId(self.Quest.Id)
+            QuestieTracker:UpdateAchieveTrackerCache(self.Quest.Id)
 
-                AchievementFrameAchievements_ForceUpdate()
-            else
-                -- Assume this is an Objective of an Achievement
-                UIErrorsFrame:AddMessage(format(l10n("You can't untrack an objective of an achievement.")), 1.0, 0.1, 0.1, 1.0)
+            if not AchievementFrame then
+                AchievementFrame_LoadUI()
             end
+
+            AchievementFrameAchievements_ForceUpdate()
+        else
+            -- Assume this is an Objective of an Achievement
+            UIErrorsFrame:AddMessage(format(l10n("You can't untrack an objective of an achievement.")), 1.0, 0.1, 0.1, 1.0)
         end
-    elseif TrackerUtils:IsBindTrue(Questie.db.profile.trackerbindOpenQuestLog, button) then
+    elseif shortcut == profile.trackerbindOpenQuestLog then
         if (not AchievementFrame) then
             AchievementFrame_LoadUI()
         end
@@ -893,7 +894,7 @@ TrackerLinePool.OnClickAchieve = function(self, button)
                 AchievementFrame_SelectAchievement(self.Quest.Id)
             end
         end
-    elseif button == "RightButton" then
+    elseif shortcut == "right" then
         local menu = TrackerMenu:GetMenuForAchievement(self.Quest)
         LibDropDown:EasyMenu(menu, TrackerMenu.menuFrame, "cursor", 0, 0, "MENU")
     end

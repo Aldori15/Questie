@@ -46,32 +46,9 @@ end
 local objectiveFlashTicker
 local objectiveFlashRestore
 local zoneCache = {}
-local bindTruthTable = {
-    ['left'] = function(button)
-        return "LeftButton" == button
-    end,
-    ['right'] = function(button)
-        return "RightButton" == button
-    end,
-    ['shiftleft'] = function(button)
-        return "LeftButton" == button and IsShiftKeyDown()
-    end,
-    ['shiftright'] = function(button)
-        return "RightButton" == button and IsShiftKeyDown()
-    end,
-    ['ctrlleft'] = function(button)
-        return "LeftButton" == button and IsControlKeyDown()
-    end,
-    ['ctrlright'] = function(button)
-        return "RightButton" == button and IsControlKeyDown()
-    end,
-    ['altleft'] = function(button)
-        return "LeftButton" == button and IsAltKeyDown()
-    end,
-    ['altright'] = function(button)
-        return "RightButton" == button and IsAltKeyDown()
-    end,
-    ['disabled'] = function() return false end,
+local shortcutButtons = {LeftButton = "left", RightButton = "right"}
+local shortcutSettings = {
+    "trackerbindOpenQuestLog", "trackerbindUntrack", "trackerbindShareQuest", "trackerbindSetTomTom",
 }
 
 local _QuestLogScrollBar = QuestLogScrollFrameScrollBar or QuestLogListScrollFrame.ScrollBar or QuestLogListScrollFrameScrollBar
@@ -283,14 +260,32 @@ function TrackerUtils:FlashFinisher(quest)
     _FlashMapFrames(frames)
 end
 
----@param bind string
 ---@param button string
----@return string bind The input keybind string
----@return string button The input button string
----@return string bindTruthTable.bind Returns matched bind string
----@return function|boolean bindTruthTable.bind.button Returns button function or false if there is no keybind set
-function TrackerUtils:IsBindTrue(bind, button)
-    return bind and button and bindTruthTable[bind] and bindTruthTable[bind](button)
+---@return string? shortcut
+function TrackerUtils.GetClickShortcut(button)
+    local suffix = shortcutButtons[button]
+    if not suffix then return nil end
+
+    local shift, ctrl, alt = IsShiftKeyDown(), IsControlKeyDown(), IsAltKeyDown()
+    if (shift and (ctrl or alt)) or (ctrl and alt) then return nil end
+    local modifier = (shift and "shift") or (ctrl and "ctrl") or (alt and "alt") or ""
+    return modifier .. suffix
+end
+
+function TrackerUtils.SetShortcut(setting, shortcut)
+    local profile = Questie.db.profile
+    if shortcut ~= "disabled" then
+        for _, otherSetting in ipairs(shortcutSettings) do
+            if otherSetting ~= setting and profile[otherSetting] == shortcut then
+                profile[otherSetting] = "disabled"
+            end
+        end
+    end
+    profile[setting] = shortcut
+end
+
+function TrackerUtils.IsTomTomAvailable()
+    return TomTom ~= nil and type(TomTom.AddWaypoint) == "function"
 end
 
 local function WithQuestSelected(questId, callback)
