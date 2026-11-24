@@ -296,7 +296,7 @@ function QuestieEventHandler:RegisterLateEvents()
     -- quest announce
     Questie:RegisterEvent("CHAT_MSG_LOOT", function(_, text, notPlayerName, _, _, playerName)
         playerName = QuestieCompat.ChatMessageLoot(text)
-        QuestieTracker.QuestItemLooted(_, text)
+        QuestieTracker:QuestItemLooted(text, playerName ~= "")
         QuestieAnnounce.ItemLooted(_, text, notPlayerName, _, _, playerName)
     end)
 

@@ -450,11 +450,12 @@ end
 -- If the player loots a "Quest Item" then this triggers a Tracker Update so the
 -- Quest Item Button can be switched on and appear in the tracker.
 ---@param text string
-function QuestieTracker:QuestItemLooted(text)
-    local playerLoot = strmatch(text, "You receive ") or strmatch(text, "You create")
+---@param isOwnLoot boolean
+function QuestieTracker:QuestItemLooted(text, isOwnLoot)
+    if not isOwnLoot then return end
     local itemId = tonumber(string.match(text, "item:(%d+)"))
 
-    if playerLoot and itemId then
+    if itemId then
         local _, _, _, _, _, itemType, _, _, _, _, _, classID = GetItemInfo(itemId)
         local usableItem = TrackerUtils:IsQuestItemUsable(itemId)
 

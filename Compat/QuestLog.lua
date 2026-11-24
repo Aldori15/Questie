@@ -687,16 +687,38 @@ function QuestieCompat.UiInfoMessage(event, ...)
     end
 end
 
--- parse chat message for player looting an item
-local playerName = UnitName("player")
-local emptyName = ""
+local lootFormatPatterns = {
+    s = "|Hitem:%d+[^|]*|h.-|h",
+    d = "%d+",
+    ["%"] = "%%",
+}
+
+local function BuildLootPattern(format)
+    local pattern = {"^"}
+    local position = 1
+    while true do
+        local first, last, conversion = format:find("%%%d*%$?([sd%%])", position)
+        local literal = format:sub(position, first and first - 1 or #format)
+        pattern[#pattern + 1] = literal:gsub("([%(%)%.%%%+%-%*%?%[%]%^%$])", "%%%1")
+        if not first then
+            break
+        end
+        pattern[#pattern + 1] = lootFormatPatterns[conversion]
+        position = last + 1
+    end
+    pattern[#pattern + 1] = "$"
+    return table.concat(pattern)
+end
+
 function QuestieCompat.ChatMessageLoot(message)
+    if not message then return "" end
+    local uncolored = message:gsub("|c%x%x%x%x%x%x%x%x(|Hitem:[^|]*|h.-|h)|r", "%1")
     for _, pattern in pairs(chatMessagePattern.playerLoot) do
-        if strfind(message, pattern) then
-            return playerName
+        if strfind(uncolored, pattern) then
+            return UnitName("player") or ""
         end
     end
-    return emptyName
+    return ""
 end
 
 -- handle remote questlog of the party/raid
@@ -773,9 +795,10 @@ function QuestieCompat.InitializeQuestLogCompatibility()
     if questLogCompatibilityInitialized then return end
     questLogCompatibilityInitialized = true
 
-    for k, patterns in pairs(chatMessagePattern) do
-        for i, str in pairs(patterns) do
-            chatMessagePattern[k][i] = QuestieLib:SanitizePattern(str)
-        end
+    for i, format in pairs(chatMessagePattern.questInfo) do
+        chatMessagePattern.questInfo[i] = QuestieLib:SanitizePattern(format)
+    end
+    for i, format in pairs(chatMessagePattern.playerLoot) do
+        chatMessagePattern.playerLoot[i] = BuildLootPattern(format)
     end
 end
