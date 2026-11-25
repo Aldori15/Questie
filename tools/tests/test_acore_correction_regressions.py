@@ -8,7 +8,6 @@ from pathlib import Path
 from _test_paths import ADDON_ROOT
 
 from questie_base import base_text
-import generate_acore_item_corrections as item_generator
 import generate_acore_npc_corrections as npc_generator
 import generate_acore_object_corrections as object_generator
 import validate_acore_quest_metadata as quest_validator
@@ -65,18 +64,10 @@ const WintergraspObjectPositionData WGOutsideNPC[WG_MAX_OUTSIDE_NPC] = {
         self.assertIn([1, 2, 1034], spawns[31109][4197])
         self.assertNotIn([48.6, 24.29], spawns[31109][4197])
 
-    def test_phase_metadata_survives_deduplication_and_correction_comparison(self):
+    def test_phase_metadata_survives_deduplication(self):
         points = [[1, 2, 1036], [1, 2, 1037], [1, 2, 1036], [3, 4, 1038, 1, 571]]
         unique = npc_generator.unique_coordinate_points(points, {571: 1})
         self.assertCountEqual([[1, 2, 1036], [1, 2, 1037], [3, 4, 1038]], unique)
-        correction = npc_generator.find_differences(
-            {31109: {'spawns': {4197: [[48.6, 24.29]]}}},
-            {31109: {'spawns': {4197: [[48.6, 24.29, 1036]]}}}, ['spawns'])
-        self.assertEqual({31109: {'spawns': {4197: [[48.6, 24.29, 1036]]}}}, correction)
-        # Ordinary SQL coordinates must not strip unrelated Questie phase conditions.
-        self.assertEqual({}, npc_generator.find_differences(
-            {1: {'spawns': {4197: [[1, 2, 1034]]}}},
-            {1: {'spawns': {4197: [[1, 2]]}}}, ['spawns']))
 
     def test_shared_map_parser_loads_all_wdm_geometry(self):
         addon_root = ADDON_ROOT
@@ -173,15 +164,6 @@ const WintergraspObjectPositionData WGOutsideNPC[WG_MAX_OUTSIDE_NPC] = {
         self.assertCountEqual([[10, 20, 0, 1, 571, 1, 4477], [10, 20, 0, 6, 571, 2, 4477],
                                [10, 20, 0, 1, 571, 1, 4501]],
                               npc_generator.unique_coordinate_points(points, {571: 7}))
-
-    def test_npc_and_object_overlays_preserve_identical_coordinate_phase_changes(self):
-        old = {210: [[10, 20]]}
-        new = {210: [[10, 20, 0, 1, 571, 2, 4477]]}
-        for generator in (npc_generator, object_generator):
-            correction = generator.find_differences({1: {"spawns": old}}, {1: {"spawns": new}}, ["spawns"])
-            self.assertEqual(new, correction[1]["spawns"])
-            self.assertNotEqual(generator.normalize_coordinate_table(new),
-                                generator.normalize_coordinate_table({210: [[10, 20, 0, 1, 571, 1, 4477]]}))
 
     def test_resolves_zulfarrak_spawn_to_wdm_instance_map(self):
         addon_root = ADDON_ROOT
@@ -284,20 +266,6 @@ const WintergraspObjectPositionData WGOutsideNPC[WG_MAX_OUTSIDE_NPC] = {
             with self.subTest(map_id=row["map"]):
                 self.assertEqual(expected_zone_id, npc_generator.resolve_coordinate_zone(row, zone_maps)[0])
 
-    def test_generated_corrections_use_wdm_floor_constants(self):
-        addon_root = ADDON_ROOT
-        zone_maps = npc_generator.parse_zone_maps(addon_root)
-        zone_names = npc_generator.parse_zone_id_names(addon_root, zone_maps)
-
-        self.assertEqual(
-            "{[zoneIDs.WDM_THE_DEADMINES_FLOOR_2] = {{10,20}}}",
-            npc_generator.format_lua_field_value("spawns", {11292: [[10.0, 20.0]]}, zone_names),
-        )
-        self.assertEqual(
-            "zoneIDs.WDM_THE_DEADMINES_FLOOR_2",
-            npc_generator.format_lua_field_value("zoneID", 11292, zone_names),
-        )
-
     def test_reported_boss_floor_coordinates_round_trip(self):
         addon_root = ADDON_ROOT
         zone_maps = npc_generator.parse_zone_maps(addon_root)
@@ -316,42 +284,6 @@ const WintergraspObjectPositionData WGOutsideNPC[WG_MAX_OUTSIDE_NPC] = {
                 world_y = data[4] - data[2] * point[1] / 100
                 self.assertEqual(point, npc_generator.convert_world_to_zone(world_x, world_y, zone_id, zone_maps))
 
-    def test_preserves_dungeon_entrance_beside_npc_interior_spawn(self):
-        corrections = npc_generator.find_differences(
-            {7604: {"spawns": {1176: [[-1, -1]]}}},
-            {7604: {"spawns": {1176: [[23.55, 18.33]]}}},
-            ["spawns"],
-            entrance_marker_zone_ids={1176},
-        )
-
-        self.assertEqual(
-            {7604: {"spawns": {1176: [[-1.0, -1.0], [23.55, 18.33]]}}},
-            corrections,
-        )
-
-    def test_preserves_dungeon_entrance_beside_object_interior_spawn(self):
-        corrections = object_generator.find_differences(
-            {141832: {"spawns": {1176: [[-1, -1]]}}},
-            {141832: {"spawns": {1176: [[40.0, 40.0]]}}},
-            ["spawns"],
-            entrance_marker_zone_ids={1176},
-        )
-
-        self.assertEqual(
-            {141832: {"spawns": {1176: [[-1.0, -1.0], [40.0, 40.0]]}}},
-            corrections,
-        )
-
-    def test_does_not_preserve_entrance_marker_outside_wdm_instances(self):
-        corrections = npc_generator.find_differences(
-            {1: {"spawns": {9999: [[-1, -1]]}}},
-            {1: {"spawns": {9999: [[50.0, 50.0]]}}},
-            ["spawns"],
-            entrance_marker_zone_ids={1176},
-        )
-
-        self.assertEqual({1: {"spawns": {9999: [[50.0, 50.0]]}}}, corrections)
-
     def test_wdm_validator_loads_world_and_instance_tables(self):
         ui_map_data = ADDON_ROOT / "Compat/UiMapData.lua"
 
@@ -359,58 +291,6 @@ const WintergraspObjectPositionData WGOutsideNPC[WG_MAX_OUTSIDE_NPC] = {
         self.assertEqual(
             1176,
             wdm_validator.load_wdm_rows(ui_map_data, "wdmInstanceMapData")[219]["areaID"],
-        )
-
-    def test_preserves_spawned_object_when_ac_npc_dropper_is_unspawned(self):
-        questie = {"objectDrops": [181616], "relatedQuests": [9452]}
-        acore = {"objectDrops": [], "npcDrops": [17102], "relatedQuests": [9452]}
-        source_context = {
-            "spawnedCreatureIds": set(),
-            "spawnedGameObjectIds": {181616},
-            "gameObjectTemplateIds": {181616},
-        }
-
-        self.assertTrue(
-            item_generator.should_preserve_indirect_quest_item_object_sources(
-                "objectDrops",
-                questie,
-                acore,
-                source_context,
-            )
-        )
-
-    def test_static_npc_dropper_remains_authoritative(self):
-        questie = {"objectDrops": [181616], "relatedQuests": [9452]}
-        acore = {"objectDrops": [], "npcDrops": [17102], "relatedQuests": [9452]}
-        source_context = {
-            "spawnedCreatureIds": {17102},
-            "spawnedGameObjectIds": {181616},
-            "gameObjectTemplateIds": {181616},
-        }
-
-        self.assertFalse(
-            item_generator.should_preserve_indirect_quest_item_object_sources(
-                "objectDrops",
-                questie,
-                acore,
-                source_context,
-            )
-        )
-
-    def test_does_not_preserve_unknown_gameobject_source(self):
-        questie = {"objectDrops": [181616], "relatedQuests": [9452]}
-        acore = {"objectDrops": [], "npcDrops": [17102], "relatedQuests": [9452]}
-
-        self.assertFalse(
-            item_generator.should_preserve_indirect_quest_item_object_sources(
-                "objectDrops",
-                questie,
-                acore,
-                {
-                    "spawnedCreatureIds": set(),
-                    "gameObjectTemplateIds": set(),
-                },
-            )
         )
 
     def test_preserves_smartai_gameobject_display_replacement(self):
@@ -488,18 +368,6 @@ const WintergraspObjectPositionData WGOutsideNPC[WG_MAX_OUTSIDE_NPC] = {
         # Escort completion is source-backed even without an area-trigger marker.
         self.assertIn(["monster", 1379], targets[309 - 1])
 
-    def test_does_not_preserve_waypoints_without_ac_path_evidence(self):
-        questie = {17528: {"waypoints": {3525: [[[38.43, 82.02], [36.51, 71.61]]]}}}
-        acore = {17528: {"waypoints": {}}}
-
-        corrections = npc_generator.find_differences(
-            questie,
-            acore,
-            ["waypoints"],
-        )
-
-        self.assertEqual({17528: {"waypoints": {}}}, corrections)
-
     def test_shipped_fishing_guides_cover_native_items_and_ghostfish_source_item(self):
         constants = quest_validator.load_constants(ADDON_ROOT)
         keys = constants["quest_keys"]
@@ -524,34 +392,6 @@ const WintergraspObjectPositionData WGOutsideNPC[WG_MAX_OUTSIDE_NPC] = {
                     self.assertEqual(hints[0][4], [["item", 45902]])
                     self.assertEqual(fields[keys["triggerEnd"] - 1], "nil")
                     self.assertEqual(quest_validator.parse_lua_value(fields[keys["requiredSourceItems"] - 1], constants), [45902])
-
-    def test_preserves_object_spawn_for_ac_required_quest_item(self):
-        questie_items = {23880: {"objectDrops": [181781]}}
-        preserve_spawn_ids = object_generator.collect_indirect_quest_item_object_source_ids(
-            questie_items,
-            {23880},
-            {181781},
-        )
-
-        corrections = object_generator.find_differences(
-            {181781: {"spawns": {3525: [[41, 30]]}, "zoneID": 3525}},
-            {181781: {"spawns": {}, "zoneID": 0}},
-            ["spawns", "zoneID"],
-            preserve_spawn_ids=preserve_spawn_ids,
-        )
-
-        self.assertEqual({181781}, preserve_spawn_ids)
-        self.assertEqual({}, corrections)
-
-    def test_does_not_preserve_object_spawn_for_non_quest_item(self):
-        preserve_spawn_ids = object_generator.collect_indirect_quest_item_object_source_ids(
-            {23880: {"objectDrops": [181781]}},
-            set(),
-            {181781},
-        )
-
-        self.assertEqual(set(), preserve_spawn_ids)
-
 
 if __name__ == "__main__":
     unittest.main()

@@ -127,6 +127,9 @@ class ObjectBaseTests(unittest.TestCase):
         fresh = {1: obj(spawns=typed({12: [[11, 22, 4, 1, 0]]}), zoneID=12)}
         result = exporter.build_records(fresh, manifest, origins(12, ("gameobject:100",)))
         self.assertEqual(result, fresh)
+        phase_only = {1: obj(spawns=typed({210: [[10, 20, 4, 3, 571]]}), zoneID=210)}
+        self.assertEqual(exporter.build_records(phase_only, manifest, origins(identities=("gameobject:100",))),
+                         phase_only)
 
     def test_removed_spawns_disappear_new_spawns_append_and_exclusions_remain(self):
         source = {1: obj(spawns=typed({210: [[10, 20], [30, 40]]}))}

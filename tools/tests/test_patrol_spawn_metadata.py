@@ -30,18 +30,6 @@ class PatrolSpawnMetadataTests(unittest.TestCase):
         self.assertEqual(npc.unique_coordinate_points([first, alternate]),
                          [[10, 20, 0, 3, 571, 2, 4477, 123]])
 
-    def test_identity_survives_correction_comparison_and_serialization(self):
-        point = [10, 20, 0, 0, 622, 0, 0, 142849]
-        old = {29795: {"spawns": {210: [[10, 20]]}}}
-        new = {29795: {"spawns": {210: [point]}}}
-        changes = npc.find_differences(old, new, ["spawns"])
-        self.assertEqual(changes[29795]["spawns"][210], [point])
-        fragment = npc.format_lua_value(changes[29795]["spawns"])
-        self.assertEqual(npc.LuaParser(fragment).parse(), {210: [point]})
-        changed_guid = [*point[:7], 142850]
-        self.assertNotEqual(npc.normalize_coordinate_table({210: [point]}),
-                            npc.normalize_coordinate_table({210: [changed_guid]}))
-
     def test_gunship_uses_outdoor_fallback_without_moving_icc_copy(self):
         original = {210: [[42, 32]], 4812: [[10, 20]]}
         ship = {"guid": 142904, "map": 623, "position_x": 15, "position_y": 30}

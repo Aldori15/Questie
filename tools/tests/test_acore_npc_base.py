@@ -468,12 +468,14 @@ class NpcBaseTests(unittest.TestCase):
         result = exporter.build_records(fresh, manifest, {})[1]
         self.assertEqual((result["s:name"], result["s:zoneID"], result["s:minLevelHealth"]), ("Renamed", 12, 100))
 
-    def test_current_path_identity_uses_fresh_point_order_without_an_old_cache(self):
+    def test_current_path_identity_uses_fresh_point_order_and_drops_removed_paths(self):
         old = {1: npc(waypoints=audit.typed({210: [[[10, 20], [30, 40]]]}))}
         origins = {"1": {"waypoints": {"n:210": {"n:1": ["path:1"]}}}}
         manifest = exporter.upgrade_manifest(bootstrap(old, old), old, origins)
         fresh = {1: npc(waypoints=audit.typed({210: [[[11, 21], [25, 35], [30, 40]]]}))}
         self.assertEqual(exporter.build_records(fresh, manifest, origins), fresh)
+        without_path = {1: npc(waypoints={})}
+        self.assertEqual(exporter.build_records(without_path, manifest, {})[1]["s:waypoints"], {})
 
     def test_new_npcs_are_generated_while_known_omissions_stay_excluded(self):
         original = {1: npc(), 2: npc()}
@@ -830,7 +832,7 @@ end
             lua = db_snapshot.lua_executable()
         except ValueError:
             self.skipTest("Lua unavailable")
-        source = {1: npc(spawns=audit.typed({210: [[10, 20, None, 3, 571]]}),
+        source = {1: npc(spawns=audit.typed({210: [[10, 20, None, 3, 571, None, None, 142849]]}),
                          waypoints=audit.typed({210: [[[30, 40]]]}))}
         before = {1: {**source[1], "s:minLevelHealth": 123}}
         records = exporter.build_records(source, bootstrap(before, source))
@@ -851,6 +853,7 @@ end
                             'assert(QuestieDB.npcKeys.spawns==7 and QuestieDB.npcData[1][2]==123)\n'
                             'local point=QuestieDB.npcData[1][7][210][1]\n'
                             'assert(point[1]==10 and point[2]==20 and point[3]==nil and point[4]==3 and point[5]==571)\n'
+                            'assert(point[6]==nil and point[7]==nil and point[8]==142849)\n'
                             'local paths=QuestieDB.npcData[1][QuestieDB.npcKeys.waypoints][210]\n'
                             'assert(#paths==1 and #paths[1]==1 and paths[1][1][1]==30 and paths[1][1][2]==40)\n'
                             'dofile(' + json.dumps((ADDON_ROOT / "Modules/Map/Waypoints/WaypointGeometry.lua").as_posix()) + ')\n'

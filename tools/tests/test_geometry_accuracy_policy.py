@@ -36,6 +36,15 @@ class GeometryAccuracyPolicyTests(unittest.TestCase):
             with self.subTest(kind=kind), self.assertRaisesRegex(ValueError, "explicit coverage review"):
                 exporter.build_records(source, manifest, {})
 
+    def test_phase_updates_at_an_unchanged_position(self):
+        for kind, exporter in (("npc", npc), ("object", obj)):
+            source, manifest = fixture(kind)
+            for phase in (4, 8, None):
+                with self.subTest(kind=kind, phase=phase):
+                    points = audit.typed({12: [[10, 20, phase, 3, 571]]})
+                    source[1]["s:spawns"] = points
+                    self.assertEqual(exporter.build_records(source, manifest, {})[1]["s:spawns"], points)
+
     def test_reviewed_partial_source_keeps_visibility_and_blocks_new_mapping_gaps(self):
         for kind, exporter in (("npc", npc), ("object", obj)):
             source, manifest = fixture(kind)
