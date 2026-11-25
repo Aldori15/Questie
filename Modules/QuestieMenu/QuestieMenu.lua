@@ -12,6 +12,7 @@ local QuestieMap = QuestieLoader:ImportModule("QuestieMap")
 ---@type QuestieDB
 local QuestieDB = QuestieLoader:ImportModule("QuestieDB")
 local QuestieEvent = QuestieLoader:ImportModule("QuestieEvent")
+local QuestieReputation = QuestieLoader:ImportModule("QuestieReputation")
 ---@type TrackerUtils
 local TrackerUtils = QuestieLoader:ImportModule("TrackerUtils")
 ---@type ZoneDB
@@ -116,6 +117,26 @@ end
 
 local function isTracked(key)
     return Questie.db.profile.townsfolkConfig[key] == true or isTrackedAsKnownProfession(key)
+end
+
+-- These portal trainers use the player's standing for their reaction.
+local portalTrainerFactions = {
+    [19340] = 934, -- Mi'irku Farstep, The Scryers
+    [20791] = 935, -- Iorioa, The Sha'tar
+    [29156] = 1090, -- Archmage Celindra, Kirin Tor
+}
+
+local function _IsTownsfolkNPCAllowed(id, key, faction)
+    if QuestieCorrections.questNPCBlacklist[id] then return false end
+
+    local reputationFaction = key == "Portal Trainer" and portalTrainerFactions[id]
+    if reputationFaction then
+        return QuestieReputation:GetFactionStandingId(reputationFaction) >= 4 -- Neutral
+    end
+
+    local friendly = QuestieDB.QueryNPCSingle(id, "friendlyToFaction")
+    return not friendly or friendly == "AH" or (faction == "Alliance" and friendly == "A")
+        or (faction == "Horde" and friendly == "H")
 end
 
 ---@param id NpcId
@@ -255,13 +276,10 @@ local function toggle(key, forceRemove) -- /run QuestieLoader:ImportModule("Ques
                 local count = 0
                 while e <= maxIndex and count < batchSize do
                     local id = ids[e]
-                    if (not _spawned[id]) then
-                        local friendly = QuestieDB.QueryNPCSingle(id, "friendlyToFaction")
-                        if ((not friendly) or friendly == "AH" or (faction == "Alliance" and friendly == "A") or (faction == "Horde" and friendly == "H")) and (not QuestieCorrections.questNPCBlacklist[id]) then
-                            local npcTitle = getNpcTitle(id, key)
-                            QuestieMap:ShowNPC(id, icon, 1.2, npcTitle, {}, true, key, true)
-                            _spawned[id] = true
-                        end
+                    if not _spawned[id] and _IsTownsfolkNPCAllowed(id, key, faction) then
+                        local npcTitle = getNpcTitle(id, key)
+                        QuestieMap:ShowNPC(id, icon, 1.2, npcTitle, {}, true, key, true)
+                        _spawned[id] = true
                     end
                     e = e + 1
                     count = count + 1
@@ -294,6 +312,16 @@ local function toggle(key, forceRemove) -- /run QuestieLoader:ImportModule("Ques
                 _spawned[id] = nil
             end
         end
+    end
+end
+
+function QuestieMenu.RefreshPortalTrainers()
+    local key = "Portal Trainer"
+    local townsfolk = Questie.db.char.townsfolk
+    local config = Questie.db.profile.townsfolkConfig
+    if config and config[key] and townsfolk and townsfolk[key] then
+        toggle(key, true)
+        toggle(key)
     end
 end
 
@@ -395,14 +423,6 @@ local function _IsFindNearestObjectCategory(key)
     return key == "Mailbox" or key == "Meeting Stones"
 end
 
-local function _IsFindNearestNPCAllowed(npcId)
-    local friendly = QuestieDB.QueryNPCSingle(npcId, "friendlyToFaction")
-    local faction = UnitFactionGroup("Player")
-
-    return ((not friendly) or friendly == "AH" or (faction == "Alliance" and friendly == "A") or (faction == "Horde" and friendly == "H"))
-            and (not QuestieCorrections.questNPCBlacklist[npcId])
-end
-
 local function _IsFindNearestSpawnVisible(spawn)
     return Phasing.IsSpawnDataVisible(spawn)
 end
@@ -485,12 +505,13 @@ local function _FindNearestTownsfolkSpawn(key, ids, isObjectCategory)
     end
 
     local best = { distance = math_huge }
+    local faction = UnitFactionGroup("Player")
     for _, id in pairs(ids) do
         local spawns, name
         if isObjectCategory then
             spawns = QuestieDB.QueryObjectSingle(id, "spawns")
             name = QuestieDB.QueryObjectSingle(id, "name") or l10n(tostring(key))
-        elseif _IsFindNearestNPCAllowed(id) then
+        elseif _IsTownsfolkNPCAllowed(id, key, faction) then
             spawns = QuestieDB.QueryNPCSingle(id, "spawns")
             if QuestieDB.seasonalVendorEvents then
                 spawns = QuestieEvent.GetVendorGeometry(id, spawns)

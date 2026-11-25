@@ -458,3 +458,39 @@ equal(visible("Moonwell"), true, "learning tailoring restores the saved moonwell
 equal(find(menu.buildTownsfolkMenu(), "Moonwell").checked(), true, "Moonwell is checked in Townsfolk")
 equal(visible("Forge"), false, "the forge stays unchecked")
 print("PASS: profession trainers and stations, learning and unlearning, shared skill-event bucket, progression and cache invalidation")
+
+do
+    local key = "Portal Trainer"
+    local db = module("QuestieDB")
+    local standing = {[934] = 3, [935] = 4, [1090] = 4}
+    module("QuestieReputation").GetFactionStandingId = function(_, id) return standing[id] end
+    env.Questie.db.char.townsfolk[key] = {19340, 20791, 29156, 2485}
+    local xs = {[19340] = 1, [20791] = 2, [29156] = 3, [2485] = 0.5}
+    db.QueryNPCSingle = function(id, field)
+        if field == "friendlyToFaction" then return id == 2485 and "A" or "" end
+        if field == "name" then return tostring(id) end
+        if field == "spawns" then return {[12] = {{xs[id], 1}}} end
+    end
+    find(menu.buildTownsfolkMenu(), key).func()
+    assert(shown[key][20791] and shown[key][29156], "neutral reputation allows portal trainers")
+    assert(not shown[key][19340] and not shown[key][2485], "unfriendly and opposing faction trainers stay hidden")
+
+    env.TomTom = {AddWaypoint = noop}
+    env.Questie.Print = noop
+    env.QuestieCompat.GetCurrentPlayerMinimapWorldPosition = function() return 0, 0, 1 end
+    env.QuestieCompat.HBD.GetWorldCoordinatesFromZone = function(_, x, y) return x, y, 1 end
+    env.QuestieCompat.HBD.GetWorldDistance = function(_, _, px, py, nx, ny) return (px - nx)^2 + (py - ny)^2 end
+    module("ZoneDB").GetUiMapIdByAreaId = function(_, id) return id end
+    module("Phasing").IsSpawnDataVisible = function() return true end
+    local waypoint
+    module("TrackerUtils").SetTomTomTarget = function(_, title) waypoint = title end
+    menu.FindNearest(key, key)
+    assert(waypoint:find("20791", 1, true), "Find Nearest skips inaccessible portal trainers")
+
+    standing[934], standing[935] = 4, 3
+    menu.RefreshPortalTrainers()
+    assert(shown[key][19340] and not shown[key][20791], "standing changes refresh enabled trainer pins")
+    menu.FindNearest(key, key)
+    assert(waypoint:find("19340", 1, true), "Find Nearest uses the new standings")
+end
+print("PASS: portal trainer reputation, pin refresh and Find Nearest")

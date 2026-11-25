@@ -386,6 +386,7 @@ function _EventHandler:ChatMsgSystem(message)
     elseif strfind(message, FACTION_STANDING_CHANGED_PATTERN) then -- When you discover a new faction or increase standing eg. Neutral -> Friendly
         local factionChanged, newFaction = QuestieReputation:Update(false)
         if factionChanged or newFaction then
+            QuestieMenu.RefreshPortalTrainers()
             QuestieCombatQueue:Queue(function()
                 QuestieTracker:Update()
             end)
@@ -548,6 +549,7 @@ function _EventHandler:ChatMsgCompatFactionChange()
     Questie.Debug(Questie.DEBUG_DEVELOP, "[EVENT] CHAT_MSG_COMBAT_FACTION_CHANGE")
     local factionChanged, newFaction = QuestieReputation:Update(false)
     if factionChanged or newFaction then
+        QuestieMenu.RefreshPortalTrainers()
         QuestieCombatQueue:Queue(function()
             QuestieTracker:Update()
         end)
