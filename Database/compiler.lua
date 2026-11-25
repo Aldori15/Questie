@@ -29,7 +29,7 @@ local coYield = coroutine.yield
 local coRunning = coroutine.running
 
 -- Bump for schema or base-database migration changes to invalidate cached DB blobs.
-QuestieDBCompiler.compiledSchemaVersion = 72
+QuestieDBCompiler.compiledSchemaVersion = 73
 
 ---@alias CompilerTypes
 ---| "u8"
