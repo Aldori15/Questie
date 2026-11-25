@@ -71,6 +71,21 @@ for key, entry in pairs(l10n.translations) do
                 local actual, errorText = signature(value)
                 if not actual then
                     fail(locale, key, errorText)
+                elseif owners[key] == "Localization/Translations/ExtraObjectivePatterns.lua" then
+                    -- Objective templates render localized entity names by index.
+                    -- Translations may reorder those indices for their grammar.
+                    local seen, count = {}, 0
+                    for token in value:gmatch("{(%d+)}") do
+                        local index = tonumber(token)
+                        if index < 1 or index > #expected or seen[index] then
+                            fail(locale, key, "invalid or repeated entity placeholder {" .. token .. "}")
+                        end
+                        seen[index] = true
+                        count = count + 1
+                    end
+                    if #actual ~= 0 or count ~= #expected then
+                        fail(locale, key, "entity placeholders differ from the English key")
+                    end
                 elseif table.concat(actual) ~= table.concat(expected) then
                     fail(locale, key, "format arguments differ from the English key")
                 end

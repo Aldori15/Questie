@@ -846,7 +846,9 @@ file = assert(io.open("Modules/Journey/QuestieJourney.lua", "r"))
 local journeySource = file:read("*a"):gsub("\r\n", "\n")
 file:close()
 local toggle = assert(journeySource:match("(function QuestieJourney:ToggleJourneyWindow%(%).-\nend)"))
+local drawCurrentTab = assert(journeySource:match("(local function DrawCurrentTab%(%).-\nend)"))
 env.Questie.started, env.PlaySound = true, noop
+env.QuestieCompat.RequestCompletedQuestRefresh = noop
 env.QuestieJourneyFrame = env.CreateFrame("Frame")
 env.QuestieJourneyFrame:Hide()
 journey.IsShown = function() return env.QuestieJourneyFrame:IsShown() end
@@ -856,7 +858,7 @@ compile([[
     local l10n = QuestieLoader:ImportModule("l10n")
     local isWindowShown = false
     local _QuestieJourney = {HandleTabChange = function() return {} end}
-]] .. toggle, "production Journey toggle")()
+]] .. drawCurrentTab .. "\n" .. toggle, "production Journey toggle")()
 engine:ShowFrame()
 journey:ToggleJourneyWindow()
 assert(journey:IsShown() and not engine:IsShown(),

@@ -27,7 +27,10 @@ local function setup(count)
     env.UnitClass = function() return "Warrior", "WARRIOR" end
     env.collectgarbage = noop
     local state = {queried = 0}
-    modules.QuestieDB = {ObjectPointers = {}, Initialize = noop}
+    modules.QuestieDB = {
+        ObjectPointers = {}, Initialize = noop,
+        itemKeys = {name = 1}, npcKeys = {name = 1}, objectKeys = {name = 1},
+    }
     for id = 1, count do modules.QuestieDB.ObjectPointers[id] = true end
     modules.QuestieDB.QueryObjectSingle = function(id, key)
         equal(key, "name", "only object names queried")
