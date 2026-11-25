@@ -1966,6 +1966,8 @@ local function resetSetup(state, character)
     env.Questie.db.profile.weeklyResetHour = 6
     env.Questie.started = true
     env.Questie.Debug = function() end
+    env.GetQuestLogTitle = function() end
+    env.QuestieLoader:ImportModule("QuestieJourney").RefreshCompletionView = function() end
     local draws, timers = 0, {}
     state.modules.AvailableQuests.CalculateAndDrawAll = function() draws = draws + 1 end
     local db = state.modules.QuestieDB

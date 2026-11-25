@@ -324,4 +324,26 @@ do
     equal(journey.private.lastZoneSelection[3], nil, "valid empty tree clears an obsolete selection")
     env.QuestieCompat.C_Timer.After = after
 end
-print("Journey navigation, quest chains, difficulty, pooled trees, and selection restoration passed")
+do
+    loadModule("Modules/Journey/QuestieJourney.lua")
+    env.Questie.started = true
+    env.QuestieJourneyFrame = {Show = noop, Hide = noop}
+    env.PlaySound = noop
+    module("QuestieOptions").HideFrame = noop
+    local requests, draws = 0, 0
+    env.QuestieCompat.RequestCompletedQuestRefresh = function() requests = requests + 1 end
+    journey.private.HandleTabChange = function() draws = draws + 1 end
+    journey:ToggleJourneyWindow()
+    equal(requests, 1, "opening Journey requests server completions")
+    equal(draws, 1, "Journey draws immediately from the local cache")
+    journey:RefreshCompletionView()
+    equal(draws, 2, "the open Journey tab refreshes when new completions arrive")
+    journey.private.lastOpenWindow = "search"
+    journey:RefreshCompletionView()
+    equal(draws, 2, "a response leaves the in-progress search alone")
+    journey:ToggleJourneyWindow()
+    equal(requests, 1, "closing Journey does not request a refresh")
+    journey:RefreshCompletionView()
+    equal(draws, 2, "a closed Journey does not redraw")
+end
+print("Journey navigation, quest chains, difficulty, pooled trees, selection and completion refresh passed")

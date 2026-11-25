@@ -22,6 +22,7 @@ local function setup(options)
     env.GetQuestResetTime = function() return native end
     env.GetMaxDailyQuests = function() return 25 end
     env.QueryQuestsCompleted = noop
+    env.GetQuestLogTitle = noop
     env.GetQuestsCompleted = function(target)
         for id in pairs(target) do target[id] = nil end
         for id in pairs(rewarded) do target[id] = true end
@@ -39,6 +40,7 @@ local function setup(options)
             IsRepeatable = function(id) return id ~= 40 end},
         AvailableQuests = {CalculateAndDrawAll = function() draws = draws + 1 end},
         QuestieServer = server, QuestiePlayer = {GetPlayerLevel = function() return 80 end},
+        QuestieJourney = {RefreshCompletionView = noop},
     }
     env.QuestieLoader = {ImportModule = function(_, name)
         modules[name] = modules[name] or {}; return modules[name]

@@ -16,10 +16,11 @@ local function loadModule(path, env)
     chunk()
 end
 
-local function setup(ids, completed)
+local function setup(ids, completed, isRepeatable)
     local env = setmetatable({}, {__index = _G})
     local modules, hooks, timers, log, rewarded, history = {}, {}, {}, {}, {}, {}
     local now, queries, title, ender = 0, 0, "Membership Benefits", {9884, 9885, 9886, 9887}
+    local mapRefreshes, journeyRefreshes = 0, 0
     for _, id in ipairs(ids or {}) do log[#log + 1] = id end
     for _, id in ipairs(completed or {}) do rewarded[id] = true end
     local function noop() end
@@ -60,7 +61,7 @@ local function setup(ids, completed)
         IsDailyQuest = function(id) return id == 30 end,
         IsWeeklyQuest = function(id) return id == 10 end,
         IsMonthlyQuest = function(id) return id >= 9884 and id <= 9887 end,
-        IsRepeatable = function() return true end,
+        IsRepeatable = isRepeatable or function() return true end,
         QueryQuestSingle = function(_, field) if field == "name" then return title end end,
         QueryNPCSingle = function() return ender end,
         IsDoable = function(id)
@@ -78,10 +79,11 @@ local function setup(ids, completed)
     modules.QuestieQuest = {SetObjectivesDirty = noop, ClearLootedSpawns = noop}
     modules.TrackerUtils = {ClearTomTomTargetForQuest = noop}
     modules.AutoRoute = {RemoveFromRoute = noop}
-    modules.QuestieJourney = {CompleteQuest = function(_, id) history[#history + 1] = id end, AbandonQuest = noop}
+    modules.QuestieJourney = {CompleteQuest = function(_, id) history[#history + 1] = id end, AbandonQuest = noop,
+        RefreshCompletionView = function() journeyRefreshes = journeyRefreshes + 1 end}
     modules.QuestieAnnounce = {CompletedQuest = noop, AbandonedQuest = noop}
     modules.QuestiePartyObjectives = {ScheduleUpdate = noop}
-    modules.AvailableQuests = {CalculateAndDrawAll = noop, ResetLastNpcGuid = noop,
+    modules.AvailableQuests = {CalculateAndDrawAll = function() mapRefreshes = mapRefreshes + 1 end, ResetLastNpcGuid = noop,
         RemoveQuest = function(id, callback) ui[id] = nil; callback() end}
     local tracker = {}
     for _, id in ipairs(log) do tracker[id] = true end
@@ -122,9 +124,69 @@ local function setup(ids, completed)
         remove = remove, advance = advance,
         query = function() compat:QUEST_QUERY_COMPLETE() end,
         queries = function() return queries end,
+        mapRefreshes = function() return mapRefreshes end,
+        journeyRefreshes = function() return journeyRefreshes end,
         chat = function() compat:CHAT_MSG_SYSTEM("CHAT_MSG_SYSTEM", title .. " completed.") end,
         ender = function(value) ender = value end,
     }
+end
+
+-- A normal chat-confirmed reward still refreshes the server list for silent completions.
+do
+    local s = setup({1001, 1003, 1004}, nil, function(id) return id == 1005 end)
+    local complete = s.env.Questie.db.char.complete
+    s.ender({1001})
+    s.claim(); s.reward(1001); s.chat()
+    equal(s.history[1], 1001, "chat path completes the exact turn-in immediately")
+    s.player[1003] = nil -- Native log alone still protects this quest.
+    s.remove(1004) -- Pending Questie log alone still protects this quest.
+    for _, id in ipairs({1002, 1003, 1004, 1005, 1006, 13686, 13687}) do s.rewarded[id] = true end
+    complete[1006] = false
+    s.advance(0.5)
+    equal(s.queries(), 1, "chat reward reuses the scheduled query")
+    local mapRefreshes = s.mapRefreshes()
+    s.query()
+    equal(complete[1002], true, "silent completion imported")
+    equal(#s.history, 1, "silent completion does not invent a Journey turn-in event")
+    equal(s.journeyRefreshes(), 1, "completion views refresh after a new entry")
+    equal(s.mapRefreshes(), mapRefreshes + 1, "server response rechecks map availability")
+    for _, id in ipairs({1003, 1004, 1005, 13686, 13687}) do
+        equal(complete[id], nil, "kept out of local completions " .. id)
+        equal(s.env.QuestieCompat.HasRawServerQuestCompletion(id), true, "raw history retained " .. id)
+    end
+    equal(complete[1006], false, "explicit local reset remains incomplete")
+    s.query()
+    equal(s.journeyRefreshes(), 1, "unchanged response does not redraw Journey")
+    for id in pairs(s.rewarded) do s.rewarded[id] = nil end
+    s.query()
+    equal(complete[1002], true, "an empty response preserves a learned completion")
+    equal(s.env.QuestieCompat.HasRawServerQuestCompletion(1002), false, "raw response excludes saved state")
+    s.advance(1)
+    equal(s.queries(), 1, "a confirmed response does not schedule another query")
+    tests = tests + 1
+end
+
+-- Opening a completion view can share an outstanding query. A newer turn-in
+-- must still be able to collect completions that the old request did not see.
+do
+    local s = setup({1001}, nil, function() return false end)
+    local compat = s.env.QuestieCompat
+    compat.RequestCompletedQuestRefresh()
+    compat.RequestCompletedQuestRefresh()
+    s.advance(0.5)
+    equal(s.queries(), 1, "refresh requests coalesce")
+    compat.RequestCompletedQuestRefresh()
+    s.ender({1001})
+    s.claim(); s.reward(1001); s.chat()
+    s.query()
+    s.rewarded[1002] = true
+    s.advance(0.5)
+    equal(s.queries(), 2, "a later reward receives a fresh response")
+    s.query()
+    equal(s.env.Questie.db.char.complete[1002], true, "newer response learns silent completion")
+    s.advance(1)
+    equal(s.queries(), 2, "view request does not add another query")
+    tests = tests + 1
 end
 
 -- Reproduces the reported four same-title monthly quests with normal lifecycle callbacks.

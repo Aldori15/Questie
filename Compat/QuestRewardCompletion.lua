@@ -19,6 +19,7 @@ local missingRewardCompletions = {}
 local rewardCompletionQueryScheduled = false
 local rewardCompletionQueryInFlight = false
 local rewardCompletionQuerySerial = 0
+local completionRefreshPending = false
 local REWARD_COMPLETION_QUERY_DELAY = 0.5
 local REWARD_COMPLETION_QUERY_TIMEOUT = 5
 
@@ -154,7 +155,7 @@ local function ExpireRewardCompletionQuery(querySerial)
 end
 
 local function HasPendingRewardQueries()
-    return #pendingRewardCompletions > 0 or next(missingRewardCompletions) ~= nil
+    return completionRefreshPending or #pendingRewardCompletions > 0 or next(missingRewardCompletions) ~= nil
 end
 
 ScheduleRewardCompletionQuery = function()
@@ -172,12 +173,21 @@ ScheduleRewardCompletionQuery = function()
         rewardCompletionQuerySerial = rewardCompletionQuerySerial + 1
         local querySerial = rewardCompletionQuerySerial
         rewardCompletionQueryInFlight = true
+        completionRefreshPending = false
 
         QueryQuestsCompleted()
         QuestieCompat.C_Timer.After(REWARD_COMPLETION_QUERY_TIMEOUT, function()
             ExpireRewardCompletionQuery(querySerial)
         end)
     end)
+end
+
+-- A view can use an outstanding reply. A confirmed reward may be newer than
+-- that request, so it can require one more snapshot.
+function QuestieCompat.RequestCompletedQuestRefresh(afterReward)
+    if rewardCompletionQueryInFlight and not afterReward then return end
+    completionRefreshPending = true
+    ScheduleRewardCompletionQuery()
 end
 
 -- Server-side rewards can remove a quest without calling GetQuestReward.
@@ -319,6 +329,7 @@ function QuestieCompat.HandleQuestRewardMessage(message)
             local questId = pending.questId
             table.remove(pendingRewardCompletions, matchingIndex)
             CompleteRewardQuest(questId)
+            QuestieCompat.RequestCompletedQuestRefresh(true)
         end
     end
 end

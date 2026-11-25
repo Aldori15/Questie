@@ -21,6 +21,7 @@ local QuestiePlayer = QuestieLoader:ImportModule("QuestiePlayer")
 ---@type QuestXP
 local QuestXP = QuestieLoader:ImportModule("QuestXP")
 local QuestieServer = QuestieLoader:ImportModule("QuestieServer")
+local QuestieJourney = QuestieLoader:ImportModule("QuestieJourney")
 
 local math_max = math.max
 local bitband = bit.band
@@ -375,7 +376,7 @@ function QuestieCompat.GetQuestsCompleted()
         Questie.db.char.complete = {}
     end
 
-    QueryQuestsCompleted()
+    QuestieCompat.RequestCompletedQuestRefresh()
     return Questie.db.char.complete
 end
 
@@ -425,20 +426,32 @@ end
 function QuestieCompat:QUEST_QUERY_COMPLETE(event)
     -- Expire old caches before applying the authoritative server response.
     QuestieCompat.ResetDailyQuests()
-    GetQuestsCompleted(Questie.db.char.complete)
-
     serverCompletedQuests = {}
-    for questId in pairs(Questie.db.char.complete) do
-        serverCompletedQuests[questId] = true
-    end
+    GetQuestsCompleted(serverCompletedQuests)
 
     -- Process reward turn-ins before repeatable quests are filtered from the
     -- raw server completion table.
     QuestieCompat.ProcessPendingRewardCompletions()
 
-    for questId in pairs(Questie.db.char.complete) do
+    local completed = Questie.db.char.complete
+    for questId in pairs(completed) do
         if QuestieDB.IsRepeatable(questId) then
-            Questie.db.char.complete[questId] = nil
+            completed[questId] = nil
+        end
+    end
+
+    local learnedCompletion = false
+    local nativeQuestIds
+    local currentQuestLog = QuestiePlayer.currentQuestlog or {}
+    for questId in pairs(serverCompletedQuests) do
+        -- Eligibility markers are maintained by the Tournament lifecycle.
+        if completed[questId] == nil and questId ~= 13686 and questId ~= 13687
+            and not currentQuestLog[questId] and not QuestieDB.IsRepeatable(questId) then
+            nativeQuestIds = nativeQuestIds or QuestieCompat.GetQuestLogQuestIds()
+            if not nativeQuestIds[questId] then
+                completed[questId] = true
+                learnedCompletion = true
+            end
         end
     end
 
@@ -460,6 +473,7 @@ function QuestieCompat:QUEST_QUERY_COMPLETE(event)
     -- status conditions. It can arrive after Questie's initial map draw.
     if Questie.started then
         AvailableQuests.CalculateAndDrawAll()
+        if learnedCompletion then QuestieJourney:RefreshCompletionView() end
     end
 end
 

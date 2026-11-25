@@ -141,6 +141,19 @@ function QuestieJourney:HideJourneyWindow()
     end
 end
 
+local function DrawCurrentTab()
+    local treeGroup = _QuestieJourney:HandleTabChange(_QuestieJourney.containerCache, _QuestieJourney.lastOpenWindow)
+    if treeGroup then
+        _QuestieJourney.treeCache = treeGroup
+    end
+end
+
+function QuestieJourney:RefreshCompletionView()
+    if isWindowShown and _QuestieJourney.lastOpenWindow ~= "search" then
+        DrawCurrentTab()
+    end
+end
+
 -- There are ways to toggle this function before the frame has been created
 function QuestieJourney:ToggleJourneyWindow()
     if (not Questie.started) then
@@ -156,10 +169,8 @@ function QuestieJourney:ToggleJourneyWindow()
         QuestieOptions:HideFrame()
         PlaySound("igPlayerInviteDecline")
 
-        local treeGroup = _QuestieJourney:HandleTabChange(_QuestieJourney.containerCache, _QuestieJourney.lastOpenWindow)
-        if treeGroup then
-            _QuestieJourney.treeCache = treeGroup
-        end
+        QuestieCompat.RequestCompletedQuestRefresh()
+        DrawCurrentTab()
 
         QuestieJourneyFrame:Show()
         isWindowShown = true
