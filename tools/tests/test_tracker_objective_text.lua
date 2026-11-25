@@ -151,7 +151,7 @@ groups = groups + 1
 do
     local function noop() end
     local methods = {}
-    for _, name in ipairs({"ClearAllPoints", "SetPoint", "SetOnClick", "SetZone", "SetObjective", "SetPlayButton", "SetMinResize"}) do
+    for _, name in ipairs({"ClearAllPoints", "SetPoint", "SetOnClick", "SetObjective", "SetPlayButton", "SetMinResize"}) do
         methods[name] = noop
     end
     function methods:Hide() self.shown = false end
@@ -166,6 +166,7 @@ do
     function methods:Show() self.shown = true end
     function methods:IsShown() return self.shown end
     function methods:SetMode(mode) self.mode = mode end
+    function methods:SetZone(zone) self.zoneId = zone end
     function methods:SetQuest(quest) self.quest = quest end
     function methods:SetWidth(width) self.width = width end
     function methods:SetSize(width, height) self.width, self.height = width, height end
@@ -237,8 +238,9 @@ do
     loader:ImportModule("TrackerData").GetLayoutRevision = function() return 0 end
     local title = "|cFFFFFF00[61] Waste Not, Want Not|r"
     local percent = 0.25
+    local groupName = "Hellfire Peninsula"
     loader:ImportModule("TrackerQuestOrder").GetSortedQuestIds = function()
-        return {10055}, {[10055] = {quest = quest, zoneName = "Hellfire Peninsula", questCompletePercent = percent}}
+        return {10055}, {[10055] = {quest = quest, zoneName = groupName, questCompletePercent = percent}}
     end
     library.GetColoredQuestName = function() return title end
     env.Questie.Debug = noop
@@ -369,6 +371,42 @@ do
     equal(titleRow.label.point[4], 69, "faded secondary item still reserves title space")
     equal(titleRow.label:GetWidth(), base:GetWidth() - 69 - 30, "formatting preserves secondary item title margin")
     equal(items[2]:GetAlpha(), 0, "fixture exercises transparent item controls")
+    groups = groups + 1
+
+    env.unpack = unpack or table.unpack
+    loadModule("Localization/l10n.lua", env)
+    loadModule("Localization/Translations/Generics.lua", env)
+    loadModule("Localization/Translations/Options/Tracker.lua", env)
+    loadModule("Localization/Translations/Map.lua", env)
+    local translations = loader:ImportModule("l10n")
+    env.GetTrackedAchievements = noop
+    for _, case in ipairs({
+        {"enUS", "Quests (By %% Complete)", "Quests (By % Complete)"},
+        {"enUS", "Quests (By %% Complete Reversed)", "Quests (By % Complete (Reversed))"},
+        {"enUS", "Quests (By Level)", "Quests (By Level)"},
+        {"enUS", "Quests (By Level Reversed)", "Quests (By Level (Reversed))"},
+        {"enUS", "Quests (By Proximity)", "Quests (By Proximity)"},
+        {"enUS", "Quests (By Proximity Reversed)", "Quests (By Proximity (Reversed))"},
+        {"koKR", "Quests (By %% Complete)", "퀘스트 (완료율(%) 순서)"},
+        {"koKR", "Quests (By %% Complete Reversed)", "퀘스트 (완료율(%) 순서 (역순))"},
+        {"koKR", "Quests (By Proximity Reversed)", "퀘스트 (거리 순서 (역순))"},
+        {"koKR", "Unknown Zone", "미확인 구역"},
+        {"koKR", "Hellfire Peninsula", "Hellfire Peninsula"},
+    }) do
+        translations:SetUILocale(case[1])
+        groupName = case[2]
+        local collapsedZones = env.Questie.db.char.collapsedZones
+        for _, collapsed in ipairs({false, true}) do
+            collapsedZones[groupName] = collapsed or nil
+            itemIndex = 0
+            tracker:Update(true)
+            equal(rows[1].zoneId, groupName, "heading keeps its saved group key")
+            equal(rows[1].label.text, "|cFFC0C0C0" .. case[3] .. (collapsed and " +" or "") .. "|r",
+                "localized heading for " .. case[1] .. ": " .. groupName)
+            equal(rows[1].expandZone.mode, collapsed and 0 or 1, "existing collapse state controls localized heading")
+        end
+        collapsedZones[groupName] = nil
+    end
     groups = groups + 1
 end
 print("Tracker objective-text regressions passed (" .. groups .. " groups)")

@@ -613,6 +613,16 @@ end
 -- Only a completed layout is current. Explicit requests invalidate before throttling.
 local layoutRevision
 
+-- Group names also key saved collapse state. Translate only the displayed label.
+local questSortHeadingKeys = {
+    ["Quests (By %% Complete)"] = "By %% Complete",
+    ["Quests (By %% Complete Reversed)"] = "By %% Complete (Reversed)",
+    ["Quests (By Level)"] = "By Level",
+    ["Quests (By Level Reversed)"] = "By Level (Reversed)",
+    ["Quests (By Proximity)"] = "By Proximity",
+    ["Quests (By Proximity Reversed)"] = "By Proximity (Reversed)",
+}
+
 local function _Update(self, force, onlyIfChanged)
     if not onlyIfChanged then layoutRevision = nil end
     -- Prevents calling the tracker too often, especially when the QuestieCombatQueue empties after combat ends
@@ -734,12 +744,19 @@ local function _Update(self, force, onlyIfChanged)
                     line.label:SetPoint("TOPLEFT", line, "TOPLEFT", 0, 0)
 
                     -- Set Zone Title and default Min/Max states
+                    local zoneLabel = zoneName
+                    local sortHeadingKey = questSortHeadingKeys[zoneName]
+                    if sortHeadingKey then
+                        zoneLabel = l10n("Quests") .. " (" .. l10n(sortHeadingKey) .. ")"
+                    elseif zoneName == "Unknown Zone" then
+                        zoneLabel = l10n("Unknown Zone")
+                    end
                     if Questie.db.char.collapsedZones[zoneName] then
                         line.expandZone:SetMode(0)
-                        line.label:SetText("|cFFC0C0C0" .. zoneName .. " +|r")
+                        line.label:SetText("|cFFC0C0C0" .. zoneLabel .. " +|r")
                     else
                         line.expandZone:SetMode(1)
-                        line.label:SetText("|cFFC0C0C0" .. zoneName .. "|r")
+                        line.label:SetText("|cFFC0C0C0" .. zoneLabel .. "|r")
                     end
 
                     -- Checks the minAllQuestsInZone[zone] table and if empty, zero out the table.
