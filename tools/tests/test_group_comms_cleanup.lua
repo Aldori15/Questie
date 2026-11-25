@@ -73,22 +73,32 @@ do
     equal(f.decoded, 6, "YELL from a group member is ignored too")
 end
 
--- Both group decoders reject direct stale insertion without breaking additive V2 parsing.
+-- Retired packet IDs are ignored, even when the sender is still grouped.
+do
+    local f = fixture()
+    assert(not f.private.packets[10] and not f.private.packets[14], "retired handlers are removed")
+    f:receive("WHISPER", nil, {msgId = 10, msgVer = 5, rawQuestList = {groupPacket()}})
+    f:receive("PARTY", nil, {msgId = 14, msgVer = 5, [1] = v2Packet()})
+    equal(next(f.comms.remoteQuestLogs), nil, "retired packets cannot create a quest snapshot")
+    equal(f.redraws, 0, "retired packets do not schedule redraws")
+end
+
+-- Incremental and full-log records reject stale senders, and full-log blocks accumulate.
 do
     local f = fixture()
     f.members["Friend-Realm"] = nil
     f.comms:InsertQuestDataPacket(groupPacket(), "Friend-Realm")
-    local offset = f.comms:InsertQuestDataPacketV2_noclass_RenameMe(v2Packet(), "Friend-Realm", 1, false)
+    local offset = f.comms:InsertFullQuestLogEntry(v2Packet(), "Friend-Realm", 1, false)
     equal(offset, 7, "rejected V2 record still consumes its complete block")
     equal(next(f.comms.remoteQuestLogs), nil, "late group decoders cannot restore a departed member")
     equal(f.comms.data:KeyExists("m_123"), nil, "late insertion cannot register tooltip data")
     f.members["Friend-Realm"] = "party1"
-    f.private.packets[10].read({playerName = "Friend-Realm", rawQuestList = {groupPacket(844, 123)}})
-    f.private.packets[10].read({playerName = "Friend-Realm", rawQuestList = {groupPacket(845, 124)}})
-    f.comms:InsertQuestDataPacketV2_noclass_RenameMe(v2Packet(846, 125), "Friend-Realm", 1, false, "F")
+    f:receive("WHISPER", nil, {msgId = 12, msgVer = 5, [1] = {1, 844, 1, 123, string.byte("m"), 1, 7}})
+    f:receive("WHISPER", nil, {msgId = 12, msgVer = 5, [1] = {2, 845, 1, 124, string.byte("m"), 1, 7,
+        846, 1, 125, string.byte("m"), 1, 7}, [2] = {846}})
     assert(f.comms.remoteQuestLogs[844] and f.comms.remoteQuestLogs[845] and f.comms.remoteQuestLogs[846],
         "full-list blocks accumulate instead of replacing each other")
-    equal(f.comms.remoteQuestLogs[846]["Friend-Realm"][1].status, "F", "failed status survives V2 storage")
+    equal(f.comms.remoteQuestLogs[846]["Friend-Realm"][1].status, "F", "full-log packet preserves failed status")
     assert(f.comms.data:GetTooltip("m_123")[844]["Friend-Realm"], "production tooltip registration exists")
     equal(f.comms:PruneRemoteGroupPlayers(), false, "current member is not pruned, independent of connectivity")
     f.members["Friend-Realm"] = nil
@@ -120,4 +130,4 @@ do
     f.members["Friend-Realm"] = nil
     equal(f.comms:PruneRemoteGroupPlayers(), false, "explicit reset clears group provenance")
 end
-print("Group comms cleanup: late packets, additive snapshots, tooltip cleanup and YELL rejection passed")
+print("Group comms cleanup: late packets, additive snapshots, tooltip cleanup and retired packet rejection passed")

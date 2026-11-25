@@ -80,28 +80,8 @@ _QuestieComms.QC_WRITE_CHANNEL = "CHANNEL"
 --Message types.
 _QuestieComms.QC_ID_BROADCAST_QUEST_UPDATE = 1 -- send quest_log_update status to party/raid members
 _QuestieComms.QC_ID_BROADCAST_QUEST_REMOVE = 2 -- send quest remove status to party/raid members
--- NYI ->
---[[
-  _QuestieComms.QC_ID_BROADCAST_QUESTIE_GETVERSION = 2 -- ask anyone for the newest questie version
-_QuestieComms.QC_ID_BROADCAST_QUESTIE_VERSION = 3 -- broadcast the current questie version
-_QuestieComms.QC_ID_ASK_CHANGELOG = 4 -- ask a player for the changelog
-_QuestieComms.QC_ID_SEND_CHANGELOG = 5
-_QuestieComms.QC_ID_ASK_QUESTS = 6 -- ask a player for their quest progress on specific quests
-_QuestieComms.QC_ID_SEND_QUESTS = 7
-_QuestieComms.QC_ID_ASK_QUESTSLIST = 8 -- ask a player for their current quest log as a list of quest IDs
-_QuestieComms.QC_ID_SEND_QUESTSLIST = 9
-
-        quest.objectives[objectiveIndex].id = questObject.Objectives[objectiveIndex].Id;
-        quest.objectives[objectiveIndex].typ = objective.type;
-        quest.objectives[objectiveIndex].fin = objective.finished;
-        quest.objectives[objectiveIndex].ful = objective.numFulfilled;
-        quest.objectives[objectiveIndex].req = objective.numRequired;
-]]--
--- <-- NYI
-_QuestieComms.QC_ID_BROADCAST_FULL_QUESTLIST = 10
 _QuestieComms.QC_ID_REQUEST_FULL_QUESTLIST = 11
-_QuestieComms.QC_ID_BROADCAST_FULL_QUESTLISTV2 = 12
-_QuestieComms.QC_ID_BROADCAST_QUEST_UPDATEV2 = 14 -- v2 (future use)
+_QuestieComms.QC_ID_BROADCAST_FULL_QUESTLIST = 12
 
 --- Global Functions --
 
@@ -234,9 +214,6 @@ function QuestieComms:Initialize()
     Questie:RegisterMessage("QC_ID_BROADCAST_QUEST_UPDATE", _QuestieComms.BroadcastQuestUpdate);
     Questie:RegisterMessage("QC_ID_BROADCAST_QUEST_REMOVE", _QuestieComms.BroadcastQuestRemove);
 
-    -- Bucket for 2 seconds to prevent spamming.
-    Questie:RegisterBucketMessage("QC_ID_BROADCAST_FULL_QUESTLIST", 2, _QuestieComms.BroadcastQuestLog);
-
     -- Responds to the "hi" event from others.
     Questie:RegisterMessage("QC_ID_REQUEST_FULL_QUESTLIST", _QuestieComms.RequestQuestLog);
 end
@@ -294,7 +271,7 @@ function _QuestieComms:BroadcastQuestRemove(questId, failed) -- broadcast quest 
     end
 end
 
-function QuestieComms:PopulateQuestDataPacketV2_noclass_renameme(questId, quest, offset)
+function QuestieComms:PopulateFullQuestLogEntry(questId, quest, offset)
     local questObject = QuestieDB.GetQuest(questId);
 
     local count = 0
@@ -327,8 +304,7 @@ function QuestieComms:PopulateQuestDataPacketV2_noclass_renameme(questId, quest,
     return offset, count
 end
 
--- temporary function: refactor in 6.0.1
-function QuestieComms:InsertQuestDataPacketV2_noclass_RenameMe(questPacket, playerName, offset, disableCompleteQuests, status)
+function QuestieComms:InsertFullQuestLogEntry(questPacket, playerName, offset, disableCompleteQuests, status)
     --We don't want to insert our own quest data.
     local allDone = true
     if questPacket then
@@ -403,10 +379,6 @@ function QuestieComms:RemoveAllRemoteGroupPlayers()
     if changed then QuestiePartyObjectives:ScheduleUpdate() end
 end
 
-_QuestieComms._isBroadcasting = false
-_QuestieComms._needsNewBroadcast = false
-_QuestieComms._nextBroadcastData = {}
-
 local function _CanSendFullSync(partyType, sendMode, targetPlayer)
     if sendMode == "WHISPER" then
         local playerName = UnitName("player")
@@ -427,6 +399,9 @@ local function _QueueUniqueFullSync(queue, eventName, sendMode, targetPlayer)
     return true
 end
 
+_QuestieComms._isBroadcasting = false
+_QuestieComms._nextBroadcastData = {}
+
 function _QuestieComms:BroadcastQuestLog(eventName, sendMode, targetPlayer) -- broadcast quest update to group or raid
     local partyType = QuestiePlayer:GetGroupType()
     if not _CanSendFullSync(partyType, sendMode, targetPlayer) then
@@ -435,76 +410,6 @@ function _QuestieComms:BroadcastQuestLog(eventName, sendMode, targetPlayer) -- b
 
     if _QuestieComms._isBroadcasting then
         _QueueUniqueFullSync(_QuestieComms._nextBroadcastData, eventName, sendMode, targetPlayer)
-        return
-    end
-
-    Questie.Debug(Questie.DEBUG_DEVELOP, "[QuestieComms] Message", eventName, "partyType:", tostring(partyType))
-    if partyType then
-        local sorted = _BuildSortedFullSyncEntries(partyType)
-
-        local rawQuestList = {}
-        local blocks = {}
-        local entryCount = 0
-        for _, entry in pairs(sorted) do
-            local quest = QuestieComms:CreateQuestDataPacket(entry.questId);
-            entryCount = entryCount + 1
-            rawQuestList[quest.id] = quest;
-            if string.len(QuestieSerializer:Serialize(rawQuestList, "b89")) > 200 then--extra space for packet metadata and CTL stuff
-                rawQuestList[quest.id] = nil
-                tinsert(blocks, rawQuestList)
-                rawQuestList = {
-                    [quest.id] = quest
-                }
-                entryCount = 1
-            end
-        end
-
-        if entryCount ~= 0 then
-            tinsert(blocks, rawQuestList) -- add the last block
-            _QuestieComms._isBroadcasting = true
-            _ScheduleQuestSyncBlocks(blocks, sendMode, function(block)
-                -- send the block
-                local questPacket = _QuestieComms:CreatePacket(_QuestieComms.QC_ID_BROADCAST_FULL_QUESTLIST);
-                questPacket.data.rawQuestList = block;
-                if "WHISPER" == sendMode then
-                    questPacket.data.writeMode = _QuestieComms.QC_WRITE_WHISPER
-                    questPacket.data.target = targetPlayer
-                    questPacket.data.priority = "NORMAL"
-                else
-                    if partyType == "raid" then
-                        questPacket.data.writeMode = _QuestieComms.QC_WRITE_ALLRAID
-                        questPacket.data.priority = "BULK"
-                    elseif partyType == "instance" then
-                        questPacket.data.writeMode = _QuestieComms.QC_WRITE_ALLINSTANCE
-                        questPacket.data.priority = "BULK" -- in case of battlegrounds
-                    else
-                        questPacket.data.writeMode = _QuestieComms.QC_WRITE_ALLGROUP
-                        questPacket.data.priority = "NORMAL"
-                    end
-                end
-                questPacket:write();
-            end, function()
-                _QuestieComms._isBroadcasting = false
-                local nextBroadcast = tremove(_QuestieComms._nextBroadcastData, 1)
-                if nextBroadcast then
-                    _QuestieComms:BroadcastQuestLog(unpack(nextBroadcast))
-                end
-            end)
-        end
-    end
-end
-
-_QuestieComms._isBroadcastingV2 = false
-_QuestieComms._nextBroadcastDataV2 = {}
-
-function _QuestieComms:BroadcastQuestLogV2(eventName, sendMode, targetPlayer) -- broadcast quest update to group or raid
-    local partyType = QuestiePlayer:GetGroupType()
-    if not _CanSendFullSync(partyType, sendMode, targetPlayer) then
-        return
-    end
-
-    if _QuestieComms._isBroadcastingV2 then
-        _QueueUniqueFullSync(_QuestieComms._nextBroadcastDataV2, eventName, sendMode, targetPlayer)
         return
     end
 
@@ -532,7 +437,7 @@ function _QuestieComms:BroadcastQuestLogV2(eventName, sendMode, targetPlayer) --
         for _, entry in pairs(sorted) do
             entryCount = entryCount + 1
 
-            offset = QuestieComms:PopulateQuestDataPacketV2_noclass_renameme(entry.questId, rawQuestList, offset)
+            offset = QuestieComms:PopulateFullQuestLogEntry(entry.questId, rawQuestList, offset)
 
             local sizeProbe = failedQuestIds and {rawQuestList, failedQuestIds} or rawQuestList
             if string.len(QuestieSerializer:Serialize(sizeProbe, "b89")) > 200 then--extra space for packet metadata and CTL stuff
@@ -547,10 +452,10 @@ function _QuestieComms:BroadcastQuestLogV2(eventName, sendMode, targetPlayer) --
         if entryCount ~= 0 or next(blocks) then
             rawQuestList[1] = entryCount
             tinsert(blocks, rawQuestList) -- add the last block
-            _QuestieComms._isBroadcastingV2 = true
+            _QuestieComms._isBroadcasting = true
             _ScheduleQuestSyncBlocks(blocks, sendMode, function(block)
                 -- send the block
-                local questPacket = _QuestieComms:CreatePacket(_QuestieComms.QC_ID_BROADCAST_FULL_QUESTLISTV2);
+                local questPacket = _QuestieComms:CreatePacket(_QuestieComms.QC_ID_BROADCAST_FULL_QUESTLIST);
                 questPacket.data[1] = block;
 
                 if failedQuestIds then
@@ -575,10 +480,10 @@ function _QuestieComms:BroadcastQuestLogV2(eventName, sendMode, targetPlayer) --
                 end
                 questPacket:write();
             end, function()
-                _QuestieComms._isBroadcastingV2 = false
-                local nextBroadcast = tremove(_QuestieComms._nextBroadcastDataV2, 1)
+                _QuestieComms._isBroadcasting = false
+                local nextBroadcast = tremove(_QuestieComms._nextBroadcastData, 1)
                 if nextBroadcast then
-                    _QuestieComms:BroadcastQuestLogV2(unpack(nextBroadcast))
+                    _QuestieComms:BroadcastQuestLog(unpack(nextBroadcast))
                 end
             end)
         end
@@ -716,29 +621,6 @@ _QuestieComms.packets = {
         QuestiePartyObjectives:ScheduleUpdate(questId)
       end
     },
-    [_QuestieComms.QC_ID_BROADCAST_FULL_QUESTLIST] = { --10
-        write = function(self)
-            Questie.Debug(Questie.DEBUG_INFO, "[QuestieComms] Sending: QC_ID_BROADCAST_FULL_QUESTLIST")
-            _QuestieComms:Broadcast(self.data);
-        end,
-        read = function(remoteQuestList)
-            if not remoteQuestList then
-                Questie.Error("[QuestieComms] QC_ID_BROADCAST_FULL_QUESTLIST no remoteQuestList")
-            end
-            --These are not strictly needed but helps readability.
-            local playerName = remoteQuestList.playerName;
-            local questList = remoteQuestList.rawQuestList;
-
-            Questie.Debug(Questie.DEBUG_INFO, "[QuestieComms] Received: QC_ID_BROADCAST_FULL_QUESTLIST Player:", playerName, questList)
-
-            --Don't save our own quests.
-            if questList then
-                for _, questData in pairs(questList) do
-                    QuestieComms:InsertQuestDataPacket(questData, playerName);
-                end
-            end
-        end
-    },
     [_QuestieComms.QC_ID_REQUEST_FULL_QUESTLIST] = { --11
         write = function(self)
             Questie.Debug(Questie.DEBUG_INFO, "[QuestieComms] Sending: QC_ID_REQUEST_FULL_QUESTLIST")
@@ -746,30 +628,19 @@ _QuestieComms.packets = {
         end,
         read = function(self)
             Questie.Debug(Questie.DEBUG_INFO, "[QuestieComms] Received: QC_ID_REQUEST_FULL_QUESTLIST")
-            --Questie:SendMessage("QC_ID_BROADCAST_FULL_QUESTLIST");
-            --if tonumber(major) > 5 then
-            --    QuestieComms:BroadcastQuestLogV2(self.playerName, "WHISPER")--Questie:SendMessage("QC_ID_BROADCAST_FULL_QUESTLISTV2");
-            --else
-            --    QuestieComms:BroadcastQuestLogV2(self.playerName, "WHISPER") -- player doesnt have new questie, use old packet
-            --end
             if UnitName("Player") ~= self.playerName then
-                local major, _, _ = strsplit(".", self.ver)
-                if tonumber(major) > 5 then
-                    _QuestieComms:BroadcastQuestLogV2("QC_ID_BROADCAST_FULL_QUESTLIST", "WHISPER", self.playerName)
-                else
-                    _QuestieComms:BroadcastQuestLog("QC_ID_BROADCAST_FULL_QUESTLIST", "WHISPER", self.playerName)
-                end
+                _QuestieComms:BroadcastQuestLog("QC_ID_BROADCAST_FULL_QUESTLIST", "WHISPER", self.playerName)
                 CommsVisibility:ScheduleSnapshot("FULL_QUESTLIST_REQUEST")
             end
         end
     },
-    [_QuestieComms.QC_ID_BROADCAST_FULL_QUESTLISTV2] = {-- 12
+    [_QuestieComms.QC_ID_BROADCAST_FULL_QUESTLIST] = {-- 12
         write = function(self)
-            Questie.Debug(Questie.DEBUG_INFO, "[QuestieComms] Sending: QC_ID_REQUEST_FULL_QUESTLISTV2")
+            Questie.Debug(Questie.DEBUG_INFO, "[QuestieComms] Sending: QC_ID_BROADCAST_FULL_QUESTLIST")
             _QuestieComms:Broadcast(self.data);
         end,
         read = function(self)
-            Questie.Debug(Questie.DEBUG_INFO, "[QuestieComms] Received: QC_ID_REQUEST_FULL_QUESTLISTV2")
+            Questie.Debug(Questie.DEBUG_INFO, "[QuestieComms] Received: QC_ID_BROADCAST_FULL_QUESTLIST")
 
             local failedQuests = {}
             if self[2] then
@@ -784,20 +655,10 @@ _QuestieComms.packets = {
                 local questId = self[1][offset]
                 local status = questId and failedQuests[questId] and "F" or nil
 
-                offset = QuestieComms:InsertQuestDataPacketV2_noclass_RenameMe(self[1], self.playerName, offset, false, status)
+                offset = QuestieComms:InsertFullQuestLogEntry(self[1], self.playerName, offset, false, status)
             end
         end
     },
-    [_QuestieComms.QC_ID_BROADCAST_QUEST_UPDATEV2] = { -- 14
-        write = function(self)
-            Questie.Debug(Questie.DEBUG_INFO, "[QuestieComms] Sending: QC_ID_BROADCAST_QUEST_UPDATEV2")
-            _QuestieComms:Broadcast(self.data);
-        end,
-        read = function(self)
-            Questie.Debug(Questie.DEBUG_INFO, "[QuestieComms] Received: QC_ID_BROADCAST_QUEST_UPDATEV2")
-            QuestieComms:InsertQuestDataPacketV2_noclass_RenameMe(self[1], self.playerName, 1, false)
-        end
-    }
 }
 
 local function _IsDuplicateQuestUpdate(packet, compressedData, writeMode)
@@ -886,6 +747,9 @@ function _QuestieComms.OnCommReceived_unsafe(prefix, message, distribution, send
             return
         end
         local decompressedData = QuestieSerializer:Deserialize(message, "b89")
+        if decompressedData and (decompressedData.msgId == 10 or decompressedData.msgId == 14) then
+            return -- Retired full-log and experimental update packets.
+        end
 
         --Check if the message version is the same base value
         if(decompressedData and decompressedData.msgVer and floor(decompressedData.msgVer) == floor(commMessageVersion)) then
