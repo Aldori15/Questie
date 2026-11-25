@@ -785,20 +785,7 @@ function _MapIconTooltip:GetObjectiveTooltip(icon)
         if quest then
             for playerName, objectiveData in pairs(quest) do
                 local playerInfo = QuestiePlayer:GetPartyMemberByName(playerName)
-                local playerColor
-                local playerType = ""
-                if playerInfo then
-                    playerColor = "|c" .. playerInfo.colorHex
-                else
-                    playerColor = QuestieComms.remotePlayerClasses[playerName]
-                    if playerColor then
-                        playerColor = Questie:GetClassColor(playerColor)
-                        playerType = " (" .. l10n("Nearby") .. ")"
-                    end
-                end
-                if not playerColor then
-                    playerColor = "|cFFCCCCCC"
-                end
+                local playerColor = playerInfo and ("|c" .. playerInfo.colorHex) or "|cFFCCCCCC"
                 if playerColor then
                     local objectiveEntry = objectiveData[iconData.ObjectiveIndex]
                     if not objectiveEntry then
@@ -806,7 +793,7 @@ function _MapIconTooltip:GetObjectiveTooltip(icon)
                         objectiveEntry = {} -- This will make "GetRGBForObjective" return default color
                     end
                     local remoteColor = QuestieLib:GetRGBForObjective(objectiveEntry)
-                    local colorizedPlayerName = " (" .. playerColor .. playerName .. "|r" .. remoteColor .. ")|r" .. playerType
+                    local colorizedPlayerName = " (" .. playerColor .. playerName .. "|r" .. remoteColor .. ")|r"
 
                     if objectiveEntry.status == "F" then
                         colorizedPlayerName = colorizedPlayerName .. " |cFFFF4444[" .. l10n("Failed") .. "]|r"

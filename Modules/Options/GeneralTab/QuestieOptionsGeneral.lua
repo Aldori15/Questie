@@ -115,22 +115,6 @@ function QuestieOptions.tabs.general:Initialize()
                             QuestiePartyObjectives:Update()
                         end,
                     },
-                    shareQuestsNearby = {
-                        type = "toggle",
-                        order = 7.4,
-                        name = function() return l10n('Share quest progress with nearby players'); end,
-                        desc = function() return l10n("Your quest progress will be periodically sent to nearby players. Disabling this doesn't affect sharing progress with party members."); end,
-                        disabled = function() return false end,
-                        width = 1.7,
-                        hidden = true, -- does this even do anything anymore after YELL removed?
-                        get = function () return not Questie.db.profile.disableYellComms end,
-                        set = function (info, value)
-                            Questie.db.profile.disableYellComms = not value
-                            if not value then
-                                QuestieLoader:ImportModule("QuestieComms"):RemoveAllRemotePlayers()
-                            end
-                        end,
-                    },
                     questAnnounceTypes = {
                         type = "group",
                         order = 7.5,
@@ -514,16 +498,6 @@ function QuestieOptions.tabs.general:Initialize()
                         set = function (_, value)
                             Questie.db.profile.enableTooltipDroprates = value
                         end
-                    },
-                    partyOnlyToggle = {
-                        type = "toggle",
-                        order = 8.76,
-                        name = function() return l10n("Only show party members"); end,
-                        desc = function() return l10n("When this is enabled, shared quest info will only show players in your party."); end,
-                        width = 1.5,
-                        hidden = true, -- does this even do anything anymore after YELL removed?
-                        get = function () return Questie.db.profile.onlyPartyShared; end,
-                        set = function (_, value) Questie.db.profile.onlyPartyShared = value end
                     },
                 },
             },

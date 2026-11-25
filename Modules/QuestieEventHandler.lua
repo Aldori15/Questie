@@ -687,7 +687,6 @@ function _EventHandler:GroupJoined()
 end
 
 function _EventHandler:GroupLeft()
-    -- Preserve unrelated Nearby/YELL data and its normal four-minute expiry.
     QuestieComms:RemoveAllRemoteGroupPlayers()
     CommsVisibility:ResetAll()
     DailyQuestComms.CancelPendingUnavailableQuestGroupResponses()

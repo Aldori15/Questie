@@ -86,9 +86,6 @@ local player = getModule("QuestiePlayer")
 player.numberOfGroupMembers = 0
 local comms = getModule("QuestieComms")
 comms.remoteQuestLogs = {}
-comms.remotePlayerTimes = {}
-comms.remotePlayerEnabled = {}
-comms.remotePlayerClasses = {}
 comms.data = {
     RemovePlayer = function(_, name)
         removedTooltips[name] = (removedTooltips[name] or 0) + 1
@@ -157,9 +154,6 @@ update(3, 3, "offline-to-online does not request logs")
 -- A disconnected player who is still in the party retains their data.
 comms.remoteQuestLogs[788] = { Remote = { fulfilled = 1 }, Testtwoo = { fulfilled = 2 } }
 comms.remoteQuestLogs[789] = { Testtwoo = { fulfilled = 1 } }
-comms.remotePlayerTimes.Testtwoo = 123
-comms.remotePlayerEnabled.Testtwoo = true
-comms.remotePlayerClasses.Testtwoo = "WARRIOR"
 tooltipOwners.Testtwoo = true
 local removedBefore = removedTooltips.Testtwoo or 0
 
@@ -172,7 +166,7 @@ equal(removedTooltips.Testtwoo or 0, removedBefore,
 testtwooOnline = true
 update(3, 3, "reconnect while grouped does not request logs")
 
--- Leaving removes cached quests, tooltip registrations and stale metadata.
+-- Leaving removes cached quests and tooltip registrations.
 update(2, 3, "departed member does not cause full-sync request")
 equal(removedTooltips.Testtwoo, removedBefore + 1, "departure clears tooltip")
 assert(not tooltipOwners.Testtwoo, "departure retained registered tooltip")
@@ -181,9 +175,6 @@ assert(comms.remoteQuestLogs[788] and comms.remoteQuestLogs[788].Remote,
 assert(not comms.remoteQuestLogs[788].Testtwoo,
     "departure retained stale quest objective")
 assert(not comms.remoteQuestLogs[789], "departure retained empty quest cache")
-assert(not comms.remotePlayerTimes.Testtwoo and
-    not comms.remotePlayerEnabled.Testtwoo and
-    not comms.remotePlayerClasses.Testtwoo, "departure retained metadata")
 update(2, 3, "duplicate departure event does not request logs")
 equal(removedTooltips.Testtwoo, removedBefore + 1,
     "duplicate roster event must not repeatedly clean player")

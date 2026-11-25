@@ -5,20 +5,20 @@ local function equal(actual, expected, label)
 end
 local function noop() end
 local function fixture()
-    local f = {members = {["Friend-Realm"] = "party1"}, now = 1000, decoded = 0, redraws = 0}
+    local f = {members = {["Friend-Realm"] = "party1"}, decoded = 0, redraws = 0}
     local modules = {}
     local function module(name) modules[name] = modules[name] or {private = {}}; return modules[name] end
     local env = setmetatable({}, {__index = _G})
     env._G, env.floor, env.tinsert, env.tremove = env, math.floor, table.insert, table.remove
-    env.GetTime = function() return f.now end
     env.UnitName = function() return "Owner" end
     env.Questie = {Debug = noop, Error = function(message) error(message) end,
         db = {profile = {debugEnabled = true}}}
-    env.QuestieCompat = {HBD = {}, C_Timer = {}, C_Map = {GetBestMapForUnit = function() return 1413 end},
+    env.QuestieCompat = {HBD = {}, C_Timer = {},
         GetGroupUnitByName = function(name) return f.members[name] end}
     env.QuestieLoader = {CreateModule = function(_, name) return module(name) end,
         ImportModule = function(_, name) return module(name) end}
-    module("QuestieSerializer").Deserialize = function()
+    module("QuestieSerializer").Deserialize = function(_, _, encoding)
+        equal(encoding, "b89", "ordinary comms retain Wrath encoding")
         f.decoded = f.decoded + 1
         return f.packet
     end
@@ -50,9 +50,6 @@ end
 local function v2Packet(id, target)
     return {id or 844, 1, target or 123, string.byte("m"), 1, 7}
 end
-local function nearbyPacket(id, target, collected)
-    return {msgId = 13, [1] = {id or 844, 1, 8, target or 456, string.byte("m"), collected or 2, 7}}
-end
 
 -- Late group transports are rejected before decoding; unrelated transports retain their behavior.
 do
@@ -62,11 +59,18 @@ do
         f:receive(distribution)
     end
     equal(f.decoded, 0, "departed senders must not reach deserialization")
-    for _, distribution in ipairs({"YELL", "GUILD", "CHANNEL"}) do f:receive(distribution) end
-    equal(f.decoded, 3, "non-group transports remain unchanged")
+    local legacyPacket = {msgId = 13, [1] = {844, 1, 8, 456, string.byte("m"), 2, 7}}
+    f:receive("YELL", "Nearby", legacyPacket)
+    equal(f.decoded, 0, "legacy YELL is ignored before deserialization")
+    equal(next(f.comms.remoteQuestLogs), nil, "legacy YELL cannot create a quest snapshot")
+    equal(f.comms.data:KeyExists("m_456"), nil, "legacy YELL cannot register tooltip data")
+    for _, distribution in ipairs({"GUILD", "CHANNEL"}) do f:receive(distribution) end
+    equal(f.decoded, 2, "other non-group transports still decode")
     f.members["Friend-Realm"] = "raid2"
     for _, distribution in ipairs({"PARTY", "RAID", "WHISPER", "INSTANCE_CHAT"}) do f:receive(distribution) end
-    equal(f.decoded, 7, "current member transports still decode")
+    equal(f.decoded, 6, "current member transports still decode")
+    f:receive("YELL", "Friend-Realm", legacyPacket)
+    equal(f.decoded, 6, "YELL from a group member is ignored too")
 end
 
 -- Both group decoders reject direct stale insertion without breaking additive V2 parsing.
@@ -98,49 +102,17 @@ do
     equal(f.redraws, redraws, "unchanged roster does not schedule another redraw")
 end
 
--- Force group-only cleanup even when GROUP_LEFT arrives before membership APIs settle.
+-- Force group cleanup even when GROUP_LEFT arrives before membership APIs settle.
 do
     local f = fixture()
     f.comms:InsertQuestDataPacket(groupPacket(), "Friend-Realm")
-    f:receive("YELL", "Nearby", nearbyPacket())
-    assert(f.comms.remoteQuestLogs[844].Nearby, "nearby packet stored by real YELL decoder")
     f.comms:RemoveAllRemoteGroupPlayers()
-    assert(not f.comms.remoteQuestLogs[844]["Friend-Realm"], "forced cleanup ignores stale membership API")
-    assert(f.comms.remoteQuestLogs[844].Nearby, "group cleanup preserves unrelated nearby snapshot")
+    equal(next(f.comms.remoteQuestLogs), nil, "forced cleanup ignores stale membership API")
     equal(f.comms.data:KeyExists("m_123"), nil, "group tooltip removed")
-    assert(f.comms.data:GetTooltip("m_456")[844].Nearby, "nearby tooltip remains registered")
-    equal(f.comms.remotePlayerTimes.Nearby, 1000, "nearby timestamp remains")
-    equal(f.comms.remotePlayerClasses.Nearby, "WARRIOR", "nearby class remains")
-    f:receive("YELL", "Nearby", nearbyPacket(844, 456, 7))
-    equal(f.comms.remoteQuestLogs[844].Nearby, nil, "completed nearby objective retains legacy removal")
-end
-
--- Nearby data still uses lazy four-minute expiry, not roster pruning.
-do
-    local f = fixture()
-    f:receive("YELL", "Nearby", nearbyPacket())
-    f.comms:PruneRemoteGroupPlayers()
-    f.comms:RemoveAllRemoteGroupPlayers()
-    assert(f.comms.remoteQuestLogs[844].Nearby, "nearby-only player is not tracked as a group sender")
-    f.now = 1240
-    f.comms:SortRemotePlayers()
-    assert(f.comms.remoteQuestLogs[844].Nearby, "exactly four minutes is not expired")
-    f.now = 1241
-    f.comms:SortRemotePlayers()
-    equal(f.comms.remoteQuestLogs[844], nil, "lazy expiry removes nearby quest and empty bucket")
-    equal(f.comms.data:KeyExists("m_456"), nil, "lazy expiry removes nearby tooltip")
 end
 
 do
     local f = fixture()
-    f.comms:InsertQuestDataPacket(groupPacket(), "Friend-Realm")
-    f.comms.remotePlayerTimes["Friend-Realm"] = 1
-    f.comms:SortRemotePlayers()
-    assert(f.comms.remoteQuestLogs[844]["Friend-Realm"], "expired nearby timestamp cannot remove a current group quest")
-    f.members["Friend-Realm"] = nil
-    equal(f.comms:PruneRemoteGroupPlayers(), true, "group provenance survives nearby timestamp cleanup")
-    equal(f.comms.data:KeyExists("m_123"), nil, "later departure still clears tooltip")
-    f.members["Friend-Realm"] = "party1"
     f.comms:InsertQuestDataPacket(groupPacket(), "Friend-Realm")
     f.comms:ResetAll()
     equal(next(f.comms.remoteQuestLogs), nil, "explicit reset still removes all quest snapshots")
@@ -148,4 +120,4 @@ do
     f.members["Friend-Realm"] = nil
     equal(f.comms:PruneRemoteGroupPlayers(), false, "explicit reset clears group provenance")
 end
-print("Group comms cleanup: late packets, additive snapshots, real tooltip cleanup and nearby expiry passed")
+print("Group comms cleanup: late packets, additive snapshots, tooltip cleanup and YELL rejection passed")

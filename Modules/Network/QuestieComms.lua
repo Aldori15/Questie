@@ -25,7 +25,6 @@ local CommsVisibility = QuestieLoader:ImportModule("CommsVisibility")
 
 --- COMPATIBILITY ---
 local C_Timer = QuestieCompat.C_Timer
-local C_Map = QuestieCompat.C_Map
 local GetGroupUnitByName = QuestieCompat.GetGroupUnitByName
 
 local HBD = QuestieCompat.HBD or LibStub("HereBeDragonsQuestie-2.0")
@@ -34,11 +33,7 @@ local HBD = QuestieCompat.HBD or LibStub("HereBeDragonsQuestie-2.0")
 _QuestieComms.prefix = "questie";
 -- List of all players questlog private to prevent modification from the outside.
 QuestieComms.remoteQuestLogs = {}
-QuestieComms.remotePlayerClasses = {}
-QuestieComms.remotePlayerEnabled = {}
-QuestieComms.remotePlayerTimes = {}
 
--- Nearby/YELL players must survive group departures until their normal expiry.
 local remoteGroupPlayers = {}
 
 local function _StoreRemoteGroupQuest(questId, playerName, objectives)
@@ -71,9 +66,6 @@ local DUPLICATE_QUEST_UPDATE_WINDOW = 0.25
 local lastCommReceiveErrorLog
 local COMM_RECEIVE_ERROR_LOG_INTERVAL = 60
 
--- forward declaration
-local _DoYell
-
 --Not used, contains a list of hashes for quest, used to compare change.
 --_QuestieComms.questHashes = {};
 
@@ -84,7 +76,6 @@ _QuestieComms.QC_WRITE_ALLINSTANCE = "INSTANCE_CHAT"
 _QuestieComms.QC_WRITE_ALLRAID = "RAID"
 _QuestieComms.QC_WRITE_WHISPER = "WHISPER"
 _QuestieComms.QC_WRITE_CHANNEL = "CHANNEL"
-_QuestieComms.QC_WRITE_YELL = "YELL"
 
 --Message types.
 _QuestieComms.QC_ID_BROADCAST_QUEST_UPDATE = 1 -- send quest_log_update status to party/raid members
@@ -110,28 +101,7 @@ _QuestieComms.QC_ID_SEND_QUESTSLIST = 9
 _QuestieComms.QC_ID_BROADCAST_FULL_QUESTLIST = 10
 _QuestieComms.QC_ID_REQUEST_FULL_QUESTLIST = 11
 _QuestieComms.QC_ID_BROADCAST_FULL_QUESTLISTV2 = 12
-_QuestieComms.QC_ID_YELL_PROGRESS = 13
 _QuestieComms.QC_ID_BROADCAST_QUEST_UPDATEV2 = 14 -- v2 (future use)
-
-local badYellLocations = {
-  -- Alliance
-  [1453] = true, -- Stormwind
-  [1455] = true, -- Ironforge
-  [1457] = true, -- Darnassus
-  [1947] = true, -- Exodar
-  -- Horde
-  [1454] = true, -- Orgrimmar
-  [1456] = true, -- Thunder Bluff
-  [1458] = true, -- Undercity
-  [1954] = true, -- Silvermoon
-  -- Both
-  [1955] = true, -- Shattrath
-  -- Battlegrounds
-  [1459] = true, -- Alterac Valley
-  [1460] = true, -- Warsong Gulch
-  [1461] = true, -- Arathi Basin
-  [1957] = true, -- Eye of the Storm
-}
 
 --- Global Functions --
 
@@ -269,12 +239,6 @@ function QuestieComms:Initialize()
 
     -- Responds to the "hi" event from others.
     Questie:RegisterMessage("QC_ID_REQUEST_FULL_QUESTLIST", _QuestieComms.RequestQuestLog);
-
-    -- Part of yellcomms, removing
-    -- if not Questie.db.profile.disableYellComms then
-    --     C_Timer.NewTicker(60, QuestieComms.SortRemotePlayers) -- periodically check for old players and remove them.
-    -- end
-
 end
 
 -- Local Functions --
@@ -285,9 +249,6 @@ function _QuestieComms:BroadcastQuestUpdate(questId) -- broadcast quest update t
         local partyType = QuestiePlayer:GetGroupType()
         Questie.Debug(Questie.DEBUG_INFO, "[QuestieComms:BroadcastQuestUpdate] partyType", tostring(partyType))
         if partyType then
-            if partyType ~= "raid" then
-                QuestieComms:YellProgress(questId)
-            end
             --Do we really need to make this?
             local questPacket = _QuestieComms:CreatePacket(_QuestieComms.QC_ID_BROADCAST_QUEST_UPDATE)
 
@@ -303,8 +264,6 @@ function _QuestieComms:BroadcastQuestUpdate(questId) -- broadcast quest update t
                 questPacket.data.writeMode = _QuestieComms.QC_WRITE_ALLGROUP
             end
             questPacket:write()
-        else
-            QuestieComms:YellProgress(questId)
         end
     end
 end
@@ -334,24 +293,6 @@ function _QuestieComms:BroadcastQuestRemove(questId, failed) -- broadcast quest 
         questPacket:write();
     end
 end
-
-local _classToIndex = {
-    ["DRUID"] = 1,
-    ["HUNTER"] = 2,
-    ["MAGE"] = 3,
-    ["PRIEST"] = 4,
-    ["ROGUE"] = 5,
-    ["SHAMAN"] = 6,
-    ["WARLOCK"] = 7,
-    ["WARRIOR"] = 8,
-    ["PALADIN"] = 9,
-    ["DEATHKNIGHT"] = 10,
-}
-local _indexToClass = {}
-for class, index in pairs(_classToIndex) do
-    _indexToClass[index] = class
-end
-
 
 function QuestieComms:PopulateQuestDataPacketV2_noclass_renameme(questId, quest, offset)
     local questObject = QuestieDB.GetQuest(questId);
@@ -385,40 +326,6 @@ function QuestieComms:PopulateQuestDataPacketV2_noclass_renameme(questId, quest,
 
     return offset, count
 end
-
-function QuestieComms:PopulateQuestDataPacketV2(questId, quest, offset)
-    local questObject = QuestieDB.GetQuest(questId);
-
-    local count = 0
-
-    local rawObjectives = QuestLogCache.GetQuestObjectives(questId) -- DO NOT MODIFY THE RETURNED TABLE
-    if (not rawObjectives) then return offset, count end
-
-    if questObject and next(questObject.Objectives) then
-        quest[offset] = questId
-        local countOffset = offset+1
-        local _, playerClass = UnitClass("player")
-        quest[offset+2] = _classToIndex[playerClass]
-
-        offset = offset + 3
-        for objectiveIndex, objective in pairs(rawObjectives) do -- DO NOT MODIFY THE RETURNED TABLE
-            quest[offset] = questObject.Objectives[objectiveIndex].Id
-            quest[offset + 1] = string.byte(string.sub(objective.type, 1, 1))
-            quest[offset + 2] = objective.numFulfilled
-            quest[offset + 3] = objective.numRequired
-            offset = offset + 4
-            count = count + 1
-        end
-
-        quest[countOffset] = count
-    end
-
-
-    Questie.Debug(Questie.DEBUG_SPAM, "[QuestieComms] questPacket made: Objectivetable:", quest)
-
-    return offset, count
-end
-
 
 -- temporary function: refactor in 6.0.1
 function QuestieComms:InsertQuestDataPacketV2_noclass_RenameMe(questPacket, playerName, offset, disableCompleteQuests, status)
@@ -466,80 +373,11 @@ function QuestieComms:InsertQuestDataPacketV2_noclass_RenameMe(questPacket, play
     return offset, allDone
 end
 
-function QuestieComms:InsertQuestDataPacketV2(questPacket, playerName, offset, disableCompleteQuests)
-    --We don't want to insert our own quest data.
-    local allDone = true
-    if questPacket then
-        --Does it contain id and objectives?
-        if(questPacket[2 + offset]) then
-            -- Create empty quest.
-            local questPacketid = questPacket[offset]
-            local objectiveCount = questPacket[offset+1]
-            local class = _indexToClass[questPacket[offset+2]]
-
-            local objectives = {}
-            offset = offset + 3
-            local objectiveIndex = 0
-            while objectiveIndex < objectiveCount and questPacket[offset] do
-                objectiveIndex = objectiveIndex + 1
-                local fulfilled = questPacket[offset+2]
-                local required = questPacket[offset+3]
-
-                objectives[objectiveIndex] = {
-                    index = objectiveIndex,
-                    id = questPacket[offset],
-                    type = string.char(questPacket[offset+1]),
-                    fulfilled = fulfilled,
-                    required = required,
-                    finished = fulfilled == required,
-                }
-
-                allDone = allDone and objectives[objectiveIndex].finished
-
-                offset = offset + 4
-            end
-            if not (allDone and disableCompleteQuests) then
-                if not QuestieComms.remoteQuestLogs[questPacketid] then
-                    QuestieComms.remoteQuestLogs[questPacketid] = {}
-                end
-                -- Create empty player.
-                if not QuestieComms.remoteQuestLogs[questPacketid][playerName] then
-                    QuestieComms.remoteQuestLogs[questPacketid][playerName] = {}
-                end
-
-                QuestieComms.remoteQuestLogs[questPacketid][playerName] = objectives
-                QuestieComms.remotePlayerClasses[playerName] = class
-
-                --Write to tooltip data
-                QuestieComms.data:RegisterTooltip(questPacketid, playerName, objectives)
-            elseif disableCompleteQuests then
-                -- remove player if they exist
-                if QuestieComms.remoteQuestLogs[questPacketid] and QuestieComms.remoteQuestLogs[questPacketid][playerName] then
-                    QuestieComms.remoteQuestLogs[questPacketid][playerName] = nil
-                end
-            end
-
-            QuestiePartyObjectives:ScheduleUpdate(questPacketid)
-        end
-    end
-    return offset, allDone
-end
-
 function QuestieComms:CheckInGroup(name)
     return GetGroupUnitByName(name) ~= nil
 end
 
-function QuestieComms:RemoveAllRemotePlayers()
-    for name in pairs(QuestieComms.remotePlayerTimes) do
-        QuestieComms:RemoveRemotePlayer(name)
-    end
-end
-
 function QuestieComms:RemoveRemotePlayer(name)
-    QuestieComms.remotePlayerTimes[name] = nil
-    QuestieComms.remotePlayerEnabled[name] = nil
-    QuestieComms.remotePlayerClasses[name] = nil
-
     if not QuestieComms:CheckInGroup(name) then
         _RemoveRemoteQuestData(name)
     end
@@ -563,74 +401,6 @@ function QuestieComms:RemoveAllRemoteGroupPlayers()
     local changed = next(remoteGroupPlayers) ~= nil
     for name in pairs(remoteGroupPlayers) do _RemoveRemoteQuestData(name) end
     if changed then QuestiePartyObjectives:ScheduleUpdate() end
-end
-
-function QuestieComms:SortRemotePlayers()
-    local now = GetTime()
-    local current = {}
-    for name, time in pairs(QuestieComms.remotePlayerTimes) do
-        if now - time > 60 * 4 then -- not seen in the last 4 minutes
-            QuestieComms:RemoveRemotePlayer(name)
-        else
-            tinsert(current, name)
-        end
-    end
-    table.sort(current, function(a, b)
-        return QuestieComms.remotePlayerTimes[a] < QuestieComms.remotePlayerTimes[b]
-    end)
-    for index,name in pairs(current) do
-        if index < 4 then
-            QuestieComms.remotePlayerEnabled[name] = true
-        else
-            QuestieComms.remotePlayerEnabled[name] = false
-        end
-    end
-end
-
-QuestieComms._yellWaitingQuests = {}
-QuestieComms._yellQueue = {}
-QuestieComms._isYelling = false
-
-local _loadupTime_removeme = GetTime() -- this will be removed in 6.0.1 or 6.1, when we can figure out a proper way to prevent
--- yelling quests on login. Not enough time to make and test a proper fix
-
-function QuestieComms:YellProgress(questId)
-    if Questie.db.profile.disableYellComms or badYellLocations[C_Map.GetBestMapForUnit("player")] or QuestiePlayer.numberOfGroupMembers > 5 or GetTime() - _loadupTime_removeme < 8 then
-        return
-    end
-    if not QuestieComms._yellWaitingQuests[questId] then
-        QuestieComms._yellWaitingQuests[questId] = true
-        if QuestieComms._isYelling then
-            tinsert(QuestieComms._yellQueue, questId)
-        else
-            QuestieComms._isYelling = true
-            C_Timer.After(2, function()
-                _DoYell(questId)
-            end)
-        end
-    end
-end
-
-_DoYell = function(questId)
-    --[[local data = {}
-    local _, count = QuestieComms:PopulateQuestDataPacketV2(questId, data, 1)
-    if count > 0 then -- dont send quests with no objectives
-        local packet = _QuestieComms:CreatePacket(_QuestieComms.QC_ID_YELL_PROGRESS);
-        packet.data[1] = data;
-        packet.data.priority = "BULK"
-        packet.data.writeMode = _QuestieComms.QC_WRITE_YELL
-
-        packet:write();
-        QuestieComms._yellWaitingQuests[questId] = nil
-    end
-    local nextQuest = tremove(QuestieComms._yellQueue, 1)
-    if nextQuest then
-        C_Timer.After(2, function()
-            _DoYell(nextQuest)
-        end)
-    else
-        QuestieComms._isYelling = false
-    end]]
 end
 
 _QuestieComms._isBroadcasting = false
@@ -1018,22 +788,6 @@ _QuestieComms.packets = {
             end
         end
     },
-    [_QuestieComms.QC_ID_YELL_PROGRESS] = { --13
-        write = function(self)
-            Questie.Debug(Questie.DEBUG_INFO, "[QuestieComms] Sending: QC_ID_YELL_PROGRESS")
-            if not badYellLocations[C_Map.GetBestMapForUnit("player")] then
-               _QuestieComms:Broadcast(self.data);
-            end
-        end,
-        read = function(self)
-            Questie.Debug(Questie.DEBUG_INFO, "[QuestieComms] Received: QC_ID_YELL_PROGRESS")
-            if not Questie.db.profile.disableYellComms and not badYellLocations[C_Map.GetBestMapForUnit("player")] then
-                QuestieComms.remotePlayerTimes[self.playerName] = GetTime()
-                QuestieComms:InsertQuestDataPacketV2(self[1], self.playerName, 1, true)
-                QuestieComms:SortRemotePlayers()
-            end
-        end
-    },
     [_QuestieComms.QC_ID_BROADCAST_QUEST_UPDATEV2] = { -- 14
         write = function(self)
             Questie.Debug(Questie.DEBUG_INFO, "[QuestieComms] Sending: QC_ID_BROADCAST_QUEST_UPDATEV2")
@@ -1098,12 +852,6 @@ function _QuestieComms:Broadcast(packet)
         -- Always do channel messages as BULK priority
         Questie:SendCommMessage(_QuestieComms.prefix, compressedData, packetWriteMode, GetChannelName("questiecom"), "BULK")
         --OLD: C_ChatInfo.SendAddonMessage("questie", compressedData, "CHANNEL", GetChannelName("questiecom"))
-    elseif packetWriteMode == _QuestieComms.QC_WRITE_YELL then
-        packet.msgVer = nil
-        --packet.ver = nil
-        local compressedData = QuestieSerializer:Serialize(packet, "b89");
-        --print("Yelling progress: " .. compressedData)
-        Questie:SendCommMessage(_QuestieComms.prefix, compressedData, packetWriteMode, "BULK")
     else
         local compressedData = QuestieSerializer:Serialize(packet, "b89");
         if _IsDuplicateQuestUpdate(packet, compressedData, packetWriteMode) then
@@ -1129,6 +877,7 @@ function _QuestieComms:OnCommReceived(message, distribution, sender)
 end
 
 function _QuestieComms.OnCommReceived_unsafe(prefix, message, distribution, sender)
+    if distribution == "YELL" then return end
     --print("[" .. distribution .."][" .. sender .. "] " .. message)
     Questie.Debug(Questie.DEBUG_DEVELOP, "|cFF22FF22", "sender:", "|r", sender, "distribution:", distribution, "Packet length:", string.len(message))
     if message and sender and sender ~= UnitName("player") then
@@ -1136,21 +885,10 @@ function _QuestieComms.OnCommReceived_unsafe(prefix, message, distribution, send
             or distribution == "INSTANCE_CHAT") and not QuestieComms:CheckInGroup(sender) then
             return
         end
-        local decompressedData
-        if distribution == "YELL" then
-            --print("Decompressing YELL data")
-            decompressedData = QuestieSerializer:Deserialize(message, "b89")
-        else
-            --print("Decompressing normal data")
-            decompressedData = QuestieSerializer:Deserialize(message, "b89")
-        end
+        local decompressedData = QuestieSerializer:Deserialize(message, "b89")
 
         --Check if the message version is the same base value
-        if distribution == "YELL" and decompressedData and decompressedData.msgId and _QuestieComms.packets[decompressedData.msgId] then
-            decompressedData.playerName = sender;
-            Questie.Debug(Questie.DEBUG_DEVELOP, "Executing message ID: ", decompressedData.msgId, "From: ", sender)
-            _QuestieComms.packets[decompressedData.msgId].read(decompressedData)
-        elseif(decompressedData and decompressedData.msgVer and floor(decompressedData.msgVer) == floor(commMessageVersion)) then
+        if(decompressedData and decompressedData.msgVer and floor(decompressedData.msgVer) == floor(commMessageVersion)) then
             if(decompressedData and decompressedData.msgId and _QuestieComms.packets[decompressedData.msgId]) then
 
                 --If a new version exist, tell them!

@@ -375,7 +375,7 @@ local function _FetchTooltipsForGroupMembers(key, tooltipData)
             end
             for playerName, _ in pairs(playerList) do
                 local playerInfo = QuestiePlayer:GetPartyMemberByName(playerName);
-                if playerInfo or QuestieComms.remotePlayerEnabled[playerName] then
+                if playerInfo then
                     anotherPlayer = true
                     break
                 end
@@ -397,7 +397,7 @@ local function _FetchTooltipsForGroupMembers(key, tooltipData)
             end
             for playerName, objectives in pairs(playerList) do
                 local playerInfo = QuestiePlayer:GetPartyMemberByName(playerName);
-                if playerInfo or QuestieComms.remotePlayerEnabled[playerName] then
+                if playerInfo then
                     anotherPlayer = true;
                     for objectiveIndex, objective in pairs(objectives) do
                         if (not objective) then
@@ -607,15 +607,8 @@ function QuestieTooltips:GetTooltip(key, playerZone, npcStarterState)
             for objectivePlayerName, objectiveInfo in pairs(playerList) do
                 local playerInfo = QuestiePlayer:GetPartyMemberByName(objectivePlayerName)
                 local playerColor
-                local playerType = ""
                 if playerInfo then
                     playerColor = "|c" .. playerInfo.colorHex
-                elseif QuestieComms.remotePlayerEnabled[objectivePlayerName] and QuestieComms.remoteQuestLogs[questId] and QuestieComms.remoteQuestLogs[questId][objectivePlayerName] and (not Questie.db.profile.onlyPartyShared or UnitInParty(objectivePlayerName)) then
-                    playerColor = QuestieComms.remotePlayerClasses[objectivePlayerName]
-                    if playerColor then
-                        playerColor = Questie:GetClassColor(playerColor)
-                        playerType = " (" .. l10n("Nearby") .. ")"
-                    end
                 end
                 if objectivePlayerName == playerName and anotherPlayer then -- Add current player name to own objective
                     local _, playerClass = UnitClass("player")
@@ -628,7 +621,7 @@ function QuestieTooltips:GetTooltip(key, playerZone, npcStarterState)
                         objectiveInfo.text = objectiveInfo.text .. playerString
                     end
                 elseif playerColor and objectivePlayerName ~= playerName then -- Add other player name to their objective
-                    objectiveInfo.text = objectiveInfo.text .. " (" .. playerColor .. objectivePlayerName .. "|r" .. objectiveInfo.color .. ")|r" .. playerType
+                    objectiveInfo.text = objectiveInfo.text .. " (" .. playerColor .. objectivePlayerName .. "|r" .. objectiveInfo.color .. ")|r"
                 end
 
                 if objectiveInfo.status == "F" then

@@ -26,18 +26,6 @@ local tooltipsUILocales = {
         ["esES"] = "No has completado esta misión",
         ["frFR"] = "Vous n'avez pas terminé cette quête",
     },
-    ["Nearby"] = {
-        ["ptBR"] = "Nas proximidades",
-        ["ruRU"] = "Недалеко",
-        ["deDE"] = "In der Nähe",
-        ["koKR"] = "근처",
-        ["esMX"] = "Cerca de",
-        ["enUS"] = true,
-        ["zhCN"] = "附近",
-        ["zhTW"] = "附近",
-        ["esES"] = "Cerca de",
-        ["frFR"] = "Proche",
-    },
     ["Requirements"] = {
         ["ptBR"] = "Requisitos",
         ["ruRU"] = "Требуется:",
