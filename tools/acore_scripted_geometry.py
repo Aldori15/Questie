@@ -32,7 +32,7 @@ AERANAS_SCRIPT_SHA256 = "0022091bb85878edfe3487ca328d39a9e1ce1f7d4b1540e49feeff4
 
 def rotation_only_update(statement):
     """Quaternion recalculations cannot change summon ownership or placement."""
-    import generate_acore_item_corrections as sql
+    import acore_item_source_reader as sql
     assignments, _, matched = sql.split_update_statement(statement, "gameobject")
     return matched and bool(assignments) and all(re.fullmatch(
         r"\s*`?rotation[0-3]`?\s*=\s*(?:SIN|COS)\s*\(\s*`?orientation`?\s*/\s*2\s*\)\s*",
@@ -58,7 +58,7 @@ def script_key(row):
 def collect(scripts, creatures_by_entry, guid_to_creature, templates, zone_maps, escort_paths,
             object_templates=None, summon_action=12, objects_by_entry=None, guid_to_object=None,
             reviewed_child_scripts=None):
-    import generate_acore_npc_corrections as reader
+    import acore_npc_source_reader as reader
 
     if summon_action not in (12, 50):
         raise ValueError("Unsupported summon action")

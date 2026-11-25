@@ -3,7 +3,7 @@ import unittest
 from unittest.mock import patch
 
 from _test_paths import ADDON_ROOT
-import generate_acore_item_corrections as reader
+import acore_item_source_reader as reader
 
 
 def loot(item=0, chance=100, group=0, reference=0, **fields):
@@ -25,14 +25,6 @@ class ItemSourceTests(unittest.TestCase):
         self.assertEqual(items[30430]["indirectSources"], {"objectDrops": [184715]})
         self.assertNotIn("objectDrops", items[30430], "display sites must not become direct loot probabilities")
         self.assertEqual(context["acquisitionCoverage"]["triggered"]["evidence"][0]["sourceId"], 184722)
-
-    def test_retired_correction_command_stops_before_reading_sql(self):
-        with patch.object(reader, "build_acore_items") as build_items:
-            with self.assertRaises(SystemExit) as result:
-                reader.main()
-        build_items.assert_not_called()
-        self.assertIn("Correction layers are retired", str(result.exception.code))
-        self.assertIn("tools/generate_acore_item_base.py", str(result.exception.code))
 
     def test_equal_chance_rows_share_the_remaining_group_probability(self):
         rows = [loot(1, 20, 1), loot(2, 0, 1), loot(3, 0, 1)]

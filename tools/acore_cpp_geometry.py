@@ -127,7 +127,7 @@ def is_unrelated_gameobject_event_mutation(statement):
 
 def collect_scourge(source_root, zone_maps, circle_rows, circle_events, waypoint_by_path):
     """Guide players to possible invasion camps and city attack routes."""
-    import generate_acore_npc_corrections as reader
+    import acore_npc_source_reader as reader
     from acore_scripted_geometry import typed
 
     root = Path(source_root)
@@ -243,7 +243,7 @@ def collect_source_zones(source_root):
 
 
 def collect(source_root, zone_maps):
-    import generate_acore_npc_corrections as reader
+    import acore_npc_source_reader as reader
     from acore_scripted_geometry import typed
 
     source_root = Path(source_root)
@@ -336,7 +336,7 @@ def collect(source_root, zone_maps):
 
 def collect_objects(source_root, zone_maps, actor_spawns=None, actor_templates=None, spell_object_bindings=None):
     """Fixed boss-reward chest positions; mode expressions bind actual entries."""
-    import generate_acore_npc_corrections as reader
+    import acore_npc_source_reader as reader
     from acore_scripted_geometry import typed
 
     source_root = Path(source_root)

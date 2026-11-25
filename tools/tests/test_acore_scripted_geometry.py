@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 from _test_paths import ADDON_ROOT
 import acore_scripted_geometry as scripts
-import generate_acore_npc_corrections as reader
+import acore_npc_source_reader as reader
 import generate_acore_npc_base as base
 import audit_acore_npc_sources as audit
 import db_snapshot

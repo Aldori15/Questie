@@ -3,7 +3,7 @@ import unittest
 from unittest.mock import patch
 
 import _test_paths
-import generate_acore_npc_corrections as npc
+import acore_npc_source_reader as npc
 
 
 class PatrolSpawnMetadataTests(unittest.TestCase):

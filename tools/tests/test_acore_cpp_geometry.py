@@ -8,7 +8,7 @@ from _test_paths import ADDON_ROOT
 from db_snapshot import temporary_directory
 import acore_cpp_geometry as cpp
 import acore_transport_geometry as transport
-import generate_acore_npc_corrections as reader
+import acore_npc_source_reader as reader
 
 
 class CppGeometryTests(unittest.TestCase):

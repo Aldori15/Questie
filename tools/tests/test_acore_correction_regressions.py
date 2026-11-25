@@ -8,8 +8,8 @@ from pathlib import Path
 from _test_paths import ADDON_ROOT
 
 from questie_base import base_text
-import generate_acore_npc_corrections as npc_generator
-import generate_acore_object_corrections as object_generator
+import acore_npc_source_reader as npc_generator
+import acore_object_source_reader as object_generator
 import validate_acore_quest_metadata as quest_validator
 import validate_wdm_map_data as wdm_validator
 
@@ -193,10 +193,6 @@ const WintergraspObjectPositionData WGOutsideNPC[WG_MAX_OUTSIDE_NPC] = {
             zone_maps["wdm_instance_map_data"][ui_id]["instance"] in zone_maps["instance_to_zone"]
             for ui_id in zone_maps["floor_threshold_by_ui"]
         ))
-
-        zone_names = npc_generator.parse_zone_id_names(addon_root, zone_maps)
-        self.assertEqual("WDM_THE_DEADMINES_FLOOR_2", zone_names[11292])
-        self.assertEqual("zoneIDs.WDM_BLACKROCK_SPIRE_FLOOR_7", npc_generator.format_zone_ref(22003, zone_names))
 
     def test_world_spawn_does_not_enter_wdm_instance_floor_fallback(self):
         addon_root = ADDON_ROOT

@@ -10,8 +10,8 @@ Pillow and StormLib.
 ## Tool roles
 
 - `generate_acore_{item,npc,object,quest}_base.py generate`: update base data.
-- `generate_acore_{item,npc,object}_corrections.py`: shared reader/helper modules;
-  keep them, but do not run their retired correction-generation commands.
+- `acore_{item,npc,object}_source_reader.py`: shared readers for source SQL,
+  loot, and NPC and gameobject geometry.
 - `audit_acore_*_sources.py`: source models and coverage reports. Changed source
   inputs or readers invalidate caches automatically.
 - `tools/data/acore_*_compatibility.json`: maintained generation policies.

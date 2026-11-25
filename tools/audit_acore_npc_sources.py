@@ -14,8 +14,8 @@ import subprocess
 
 import audit_acore_item_sources as shared
 import db_snapshot
-import generate_acore_item_corrections as sql_reader
-import generate_acore_npc_corrections as reader
+import acore_item_source_reader as sql_reader
+import acore_npc_source_reader as reader
 import acore_cpp_geometry
 import acore_npc_health
 import acore_transport_geometry
@@ -28,8 +28,8 @@ TABLES = ("creature_template", "creature_classlevelstats", "creature_queststarte
           "event_scripts", "game_event_creature", "game_event_gameobject", "gameobject", "gameobject_template")
 ANCHORS = {1, 3, 4, 115, 1629, 2, 5, 6, 116, 1610}
 REPO_INPUTS = ("Database/Zones/zoneTables.lua", "Compat/UiMapData.lua", "Modules/Phasing.lua",
-               "Modules/Network/QuestieServer.lua", "tools/generate_acore_npc_corrections.py",
-               "tools/generate_acore_item_corrections.py", "tools/validate_acore_quest_metadata.py",
+               "Modules/Network/QuestieServer.lua", "tools/acore_npc_source_reader.py",
+               "tools/acore_item_source_reader.py", "tools/validate_acore_quest_metadata.py",
                "tools/acore_scripted_geometry.py", "tools/acore_cpp_geometry.py", "tools/acore_runtime_geometry.py",
                "tools/acore_npc_health.py", "tools/acore_transport_geometry.py", "tools/acore_quest_compatibility.py",
                "tools/audit_acore_npc_sources.py")

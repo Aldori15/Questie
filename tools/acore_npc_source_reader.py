@@ -1,3 +1,5 @@
+"""Read AzerothCore NPC data and resolve spawn and waypoint geometry."""
+
 import ast
 import csv
 import math
@@ -17,7 +19,7 @@ TOOLS_DIR = Path(__file__).resolve().parent
 if str(TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(TOOLS_DIR))
 
-from generate_acore_item_corrections import (  # noqa: E402
+from acore_item_source_reader import (  # noqa: E402
     apply_multirow_delete,
     apply_multirow_insert,
     apply_multirow_update,
@@ -471,28 +473,6 @@ def parse_zone_id_constants(repo_root):
             constants[f"zoneIDs.{name}"] = value
             constants[f"ZoneDB.private.zoneIDs.{name}"] = value
     return constants
-
-
-def wdm_floor_zone_constant_name(data):
-    source_map_id = float(data.get("mapID") or 0)
-    floor = int(round((source_map_id - int(source_map_id)) * 10))
-    instance_name = re.sub(r"([a-z])([A-Z])", r"\1_\2", str(data.get("name") or "INSTANCE"))
-    instance_name = re.sub(r"[^A-Za-z0-9_]", "_", instance_name).upper()
-    return f"WDM_{instance_name}_FLOOR_{floor}"
-
-
-def parse_zone_id_names(repo_root, zone_maps=None):
-    parsed = parse_zone_ids(repo_root)
-    zone_names = {}
-    for name, value in parsed.items():
-        if isinstance(value, int) and value not in zone_names:
-            zone_names[value] = name
-    if zone_maps:
-        for ui_id in zone_maps["floor_threshold_by_ui"]:
-            zone_id = zone_maps["ui_to_zone"].get(ui_id)
-            if zone_id and zone_id >= zone_maps["wdm_floor_zone_id_offset"]:
-                zone_names[zone_id] = wdm_floor_zone_constant_name(zone_maps["wdm_instance_map_data"][ui_id])
-    return zone_names
 
 
 def extract_lua_assigned_tables(text, assignment_pattern):
@@ -1654,32 +1634,6 @@ def sort_coordinate_table(zone_points, map_difficulty_masks=None):
     }
 
 
-def merge_entrance_spawn_placeholders(acore_spawns, questie_spawns, eligible_zone_ids):
-    """Keep Questie's dungeon-entrance marker beside generated interior coordinates."""
-    if not isinstance(acore_spawns, dict) or not isinstance(questie_spawns, dict):
-        return acore_spawns
-
-    eligible_zone_ids = set(eligible_zone_ids or ())
-    merged = {
-        int(zone_id): [list(point) for point in points]
-        for zone_id, points in acore_spawns.items()
-    }
-    for zone_id, questie_points in questie_spawns.items():
-        zone_id = int(zone_id)
-        if zone_id not in eligible_zone_ids or zone_id not in merged:
-            continue
-        for point in questie_points or ():
-            if (
-                isinstance(point, list)
-                and len(point) >= 2
-                and float(point[0]) == -1
-                and float(point[1]) == -1
-            ):
-                merged[zone_id].append([-1, -1])
-
-    return sort_coordinate_table(merged)
-
-
 def sort_waypoint_table(zone_paths):
     return {
         int(zone_id): sorted(
@@ -1749,178 +1703,3 @@ def unique_consecutive_points(points):
         result.append(key)
         previous = key
     return result
-
-
-def normalize_list(value):
-    if not value:
-        return ()
-    if isinstance(value, dict):
-        value = value.values()
-    return tuple(sorted({int(v) for v in value if v is not None}))
-
-
-def normalize_coordinate_table(value, waypoint=False, include_phases=False):
-    if not value:
-        return ()
-    zones = []
-    if not isinstance(value, dict):
-        return ()
-    for zone_id, points in value.items():
-        if not points:
-            zones.append((int(zone_id), ()))
-            continue
-        if waypoint:
-            paths = []
-            for path in points:
-                if not path:
-                    continue
-                # Questie corrections sometimes use { {x,y}, ... } instead of { {{x,y}, ...}, ... }.
-                if isinstance(path, list) and path and isinstance(path[0], (int, float)):
-                    path_points = points
-                    paths = [tuple((round(float(p[0]), 2), round(float(p[1]), 2)) for p in path_points if isinstance(p, list) and len(p) >= 2)]
-                    break
-                paths.append(tuple((round(float(p[0]), 2), round(float(p[1]), 2)) for p in path if isinstance(p, list) and len(p) >= 2))
-            zones.append((int(zone_id), tuple(sorted(paths))))
-        else:
-            normalized_points = []
-            for point in points:
-                if not isinstance(point, list) or len(point) < 2:
-                    continue
-                normalized_point = (round(float(point[0]), 2), round(float(point[1]), 2))
-                # SQL phaseMask is separate from Questie's logical phase IDs.
-                if include_phases:
-                    normalized_point += (int(point[2]) if len(point) >= 3 and point[2] else 0,)
-                if len(point) >= 5:
-                    normalized_point += (int(point[3]), int(point[4]))
-                if len(point) >= 7:
-                    normalized_point += (int(point[5]), int(point[6]))
-                if len(point) >= 8:
-                    normalized_point += (int(point[7]),)
-                normalized_points.append(normalized_point)
-            zones.append((int(zone_id), tuple(sorted(normalized_points))))
-    return tuple(sorted(zones))
-
-
-def normalize_value(field, value, include_spawn_phases=False):
-    if field in LIST_FIELDS:
-        return normalize_list(value)
-    if field in NESTED_FIELDS:
-        return normalize_coordinate_table(value, waypoint=(field == "waypoints"), include_phases=include_spawn_phases)
-    if field in STRING_FIELDS:
-        return value or ""
-    return int(value or 0)
-
-
-def correction_value(field, acore_value):
-    if field in LIST_FIELDS:
-        return list(normalize_list(acore_value))
-    if field in NESTED_FIELDS:
-        return acore_value or {}
-    if field in STRING_FIELDS:
-        return acore_value or ""
-    return int(acore_value or 0)
-
-
-def find_differences(
-    questie_npcs,
-    acore_npcs,
-    fields,
-    include_missing_npcs=False,
-    preserve_spawn_ids=None,
-    entrance_marker_zone_ids=None,
-):
-    corrections = {}
-    preserve_spawn_ids = preserve_spawn_ids or set()
-    ids = set(questie_npcs)
-    if include_missing_npcs:
-        ids |= set(acore_npcs)
-
-    for npc_id in sorted(ids):
-        acore = acore_npcs.get(npc_id)
-        if not acore:
-            continue
-        questie = questie_npcs.get(npc_id, {})
-        for field in fields:
-            if field not in acore:
-                continue
-            acore_value = acore.get(field)
-            if field == "spawns":
-                acore_value = merge_entrance_spawn_placeholders(
-                    acore_value,
-                    questie.get(field),
-                    entrance_marker_zone_ids,
-                )
-            compare_phases = field == "spawns" and any(
-                len(point) >= 3 and point[2]
-                for points in (acore_value or {}).values() for point in points
-            )
-            expected = normalize_value(field, acore_value, compare_phases)
-            actual = normalize_value(field, questie.get(field), compare_phases)
-            if (
-                npc_id in preserve_spawn_ids
-                and field in {"spawns", "waypoints", "zoneID"}
-                and field in acore
-                and normalize_value("spawns", acore.get("spawns")) == ()
-                and (field != "waypoints" or normalize_value("waypoints", acore.get("waypoints")) == ())
-                and normalize_value("spawns", questie.get("spawns")) != ()
-            ):
-                continue
-            if expected != actual:
-                corrections.setdefault(npc_id, {})[field] = correction_value(field, acore_value)
-    return corrections
-
-
-def lua_quote(value):
-    return ast.literal_eval(repr(value)).replace("\\", "\\\\").replace('"', '\\"')
-
-
-def format_zone_ref(value, zone_names):
-    if isinstance(value, int) or float(value).is_integer():
-        zone_id = int(value)
-        zone_name = zone_names.get(zone_id)
-        if zone_name:
-            return f"zoneIDs.{zone_name}"
-        return str(zone_id)
-    return format_lua_number(value)
-
-
-def format_lua_value(value, zone_names=None, zone_keyed_table=False):
-    zone_names = zone_names or {}
-    if isinstance(value, str):
-        return f'"{lua_quote(value)}"'
-    if isinstance(value, list):
-        if value and isinstance(value[0], list):
-            return "{" + ",".join(format_lua_value(item, zone_names) for item in value) + "}"
-        return "{" + ",".join(format_lua_number(item) for item in value) + "}"
-    if isinstance(value, dict):
-        return "{" + ", ".join(
-            f"[{format_zone_ref(key, zone_names) if zone_keyed_table else int(key)}] = "
-            f"{format_lua_value(value[key], zone_names)}"
-            for key in sorted(value)
-        ) + "}"
-    if isinstance(value, int):
-        return str(value)
-    if isinstance(value, float):
-        return format_lua_number(value)
-    raise TypeError(f"Unsupported Lua value: {value!r}")
-
-
-def format_lua_number(value):
-    if isinstance(value, int) or float(value).is_integer():
-        return str(int(value))
-    return f"{float(value):.2f}".rstrip("0").rstrip(".")
-
-
-def format_lua_field_value(field, value, zone_names):
-    if field == "zoneID":
-        return format_zone_ref(value, zone_names)
-    return format_lua_value(value, zone_names, zone_keyed_table=(field in NESTED_FIELDS))
-
-
-def main():
-    raise SystemExit("Correction layers are retired. Use tools/generate_acore_npc_base.py; "
-                     "this module retains shared source-reading helpers.")
-
-
-if __name__ == "__main__":
-    main()

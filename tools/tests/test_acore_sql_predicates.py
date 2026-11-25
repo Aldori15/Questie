@@ -3,8 +3,8 @@ import unittest
 
 from _test_paths import ADDON_ROOT
 import db_snapshot
-import generate_acore_item_corrections as reader
-import generate_acore_npc_corrections as npc_reader
+import acore_item_source_reader as reader
+import acore_npc_source_reader as npc_reader
 
 
 class SqlPredicateTests(unittest.TestCase):

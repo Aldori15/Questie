@@ -1,3 +1,5 @@
+"""Read AzerothCore SQL, item templates, and loot sources."""
+
 import ast
 import math
 import re
@@ -55,8 +57,6 @@ FIELD_ORDER = [
     "vendors",
     "relatedQuests",
 ]
-
-ACORE_SOURCE = "AzerothCore"
 
 def strip_lua_comments(text):
     result = []
@@ -1322,69 +1322,3 @@ def build_acore_items(source_root, include_modules=False, spell_sql=None, spell_
         "acquisitionCoverage": {"triggered": triggered_sources, "summonHandoffs": summon_sources},
     }
     return acore_items, skipped_mutations, source_context
-
-
-def normalize_list(value):
-    if not value:
-        return ()
-    return tuple(sorted({int(v) for v in value if v is not None}))
-
-
-def should_preserve_indirect_quest_item_object_sources(field, questie, acore, source_context=None):
-    if field != "objectDrops":
-        return False
-
-    source_context = source_context or {}
-    questie_object_drops = normalize_list(questie.get("objectDrops"))
-    gameobject_template_ids = source_context.get("gameObjectTemplateIds")
-    if gameobject_template_ids is not None and not set(questie_object_drops).issubset(gameobject_template_ids):
-        return False
-    spawned_gameobject_ids = source_context.get("spawnedGameObjectIds")
-    if spawned_gameobject_ids is not None and not set(questie_object_drops).issubset(spawned_gameobject_ids):
-        return False
-
-    acore_npc_drops = normalize_list(acore.get("npcDrops"))
-    spawned_creature_ids = source_context.get("spawnedCreatureIds")
-    has_mappable_acore_npc_source = (
-        bool(acore_npc_drops)
-        if spawned_creature_ids is None
-        else any(npc_id in spawned_creature_ids for npc_id in acore_npc_drops)
-    )
-
-    # Some quest items are obtained via using an item on a gameobject or
-    # through scripted interactions where AzerothCore's `gameobject_loot`
-    # table does not include a direct mapping. If Questie already has
-    # object POIs for such items and AC lists the item as related to a
-    # quest, prefer preserving the existing object POIs rather than
-    # overriding them with an empty list.
-    if (
-        not normalize_list(acore.get("objectDrops"))
-        and bool(questie_object_drops)
-        and (
-            bool(normalize_list(acore.get("relatedQuests")))
-            or bool(normalize_list(questie.get("relatedQuests")))
-        )
-        and not has_mappable_acore_npc_source
-        and not normalize_list(acore.get("itemDrops"))
-    ):
-        return True
-
-    return (
-        not normalize_list(acore.get("objectDrops"))
-        and bool(questie_object_drops)
-        and (
-            bool(normalize_list(acore.get("relatedQuests")))
-            or bool(normalize_list(questie.get("relatedQuests")))
-        )
-        and bool(normalize_list(acore.get("itemDrops")))
-        and normalize_list(acore.get("itemDrops")) == normalize_list(questie.get("itemDrops"))
-    )
-
-
-def main():
-    raise SystemExit("Correction layers are retired. Use tools/generate_acore_item_base.py; "
-                     "this module retains shared source-reading helpers.")
-
-
-if __name__ == "__main__":
-    main()

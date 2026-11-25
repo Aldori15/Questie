@@ -1,3 +1,5 @@
+"""Read AzerothCore gameobjects, their locations, and quest relations."""
+
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -8,13 +10,13 @@ TOOLS_DIR = Path(__file__).resolve().parent
 if str(TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(TOOLS_DIR))
 
-from generate_acore_item_corrections import (  # noqa: E402
+from acore_item_source_reader import (  # noqa: E402
     add_item_sources_from_loot,
     build_gameobject_loot_source_map,
     load_keyed_table,
     load_row_table,
 )
-from generate_acore_npc_corrections import (  # noqa: E402
+from acore_npc_source_reader import (  # noqa: E402
     add_acore_spawn_visibility,
     find_map_difficulty_dbc,
     get_creature_entries,
@@ -23,17 +25,12 @@ from generate_acore_npc_corrections import (  # noqa: E402
     load_map_difficulty_masks,
     load_filtered_row_table,
     load_rows_from_sql_file,
-    merge_entrance_spawn_placeholders,
     parse_zone_maps,
     resolve_coordinate_zone,
     source_zone_candidates,
     sort_coordinate_table,
 )
 
-
-LIST_FIELDS = {"questStarts", "questEnds"}
-NESTED_FIELDS = {"spawns"}
-STRING_FIELDS = {"name"}
 
 FIELD_ORDER = [
     "name",
@@ -275,127 +272,3 @@ def build_acore_objects(
         **{f"mapping:{key}": value for key, value in map_stats.items()},
     }
     return acore_objects, skipped_mutations, item_object_source_ids
-
-
-def normalize_list(value):
-    if not value:
-        return ()
-    if isinstance(value, dict):
-        value = value.values()
-    return tuple(sorted({int(v) for v in value if v is not None}))
-
-
-def normalize_coordinate_table(value):
-    if not value or not isinstance(value, dict):
-        return ()
-    zones = []
-    for zone_id, points in value.items():
-        if not points:
-            zones.append((int(zone_id), ()))
-            continue
-        zones.append(
-            (
-                int(zone_id),
-                tuple(
-                    sorted(
-                        (
-                            round(float(point[0]), 2),
-                            round(float(point[1]), 2),
-                            *((int(point[3]), int(point[4])) if len(point) >= 5 else ()),
-                            *((int(point[5]), int(point[6])) if len(point) >= 7 else ()),
-                        )
-                        for point in points
-                        if isinstance(point, list) and len(point) >= 2
-                    )
-                ),
-            )
-        )
-    return tuple(sorted(zones))
-
-
-def collect_indirect_quest_item_object_source_ids(
-    questie_items,
-    required_quest_item_ids,
-    candidate_ids,
-):
-    candidate_ids = set(candidate_ids)
-    source_ids = set()
-    for item_id in required_quest_item_ids:
-        for object_id in normalize_list(questie_items.get(item_id, {}).get("objectDrops")):
-            if object_id in candidate_ids:
-                source_ids.add(object_id)
-    return source_ids
-
-
-def normalize_value(field, value):
-    if field in LIST_FIELDS:
-        return normalize_list(value)
-    if field in NESTED_FIELDS:
-        return normalize_coordinate_table(value)
-    if field in STRING_FIELDS:
-        return value or ""
-    return int(value or 0)
-
-
-def correction_value(field, acore_value):
-    if field in LIST_FIELDS:
-        return list(normalize_list(acore_value))
-    if field in NESTED_FIELDS:
-        return acore_value or {}
-    if field in STRING_FIELDS:
-        return acore_value or ""
-    return int(acore_value or 0)
-
-
-def find_differences(
-    questie_objects,
-    acore_objects,
-    fields,
-    include_missing_objects=False,
-    preserve_spawn_ids=None,
-    force_include_ids=None,
-    entrance_marker_zone_ids=None,
-):
-    corrections = {}
-    preserve_spawn_ids = preserve_spawn_ids or set()
-    ids = set(questie_objects) | set(force_include_ids or ())
-    if include_missing_objects:
-        ids |= set(acore_objects)
-
-    for object_id in sorted(ids):
-        acore = acore_objects.get(object_id)
-        if not acore:
-            continue
-        questie = questie_objects.get(object_id, {})
-        for field in fields:
-            if field not in acore:
-                continue
-            acore_value = acore.get(field)
-            if field == "spawns":
-                acore_value = merge_entrance_spawn_placeholders(
-                    acore_value,
-                    questie.get(field),
-                    entrance_marker_zone_ids,
-                )
-            expected = normalize_value(field, acore_value)
-            actual = normalize_value(field, questie.get(field))
-            if (
-                object_id in preserve_spawn_ids
-                and field in {"spawns", "zoneID"}
-                and field in acore
-                and normalize_value("spawns", acore.get("spawns")) == ()
-                and normalize_value("spawns", questie.get("spawns")) != ()
-            ):
-                continue
-            if expected != actual:
-                corrections.setdefault(object_id, {})[field] = correction_value(field, acore_value)
-    return corrections
-
-
-def main():
-    raise SystemExit("Correction layers are retired. Use tools/generate_acore_object_base.py; "
-                     "this module retains shared source-reading helpers.")
-
-
-if __name__ == "__main__":
-    main()

@@ -99,11 +99,5 @@ class AcoreDataPathTests(unittest.TestCase):
         for kind in ("Quest", "NPC", "Object", "Item"):
             self.assertFalse((ADDON_ROOT / DATA_DIR / ("AzerothCore" + kind + "Corrections.lua")).exists())
 
-    def test_shared_source_helpers_cannot_write_retired_correction_outputs(self):
-        for kind in ("item", "npc", "object"):
-            with self.subTest(kind=kind), self.assertRaisesRegex(SystemExit, "generate_acore_" + kind + "_base.py"):
-                importlib.import_module("generate_acore_" + kind + "_corrections").main()
-
-
 if __name__ == "__main__":
     unittest.main()

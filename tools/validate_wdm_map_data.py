@@ -4,7 +4,7 @@ import math
 import re
 from pathlib import Path
 
-from generate_acore_npc_corrections import parse_zone_maps
+from acore_npc_source_reader import parse_zone_maps
 
 
 WDM_ROW_PATTERN = re.compile(

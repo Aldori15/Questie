@@ -12,7 +12,7 @@ import math
 from pathlib import Path
 import re
 
-from generate_acore_npc_corrections import LuaParser
+from acore_npc_source_reader import LuaParser
 from questie_base import base_text, parse_keys
 from report_acore_quest_blacklist import parse_blacklist_entries, is_fully_blacklisted_in_wotlk
 

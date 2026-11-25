@@ -6,8 +6,8 @@ from pathlib import Path
 import re
 import sys
 
-from generate_acore_item_corrections import load_row_table, extract_balanced_braces
-from generate_acore_npc_corrections import LuaParser, load_filtered_row_table
+from acore_item_source_reader import load_row_table, extract_balanced_braces
+from acore_npc_source_reader import LuaParser, load_filtered_row_table
 from questie_base import base_text, parse_keys
 
 

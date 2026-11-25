@@ -5,7 +5,7 @@ from unittest.mock import patch
 from _test_paths import ADDON_ROOT
 import audit_acore_item_sources as audit
 import db_snapshot
-import generate_acore_item_corrections as reader
+import acore_item_source_reader as reader
 
 
 def export_fixture(path, underscored=False, table="spell"):

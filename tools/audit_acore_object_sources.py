@@ -12,9 +12,9 @@ from unittest.mock import patch
 import audit_acore_item_sources as shared
 import audit_acore_npc_sources as geometry
 import db_snapshot
-import generate_acore_item_corrections as sql_reader
-import generate_acore_npc_corrections as coordinate_reader
-import generate_acore_object_corrections as reader
+import acore_item_source_reader as sql_reader
+import acore_npc_source_reader as coordinate_reader
+import acore_object_source_reader as reader
 import acore_cpp_geometry
 
 
@@ -23,8 +23,8 @@ TABLES = ("gameobject_template", "gameobject_template_addon", "gameobject_quests
           "game_event_gameobject_quest", "gameobject_questender", "reference_loot_template",
           "gameobject_loot_template")
 REPO_INPUTS = ("Database/Zones/zoneTables.lua", "Compat/UiMapData.lua", "Modules/Phasing.lua",
-               "Modules/Network/QuestieServer.lua", "tools/generate_acore_object_corrections.py",
-               "tools/generate_acore_npc_corrections.py", "tools/generate_acore_item_corrections.py",
+               "Modules/Network/QuestieServer.lua", "tools/acore_object_source_reader.py",
+               "tools/acore_npc_source_reader.py", "tools/acore_item_source_reader.py",
                "tools/validate_acore_quest_metadata.py", "tools/audit_acore_npc_sources.py",
                "tools/acore_scripted_geometry.py", "tools/acore_cpp_geometry.py", "tools/audit_acore_object_sources.py")
 

@@ -13,7 +13,7 @@ from unittest.mock import patch
 
 import audit_acore_item_sources as shared
 import db_snapshot
-import generate_acore_item_corrections as sql_reader
+import acore_item_source_reader as sql_reader
 import validate_acore_quest_metadata as metadata_reader
 import validate_acore_quest_relations as relation_reader
 import acore_quest_compatibility as compatibility
@@ -26,7 +26,7 @@ import acore_quest_smart_guides as smart_guides
 import acore_quest_summon_guides as summon_guides
 import acore_quest_classic_guides as classic_guides
 import acore_quest_spell_guides as spell_guides
-import generate_acore_npc_corrections as coordinates
+import acore_npc_source_reader as coordinates
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -157,7 +157,7 @@ def source_signature(source, spell_sql, spell_table, tool_candidates=None, creat
     for root in metadata_reader.get_excluded_module_sql_roots(source):
         paths.update(p.resolve() for p in root.rglob("*.sql"))
     revision = subprocess.run(["git", "-C", str(source), "rev-parse", "HEAD"], capture_output=True, text=True)
-    readers = ("audit_acore_quest_sources.py", "generate_acore_item_corrections.py", "validate_acore_quest_metadata.py", "validate_acore_quest_relations.py",
+    readers = ("audit_acore_quest_sources.py", "acore_item_source_reader.py", "validate_acore_quest_metadata.py", "validate_acore_quest_relations.py",
                 "acore_quest_compatibility.py", "acore_quest_guides.py", "acore_quest_guide_labels.py",
                 "acore_quest_flight_guides.py", "acore_quest_cpp_events.py",
                 "acore_quest_area_scripts.py",
@@ -168,7 +168,7 @@ def source_signature(source, spell_sql, spell_table, tool_candidates=None, creat
                "acore_quest_classic_guides.py", "acore_quest_spell_guides.py", "acore_cpp_geometry.py",
                "acore_scripted_geometry.py",
                "acore_item_compatibility.py",
-               "generate_acore_npc_corrections.py")
+               "acore_npc_source_reader.py")
     return {"version": 7, "sourceRoot": str(source), "includeModules": False,
             "toolCandidates": tool_candidates or {},
             "sourceRevision": revision.stdout.strip() if revision.returncode == 0 else None,

@@ -5,7 +5,7 @@ import unittest
 from _test_paths import ADDON_ROOT
 import acore_runtime_geometry as runtime
 import generate_acore_npc_base as exporter
-import generate_acore_npc_corrections as reader
+import acore_npc_source_reader as reader
 
 
 class RuntimeGeometryTests(unittest.TestCase):

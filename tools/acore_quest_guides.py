@@ -939,7 +939,7 @@ FISHING_POOL_GUIDES = {
 def append_fishing_hints(packet, quest_templates, item_templates, fishing_rows, reference_rows, item_loot_rows,
                          object_templates=(), object_loot_rows=()):
     """Restore reviewed water locations only while their source acquisition still exists."""
-    from generate_acore_item_corrections import resolve_loot_rows
+    from acore_item_source_reader import resolve_loot_rows
 
     quests, items = _templates(quest_templates, "ID"), _templates(item_templates, "entry")
     references, fishing, containers, object_loot = (defaultdict(list) for _ in range(4))

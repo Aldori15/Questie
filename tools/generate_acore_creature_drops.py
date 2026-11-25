@@ -11,7 +11,7 @@ TOOLS_DIR = Path(__file__).resolve().parent
 if str(TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(TOOLS_DIR))
 
-from generate_acore_item_corrections import (  # noqa: E402
+from acore_item_source_reader import (  # noqa: E402
     apply_multirow_delete,
     apply_multirow_update,
     apply_variable_set,
